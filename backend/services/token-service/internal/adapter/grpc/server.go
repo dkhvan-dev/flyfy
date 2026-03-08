@@ -7,9 +7,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/grpc/handler"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
 	pb "github.com/dkhvan-dev/flyfy/proto/gen/go/token"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/adapter/grpc/handler"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/domain/port"
 )
 
 // TokenServiceServer implements the gRPC TokenService defined in token.proto.

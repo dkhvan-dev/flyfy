@@ -3,7 +3,7 @@ package port
 import (
 	"context"
 
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
 )
 
 // --- Primary Ports (driven by incoming requests) ---

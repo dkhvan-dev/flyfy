@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/domain/port"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/config"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/port"
 )
 
 // AuthUseCase implements the core authentication business logic.

@@ -108,5 +108,120 @@ services:
       timeout: 3s
       retries: 5
 
+  # ============================================
+  # File Manager PostgreSQL
+  # ============================================
+  file-manager-postgres:
+    image: postgres:17-alpine
+    container_name: flyfy-file-manager-postgres
+    environment:
+      POSTGRES_DB: file_manager_db
+      POSTGRES_USER: flyfy
+      POSTGRES_PASSWORD: flyfy
+    ports:
+      - "5435:5432"
+    volumes:
+      - file_manager_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/003_file_manager.sh:/docker-entrypoint-initdb.d/003_file_manager.sh
+      - ../backend/services/file-manager-service/migrations:/migrations/file-manager-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flyfy -d file_manager_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # File Manager MinIO
+  # ============================================
+  file-manager-minio:
+    image: minio/minio:latest
+    container_name: flyfy-file-manager-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: flyfy
+      MINIO_ROOT_PASSWORD: flyfysecret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - file_manager_minio_data:/data
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+
+  # ============================================
+  # File Manager MinIO Init
+  # ============================================
+  file-manager-minio-init:
+    image: minio/mc:latest
+    container_name: flyfy-file-manager-minio-init
+    depends_on:
+      file-manager-minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set local http://file-manager-minio:9000 flyfy flyfysecret;
+      mc mb -p local/flyfy-files || true;
+      mc anonymous set private local/flyfy-files || true;
+      exit 0;
+      "
+
+  # ============================================
+  # File Manager Service
+  # ============================================
+  file-manager-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/file-manager-service/Dockerfile
+    container_name: flyfy-file-manager-service
+    depends_on:
+      file-manager-postgres:
+        condition: service_healthy
+      file-manager-minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "8083:8083"
+      - "9093:9093"
+    environment:
+      APP_ENV: development
+
+      HTTP_PORT: 8083
+      GRPC_PORT: 9093
+
+      POSTGRES_HOST: file-manager-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: flyfy
+      POSTGRES_PASSWORD: flyfy
+      POSTGRES_DB: file_manager_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 10
+      POSTGRES_MIN_OPEN_CONNS: 2
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+      POSTGRES_MAX_CONN_IDLE_TIME: 30m
+
+      STORAGE_PROVIDER: s3
+      STORAGE_ENDPOINT: http://file-manager-minio:9000
+      STORAGE_REGION: us-east-1
+      STORAGE_ACCESS_KEY_ID: flyfy
+      STORAGE_SECRET_ACCESS_KEY: flyfysecret
+      STORAGE_BUCKET: flyfy-files
+      STORAGE_USE_PATH_STYLE: "true"
+      STORAGE_PRESIGN_TTL: 15m
+      STORAGE_MAX_UPLOAD_SIZE_BYTES: 26214400
+
+      LOG_LEVEL: debug
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      REQUIRE_AUTHENTICATED_WRITES: "true"
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      REQUEST_ID_HEADER: X-Request-Id
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  file_manager_postgres_data:
+  file_manager_minio_data:

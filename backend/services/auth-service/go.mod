@@ -1,4 +1,4 @@
-module github.com/dkhvan-dev/flyfy/auth-service
+module github.com/dkhvan-dev/flyfy/backend/services/auth-service
 
 go 1.26
 

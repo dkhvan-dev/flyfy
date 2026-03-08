@@ -1,4 +1,4 @@
-module github.com/dkhvan-dev/flyfy/token-service
+module github.com/dkhvan-dev/flyfy/backend/services/token-service
 
 go 1.26
 

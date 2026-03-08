@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/dkhvan-dev/flyfy/token-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/domain/port"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
 )
 
 // TokenGRPCHandler implements the gRPC TokenService server.

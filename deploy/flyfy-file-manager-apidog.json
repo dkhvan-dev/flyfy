@@ -1,0 +1,801 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "FlyFy File Manager Service API",
+        "description": "Коллекция запросов для file-manager-service",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8083",
+            "description": "Local"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Health"
+        },
+        {
+            "name": "Files"
+        },
+        {
+            "name": "Bindings"
+        }
+    ],
+    "paths": {
+        "/health": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Проверка здоровья сервиса",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/v1/files/upload-requests": {
+            "post": {
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Создать upload request",
+                "description": "Создаёт metadata файла и возвращает presigned upload URL",
+                "parameters": [
+                    {
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "upload-avatar-user-123-001"
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "example": "11111111-1111-1111-1111-111111111111"
+                    },
+                    {
+                        "name": "X-User-Roles",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "USER,GUIDE"
+                    },
+                    {
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "req-file-upload-001"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateUploadRequestRequest"
+                            },
+                            "examples": {
+                                "avatarUpload": {
+                                    "summary": "Загрузка аватарки",
+                                    "value": {
+                                        "originalName": "avatar.jpg",
+                                        "contentType": "image/jpeg",
+                                        "sizeBytes": 245000,
+                                        "purpose": "AVATAR",
+                                        "visibility": "PRIVATE",
+                                        "ownerType": "USER",
+                                        "ownerId": "11111111-1111-1111-1111-111111111111"
+                                    }
+                                },
+                                "guideDocUpload": {
+                                    "summary": "Документ гида",
+                                    "value": {
+                                        "originalName": "passport.pdf",
+                                        "contentType": "application/pdf",
+                                        "sizeBytes": 820000,
+                                        "purpose": "GUIDE_VERIFICATION_DOC",
+                                        "visibility": "PRIVATE",
+                                        "ownerType": "GUIDE_VERIFICATION_REQUEST",
+                                        "ownerId": "22222222-2222-2222-2222-222222222222"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Upload request создан",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreateUploadRequestResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации"
+                    },
+                    "401": {
+                        "description": "Нет user context"
+                    },
+                    "409": {
+                        "description": "Idempotency conflict"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка"
+                    }
+                }
+            }
+        },
+        "/v1/files/{fileId}": {
+            "get": {
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Получить metadata файла",
+                "parameters": [
+                    {
+                        "name": "fileId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "example": "33333333-3333-3333-3333-333333333333"
+                    },
+                    {
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Metadata файла",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный fileId"
+                    },
+                    "404": {
+                        "description": "Файл не найден"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Soft delete файла",
+                "parameters": [
+                    {
+                        "name": "fileId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Файл помечен удалённым"
+                    },
+                    "400": {
+                        "description": "Некорректный fileId"
+                    },
+                    "404": {
+                        "description": "Файл не найден"
+                    }
+                }
+            }
+        },
+        "/v1/files/{fileId}/complete": {
+            "post": {
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Подтвердить завершение upload",
+                "parameters": [
+                    {
+                        "name": "fileId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload завершён",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompleteUploadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации"
+                    },
+                    "404": {
+                        "description": "Файл не найден"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка"
+                    }
+                }
+            }
+        },
+        "/v1/files/{fileId}/download-url": {
+            "post": {
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Получить presigned download URL",
+                "parameters": [
+                    {
+                        "name": "fileId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Presigned download URL",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreateDownloadURLResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный fileId"
+                    },
+                    "404": {
+                        "description": "Файл не найден"
+                    }
+                }
+            }
+        },
+        "/v1/files/{fileId}/bindings": {
+            "post": {
+                "tags": [
+                    "Bindings"
+                ],
+                "summary": "Привязать файл к owner context",
+                "parameters": [
+                    {
+                        "name": "fileId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-User-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BindFileRequest"
+                            },
+                            "examples": {
+                                "bindAvatar": {
+                                    "summary": "Привязать как primary avatar",
+                                    "value": {
+                                        "ownerType": "USER",
+                                        "ownerId": "11111111-1111-1111-1111-111111111111",
+                                        "purpose": "AVATAR",
+                                        "isPrimary": true
+                                    }
+                                },
+                                "bindGuideDoc": {
+                                    "summary": "Привязать документ заявки гида",
+                                    "value": {
+                                        "ownerType": "GUIDE_VERIFICATION_REQUEST",
+                                        "ownerId": "22222222-2222-2222-2222-222222222222",
+                                        "purpose": "GUIDE_VERIFICATION_DOC",
+                                        "isPrimary": false
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Файл привязан",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileBindingResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации"
+                    },
+                    "404": {
+                        "description": "Файл не найден"
+                    },
+                    "409": {
+                        "description": "Конфликт binding"
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Bindings"
+                ],
+                "summary": "Получить bindings файла",
+                "parameters": [
+                    {
+                        "name": "fileId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список bindings",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListBindingsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный fileId"
+                    },
+                    "404": {
+                        "description": "Файл не найден"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CreateUploadRequestRequest": {
+                "type": "object",
+                "required": [
+                    "originalName",
+                    "contentType",
+                    "sizeBytes",
+                    "purpose",
+                    "visibility"
+                ],
+                "properties": {
+                    "originalName": {
+                        "type": "string",
+                        "example": "avatar.jpg"
+                    },
+                    "contentType": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    },
+                    "sizeBytes": {
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 245000
+                    },
+                    "purpose": {
+                        "type": "string",
+                        "enum": [
+                            "AVATAR",
+                            "GUIDE_VERIFICATION_DOC",
+                            "ACTIVITY_MEDIA",
+                            "TOUR_MEDIA",
+                            "CHAT_ATTACHMENT",
+                            "GENERIC_DOCUMENT"
+                        ]
+                    },
+                    "visibility": {
+                        "type": "string",
+                        "enum": [
+                            "PRIVATE",
+                            "PROTECTED",
+                            "PUBLIC"
+                        ]
+                    },
+                    "ownerType": {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                            "USER",
+                            "GUIDE_PROFILE",
+                            "GUIDE_VERIFICATION_REQUEST",
+                            "ACTIVITY",
+                            "TOUR",
+                            "ORGANIZATION"
+                        ]
+                    },
+                    "ownerId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    }
+                }
+            },
+            "CreateUploadRequestResponse": {
+                "type": "object",
+                "properties": {
+                    "fileId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "objectKey": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "PENDING_UPLOAD"
+                    },
+                    "upload": {
+                        "$ref": "#/components/schemas/UploadDescriptor"
+                    }
+                }
+            },
+            "UploadDescriptor": {
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "type": "string",
+                        "example": "PUT"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "headers": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "CompleteUploadResponse": {
+                "type": "object",
+                "properties": {
+                    "fileId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "READY"
+                    },
+                    "detectedContentType": {
+                        "type": "string",
+                        "example": "image/jpeg"
+                    },
+                    "SizeBytes": {
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 245000
+                    },
+                    "sizeBytes": {
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 245000
+                    }
+                }
+            },
+            "FileResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "example": "s3"
+                    },
+                    "bucket": {
+                        "type": "string"
+                    },
+                    "objectKey": {
+                        "type": "string"
+                    },
+                    "originalName": {
+                        "type": "string"
+                    },
+                    "storedName": {
+                        "type": "string"
+                    },
+                    "extension": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "contentType": {
+                        "type": "string"
+                    },
+                    "detectedContentType": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "sizeBytes": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "checksumSha256": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "visibility": {
+                        "type": "string"
+                    },
+                    "purpose": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "ownerType": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ownerId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "uploadedByUserId": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "uploadExpiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "isDeleted": {
+                        "type": "boolean"
+                    },
+                    "deletedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "CreateDownloadURLResponse": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string"
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "BindFileRequest": {
+                "type": "object",
+                "required": [
+                    "ownerType",
+                    "ownerId",
+                    "purpose",
+                    "isPrimary"
+                ],
+                "properties": {
+                    "ownerType": {
+                        "type": "string",
+                        "enum": [
+                            "USER",
+                            "GUIDE_PROFILE",
+                            "GUIDE_VERIFICATION_REQUEST",
+                            "ACTIVITY",
+                            "TOUR",
+                            "ORGANIZATION"
+                        ]
+                    },
+                    "ownerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "purpose": {
+                        "type": "string",
+                        "enum": [
+                            "AVATAR",
+                            "GUIDE_VERIFICATION_DOC",
+                            "ACTIVITY_MEDIA",
+                            "TOUR_MEDIA",
+                            "CHAT_ATTACHMENT",
+                            "GENERIC_DOCUMENT"
+                        ]
+                    },
+                    "isPrimary": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                }
+            },
+            "FileBindingResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fileId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "ownerType": {
+                        "type": "string"
+                    },
+                    "ownerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "purpose": {
+                        "type": "string"
+                    },
+                    "isPrimary": {
+                        "type": "boolean"
+                    },
+                    "isDeleted": {
+                        "type": "boolean"
+                    },
+                    "deletedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "createdByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "ListBindingsResponse": {
+                "type": "object",
+                "properties": {
+                    "bindings": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FileBindingResponse"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

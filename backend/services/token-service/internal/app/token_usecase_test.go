@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
-	"github.com/dkhvan-dev/flyfy/token-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/app"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/config"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
 )
 
 // --- Mock implementations ---
@@ -50,7 +50,7 @@ func (m *mockKeyStore) StoreKey(_ context.Context, keyID string, key *rsa.Privat
 	return nil
 }
 
-func (m *mockKeyStore) DeactivateKey(_ context.Context, _ string) error { return nil }
+func (m *mockKeyStore) DeactivateKey(_ context.Context, _ string) error  { return nil }
 func (m *mockKeyStore) DeleteExpiredKeys(_ context.Context, _ int) error { return nil }
 
 type mockRevocationStore struct {
@@ -145,12 +145,12 @@ func setupUseCase(t *testing.T) (*app.TokenUseCase, *mockKeyStore, *mockRevocati
 	logger := zerolog.Nop()
 
 	cfg := config.JWTConfig{
-		Issuer:              "test-issuer",
-		AccessTokenTTL:      900_000_000_000,  // 15 min in ns
-		RefreshTokenTTL:     2_592_000_000_000_000, // 30 days in ns
-		ServiceTokenTTL:     3_600_000_000_000, // 1h in ns
-		RSAKeySize:          2048,
-		MaxKeysInJWKS:       3,
+		Issuer:          "test-issuer",
+		AccessTokenTTL:  900_000_000_000,       // 15 min in ns
+		RefreshTokenTTL: 2_592_000_000_000_000, // 30 days in ns
+		ServiceTokenTTL: 3_600_000_000_000,     // 1h in ns
+		RSAKeySize:      2048,
+		MaxKeysInJWKS:   3,
 	}
 
 	uc := app.NewTokenUseCase(cfg, keyStore, revStore, svcStore, pwVerifier, audit, logger)

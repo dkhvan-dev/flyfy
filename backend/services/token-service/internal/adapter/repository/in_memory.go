@@ -5,7 +5,7 @@ import (
 	"crypto/rsa"
 	"sync"
 
-	"github.com/dkhvan-dev/flyfy/token-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
 	"github.com/go-jose/go-jose/v4"
 )
 

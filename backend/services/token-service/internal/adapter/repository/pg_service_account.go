@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/dkhvan-dev/flyfy/token-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
 )
 
 // PgServiceAccountStore implements port.ServiceAccountStore using PostgreSQL.

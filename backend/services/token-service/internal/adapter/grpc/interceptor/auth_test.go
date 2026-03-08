@@ -3,7 +3,7 @@ package interceptor_test
 import (
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/token-service/internal/adapter/grpc/interceptor"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/grpc/interceptor"
 )
 
 func TestHasAllRoles(t *testing.T) {
@@ -50,7 +50,7 @@ func TestHasAllRoles(t *testing.T) {
 			// We test via the exported CallerFromContext and the logic indirectly.
 			// Since hasAllRoles is unexported, we test through findMissingRoles logic.
 			// For a proper test, we'd either export or test through the interceptor.
-			
+
 			// Build a role set to simulate the check
 			roleSet := make(map[string]struct{}, len(tt.serviceRoles))
 			for _, r := range tt.serviceRoles {

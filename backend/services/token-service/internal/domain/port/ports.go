@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/rsa"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
 	"github.com/go-jose/go-jose/v4"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/domain/model"
 )
 
 // --- Primary Ports (driven by incoming requests) ---

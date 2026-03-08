@@ -15,15 +15,15 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/crypto"
+	tokengrpc "github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/grpc"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/grpc/handler"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/grpc/interceptor"
+	httpAdapter "github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/http"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/repository"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/app"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/config"
 	pb "github.com/dkhvan-dev/flyfy/proto/gen/go/token"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/adapter/crypto"
-	tokengrpc "github.com/dkhvan-dev/flyfy/token-service/internal/adapter/grpc"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/adapter/grpc/handler"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/adapter/grpc/interceptor"
-	httpAdapter "github.com/dkhvan-dev/flyfy/token-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/token-service/internal/config"
 	"google.golang.org/grpc/reflection"
 )
 

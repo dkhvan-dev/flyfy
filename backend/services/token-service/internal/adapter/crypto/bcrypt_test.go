@@ -3,7 +3,7 @@ package crypto_test
 import (
 	"testing"
 
-	"github.com/dkhvan-dev/flyfy/token-service/internal/adapter/crypto"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/crypto"
 )
 
 func TestBcryptVerifier_HashAndVerify(t *testing.T) {

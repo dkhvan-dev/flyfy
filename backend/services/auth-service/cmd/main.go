@@ -13,13 +13,13 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 
-	httpAdapter "github.com/dkhvan-dev/flyfy/auth-service/internal/adapter/http"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/adapter/oauth"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/adapter/otp"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/adapter/repository"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/adapter/tokenclient"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/app"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/config"
+	httpAdapter "github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/http"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/oauth"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/otp"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/repository"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/adapter/tokenclient"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/app"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/config"
 )
 
 func main() {

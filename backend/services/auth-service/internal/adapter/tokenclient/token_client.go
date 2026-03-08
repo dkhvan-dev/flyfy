@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/config"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/domain/model"
-	"github.com/dkhvan-dev/flyfy/auth-service/internal/domain/port"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/config"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/port"
 	tokenpb "github.com/dkhvan-dev/flyfy/proto/gen/go/token"
 )
 

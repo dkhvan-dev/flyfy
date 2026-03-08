@@ -9,7 +9,7 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog"
 
-	"github.com/dkhvan-dev/flyfy/token-service/internal/domain/port"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
 )
 
 // JWKSHandler serves the /.well-known/jwks.json endpoint.
