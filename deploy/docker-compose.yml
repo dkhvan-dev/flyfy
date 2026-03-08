@@ -1,0 +1,112 @@
+services:
+  # ============================================
+  # Token Service
+  # ============================================
+  token-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/token-service/Dockerfile
+    ports:
+      - "50051:50051"   # gRPC
+      - "8081:8081"     # HTTP (JWKS + Health)
+    environment:
+      APP_ENV: development
+      GRPC_PORT: 50051
+      HTTP_PORT: 8081
+      JWT_ISSUER: tourism-superapp/token-service
+      JWT_ACCESS_TTL: 30m
+      JWT_REFRESH_TTL: 720h
+      JWT_SERVICE_TTL: 1h
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: token_service
+      PG_PASSWORD: token_secret_dev
+      PG_DBNAME: token_service
+      PG_SSLMODE: disable
+      REDIS_ADDR: redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================
+  # Auth Service
+  # ============================================
+  auth-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/auth-service/Dockerfile
+    ports:
+      - "50052:50052"   # gRPC (reserved)
+      - "8082:8082"     # HTTP (REST API)
+    environment:
+      APP_ENV: development
+      GRPC_PORT: 50052
+      HTTP_PORT: 8082
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: auth_service
+      PG_PASSWORD: auth_secret_dev
+      PG_DBNAME: auth_db
+      PG_SSLMODE: disable
+      REDIS_ADDR: redis:6379
+      REDIS_DB: 1
+      TOKEN_SERVICE_ADDR: token-service:50051
+      TOKEN_SERVICE_ID: auth-service
+      TOKEN_SERVICE_SECRET: auth-service-secret
+      OTP_LENGTH: 6
+      OTP_TTL: 5m
+      OTP_MAX_ATTEMPTS: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      token-service:
+        condition: service_started
+    restart: unless-stopped
+
+  # ============================================
+  # PostgreSQL
+  # ============================================
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: token_service
+      POSTGRES_PASSWORD: token_secret_dev
+      POSTGRES_DB: token_service
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Init scripts (executed in alphabetical order)
+      - ./init-scripts/000_create_databases.sql:/docker-entrypoint-initdb.d/000_create_databases.sql
+      - ./init-scripts/001_token_service.sh:/docker-entrypoint-initdb.d/001_token_service.sh
+      - ./init-scripts/002_auth_service.sh:/docker-entrypoint-initdb.d/002_auth_service.sh
+      # Migration files (mounted read-only, used by init scripts)
+      - ../backend/services/token-service/migrations:/migrations/token-service:ro
+      - ../backend/services/auth-service/migrations:/migrations/auth-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U token_service"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ============================================
+  # Redis
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:

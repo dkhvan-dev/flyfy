@@ -1,0 +1,64 @@
+run:
+  timeout: 5m
+  go: "1.26"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - typecheck
+    - gocritic
+    - gofumpt
+    - gosec
+    - prealloc
+    - unconvert
+    - unparam
+    - misspell
+    - nolintlint
+    - revive
+    - bodyclose
+    - contextcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - nilerr
+    - nilnil
+    - sqlclosecheck
+    - wastedassign
+
+linters-settings:
+  govet:
+    shadow: true
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+  revive:
+    rules:
+      - name: unexported-return
+        disabled: true
+  gosec:
+    excludes:
+      - G104  # unhandled errors (covered by errcheck)
+  exhaustive:
+    default-signifies-exhaustive: true
+
+issues:
+  exclude-rules:
+    # Test files can have longer functions and use assertions
+    - path: _test\.go
+      linters:
+        - gocritic
+        - gosec
+        - errcheck
+    # Main can be longer
+    - path: cmd/main\.go
+      linters:
+        - gocritic
+  max-same-issues: 3
+  max-issues-per-linter: 50

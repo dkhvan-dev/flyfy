@@ -1,0 +1,253 @@
+{
+  "info": {
+    "name": "Flyfy Token-Service",
+    "description": "Коллекция запросов (HTTP и тела для gRPC) для тестирования token-service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "http_url", "value": "http://localhost:8081", "type": "string" },
+    { "key": "grpc_url", "value": "grpc://localhost:50051", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "refresh_token", "value": "", "type": "string" },
+    { "key": "service_token", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. REST API (HTTP)",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{http_url}}/health",
+              "host": ["{{http_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{http_url}}/ready",
+              "host": ["{{http_url}}"],
+              "path": ["ready"]
+            }
+          }
+        },
+        {
+          "name": "Get JWKS",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{http_url}}/.well-known/jwks.json",
+              "host": ["{{http_url}}"],
+              "path": [".well-known", "jwks.json"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. gRPC Payloads",
+      "description": "Apidog создаст структуру gRPC автоматически при импорте token.proto. Эти запросы служат справочником JSON-тел (payload) и для сохранения переменных.",
+      "item": [
+        {
+          "name": "GenerateUserTokens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var data = pm.response.json();",
+                  "if (data.access_token) pm.environment.set(\"access_token\", data.access_token);",
+                  "if (data.refresh_token) pm.environment.set(\"refresh_token\", data.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"bba3d978-8380-4ebd-9ab0-95152aebbc5a\",\n  \"role\": \"tourist\",\n  \"permissions\": [\n    \"read:profile\",\n    \"write:profile\"\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{grpc_url}}/token.v1.TokenService/GenerateUserTokens",
+              "host": ["{{grpc_url}}"],
+              "path": ["token.v1.TokenService", "GenerateUserTokens"]
+            }
+          }
+        },
+        {
+          "name": "ValidateAccessToken",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{access_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{grpc_url}}/token.v1.TokenService/ValidateAccessToken",
+              "host": ["{{grpc_url}}"],
+              "path": ["token.v1.TokenService", "ValidateAccessToken"]
+            }
+          }
+        },
+        {
+          "name": "RefreshTokens",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var data = pm.response.json();",
+                  "if (data.access_token) pm.environment.set(\"access_token\", data.access_token);",
+                  "if (data.refresh_token) pm.environment.set(\"refresh_token\", data.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{grpc_url}}/token.v1.TokenService/RefreshTokens",
+              "host": ["{{grpc_url}}"],
+              "path": ["token.v1.TokenService", "RefreshTokens"]
+            }
+          }
+        },
+        {
+          "name": "ValidateRefreshToken",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{grpc_url}}/token.v1.TokenService/ValidateRefreshToken",
+              "host": ["{{grpc_url}}"],
+              "path": ["token.v1.TokenService", "ValidateRefreshToken"]
+            }
+          }
+        },
+        {
+          "name": "RevokeToken",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jti\": \"REPLACE_WITH_JTI_FROM_VALIDATE_RESPONSE\",\n  \"exp\": 1735689600,\n  \"reason\": \"manual_revoke_test\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{grpc_url}}/token.v1.TokenService/RevokeToken",
+              "host": ["{{grpc_url}}"],
+              "path": ["token.v1.TokenService", "RevokeToken"]
+            }
+          }
+        },
+        {
+          "name": "AuthenticateService (S2S)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var data = pm.response.json();",
+                  "if (data.token) pm.environment.set(\"service_token\", data.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"service_id\": \"auth-service\",\n  \"service_secret\": \"auth-service-secret\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{grpc_url}}/token.v1.TokenService/AuthenticateService",
+              "host": ["{{grpc_url}}"],
+              "path": ["token.v1.TokenService", "AuthenticateService"]
+            }
+          }
+        },
+        {
+          "name": "ValidateServiceToken",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{service_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{grpc_url}}/token.v1.TokenService/ValidateServiceToken",
+              "host": ["{{grpc_url}}"],
+              "path": ["token.v1.TokenService", "ValidateServiceToken"]
+            }
+          }
+        },
+        {
+          "name": "GenerateServiceToken",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"service_id\": \"test-service\",\n  \"roles\": [\n    \"system\"\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{grpc_url}}/token.v1.TokenService/GenerateServiceToken",
+              "host": ["{{grpc_url}}"],
+              "path": ["token.v1.TokenService", "GenerateServiceToken"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

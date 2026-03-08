@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package token.v1;
+
+option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/token;tokenpb";
+
+import "google/protobuf/timestamp.proto";
+
+// TokenService handles all token operations.
+service TokenService {
+  // User tokens
+  rpc GenerateUserTokens(GenerateUserTokensRequest)   returns (TokenPairResponse);
+  rpc ValidateAccessToken(ValidateTokenRequest)        returns (ValidatedClaimsResponse);
+  rpc ValidateRefreshToken(ValidateTokenRequest)       returns (ValidatedClaimsResponse);
+  rpc RefreshTokens(RefreshTokensRequest)              returns (TokenPairResponse);
+  rpc RevokeToken(RevokeTokenRequest)                  returns (RevokeTokenResponse);
+
+  // Service-to-service tokens
+  rpc AuthenticateService(AuthenticateServiceRequest)  returns (ServiceTokenResponse);
+  rpc ValidateServiceToken(ValidateTokenRequest)       returns (ValidatedClaimsResponse);
+  rpc GenerateServiceToken(GenerateServiceTokenRequest) returns (ServiceTokenResponse);
+}
+
+// --- Requests ---
+
+message GenerateUserTokensRequest {
+  string user_id     = 1;
+  string role        = 2;  // "tourist", "guide", "agency", "admin"
+  repeated string permissions = 3;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message RefreshTokensRequest {
+  string refresh_token = 1;
+}
+
+message RevokeTokenRequest {
+  string jti    = 1;  // JWT ID to revoke
+  int64  exp    = 2;  // Expiry timestamp (for TTL on revocation entry)
+  string reason = 3;
+}
+
+message AuthenticateServiceRequest {
+  string service_id     = 1;
+  string service_secret = 2;
+}
+
+message GenerateServiceTokenRequest {
+  string service_id     = 1;
+  repeated string roles = 2;
+}
+
+// --- Responses ---
+
+message TokenPairResponse {
+  string access_token  = 1;
+  string refresh_token = 2;
+  string token_type    = 3;  // "Bearer"
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+message ServiceTokenResponse {
+  string token = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}
+
+message ValidatedClaimsResponse {
+  bool   valid       = 1;
+  string subject     = 2;
+  string type        = 3;  // "user" or "service"
+  string role        = 4;  // for user tokens
+  repeated string roles       = 5;  // for service tokens
+  repeated string permissions = 6;
+  string jti         = 7;
+  google.protobuf.Timestamp issued_at   = 8;
+  google.protobuf.Timestamp expires_at  = 9;
+}
+
+message RevokeTokenResponse {
+  bool revoked = 1;
+}
