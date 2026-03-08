@@ -113,7 +113,7 @@ services:
   # ============================================
   file-manager-postgres:
     image: postgres:17-alpine
-    container_name: flyfy-file-manager-postgres
+    container_name: file-manager-postgres
     environment:
       POSTGRES_DB: file_manager_db
       POSTGRES_USER: flyfy
@@ -135,7 +135,7 @@ services:
   # ============================================
   file-manager-minio:
     image: minio/minio:latest
-    container_name: flyfy-file-manager-minio
+    container_name: file-manager-minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: flyfy
@@ -156,7 +156,7 @@ services:
   # ============================================
   file-manager-minio-init:
     image: minio/mc:latest
-    container_name: flyfy-file-manager-minio-init
+    container_name: file-manager-minio-init
     depends_on:
       file-manager-minio:
         condition: service_started
@@ -176,7 +176,7 @@ services:
     build:
       context: ..
       dockerfile: ./backend/services/file-manager-service/Dockerfile
-    container_name: flyfy-file-manager-service
+    container_name: file-manager-service
     depends_on:
       file-manager-postgres:
         condition: service_healthy
@@ -221,7 +221,80 @@ services:
       REQUEST_ID_HEADER: X-Request-Id
     restart: unless-stopped
 
+  # ============================================
+  # User Service PostgreSQL
+  # ============================================
+  user-postgres:
+    image: postgres:17-alpine
+    container_name: user-postgres
+    environment:
+      POSTGRES_DB: user_service_db
+      POSTGRES_USER: flyfy
+      POSTGRES_PASSWORD: flyfy
+    ports:
+      - "5436:5432"
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/004_user_service.sh:/docker-entrypoint-initdb.d/004_user_service.sh
+      - ../backend/services/user-service/migrations:/migrations/user-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flyfy -d user_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # User Service
+  # ============================================
+  user-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/user-service/Dockerfile
+    container_name: user-service
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+      file-manager-service:
+        condition: service_started
+    ports:
+      - "8084:8084"
+      - "9094:9094"
+    environment:
+      APP_ENV: development
+
+      HTTP_PORT: 8084
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 15s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      GRPC_PORT: 9094
+
+      POSTGRES_HOST: user-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: flyfy
+      POSTGRES_PASSWORD: flyfy
+      POSTGRES_DB: user_service_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 10
+      POSTGRES_MIN_OPEN_CONNS: 2
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+      POSTGRES_MAX_CONN_IDLE_TIME: 30m
+
+      LOG_LEVEL: debug
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      REQUIRE_AUTHENTICATED_WRITES: "true"
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+
+      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
+
+    restart: unless-stopped
+
 volumes:
   pgdata:
   file_manager_postgres_data:
   file_manager_minio_data:
+  user_postgres_data:
