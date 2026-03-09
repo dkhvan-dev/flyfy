@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/device/device_context_service.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/update_profile_request.dart';
@@ -19,6 +20,7 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _profileApi = ProfileApi();
+  final _deviceContextService = const DeviceContextService();
 
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
@@ -30,7 +32,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   late String _localeCode;
   late bool _isPublic;
+
   bool _isSaving = false;
+  bool _isResolvingLocation = false;
 
   @override
   void initState() {
@@ -44,11 +48,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _displayNameController = TextEditingController(text: profile?.displayName ?? '');
     _bioController = TextEditingController(text: profile?.bio ?? '');
     _countryCodeController = TextEditingController(text: profile?.countryCode ?? '');
-    _timezoneController = TextEditingController(text: profile?.timezone ?? 'Asia/Almaty');
+    _timezoneController = TextEditingController(
+      text: profile?.timezone ?? 'Asia/Almaty',
+    );
     _currencyController = TextEditingController(text: profile?.currency ?? 'KZT');
 
     _localeCode = _normalizeLocaleCode(profile?.locale, fallback: appLocaleCode);
     _isPublic = profile?.isPublic ?? true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _prefillTimezoneFromDevice();
+    });
   }
 
   @override
@@ -61,6 +71,104 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _timezoneController.dispose();
     _currencyController.dispose();
     super.dispose();
+  }
+
+  Future<void> _prefillTimezoneFromDevice() async {
+    final currentValue = _timezoneController.text.trim();
+    final shouldReplace =
+        currentValue.isEmpty || currentValue == 'Asia/Almaty';
+
+    if (!shouldReplace) return;
+
+    final timezone = await _deviceContextService.getLocalTimezone();
+    if (!mounted || timezone == null || timezone.trim().isEmpty) return;
+
+    setState(() {
+      _timezoneController.text = timezone;
+    });
+  }
+
+  Future<void> _resolveLocationFromDevice() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    setState(() {
+      _isResolvingLocation = true;
+    });
+
+    try {
+      final suggestion = await _deviceContextService.detectLocationSuggestion();
+      if (!mounted || suggestion == null) return;
+
+      final confirmed = await _showLocationConfirmDialog(suggestion);
+      if (!mounted || confirmed != true) return;
+
+      setState(() {
+        if ((suggestion.countryCode ?? '').isNotEmpty) {
+          _countryCodeController.text = suggestion.countryCode!;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      final code = e.toString();
+      String message = l10n.locationDetectFailed;
+
+      if (code.contains('location_services_disabled')) {
+        message = l10n.locationServicesDisabled;
+      } else if (code.contains('location_permission_denied_forever')) {
+        message = l10n.locationPermissionDeniedForever;
+      } else if (code.contains('location_permission_denied')) {
+        message = l10n.locationPermissionDenied;
+      }
+
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: message,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isResolvingLocation = false;
+        });
+      }
+    }
+  }
+
+  Future<bool?> _showLocationConfirmDialog(
+    DeviceLocationSuggestion suggestion,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+
+    final locationText = [
+      if ((suggestion.cityName ?? '').isNotEmpty) suggestion.cityName,
+      if ((suggestion.countryName ?? '').isNotEmpty) suggestion.countryName,
+      if ((suggestion.countryCode ?? '').isNotEmpty) suggestion.countryCode,
+    ].whereType<String>().join(', ');
+
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.useDetectedLocationTitle),
+          content: Text(
+            locationText.isEmpty
+                ? l10n.locationDetectFailed
+                : l10n.useDetectedLocationDescription(locationText),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancelButton),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.useButton),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _save() async {
@@ -123,6 +231,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
       }
     }
+  }
+
+  String _normalizeLocaleCode(String? raw, {String fallback = 'ru'}) {
+    const allowed = {'ru', 'en', 'kk'};
+
+    final normalized = (raw ?? '').trim().toLowerCase();
+    if (allowed.contains(normalized)) {
+      return normalized;
+    }
+
+    final fallbackNormalized = fallback.trim().toLowerCase();
+    if (allowed.contains(fallbackNormalized)) {
+      return fallbackNormalized;
+    }
+
+    return 'ru';
   }
 
   @override
@@ -205,6 +329,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   border: const OutlineInputBorder(),
                 ),
               ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _isResolvingLocation ? null : _resolveLocationFromDevice,
+                icon: const Icon(Icons.my_location_outlined),
+                label: _isResolvingLocation
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(l10n.detectLocationButton),
+              ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _normalizeLocaleCode(_localeCode),
@@ -267,21 +403,5 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       ),
     );
-  }
-
-  String _normalizeLocaleCode(String? raw, {String fallback = 'ru'}) {
-    const allowed = {'ru', 'en', 'kk'};
-
-    final normalized = (raw ?? '').trim().toLowerCase();
-    if (allowed.contains(normalized)) {
-      return normalized;
-    }
-
-    final fallbackNormalized = fallback.trim().toLowerCase();
-    if (allowed.contains(fallbackNormalized)) {
-      return fallbackNormalized;
-    }
-
-    return 'ru';
   }
 }

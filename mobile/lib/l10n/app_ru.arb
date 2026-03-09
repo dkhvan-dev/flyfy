@@ -72,5 +72,19 @@
   "lastNameRequired": "Укажите фамилию",
   "profileRequiredTitle": "Заполните профиль",
   "profileRequiredDescription": "Чтобы продолжить, укажите имя и фамилию в профиле. Это помогает снизить количество фейковых аккаунтов и повышает доверие между пользователями.",
-  "laterButton": "Позже"
+  "laterButton": "Позже",
+  "detectLocationButton": "Определить по геолокации",
+  "useDetectedLocationTitle": "Использовать определённую локацию?",
+  "useDetectedLocationDescription": "Мы определили вашу локацию как: {location}. Использовать её для профиля?",
+  "@useDetectedLocationDescription": {
+    "placeholders": {
+      "location": {}
+    }
+  },
+  "locationDetectFailed": "Не удалось определить локацию",
+  "locationServicesDisabled": "Сервисы геолокации отключены на устройстве",
+  "locationPermissionDenied": "Доступ к геолокации не предоставлен",
+  "locationPermissionDeniedForever": "Доступ к геолокации запрещён. Разрешите его в настройках устройства",
+  "cancelButton": "Отмена",
+  "useButton": "Использовать"
 }

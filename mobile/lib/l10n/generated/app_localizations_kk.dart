@@ -202,4 +202,35 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get laterButton => 'Кейінірек';
+
+  @override
+  String get detectLocationButton => 'Геолокация бойынша анықтау';
+
+  @override
+  String get useDetectedLocationTitle => 'Анықталған локацияны қолданасыз ба?';
+
+  @override
+  String useDetectedLocationDescription(Object location) {
+    return 'Біз сіздің локацияңызды былай анықтадық: $location. Профиль үшін қолданасыз ба?';
+  }
+
+  @override
+  String get locationDetectFailed => 'Локацияны анықтау сәтсіз аяқталды';
+
+  @override
+  String get locationServicesDisabled =>
+      'Құрылғыда геолокация қызметтері өшірілген';
+
+  @override
+  String get locationPermissionDenied => 'Геолокацияға рұқсат берілмеген';
+
+  @override
+  String get locationPermissionDeniedForever =>
+      'Геолокацияға қолжетімсіз. Құрылғы баптауларында рұқсат беріңіз';
+
+  @override
+  String get cancelButton => 'Бас тарту';
+
+  @override
+  String get useButton => 'Қолдану';
 }

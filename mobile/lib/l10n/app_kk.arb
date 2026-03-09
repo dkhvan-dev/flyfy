@@ -72,5 +72,19 @@
   "lastNameRequired": "Тегіңізді енгізіңіз",
   "profileRequiredTitle": "Профильді толтырыңыз",
   "profileRequiredDescription": "Жалғастыру үшін профиліңізде атыңыз бен тегіңізді көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.",
-  "laterButton": "Кейінірек"
+  "laterButton": "Кейінірек",
+  "detectLocationButton": "Геолокация бойынша анықтау",
+  "useDetectedLocationTitle": "Анықталған локацияны қолданасыз ба?",
+  "useDetectedLocationDescription": "Біз сіздің локацияңызды былай анықтадық: {location}. Профиль үшін қолданасыз ба?",
+  "@useDetectedLocationDescription": {
+    "placeholders": {
+      "location": {}
+    }
+  },
+  "locationDetectFailed": "Локацияны анықтау сәтсіз аяқталды",
+  "locationServicesDisabled": "Құрылғыда геолокация қызметтері өшірілген",
+  "locationPermissionDenied": "Геолокацияға рұқсат берілмеген",
+  "locationPermissionDeniedForever": "Геолокацияға қолжетімсіз. Құрылғы баптауларында рұқсат беріңіз",
+  "cancelButton": "Бас тарту",
+  "useButton": "Қолдану"
 }

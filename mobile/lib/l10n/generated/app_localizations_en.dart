@@ -200,4 +200,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get laterButton => 'Later';
+
+  @override
+  String get detectLocationButton => 'Detect from location';
+
+  @override
+  String get useDetectedLocationTitle => 'Use detected location?';
+
+  @override
+  String useDetectedLocationDescription(Object location) {
+    return 'We detected your location as: $location. Use it for your profile?';
+  }
+
+  @override
+  String get locationDetectFailed => 'Failed to detect location';
+
+  @override
+  String get locationServicesDisabled =>
+      'Location services are disabled on this device';
+
+  @override
+  String get locationPermissionDenied => 'Location permission was not granted';
+
+  @override
+  String get locationPermissionDeniedForever =>
+      'Location access is blocked. Please enable it in device settings';
+
+  @override
+  String get cancelButton => 'Cancel';
+
+  @override
+  String get useButton => 'Use';
 }

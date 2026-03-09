@@ -471,6 +471,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later'**
   String get laterButton;
+
+  /// No description provided for @detectLocationButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Detect from location'**
+  String get detectLocationButton;
+
+  /// No description provided for @useDetectedLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use detected location?'**
+  String get useDetectedLocationTitle;
+
+  /// No description provided for @useDetectedLocationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'We detected your location as: {location}. Use it for your profile?'**
+  String useDetectedLocationDescription(Object location);
+
+  /// No description provided for @locationDetectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to detect location'**
+  String get locationDetectFailed;
+
+  /// No description provided for @locationServicesDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Location services are disabled on this device'**
+  String get locationServicesDisabled;
+
+  /// No description provided for @locationPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission was not granted'**
+  String get locationPermissionDenied;
+
+  /// No description provided for @locationPermissionDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Location access is blocked. Please enable it in device settings'**
+  String get locationPermissionDeniedForever;
+
+  /// No description provided for @cancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelButton;
+
+  /// No description provided for @useButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Use'**
+  String get useButton;
 }
 
 class _AppLocalizationsDelegate

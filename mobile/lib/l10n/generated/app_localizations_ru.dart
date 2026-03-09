@@ -200,4 +200,35 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get laterButton => 'Позже';
+
+  @override
+  String get detectLocationButton => 'Определить по геолокации';
+
+  @override
+  String get useDetectedLocationTitle => 'Использовать определённую локацию?';
+
+  @override
+  String useDetectedLocationDescription(Object location) {
+    return 'Мы определили вашу локацию как: $location. Использовать её для профиля?';
+  }
+
+  @override
+  String get locationDetectFailed => 'Не удалось определить локацию';
+
+  @override
+  String get locationServicesDisabled =>
+      'Сервисы геолокации отключены на устройстве';
+
+  @override
+  String get locationPermissionDenied => 'Доступ к геолокации не предоставлен';
+
+  @override
+  String get locationPermissionDeniedForever =>
+      'Доступ к геолокации запрещён. Разрешите его в настройках устройства';
+
+  @override
+  String get cancelButton => 'Отмена';
+
+  @override
+  String get useButton => 'Использовать';
 }
