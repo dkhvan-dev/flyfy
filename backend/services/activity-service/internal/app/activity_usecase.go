@@ -16,11 +16,15 @@ import (
 )
 
 type ActivityUseCase struct {
-	repo port.ActivityRepository
+	repo   port.ActivityRepository
+	policy *PolicyService
 }
 
 func NewActivityUseCase(repo port.ActivityRepository) *ActivityUseCase {
-	return &ActivityUseCase{repo: repo}
+	return &ActivityUseCase{
+		repo:   repo,
+		policy: NewPolicyService(repo),
+	}
 }
 
 type CreateActivityInput struct {
@@ -116,6 +120,18 @@ type UpdateActivityInput struct {
 func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivityInput) (*model.Activity, error) {
 	if input.HostUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
+	}
+
+	if err := u.policy.CheckCreateRateLimit(ctx, input.HostUserID); err != nil {
+		return nil, err
+	}
+
+	if err := u.policy.ValidateURLs(
+		ctx,
+		input.MapURL,
+		input.MeetingURL,
+	); err != nil {
+		return nil, err
 	}
 
 	item, err := model.NewActivity(model.NewActivityParams{
@@ -601,6 +617,14 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		item.MeetingURL = model.NormalizeOptionalString(input.MeetingURL)
 	}
 
+	if err = u.policy.ValidateURLs(
+		ctx,
+		item.MapURL,
+		item.MeetingURL,
+	); err != nil {
+		return nil, err
+	}
+
 	if err = u.validateUpdateRules(ctx, item, beforePriceType, beforePriceAmount, beforeCurrency, beforeLocationSnapshot); err != nil {
 		return nil, err
 	}
@@ -790,6 +814,60 @@ func (u *ActivityUseCase) RejectModeration(
 	}
 
 	return item, nil
+}
+
+func (u *ActivityUseCase) ListHostedActivities(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	offset int,
+) ([]*model.Activity, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	items, err := u.repo.ListHostedActivitiesByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list hosted activities: %w", err)
+	}
+
+	return items, nil
+}
+
+func (u *ActivityUseCase) ListJoinedActivities(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	offset int,
+) ([]*model.Activity, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidParticipantUserID
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	items, err := u.repo.ListJoinedActivitiesByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list joined activities: %w", err)
+	}
+
+	return items, nil
 }
 
 func normalizeTags(tags []string) []string {

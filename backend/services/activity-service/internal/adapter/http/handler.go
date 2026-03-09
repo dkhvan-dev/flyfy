@@ -41,6 +41,10 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 	mux.HandleFunc("POST /v1/activities", h.CreateActivity)
 	mux.HandleFunc("GET /v1/activities", h.ListActivities)
+
+	mux.HandleFunc("GET /v1/me/activities/joined", h.ListMyJoinedActivities)
+	mux.HandleFunc("GET /v1/me/activities/hosted", h.ListMyHostedActivities)
+
 	mux.HandleFunc("GET /v1/activities/", h.handleActivityRoutes)
 	mux.HandleFunc("PATCH /v1/activities/", h.handleActivityRoutes)
 	mux.HandleFunc("POST /v1/activities/", h.handleActivityRoutes)
@@ -83,6 +87,11 @@ func (h *Handler) handleActivityRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch parts[1] {
+	case "participants":
+		if r.Method == http.MethodGet {
+			h.ListActivityParticipants(w, r, activityID)
+			return
+		}
 	case "publish":
 		if r.Method == http.MethodPost {
 			h.PublishActivity(w, r, activityID)
@@ -640,6 +649,93 @@ func (h *Handler) LeaveActivity(w http.ResponseWriter, r *http.Request, activity
 	writeJSON(w, http.StatusOK, toParticipantResponse(item))
 }
 
+func (h *Handler) ListActivityParticipants(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
+	limit := parseIntOrDefault(r.URL.Query().Get("limit"), 50)
+	offset := parseIntOrDefault(r.URL.Query().Get("offset"), 0)
+
+	items, err := h.repo.ListParticipantsByActivityID(r.Context(), activityID, limit, offset)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list activity participants")
+		return
+	}
+
+	resp := struct {
+		Items []dto.ParticipantResponse `json:"items"`
+	}{
+		Items: make([]dto.ParticipantResponse, 0, len(items)),
+	}
+
+	for _, item := range items {
+		resp.Items = append(resp.Items, toParticipantResponse(item))
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) ListMyJoinedActivities(w http.ResponseWriter, r *http.Request) {
+	actorUserID, err := parseActorUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	limit := parseIntOrDefault(r.URL.Query().Get("limit"), 20)
+	offset := parseIntOrDefault(r.URL.Query().Get("offset"), 0)
+
+	items, err := h.activityUC.ListJoinedActivities(r.Context(), actorUserID, limit, offset)
+	if err != nil {
+		h.writeAppError(w, err, "failed to list joined activities")
+		return
+	}
+
+	resp := dto.ActivityListResponse{
+		Items: make([]dto.ActivityResponse, 0, len(items)),
+	}
+
+	for _, item := range items {
+		mapped, mapErr := h.toActivityResponse(r.Context(), item)
+		if mapErr != nil {
+			writeError(w, http.StatusInternalServerError, "failed to build activity response")
+			return
+		}
+		resp.Items = append(resp.Items, mapped)
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) ListMyHostedActivities(w http.ResponseWriter, r *http.Request) {
+	actorUserID, err := parseActorUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	limit := parseIntOrDefault(r.URL.Query().Get("limit"), 20)
+	offset := parseIntOrDefault(r.URL.Query().Get("offset"), 0)
+
+	items, err := h.activityUC.ListHostedActivities(r.Context(), actorUserID, limit, offset)
+	if err != nil {
+		h.writeAppError(w, err, "failed to list hosted activities")
+		return
+	}
+
+	resp := dto.ActivityListResponse{
+		Items: make([]dto.ActivityResponse, 0, len(items)),
+	}
+
+	for _, item := range items {
+		mapped, mapErr := h.toActivityResponse(r.Context(), item)
+		if mapErr != nil {
+			writeError(w, http.StatusInternalServerError, "failed to build activity response")
+			return
+		}
+		resp.Items = append(resp.Items, mapped)
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) (dto.ActivityResponse, error) {
 	tags, err := h.repo.ListTagsByActivityID(ctx, item.ID)
 	if err != nil {
@@ -759,7 +855,10 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, model.ErrPriceLocked),
 		errors.Is(err, model.ErrOnlyAuthorCanDuplicate),
 		errors.Is(err, model.ErrActivityCannotBePublished),
-		errors.Is(err, model.ErrCriticalFieldsLocked):
+		errors.Is(err, model.ErrCriticalFieldsLocked),
+		errors.Is(err, app.ErrBlockedURLDetected),
+		errors.Is(err, app.ErrSuspiciousURLRequiresReview),
+		errors.Is(err, app.ErrActivityCreationRateLimited):
 		writeError(w, http.StatusBadRequest, err.Error())
 
 	case errors.Is(err, app.ErrActivityNotFound),

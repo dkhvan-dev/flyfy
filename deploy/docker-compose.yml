@@ -523,6 +523,7 @@ services:
       USER_SERVICE_HTTP_URL: http://user-service:8084
       GUIDE_SERVICE_HTTP_URL: http://guide-service:8085
       FILE_MANAGER_HTTP_URL: http://file-manager-service:8083
+      ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
 
       TOKEN_SERVICE_GRPC_TARGET: dns:///token-service:50051
       TOKEN_SERVICE_ID: api-gateway

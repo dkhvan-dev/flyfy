@@ -31,4 +31,8 @@ var (
 
 	ErrCriticalFieldsUpdateForbidden = errors.New("critical fields cannot be changed after publication")
 	ErrPriceChangeForbidden          = errors.New("price change is forbidden")
+
+	ErrBlockedURLDetected          = errors.New("blocked url detected")
+	ErrSuspiciousURLRequiresReview = errors.New("suspicious url requires review")
+	ErrActivityCreationRateLimited = errors.New("activity creation rate limited")
 )

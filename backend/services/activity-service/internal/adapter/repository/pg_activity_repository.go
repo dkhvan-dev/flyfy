@@ -953,6 +953,168 @@ func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model
 	return nil
 }
 
+func (r *PGActivityRepository) ListHostedActivitiesByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	offset int,
+) ([]*model.Activity, error) {
+	const query = `
+		SELECT
+			id, host_user_id, source_activity_id,
+			title, description,
+			format, status, visibility, join_mode, moderation_status,
+			category_slug, language_code, timezone,
+			start_at, end_at, registration_deadline,
+			capacity_type, min_participants, max_participants,
+			price_type, price_amount, currency, price_locked_at,
+			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
+			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url,
+			cancellation_reason, cancelled_at, started_at, completed_at, published_at,
+			revision, created_at, updated_at
+		FROM activities
+		WHERE host_user_id = $1
+		ORDER BY start_at DESC, created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.pool.Query(ctx, query, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list hosted activities by user id: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]*model.Activity, 0)
+	for rows.Next() {
+		item, scanErr := scanActivity(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan hosted activity: %w", scanErr)
+		}
+		result = append(result, item)
+	}
+
+	return result, rows.Err()
+}
+
+func (r *PGActivityRepository) ListJoinedActivitiesByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	offset int,
+) ([]*model.Activity, error) {
+	const query = `
+		SELECT DISTINCT
+			a.id, a.host_user_id, a.source_activity_id,
+			a.title, a.description,
+			a.format, a.status, a.visibility, a.join_mode, a.moderation_status,
+			a.category_slug, a.language_code, a.timezone,
+			a.start_at, a.end_at, a.registration_deadline,
+			a.capacity_type, a.min_participants, a.max_participants,
+			a.price_type, a.price_amount, a.currency, a.price_locked_at,
+			a.requires_profile_completion, a.requires_attendance_confirmation, a.confirmation_deadline,
+			a.country_code, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url,
+			a.cancellation_reason, a.cancelled_at, a.started_at, a.completed_at, a.published_at,
+			a.revision, a.created_at, a.updated_at
+		FROM activities a
+		INNER JOIN activity_participants ap ON ap.activity_id = a.id
+		WHERE ap.user_id = $1
+		  AND ap.status IN (
+		    'REQUESTED',
+		    'APPROVED',
+		    'WAITLISTED',
+		    'PENDING_PAYMENT',
+		    'CONFIRMED',
+		    'CHECKED_IN',
+		    'ATTENDED',
+		    'NO_SHOW',
+		    'CANCELLED',
+		    'EXPIRED',
+		    'DECLINED'
+		  )
+		ORDER BY a.start_at DESC, a.created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.pool.Query(ctx, query, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list joined activities by user id: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]*model.Activity, 0)
+	for rows.Next() {
+		item, scanErr := scanActivity(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan joined activity: %w", scanErr)
+		}
+		result = append(result, item)
+	}
+
+	return result, rows.Err()
+}
+
+func (r *PGActivityRepository) ListActiveBlockedURLPatterns(ctx context.Context) ([]*model.BlockedURLPattern, error) {
+	const query = `
+		SELECT id, pattern_type, pattern_value, action, is_active, comment, created_at
+		FROM blocked_url_patterns
+		WHERE is_active = TRUE
+		ORDER BY created_at ASC
+	`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("list active blocked url patterns: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]*model.BlockedURLPattern, 0)
+	for rows.Next() {
+		var (
+			item        model.BlockedURLPattern
+			patternType string
+			action      string
+		)
+
+		if err = rows.Scan(
+			&item.ID,
+			&patternType,
+			&item.PatternValue,
+			&action,
+			&item.IsActive,
+			&item.Comment,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan blocked url pattern: %w", err)
+		}
+
+		item.PatternType = model.BlockedURLPatternType(patternType)
+		item.Action = model.BlockedURLPatternAction(action)
+		result = append(result, &item)
+	}
+
+	return result, rows.Err()
+}
+
+func (r *PGActivityRepository) CountActivitiesCreatedSince(
+	ctx context.Context,
+	hostUserID uuid.UUID,
+	since time.Time,
+) (int, error) {
+	const query = `
+		SELECT COUNT(*)
+		FROM activities
+		WHERE host_user_id = $1
+		  AND created_at >= $2
+	`
+
+	var count int
+	if err := r.pool.QueryRow(ctx, query, hostUserID, since).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count activities created since: %w", err)
+	}
+
+	return count, nil
+}
+
 /* -------------------- scanners -------------------- */
 
 type activityScanner interface {

@@ -2,6 +2,7 @@ package port
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -56,9 +57,15 @@ type ActivityRepository interface {
 	GetParticipantByActivityAndUser(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
 	ListParticipantsByActivityID(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error)
 
+	ListHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
+	ListJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
+
 	CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error
 	UpdateParticipant(ctx context.Context, item *model.ActivityParticipant) error
 	CreateParticipantEvent(ctx context.Context, item *model.ParticipantEvent) error
 
 	WithTx(ctx context.Context, fn func(repo ActivityTxRepository) error) error
+
+	ListActiveBlockedURLPatterns(ctx context.Context) ([]*model.BlockedURLPattern, error)
+	CountActivitiesCreatedSince(ctx context.Context, hostUserID uuid.UUID, since time.Time) (int, error)
 }
