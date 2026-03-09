@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/session_provider.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 
@@ -31,9 +32,13 @@ class _OtpScreenState extends State<OtpScreen> {
     final auth = context.read<AuthProvider>();
     final success = await auth.verifyOtp(widget.phone, code);
 
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     if (success) {
+      await context.read<SessionProvider>().restoreSession();
+
+      if (!context.mounted) return;
+
       context.go(widget.from?.isNotEmpty == true ? widget.from! : '/');
     } else {
       await showErrorDialog(

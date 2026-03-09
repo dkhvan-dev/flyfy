@@ -197,4 +197,13 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> hasRefreshTokenForBiometricLogin() async {
+    try {
+      final refreshToken = await _secureStorage.getRefreshToken();
+      return refreshToken != null && refreshToken.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
 }

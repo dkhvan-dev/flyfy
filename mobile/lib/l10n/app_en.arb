@@ -31,5 +31,23 @@
     "placeholders": {
       "phone": {}
     }
-  }
+  },
+  "profileTitle": "Profile",
+  "profileNotAvailable": "Profile is not available",
+  "profilePhone": "Phone",
+  "profileEmail": "Email",
+  "profileLocale": "Language",
+  "profileTimezone": "Time zone",
+  "welcomeUser": "Welcome, {name}",
+  "@welcomeUser": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "openProfileHint": "Tap to open profile",
+  "userFallbackName": "friend",
+  "loginButton": "Log in",
+  "notSpecified": "Not specified",
+  "loginWithBiometrics": "Sign in with biometrics",
+  "biometricLoginFailed": "Failed to sign in with biometrics"
 }

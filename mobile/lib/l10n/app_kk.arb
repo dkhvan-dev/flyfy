@@ -31,5 +31,23 @@
     "placeholders": {
       "phone": {}
     }
-  }
+  },
+  "profileTitle": "Профиль",
+  "profileNotAvailable": "Профиль қолжетімсіз",
+  "profilePhone": "Телефон",
+  "profileEmail": "Email",
+  "profileLocale": "Тіл",
+  "profileTimezone": "Уақыт белдеуі",
+  "welcomeUser": "Қош келдіңіз, {name}",
+  "@welcomeUser": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "openProfileHint": "Профильді ашу үшін басыңыз",
+  "userFallbackName": "дос",
+  "loginButton": "Кіру",
+  "notSpecified": "Көрсетілмеген",
+  "loginWithBiometrics": "Биометрия арқылы кіру",
+  "biometricLoginFailed": "Биометрия арқылы кіру сәтсіз аяқталды"
 }

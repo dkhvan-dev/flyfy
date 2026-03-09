@@ -31,5 +31,23 @@
     "placeholders": {
       "phone": {}
     }
-  }
+  },
+  "profileTitle": "Профиль",
+  "profileNotAvailable": "Профиль недоступен",
+  "profilePhone": "Телефон",
+  "profileEmail": "Email",
+  "profileLocale": "Язык",
+  "profileTimezone": "Часовой пояс",
+  "welcomeUser": "Добро пожаловать, {name}",
+  "@welcomeUser": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "openProfileHint": "Нажмите, чтобы открыть профиль",
+  "userFallbackName": "друг",
+  "loginButton": "Войти",
+  "notSpecified": "Не указано",
+  "loginWithBiometrics": "Войти по биометрии",
+  "biometricLoginFailed": "Не удалось выполнить вход по биометрии"
 }

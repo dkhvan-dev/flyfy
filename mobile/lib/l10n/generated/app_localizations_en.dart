@@ -91,4 +91,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String codeSentTo(Object phone) {
     return 'Code sent to $phone';
   }
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get profileNotAvailable => 'Profile is not available';
+
+  @override
+  String get profilePhone => 'Phone';
+
+  @override
+  String get profileEmail => 'Email';
+
+  @override
+  String get profileLocale => 'Language';
+
+  @override
+  String get profileTimezone => 'Time zone';
+
+  @override
+  String welcomeUser(Object name) {
+    return 'Welcome, $name';
+  }
+
+  @override
+  String get openProfileHint => 'Tap to open profile';
+
+  @override
+  String get userFallbackName => 'friend';
+
+  @override
+  String get notSpecified => 'Not specified';
+
+  @override
+  String get loginWithBiometrics => 'Sign in with biometrics';
+
+  @override
+  String get biometricLoginFailed => 'Failed to sign in with biometrics';
 }

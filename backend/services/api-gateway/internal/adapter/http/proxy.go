@@ -91,11 +91,13 @@ func (h *ProxyHandler) Dispatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.injectTrustedHeaders(r)
+	h.rewritePath(r, policy)
 
 	log.Info().
 		Str("upstream", policy.Upstream).
 		Str("route", policy.Name).
 		Str("request_id", RequestIDFromContext(r.Context())).
+		Str("rewritten_path", r.URL.Path).
 		Msg("proxying request")
 
 	proxy.ServeHTTP(w, r)
@@ -156,4 +158,32 @@ func newSingleHostProxy(upstreamName string, rawTarget string) (*httputil.Revers
 	}
 
 	return proxy, nil
+}
+
+func (h *ProxyHandler) rewritePath(r *http.Request, policy *RoutePolicy) {
+	if policy == nil {
+		return
+	}
+
+	if strings.TrimSpace(policy.RewritePrefix) == "" {
+		return
+	}
+
+	originalPath := r.URL.Path
+	if !strings.HasPrefix(originalPath, policy.Prefix) {
+		return
+	}
+
+	suffix := strings.TrimPrefix(originalPath, policy.Prefix)
+
+	target := policy.RewritePrefix
+	if strings.HasSuffix(target, "/") {
+		r.URL.Path = target + suffix
+	} else if suffix == "" {
+		r.URL.Path = target
+	} else {
+		r.URL.Path = target + "/" + suffix
+	}
+
+	r.URL.RawPath = r.URL.Path
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/session_provider.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 
@@ -17,6 +18,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _phoneFocusNode = FocusNode();
+  bool _canUseBiometrics = false;
+  bool _isCheckingBiometrics = true;
 
   void _submit() async {
     final l10n = AppLocalizations.of(context)!;
@@ -163,7 +166,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (!mounted) return;
 
                                 if (success) {
-                                  context.go('/');
+                                  await context.read<SessionProvider>().restoreSession();
+
+                                  if (!mounted) return;
+
+                                  context.go(widget.from ?? '/');
                                 } else {
                                   await showErrorDialog(
                                     context,
@@ -190,7 +197,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (!mounted) return;
 
                                 if (success) {
-                                  context.go('/');
+                                  await context.read<SessionProvider>().restoreSession();
+
+                                  if (!mounted) return;
+
+                                  context.go(widget.from ?? '/');
                                 } else {
                                   await showErrorDialog(
                                     context,
@@ -204,6 +215,37 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 },
               ),
+              if (!_isCheckingBiometrics && _canUseBiometrics) ...[
+                const SizedBox(height: 20),
+                Consumer<AuthProvider>(
+                  builder: (context, auth, _) {
+                    final isAnyLoading = auth.isGoogleLoading ||
+                        auth.isAppleLoading ||
+                        auth.isSendingOtp ||
+                        auth.isVerifyingOtp;
+
+                    return OutlinedButton.icon(
+                      onPressed: isAnyLoading ? null : _loginWithBiometrics,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white24),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(Icons.fingerprint),
+                      label: Text(
+                        l10n.loginWithBiometrics,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -223,6 +265,10 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkBiometricAvailability();
+    });
   }
 
   @override
@@ -230,6 +276,52 @@ class _LoginScreenState extends State<LoginScreen> {
     _phoneController.dispose();
     _phoneFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    final auth = context.read<AuthProvider>();
+
+    try {
+      final hasRefreshToken =
+          await auth.hasRefreshTokenForBiometricLogin();
+
+      if (!mounted) return;
+
+      setState(() {
+        _canUseBiometrics = hasRefreshToken;
+        _isCheckingBiometrics = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _canUseBiometrics = false;
+        _isCheckingBiometrics = false;
+      });
+    }
+  }
+
+  Future<void> _loginWithBiometrics() async {
+    final l10n = AppLocalizations.of(context)!;
+    final authProvider = context.read<AuthProvider>();
+
+    final success = await authProvider.loginWithBiometrics();
+
+    if (!mounted) return;
+
+    if (success) {
+      await context.read<SessionProvider>().restoreSession();
+
+      if (!mounted) return;
+
+      context.go(widget.from ?? '/');
+    } else {
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: authProvider.errorMessage ?? l10n.biometricLoginFailed,
+      );
+    }
   }
 }
 

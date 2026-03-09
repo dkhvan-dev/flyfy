@@ -17,6 +17,7 @@ type RoutePolicy struct {
 	RequiredRoles      []string
 	Upstream           string
 	RateLimitPerMinute *int
+	RewritePrefix      string
 }
 
 func routePolicies(apiPrefix string) []RoutePolicy {
@@ -36,24 +37,28 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			AuthMode:           RouteAuthPublic,
 			Upstream:           "auth",
 			RateLimitPerMinute: &authLimit,
+			RewritePrefix:      "/api/v1/auth/",
 		},
 		{
-			Name:     "users",
-			Prefix:   apiPrefix + "/users/",
-			AuthMode: RouteAuthAuthenticated,
-			Upstream: "user",
+			Name:          "users",
+			Prefix:        apiPrefix + "/users/",
+			AuthMode:      RouteAuthAuthenticated,
+			Upstream:      "user",
+			RewritePrefix: "/v1/users/",
 		},
 		{
-			Name:     "public-users",
-			Prefix:   apiPrefix + "/public/users",
-			AuthMode: RouteAuthAuthenticated,
-			Upstream: "user",
+			Name:          "public-users",
+			Prefix:        apiPrefix + "/public/users",
+			AuthMode:      RouteAuthAuthenticated,
+			Upstream:      "user",
+			RewritePrefix: "/v1/public/users",
 		},
 		{
-			Name:     "guides",
-			Prefix:   apiPrefix + "/guides/",
-			AuthMode: RouteAuthAuthenticated,
-			Upstream: "guide",
+			Name:          "guides",
+			Prefix:        apiPrefix + "/guides/",
+			AuthMode:      RouteAuthAuthenticated,
+			Upstream:      "guide",
+			RewritePrefix: "/v1/guides/",
 		},
 		{
 			Name:               "admin-guides",
@@ -62,6 +67,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RequiredRoles:      []string{"ADMIN", "MODERATOR"},
 			Upstream:           "guide",
 			RateLimitPerMinute: &adminLimit,
+			RewritePrefix:      "/v1/admin/guides/",
 		},
 		{
 			Name:               "files",
@@ -69,6 +75,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			AuthMode:           RouteAuthAuthenticated,
 			Upstream:           "file-manager",
 			RateLimitPerMinute: &filesLimit,
+			RewritePrefix:      "/v1/files/",
 		},
 	}
 }

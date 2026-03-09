@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/session_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -60,6 +61,7 @@ class HomeScreen extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       await context.read<AuthProvider>().logout();
+      await context.read<SessionProvider>().clearSession();
 
       if (context.mounted) {
         context.go('/');
@@ -85,12 +87,76 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
-        title: Text(
-          l10n.appTitle, 
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
-        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        titleSpacing: 16,
+        title: Consumer2<AuthProvider, SessionProvider>(
+          builder: (context, auth, session, _) {
+            final isLoggedIn = auth.state == AuthState.authenticated;
+            final profile = session.profile;
+
+            if (!isLoggedIn) {
+              return Text(
+                l10n.appTitle,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            }
+
+            final userName = profile?.preferredName ?? l10n.userFallbackName;
+            final initials = profile?.initials ?? 'F';
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () => context.push('/profile'),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: const Color(0xFF00BCD4).withOpacity(0.2),
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.welcomeUser(userName),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        Text(
+                          l10n.openProfileHint,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
         actions: [
           Consumer<AuthProvider>(
             builder: (context, auth, _) {
@@ -111,7 +177,7 @@ class HomeScreen extends StatelessWidget {
                 },
                 child: Text(
                   l10n.loginButton,
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                 ),
               );
             },

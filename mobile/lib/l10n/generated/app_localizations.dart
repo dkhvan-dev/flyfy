@@ -261,6 +261,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Code sent to {phone}'**
   String codeSentTo(Object phone);
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @profileNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile is not available'**
+  String get profileNotAvailable;
+
+  /// No description provided for @profilePhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get profilePhone;
+
+  /// No description provided for @profileEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get profileEmail;
+
+  /// No description provided for @profileLocale.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get profileLocale;
+
+  /// No description provided for @profileTimezone.
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get profileTimezone;
+
+  /// No description provided for @welcomeUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome, {name}'**
+  String welcomeUser(Object name);
+
+  /// No description provided for @openProfileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open profile'**
+  String get openProfileHint;
+
+  /// No description provided for @userFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'friend'**
+  String get userFallbackName;
+
+  /// No description provided for @notSpecified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not specified'**
+  String get notSpecified;
+
+  /// No description provided for @loginWithBiometrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with biometrics'**
+  String get loginWithBiometrics;
+
+  /// No description provided for @biometricLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to sign in with biometrics'**
+  String get biometricLoginFailed;
 }
 
 class _AppLocalizationsDelegate

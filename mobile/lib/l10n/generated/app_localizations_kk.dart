@@ -93,4 +93,42 @@ class AppLocalizationsKk extends AppLocalizations {
   String codeSentTo(Object phone) {
     return '$phone нөміріне код жіберілді';
   }
+
+  @override
+  String get profileTitle => 'Профиль';
+
+  @override
+  String get profileNotAvailable => 'Профиль қолжетімсіз';
+
+  @override
+  String get profilePhone => 'Телефон';
+
+  @override
+  String get profileEmail => 'Email';
+
+  @override
+  String get profileLocale => 'Тіл';
+
+  @override
+  String get profileTimezone => 'Уақыт белдеуі';
+
+  @override
+  String welcomeUser(Object name) {
+    return 'Қош келдіңіз, $name';
+  }
+
+  @override
+  String get openProfileHint => 'Профильді ашу үшін басыңыз';
+
+  @override
+  String get userFallbackName => 'дос';
+
+  @override
+  String get notSpecified => 'Көрсетілмеген';
+
+  @override
+  String get loginWithBiometrics => 'Биометрия арқылы кіру';
+
+  @override
+  String get biometricLoginFailed => 'Биометрия арқылы кіру сәтсіз аяқталды';
 }

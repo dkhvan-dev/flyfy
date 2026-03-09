@@ -1,8 +1,10 @@
 import 'package:go_router/go_router.dart';
+
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/otp_screen.dart';
 import '../../screens/home/home_screen.dart';
+import '../../screens/profile/profile_screen.dart';
 
 class AppRouter {
   static GoRouter router(AuthProvider authProvider) {
@@ -12,7 +14,6 @@ class AppRouter {
       redirect: (context, state) {
         final authState = authProvider.state;
         final location = state.matchedLocation;
-
         final isLoggedIn = authState == AuthState.authenticated;
         final isInitial = authState == AuthState.initial;
 
@@ -58,14 +59,10 @@ class AppRouter {
             return OtpScreen(phone: phone, from: from);
           },
         ),
-        // GoRoute(
-        //   path: '/services',
-        //   builder: (context, state) => const ServicesScreen(),
-        // ),
-        // GoRoute(
-        //   path: '/account',
-        //   builder: (context, state) => const AccountScreen(),
-        // ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
       ],
     );
   }

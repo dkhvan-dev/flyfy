@@ -91,4 +91,42 @@ class AppLocalizationsRu extends AppLocalizations {
   String codeSentTo(Object phone) {
     return 'Код отправлен на $phone';
   }
+
+  @override
+  String get profileTitle => 'Профиль';
+
+  @override
+  String get profileNotAvailable => 'Профиль недоступен';
+
+  @override
+  String get profilePhone => 'Телефон';
+
+  @override
+  String get profileEmail => 'Email';
+
+  @override
+  String get profileLocale => 'Язык';
+
+  @override
+  String get profileTimezone => 'Часовой пояс';
+
+  @override
+  String welcomeUser(Object name) {
+    return 'Добро пожаловать, $name';
+  }
+
+  @override
+  String get openProfileHint => 'Нажмите, чтобы открыть профиль';
+
+  @override
+  String get userFallbackName => 'друг';
+
+  @override
+  String get notSpecified => 'Не указано';
+
+  @override
+  String get loginWithBiometrics => 'Войти по биометрии';
+
+  @override
+  String get biometricLoginFailed => 'Не удалось выполнить вход по биометрии';
 }

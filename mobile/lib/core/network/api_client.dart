@@ -51,7 +51,6 @@ class ApiClient {
               options.headers['Authorization'] = 'Bearer $accessToken';
             }
           }
-
           handler.next(options);
         },
         onError: (error, handler) async {
@@ -83,21 +82,22 @@ class ApiClient {
 
             final response = await _dio.fetch(request);
             handler.resolve(response);
-            return;
           } catch (_) {
             _refreshFuture = null;
             await _secureStorage.deleteTokens();
             handler.next(error);
-            return;
           }
         },
       ),
     );
   }
 
-  bool _isAuthRoute(String path) {
-    return path.startsWith('/auth/');
+  Future<Map<String, dynamic>> initMe() async {
+    final response = await _dio.post('/users/me/init');
+    return response.data as Map<String, dynamic>;
   }
+
+  bool _isAuthRoute(String path) => path.startsWith('/auth/');
 
   Future<void> _refreshAccessToken() async {
     final refreshToken = await _secureStorage.getRefreshToken();
@@ -113,10 +113,7 @@ class ApiClient {
   }
 
   Future<void> sendCode(String phone) async {
-    await _dio.post(
-      '/auth/phone/send-code',
-      data: {'phone': phone},
-    );
+    await _dio.post('/auth/phone/send-code', data: {'phone': phone});
   }
 
   Future<AuthResult> verifyOtp(String phone, String code) async {
@@ -124,7 +121,6 @@ class ApiClient {
       '/auth/phone/verify',
       data: {'phone': phone, 'code': code},
     );
-
     return AuthResult.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -133,7 +129,6 @@ class ApiClient {
       '/auth/google',
       data: {'id_token': idToken},
     );
-
     return AuthResult.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -142,7 +137,6 @@ class ApiClient {
       '/auth/apple',
       data: {'id_token': idToken},
     );
-
     return AuthResult.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -161,7 +155,11 @@ class ApiClient {
       '/auth/refresh',
       data: {'refresh_token': refreshToken},
     );
-
     return AuthResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> getMe() async {
+    final response = await _dio.get('/users/me');
+    return response.data as Map<String, dynamic>;
   }
 }
