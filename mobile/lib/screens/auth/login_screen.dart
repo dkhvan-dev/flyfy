@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneFocusNode = FocusNode();
 
   void _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     final phone = _phoneController.text.trim();
     if (phone.isEmpty) return;
 
@@ -40,8 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       await showErrorDialog(
         context,
-        title: 'Ошибка',
-        message: auth.errorMessage ?? 'Не удалось отправить код.',
+        title: l10n.error,
+        message: auth.errorMessage ?? l10n.otpSendFailed,
       );
     }
   }
@@ -131,9 +132,9 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 children: [
                   Expanded(child: Container(height: 1, color: Colors.white24)),
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text('OR', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    child: Text(l10n.or, style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
                   ),
                   Expanded(child: Container(height: 1, color: Colors.white24)),
                 ],
@@ -166,9 +167,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 } else {
                                   await showErrorDialog(
                                     context,
-                                    title: 'Ошибка входа',
-                                    message: authProvider.errorMessage ??
-                                        'Не удалось выполнить вход через Google.',
+                                    title: l10n.error,
+                                    message: authProvider.errorMessage ?? l10n.googleLoginFailed,
                                   );
                                 }
                               },
@@ -194,9 +194,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 } else {
                                   await showErrorDialog(
                                     context,
-                                    title: 'Ошибка входа',
-                                    message: authProvider.errorMessage ??
-                                        'Не удалось выполнить вход через Apple ID.',
+                                    title: l10n.error,
+                                    message: authProvider.errorMessage ?? l10n.appleLoginFailed,
                                   );
                                 }
                               },

@@ -25,5 +25,11 @@
   "logoutDialogMessage": "Вы уверены, что хотите выйти из аккаунта? Для следующего входа может потребоваться повторная авторизация.",
   "logoutConfirmButton": "Выйти",
   "cancel": "Отмена",
-  "loginButton": "Войти"
+  "loginButton": "Войти",
+  "codeSentTo": "Код отправлен на {phone}",
+  "@codeSentTo": {
+    "placeholders": {
+      "phone": {}
+    }
+  }
 }

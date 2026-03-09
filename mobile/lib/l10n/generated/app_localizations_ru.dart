@@ -86,4 +86,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get loginButton => 'Войти';
+
+  @override
+  String codeSentTo(Object phone) {
+    return 'Код отправлен на $phone';
+  }
 }

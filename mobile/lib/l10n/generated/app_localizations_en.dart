@@ -86,4 +86,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loginButton => 'Log in';
+
+  @override
+  String codeSentTo(Object phone) {
+    return 'Code sent to $phone';
+  }
 }

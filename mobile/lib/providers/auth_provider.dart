@@ -12,13 +12,21 @@ enum AuthState {
 }
 
 class AuthProvider extends ChangeNotifier {
-  final ApiClient _apiClient = ApiClient();
-  final SecureStorage _secureStorage = SecureStorage();
-  final BiometricAuthService _biometricAuthService = BiometricAuthService();
+  AuthProvider({
+    ApiClient? apiClient,
+    SecureStorage? secureStorage,
+    BiometricAuthService? biometricAuthService,
+  })  : _apiClient = apiClient ?? ApiClient(),
+        _secureStorage = secureStorage ?? SecureStorage(),
+        _biometricAuthService =
+            biometricAuthService ?? BiometricAuthService();
+
+  final ApiClient _apiClient;
+  final SecureStorage _secureStorage;
+  final BiometricAuthService _biometricAuthService;
 
   AuthState _state = AuthState.initial;
   String? _errorMessage;
-
   bool _isSendingOtp = false;
   bool _isVerifyingOtp = false;
   bool _isGoogleLoading = false;
@@ -26,7 +34,6 @@ class AuthProvider extends ChangeNotifier {
 
   AuthState get state => _state;
   String? get errorMessage => _errorMessage;
-
   bool get isSendingOtp => _isSendingOtp;
   bool get isVerifyingOtp => _isVerifyingOtp;
   bool get isGoogleLoading => _isGoogleLoading;
@@ -51,19 +58,15 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await _apiClient.sendCode(phone);
-      _isSendingOtp = false;
-      notifyListeners();
       return true;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
-      _isSendingOtp = false;
-      notifyListeners();
       return false;
     } catch (_) {
-      _errorMessage = 'Не удалось отправить код.';
+      return false;
+    } finally {
       _isSendingOtp = false;
       notifyListeners();
-      return false;
     }
   }
 
@@ -74,26 +77,20 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final result = await _apiClient.verifyOtp(phone, code);
-
       await _secureStorage.saveTokens(
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       );
-
-      _isVerifyingOtp = false;
       _state = AuthState.authenticated;
-      notifyListeners();
       return true;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
-      _isVerifyingOtp = false;
-      notifyListeners();
       return false;
     } catch (_) {
-      _errorMessage = 'Не удалось подтвердить код.';
+      return false;
+    } finally {
       _isVerifyingOtp = false;
       notifyListeners();
-      return false;
     }
   }
 
@@ -104,26 +101,20 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final result = await _apiClient.loginWithGoogle(idToken);
-
       await _secureStorage.saveTokens(
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       );
-
-      _isGoogleLoading = false;
       _state = AuthState.authenticated;
-      notifyListeners();
       return true;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
-      _isGoogleLoading = false;
-      notifyListeners();
       return false;
     } catch (_) {
-      _errorMessage = 'Не удалось выполнить вход через Google.';
+      return false;
+    } finally {
       _isGoogleLoading = false;
       notifyListeners();
-      return false;
     }
   }
 
@@ -134,26 +125,20 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final result = await _apiClient.loginWithApple(idToken);
-
       await _secureStorage.saveTokens(
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       );
-
-      _isAppleLoading = false;
       _state = AuthState.authenticated;
-      notifyListeners();
       return true;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
-      _isAppleLoading = false;
-      notifyListeners();
       return false;
     } catch (_) {
-      _errorMessage = 'Не удалось выполнить вход через Apple ID.';
+      return false;
+    } finally {
       _isAppleLoading = false;
       notifyListeners();
-      return false;
     }
   }
 
@@ -166,6 +151,7 @@ class AuthProvider extends ChangeNotifier {
         await _apiClient.logout(accessToken, refreshToken);
       }
     } catch (_) {
+      // ignore
     } finally {
       await _secureStorage.deleteTokens();
       _state = AuthState.unauthenticated;
@@ -178,30 +164,22 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final biometric = BiometricAuthService();
-      final available = await biometric.isAvailable();
+      final available = await _biometricAuthService.isAvailable();
       if (!available) {
-        _errorMessage = 'Биометрия недоступна на этом устройстве';
-        notifyListeners();
         return false;
       }
 
-      final ok = await biometric.authenticate();
+      final ok = await _biometricAuthService.authenticate();
       if (!ok) {
-        _errorMessage = 'Биометрическая аутентификация не пройдена';
-        notifyListeners();
         return false;
       }
 
       final refreshToken = await _secureStorage.getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) {
-        _errorMessage = 'Сессия не найдена, выполните обычный вход';
-        notifyListeners();
         return false;
       }
 
       final result = await _apiClient.refreshTokens(refreshToken);
-
       await _secureStorage.saveTokens(
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
@@ -215,7 +193,6 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     } catch (_) {
-      _errorMessage = 'Не удалось выполнить вход по биометрии';
       notifyListeners();
       return false;
     }

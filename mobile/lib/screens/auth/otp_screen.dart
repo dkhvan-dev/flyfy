@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/ui/error_dialog.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phone;
@@ -23,6 +24,7 @@ class _OtpScreenState extends State<OtpScreen> {
   final _codeController = TextEditingController();
 
   void _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     final code = _codeController.text.trim();
     if (code.length != 6) return;
 
@@ -36,14 +38,16 @@ class _OtpScreenState extends State<OtpScreen> {
     } else {
       await showErrorDialog(
         context,
-        title: 'Ошибка',
-        message: auth.errorMessage ?? 'Неверный код подтверждения.',
+        title: l10n.error,
+        message: auth.errorMessage ?? l10n.otpInvalid,
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
@@ -58,14 +62,14 @@ class _OtpScreenState extends State<OtpScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Enter Auth Code',
+              Text(
+                l10n.enterAuthCode,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               const SizedBox(height: 8),
               Text(
-                'Sent to ${widget.phone}',
+                l10n.codeSentTo(widget.phone),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, color: Colors.white70),
               ),
@@ -117,8 +121,8 @@ class _OtpScreenState extends State<OtpScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      'Verify & Login',
+                    child: Text(
+                      l10n.verifyAndLogin,
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   );

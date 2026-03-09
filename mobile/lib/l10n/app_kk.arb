@@ -25,5 +25,11 @@
   "logoutDialogMessage": "Аккаунттан шығатыныңызға сенімдісіз бе? Келесі жолы қайта авторизациядан өту қажет болуы мүмкін.",
   "logoutConfirmButton": "Шығу",
   "cancel": "Бас тарту",
-  "loginButton": "Кіру"
+  "loginButton": "Кіру",
+  "codeSentTo": "{phone} нөміріне код жіберілді",
+  "@codeSentTo": {
+    "placeholders": {
+      "phone": {}
+    }
+  }
 }

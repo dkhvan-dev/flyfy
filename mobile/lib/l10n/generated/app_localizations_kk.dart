@@ -88,4 +88,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get loginButton => 'Кіру';
+
+  @override
+  String codeSentTo(Object phone) {
+    return '$phone нөміріне код жіберілді';
+  }
 }

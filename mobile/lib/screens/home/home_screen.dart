@@ -109,8 +109,8 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () {
                   context.push('/login');
                 },
-                child: const Text(
-                  'Войти',
+                child: Text(
+                  l10n.loginButton,
                   style: TextStyle(color: Colors.white),
                 ),
               );

@@ -255,6 +255,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Log in'**
   String get loginButton;
+
+  /// No description provided for @codeSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Code sent to {phone}'**
+  String codeSentTo(Object phone);
 }
 
 class _AppLocalizationsDelegate

@@ -25,5 +25,11 @@
   "logoutDialogMessage": "Are you sure you want to sign out? You may need to authenticate again next time.",
   "logoutConfirmButton": "Sign out",
   "cancel": "Cancel",
-  "loginButton": "Log in"
+  "loginButton": "Log in",
+  "codeSentTo": "Code sent to {phone}",
+  "@codeSentTo": {
+    "placeholders": {
+      "phone": {}
+    }
+  }
 }
