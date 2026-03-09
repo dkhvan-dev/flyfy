@@ -113,6 +113,30 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileTimezone => 'Уақыт белдеуі';
 
   @override
+  String get profileCountry => 'Ел';
+
+  @override
+  String get profileCurrency => 'Валюта';
+
+  @override
+  String get profileVisibility => 'Профиль көрінуі';
+
+  @override
+  String get profilePublic => 'Ашық';
+
+  @override
+  String get profilePrivate => 'Жабық';
+
+  @override
+  String get editProfileButton => 'Профильді өңдеу';
+
+  @override
+  String get becomeGuideButton => 'Гид болу';
+
+  @override
+  String get logoutButton => 'Шығу';
+
+  @override
   String welcomeUser(Object name) {
     return 'Қош келдіңіз, $name';
   }
@@ -131,4 +155,51 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get biometricLoginFailed => 'Биометрия арқылы кіру сәтсіз аяқталды';
+
+  @override
+  String get profileIncompleteTitle => 'Профиль толық толтырылмаған';
+
+  @override
+  String get profileIncompleteDescription =>
+      'FlyFy мүмкіндіктерін толық пайдалану үшін атыңыз бен тегіңізді толтырыңыз';
+
+  @override
+  String get fillNowButton => 'Толтыру';
+
+  @override
+  String get appLanguageTitle => 'Қолданба тілі';
+
+  @override
+  String get saveProfileButton => 'Сақтау';
+
+  @override
+  String get profileSaveFailed => 'Профильді сақтау сәтсіз аяқталды';
+
+  @override
+  String get firstNameLabel => 'Аты';
+
+  @override
+  String get lastNameLabel => 'Тегі';
+
+  @override
+  String get displayNameLabel => 'Көрсетілетін ат';
+
+  @override
+  String get bioLabel => 'Өзі туралы';
+
+  @override
+  String get firstNameRequired => 'Атыңызды енгізіңіз';
+
+  @override
+  String get lastNameRequired => 'Тегіңізді енгізіңіз';
+
+  @override
+  String get profileRequiredTitle => 'Профильді толтырыңыз';
+
+  @override
+  String get profileRequiredDescription =>
+      'Жалғастыру үшін профиліңізде атыңыз бен тегіңізді көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.';
+
+  @override
+  String get laterButton => 'Кейінірек';
 }

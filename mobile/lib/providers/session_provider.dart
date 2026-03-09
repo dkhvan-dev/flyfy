@@ -30,28 +30,34 @@ class SessionProvider extends ChangeNotifier {
   bool get isAuthenticated => _status == SessionStatus.authenticated;
   bool get isLoading => _status == SessionStatus.loading;
 
-  Future<void> restoreSession() async {
+  Future<void> restoreSession({
+    String? primaryPhoneHint,
+    String? primaryEmailHint,
+  }) async {
     _status = SessionStatus.loading;
     notifyListeners();
 
     try {
-        final token = await _secureStorage.getAccessToken();
-        if (token == null || token.isEmpty) {
+      final token = await _secureStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
         _profile = null;
         _status = SessionStatus.unauthenticated;
         notifyListeners();
         return;
-        }
+      }
 
-        _profile = await _profileApi.getOrInitMe();
-        _status = SessionStatus.authenticated;
-        notifyListeners();
+      _profile = await _profileApi.getOrInitMe(
+        primaryPhoneHint: primaryPhoneHint,
+        primaryEmailHint: primaryEmailHint,
+      );
+      _status = SessionStatus.authenticated;
+      notifyListeners();
     } catch (_) {
-        _profile = null;
-        _status = SessionStatus.unauthenticated;
-        notifyListeners();
+      _profile = null;
+      _status = SessionStatus.unauthenticated;
+      notifyListeners();
     }
-    }
+  }
 
   Future<void> reloadProfile() async {
     if (!isAuthenticated) return;

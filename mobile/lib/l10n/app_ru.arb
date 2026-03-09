@@ -38,6 +38,14 @@
   "profileEmail": "Email",
   "profileLocale": "Язык",
   "profileTimezone": "Часовой пояс",
+  "profileCountry": "Страна",
+  "profileCurrency": "Валюта",
+  "profileVisibility": "Видимость профиля",
+  "profilePublic": "Публичный",
+  "profilePrivate": "Приватный",
+  "editProfileButton": "Редактировать профиль",
+  "becomeGuideButton": "Стать гидом",
+  "logoutButton": "Выйти",
   "welcomeUser": "Добро пожаловать, {name}",
   "@welcomeUser": {
     "placeholders": {
@@ -49,5 +57,20 @@
   "loginButton": "Войти",
   "notSpecified": "Не указано",
   "loginWithBiometrics": "Войти по биометрии",
-  "biometricLoginFailed": "Не удалось выполнить вход по биометрии"
+  "biometricLoginFailed": "Не удалось выполнить вход по биометрии",
+  "profileIncompleteTitle": "Профиль заполнен не полностью",
+  "profileIncompleteDescription": "Заполните имя и фамилию, чтобы пользоваться всеми возможностями FlyFy",
+  "fillNowButton": "Заполнить",
+  "appLanguageTitle": "Язык приложения",
+  "saveProfileButton": "Сохранить",
+  "profileSaveFailed": "Не удалось сохранить профиль",
+  "firstNameLabel": "Имя",
+  "lastNameLabel": "Фамилия",
+  "displayNameLabel": "Отображаемое имя",
+  "bioLabel": "О себе",
+  "firstNameRequired": "Укажите имя",
+  "lastNameRequired": "Укажите фамилию",
+  "profileRequiredTitle": "Заполните профиль",
+  "profileRequiredDescription": "Чтобы продолжить, укажите имя и фамилию в профиле. Это помогает снизить количество фейковых аккаунтов и повышает доверие между пользователями.",
+  "laterButton": "Позже"
 }

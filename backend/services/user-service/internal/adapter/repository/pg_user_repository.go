@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -626,4 +627,60 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 	}
 
 	return result, rows.Err()
+}
+
+func (r *PGUserRepository) PatchUserIdentityBySubject(
+	ctx context.Context,
+	subjectID string,
+	primaryPhone *string,
+	primaryEmail *string,
+) error {
+	subjectID = strings.TrimSpace(subjectID)
+	if subjectID == "" {
+		return nil
+	}
+
+	var phone *string
+	if primaryPhone != nil {
+		v := strings.TrimSpace(*primaryPhone)
+		if v != "" {
+			phone = &v
+		}
+	}
+
+	var email *string
+	if primaryEmail != nil {
+		v := strings.TrimSpace(*primaryEmail)
+		if v != "" {
+			email = &v
+		}
+	}
+
+	if phone == nil && email == nil {
+		return nil
+	}
+
+	const query = `
+		UPDATE users
+		SET
+			primary_phone = CASE
+				WHEN ($2::text IS NOT NULL AND (primary_phone IS NULL OR btrim(primary_phone) = ''))
+				THEN $2::text
+				ELSE primary_phone
+			END,
+			primary_email = CASE
+				WHEN ($3::text IS NOT NULL AND (primary_email IS NULL OR btrim(primary_email) = ''))
+				THEN $3::text
+				ELSE primary_email
+			END,
+			updated_at = NOW()
+		WHERE auth_subject_id = $1
+	`
+
+	_, err := r.pool.Exec(ctx, query, subjectID, phone, email)
+	if err != nil {
+		return fmt.Errorf("patch user identity by subject: %w", err)
+	}
+
+	return nil
 }

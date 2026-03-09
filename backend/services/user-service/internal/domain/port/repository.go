@@ -35,4 +35,11 @@ type UserRepository interface {
 
 	ListPublicProfiles(ctx context.Context, limit int, offset int) ([]*model.UserProfile, error)
 	GetPublicProfilesByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]*model.UserProfile, error)
+
+	PatchUserIdentityBySubject(
+		ctx context.Context,
+		subjectID string,
+		primaryPhone *string,
+		primaryEmail *string,
+	) error
 }

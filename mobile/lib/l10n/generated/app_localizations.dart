@@ -298,6 +298,54 @@ abstract class AppLocalizations {
   /// **'Time zone'**
   String get profileTimezone;
 
+  /// No description provided for @profileCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get profileCountry;
+
+  /// No description provided for @profileCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get profileCurrency;
+
+  /// No description provided for @profileVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile visibility'**
+  String get profileVisibility;
+
+  /// No description provided for @profilePublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get profilePublic;
+
+  /// No description provided for @profilePrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get profilePrivate;
+
+  /// No description provided for @editProfileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get editProfileButton;
+
+  /// No description provided for @becomeGuideButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Become a guide'**
+  String get becomeGuideButton;
+
+  /// No description provided for @logoutButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get logoutButton;
+
   /// No description provided for @welcomeUser.
   ///
   /// In en, this message translates to:
@@ -333,6 +381,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to sign in with biometrics'**
   String get biometricLoginFailed;
+
+  /// No description provided for @profileIncompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile is incomplete'**
+  String get profileIncompleteTitle;
+
+  /// No description provided for @profileIncompleteDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in your first and last name to unlock all FlyFy features'**
+  String get profileIncompleteDescription;
+
+  /// No description provided for @fillNowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill now'**
+  String get fillNowButton;
+
+  /// No description provided for @appLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App language'**
+  String get appLanguageTitle;
+
+  /// No description provided for @saveProfileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveProfileButton;
+
+  /// No description provided for @profileSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save profile'**
+  String get profileSaveFailed;
+
+  /// No description provided for @firstNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get firstNameLabel;
+
+  /// No description provided for @lastNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get lastNameLabel;
+
+  /// No description provided for @displayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get displayNameLabel;
+
+  /// No description provided for @bioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get bioLabel;
+
+  /// No description provided for @firstNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter first name'**
+  String get firstNameRequired;
+
+  /// No description provided for @lastNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter last name'**
+  String get lastNameRequired;
+
+  /// No description provided for @profileRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your profile'**
+  String get profileRequiredTitle;
+
+  /// No description provided for @profileRequiredDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'To continue, enter your first and last name in your profile. This helps reduce fake accounts and increases trust between users.'**
+  String get profileRequiredDescription;
+
+  /// No description provided for @laterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get laterButton;
 }
 
 class _AppLocalizationsDelegate

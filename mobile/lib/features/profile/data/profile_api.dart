@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_client.dart';
+import '../models/update_profile_request.dart';
 import '../models/user_profile_vm.dart';
 
 class ProfileApi {
@@ -13,7 +14,10 @@ class ProfileApi {
     return UserProfileVm.fromJson(data);
   }
 
-  Future<UserProfileVm> getOrInitMe() async {
+  Future<UserProfileVm> getOrInitMe({
+    String? primaryPhoneHint,
+    String? primaryEmailHint,
+  }) async {
     try {
       return await getMe();
     } on DioException catch (e) {
@@ -29,8 +33,16 @@ class ProfileApi {
 
       if (!isUserNotFound) rethrow;
 
-      final initData = await _apiClient.initMe();
+      final initData = await _apiClient.initMe(
+        primaryPhone: primaryPhoneHint,
+        primaryEmail: primaryEmailHint,
+      );
       return UserProfileVm.fromJson(initData);
     }
+  }
+
+  Future<UserProfileVm> updateMeProfile(UpdateProfileRequest request) async {
+    final data = await _apiClient.updateMeProfile(request.toJson());
+    return UserProfileVm.fromJson(data);
   }
 }

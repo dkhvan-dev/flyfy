@@ -111,6 +111,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTimezone => 'Time zone';
 
   @override
+  String get profileCountry => 'Country';
+
+  @override
+  String get profileCurrency => 'Currency';
+
+  @override
+  String get profileVisibility => 'Profile visibility';
+
+  @override
+  String get profilePublic => 'Public';
+
+  @override
+  String get profilePrivate => 'Private';
+
+  @override
+  String get editProfileButton => 'Edit profile';
+
+  @override
+  String get becomeGuideButton => 'Become a guide';
+
+  @override
+  String get logoutButton => 'Log out';
+
+  @override
   String welcomeUser(Object name) {
     return 'Welcome, $name';
   }
@@ -129,4 +153,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get biometricLoginFailed => 'Failed to sign in with biometrics';
+
+  @override
+  String get profileIncompleteTitle => 'Profile is incomplete';
+
+  @override
+  String get profileIncompleteDescription =>
+      'Fill in your first and last name to unlock all FlyFy features';
+
+  @override
+  String get fillNowButton => 'Fill now';
+
+  @override
+  String get appLanguageTitle => 'App language';
+
+  @override
+  String get saveProfileButton => 'Save';
+
+  @override
+  String get profileSaveFailed => 'Failed to save profile';
+
+  @override
+  String get firstNameLabel => 'First name';
+
+  @override
+  String get lastNameLabel => 'Last name';
+
+  @override
+  String get displayNameLabel => 'Display name';
+
+  @override
+  String get bioLabel => 'About';
+
+  @override
+  String get firstNameRequired => 'Enter first name';
+
+  @override
+  String get lastNameRequired => 'Enter last name';
+
+  @override
+  String get profileRequiredTitle => 'Complete your profile';
+
+  @override
+  String get profileRequiredDescription =>
+      'To continue, enter your first and last name in your profile. This helps reduce fake accounts and increases trust between users.';
+
+  @override
+  String get laterButton => 'Later';
 }

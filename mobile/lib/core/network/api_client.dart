@@ -92,8 +92,25 @@ class ApiClient {
     );
   }
 
-  Future<Map<String, dynamic>> initMe() async {
-    final response = await _dio.post('/users/me/init');
+  Future<Map<String, dynamic>> initMe({
+    String? primaryPhone,
+    String? primaryEmail,
+  }) async {
+    final body = <String, dynamic>{};
+
+    if ((primaryPhone ?? '').trim().isNotEmpty) {
+      body['primaryPhone'] = primaryPhone!.trim();
+    }
+    if ((primaryEmail ?? '').trim().isNotEmpty) {
+      body['primaryEmail'] = primaryEmail!.trim();
+    }
+
+    final response = await _dio.post('/users/me/init', data: body);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getMe() async {
+    final response = await _dio.get('/users/me');
     return response.data as Map<String, dynamic>;
   }
 
@@ -158,8 +175,8 @@ class ApiClient {
     return AuthResult.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<Map<String, dynamic>> getMe() async {
-    final response = await _dio.get('/users/me');
+  Future<Map<String, dynamic>> updateMeProfile(Map<String, dynamic> body) async {
+    final response = await _dio.put('/users/me/profile', data: body);
     return response.data as Map<String, dynamic>;
   }
 }

@@ -38,6 +38,14 @@
   "profileEmail": "Email",
   "profileLocale": "Language",
   "profileTimezone": "Time zone",
+  "profileCountry": "Country",
+  "profileCurrency": "Currency",
+  "profileVisibility": "Profile visibility",
+  "profilePublic": "Public",
+  "profilePrivate": "Private",
+  "editProfileButton": "Edit profile",
+  "becomeGuideButton": "Become a guide",
+  "logoutButton": "Log out",
   "welcomeUser": "Welcome, {name}",
   "@welcomeUser": {
     "placeholders": {
@@ -49,5 +57,20 @@
   "loginButton": "Log in",
   "notSpecified": "Not specified",
   "loginWithBiometrics": "Sign in with biometrics",
-  "biometricLoginFailed": "Failed to sign in with biometrics"
+  "biometricLoginFailed": "Failed to sign in with biometrics",
+  "profileIncompleteTitle": "Profile is incomplete",
+  "profileIncompleteDescription": "Fill in your first and last name to unlock all FlyFy features",
+  "fillNowButton": "Fill now",
+  "appLanguageTitle": "App language",
+  "saveProfileButton": "Save",
+  "profileSaveFailed": "Failed to save profile",
+  "firstNameLabel": "First name",
+  "lastNameLabel": "Last name",
+  "displayNameLabel": "Display name",
+  "bioLabel": "About",
+  "firstNameRequired": "Enter first name",
+  "lastNameRequired": "Enter last name",
+  "profileRequiredTitle": "Complete your profile",
+  "profileRequiredDescription": "To continue, enter your first and last name in your profile. This helps reduce fake accounts and increases trust between users.",
+  "laterButton": "Later"
 }

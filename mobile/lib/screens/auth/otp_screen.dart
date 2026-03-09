@@ -35,7 +35,9 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!context.mounted) return;
 
     if (success) {
-      await context.read<SessionProvider>().restoreSession();
+      await context.read<SessionProvider>().restoreSession(
+            primaryPhoneHint: widget.phone,
+          );
 
       if (!context.mounted) return;
 

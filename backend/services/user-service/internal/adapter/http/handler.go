@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -48,9 +49,24 @@ func (h *Handler) InitMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	aggregate, err := h.useCase.GetOrCreateBySubject(r.Context(), app.InitUserInput{
-		SubjectID: subject,
-	})
+	var req dto.InitMeRequest
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+	}
+
+	aggregate, err := h.useCase.GetOrCreateBySubjectWithIdentity(
+		r.Context(),
+		app.InitUserInput{
+			SubjectID: subject,
+		},
+		app.InitIdentityHints{
+			PrimaryPhone: req.PrimaryPhone,
+			PrimaryEmail: req.PrimaryEmail,
+		},
+	)
 	if err != nil {
 		switch {
 		case errors.Is(err, app.ErrInvalidSubjectID):

@@ -340,3 +340,30 @@ func (u *UserUseCase) GetPublicProfilesByUserIDs(
 
 	return items, nil
 }
+
+type InitIdentityHints struct {
+	PrimaryPhone *string
+	PrimaryEmail *string
+}
+
+func (u *UserUseCase) GetOrCreateBySubjectWithIdentity(
+	ctx context.Context,
+	input InitUserInput,
+	hints InitIdentityHints,
+) (*UserAggregate, error) {
+	_, err := u.GetOrCreateBySubject(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = u.repo.PatchUserIdentityBySubject(
+		ctx,
+		input.SubjectID,
+		hints.PrimaryPhone,
+		hints.PrimaryEmail,
+	); err != nil {
+		return nil, fmt.Errorf("patch user identity by subject: %w", err)
+	}
+
+	return u.GetAggregateBySubject(ctx, input.SubjectID)
+}

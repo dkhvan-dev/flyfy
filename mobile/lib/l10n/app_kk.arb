@@ -38,6 +38,14 @@
   "profileEmail": "Email",
   "profileLocale": "Тіл",
   "profileTimezone": "Уақыт белдеуі",
+  "profileCountry": "Ел",
+  "profileCurrency": "Валюта",
+  "profileVisibility": "Профиль көрінуі",
+  "profilePublic": "Ашық",
+  "profilePrivate": "Жабық",
+  "editProfileButton": "Профильді өңдеу",
+  "becomeGuideButton": "Гид болу",
+  "logoutButton": "Шығу",
   "welcomeUser": "Қош келдіңіз, {name}",
   "@welcomeUser": {
     "placeholders": {
@@ -49,5 +57,20 @@
   "loginButton": "Кіру",
   "notSpecified": "Көрсетілмеген",
   "loginWithBiometrics": "Биометрия арқылы кіру",
-  "biometricLoginFailed": "Биометрия арқылы кіру сәтсіз аяқталды"
+  "biometricLoginFailed": "Биометрия арқылы кіру сәтсіз аяқталды",
+  "profileIncompleteTitle": "Профиль толық толтырылмаған",
+  "profileIncompleteDescription": "FlyFy мүмкіндіктерін толық пайдалану үшін атыңыз бен тегіңізді толтырыңыз",
+  "fillNowButton": "Толтыру",
+  "appLanguageTitle": "Қолданба тілі",
+  "saveProfileButton": "Сақтау",
+  "profileSaveFailed": "Профильді сақтау сәтсіз аяқталды",
+  "firstNameLabel": "Аты",
+  "lastNameLabel": "Тегі",
+  "displayNameLabel": "Көрсетілетін ат",
+  "bioLabel": "Өзі туралы",
+  "firstNameRequired": "Атыңызды енгізіңіз",
+  "lastNameRequired": "Тегіңізді енгізіңіз",
+  "profileRequiredTitle": "Профильді толтырыңыз",
+  "profileRequiredDescription": "Жалғастыру үшін профиліңізде атыңыз бен тегіңізді көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.",
+  "laterButton": "Кейінірек"
 }
