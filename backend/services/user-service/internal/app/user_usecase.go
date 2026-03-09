@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -39,68 +41,79 @@ type InitUserInput struct {
 }
 
 func (u *UserUseCase) GetOrCreateBySubject(ctx context.Context, input InitUserInput) (*UserAggregate, error) {
+	input.SubjectID = strings.TrimSpace(input.SubjectID)
 	if input.SubjectID == "" {
 		return nil, ErrInvalidSubjectID
 	}
 
-	existing, err := u.repo.GetUserBySubject(ctx, input.SubjectID)
-	if err != nil {
+	existingUser, err := u.repo.GetUserBySubject(ctx, input.SubjectID)
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
 		return nil, fmt.Errorf("get user by subject: %w", err)
 	}
-
-	if existing != nil && !existing.IsDeleted {
-		return u.GetAggregateByUserID(ctx, existing.ID)
+	if existingUser != nil {
+		return u.GetAggregateBySubject(ctx, input.SubjectID)
 	}
 
-	user, err := model.NewUser(model.NewUserParams{
+	userID := uuid.New()
+	defaultCurrency := "KZT"
+	defaultLocale := "KZ"
+	defaultTimezone := "Asia/Almaty"
+
+	profile := &model.UserProfile{
+		UserID:             userID,
+		Locale:             defaultLocale,
+		Timezone:           defaultTimezone,
+		Currency:           &defaultCurrency,
+		IsPublic:           true,
+		IsProfileCompleted: false,
+		CreatedAt:          time.Now().UTC(),
+		UpdatedAt:          time.Now().UTC(),
+	}
+
+	user := &model.User{
+		ID:            userID,
 		AuthSubjectID: input.SubjectID,
-		PrimaryPhone:  input.PrimaryPhone,
-		PrimaryEmail:  input.PrimaryEmail,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("new user: %w", err)
+		Status:        enum.UserStatusActive,
+		PrimaryPhone:  normalizeOptionalString(input.PrimaryPhone),
+		PrimaryEmail:  normalizeOptionalString(input.PrimaryEmail),
+		CreatedAt:     time.Now().UTC(),
+		UpdatedAt:     time.Now().UTC(),
 	}
 
-	profile, err := model.NewUserProfile(model.NewUserProfileParams{
-		UserID: user.ID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("new user profile: %w", err)
+	settings := &model.UserSettings{
+		UserID:                    userID,
+		NotificationsPushEnabled:  true,
+		NotificationsEmailEnabled: true,
+		NotificationsSMSEnabled:   true,
+		MarketingEnabled:          false,
+		DarkModeEnabled:           false,
+		CreatedAt:                 time.Now().UTC(),
+		UpdatedAt:                 time.Now().UTC(),
 	}
 
-	settings, err := model.NewUserSettings(model.NewUserSettingsParams{
-		UserID: user.ID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("new user settings: %w", err)
+	reputation := &model.UserReputation{
+		UserID:              userID,
+		TrustScore:          0,
+		RiskScore:           0,
+		CompletedBookings:   0,
+		CompletedActivities: 0,
+		CancellationsCount:  0,
+		ReportsCount:        0,
+		CreatedAt:           time.Now().UTC(),
+		UpdatedAt:           time.Now().UTC(),
 	}
 
-	reputation, err := model.NewUserReputation(model.NewUserReputationParams{
-		UserID: user.ID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("new user reputation: %w", err)
-	}
-
-	defaultRole, err := model.NewUserSystemRole(model.NewUserSystemRoleParams{
-		UserID: user.ID,
-		Role:   enum.SystemRoleUser,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("new default role: %w", err)
+	defaultRole := &model.UserSystemRole{
+		UserID:    userID,
+		Role:      enum.SystemRoleUser,
+		GrantedAt: time.Now().UTC(),
 	}
 
 	if err = u.repo.CreateUserAggregate(ctx, user, profile, settings, reputation, defaultRole); err != nil {
 		return nil, fmt.Errorf("create user aggregate: %w", err)
 	}
 
-	return &UserAggregate{
-		User:       user,
-		Profile:    profile,
-		Settings:   settings,
-		Reputation: reputation,
-		Roles:      []*model.UserSystemRole{defaultRole},
-	}, nil
+	return u.GetAggregateBySubject(ctx, input.SubjectID)
 }
 
 func (u *UserUseCase) GetAggregateByUserID(ctx context.Context, userID uuid.UUID) (*UserAggregate, error) {
@@ -186,55 +199,46 @@ type UpdateProfileInput struct {
 	IsPublic     *bool
 }
 
-func (u *UserUseCase) UpdateProfile(ctx context.Context, input UpdateProfileInput) (*model.UserProfile, error) {
-	if input.UserID == uuid.Nil {
-		return nil, ErrInvalidUserID
-	}
-
-	profile, err := u.repo.GetProfileByUserID(ctx, input.UserID)
+func (u *UserUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, input UpdateProfileInput) (*UserAggregate, error) {
+	profile, err := u.repo.GetProfileByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get profile by user id: %w", err)
 	}
-	if profile == nil {
-		return nil, ErrProfileNotFound
-	}
 
-	if input.AvatarFileID != nil {
-		if u.fileManager == nil {
-			return nil, fmt.Errorf("file manager client is not configured")
-		}
+	profile.FirstName = normalizeOptionalString(input.FirstName)
+	profile.LastName = normalizeOptionalString(input.LastName)
+	profile.DisplayName = normalizeOptionalString(input.DisplayName)
+	profile.Bio = normalizeOptionalString(input.Bio)
+	profile.BirthDate = input.BirthDate
+	profile.AvatarFileID = input.AvatarFileID
+	profile.CityID = input.CityID
+	profile.CountryCode = normalizeOptionalString(input.CountryCode)
 
-		if err = u.fileManager.ValidateAvatarFile(ctx, *input.AvatarFileID); err != nil {
-			return nil, err
-		}
-
-		if err = u.fileManager.BindAvatarToUser(ctx, *input.AvatarFileID, input.UserID, &input.UserID); err != nil {
-			return nil, fmt.Errorf("bind avatar in file-manager: %w", err)
+	if input.Locale != nil {
+		if locale := strings.TrimSpace(*input.Locale); locale != "" {
+			profile.Locale = locale
 		}
 	}
-
-	if err = profile.ApplyUpdate(model.UpdateUserProfileParams{
-		FirstName:    input.FirstName,
-		LastName:     input.LastName,
-		DisplayName:  input.DisplayName,
-		Bio:          input.Bio,
-		BirthDate:    input.BirthDate,
-		AvatarFileID: input.AvatarFileID,
-		CityID:       input.CityID,
-		CountryCode:  input.CountryCode,
-		Locale:       input.Locale,
-		Timezone:     input.Timezone,
-		Currency:     input.Currency,
-		IsPublic:     input.IsPublic,
-	}); err != nil {
-		return nil, fmt.Errorf("apply profile update: %w", err)
+	if input.Timezone != nil {
+		if timezone := strings.TrimSpace(*input.Timezone); timezone != "" {
+			profile.Timezone = timezone
+		}
 	}
+
+	profile.Currency = normalizeOptionalString(input.Currency)
+
+	if input.IsPublic != nil {
+		profile.IsPublic = *input.IsPublic
+	}
+
+	profile.IsProfileCompleted = computeProfileCompleted(profile)
+	profile.UpdatedAt = time.Now().UTC()
 
 	if err = u.repo.UpdateProfile(ctx, profile); err != nil {
 		return nil, fmt.Errorf("update profile: %w", err)
 	}
 
-	return profile, nil
+	return u.GetAggregateByUserID(ctx, userID)
 }
 
 func (u *UserUseCase) GrantRole(
@@ -366,4 +370,22 @@ func (u *UserUseCase) GetOrCreateBySubjectWithIdentity(
 	}
 
 	return u.GetAggregateBySubject(ctx, input.SubjectID)
+}
+
+func computeProfileCompleted(profile *model.UserProfile) bool {
+	if profile == nil {
+		return false
+	}
+
+	firstName := ""
+	if profile.FirstName != nil {
+		firstName = strings.TrimSpace(*profile.FirstName)
+	}
+
+	lastName := ""
+	if profile.LastName != nil {
+		lastName = strings.TrimSpace(*profile.LastName)
+	}
+
+	return firstName != "" && lastName != ""
 }

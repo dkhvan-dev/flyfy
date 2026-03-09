@@ -27,6 +27,8 @@ class AuthProvider extends ChangeNotifier {
 
   AuthState _state = AuthState.initial;
   String? _errorMessage;
+  String? _lastPrimaryPhoneHint;
+  String? _lastPrimaryEmailHint;
   bool _isSendingOtp = false;
   bool _isVerifyingOtp = false;
   bool _isGoogleLoading = false;
@@ -34,6 +36,8 @@ class AuthProvider extends ChangeNotifier {
 
   AuthState get state => _state;
   String? get errorMessage => _errorMessage;
+  String? get lastPrimaryPhoneHint => _lastPrimaryPhoneHint;
+  String? get lastPrimaryEmailHint => _lastPrimaryEmailHint;
   bool get isSendingOtp => _isSendingOtp;
   bool get isVerifyingOtp => _isVerifyingOtp;
   bool get isGoogleLoading => _isGoogleLoading;
@@ -81,6 +85,10 @@ class AuthProvider extends ChangeNotifier {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       );
+
+      _lastPrimaryPhoneHint = result.primaryPhoneHint ?? phone;
+      _lastPrimaryEmailHint = result.primaryEmailHint;
+
       _state = AuthState.authenticated;
       return true;
     } on DioException catch (e) {
@@ -105,6 +113,10 @@ class AuthProvider extends ChangeNotifier {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       );
+
+      _lastPrimaryPhoneHint = result.primaryPhoneHint;
+      _lastPrimaryEmailHint = result.primaryEmailHint;
+
       _state = AuthState.authenticated;
       return true;
     } on DioException catch (e) {
@@ -129,6 +141,10 @@ class AuthProvider extends ChangeNotifier {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       );
+
+      _lastPrimaryPhoneHint = result.primaryPhoneHint;
+      _lastPrimaryEmailHint = result.primaryEmailHint;
+
       _state = AuthState.authenticated;
       return true;
     } on DioException catch (e) {
@@ -154,6 +170,8 @@ class AuthProvider extends ChangeNotifier {
       // ignore
     } finally {
       await _secureStorage.deleteTokens();
+      _lastPrimaryPhoneHint = null;
+      _lastPrimaryEmailHint = null;
       _state = AuthState.unauthenticated;
       notifyListeners();
     }
@@ -184,6 +202,9 @@ class AuthProvider extends ChangeNotifier {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       );
+
+      _lastPrimaryPhoneHint = result.primaryPhoneHint;
+      _lastPrimaryEmailHint = result.primaryEmailHint;
 
       _state = AuthState.authenticated;
       notifyListeners();

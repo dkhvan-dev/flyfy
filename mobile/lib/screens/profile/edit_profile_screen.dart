@@ -37,6 +37,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
 
     final profile = context.read<SessionProvider>().profile;
+    final appLocaleCode = context.read<LocaleProvider>().locale.languageCode;
 
     _firstNameController = TextEditingController(text: profile?.firstName ?? '');
     _lastNameController = TextEditingController(text: profile?.lastName ?? '');
@@ -46,7 +47,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _timezoneController = TextEditingController(text: profile?.timezone ?? 'Asia/Almaty');
     _currencyController = TextEditingController(text: profile?.currency ?? 'KZT');
 
-    _localeCode = profile?.locale ?? context.read<LocaleProvider>().locale.languageCode;
+    _localeCode = _normalizeLocaleCode(profile?.locale, fallback: appLocaleCode);
     _isPublic = profile?.isPublic ?? true;
   }
 
@@ -206,7 +207,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _localeCode,
+                value: _normalizeLocaleCode(_localeCode),
                 decoration: InputDecoration(
                   labelText: l10n.appLanguageTitle,
                   border: const OutlineInputBorder(),
@@ -266,5 +267,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       ),
     );
+  }
+
+  String _normalizeLocaleCode(String? raw, {String fallback = 'ru'}) {
+    const allowed = {'ru', 'en', 'kk'};
+
+    final normalized = (raw ?? '').trim().toLowerCase();
+    if (allowed.contains(normalized)) {
+      return normalized;
+    }
+
+    final fallbackNormalized = fallback.trim().toLowerCase();
+    if (allowed.contains(fallbackNormalized)) {
+      return fallbackNormalized;
+    }
+
+    return 'ru';
   }
 }

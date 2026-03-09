@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/generated/app_localizations.dart';
-import '../../providers/session_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../providers/session_provider.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -16,17 +16,6 @@ class ProfileScreen extends StatelessWidget {
     return Consumer<SessionProvider>(
       builder: (context, session, _) {
         final profile = session.profile;
-
-        if (profile == null) {
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(l10n.profileTitle),
-            ),
-            body: Center(
-              child: Text(l10n.profileNotAvailable),
-            ),
-          );
-        }
 
         return Scaffold(
           appBar: AppBar(
@@ -43,19 +32,25 @@ class ProfileScreen extends StatelessWidget {
                       Card(
                         color: const Color(0xFF2A1F0A),
                         child: ListTile(
-                          leading: const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                          leading: const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.amber,
+                          ),
                           title: Text(l10n.profileIncompleteTitle),
                           subtitle: Text(l10n.profileIncompleteDescription),
                           trailing: TextButton(
                             onPressed: () async {
-                              final updated = await Navigator.of(context).push<bool>(
+                              final updated =
+                                  await Navigator.of(context).push<bool>(
                                 MaterialPageRoute(
                                   builder: (_) => const EditProfileScreen(),
                                 ),
                               );
 
                               if (updated == true && context.mounted) {
-                                await context.read<SessionProvider>().reloadProfile();
+                                await context
+                                    .read<SessionProvider>()
+                                    .reloadProfile();
                               }
                             },
                             child: Text(l10n.fillNowButton),
@@ -95,17 +90,44 @@ class ProfileScreen extends StatelessWidget {
                       title: Text(l10n.profileTimezone),
                       subtitle: Text(profile.timezone),
                     ),
+                    if ((profile.countryCode ?? '').trim().isNotEmpty)
+                      ListTile(
+                        title: Text(l10n.profileCountry),
+                        subtitle: Text(profile.countryCode!),
+                      ),
+                    if ((profile.currency ?? '').trim().isNotEmpty)
+                      ListTile(
+                        title: Text(l10n.profileCurrency),
+                        subtitle: Text(profile.currency!),
+                      ),
+                    const SizedBox(height: 8),
                     Card(
                       child: ListTile(
                         title: Text(l10n.appLanguageTitle),
-                        subtitle: Text(_languageLabel(context.watch<LocaleProvider>().locale.languageCode)),
+                        subtitle: Text(
+                          _languageLabel(
+                            context.watch<LocaleProvider>().locale.languageCode,
+                          ),
+                        ),
                         trailing: DropdownButton<String>(
-                          value: context.watch<LocaleProvider>().locale.languageCode,
+                          value: context
+                              .watch<LocaleProvider>()
+                              .locale
+                              .languageCode,
                           underline: const SizedBox.shrink(),
                           items: const [
-                            DropdownMenuItem(value: 'ru', child: Text('Русский')),
-                            DropdownMenuItem(value: 'en', child: Text('English')),
-                            DropdownMenuItem(value: 'kk', child: Text('Қазақша')),
+                            DropdownMenuItem(
+                              value: 'ru',
+                              child: Text('Русский'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'en',
+                              child: Text('English'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'kk',
+                              child: Text('Қазақша'),
+                            ),
                           ],
                           onChanged: (value) async {
                             if (value == null) return;

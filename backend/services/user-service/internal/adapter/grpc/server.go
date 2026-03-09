@@ -29,11 +29,16 @@ func (s *Server) GetOrCreateUserBySubject(
 	ctx context.Context,
 	req *userv1.GetOrCreateUserBySubjectRequest,
 ) (*userv1.GetOrCreateUserBySubjectResponse, error) {
-	resp, err := s.useCase.GetOrCreateBySubject(ctx, app.InitUserInput{
-		SubjectID:    strings.TrimSpace(req.GetSubjectId()),
-		PrimaryPhone: stringPtrOrNil(req.GetPrimaryPhone()),
-		PrimaryEmail: stringPtrOrNil(req.GetPrimaryEmail()),
-	})
+	resp, err := s.useCase.GetOrCreateBySubjectWithIdentity(
+		ctx,
+		app.InitUserInput{
+			SubjectID: strings.TrimSpace(req.GetSubjectId()),
+		},
+		app.InitIdentityHints{
+			PrimaryPhone: stringPtrOrNil(req.GetPrimaryPhone()),
+			PrimaryEmail: stringPtrOrNil(req.GetPrimaryEmail()),
+		},
+	)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -105,7 +110,7 @@ func (s *Server) UpdateUserProfile(
 		return nil, mapError(err)
 	}
 
-	profile, err := s.useCase.UpdateProfile(ctx, app.UpdateProfileInput{
+	updatedAggregate, err := s.useCase.UpdateProfile(ctx, userID, app.UpdateProfileInput{
 		UserID:       userID,
 		FirstName:    stringPtrOrNil(req.GetFirstName()),
 		LastName:     stringPtrOrNil(req.GetLastName()),
@@ -125,8 +130,116 @@ func (s *Server) UpdateUserProfile(
 	}
 
 	return &userv1.UpdateUserProfileResponse{
-		Profile: toProtoProfile(profile),
+		Profile: toProtoProfile(updatedAggregate.Profile),
 	}, nil
+}
+
+func (s *Server) UpdateUserSettings(
+	ctx context.Context,
+	req *userv1.UpdateUserSettingsRequest,
+) (*userv1.UpdateUserSettingsResponse, error) {
+	userID, err := uuid.Parse(strings.TrimSpace(req.GetUserId()))
+	if err != nil {
+		return nil, mapError(app.ErrInvalidUserID)
+	}
+
+	settings, err := s.useCase.UpdateSettings(ctx, userID, model.UpdateUserSettingsParams{
+		NotificationsPushEnabled:  optionalBoolPtr(req.NotificationsPushEnabled),
+		NotificationsEmailEnabled: optionalBoolPtr(req.NotificationsEmailEnabled),
+		NotificationsSMSEnabled:   optionalBoolPtr(req.NotificationsSmsEnabled),
+		MarketingEnabled:          optionalBoolPtr(req.MarketingEnabled),
+		DarkModeEnabled:           optionalBoolPtr(req.DarkModeEnabled),
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &userv1.UpdateUserSettingsResponse{
+		Settings: toProtoSettings(settings),
+	}, nil
+}
+
+func (s *Server) GrantUserRole(
+	ctx context.Context,
+	req *userv1.GrantUserRoleRequest,
+) (*userv1.GrantUserRoleResponse, error) {
+	userID, err := uuid.Parse(strings.TrimSpace(req.GetUserId()))
+	if err != nil {
+		return nil, mapError(app.ErrInvalidUserID)
+	}
+
+	role := enum.SystemRole(strings.TrimSpace(req.GetRole()))
+
+	var grantedBy *uuid.UUID
+	if strings.TrimSpace(req.GetGrantedBy()) != "" {
+		parsed, parseErr := uuid.Parse(strings.TrimSpace(req.GetGrantedBy()))
+		if parseErr != nil {
+			return nil, mapError(app.ErrInvalidUserID)
+		}
+		grantedBy = &parsed
+	}
+
+	if err = s.useCase.GrantRole(ctx, userID, role, grantedBy); err != nil {
+		return nil, mapError(err)
+	}
+
+	return &userv1.GrantUserRoleResponse{
+		Success: true,
+	}, nil
+}
+
+func (s *Server) ListPublicProfiles(
+	ctx context.Context,
+	req *userv1.ListPublicProfilesRequest,
+) (*userv1.ListPublicProfilesResponse, error) {
+	items, err := s.useCase.ListPublicProfiles(ctx, int(req.GetLimit()), int(req.GetOffset()))
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	resp := &userv1.ListPublicProfilesResponse{
+		Items: make([]*userv1.PublicProfile, 0, len(items)),
+	}
+	for _, item := range items {
+		resp.Items = append(resp.Items, toProtoPublicProfile(item))
+	}
+
+	return resp, nil
+}
+
+func (s *Server) GetPublicProfilesByUserIds(
+	ctx context.Context,
+	req *userv1.GetPublicProfilesByUserIdsRequest,
+) (*userv1.GetPublicProfilesByUserIdsResponse, error) {
+	rawIDs := req.GetUserIds()
+	userIDs := make([]uuid.UUID, 0, len(rawIDs))
+
+	for _, raw := range rawIDs {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+
+		parsed, err := uuid.Parse(raw)
+		if err != nil {
+			return nil, mapError(app.ErrInvalidUserID)
+		}
+		userIDs = append(userIDs, parsed)
+	}
+
+	items, err := s.useCase.GetPublicProfilesByUserIDs(ctx, userIDs)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	resp := &userv1.GetPublicProfilesByUserIdsResponse{
+		Items: make([]*userv1.PublicProfile, 0, len(items)),
+	}
+	for _, item := range items {
+		resp.Items = append(resp.Items, toProtoPublicProfile(item))
+	}
+
+	return resp, nil
 }
 
 func toProtoAggregate(aggregate *app.UserAggregate) *userv1.UserAggregate {
@@ -191,7 +304,7 @@ func toProtoProfile(profile *model.UserProfile) *userv1.UserProfile {
 		CountryCode:  valueOrEmpty(profile.CountryCode),
 		Locale:       profile.Locale,
 		Timezone:     profile.Timezone,
-		Currency:     profile.Currency,
+		Currency:     valueOrEmpty(profile.Currency),
 		IsPublic:     profile.IsPublic,
 		CreatedAt:    profile.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:    profile.UpdatedAt.UTC().Format(time.RFC3339),
@@ -222,6 +335,24 @@ func toProtoReputation(rep *model.UserReputation) *userv1.UserReputation {
 		ReportsCount:        int32(rep.ReportsCount),
 		CreatedAt:           rep.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:           rep.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
+	var avatarFileID string
+	if profile.AvatarFileID != nil {
+		avatarFileID = profile.AvatarFileID.String()
+	}
+
+	return &userv1.PublicProfile{
+		UserId:       profile.UserID.String(),
+		DisplayName:  valueOrEmpty(profile.DisplayName),
+		Bio:          valueOrEmpty(profile.Bio),
+		AvatarFileId: avatarFileID,
+		CountryCode:  valueOrEmpty(profile.CountryCode),
+		Locale:       profile.Locale,
+		Timezone:     profile.Timezone,
+		IsPublic:     profile.IsPublic,
 	}
 }
 
@@ -268,135 +399,10 @@ func parseOptionalDateProto(v string) (*time.Time, error) {
 	return &t, nil
 }
 
-func (s *Server) UpdateUserSettings(
-	ctx context.Context,
-	req *userv1.UpdateUserSettingsRequest,
-) (*userv1.UpdateUserSettingsResponse, error) {
-	userID, err := uuid.Parse(strings.TrimSpace(req.GetUserId()))
-	if err != nil {
-		return nil, mapError(app.ErrInvalidUserID)
-	}
-
-	settings, err := s.useCase.UpdateSettings(ctx, userID, model.UpdateUserSettingsParams{
-		NotificationsPushEnabled:  optionalBoolPtr(req.NotificationsPushEnabled),
-		NotificationsEmailEnabled: optionalBoolPtr(req.NotificationsEmailEnabled),
-		NotificationsSMSEnabled:   optionalBoolPtr(req.NotificationsSmsEnabled),
-		MarketingEnabled:          optionalBoolPtr(req.MarketingEnabled),
-		DarkModeEnabled:           optionalBoolPtr(req.DarkModeEnabled),
-	})
-	if err != nil {
-		return nil, mapError(err)
-	}
-
-	return &userv1.UpdateUserSettingsResponse{
-		Settings: toProtoSettings(settings),
-	}, nil
-}
-
-func (s *Server) GrantUserRole(
-	ctx context.Context,
-	req *userv1.GrantUserRoleRequest,
-) (*userv1.GrantUserRoleResponse, error) {
-	userID, err := uuid.Parse(strings.TrimSpace(req.GetUserId()))
-	if err != nil {
-		return nil, mapError(app.ErrInvalidUserID)
-	}
-
-	role := enum.SystemRole(strings.TrimSpace(req.GetRole()))
-	var grantedBy *uuid.UUID
-	if strings.TrimSpace(req.GetGrantedBy()) != "" {
-		parsed, parseErr := uuid.Parse(strings.TrimSpace(req.GetGrantedBy()))
-		if parseErr != nil {
-			return nil, mapError(app.ErrInvalidUserID)
-		}
-		grantedBy = &parsed
-	}
-
-	if err = s.useCase.GrantRole(ctx, userID, role, grantedBy); err != nil {
-		return nil, mapError(err)
-	}
-
-	return &userv1.GrantUserRoleResponse{
-		Success: true,
-	}, nil
-}
-
-func (s *Server) ListPublicProfiles(
-	ctx context.Context,
-	req *userv1.ListPublicProfilesRequest,
-) (*userv1.ListPublicProfilesResponse, error) {
-	items, err := s.useCase.ListPublicProfiles(ctx, int(req.GetLimit()), int(req.GetOffset()))
-	if err != nil {
-		return nil, mapError(err)
-	}
-
-	resp := &userv1.ListPublicProfilesResponse{
-		Items: make([]*userv1.PublicProfile, 0, len(items)),
-	}
-	for _, item := range items {
-		resp.Items = append(resp.Items, toProtoPublicProfile(item))
-	}
-
-	return resp, nil
-}
-
 func optionalBoolPtr(v *bool) *bool {
 	if v == nil {
 		return nil
 	}
 	b := *v
 	return &b
-}
-
-func (s *Server) GetPublicProfilesByUserIds(
-	ctx context.Context,
-	req *userv1.GetPublicProfilesByUserIdsRequest,
-) (*userv1.GetPublicProfilesByUserIdsResponse, error) {
-	rawIDs := req.GetUserIds()
-	userIDs := make([]uuid.UUID, 0, len(rawIDs))
-
-	for _, raw := range rawIDs {
-		raw = strings.TrimSpace(raw)
-		if raw == "" {
-			continue
-		}
-
-		parsed, err := uuid.Parse(raw)
-		if err != nil {
-			return nil, mapError(app.ErrInvalidUserID)
-		}
-		userIDs = append(userIDs, parsed)
-	}
-
-	items, err := s.useCase.GetPublicProfilesByUserIDs(ctx, userIDs)
-	if err != nil {
-		return nil, mapError(err)
-	}
-
-	resp := &userv1.GetPublicProfilesByUserIdsResponse{
-		Items: make([]*userv1.PublicProfile, 0, len(items)),
-	}
-	for _, item := range items {
-		resp.Items = append(resp.Items, toProtoPublicProfile(item))
-	}
-
-	return resp, nil
-}
-
-func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
-	var avatarFileID string
-	if profile.AvatarFileID != nil {
-		avatarFileID = profile.AvatarFileID.String()
-	}
-
-	return &userv1.PublicProfile{
-		UserId:       profile.UserID.String(),
-		DisplayName:  valueOrEmpty(profile.DisplayName),
-		Bio:          valueOrEmpty(profile.Bio),
-		AvatarFileId: avatarFileID,
-		CountryCode:  valueOrEmpty(profile.CountryCode),
-		Locale:       profile.Locale,
-		Timezone:     profile.Timezone,
-		IsPublic:     profile.IsPublic,
-	}
 }

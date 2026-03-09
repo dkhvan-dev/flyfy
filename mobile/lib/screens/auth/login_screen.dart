@@ -166,7 +166,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (!mounted) return;
 
                                 if (success) {
-                                  await context.read<SessionProvider>().restoreSession();
+                                  await context.read<SessionProvider>().restoreSession(
+                                        primaryPhoneHint: authProvider.lastPrimaryPhoneHint,
+                                        primaryEmailHint: authProvider.lastPrimaryEmailHint,
+                                      );
 
                                   if (!mounted) return;
 
@@ -197,7 +200,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (!mounted) return;
 
                                 if (success) {
-                                  await context.read<SessionProvider>().restoreSession();
+                                  await context.read<SessionProvider>().restoreSession(
+                                        primaryPhoneHint: authProvider.lastPrimaryPhoneHint,
+                                        primaryEmailHint: authProvider.lastPrimaryEmailHint,
+                                      );
 
                                   if (!mounted) return;
 

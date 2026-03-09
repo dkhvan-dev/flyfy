@@ -131,17 +131,9 @@ func (c *TokenServiceClient) GenerateUserTokens(
 		return nil, fmt.Errorf("GenerateUserTokens RPC: %w", err)
 	}
 
-	if resp.GetExpiresAt() == nil {
-		return nil, fmt.Errorf("GenerateUserTokens RPC: missing expires_at")
-	}
-
-	expiresAt := resp.GetExpiresAt().AsTime()
-
 	return &model.AuthResult{
 		AccessToken:  resp.GetAccessToken(),
 		RefreshToken: resp.GetRefreshToken(),
-		TokenType:    resp.GetTokenType(),
-		ExpiresIn:    int64(time.Until(expiresAt).Seconds()),
 	}, nil
 }
 
@@ -160,17 +152,9 @@ func (c *TokenServiceClient) RefreshTokens(ctx context.Context, refreshToken str
 		return nil, fmt.Errorf("RefreshTokens RPC: %w", err)
 	}
 
-	if resp.GetExpiresAt() == nil {
-		return nil, fmt.Errorf("RefreshTokens RPC: missing expires_at")
-	}
-
-	expiresAt := resp.GetExpiresAt().AsTime()
-
 	return &model.AuthResult{
 		AccessToken:  resp.GetAccessToken(),
 		RefreshToken: resp.GetRefreshToken(),
-		TokenType:    resp.GetTokenType(),
-		ExpiresIn:    int64(time.Until(expiresAt).Seconds()),
 	}, nil
 }
 

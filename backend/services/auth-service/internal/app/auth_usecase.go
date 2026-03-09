@@ -92,10 +92,7 @@ func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string
 		return nil, model.ErrPhoneRequired
 	}
 
-	// Verify OTP
-	valid, err := true, error(nil)
-
-	// TODO: delete mock
+	valid, err := true, error(nil) // TODO: delete mock
 	uc.logger.Info().
 		Str("phone_raw", phone).
 		Msg("verify OTP request phone after normalize")
@@ -103,7 +100,6 @@ func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string
 	if phone != "+77051698779" {
 		valid, err = uc.otpStore.Verify(ctx, phone, code)
 	}
-
 	if err != nil {
 		return nil, fmt.Errorf("verifying OTP: %w", err)
 	}
@@ -111,17 +107,14 @@ func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string
 		return nil, model.ErrInvalidOTP
 	}
 
-	// Find or create user
 	user, isNew, err := uc.findOrCreateUserByPhone(ctx, phone)
 	if err != nil {
 		return nil, err
 	}
-
 	if !user.IsActive {
 		return nil, model.ErrUserBlocked
 	}
 
-	// Request tokens from token-service
 	result, err := uc.tokenClient.GenerateUserTokens(ctx, user.ID.String(), string(user.Role), nil)
 	if err != nil {
 		uc.logger.Error().Err(err).Str("user_id", user.ID.String()).Msg("failed to generate tokens")
@@ -129,6 +122,8 @@ func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string
 	}
 
 	result.IsNewUser = isNew
+	result.PrimaryPhoneHint = strPtr(phone)
+
 	uc.logger.Info().
 		Str("user_id", user.ID.String()).
 		Bool("is_new", isNew).
@@ -165,7 +160,6 @@ func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvid
 		return nil, model.ErrOAuthProviderID
 	}
 
-	// Find existing user by provider
 	user, err := uc.userRepo.FindByProvider(ctx, provider, info.ProviderID)
 	if err != nil {
 		return nil, fmt.Errorf("finding user by provider: %w", err)
@@ -173,8 +167,8 @@ func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvid
 
 	isNew := false
 	if user == nil {
-		// Create new user
 		isNew = true
+
 		user = &model.AuthUser{
 			ID:       uuid.New(),
 			Role:     model.RoleTourist,
@@ -184,7 +178,6 @@ func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvid
 			return nil, fmt.Errorf("creating user: %w", err)
 		}
 
-		// Link provider
 		link := &model.AuthProviderLink{
 			ID:         uuid.New(),
 			UserID:     user.ID,
@@ -201,13 +194,17 @@ func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvid
 		return nil, model.ErrUserBlocked
 	}
 
-	// Request tokens
 	result, err := uc.tokenClient.GenerateUserTokens(ctx, user.ID.String(), string(user.Role), nil)
 	if err != nil {
 		return nil, model.ErrTokenServiceUnavailable
 	}
 
 	result.IsNewUser = isNew
+
+	if email := strings.TrimSpace(info.Email); email != "" {
+		result.PrimaryEmailHint = strPtr(email)
+	}
+
 	uc.logger.Info().
 		Str("user_id", user.ID.String()).
 		Str("provider", string(provider)).

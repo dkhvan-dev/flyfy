@@ -6,6 +6,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
 
+import '../../features/profile/profile_completion_gate.dart';
+import '../../features/profile/profile_guard_result.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -233,7 +236,12 @@ class HomeScreen extends StatelessWidget {
                       title: l10n.serviceGuides,
                       icon: Icons.person,
                       color: const Color(0xFFF57F17),
-                      onTap: () => _openProtectedRoute(context, '/services/guides'),
+                      onTap: () async {
+                        final allowed = await _ensureProfileCompleted(context);
+                        if (!allowed || !context.mounted) return;
+
+                        context.push('/services/guides');
+                      },
                     ),
                     _ServiceCard(
                       title: l10n.serviceHotels,
@@ -255,6 +263,11 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<bool> _ensureProfileCompleted(BuildContext context) async {
+    final result = await ProfileCompletionGate.ensureCompleted(context);
+    return result != ProfileGuardResult.cancelled;
   }
 }
 

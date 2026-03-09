@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/model"
 )
@@ -30,55 +31,43 @@ func (r *PGUserRepository) CreateUserAggregate(
 	reputation *model.UserReputation,
 	defaultRole *model.UserSystemRole,
 ) error {
-	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	const insertUser = `
+	const userQuery = `
 		INSERT INTO users (
-			id, auth_subject_id, status, primary_phone, primary_email,
-			is_deleted, deleted_at, created_at, updated_at
-		) VALUES (
-			$1, $2, $3, $4, $5,
-			$6, $7, $8, $9
-		)
+			id, auth_subject_id, status, primary_phone, primary_email, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
 	`
 	if _, err = tx.Exec(
 		ctx,
-		insertUser,
+		userQuery,
 		user.ID,
 		user.AuthSubjectID,
 		string(user.Status),
 		user.PrimaryPhone,
 		user.PrimaryEmail,
-		user.IsDeleted,
-		user.DeletedAt,
-		user.CreatedAt,
-		user.UpdatedAt,
 	); err != nil {
-		err = classifyPGError(err)
-		if errors.Is(err, ErrUniqueViolation) {
-			return ErrConflict
-		}
 		return fmt.Errorf("insert user: %w", err)
 	}
 
-	const insertProfile = `
+	const profileQuery = `
 		INSERT INTO user_profiles (
 			user_id, first_name, last_name, display_name, bio, birth_date,
 			avatar_file_id, city_id, country_code, locale, timezone, currency,
-			is_public, created_at, updated_at
+			is_public, is_profile_completed, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6,
 			$7, $8, $9, $10, $11, $12,
-			$13, $14, $15
+			$13, $14, NOW(), NOW()
 		)
 	`
 	if _, err = tx.Exec(
 		ctx,
-		insertProfile,
+		profileQuery,
 		profile.UserID,
 		profile.FirstName,
 		profile.LastName,
@@ -92,51 +81,41 @@ func (r *PGUserRepository) CreateUserAggregate(
 		profile.Timezone,
 		profile.Currency,
 		profile.IsPublic,
-		profile.CreatedAt,
-		profile.UpdatedAt,
+		profile.IsProfileCompleted,
 	); err != nil {
 		return fmt.Errorf("insert profile: %w", err)
 	}
 
-	const insertSettings = `
+	const settingsQuery = `
 		INSERT INTO user_settings (
 			user_id, notifications_push_enabled, notifications_email_enabled,
 			notifications_sms_enabled, marketing_enabled, dark_mode_enabled,
 			created_at, updated_at
-		) VALUES (
-			$1, $2, $3, $4, $5, $6,
-			$7, $8
-		)
+		) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 	`
 	if _, err = tx.Exec(
 		ctx,
-		insertSettings,
+		settingsQuery,
 		settings.UserID,
 		settings.NotificationsPushEnabled,
 		settings.NotificationsEmailEnabled,
 		settings.NotificationsSMSEnabled,
 		settings.MarketingEnabled,
 		settings.DarkModeEnabled,
-		settings.CreatedAt,
-		settings.UpdatedAt,
 	); err != nil {
 		return fmt.Errorf("insert settings: %w", err)
 	}
 
-	const insertReputation = `
+	const reputationQuery = `
 		INSERT INTO user_reputation (
 			user_id, trust_score, risk_score, completed_bookings,
 			completed_activities, cancellations_count, reports_count,
 			created_at, updated_at
-		) VALUES (
-			$1, $2, $3, $4,
-			$5, $6, $7,
-			$8, $9
-		)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 	`
 	if _, err = tx.Exec(
 		ctx,
-		insertReputation,
+		reputationQuery,
 		reputation.UserID,
 		reputation.TrustScore,
 		reputation.RiskScore,
@@ -144,28 +123,21 @@ func (r *PGUserRepository) CreateUserAggregate(
 		reputation.CompletedActivities,
 		reputation.CancellationsCount,
 		reputation.ReportsCount,
-		reputation.CreatedAt,
-		reputation.UpdatedAt,
 	); err != nil {
 		return fmt.Errorf("insert reputation: %w", err)
 	}
 
-	const insertRole = `
+	const roleQuery = `
 		INSERT INTO user_system_roles (
-			id, user_id, role, granted_at, granted_by, created_at
-		) VALUES (
-			$1, $2, $3, $4, $5, $6
-		)
+			user_id, role, granted_at, granted_by
+		) VALUES ($1, $2, NOW(), $3)
 	`
 	if _, err = tx.Exec(
 		ctx,
-		insertRole,
-		defaultRole.ID,
+		roleQuery,
 		defaultRole.UserID,
 		string(defaultRole.Role),
-		defaultRole.GrantedAt,
 		defaultRole.GrantedBy,
-		defaultRole.CreatedAt,
 	); err != nil {
 		return fmt.Errorf("insert default role: %w", err)
 	}
@@ -260,40 +232,38 @@ func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.U
 		SELECT
 			user_id, first_name, last_name, display_name, bio, birth_date,
 			avatar_file_id, city_id, country_code, locale, timezone, currency,
-			is_public, created_at, updated_at
+			is_public, is_profile_completed, created_at, updated_at
 		FROM user_profiles
 		WHERE user_id = $1
-		LIMIT 1
 	`
 
-	row := r.pool.QueryRow(ctx, query, userID)
-
-	var item model.UserProfile
-	err := row.Scan(
-		&item.UserID,
-		&item.FirstName,
-		&item.LastName,
-		&item.DisplayName,
-		&item.Bio,
-		&item.BirthDate,
-		&item.AvatarFileID,
-		&item.CityID,
-		&item.CountryCode,
-		&item.Locale,
-		&item.Timezone,
-		&item.Currency,
-		&item.IsPublic,
-		&item.CreatedAt,
-		&item.UpdatedAt,
+	var profile model.UserProfile
+	err := r.pool.QueryRow(ctx, query, userID).Scan(
+		&profile.UserID,
+		&profile.FirstName,
+		&profile.LastName,
+		&profile.DisplayName,
+		&profile.Bio,
+		&profile.BirthDate,
+		&profile.AvatarFileID,
+		&profile.CityID,
+		&profile.CountryCode,
+		&profile.Locale,
+		&profile.Timezone,
+		&profile.Currency,
+		&profile.IsPublic,
+		&profile.IsProfileCompleted,
+		&profile.CreatedAt,
+		&profile.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, app.ErrUserNotFound
 		}
-		return nil, fmt.Errorf("select profile by user id: %w", err)
+		return nil, fmt.Errorf("get profile by user id: %w", err)
 	}
 
-	return &item, nil
+	return &profile, nil
 }
 
 func (r *PGUserRepository) GetSettingsByUserID(ctx context.Context, userID uuid.UUID) (*model.UserSettings, error) {
@@ -421,11 +391,12 @@ func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.Use
 			timezone = $11,
 			currency = $12,
 			is_public = $13,
-			updated_at = $14
+			is_profile_completed = $14,
+			updated_at = NOW()
 		WHERE user_id = $1
 	`
 
-	tag, err := r.pool.Exec(
+	_, err := r.pool.Exec(
 		ctx,
 		query,
 		profile.UserID,
@@ -441,13 +412,10 @@ func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.Use
 		profile.Timezone,
 		profile.Currency,
 		profile.IsPublic,
-		profile.UpdatedAt,
+		profile.IsProfileCompleted,
 	)
 	if err != nil {
 		return fmt.Errorf("update profile: %w", err)
-	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
 	}
 
 	return nil
@@ -539,7 +507,7 @@ func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, of
 		SELECT
 			user_id, first_name, last_name, display_name, bio, birth_date,
 			avatar_file_id, city_id, country_code, locale, timezone, currency,
-			is_public, created_at, updated_at
+			is_public, is_profile_completed, created_at, updated_at
 		FROM user_profiles
 		WHERE is_public = TRUE
 		ORDER BY created_at DESC
@@ -552,32 +520,33 @@ func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, of
 	}
 	defer rows.Close()
 
-	var result []*model.UserProfile
+	var items []*model.UserProfile
 	for rows.Next() {
-		var item model.UserProfile
+		var profile model.UserProfile
 		if err = rows.Scan(
-			&item.UserID,
-			&item.FirstName,
-			&item.LastName,
-			&item.DisplayName,
-			&item.Bio,
-			&item.BirthDate,
-			&item.AvatarFileID,
-			&item.CityID,
-			&item.CountryCode,
-			&item.Locale,
-			&item.Timezone,
-			&item.Currency,
-			&item.IsPublic,
-			&item.CreatedAt,
-			&item.UpdatedAt,
+			&profile.UserID,
+			&profile.FirstName,
+			&profile.LastName,
+			&profile.DisplayName,
+			&profile.Bio,
+			&profile.BirthDate,
+			&profile.AvatarFileID,
+			&profile.CityID,
+			&profile.CountryCode,
+			&profile.Locale,
+			&profile.Timezone,
+			&profile.Currency,
+			&profile.IsPublic,
+			&profile.IsProfileCompleted,
+			&profile.CreatedAt,
+			&profile.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan public profile: %w", err)
 		}
-		result = append(result, &item)
+		items = append(items, &profile)
 	}
 
-	return result, rows.Err()
+	return items, rows.Err()
 }
 
 func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]*model.UserProfile, error) {
@@ -589,7 +558,7 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 		SELECT
 			user_id, first_name, last_name, display_name, bio, birth_date,
 			avatar_file_id, city_id, country_code, locale, timezone, currency,
-			is_public, created_at, updated_at
+			is_public, is_profile_completed, created_at, updated_at
 		FROM user_profiles
 		WHERE is_public = TRUE
 		  AND user_id = ANY($1)
@@ -618,6 +587,7 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 			&item.Timezone,
 			&item.Currency,
 			&item.IsPublic,
+			&item.IsProfileCompleted,
 			&item.CreatedAt,
 			&item.UpdatedAt,
 		); err != nil {

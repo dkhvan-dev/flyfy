@@ -68,12 +68,3 @@ type OAuthUserInfo struct {
 	Email      string `json:"email,omitempty"`
 	Name       string `json:"name,omitempty"`
 }
-
-// AuthResult is the response returned after successful authentication.
-type AuthResult struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresIn    int64  `json:"expires_in"` // seconds
-	IsNewUser    bool   `json:"is_new_user"`
-}

@@ -16,21 +16,22 @@ var (
 )
 
 type UserProfile struct {
-	UserID       uuid.UUID
-	FirstName    *string
-	LastName     *string
-	DisplayName  *string
-	Bio          *string
-	BirthDate    *time.Time
-	AvatarFileID *uuid.UUID
-	CityID       *uuid.UUID
-	CountryCode  *string
-	Locale       string
-	Timezone     string
-	Currency     string
-	IsPublic     bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	UserID             uuid.UUID  `json:"user_id"`
+	FirstName          *string    `json:"first_name,omitempty"`
+	LastName           *string    `json:"last_name,omitempty"`
+	DisplayName        *string    `json:"display_name,omitempty"`
+	Bio                *string    `json:"bio,omitempty"`
+	BirthDate          *time.Time `json:"birth_date,omitempty"`
+	AvatarFileID       *uuid.UUID `json:"avatar_file_id,omitempty"`
+	CityID             *uuid.UUID `json:"city_id,omitempty"`
+	CountryCode        *string    `json:"country_code,omitempty"`
+	Locale             string     `json:"locale"`
+	Timezone           string     `json:"timezone"`
+	Currency           *string    `json:"currency,omitempty"`
+	IsPublic           bool       `json:"is_public"`
+	IsProfileCompleted bool       `json:"is_profile_completed"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 type NewUserProfileParams struct {
@@ -39,15 +40,17 @@ type NewUserProfileParams struct {
 
 func NewUserProfile(params NewUserProfileParams) (*UserProfile, error) {
 	now := time.Now().UTC()
+	defaultCurrency := "KZT"
 
 	profile := &UserProfile{
-		UserID:    params.UserID,
-		Locale:    "ru",
-		Timezone:  "Asia/Almaty",
-		Currency:  "KZT",
-		IsPublic:  true,
-		CreatedAt: now,
-		UpdatedAt: now,
+		UserID:             params.UserID,
+		Locale:             "ru",
+		Timezone:           "Asia/Almaty",
+		Currency:           &defaultCurrency,
+		IsPublic:           true,
+		IsProfileCompleted: false,
+		CreatedAt:          now,
+		UpdatedAt:          now,
 	}
 
 	if err := profile.Validate(); err != nil {
@@ -67,7 +70,7 @@ func (p *UserProfile) Validate() error {
 	if strings.TrimSpace(p.Timezone) == "" {
 		return ErrInvalidTimezone
 	}
-	if strings.TrimSpace(p.Currency) == "" {
+	if p.Currency == nil || strings.TrimSpace(*p.Currency) == "" {
 		return ErrInvalidCurrency
 	}
 	return nil
@@ -109,7 +112,7 @@ func (p *UserProfile) ApplyUpdate(params UpdateUserProfileParams) error {
 		p.Timezone = strings.TrimSpace(*params.Timezone)
 	}
 	if params.Currency != nil {
-		p.Currency = strings.TrimSpace(*params.Currency)
+		p.Currency = normalizeOptionalString(params.Currency)
 	}
 	if params.IsPublic != nil {
 		p.IsPublic = *params.IsPublic

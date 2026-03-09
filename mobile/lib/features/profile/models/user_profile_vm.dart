@@ -5,6 +5,7 @@ class UserProfileVm {
     required this.locale,
     required this.timezone,
     required this.isPublic,
+    required this.isProfileCompleted,
     this.primaryPhone,
     this.primaryEmail,
     this.firstName,
@@ -21,6 +22,7 @@ class UserProfileVm {
   final String locale;
   final String timezone;
   final bool isPublic;
+  final bool isProfileCompleted;
 
   final String? primaryPhone;
   final String? primaryEmail;
@@ -51,6 +53,7 @@ class UserProfileVm {
       timezone: profile['timezone']?.toString() ?? 'Asia/Almaty',
       currency: profile['currency']?.toString(),
       isPublic: profile['isPublic'] == true,
+      isProfileCompleted: profile['isProfileCompleted'] == true,
     );
   }
 
@@ -78,11 +81,6 @@ class UserProfileVm {
     final source = preferredName.trim();
     if (source.isEmpty) return 'F';
     return source.substring(0, 1).toUpperCase();
-  }
-
-  bool get isProfileCompleted {
-    return (firstName ?? '').trim().isNotEmpty &&
-        (lastName ?? '').trim().isNotEmpty;
   }
 
   String _maskPhone(String phone) {

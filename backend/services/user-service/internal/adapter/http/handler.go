@@ -175,7 +175,7 @@ func (h *Handler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, err := h.useCase.UpdateProfile(r.Context(), app.UpdateProfileInput{
+	updatedAggregate, err := h.useCase.UpdateProfile(r.Context(), aggregate.User.ID, app.UpdateProfileInput{
 		UserID:       aggregate.User.ID,
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
@@ -195,25 +195,20 @@ func (h *Handler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, app.ErrInvalidUserID),
 			errors.Is(err, model.ErrInvalidLocale),
 			errors.Is(err, model.ErrInvalidTimezone),
-			errors.Is(err, model.ErrInvalidCurrency):
-			writeError(w, http.StatusBadRequest, err.Error())
-		case errors.Is(err, app.ErrProfileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
-		case errors.Is(err, app.ErrInvalidUserID),
-			errors.Is(err, model.ErrInvalidLocale),
-			errors.Is(err, model.ErrInvalidTimezone),
 			errors.Is(err, model.ErrInvalidCurrency),
 			errors.Is(err, app.ErrAvatarFileNotFound),
 			errors.Is(err, app.ErrAvatarFileNotReady),
 			errors.Is(err, app.ErrAvatarFileNotAllowed):
 			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrProfileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
 		default:
 			writeError(w, http.StatusInternalServerError, "failed to update profile")
 		}
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toUserProfileResponse(profile))
+	writeJSON(w, http.StatusOK, toUserProfileResponse(updatedAggregate.Profile))
 }
 
 func toInitMeResponse(aggregate *app.UserAggregate) dto.InitMeResponse {
@@ -271,21 +266,22 @@ func toUserProfileResponse(profile *model.UserProfile) dto.UserProfileResponse {
 	}
 
 	return dto.UserProfileResponse{
-		UserID:       profile.UserID.String(),
-		FirstName:    profile.FirstName,
-		LastName:     profile.LastName,
-		DisplayName:  profile.DisplayName,
-		Bio:          profile.Bio,
-		BirthDate:    birthDate,
-		AvatarFileID: avatarFileID,
-		CityID:       cityID,
-		CountryCode:  profile.CountryCode,
-		Locale:       profile.Locale,
-		Timezone:     profile.Timezone,
-		Currency:     profile.Currency,
-		IsPublic:     profile.IsPublic,
-		CreatedAt:    profile.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:    profile.UpdatedAt.UTC().Format(time.RFC3339),
+		UserID:             profile.UserID.String(),
+		FirstName:          profile.FirstName,
+		LastName:           profile.LastName,
+		DisplayName:        profile.DisplayName,
+		Bio:                profile.Bio,
+		BirthDate:          birthDate,
+		AvatarFileID:       avatarFileID,
+		CityID:             cityID,
+		CountryCode:        profile.CountryCode,
+		Locale:             profile.Locale,
+		Timezone:           profile.Timezone,
+		Currency:           profile.Currency,
+		IsPublic:           profile.IsPublic,
+		IsProfileCompleted: profile.IsProfileCompleted,
+		CreatedAt:          profile.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:          profile.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 }
 

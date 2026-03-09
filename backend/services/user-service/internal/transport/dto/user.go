@@ -21,21 +21,22 @@ type UserResponse struct {
 }
 
 type UserProfileResponse struct {
-	UserID       string  `json:"userId"`
-	FirstName    *string `json:"firstName,omitempty"`
-	LastName     *string `json:"lastName,omitempty"`
-	DisplayName  *string `json:"displayName,omitempty"`
-	Bio          *string `json:"bio,omitempty"`
-	BirthDate    *string `json:"birthDate,omitempty"`
-	AvatarFileID *string `json:"avatarFileId,omitempty"`
-	CityID       *string `json:"cityId,omitempty"`
-	CountryCode  *string `json:"countryCode,omitempty"`
-	Locale       string  `json:"locale"`
-	Timezone     string  `json:"timezone"`
-	Currency     string  `json:"currency"`
-	IsPublic     bool    `json:"isPublic"`
-	CreatedAt    string  `json:"createdAt"`
-	UpdatedAt    string  `json:"updatedAt"`
+	UserID             string  `json:"userId"`
+	FirstName          *string `json:"firstName,omitempty"`
+	LastName           *string `json:"lastName,omitempty"`
+	DisplayName        *string `json:"displayName,omitempty"`
+	Bio                *string `json:"bio,omitempty"`
+	BirthDate          *string `json:"birthDate,omitempty"`
+	AvatarFileID       *string `json:"avatarFileId,omitempty"`
+	CityID             *string `json:"cityId,omitempty"`
+	CountryCode        *string `json:"countryCode,omitempty"`
+	Locale             string  `json:"locale"`
+	Timezone           string  `json:"timezone"`
+	Currency           *string `json:"currency,omitempty"`
+	IsPublic           bool    `json:"isPublic"`
+	IsProfileCompleted bool    `json:"isProfileCompleted"`
+	CreatedAt          string  `json:"createdAt"`
+	UpdatedAt          string  `json:"updatedAt"`
 }
 
 type UserSettingsResponse struct {
