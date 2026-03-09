@@ -196,16 +196,19 @@ services:
       APP_ENV: development
       GRPC_PORT: 50051
       HTTP_PORT: 8081
+
       JWT_ISSUER: tourism-superapp/token-service
       JWT_ACCESS_TTL: 30m
       JWT_REFRESH_TTL: 720h
       JWT_SERVICE_TTL: 1h
+
       PG_HOST: token-postgres
       PG_PORT: 5432
       PG_USER: token_service
       PG_PASSWORD: token_secret_dev
       PG_DBNAME: token_service
       PG_SSLMODE: disable
+
       REDIS_ADDR: redis:6379
     depends_on:
       token-postgres:
@@ -231,17 +234,21 @@ services:
       APP_ENV: development
       GRPC_PORT: 50052
       HTTP_PORT: 8082
+
       PG_HOST: auth-postgres
       PG_PORT: 5432
       PG_USER: auth_service
       PG_PASSWORD: auth_secret_dev
       PG_DBNAME: auth_db
       PG_SSLMODE: disable
+
       REDIS_ADDR: redis:6379
       REDIS_DB: 1
+
       TOKEN_SERVICE_ADDR: token-service:50051
       TOKEN_SERVICE_ID: auth-service
       TOKEN_SERVICE_SECRET: auth-service-secret
+
       OTP_LENGTH: 6
       OTP_TTL: 5m
       OTP_MAX_ATTEMPTS: 5
@@ -274,7 +281,6 @@ services:
       - "9093:9093"
     environment:
       APP_ENV: development
-
       HTTP_PORT: 8083
       GRPC_PORT: 9093
 
@@ -329,12 +335,10 @@ services:
       - "9094:9094"
     environment:
       APP_ENV: development
-
       HTTP_PORT: 8084
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
-
       GRPC_PORT: 9094
 
       POSTGRES_HOST: user-postgres
@@ -370,7 +374,6 @@ services:
       context: ..
       dockerfile: ./backend/services/guide-service/Dockerfile
     container_name: flyfy-guide-service
-    restart: unless-stopped
     depends_on:
       guide-postgres:
         condition: service_healthy
@@ -383,12 +386,10 @@ services:
       - "9095:9095"
     environment:
       APP_ENV: development
-
       HTTP_PORT: 8085
       HTTP_READ_TIMEOUT: 15s
       HTTP_WRITE_TIMEOUT: 15s
       HTTP_IDLE_TIMEOUT: 60s
-
       GRPC_PORT: 9095
 
       POSTGRES_HOST: guide-postgres
@@ -413,6 +414,69 @@ services:
 
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
       FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # API Gateway
+  # ============================================
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: ./backend/services/api-gateway/Dockerfile
+    container_name: flyfy-api-gateway
+    depends_on:
+      token-service:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      file-manager-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      guide-service:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    environment:
+      APP_ENV: development
+
+      HTTP_PORT: 8080
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 15s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      LOG_LEVEL: info
+
+      REQUEST_ID_HEADER: X-Request-Id
+      TRUSTED_HEADER_USER_ID: X-User-Id
+      TRUSTED_HEADER_ROLES: X-User-Roles
+      TRUSTED_HEADER_SUB: X-Auth-Subject
+
+      API_PREFIX: /api/v1
+
+      AUTH_SERVICE_HTTP_URL: http://auth-service:8082
+      USER_SERVICE_HTTP_URL: http://user-service:8084
+      GUIDE_SERVICE_HTTP_URL: http://guide-service:8085
+      FILE_MANAGER_HTTP_URL: http://file-manager-service:8083
+
+      TOKEN_SERVICE_GRPC_TARGET: dns:///token-service:50051
+      TOKEN_SERVICE_ID: api-gateway
+      TOKEN_SERVICE_SECRET: api-gateway-secret
+      TOKEN_SERVICE_CALL_TIMEOUT: 3s
+
+      CORS_ALLOWED_ORIGINS: "*"
+      CORS_ALLOWED_METHODS: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      CORS_ALLOWED_HEADERS: Authorization,Content-Type,X-Request-Id
+      CORS_EXPOSE_HEADERS: X-Request-Id
+      CORS_ALLOW_CREDENTIALS: "false"
+      CORS_MAX_AGE_SECONDS: 600
+
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_REQUESTS_PER_MINUTE: 120
+      RATE_LIMIT_CLEANUP_INTERVAL: 1m
+    restart: unless-stopped
     networks:
       - flyfy-network
 
