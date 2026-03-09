@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-echo "Running user-service migrations..."
+echo "Running guide-service migrations..."
 
-for file in /migrations/user-service/*.up.sql; do
+for file in /migrations/guide-service/*.up.sql; do
   echo "Applying $file"
   psql -v ON_ERROR_STOP=1 \
     -U "$POSTGRES_USER" \
@@ -11,4 +11,4 @@ for file in /migrations/user-service/*.up.sql; do
     -f "$file"
 done
 
-echo "user-service migrations applied"
+echo "guide-service migrations applied"

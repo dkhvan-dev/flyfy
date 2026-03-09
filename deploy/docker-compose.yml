@@ -1,112 +1,53 @@
 services:
   # ============================================
-  # Token Service
+  # Token Service PostgreSQL
   # ============================================
-  token-service:
-    build:
-      context: ..
-      dockerfile: ./backend/services/token-service/Dockerfile
-    ports:
-      - "50051:50051"   # gRPC
-      - "8081:8081"     # HTTP (JWKS + Health)
-    environment:
-      APP_ENV: development
-      GRPC_PORT: 50051
-      HTTP_PORT: 8081
-      JWT_ISSUER: tourism-superapp/token-service
-      JWT_ACCESS_TTL: 30m
-      JWT_REFRESH_TTL: 720h
-      JWT_SERVICE_TTL: 1h
-      PG_HOST: postgres
-      PG_PORT: 5432
-      PG_USER: token_service
-      PG_PASSWORD: token_secret_dev
-      PG_DBNAME: token_service
-      PG_SSLMODE: disable
-      REDIS_ADDR: redis:6379
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # ============================================
-  # Auth Service
-  # ============================================
-  auth-service:
-    build:
-      context: ..
-      dockerfile: ./backend/services/auth-service/Dockerfile
-    ports:
-      - "50052:50052"   # gRPC (reserved)
-      - "8082:8082"     # HTTP (REST API)
-    environment:
-      APP_ENV: development
-      GRPC_PORT: 50052
-      HTTP_PORT: 8082
-      PG_HOST: postgres
-      PG_PORT: 5432
-      PG_USER: auth_service
-      PG_PASSWORD: auth_secret_dev
-      PG_DBNAME: auth_db
-      PG_SSLMODE: disable
-      REDIS_ADDR: redis:6379
-      REDIS_DB: 1
-      TOKEN_SERVICE_ADDR: token-service:50051
-      TOKEN_SERVICE_ID: auth-service
-      TOKEN_SERVICE_SECRET: auth-service-secret
-      OTP_LENGTH: 6
-      OTP_TTL: 5m
-      OTP_MAX_ATTEMPTS: 5
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      token-service:
-        condition: service_started
-    restart: unless-stopped
-
-  # ============================================
-  # PostgreSQL
-  # ============================================
-  postgres:
+  token-postgres:
     image: postgres:17-alpine
-    ports:
-      - "5432:5432"
+    container_name: token-postgres
     environment:
+      POSTGRES_DB: token_service
       POSTGRES_USER: token_service
       POSTGRES_PASSWORD: token_secret_dev
-      POSTGRES_DB: token_service
+    ports:
+      - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      # Init scripts (executed in alphabetical order)
-      - ./init-scripts/000_create_databases.sql:/docker-entrypoint-initdb.d/000_create_databases.sql
+      - token_postgres_data:/var/lib/postgresql/data
       - ./init-scripts/001_token_service.sh:/docker-entrypoint-initdb.d/001_token_service.sh
-      - ./init-scripts/002_auth_service.sh:/docker-entrypoint-initdb.d/002_auth_service.sh
-      # Migration files (mounted read-only, used by init scripts)
       - ../backend/services/token-service/migrations:/migrations/token-service:ro
-      - ../backend/services/auth-service/migrations:/migrations/auth-service:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U token_service"]
-      interval: 5s
-      timeout: 3s
+      test: ["CMD-SHELL", "pg_isready -U token_service -d token_service"]
+      interval: 10s
+      timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
 
   # ============================================
-  # Redis
+  # Auth Service PostgreSQL
   # ============================================
-  redis:
-    image: redis:7-alpine
+  auth-postgres:
+    image: postgres:17-alpine
+    container_name: auth-postgres
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_service
+      POSTGRES_PASSWORD: auth_secret_dev
     ports:
-      - "6379:6379"
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+      - "5433:5432"
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/002_auth_service.sh:/docker-entrypoint-initdb.d/002_auth_service.sh
+      - ../backend/services/auth-service/migrations:/migrations/auth-service:ro
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
+      test: ["CMD-SHELL", "pg_isready -U auth_service -d auth_db"]
+      interval: 10s
+      timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
 
   # ============================================
   # File Manager PostgreSQL
@@ -116,8 +57,8 @@ services:
     container_name: file-manager-postgres
     environment:
       POSTGRES_DB: file_manager_db
-      POSTGRES_USER: flyfy
-      POSTGRES_PASSWORD: flyfy
+      POSTGRES_USER: file_manager
+      POSTGRES_PASSWORD: file_manager_secret_dev
     ports:
       - "5435:5432"
     volumes:
@@ -125,10 +66,81 @@ services:
       - ./init-scripts/003_file_manager.sh:/docker-entrypoint-initdb.d/003_file_manager.sh
       - ../backend/services/file-manager-service/migrations:/migrations/file-manager-service:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U flyfy -d file_manager_db"]
+      test: ["CMD-SHELL", "pg_isready -U file_manager -d file_manager_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # User Service PostgreSQL
+  # ============================================
+  user-postgres:
+    image: postgres:17-alpine
+    container_name: user-postgres
+    environment:
+      POSTGRES_DB: user_service_db
+      POSTGRES_USER: user_service
+      POSTGRES_PASSWORD: user_secret_dev
+    ports:
+      - "5436:5432"
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/004_user_service.sh:/docker-entrypoint-initdb.d/004_user_service.sh
+      - ../backend/services/user-service/migrations:/migrations/user-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_service -d user_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Guide Service PostgreSQL
+  # ============================================
+  guide-postgres:
+    image: postgres:17-alpine
+    container_name: guide-postgres
+    environment:
+      POSTGRES_DB: guide_service_db
+      POSTGRES_USER: guide_service
+      POSTGRES_PASSWORD: guide_secret_dev
+    ports:
+      - "5437:5432"
+    volumes:
+      - guide_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/005_guide_service.sh:/docker-entrypoint-initdb.d/005_guide_service.sh
+      - ../backend/services/guide-service/migrations:/migrations/guide-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guide_service -d guide_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Redis
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: flyfy-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
 
   # ============================================
   # File Manager MinIO
@@ -145,11 +157,9 @@ services:
       - "9001:9001"
     volumes:
       - file_manager_minio_data:/data
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
 
   # ============================================
   # File Manager MinIO Init
@@ -168,6 +178,83 @@ services:
       mc anonymous set private local/flyfy-files || true;
       exit 0;
       "
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Token Service
+  # ============================================
+  token-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/token-service/Dockerfile
+    container_name: flyfy-token-service
+    ports:
+      - "50051:50051"
+      - "8081:8081"
+    environment:
+      APP_ENV: development
+      GRPC_PORT: 50051
+      HTTP_PORT: 8081
+      JWT_ISSUER: tourism-superapp/token-service
+      JWT_ACCESS_TTL: 30m
+      JWT_REFRESH_TTL: 720h
+      JWT_SERVICE_TTL: 1h
+      PG_HOST: token-postgres
+      PG_PORT: 5432
+      PG_USER: token_service
+      PG_PASSWORD: token_secret_dev
+      PG_DBNAME: token_service
+      PG_SSLMODE: disable
+      REDIS_ADDR: redis:6379
+    depends_on:
+      token-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Auth Service
+  # ============================================
+  auth-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/auth-service/Dockerfile
+    container_name: flyfy-auth-service
+    ports:
+      - "50052:50052"
+      - "8082:8082"
+    environment:
+      APP_ENV: development
+      GRPC_PORT: 50052
+      HTTP_PORT: 8082
+      PG_HOST: auth-postgres
+      PG_PORT: 5432
+      PG_USER: auth_service
+      PG_PASSWORD: auth_secret_dev
+      PG_DBNAME: auth_db
+      PG_SSLMODE: disable
+      REDIS_ADDR: redis:6379
+      REDIS_DB: 1
+      TOKEN_SERVICE_ADDR: token-service:50051
+      TOKEN_SERVICE_ID: auth-service
+      TOKEN_SERVICE_SECRET: auth-service-secret
+      OTP_LENGTH: 6
+      OTP_TTL: 5m
+      OTP_MAX_ATTEMPTS: 5
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      token-service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - flyfy-network
 
   # ============================================
   # File Manager Service
@@ -176,7 +263,7 @@ services:
     build:
       context: ..
       dockerfile: ./backend/services/file-manager-service/Dockerfile
-    container_name: file-manager-service
+    container_name: flyfy-file-manager-service
     depends_on:
       file-manager-postgres:
         condition: service_healthy
@@ -193,8 +280,8 @@ services:
 
       POSTGRES_HOST: file-manager-postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: flyfy
-      POSTGRES_PASSWORD: flyfy
+      POSTGRES_USER: file_manager
+      POSTGRES_PASSWORD: file_manager_secret_dev
       POSTGRES_DB: file_manager_db
       POSTGRES_SSLMODE: disable
       POSTGRES_MAX_OPEN_CONNS: 10
@@ -218,30 +305,11 @@ services:
       REQUIRE_AUTHENTICATED_WRITES: "true"
       TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
       TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
       REQUEST_ID_HEADER: X-Request-Id
     restart: unless-stopped
-
-  # ============================================
-  # User Service PostgreSQL
-  # ============================================
-  user-postgres:
-    image: postgres:17-alpine
-    container_name: user-postgres
-    environment:
-      POSTGRES_DB: user_service_db
-      POSTGRES_USER: flyfy
-      POSTGRES_PASSWORD: flyfy
-    ports:
-      - "5436:5432"
-    volumes:
-      - user_postgres_data:/var/lib/postgresql/data
-      - ./init-scripts/004_user_service.sh:/docker-entrypoint-initdb.d/004_user_service.sh
-      - ../backend/services/user-service/migrations:/migrations/user-service:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U flyfy -d user_service_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    networks:
+      - flyfy-network
 
   # ============================================
   # User Service
@@ -250,7 +318,7 @@ services:
     build:
       context: ..
       dockerfile: ./backend/services/user-service/Dockerfile
-    container_name: user-service
+    container_name: flyfy-user-service
     depends_on:
       user-postgres:
         condition: service_healthy
@@ -271,8 +339,8 @@ services:
 
       POSTGRES_HOST: user-postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: flyfy
-      POSTGRES_PASSWORD: flyfy
+      POSTGRES_USER: user_service
+      POSTGRES_PASSWORD: user_secret_dev
       POSTGRES_DB: user_service_db
       POSTGRES_SSLMODE: disable
       POSTGRES_MAX_OPEN_CONNS: 10
@@ -290,11 +358,72 @@ services:
       REQUEST_ID_HEADER: X-Request-Id
 
       FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
-
     restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Guide Service
+  # ============================================
+  guide-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/guide-service/Dockerfile
+    container_name: flyfy-guide-service
+    restart: unless-stopped
+    depends_on:
+      guide-postgres:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      file-manager-service:
+        condition: service_started
+    ports:
+      - "8085:8085"
+      - "9095:9095"
+    environment:
+      APP_ENV: development
+
+      HTTP_PORT: 8085
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 15s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      GRPC_PORT: 9095
+
+      POSTGRES_HOST: guide-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: guide_service
+      POSTGRES_PASSWORD: guide_secret_dev
+      POSTGRES_DB: guide_service_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 10
+      POSTGRES_MIN_OPEN_CONNS: 2
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+      POSTGRES_MAX_CONN_IDLE_TIME: 30m
+
+      LOG_LEVEL: info
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      REQUIRE_AUTHENTICATED_WRITES: "true"
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+
+      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
+    networks:
+      - flyfy-network
+
+networks:
+  flyfy-network:
+    driver: bridge
 
 volumes:
-  pgdata:
+  token_postgres_data:
+  auth_postgres_data:
   file_manager_postgres_data:
   file_manager_minio_data:
   user_postgres_data:
+  guide_postgres_data:

@@ -1461,6 +1461,94 @@ func (x *PublicProfile) GetIsPublic() bool {
 	return false
 }
 
+type GetPublicProfilesByUserIdsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserIds       []string               `protobuf:"bytes,1,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPublicProfilesByUserIdsRequest) Reset() {
+	*x = GetPublicProfilesByUserIdsRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPublicProfilesByUserIdsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPublicProfilesByUserIdsRequest) ProtoMessage() {}
+
+func (x *GetPublicProfilesByUserIdsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPublicProfilesByUserIdsRequest.ProtoReflect.Descriptor instead.
+func (*GetPublicProfilesByUserIdsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetPublicProfilesByUserIdsRequest) GetUserIds() []string {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+type GetPublicProfilesByUserIdsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*PublicProfile       `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPublicProfilesByUserIdsResponse) Reset() {
+	*x = GetPublicProfilesByUserIdsResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPublicProfilesByUserIdsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPublicProfilesByUserIdsResponse) ProtoMessage() {}
+
+func (x *GetPublicProfilesByUserIdsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPublicProfilesByUserIdsResponse.ProtoReflect.Descriptor instead.
+func (*GetPublicProfilesByUserIdsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetPublicProfilesByUserIdsResponse) GetItems() []*PublicProfile {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
@@ -1604,7 +1692,11 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\fcountry_code\x18\x05 \x01(\tR\vcountryCode\x12\x16\n" +
 	"\x06locale\x18\x06 \x01(\tR\x06locale\x12\x1a\n" +
 	"\btimezone\x18\a \x01(\tR\btimezone\x12\x1b\n" +
-	"\tis_public\x18\b \x01(\bR\bisPublic2\x85\x05\n" +
+	"\tis_public\x18\b \x01(\bR\bisPublic\">\n" +
+	"!GetPublicProfilesByUserIdsRequest\x12\x19\n" +
+	"\buser_ids\x18\x01 \x03(\tR\auserIds\"R\n" +
+	"\"GetPublicProfilesByUserIdsResponse\x12,\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.user.v1.PublicProfileR\x05items2\xfc\x05\n" +
 	"\vUserService\x12o\n" +
 	"\x18GetOrCreateUserBySubject\x12(.user.v1.GetOrCreateUserBySubjectRequest\x1a).user.v1.GetOrCreateUserBySubjectResponse\x12H\n" +
 	"\vGetUserById\x12\x1b.user.v1.GetUserByIdRequest\x1a\x1c.user.v1.GetUserByIdResponse\x12Q\n" +
@@ -1612,7 +1704,8 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x11UpdateUserProfile\x12!.user.v1.UpdateUserProfileRequest\x1a\".user.v1.UpdateUserProfileResponse\x12]\n" +
 	"\x12UpdateUserSettings\x12\".user.v1.UpdateUserSettingsRequest\x1a#.user.v1.UpdateUserSettingsResponse\x12N\n" +
 	"\rGrantUserRole\x12\x1d.user.v1.GrantUserRoleRequest\x1a\x1e.user.v1.GrantUserRoleResponse\x12]\n" +
-	"\x12ListPublicProfiles\x12\".user.v1.ListPublicProfilesRequest\x1a#.user.v1.ListPublicProfilesResponseB9Z7github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1;userv1b\x06proto3"
+	"\x12ListPublicProfiles\x12\".user.v1.ListPublicProfilesRequest\x1a#.user.v1.ListPublicProfilesResponse\x12u\n" +
+	"\x1aGetPublicProfilesByUserIds\x12*.user.v1.GetPublicProfilesByUserIdsRequest\x1a+.user.v1.GetPublicProfilesByUserIdsResponseB9Z7github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1;userv1b\x06proto3"
 
 var (
 	file_user_v1_user_proto_rawDescOnce sync.Once
@@ -1626,28 +1719,30 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_user_v1_user_proto_goTypes = []any{
-	(*GetOrCreateUserBySubjectRequest)(nil),  // 0: user.v1.GetOrCreateUserBySubjectRequest
-	(*GetOrCreateUserBySubjectResponse)(nil), // 1: user.v1.GetOrCreateUserBySubjectResponse
-	(*GetUserByIdRequest)(nil),               // 2: user.v1.GetUserByIdRequest
-	(*GetUserByIdResponse)(nil),              // 3: user.v1.GetUserByIdResponse
-	(*GetUserProfileRequest)(nil),            // 4: user.v1.GetUserProfileRequest
-	(*GetUserProfileResponse)(nil),           // 5: user.v1.GetUserProfileResponse
-	(*UpdateUserProfileRequest)(nil),         // 6: user.v1.UpdateUserProfileRequest
-	(*UpdateUserProfileResponse)(nil),        // 7: user.v1.UpdateUserProfileResponse
-	(*UserAggregate)(nil),                    // 8: user.v1.UserAggregate
-	(*User)(nil),                             // 9: user.v1.User
-	(*UserProfile)(nil),                      // 10: user.v1.UserProfile
-	(*UserSettings)(nil),                     // 11: user.v1.UserSettings
-	(*UserReputation)(nil),                   // 12: user.v1.UserReputation
-	(*UpdateUserSettingsRequest)(nil),        // 13: user.v1.UpdateUserSettingsRequest
-	(*UpdateUserSettingsResponse)(nil),       // 14: user.v1.UpdateUserSettingsResponse
-	(*GrantUserRoleRequest)(nil),             // 15: user.v1.GrantUserRoleRequest
-	(*GrantUserRoleResponse)(nil),            // 16: user.v1.GrantUserRoleResponse
-	(*ListPublicProfilesRequest)(nil),        // 17: user.v1.ListPublicProfilesRequest
-	(*ListPublicProfilesResponse)(nil),       // 18: user.v1.ListPublicProfilesResponse
-	(*PublicProfile)(nil),                    // 19: user.v1.PublicProfile
+	(*GetOrCreateUserBySubjectRequest)(nil),    // 0: user.v1.GetOrCreateUserBySubjectRequest
+	(*GetOrCreateUserBySubjectResponse)(nil),   // 1: user.v1.GetOrCreateUserBySubjectResponse
+	(*GetUserByIdRequest)(nil),                 // 2: user.v1.GetUserByIdRequest
+	(*GetUserByIdResponse)(nil),                // 3: user.v1.GetUserByIdResponse
+	(*GetUserProfileRequest)(nil),              // 4: user.v1.GetUserProfileRequest
+	(*GetUserProfileResponse)(nil),             // 5: user.v1.GetUserProfileResponse
+	(*UpdateUserProfileRequest)(nil),           // 6: user.v1.UpdateUserProfileRequest
+	(*UpdateUserProfileResponse)(nil),          // 7: user.v1.UpdateUserProfileResponse
+	(*UserAggregate)(nil),                      // 8: user.v1.UserAggregate
+	(*User)(nil),                               // 9: user.v1.User
+	(*UserProfile)(nil),                        // 10: user.v1.UserProfile
+	(*UserSettings)(nil),                       // 11: user.v1.UserSettings
+	(*UserReputation)(nil),                     // 12: user.v1.UserReputation
+	(*UpdateUserSettingsRequest)(nil),          // 13: user.v1.UpdateUserSettingsRequest
+	(*UpdateUserSettingsResponse)(nil),         // 14: user.v1.UpdateUserSettingsResponse
+	(*GrantUserRoleRequest)(nil),               // 15: user.v1.GrantUserRoleRequest
+	(*GrantUserRoleResponse)(nil),              // 16: user.v1.GrantUserRoleResponse
+	(*ListPublicProfilesRequest)(nil),          // 17: user.v1.ListPublicProfilesRequest
+	(*ListPublicProfilesResponse)(nil),         // 18: user.v1.ListPublicProfilesResponse
+	(*PublicProfile)(nil),                      // 19: user.v1.PublicProfile
+	(*GetPublicProfilesByUserIdsRequest)(nil),  // 20: user.v1.GetPublicProfilesByUserIdsRequest
+	(*GetPublicProfilesByUserIdsResponse)(nil), // 21: user.v1.GetPublicProfilesByUserIdsResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
 	8,  // 0: user.v1.GetOrCreateUserBySubjectResponse.aggregate:type_name -> user.v1.UserAggregate
@@ -1660,25 +1755,28 @@ var file_user_v1_user_proto_depIdxs = []int32{
 	12, // 7: user.v1.UserAggregate.reputation:type_name -> user.v1.UserReputation
 	11, // 8: user.v1.UpdateUserSettingsResponse.settings:type_name -> user.v1.UserSettings
 	19, // 9: user.v1.ListPublicProfilesResponse.items:type_name -> user.v1.PublicProfile
-	0,  // 10: user.v1.UserService.GetOrCreateUserBySubject:input_type -> user.v1.GetOrCreateUserBySubjectRequest
-	2,  // 11: user.v1.UserService.GetUserById:input_type -> user.v1.GetUserByIdRequest
-	4,  // 12: user.v1.UserService.GetUserProfile:input_type -> user.v1.GetUserProfileRequest
-	6,  // 13: user.v1.UserService.UpdateUserProfile:input_type -> user.v1.UpdateUserProfileRequest
-	13, // 14: user.v1.UserService.UpdateUserSettings:input_type -> user.v1.UpdateUserSettingsRequest
-	15, // 15: user.v1.UserService.GrantUserRole:input_type -> user.v1.GrantUserRoleRequest
-	17, // 16: user.v1.UserService.ListPublicProfiles:input_type -> user.v1.ListPublicProfilesRequest
-	1,  // 17: user.v1.UserService.GetOrCreateUserBySubject:output_type -> user.v1.GetOrCreateUserBySubjectResponse
-	3,  // 18: user.v1.UserService.GetUserById:output_type -> user.v1.GetUserByIdResponse
-	5,  // 19: user.v1.UserService.GetUserProfile:output_type -> user.v1.GetUserProfileResponse
-	7,  // 20: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
-	14, // 21: user.v1.UserService.UpdateUserSettings:output_type -> user.v1.UpdateUserSettingsResponse
-	16, // 22: user.v1.UserService.GrantUserRole:output_type -> user.v1.GrantUserRoleResponse
-	18, // 23: user.v1.UserService.ListPublicProfiles:output_type -> user.v1.ListPublicProfilesResponse
-	17, // [17:24] is the sub-list for method output_type
-	10, // [10:17] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	19, // 10: user.v1.GetPublicProfilesByUserIdsResponse.items:type_name -> user.v1.PublicProfile
+	0,  // 11: user.v1.UserService.GetOrCreateUserBySubject:input_type -> user.v1.GetOrCreateUserBySubjectRequest
+	2,  // 12: user.v1.UserService.GetUserById:input_type -> user.v1.GetUserByIdRequest
+	4,  // 13: user.v1.UserService.GetUserProfile:input_type -> user.v1.GetUserProfileRequest
+	6,  // 14: user.v1.UserService.UpdateUserProfile:input_type -> user.v1.UpdateUserProfileRequest
+	13, // 15: user.v1.UserService.UpdateUserSettings:input_type -> user.v1.UpdateUserSettingsRequest
+	15, // 16: user.v1.UserService.GrantUserRole:input_type -> user.v1.GrantUserRoleRequest
+	17, // 17: user.v1.UserService.ListPublicProfiles:input_type -> user.v1.ListPublicProfilesRequest
+	20, // 18: user.v1.UserService.GetPublicProfilesByUserIds:input_type -> user.v1.GetPublicProfilesByUserIdsRequest
+	1,  // 19: user.v1.UserService.GetOrCreateUserBySubject:output_type -> user.v1.GetOrCreateUserBySubjectResponse
+	3,  // 20: user.v1.UserService.GetUserById:output_type -> user.v1.GetUserByIdResponse
+	5,  // 21: user.v1.UserService.GetUserProfile:output_type -> user.v1.GetUserProfileResponse
+	7,  // 22: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
+	14, // 23: user.v1.UserService.UpdateUserSettings:output_type -> user.v1.UpdateUserSettingsResponse
+	16, // 24: user.v1.UserService.GrantUserRole:output_type -> user.v1.GrantUserRoleResponse
+	18, // 25: user.v1.UserService.ListPublicProfiles:output_type -> user.v1.ListPublicProfilesResponse
+	21, // 26: user.v1.UserService.GetPublicProfilesByUserIds:output_type -> user.v1.GetPublicProfilesByUserIdsResponse
+	19, // [19:27] is the sub-list for method output_type
+	11, // [11:19] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_user_proto_init() }
@@ -1694,7 +1792,7 @@ func file_user_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

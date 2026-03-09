@@ -1,0 +1,231 @@
+syntax = "proto3";
+
+package guide.v1;
+
+option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/guide/v1;guidev1";
+
+service GuideService {
+  rpc GetOrCreateGuideProfile(GetOrCreateGuideProfileRequest) returns (GetOrCreateGuideProfileResponse);
+  rpc GetGuideProfileById(GetGuideProfileByIdRequest) returns (GetGuideProfileByIdResponse);
+  rpc GetGuideProfileByUserId(GetGuideProfileByUserIdRequest) returns (GetGuideProfileByUserIdResponse);
+  rpc UpdateGuideProfile(UpdateGuideProfileRequest) returns (UpdateGuideProfileResponse);
+  rpc CreateVerificationRequest(CreateVerificationRequestRequest) returns (CreateVerificationRequestResponse);
+  rpc AttachVerificationDocument(AttachVerificationDocumentRequest) returns (AttachVerificationDocumentResponse);
+  rpc ListPublicGuides(ListPublicGuidesRequest) returns (ListPublicGuidesResponse);
+  rpc ApproveVerificationRequest(ApproveVerificationRequestRequest) returns (ApproveVerificationRequestResponse);
+  rpc RejectVerificationRequest(RejectVerificationRequestRequest) returns (RejectVerificationRequestResponse);
+  rpc SuspendGuideProfile(SuspendGuideProfileRequest) returns (SuspendGuideProfileResponse);
+  rpc ActivateGuideProfile(ActivateGuideProfileRequest) returns (ActivateGuideProfileResponse);
+  rpc ListPendingVerificationRequests(ListPendingVerificationRequestsRequest) returns (ListPendingVerificationRequestsResponse);
+}
+
+message GetOrCreateGuideProfileRequest {
+  string user_id = 1;
+  string type = 2;
+}
+
+message GetOrCreateGuideProfileResponse {
+  GuideAggregate aggregate = 1;
+}
+
+message GetGuideProfileByIdRequest {
+  string guide_profile_id = 1;
+}
+
+message GetGuideProfileByIdResponse {
+  GuideAggregate aggregate = 1;
+}
+
+message GetGuideProfileByUserIdRequest {
+  string user_id = 1;
+}
+
+message GetGuideProfileByUserIdResponse {
+  GuideAggregate aggregate = 1;
+}
+
+message UpdateGuideProfileRequest {
+  string guide_profile_id = 1;
+  string headline = 2;
+  string about = 3;
+  optional int32 experience_years = 4;
+  string base_city_id = 5;
+  optional bool is_private_guide_available = 6;
+  optional bool is_activity_host_available = 7;
+  optional bool is_tour_guide_available = 8;
+  repeated GuideLanguageInput languages = 9;
+  repeated GuideSpecializationInput specializations = 10;
+}
+
+message UpdateGuideProfileResponse {
+  GuideAggregate aggregate = 1;
+}
+
+message CreateVerificationRequestRequest {
+  string guide_profile_id = 1;
+  string comment = 2;
+}
+
+message CreateVerificationRequestResponse {
+  VerificationRequest verification_request = 1;
+}
+
+message AttachVerificationDocumentRequest {
+  string verification_request_id = 1;
+  string file_id = 2;
+  string document_type = 3;
+  string created_by_user_id = 4;
+}
+
+message AttachVerificationDocumentResponse {
+  GuideDocument document = 1;
+}
+
+message ListPublicGuidesRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message ListPublicGuidesResponse {
+  repeated PublicGuideCard items = 1;
+}
+
+message GuideAggregate {
+  GuideProfile profile = 1;
+  VerificationRequest verification_request = 2;
+  repeated GuideDocument documents = 3;
+  repeated GuideLanguage languages = 4;
+  repeated GuideSpecialization specializations = 5;
+}
+
+message GuideProfile {
+  string id = 1;
+  string user_id = 2;
+  string type = 3;
+  string status = 4;
+  string headline = 5;
+  string about = 6;
+  int32 experience_years = 7;
+  string base_city_id = 8;
+  bool is_private_guide_available = 9;
+  bool is_activity_host_available = 10;
+  bool is_tour_guide_available = 11;
+  double rating_avg = 12;
+  int32 reviews_count = 13;
+  string created_at = 14;
+  string updated_at = 15;
+}
+
+message VerificationRequest {
+  string id = 1;
+  string guide_profile_id = 2;
+  string status = 3;
+  string comment = 4;
+  string review_comment = 5;
+  string submitted_at = 6;
+  string reviewed_at = 7;
+  string reviewed_by = 8;
+  string created_at = 9;
+  string updated_at = 10;
+}
+
+message GuideDocument {
+  string id = 1;
+  string verification_request_id = 2;
+  string file_id = 3;
+  string document_type = 4;
+  string created_at = 5;
+}
+
+message GuideLanguage {
+  string id = 1;
+  string guide_profile_id = 2;
+  string language_code = 3;
+  string proficiency_level = 4;
+  string created_at = 5;
+}
+
+message GuideSpecialization {
+  string id = 1;
+  string guide_profile_id = 2;
+  string specialization_code = 3;
+  string created_at = 4;
+}
+
+message GuideLanguageInput {
+  string language_code = 1;
+  string proficiency_level = 2;
+}
+
+message GuideSpecializationInput {
+  string specialization_code = 1;
+}
+
+message ApproveVerificationRequestRequest {
+  string verification_request_id = 1;
+  string reviewer_id = 2;
+  string review_comment = 3;
+}
+
+message ApproveVerificationRequestResponse {
+  GuideAggregate aggregate = 1;
+}
+
+message RejectVerificationRequestRequest {
+  string verification_request_id = 1;
+  string reviewer_id = 2;
+  string review_comment = 3;
+}
+
+message RejectVerificationRequestResponse {
+  GuideAggregate aggregate = 1;
+}
+
+message SuspendGuideProfileRequest {
+  string guide_profile_id = 1;
+}
+
+message SuspendGuideProfileResponse {
+  GuideAggregate aggregate = 1;
+}
+
+message ActivateGuideProfileRequest {
+  string guide_profile_id = 1;
+}
+
+message ActivateGuideProfileResponse {
+  GuideAggregate aggregate = 1;
+}
+
+message ListPendingVerificationRequestsRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message ListPendingVerificationRequestsResponse {
+  repeated VerificationQueueItem items = 1;
+}
+
+message VerificationQueueItem {
+  string id = 1;
+  string guide_profile_id = 2;
+  string status = 3;
+  string comment = 4;
+  string submitted_at = 5;
+  string created_at = 6;
+}
+
+message PublicGuideCard {
+  GuideProfile guide_profile = 1;
+  PublicUserProfile user_profile = 2;
+}
+
+message PublicUserProfile {
+  string user_id = 1;
+  string display_name = 2;
+  string avatar_file_id = 3;
+  string country_code = 4;
+  string locale = 5;
+  string timezone = 6;
+  bool is_public = 7;
+}

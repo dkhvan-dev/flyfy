@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_GetOrCreateUserBySubject_FullMethodName = "/user.v1.UserService/GetOrCreateUserBySubject"
-	UserService_GetUserById_FullMethodName              = "/user.v1.UserService/GetUserById"
-	UserService_GetUserProfile_FullMethodName           = "/user.v1.UserService/GetUserProfile"
-	UserService_UpdateUserProfile_FullMethodName        = "/user.v1.UserService/UpdateUserProfile"
-	UserService_UpdateUserSettings_FullMethodName       = "/user.v1.UserService/UpdateUserSettings"
-	UserService_GrantUserRole_FullMethodName            = "/user.v1.UserService/GrantUserRole"
-	UserService_ListPublicProfiles_FullMethodName       = "/user.v1.UserService/ListPublicProfiles"
+	UserService_GetOrCreateUserBySubject_FullMethodName   = "/user.v1.UserService/GetOrCreateUserBySubject"
+	UserService_GetUserById_FullMethodName                = "/user.v1.UserService/GetUserById"
+	UserService_GetUserProfile_FullMethodName             = "/user.v1.UserService/GetUserProfile"
+	UserService_UpdateUserProfile_FullMethodName          = "/user.v1.UserService/UpdateUserProfile"
+	UserService_UpdateUserSettings_FullMethodName         = "/user.v1.UserService/UpdateUserSettings"
+	UserService_GrantUserRole_FullMethodName              = "/user.v1.UserService/GrantUserRole"
+	UserService_ListPublicProfiles_FullMethodName         = "/user.v1.UserService/ListPublicProfiles"
+	UserService_GetPublicProfilesByUserIds_FullMethodName = "/user.v1.UserService/GetPublicProfilesByUserIds"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -39,6 +40,7 @@ type UserServiceClient interface {
 	UpdateUserSettings(ctx context.Context, in *UpdateUserSettingsRequest, opts ...grpc.CallOption) (*UpdateUserSettingsResponse, error)
 	GrantUserRole(ctx context.Context, in *GrantUserRoleRequest, opts ...grpc.CallOption) (*GrantUserRoleResponse, error)
 	ListPublicProfiles(ctx context.Context, in *ListPublicProfilesRequest, opts ...grpc.CallOption) (*ListPublicProfilesResponse, error)
+	GetPublicProfilesByUserIds(ctx context.Context, in *GetPublicProfilesByUserIdsRequest, opts ...grpc.CallOption) (*GetPublicProfilesByUserIdsResponse, error)
 }
 
 type userServiceClient struct {
@@ -119,6 +121,16 @@ func (c *userServiceClient) ListPublicProfiles(ctx context.Context, in *ListPubl
 	return out, nil
 }
 
+func (c *userServiceClient) GetPublicProfilesByUserIds(ctx context.Context, in *GetPublicProfilesByUserIdsRequest, opts ...grpc.CallOption) (*GetPublicProfilesByUserIdsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPublicProfilesByUserIdsResponse)
+	err := c.cc.Invoke(ctx, UserService_GetPublicProfilesByUserIds_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -130,6 +142,7 @@ type UserServiceServer interface {
 	UpdateUserSettings(context.Context, *UpdateUserSettingsRequest) (*UpdateUserSettingsResponse, error)
 	GrantUserRole(context.Context, *GrantUserRoleRequest) (*GrantUserRoleResponse, error)
 	ListPublicProfiles(context.Context, *ListPublicProfilesRequest) (*ListPublicProfilesResponse, error)
+	GetPublicProfilesByUserIds(context.Context, *GetPublicProfilesByUserIdsRequest) (*GetPublicProfilesByUserIdsResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -160,6 +173,9 @@ func (UnimplementedUserServiceServer) GrantUserRole(context.Context, *GrantUserR
 }
 func (UnimplementedUserServiceServer) ListPublicProfiles(context.Context, *ListPublicProfilesRequest) (*ListPublicProfilesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPublicProfiles not implemented")
+}
+func (UnimplementedUserServiceServer) GetPublicProfilesByUserIds(context.Context, *GetPublicProfilesByUserIdsRequest) (*GetPublicProfilesByUserIdsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPublicProfilesByUserIds not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -308,6 +324,24 @@ func _UserService_ListPublicProfiles_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_GetPublicProfilesByUserIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPublicProfilesByUserIdsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetPublicProfilesByUserIds(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetPublicProfilesByUserIds_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetPublicProfilesByUserIds(ctx, req.(*GetPublicProfilesByUserIdsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -342,6 +376,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPublicProfiles",
 			Handler:    _UserService_ListPublicProfiles_Handler,
+		},
+		{
+			MethodName: "GetPublicProfilesByUserIds",
+			Handler:    _UserService_GetPublicProfilesByUserIds_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -578,3 +578,52 @@ func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, of
 
 	return result, rows.Err()
 }
+
+func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]*model.UserProfile, error) {
+	if len(userIDs) == 0 {
+		return []*model.UserProfile{}, nil
+	}
+
+	const query = `
+		SELECT
+			user_id, first_name, last_name, display_name, bio, birth_date,
+			avatar_file_id, city_id, country_code, locale, timezone, currency,
+			is_public, created_at, updated_at
+		FROM user_profiles
+		WHERE is_public = TRUE
+		  AND user_id = ANY($1)
+	`
+
+	rows, err := r.pool.Query(ctx, query, userIDs)
+	if err != nil {
+		return nil, fmt.Errorf("query public profiles by user ids: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*model.UserProfile
+	for rows.Next() {
+		var item model.UserProfile
+		if err = rows.Scan(
+			&item.UserID,
+			&item.FirstName,
+			&item.LastName,
+			&item.DisplayName,
+			&item.Bio,
+			&item.BirthDate,
+			&item.AvatarFileID,
+			&item.CityID,
+			&item.CountryCode,
+			&item.Locale,
+			&item.Timezone,
+			&item.Currency,
+			&item.IsPublic,
+			&item.CreatedAt,
+			&item.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan public profile by user ids: %w", err)
+		}
+		result = append(result, &item)
+	}
+
+	return result, rows.Err()
+}

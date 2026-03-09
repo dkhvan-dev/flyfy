@@ -324,3 +324,19 @@ func (u *UserUseCase) ListPublicProfiles(
 
 	return items, nil
 }
+
+func (u *UserUseCase) GetPublicProfilesByUserIDs(
+	ctx context.Context,
+	userIDs []uuid.UUID,
+) ([]*model.UserProfile, error) {
+	if len(userIDs) == 0 {
+		return []*model.UserProfile{}, nil
+	}
+
+	items, err := u.repo.GetPublicProfilesByUserIDs(ctx, userIDs)
+	if err != nil {
+		return nil, fmt.Errorf("get public profiles by user ids: %w", err)
+	}
+
+	return items, nil
+}

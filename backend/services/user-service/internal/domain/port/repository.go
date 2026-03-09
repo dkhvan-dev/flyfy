@@ -34,4 +34,5 @@ type UserRepository interface {
 	HasRole(ctx context.Context, userID uuid.UUID, role enum.SystemRole) (bool, error)
 
 	ListPublicProfiles(ctx context.Context, limit int, offset int) ([]*model.UserProfile, error)
+	GetPublicProfilesByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]*model.UserProfile, error)
 }

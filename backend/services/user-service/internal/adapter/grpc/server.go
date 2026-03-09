@@ -340,6 +340,49 @@ func (s *Server) ListPublicProfiles(
 	return resp, nil
 }
 
+func optionalBoolPtr(v *bool) *bool {
+	if v == nil {
+		return nil
+	}
+	b := *v
+	return &b
+}
+
+func (s *Server) GetPublicProfilesByUserIds(
+	ctx context.Context,
+	req *userv1.GetPublicProfilesByUserIdsRequest,
+) (*userv1.GetPublicProfilesByUserIdsResponse, error) {
+	rawIDs := req.GetUserIds()
+	userIDs := make([]uuid.UUID, 0, len(rawIDs))
+
+	for _, raw := range rawIDs {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+
+		parsed, err := uuid.Parse(raw)
+		if err != nil {
+			return nil, mapError(app.ErrInvalidUserID)
+		}
+		userIDs = append(userIDs, parsed)
+	}
+
+	items, err := s.useCase.GetPublicProfilesByUserIDs(ctx, userIDs)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	resp := &userv1.GetPublicProfilesByUserIdsResponse{
+		Items: make([]*userv1.PublicProfile, 0, len(items)),
+	}
+	for _, item := range items {
+		resp.Items = append(resp.Items, toProtoPublicProfile(item))
+	}
+
+	return resp, nil
+}
+
 func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
 	var avatarFileID string
 	if profile.AvatarFileID != nil {
@@ -356,12 +399,4 @@ func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
 		Timezone:     profile.Timezone,
 		IsPublic:     profile.IsPublic,
 	}
-}
-
-func optionalBoolPtr(v *bool) *bool {
-	if v == nil {
-		return nil
-	}
-	b := *v
-	return &b
 }
