@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlyFy Activity Service Map v2</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg2: #121937;
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel-strong: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: #eef3ff;
+      --muted: #aeb8d0;
+      --cyan: #55d6ff;
+      --emerald: #45d69c;
+      --amber: #ffbf47;
+      --violet: #a78bfa;
+      --rose: #fb7185;
+      --yellow: #ffd54a;
+      --fuchsia: #e879f9;
+      --slate: #94a3b8;
+      --blue: #60a5fa;
+      --green: #4ade80;
+      --red: #f87171;
+      --shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(85, 214, 255, 0.14), transparent 24%),
+        radial-gradient(circle at top right, rgba(167, 139, 250, 0.12), transparent 20%),
+        linear-gradient(180deg, var(--bg2), var(--bg));
+    }
+
+    .container {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .hero {
+      margin-bottom: 26px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(85, 214, 255, 0.35);
+      color: var(--cyan);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      background: rgba(85, 214, 255, 0.08);
+    }
+
+    h1 {
+      margin: 14px 0 12px;
+      font-size: clamp(34px, 4.5vw, 58px);
+      line-height: 1.03;
+      letter-spacing: -0.03em;
+    }
+
+    .lead {
+      max-width: 1080px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.75;
+      margin: 0;
+    }
+
+    .section-title {
+      margin: 30px 0 14px;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .tone-cyan {
+      background: linear-gradient(180deg, rgba(85, 214, 255, 0.12), rgba(255, 255, 255, 0.05));
+      border-color: rgba(85, 214, 255, 0.26);
+    }
+
+    .tone-emerald {
+      background: linear-gradient(180deg, rgba(69, 214, 156, 0.12), rgba(255, 255, 255, 0.05));
+      border-color: rgba(69, 214, 156, 0.26);
+    }
+
+    .tone-amber {
+      background: linear-gradient(180deg, rgba(255, 191, 71, 0.12), rgba(255, 255, 255, 0.05));
+      border-color: rgba(255, 191, 71, 0.26);
+    }
+
+    .tone-violet {
+      background: linear-gradient(180deg, rgba(167, 139, 250, 0.12), rgba(255, 255, 255, 0.05));
+      border-color: rgba(167, 139, 250, 0.26);
+    }
+
+    .tone-rose {
+      background: linear-gradient(180deg, rgba(251, 113, 133, 0.12), rgba(255, 255, 255, 0.05));
+      border-color: rgba(251, 113, 133, 0.26);
+    }
+
+    .tone-yellow {
+      background: linear-gradient(180deg, rgba(255, 213, 74, 0.12), rgba(255, 255, 255, 0.05));
+      border-color: rgba(255, 213, 74, 0.26);
+    }
+
+    .tone-fuchsia {
+      background: linear-gradient(180deg, rgba(232, 121, 249, 0.12), rgba(255, 255, 255, 0.05));
+      border-color: rgba(232, 121, 249, 0.26);
+    }
+
+    .tone-slate {
+      background: linear-gradient(180deg, rgba(148, 163, 184, 0.12), rgba(255, 255, 255, 0.05));
+      border-color: rgba(148, 163, 184, 0.26);
+    }
+
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 20px;
+    }
+
+    .card h3 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    .pill-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .pill {
+      border-radius: 16px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      color: #eef6ff;
+      font-size: 14px;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .step {
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      color: #eff8ff;
+      background: rgba(96, 165, 250, 0.10);
+      border: 1px solid rgba(96, 165, 250, 0.22);
+      white-space: nowrap;
+    }
+
+    .arrow {
+      color: #74829b;
+    }
+
+    .list {
+      margin: 0;
+      padding-left: 20px;
+      color: #edf3ff;
+      line-height: 1.75;
+    }
+
+    .list li+li {
+      margin-top: 8px;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .stack-item {
+      border-radius: 18px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #eef3fb;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.green {
+      background: var(--green);
+    }
+
+    .dot.yellow {
+      background: var(--yellow);
+    }
+
+    .dot.red {
+      background: var(--red);
+    }
+
+    .dot.blue {
+      background: var(--blue);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .footer-space {
+      height: 8px;
+    }
+
+    @media (max-width: 1260px) {
+      .grid-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .container {
+        padding: 18px;
+      }
+
+      .grid-4 {
+        grid-template-columns: 1fr;
+      }
+
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <section class="hero">
+      <div class="badge">FlyFy · Activity Service Map v2</div>
+      <h1>Новая карта сервиса активностей</h1>
+      <p class="lead">
+        Карта собрана с учётом всех замечаний: история участия и проведения, повтор активности, старт/завершение/отмена,
+        ограничение минимального и максимального числа участников, умный поиск, антиспам, country mismatch policy,
+        модерация, блокировки критических секций, ожидание подтверждения участия и будущая денежная модель.
+      </p>
+      <div class="legend">
+        <span><i class="dot blue"></i> core домен</span>
+        <span><i class="dot green"></i> участие и проведение</span>
+        <span><i class="dot yellow"></i> деньги и ограничения</span>
+        <span><i class="dot red"></i> риск, модерация, антиспам</span>
+      </div>
+    </section>
+
+    <h2 class="section-title">1. Доменные блоки</h2>
+    <section class="grid-4">
+      <article class="card tone-cyan">
+        <h2>Activity Core</h2>
+        <div class="pill-list">
+          <div class="pill">title, description</div>
+          <div class="pill">format: OFFLINE / ONLINE / HYBRID</div>
+          <div class="pill">status, visibility, joinMode</div>
+          <div class="pill">startAt, endAt, timezone</div>
+          <div class="pill">registrationDeadline</div>
+          <div class="pill">sourceActivityId (duplicate)</div>
+        </div>
+        <div class="note">Базовая сущность активности, которую можно планировать, публиковать, повторять и архивировать.
+        </div>
+      </article>
+
+      <article class="card tone-emerald">
+        <h2>Participation & History</h2>
+        <div class="pill-list">
+          <div class="pill">activity_participants</div>
+          <div class="pill">participant_status_history</div>
+          <div class="pill">attendance confirmation</div>
+          <div class="pill">check-in / no-show / attended</div>
+          <div class="pill">hosted_activities history</div>
+          <div class="pill">joined_activities history</div>
+        </div>
+        <div class="note">История нужна и для участника, и для организатора: записался, пришёл, не пришёл, отменил,
+          провёл.</div>
+      </article>
+
+      <article class="card tone-amber">
+        <h2>Capacity & Locking</h2>
+        <div class="pill-list">
+          <div class="pill">minParticipants</div>
+          <div class="pill">maxParticipants / UNLIMITED</div>
+          <div class="pill">waitlist</div>
+          <div class="pill">slot reservation</div>
+          <div class="pill">SELECT ... FOR UPDATE</div>
+          <div class="pill">unique active participant constraint</div>
+        </div>
+        <div class="note">Защита от кейса, когда 4 человека одновременно пытаются занять 2 места.</div>
+      </article>
+
+      <article class="card tone-violet">
+        <h2>Search & Discovery</h2>
+        <div class="pill-list">
+          <div class="pill">full-text search</div>
+          <div class="pill">category + tags</div>
+          <div class="pill">country / city / nearby</div>
+          <div class="pill">date / price / format filters</div>
+          <div class="pill">smart ranking</div>
+          <div class="pill">recommended repeats</div>
+        </div>
+        <div class="note">Поиск должен быть не только фильтрами, но и умной выдачей по истории и профилю пользователя.
+        </div>
+      </article>
+
+      <article class="card tone-yellow">
+        <h2>Commerce</h2>
+        <div class="pill-list">
+          <div class="pill">FREE / PAID / DEPOSIT</div>
+          <div class="pill">priceAmount, currency</div>
+          <div class="pill">price lock rules</div>
+          <div class="pill">payment hold / escrow</div>
+          <div class="pill">refund policy</div>
+          <div class="pill">host payout + platform fee</div>
+        </div>
+        <div class="note">Поддержка платных офлайн/онлайн активностей, вебинаров, аренды помещения и расходов
+          организатора.</div>
+      </article>
+
+      <article class="card tone-fuchsia">
+        <h2>Communication</h2>
+        <div class="pill-list">
+          <div class="pill">activity chat</div>
+          <div class="pill">system messages</div>
+          <div class="pill">reminders</div>
+          <div class="pill">attendance prompt: приду / не приду</div>
+          <div class="pill">change notifications</div>
+          <div class="pill">post-activity feedback</div>
+        </div>
+        <div class="note">Чат и уведомления должны быть привязаны к жизненному циклу активности и факту участия.</div>
+      </article>
+
+      <article class="card tone-rose">
+        <h2>Moderation & Anti-Abuse</h2>
+        <div class="pill-list">
+          <div class="pill">post-moderation by default</div>
+          <div class="pill">risk-based pre-review</div>
+          <div class="pill">rate limits per user</div>
+          <div class="pill">blocked URL masks</div>
+          <div class="pill">content similarity checks</div>
+          <div class="pill">future AI moderation</div>
+        </div>
+        <div class="note">Не тотальная премодерация, а risk-based контроль: платные, массовые и подозрительные
+          активности отправляются в review.</div>
+      </article>
+
+      <article class="card tone-slate">
+        <h2>Audit & Observability</h2>
+        <div class="pill-list">
+          <div class="pill">activity_event_log</div>
+          <div class="pill">participant_event_log</div>
+          <div class="pill">moderation_event_log</div>
+          <div class="pill">payment event log</div>
+          <div class="pill">search analytics</div>
+          <div class="pill">host reliability score</div>
+        </div>
+        <div class="note">В спорных и денежных сценариях нельзя жить только на current status. Нужна полная история
+          событий.</div>
+      </article>
+    </section>
+
+    <h2 class="section-title">2. Жизненные циклы</h2>
+    <section class="grid-3">
+      <article class="card">
+        <h3>Жизненный цикл активности</h3>
+        <div class="flow">
+          <div class="step">Draft</div>
+          <div class="arrow">→</div>
+          <div class="step">Review Required / Auto Publish</div>
+          <div class="arrow">→</div>
+          <div class="step">Enrollment Open</div>
+          <div class="arrow">→</div>
+          <div class="step">Full / Waiting List</div>
+          <div class="arrow">→</div>
+          <div class="step">Started</div>
+          <div class="arrow">→</div>
+          <div class="step">Completed / Cancelled</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>Жизненный цикл участника</h3>
+        <div class="flow">
+          <div class="step">Join Request / Direct Join</div>
+          <div class="arrow">→</div>
+          <div class="step">Approved / Waitlisted</div>
+          <div class="arrow">→</div>
+          <div class="step">Pending Payment / Confirmed</div>
+          <div class="arrow">→</div>
+          <div class="step">Attending Confirmed</div>
+          <div class="arrow">→</div>
+          <div class="step">Attended / No-show / Cancelled</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>Жизненный цикл денег</h3>
+        <div class="flow">
+          <div class="step">Reserve Slot</div>
+          <div class="arrow">→</div>
+          <div class="step">Hold / Payment Intent</div>
+          <div class="arrow">→</div>
+          <div class="step">Captured / Escrow</div>
+          <div class="arrow">→</div>
+          <div class="step">Completed</div>
+          <div class="arrow">→</div>
+          <div class="step">Payout / Refund</div>
+        </div>
+      </article>
+    </section>
+
+    <h2 class="section-title">3. Правила и инварианты</h2>
+    <section class="grid-2">
+      <article class="card">
+        <h3>Критические бизнес-правила</h3>
+        <ul class="list">
+          <li>Дата начала активности должна быть не раньше чем через 1 час от текущего времени.</li>
+          <li>Если активность LIMITED, то число занятых активных слотов никогда не должно превышать maxParticipants.
+          </li>
+          <li>Если minParticipants задан, он не может превышать maxParticipants.</li>
+          <li>FREE → PAID и изменение цены после появления подтверждённых / оплаченных участников запрещено.</li>
+          <li>Критические изменения после публикации требуют уведомления участников, а часть изменений — полного
+            запрета.</li>
+          <li>Только автор может дублировать проведённую активность в новую.</li>
+          <li>Удаление активности заменяется на cancel / archive, чтобы не терять историю.</li>
+          <li>Создание, join, cancel, waitlist promotion и смена capacity идут только в транзакциях под блокировкой.
+          </li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h3>Антиспам и ограничения</h3>
+        <div class="stack">
+          <div class="stack-item">Лимит на создание новых активностей за 1 час / 24 часа.</div>
+          <div class="stack-item">Лимит на число одновременно опубликованных будущих активностей.</div>
+          <div class="stack-item">Content similarity check для почти одинаковых title / description / links / location.
+          </div>
+          <div class="stack-item">Blocked URL masks: startsWith / contains / regex + разбор scheme/host/path.</div>
+          <div class="stack-item">Risk-based post-moderation и, в будущем, AI-модерация текста, ссылок и изображений.
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <h2 class="section-title">4. География и eligibility</h2>
+    <section class="grid-3">
+      <article class="card">
+        <h3>Offline / Online политика</h3>
+        <div class="stack">
+          <div class="stack-item">ONLINE: country mismatch не блокирует участие.</div>
+          <div class="stack-item">OFFLINE: учитываем страну, город, расстояние и время до старта.</div>
+          <div class="stack-item">HYBRID: обе политики, в зависимости от выбранного режима участия.</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>Country mismatch policy</h3>
+        <div class="stack">
+          <div class="stack-item">Если пользователь в другой стране и до старта мало времени — auto join блокируется.
+          </div>
+          <div class="stack-item">Сценарий переводится в manual approval или показывается предупреждение.</div>
+          <div class="stack-item">Для доверенных пользователей политика может быть мягче.</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>Nearby-функции отдельно</h3>
+        <div class="stack">
+          <div class="stack-item">Текущая геолокация устройства используется отдельно для nearby search.</div>
+          <div class="stack-item">Профильная локация не должна жёстко подменяться GPS без подтверждения пользователя.
+          </div>
+          <div class="stack-item">Timezone — автоматически с устройства, country/city — optional suggestion с
+            подтверждением.</div>
+        </div>
+      </article>
+    </section>
+
+    <h2 class="section-title">5. Критические секции и блокировки</h2>
+    <section class="grid-2">
+      <article class="card tone-amber">
+        <h3>Где нужны блокировки</h3>
+        <ul class="list">
+          <li>Join activity</li>
+          <li>Leave / cancel participation</li>
+          <li>Waitlist → approved promotion</li>
+          <li>Change maxParticipants</li>
+          <li>Start / cancel / complete activity</li>
+          <li>Payment reservation timeout release</li>
+        </ul>
+      </article>
+
+      <article class="card tone-amber">
+        <h3>Техническая стратегия</h3>
+        <div class="stack">
+          <div class="stack-item">PostgreSQL transaction + SELECT ... FOR UPDATE на activity / capacity row.</div>
+          <div class="stack-item">Unique constraint на активное участие пользователя в активности.</div>
+          <div class="stack-item">Reservation statuses для платных активностей: PENDING_PAYMENT / CONFIRMED / EXPIRED.
+          </div>
+          <div class="stack-item">Idempotency key или защита от double submit / retry.</div>
+        </div>
+      </article>
+    </section>
+
+    <h2 class="section-title">6. Что должно быть в профиле пользователя</h2>
+    <section class="grid-3">
+      <article class="card">
+        <h3>Я записался</h3>
+        <div class="note">Все активности, где пользователь был участником: pending, approved, attended, cancelled,
+          no-show.</div>
+      </article>
+      <article class="card">
+        <h3>Я посетил</h3>
+        <div class="note">Только фактически посещённые активности. Полезно для trust, рекомендаций и достижений.</div>
+      </article>
+      <article class="card">
+        <h3>Я провёл</h3>
+        <div class="note">Активности, где пользователь был автором/организатором: проведённые, отменённые,
+          дублированные.</div>
+      </article>
+    </section>
+
+    <h2 class="section-title">7. Рекомендуемый порядок реализации</h2>
+    <section class="card">
+      <div class="mini-grid">
+        <div class="stack-item">1. Core activity schema + enums + migrations</div>
+        <div class="stack-item">2. Participation + waitlist + participant history</div>
+        <div class="stack-item">3. Execution control: start / complete / cancel + reasons</div>
+        <div class="stack-item">4. Concurrency / locking / capacity invariants</div>
+        <div class="stack-item">5. Search + filters + tags + geo</div>
+        <div class="stack-item">6. Notifications + attendance confirmations</div>
+        <div class="stack-item">7. Pricing + payment reservations + escrow</div>
+        <div class="stack-item">8. Moderation + anti-spam + blocked links + future AI checks</div>
+      </div>
+    </section>
+
+    <div class="footer-space"></div>
+  </div>
+</body>
+
+</html>

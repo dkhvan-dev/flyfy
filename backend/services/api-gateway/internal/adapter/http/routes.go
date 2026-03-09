@@ -77,6 +77,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RateLimitPerMinute: &filesLimit,
 			RewritePrefix:      "/v1/files/",
 		},
+		{
+			Name:               "activities",
+			Prefix:             apiPrefix + "/activities/",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "activity",
+			RateLimitPerMinute: &authLimit,
+			RewritePrefix:      "/v1/activities/",
+		},
 	}
 }
 

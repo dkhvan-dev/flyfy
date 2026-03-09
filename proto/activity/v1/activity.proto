@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package activity.v1;
+
+option go_package = "github.com/dkhvan-dev/flyfy/proto/gen/go/activity/v1;activityv1";
+
+service ActivityService {
+  rpc GetActivityById(GetActivityByIdRequest) returns (GetActivityByIdResponse);
+  rpc ListActivities(ListActivitiesRequest) returns (ListActivitiesResponse);
+
+  rpc JoinActivity(JoinActivityRequest) returns (JoinActivityResponse);
+  rpc LeaveActivity(LeaveActivityRequest) returns (LeaveActivityResponse);
+
+  rpc ApproveActivityModeration(ApproveActivityModerationRequest) returns (ApproveActivityModerationResponse);
+  rpc RejectActivityModeration(RejectActivityModerationRequest) returns (RejectActivityModerationResponse);
+}
+
+message Activity {
+  string id = 1;
+  string host_user_id = 2;
+  string source_activity_id = 3;
+
+  string title = 4;
+  string description = 5;
+
+  string format = 6;
+  string status = 7;
+  string visibility = 8;
+  string join_mode = 9;
+  string moderation_status = 10;
+
+  string category_slug = 11;
+  string language_code = 12;
+  string timezone = 13;
+
+  string start_at = 14;
+  string end_at = 15;
+  string registration_deadline = 16;
+
+  string capacity_type = 17;
+  int32 min_participants = 18;
+  int32 max_participants = 19;
+
+  string price_type = 20;
+  double price_amount = 21;
+  string currency = 22;
+  string price_locked_at = 23;
+
+  bool requires_profile_completion = 24;
+  bool requires_attendance_confirmation = 25;
+  string confirmation_deadline = 26;
+
+  string country_code = 27;
+  string city_name = 28;
+  string address_text = 29;
+  double latitude = 30;
+  double longitude = 31;
+  string map_url = 32;
+  string meeting_url = 33;
+
+  string cancellation_reason = 34;
+  string cancelled_at = 35;
+  string started_at = 36;
+  string completed_at = 37;
+  string published_at = 38;
+
+  int32 revision = 39;
+  string created_at = 40;
+  string updated_at = 41;
+}
+
+message ActivityParticipant {
+  string id = 1;
+  string activity_id = 2;
+  string user_id = 3;
+  string status = 4;
+
+  string joined_at = 5;
+  string approved_at = 6;
+  string waitlisted_at = 7;
+  string payment_due_at = 8;
+  string paid_at = 9;
+  string attendance_confirmed_at = 10;
+  string checked_in_at = 11;
+  string attended_at = 12;
+  string cancelled_at = 13;
+  string cancelled_by_user_id = 14;
+  string cancel_reason = 15;
+
+  string created_at = 16;
+  string updated_at = 17;
+}
+
+message GetActivityByIdRequest {
+  string activity_id = 1;
+}
+
+message GetActivityByIdResponse {
+  Activity activity = 1;
+}
+
+message ListActivitiesRequest {
+  string host_user_id = 1;
+  repeated string statuses = 2;
+  string category_slug = 3;
+  string country_code = 4;
+  string city_name = 5;
+  string language_code = 6;
+  string query = 7;
+  int32 limit = 8;
+  int32 offset = 9;
+}
+
+message ListActivitiesResponse {
+  repeated Activity items = 1;
+}
+
+message JoinActivityRequest {
+  string activity_id = 1;
+  string user_id = 2;
+}
+
+message JoinActivityResponse {
+  ActivityParticipant participant = 1;
+}
+
+message LeaveActivityRequest {
+  string activity_id = 1;
+  string user_id = 2;
+  string reason = 3;
+}
+
+message LeaveActivityResponse {
+  ActivityParticipant participant = 1;
+}
+
+message ApproveActivityModerationRequest {
+  string activity_id = 1;
+  string moderator_user_id = 2;
+}
+
+message ApproveActivityModerationResponse {
+  Activity activity = 1;
+}
+
+message RejectActivityModerationRequest {
+  string activity_id = 1;
+  string moderator_user_id = 2;
+}
+
+message RejectActivityModerationResponse {
+  Activity activity = 1;
+}

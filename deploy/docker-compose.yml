@@ -126,6 +126,31 @@ services:
       - flyfy-network
 
   # ============================================
+  # Activity PostgreSQL
+  # ============================================
+  activity-postgres:
+    image: postgres:17-alpine
+    container_name: activity-postgres
+    environment:
+      POSTGRES_DB: activity_service_db
+      POSTGRES_USER: activity_service
+      POSTGRES_PASSWORD: activity_secret_dev
+    ports:
+      - "5438:5432"
+    volumes:
+      - activity_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/006_activity_service.sh:/docker-entrypoint-initdb.d/006_activity_service.sh
+      - ../backend/services/activity-service/migrations:/migrations/activity-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U activity_service -d activity_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Redis
   # ============================================
   redis:
@@ -189,7 +214,7 @@ services:
     build:
       context: ..
       dockerfile: ./backend/services/token-service/Dockerfile
-    container_name: flyfy-token-service
+    container_name: token-service
     ports:
       - "50051:50051"
       - "8081:8081"
@@ -227,7 +252,7 @@ services:
     build:
       context: ..
       dockerfile: ./backend/services/auth-service/Dockerfile
-    container_name: flyfy-auth-service
+    container_name: auth-service
     ports:
       - "50052:50052"
       - "8082:8082"
@@ -271,7 +296,7 @@ services:
     build:
       context: ..
       dockerfile: ./backend/services/file-manager-service/Dockerfile
-    container_name: flyfy-file-manager-service
+    container_name: file-manager-service
     depends_on:
       file-manager-postgres:
         condition: service_healthy
@@ -325,7 +350,7 @@ services:
     build:
       context: ..
       dockerfile: ./backend/services/user-service/Dockerfile
-    container_name: flyfy-user-service
+    container_name: user-service
     depends_on:
       user-postgres:
         condition: service_healthy
@@ -374,7 +399,7 @@ services:
     build:
       context: ..
       dockerfile: ./backend/services/guide-service/Dockerfile
-    container_name: flyfy-guide-service
+    container_name: guide-service
     depends_on:
       guide-postgres:
         condition: service_healthy
@@ -418,6 +443,43 @@ services:
     restart: unless-stopped
     networks:
       - flyfy-network
+  
+  # ============================================
+  # Activity Service
+  # ============================================
+  activity-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/activity-service/Dockerfile
+    container_name: activity-service
+    depends_on:
+      activity-postgres:
+        condition: service_healthy
+    ports:
+      - "8086:8086"
+      - "9096:9096"
+    environment:
+      APP_NAME: activity-service
+      APP_ENV: development
+
+      HTTP_PORT: 8086
+      GRPC_PORT: 9096
+
+      DB_HOST: activity-postgres
+      DB_PORT: 5432
+      DB_NAME: activity_service_db
+      DB_USER: activity_service
+      DB_PASSWORD: activity_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 10
+      DB_MIN_CONNS: 2
+      DB_MAX_CONN_IDLE: 15m
+      DB_MAX_CONN_LIFETIME: 1h
+
+      LOG_LEVEL: debug
+    restart: unless-stopped
+    networks:
+      - flyfy-network
 
   # ============================================
   # API Gateway
@@ -426,7 +488,7 @@ services:
     build:
       context: ..
       dockerfile: ./backend/services/api-gateway/Dockerfile
-    container_name: flyfy-api-gateway
+    container_name: api-gateway
     depends_on:
       token-service:
         condition: service_started
@@ -492,3 +554,4 @@ volumes:
   file_manager_minio_data:
   user_postgres_data:
   guide_postgres_data:
+  activity_postgres_data:

@@ -1,0 +1,62 @@
+package enum
+
+type ParticipantStatus string
+
+const (
+	ParticipantStatusRequested      ParticipantStatus = "REQUESTED"
+	ParticipantStatusApproved       ParticipantStatus = "APPROVED"
+	ParticipantStatusWaitlisted     ParticipantStatus = "WAITLISTED"
+	ParticipantStatusPendingPayment ParticipantStatus = "PENDING_PAYMENT"
+	ParticipantStatusConfirmed      ParticipantStatus = "CONFIRMED"
+	ParticipantStatusDeclined       ParticipantStatus = "DECLINED"
+	ParticipantStatusCancelled      ParticipantStatus = "CANCELLED"
+	ParticipantStatusExpired        ParticipantStatus = "EXPIRED"
+	ParticipantStatusCheckedIn      ParticipantStatus = "CHECKED_IN"
+	ParticipantStatusAttended       ParticipantStatus = "ATTENDED"
+	ParticipantStatusNoShow         ParticipantStatus = "NO_SHOW"
+)
+
+func (v ParticipantStatus) IsValid() bool {
+	switch v {
+	case ParticipantStatusRequested,
+		ParticipantStatusApproved,
+		ParticipantStatusWaitlisted,
+		ParticipantStatusPendingPayment,
+		ParticipantStatusConfirmed,
+		ParticipantStatusDeclined,
+		ParticipantStatusCancelled,
+		ParticipantStatusExpired,
+		ParticipantStatusCheckedIn,
+		ParticipantStatusAttended,
+		ParticipantStatusNoShow:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v ParticipantStatus) OccupiesSlot() bool {
+	switch v {
+	case ParticipantStatusApproved,
+		ParticipantStatusPendingPayment,
+		ParticipantStatusConfirmed,
+		ParticipantStatusCheckedIn:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v ParticipantStatus) IsActive() bool {
+	switch v {
+	case ParticipantStatusRequested,
+		ParticipantStatusApproved,
+		ParticipantStatusWaitlisted,
+		ParticipantStatusPendingPayment,
+		ParticipantStatusConfirmed,
+		ParticipantStatusCheckedIn:
+		return true
+	default:
+		return false
+	}
+}
