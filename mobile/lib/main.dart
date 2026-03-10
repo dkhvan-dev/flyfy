@@ -8,6 +8,7 @@ import 'providers/session_provider.dart';
 import 'providers/locale_provider.dart';
 import 'core/router/app_router.dart';
 import 'l10n/generated/app_localizations.dart';
+import 'providers/activity_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,6 +53,9 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
         ChangeNotifierProvider<SessionProvider>.value(value: _sessionProvider),
         ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
+        ChangeNotifierProvider(
+          create: (_) => ActivityProvider(),
+        ),
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, _) {

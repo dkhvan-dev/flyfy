@@ -231,4 +231,136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get useButton => 'Use';
+
+  @override
+  String get activitiesTitle => 'Activities';
+
+  @override
+  String get activitiesLoadFailed => 'Failed to load activities';
+
+  @override
+  String get noActivitiesYet => 'No activities yet';
+
+  @override
+  String get activitiesWillAppearHere => 'New activities will appear here';
+
+  @override
+  String get activityDetailsComingSoon =>
+      'Activity details page is coming soon';
+
+  @override
+  String get detailsButton => 'Details';
+
+  @override
+  String get retryButton => 'Retry';
+
+  @override
+  String get freeLabel => 'Free';
+
+  @override
+  String get fromLabel => 'from';
+
+  @override
+  String get activityStatusDraft => 'Draft';
+
+  @override
+  String get activityStatusReviewRequired => 'Under review';
+
+  @override
+  String get activityStatusPublished => 'Published';
+
+  @override
+  String get activityStatusEnrollmentOpen => 'Open for registration';
+
+  @override
+  String get activityStatusFull => 'Full';
+
+  @override
+  String get activityStatusStarted => 'Started';
+
+  @override
+  String get activityStatusCompleted => 'Completed';
+
+  @override
+  String get activityStatusCancelled => 'Cancelled';
+
+  @override
+  String get activityFormatOffline => 'Offline';
+
+  @override
+  String get activityFormatOnline => 'Online';
+
+  @override
+  String get activityFormatHybrid => 'Hybrid';
+
+  @override
+  String get activityDetailsTitle => 'Activity';
+
+  @override
+  String get activityDetailsLoadFailed => 'Failed to load activity';
+
+  @override
+  String get activityNotFound => 'Activity not found';
+
+  @override
+  String get activityAboutSection => 'About';
+
+  @override
+  String get activityInfoSection => 'Information';
+
+  @override
+  String get activityTagsSection => 'Tags';
+
+  @override
+  String get activityAccessSection => 'Access and safety';
+
+  @override
+  String get activitySensitiveDetailsProtected =>
+      'The exact location, online meeting link, and sensitive details are available only after joining or being approved.';
+
+  @override
+  String get activitySensitiveDetailsHint =>
+      'This is done for the safety of participants and organizers.';
+
+  @override
+  String get activityDateAndTime => 'Date and time';
+
+  @override
+  String get activityCategory => 'Category';
+
+  @override
+  String get activityLanguage => 'Language';
+
+  @override
+  String get activityCapacity => 'Capacity';
+
+  @override
+  String get activityPrice => 'Price';
+
+  @override
+  String get activityLocation => 'Location';
+
+  @override
+  String get activityUnlimitedCapacity => 'Number of participants is unlimited';
+
+  @override
+  String get activityLimitedCapacity => 'Limited number of places';
+
+  @override
+  String get activityJoinButton => 'Join';
+
+  @override
+  String get activityLeaveButton => 'Leave';
+
+  @override
+  String get activityJoinSuccess => 'You joined the activity';
+
+  @override
+  String get activityLeaveSuccess => 'You left the activity';
+
+  @override
+  String get activityJoinFailed => 'Failed to join the activity';
+
+  @override
+  String get activityLeaveFailed => 'Failed to leave the activity';
 }

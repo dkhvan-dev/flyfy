@@ -525,6 +525,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use'**
   String get useButton;
+
+  /// No description provided for @activitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get activitiesTitle;
+
+  /// No description provided for @activitiesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load activities'**
+  String get activitiesLoadFailed;
+
+  /// No description provided for @noActivitiesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No activities yet'**
+  String get noActivitiesYet;
+
+  /// No description provided for @activitiesWillAppearHere.
+  ///
+  /// In en, this message translates to:
+  /// **'New activities will appear here'**
+  String get activitiesWillAppearHere;
+
+  /// No description provided for @activityDetailsComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity details page is coming soon'**
+  String get activityDetailsComingSoon;
+
+  /// No description provided for @detailsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get detailsButton;
+
+  /// No description provided for @retryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryButton;
+
+  /// No description provided for @freeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get freeLabel;
+
+  /// No description provided for @fromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'from'**
+  String get fromLabel;
+
+  /// No description provided for @activityStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get activityStatusDraft;
+
+  /// No description provided for @activityStatusReviewRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get activityStatusReviewRequired;
+
+  /// No description provided for @activityStatusPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Published'**
+  String get activityStatusPublished;
+
+  /// No description provided for @activityStatusEnrollmentOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open for registration'**
+  String get activityStatusEnrollmentOpen;
+
+  /// No description provided for @activityStatusFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full'**
+  String get activityStatusFull;
+
+  /// No description provided for @activityStatusStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get activityStatusStarted;
+
+  /// No description provided for @activityStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get activityStatusCompleted;
+
+  /// No description provided for @activityStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get activityStatusCancelled;
+
+  /// No description provided for @activityFormatOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get activityFormatOffline;
+
+  /// No description provided for @activityFormatOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get activityFormatOnline;
+
+  /// No description provided for @activityFormatHybrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Hybrid'**
+  String get activityFormatHybrid;
+
+  /// No description provided for @activityDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get activityDetailsTitle;
+
+  /// No description provided for @activityDetailsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load activity'**
+  String get activityDetailsLoadFailed;
+
+  /// No description provided for @activityNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity not found'**
+  String get activityNotFound;
+
+  /// No description provided for @activityAboutSection.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get activityAboutSection;
+
+  /// No description provided for @activityInfoSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Information'**
+  String get activityInfoSection;
+
+  /// No description provided for @activityTagsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get activityTagsSection;
+
+  /// No description provided for @activityAccessSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Access and safety'**
+  String get activityAccessSection;
+
+  /// No description provided for @activitySensitiveDetailsProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'The exact location, online meeting link, and sensitive details are available only after joining or being approved.'**
+  String get activitySensitiveDetailsProtected;
+
+  /// No description provided for @activitySensitiveDetailsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This is done for the safety of participants and organizers.'**
+  String get activitySensitiveDetailsHint;
+
+  /// No description provided for @activityDateAndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Date and time'**
+  String get activityDateAndTime;
+
+  /// No description provided for @activityCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get activityCategory;
+
+  /// No description provided for @activityLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get activityLanguage;
+
+  /// No description provided for @activityCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Capacity'**
+  String get activityCapacity;
+
+  /// No description provided for @activityPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get activityPrice;
+
+  /// No description provided for @activityLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get activityLocation;
+
+  /// No description provided for @activityUnlimitedCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of participants is unlimited'**
+  String get activityUnlimitedCapacity;
+
+  /// No description provided for @activityLimitedCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited number of places'**
+  String get activityLimitedCapacity;
+
+  /// No description provided for @activityJoinButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get activityJoinButton;
+
+  /// No description provided for @activityLeaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get activityLeaveButton;
+
+  /// No description provided for @activityJoinSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You joined the activity'**
+  String get activityJoinSuccess;
+
+  /// No description provided for @activityLeaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You left the activity'**
+  String get activityLeaveSuccess;
+
+  /// No description provided for @activityJoinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to join the activity'**
+  String get activityJoinFailed;
+
+  /// No description provided for @activityLeaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to leave the activity'**
+  String get activityLeaveFailed;
 }
 
 class _AppLocalizationsDelegate

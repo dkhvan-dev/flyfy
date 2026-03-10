@@ -5,6 +5,8 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/otp_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/profile/profile_screen.dart';
+import '../../screens/activities/activities_screen.dart';
+import '../../screens/activities/activity_details_screen.dart';
 
 class AppRouter {
   static GoRouter router(AuthProvider authProvider) {
@@ -62,6 +64,17 @@ class AppRouter {
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: '/activities',
+          builder: (context, state) => const ActivitiesScreen(),
+        ),
+        GoRoute(
+          path: '/activities/:activityId',
+          builder: (context, state) {
+            final activityId = state.pathParameters['activityId'] ?? '';
+            return ActivityDetailsScreen(activityId: activityId);
+          },
         ),
       ],
     );

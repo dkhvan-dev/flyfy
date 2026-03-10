@@ -231,4 +231,136 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get useButton => 'Использовать';
+
+  @override
+  String get activitiesTitle => 'Активности';
+
+  @override
+  String get activitiesLoadFailed => 'Не удалось загрузить активности';
+
+  @override
+  String get noActivitiesYet => 'Пока активностей нет';
+
+  @override
+  String get activitiesWillAppearHere =>
+      'Когда появятся новые активности, они будут отображаться здесь';
+
+  @override
+  String get activityDetailsComingSoon => 'Страница активности скоро появится';
+
+  @override
+  String get detailsButton => 'Подробнее';
+
+  @override
+  String get retryButton => 'Повторить';
+
+  @override
+  String get freeLabel => 'Бесплатно';
+
+  @override
+  String get fromLabel => 'от';
+
+  @override
+  String get activityStatusDraft => 'Черновик';
+
+  @override
+  String get activityStatusReviewRequired => 'На проверке';
+
+  @override
+  String get activityStatusPublished => 'Опубликовано';
+
+  @override
+  String get activityStatusEnrollmentOpen => 'Открыта запись';
+
+  @override
+  String get activityStatusFull => 'Мест нет';
+
+  @override
+  String get activityStatusStarted => 'Началось';
+
+  @override
+  String get activityStatusCompleted => 'Завершено';
+
+  @override
+  String get activityStatusCancelled => 'Отменено';
+
+  @override
+  String get activityFormatOffline => 'Офлайн';
+
+  @override
+  String get activityFormatOnline => 'Онлайн';
+
+  @override
+  String get activityFormatHybrid => 'Гибрид';
+
+  @override
+  String get activityDetailsTitle => 'Активность';
+
+  @override
+  String get activityDetailsLoadFailed => 'Не удалось загрузить активность';
+
+  @override
+  String get activityNotFound => 'Активность не найдена';
+
+  @override
+  String get activityAboutSection => 'Описание';
+
+  @override
+  String get activityInfoSection => 'Информация';
+
+  @override
+  String get activityTagsSection => 'Теги';
+
+  @override
+  String get activityAccessSection => 'Доступ и безопасность';
+
+  @override
+  String get activitySensitiveDetailsProtected =>
+      'Точное место проведения, ссылка на онлайн-встречу и чувствительные детали доступны только после участия или подтверждения.';
+
+  @override
+  String get activitySensitiveDetailsHint =>
+      'Это сделано для безопасности участников и организатора.';
+
+  @override
+  String get activityDateAndTime => 'Дата и время';
+
+  @override
+  String get activityCategory => 'Категория';
+
+  @override
+  String get activityLanguage => 'Язык';
+
+  @override
+  String get activityCapacity => 'Количество мест';
+
+  @override
+  String get activityPrice => 'Стоимость';
+
+  @override
+  String get activityLocation => 'Локация';
+
+  @override
+  String get activityUnlimitedCapacity => 'Количество участников не ограничено';
+
+  @override
+  String get activityLimitedCapacity => 'Количество мест ограничено';
+
+  @override
+  String get activityJoinButton => 'Записаться';
+
+  @override
+  String get activityLeaveButton => 'Покинуть';
+
+  @override
+  String get activityJoinSuccess => 'Вы записались на активность';
+
+  @override
+  String get activityLeaveSuccess => 'Вы покинули активность';
+
+  @override
+  String get activityJoinFailed => 'Не удалось записаться на активность';
+
+  @override
+  String get activityLeaveFailed => 'Не удалось покинуть активность';
 }

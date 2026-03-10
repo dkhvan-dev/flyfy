@@ -233,4 +233,137 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get useButton => 'Қолдану';
+
+  @override
+  String get activitiesTitle => 'Белсенділіктер';
+
+  @override
+  String get activitiesLoadFailed => 'Белсенділіктерді жүктеу мүмкін болмады';
+
+  @override
+  String get noActivitiesYet => 'Әзірге белсенділіктер жоқ';
+
+  @override
+  String get activitiesWillAppearHere =>
+      'Жаңа белсенділіктер пайда болғанда, олар осы жерде көрсетіледі';
+
+  @override
+  String get activityDetailsComingSoon =>
+      'Белсенділік беті жақында пайда болады';
+
+  @override
+  String get detailsButton => 'Толығырақ';
+
+  @override
+  String get retryButton => 'Қайталау';
+
+  @override
+  String get freeLabel => 'Тегін';
+
+  @override
+  String get fromLabel => 'бастап';
+
+  @override
+  String get activityStatusDraft => 'Нобай';
+
+  @override
+  String get activityStatusReviewRequired => 'Тексеруде';
+
+  @override
+  String get activityStatusPublished => 'Жарияланған';
+
+  @override
+  String get activityStatusEnrollmentOpen => 'Жазылу ашық';
+
+  @override
+  String get activityStatusFull => 'Орын жоқ';
+
+  @override
+  String get activityStatusStarted => 'Басталды';
+
+  @override
+  String get activityStatusCompleted => 'Аяқталды';
+
+  @override
+  String get activityStatusCancelled => 'Бас тартылды';
+
+  @override
+  String get activityFormatOffline => 'Офлайн';
+
+  @override
+  String get activityFormatOnline => 'Онлайн';
+
+  @override
+  String get activityFormatHybrid => 'Гибрид';
+
+  @override
+  String get activityDetailsTitle => 'Белсенділік';
+
+  @override
+  String get activityDetailsLoadFailed => 'Белсенділікті жүктеу мүмкін болмады';
+
+  @override
+  String get activityNotFound => 'Белсенділік табылмады';
+
+  @override
+  String get activityAboutSection => 'Сипаттама';
+
+  @override
+  String get activityInfoSection => 'Ақпарат';
+
+  @override
+  String get activityTagsSection => 'Тегтер';
+
+  @override
+  String get activityAccessSection => 'Қолжетімділік және қауіпсіздік';
+
+  @override
+  String get activitySensitiveDetailsProtected =>
+      'Нақты мекенжай, онлайн-кездесу сілтемесі және сезімтал мәліметтер тек қатысқаннан немесе расталғаннан кейін қолжетімді болады.';
+
+  @override
+  String get activitySensitiveDetailsHint =>
+      'Бұл қатысушылар мен ұйымдастырушының қауіпсіздігі үшін жасалған.';
+
+  @override
+  String get activityDateAndTime => 'Күні мен уақыты';
+
+  @override
+  String get activityCategory => 'Санат';
+
+  @override
+  String get activityLanguage => 'Тіл';
+
+  @override
+  String get activityCapacity => 'Орын саны';
+
+  @override
+  String get activityPrice => 'Бағасы';
+
+  @override
+  String get activityLocation => 'Орналасуы';
+
+  @override
+  String get activityUnlimitedCapacity => 'Қатысушылар саны шектелмеген';
+
+  @override
+  String get activityLimitedCapacity => 'Орын саны шектеулі';
+
+  @override
+  String get activityJoinButton => 'Жазылу';
+
+  @override
+  String get activityLeaveButton => 'Шығу';
+
+  @override
+  String get activityJoinSuccess => 'Сіз белсенділікке жазылдыңыз';
+
+  @override
+  String get activityLeaveSuccess => 'Сіз белсенділіктен шықтыңыз';
+
+  @override
+  String get activityJoinFailed => 'Белсенділікке жазылу мүмкін болмады';
+
+  @override
+  String get activityLeaveFailed => 'Белсенділіктен шығу мүмкін болмады';
 }

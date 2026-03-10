@@ -30,6 +30,8 @@ class ApiClient {
 
   Future<void>? _refreshFuture;
 
+  Dio get dio => _dio;
+
   void _configureInterceptors() {
     if (kDebugMode) {
       _dio.interceptors.add(
@@ -45,12 +47,15 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          if (!_isAuthRoute(options.path)) {
+          final requiresAuth = _requiresAuth(options);
+
+          if (requiresAuth) {
             final accessToken = await _secureStorage.getAccessToken();
             if (accessToken != null && accessToken.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $accessToken';
             }
           }
+
           handler.next(options);
         },
         onError: (error, handler) async {
@@ -59,7 +64,7 @@ class ApiClient {
 
           final shouldTryRefresh =
               statusCode == 401 &&
-              !_isAuthRoute(request.path) &&
+              _requiresAuth(request) &&
               request.extra['retried'] != true;
 
           if (!shouldTryRefresh) {
@@ -92,6 +97,29 @@ class ApiClient {
     );
   }
 
+  bool _requiresAuth(RequestOptions options) {
+    final requiresAuthFromExtra = options.extra['requiresAuth'];
+    if (requiresAuthFromExtra == false) {
+      return false;
+    }
+    return !_isAuthRoute(options.path);
+  }
+
+  bool _isAuthRoute(String path) => path.startsWith('/auth/');
+
+  Future<void> _refreshAccessToken() async {
+    final refreshToken = await _secureStorage.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      throw StateError('Missing refresh token');
+    }
+
+    final result = await refreshTokens(refreshToken);
+    await _secureStorage.saveTokens(
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    );
+  }
+
   Future<Map<String, dynamic>> initMe({
     String? primaryPhone,
     String? primaryEmail,
@@ -112,21 +140,6 @@ class ApiClient {
   Future<Map<String, dynamic>> getMe() async {
     final response = await _dio.get('/users/me');
     return response.data as Map<String, dynamic>;
-  }
-
-  bool _isAuthRoute(String path) => path.startsWith('/auth/');
-
-  Future<void> _refreshAccessToken() async {
-    final refreshToken = await _secureStorage.getRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) {
-      throw StateError('Missing refresh token');
-    }
-
-    final result = await refreshTokens(refreshToken);
-    await _secureStorage.saveTokens(
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-    );
   }
 
   Future<void> sendCode(String phone) async {
