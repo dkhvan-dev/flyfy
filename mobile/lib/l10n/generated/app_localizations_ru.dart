@@ -363,4 +363,48 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activityLeaveFailed => 'Не удалось покинуть активность';
+
+  @override
+  String get homeTitle => 'FlyFy';
+
+  @override
+  String get homeSubtitle =>
+      'Путешествуйте, находите активности и открывайте новые впечатления';
+
+  @override
+  String get servicesSectionTitle => 'Сервисы';
+
+  @override
+  String get homeToursTitle => 'Туры';
+
+  @override
+  String get homeToursSubtitle => 'Подберите интересные маршруты и поездки';
+
+  @override
+  String get homeGuidesTitle => 'Гиды';
+
+  @override
+  String get homeGuidesSubtitle => 'Найдите местных проводников и экспертов';
+
+  @override
+  String get homeHotelsTitle => 'Отели';
+
+  @override
+  String get homeHotelsSubtitle => 'Бронируйте проживание удобно и быстро';
+
+  @override
+  String get homeTransportTitle => 'Транспорт';
+
+  @override
+  String get homeTransportSubtitle => 'Планируйте перемещения заранее';
+
+  @override
+  String get activitiesEntryTitle => 'Активности';
+
+  @override
+  String get activitiesEntrySubtitle =>
+      'Найдите офлайн и онлайн события, к которым можно присоединиться';
+
+  @override
+  String get comingSoon => 'Скоро появится';
 }

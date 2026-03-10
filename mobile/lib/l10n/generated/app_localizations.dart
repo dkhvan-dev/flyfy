@@ -783,6 +783,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to leave the activity'**
   String get activityLeaveFailed;
+
+  /// No description provided for @homeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FlyFy'**
+  String get homeTitle;
+
+  /// No description provided for @homeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel, discover activities, and explore new experiences'**
+  String get homeSubtitle;
+
+  /// No description provided for @servicesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get servicesSectionTitle;
+
+  /// No description provided for @homeToursTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tours'**
+  String get homeToursTitle;
+
+  /// No description provided for @homeToursSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose interesting routes and trips'**
+  String get homeToursSubtitle;
+
+  /// No description provided for @homeGuidesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guides'**
+  String get homeGuidesTitle;
+
+  /// No description provided for @homeGuidesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find local guides and experts'**
+  String get homeGuidesSubtitle;
+
+  /// No description provided for @homeHotelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hotels'**
+  String get homeHotelsTitle;
+
+  /// No description provided for @homeHotelsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Book accommodation quickly and conveniently'**
+  String get homeHotelsSubtitle;
+
+  /// No description provided for @homeTransportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get homeTransportTitle;
+
+  /// No description provided for @homeTransportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan your trips in advance'**
+  String get homeTransportSubtitle;
+
+  /// No description provided for @activitiesEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get activitiesEntryTitle;
+
+  /// No description provided for @activitiesEntrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find offline and online events you can join'**
+  String get activitiesEntrySubtitle;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get comingSoon;
 }
 
 class _AppLocalizationsDelegate

@@ -29,6 +29,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	adminLimit := 60
 	authLimit := 300
 	filesLimit := 180
+	activityLimit := 180
 
 	return []RoutePolicy{
 		{
@@ -49,7 +50,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 		{
 			Name:          "public-users",
 			Prefix:        apiPrefix + "/public/users",
-			AuthMode:      RouteAuthAuthenticated,
+			AuthMode:      RouteAuthPublic,
 			Upstream:      "user",
 			RewritePrefix: "/v1/public/users",
 		},
@@ -79,19 +80,19 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 		},
 		{
 			Name:               "my-activities",
-			Prefix:             apiPrefix + "/me/activities/",
+			Prefix:             apiPrefix + "/me/activities",
 			AuthMode:           RouteAuthAuthenticated,
 			Upstream:           "activity",
-			RateLimitPerMinute: &authLimit,
-			RewritePrefix:      "/v1/me/activities/",
+			RateLimitPerMinute: &activityLimit,
+			RewritePrefix:      "/v1/me/activities",
 		},
 		{
 			Name:               "activities",
-			Prefix:             apiPrefix + "/activities/",
-			AuthMode:           RouteAuthAuthenticated,
+			Prefix:             apiPrefix + "/activities",
+			AuthMode:           RouteAuthPublic,
 			Upstream:           "activity",
-			RateLimitPerMinute: &authLimit,
-			RewritePrefix:      "/v1/activities/",
+			RateLimitPerMinute: &activityLimit,
+			RewritePrefix:      "/v1/activities",
 		},
 	}
 }

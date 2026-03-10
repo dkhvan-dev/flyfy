@@ -78,12 +78,8 @@ class ActivityListItemVm {
     if (city.isNotEmpty && country.isNotEmpty) {
       return '$city, $country';
     }
-    if (city.isNotEmpty) {
-      return city;
-    }
-    if (country.isNotEmpty) {
-      return country;
-    }
+    if (city.isNotEmpty) return city;
+    if (country.isNotEmpty) return country;
     return '';
   }
 
@@ -92,11 +88,10 @@ class ActivityListItemVm {
   String get priceLabel {
     if (isFree) return 'FREE';
     if (priceAmount == null) return priceType;
-    if ((currency ?? '').trim().isEmpty) {
-      return priceAmount!.toStringAsFixed(
-        priceAmount! % 1 == 0 ? 0 : 2,
-      );
-    }
-    return '${priceAmount!.toStringAsFixed(priceAmount! % 1 == 0 ? 0 : 2)} $currency';
+    final amount = priceAmount! % 1 == 0
+        ? priceAmount!.toStringAsFixed(0)
+        : priceAmount!.toStringAsFixed(2);
+    if ((currency ?? '').trim().isEmpty) return amount;
+    return '$amount $currency';
   }
 }

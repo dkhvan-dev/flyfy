@@ -15,17 +15,11 @@ class AppRouter {
       refreshListenable: authProvider,
       redirect: (context, state) {
         final authState = authProvider.state;
-        final location = state.matchedLocation;
+        final location = state.uri.path;
         final isLoggedIn = authState == AuthState.authenticated;
         final isInitial = authState == AuthState.initial;
 
-        const publicRoutes = {
-          '/',
-          '/login',
-          '/otp',
-        };
-
-        final isPublicRoute = publicRoutes.contains(location);
+        final isPublicRoute = _isPublicRoute(location);
 
         if (isInitial) {
           return null;
@@ -78,5 +72,17 @@ class AppRouter {
         ),
       ],
     );
+  }
+
+  static bool _isPublicRoute(String location) {
+    if (location == '/' || location == '/login' || location == '/otp') {
+      return true;
+    }
+
+    if (location == '/activities' || location.startsWith('/activities/')) {
+      return true;
+    }
+
+    return false;
   }
 }

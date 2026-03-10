@@ -129,5 +129,19 @@
   "activityJoinSuccess": "Вы записались на активность",
   "activityLeaveSuccess": "Вы покинули активность",
   "activityJoinFailed": "Не удалось записаться на активность",
-  "activityLeaveFailed": "Не удалось покинуть активность"
+  "activityLeaveFailed": "Не удалось покинуть активность",
+  "homeTitle": "FlyFy",
+  "homeSubtitle": "Путешествуйте, находите активности и открывайте новые впечатления",
+  "servicesSectionTitle": "Сервисы",
+  "homeToursTitle": "Туры",
+  "homeToursSubtitle": "Подберите интересные маршруты и поездки",
+  "homeGuidesTitle": "Гиды",
+  "homeGuidesSubtitle": "Найдите местных проводников и экспертов",
+  "homeHotelsTitle": "Отели",
+  "homeHotelsSubtitle": "Бронируйте проживание удобно и быстро",
+  "homeTransportTitle": "Транспорт",
+  "homeTransportSubtitle": "Планируйте перемещения заранее",
+  "activitiesEntryTitle": "Активности",
+  "activitiesEntrySubtitle": "Найдите офлайн и онлайн события, к которым можно присоединиться",
+  "comingSoon": "Скоро появится"
 }

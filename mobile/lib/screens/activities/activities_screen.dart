@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -42,9 +42,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           if (provider.state == ActivitiesState.loading &&
               provider.items.isEmpty) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF00BCD4),
-              ),
+              child: CircularProgressIndicator(color: Color(0xFF00BCD4)),
             );
           }
 
@@ -179,25 +177,22 @@ class _ActivityCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      context.push('/activities/${item.id}');
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withOpacity(0.14)),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: Text(l10n.detailsButton),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  context.push('/activities/${item.id}');
+                },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.white.withOpacity(0.14)),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-              ],
+                child: Text(l10n.detailsButton),
+              ),
             ),
           ],
         ),

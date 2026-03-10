@@ -366,4 +366,48 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get activityLeaveFailed => 'Белсенділіктен шығу мүмкін болмады';
+
+  @override
+  String get homeTitle => 'FlyFy';
+
+  @override
+  String get homeSubtitle =>
+      'Саяхаттап, белсенділіктерді тауып, жаңа әсерлер ашыңыз';
+
+  @override
+  String get servicesSectionTitle => 'Сервистер';
+
+  @override
+  String get homeToursTitle => 'Турлар';
+
+  @override
+  String get homeToursSubtitle => 'Қызықты бағыттар мен сапарларды таңдаңыз';
+
+  @override
+  String get homeGuidesTitle => 'Гидтер';
+
+  @override
+  String get homeGuidesSubtitle => 'Жергілікті гидтер мен сарапшыларды табыңыз';
+
+  @override
+  String get homeHotelsTitle => 'Қонақ үйлер';
+
+  @override
+  String get homeHotelsSubtitle => 'Тұру орнын ыңғайлы әрі жылдам брондаңыз';
+
+  @override
+  String get homeTransportTitle => 'Көлік';
+
+  @override
+  String get homeTransportSubtitle => 'Қозғалысты алдын ала жоспарлаңыз';
+
+  @override
+  String get activitiesEntryTitle => 'Белсенділіктер';
+
+  @override
+  String get activitiesEntrySubtitle =>
+      'Қосылуға болатын офлайн және онлайн іс-шараларды табыңыз';
+
+  @override
+  String get comingSoon => 'Жақында пайда болады';
 }

@@ -363,4 +363,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityLeaveFailed => 'Failed to leave the activity';
+
+  @override
+  String get homeTitle => 'FlyFy';
+
+  @override
+  String get homeSubtitle =>
+      'Travel, discover activities, and explore new experiences';
+
+  @override
+  String get servicesSectionTitle => 'Services';
+
+  @override
+  String get homeToursTitle => 'Tours';
+
+  @override
+  String get homeToursSubtitle => 'Choose interesting routes and trips';
+
+  @override
+  String get homeGuidesTitle => 'Guides';
+
+  @override
+  String get homeGuidesSubtitle => 'Find local guides and experts';
+
+  @override
+  String get homeHotelsTitle => 'Hotels';
+
+  @override
+  String get homeHotelsSubtitle =>
+      'Book accommodation quickly and conveniently';
+
+  @override
+  String get homeTransportTitle => 'Transport';
+
+  @override
+  String get homeTransportSubtitle => 'Plan your trips in advance';
+
+  @override
+  String get activitiesEntryTitle => 'Activities';
+
+  @override
+  String get activitiesEntrySubtitle =>
+      'Find offline and online events you can join';
+
+  @override
+  String get comingSoon => 'Coming soon';
 }

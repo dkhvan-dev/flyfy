@@ -3,11 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/ui/error_dialog.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../core/ui/error_dialog.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
   const ActivityDetailsScreen({
@@ -64,38 +64,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       return;
     }
 
-    await provider.loadActivityDetails(widget.activityId);
-
-    if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.activityJoinSuccess)),
-    );
-  }
-
-  Future<void> _handleLeave() async {
-    final l10n = AppLocalizations.of(context)!;
-    final provider = context.read<ActivityProvider>();
-
-    final success = await provider.leaveActivity(widget.activityId);
-
-    if (!mounted) return;
-
-    if (!success) {
-      await showErrorDialog(
-        context,
-        title: l10n.error,
-        message: provider.actionErrorMessage ?? l10n.activityLeaveFailed,
-      );
-      return;
-    }
-
-    await provider.loadActivityDetails(widget.activityId);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.activityLeaveSuccess)),
     );
   }
 
@@ -119,19 +89,15 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
           if (provider.state == ActivitiesState.loading &&
               provider.selectedActivity == null) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF00BCD4),
-              ),
+              child: CircularProgressIndicator(color: Color(0xFF00BCD4)),
             );
           }
 
           if (provider.state == ActivitiesState.error &&
               provider.selectedActivity == null) {
             return _ActivityDetailsErrorView(
-              message:
-                  provider.errorMessage ?? l10n.activityDetailsLoadFailed,
-              onRetry: () =>
-                  provider.loadActivityDetails(widget.activityId),
+              message: provider.errorMessage ?? l10n.activityDetailsLoadFailed,
+              onRetry: () => provider.loadActivityDetails(widget.activityId),
             );
           }
 
@@ -139,8 +105,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
           if (activity == null) {
             return _ActivityDetailsErrorView(
               message: l10n.activityNotFound,
-              onRetry: () =>
-                  provider.loadActivityDetails(widget.activityId),
+              onRetry: () => provider.loadActivityDetails(widget.activityId),
             );
           }
 
@@ -148,8 +113,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
             children: [
               Expanded(
                 child: RefreshIndicator(
-                  onRefresh: () =>
-                      provider.loadActivityDetails(widget.activityId),
+                  onRefresh: () => provider.loadActivityDetails(widget.activityId),
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
@@ -268,77 +232,42 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                       ),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Consumer<ActivityProvider>(
-                          builder: (context, provider, _) {
-                            final isLoading = provider.actionState ==
-                                ActivityActionState.loading;
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Consumer<ActivityProvider>(
+                      builder: (context, provider, _) {
+                        final isLoading =
+                            provider.actionState == ActivityActionState.loading;
 
-                            return ElevatedButton(
-                              onPressed: isLoading ? null : _handleJoin,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00BCD4),
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                        return ElevatedButton(
+                          onPressed: isLoading ? null : _handleJoin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00BCD4),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  l10n.activityJoinButton,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                              ),
-                              child: isLoading
-                                  ? const SizedBox(
-                                      height: 22,
-                                      width: 22,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Text(
-                                      l10n.activityJoinButton,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Consumer<ActivityProvider>(
-                          builder: (context, provider, _) {
-                            final isLoading = provider.actionState ==
-                                ActivityActionState.loading;
-
-                            return OutlinedButton(
-                              onPressed: isLoading ? null : _handleLeave,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: BorderSide(
-                                  color: Colors.white.withOpacity(0.14),
-                                ),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: Text(
-                                l10n.activityLeaveButton,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),

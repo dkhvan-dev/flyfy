@@ -129,5 +129,19 @@
   "activityJoinSuccess": "You joined the activity",
   "activityLeaveSuccess": "You left the activity",
   "activityJoinFailed": "Failed to join the activity",
-  "activityLeaveFailed": "Failed to leave the activity"
+  "activityLeaveFailed": "Failed to leave the activity",
+  "homeTitle": "FlyFy",
+  "homeSubtitle": "Travel, discover activities, and explore new experiences",
+  "servicesSectionTitle": "Services",
+  "homeToursTitle": "Tours",
+  "homeToursSubtitle": "Choose interesting routes and trips",
+  "homeGuidesTitle": "Guides",
+  "homeGuidesSubtitle": "Find local guides and experts",
+  "homeHotelsTitle": "Hotels",
+  "homeHotelsSubtitle": "Book accommodation quickly and conveniently",
+  "homeTransportTitle": "Transport",
+  "homeTransportSubtitle": "Plan your trips in advance",
+  "activitiesEntryTitle": "Activities",
+  "activitiesEntrySubtitle": "Find offline and online events you can join",
+  "comingSoon": "Coming soon"
 }

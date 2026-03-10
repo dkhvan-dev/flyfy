@@ -33,8 +33,6 @@ class ActivityProvider extends ChangeNotifier {
   String? _actionErrorMessage;
 
   List<ActivityListItemVm> _items = const [];
-  List<ActivityListItemVm> _joinedItems = const [];
-  List<ActivityListItemVm> _hostedItems = const [];
   ActivityListItemVm? _selectedActivity;
 
   ActivitiesState get state => _state;
@@ -42,10 +40,7 @@ class ActivityProvider extends ChangeNotifier {
   bool get isRefreshing => _isRefreshing;
   String? get errorMessage => _errorMessage;
   String? get actionErrorMessage => _actionErrorMessage;
-
   List<ActivityListItemVm> get items => _items;
-  List<ActivityListItemVm> get joinedItems => _joinedItems;
-  List<ActivityListItemVm> get hostedItems => _hostedItems;
   ActivityListItemVm? get selectedActivity => _selectedActivity;
 
   Future<void> loadActivities() async {
@@ -126,69 +121,6 @@ class ActivityProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
-  }
-
-  Future<bool> leaveActivity(
-    String activityId, {
-    String? reason,
-  }) async {
-    _actionState = ActivityActionState.loading;
-    _actionErrorMessage = null;
-    notifyListeners();
-
-    try {
-      await _activityApi.leaveActivity(activityId, reason: reason);
-      _actionState = ActivityActionState.success;
-      return true;
-    } on DioException catch (e) {
-      _actionErrorMessage = DioErrorMapper.toMessage(e);
-      _actionState = ActivityActionState.error;
-      return false;
-    } catch (_) {
-      _actionErrorMessage = 'Failed to leave activity';
-      _actionState = ActivityActionState.error;
-      return false;
-    } finally {
-      notifyListeners();
-    }
-  }
-
-  Future<void> loadMyJoinedActivities() async {
-    _state = ActivitiesState.loading;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      _joinedItems = await _activityApi.getMyJoinedActivities();
-      _state = ActivitiesState.success;
-    } on DioException catch (e) {
-      _errorMessage = DioErrorMapper.toMessage(e);
-      _state = ActivitiesState.error;
-    } catch (_) {
-      _errorMessage = 'Failed to load joined activities';
-      _state = ActivitiesState.error;
-    }
-
-    notifyListeners();
-  }
-
-  Future<void> loadMyHostedActivities() async {
-    _state = ActivitiesState.loading;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      _hostedItems = await _activityApi.getMyHostedActivities();
-      _state = ActivitiesState.success;
-    } on DioException catch (e) {
-      _errorMessage = DioErrorMapper.toMessage(e);
-      _state = ActivitiesState.error;
-    } catch (_) {
-      _errorMessage = 'Failed to load hosted activities';
-      _state = ActivitiesState.error;
-    }
-
-    notifyListeners();
   }
 
   void clearSelectedActivity() {

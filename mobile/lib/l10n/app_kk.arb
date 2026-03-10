@@ -129,5 +129,19 @@
   "activityJoinSuccess": "Сіз белсенділікке жазылдыңыз",
   "activityLeaveSuccess": "Сіз белсенділіктен шықтыңыз",
   "activityJoinFailed": "Белсенділікке жазылу мүмкін болмады",
-  "activityLeaveFailed": "Белсенділіктен шығу мүмкін болмады"
+  "activityLeaveFailed": "Белсенділіктен шығу мүмкін болмады",
+  "homeTitle": "FlyFy",
+  "homeSubtitle": "Саяхаттап, белсенділіктерді тауып, жаңа әсерлер ашыңыз",
+  "servicesSectionTitle": "Сервистер",
+  "homeToursTitle": "Турлар",
+  "homeToursSubtitle": "Қызықты бағыттар мен сапарларды таңдаңыз",
+  "homeGuidesTitle": "Гидтер",
+  "homeGuidesSubtitle": "Жергілікті гидтер мен сарапшыларды табыңыз",
+  "homeHotelsTitle": "Қонақ үйлер",
+  "homeHotelsSubtitle": "Тұру орнын ыңғайлы әрі жылдам брондаңыз",
+  "homeTransportTitle": "Көлік",
+  "homeTransportSubtitle": "Қозғалысты алдын ала жоспарлаңыз",
+  "activitiesEntryTitle": "Белсенділіктер",
+  "activitiesEntrySubtitle": "Қосылуға болатын офлайн және онлайн іс-шараларды табыңыз",
+  "comingSoon": "Жақында пайда болады"
 }
