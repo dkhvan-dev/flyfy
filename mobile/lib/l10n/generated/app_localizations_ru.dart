@@ -407,4 +407,191 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get comingSoon => 'Скоро появится';
+
+  @override
+  String get createActivityFab => 'Создать';
+
+  @override
+  String get createActivityTitle => 'Новая активность';
+
+  @override
+  String get createActivitySubmit => 'Создать активность';
+
+  @override
+  String get createActivitySuccess => 'Активность успешно создана';
+
+  @override
+  String get createActivityFailed => 'Не удалось создать активность';
+
+  @override
+  String get createStepBasic => 'Основное';
+
+  @override
+  String get createStepSchedule => 'Формат и расписание';
+
+  @override
+  String get createStepParticipation => 'Участие';
+
+  @override
+  String get createStepLocation => 'Локация';
+
+  @override
+  String get createStepNext => 'Далее';
+
+  @override
+  String get createStepBack => 'Назад';
+
+  @override
+  String get createBasicSection => 'ОСНОВНАЯ ИНФОРМАЦИЯ';
+
+  @override
+  String get createTitleLabel => 'Название';
+
+  @override
+  String get createTitleHint => 'Введите название активности';
+
+  @override
+  String get createTitleValidation =>
+      'Название должно быть не менее 3 символов';
+
+  @override
+  String get createDescriptionLabel => 'Описание';
+
+  @override
+  String get createDescriptionHint => 'Расскажите, что будет на активности';
+
+  @override
+  String get createDescriptionValidation =>
+      'Описание должно быть не менее 10 символов';
+
+  @override
+  String get createCategoryLabel => 'Категория';
+
+  @override
+  String get createCategoryHint => 'Например: спорт, образование, музыка';
+
+  @override
+  String get createCategoryValidation => 'Укажите категорию';
+
+  @override
+  String get createTagsLabel => 'Теги';
+
+  @override
+  String get createTagsHint => 'Через запятую: бег, утро, парк';
+
+  @override
+  String get createFormatSection => 'ФОРМАТ ПРОВЕДЕНИЯ';
+
+  @override
+  String get createScheduleSection => 'РАСПИСАНИЕ';
+
+  @override
+  String get createStartAtLabel => 'Начало';
+
+  @override
+  String get createEndAtLabel => 'Окончание';
+
+  @override
+  String get createRegistrationDeadlineLabel => 'Крайний срок регистрации';
+
+  @override
+  String get createEndDateValidation =>
+      'Дата окончания должна быть после начала';
+
+  @override
+  String get createLanguageSection => 'ЯЗЫК АКТИВНОСТИ';
+
+  @override
+  String get createVisibilitySection => 'ВИДИМОСТЬ';
+
+  @override
+  String get createVisibilityPublic => 'Публичная';
+
+  @override
+  String get createVisibilityPrivate => 'Приватная';
+
+  @override
+  String get createVisibilityUnlisted => 'По ссылке';
+
+  @override
+  String get createJoinModeSection => 'РЕЖИМ ЗАПИСИ';
+
+  @override
+  String get createJoinModeAuto => 'Автоматическое одобрение';
+
+  @override
+  String get createJoinModeManual => 'Ручное одобрение';
+
+  @override
+  String get createCapacitySection => 'КОЛИЧЕСТВО МЕСТ';
+
+  @override
+  String get createCapacityUnlimited => 'Без ограничений';
+
+  @override
+  String get createCapacityLimited => 'Ограничено';
+
+  @override
+  String get createMinParticipantsLabel => 'Минимум';
+
+  @override
+  String get createMaxParticipantsLabel => 'Максимум';
+
+  @override
+  String get createMaxParticipantsValidation =>
+      'Укажите корректное максимальное число';
+
+  @override
+  String get createPriceSection => 'СТОИМОСТЬ';
+
+  @override
+  String get createPriceFree => 'Бесплатно';
+
+  @override
+  String get createPricePaid => 'Платно';
+
+  @override
+  String get createPriceDeposit => 'Депозит';
+
+  @override
+  String get createPriceAmountLabel => 'Сумма';
+
+  @override
+  String get createCurrencyLabel => 'Валюта';
+
+  @override
+  String get createPriceValidation => 'Укажите корректную сумму';
+
+  @override
+  String get createOnlineSection => 'ОНЛАЙН-ДОСТУП';
+
+  @override
+  String get createMeetingUrlLabel => 'Ссылка на встречу';
+
+  @override
+  String get createMeetingUrlHint => 'https://zoom.us/...';
+
+  @override
+  String get createMeetingUrlValidation => 'Укажите ссылку на онлайн-встречу';
+
+  @override
+  String get createOfflineSection => 'МЕСТО ПРОВЕДЕНИЯ';
+
+  @override
+  String get createCountryLabel => 'Страна';
+
+  @override
+  String get createCityLabel => 'Город';
+
+  @override
+  String get createCityHint => 'Например: Алматы';
+
+  @override
+  String get createAddressLabel => 'Адрес';
+
+  @override
+  String get createAddressHint => 'Улица, дом, корпус';
+
+  @override
+  String get createLocationValidation => 'Укажите город или адрес проведения';
 }

@@ -261,13 +261,33 @@ func authMiddleware(cfg *config.Config, verifier app.TokenVerifier, next http.Ha
 			return
 		}
 
+		authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+		hasToken := strings.HasPrefix(strings.ToLower(authHeader), "bearer ")
+
 		if policy.AuthMode == RouteAuthPublic {
+			if hasToken {
+				token := strings.TrimSpace(authHeader[len("Bearer "):])
+				if token != "" {
+					claims, err := verifier.VerifyAccessToken(r.Context(), token)
+					if err == nil {
+						ctx := context.WithValue(r.Context(), contextKeyClaims, claims)
+						next.ServeHTTP(w, r.WithContext(ctx))
+						return
+					}
+					log.Warn().
+						Err(err).
+						Str("route", RouteNameOrDefault(r.Context())).
+						Str("method", r.Method).
+						Str("path", r.URL.Path).
+						Str("request_id", RequestIDFromContext(r.Context())).
+						Msg("optional token verification failed on public route")
+				}
+			}
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
-		if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+		if !hasToken {
 			writeError(w, http.StatusUnauthorized, "missing bearer token")
 			return
 		}

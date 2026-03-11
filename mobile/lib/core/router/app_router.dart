@@ -7,6 +7,7 @@ import '../../screens/home/home_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/activities/activities_screen.dart';
 import '../../screens/activities/activity_details_screen.dart';
+import '../../screens/activities/create_activity_screen.dart';
 
 class AppRouter {
   static GoRouter router(AuthProvider authProvider) {
@@ -64,6 +65,10 @@ class AppRouter {
           builder: (context, state) => const ActivitiesScreen(),
         ),
         GoRoute(
+          path: '/activities/create',
+          builder: (context, state) => const CreateActivityScreen(),
+        ),
+        GoRoute(
           path: '/activities/:activityId',
           builder: (context, state) {
             final activityId = state.pathParameters['activityId'] ?? '';
@@ -79,7 +84,12 @@ class AppRouter {
       return true;
     }
 
-    if (location == '/activities' || location.startsWith('/activities/')) {
+    if (location == '/activities') {
+      return true;
+    }
+
+    if (location.startsWith('/activities/') &&
+        location != '/activities/create') {
       return true;
     }
 

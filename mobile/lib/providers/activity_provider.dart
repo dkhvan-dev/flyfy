@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../core/network/activity_api.dart';
 import '../core/network/dio_error_mapper.dart';
 import '../features/activities/models/activity_list_item_vm.dart';
+import '../features/activities/models/create_activity_request.dart';
 
 enum ActivitiesState {
   initial,
@@ -132,5 +133,52 @@ class ActivityProvider extends ChangeNotifier {
     _actionState = ActivityActionState.idle;
     _actionErrorMessage = null;
     notifyListeners();
+  }
+
+  Future<ActivityListItemVm?> createActivity(
+    CreateActivityRequest request,
+  ) async {
+    _actionState = ActivityActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final created = await _activityApi.createActivity(request);
+      _actionState = ActivityActionState.success;
+      notifyListeners();
+      return created;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ActivityActionState.error;
+      notifyListeners();
+      return null;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to create activity';
+      _actionState = ActivityActionState.error;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> leaveActivity(String activityId, {String? reason}) async {
+    _actionState = ActivityActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      await _activityApi.leaveActivity(activityId, reason: reason);
+      _actionState = ActivityActionState.success;
+      return true;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ActivityActionState.error;
+      return false;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to leave activity';
+      _actionState = ActivityActionState.error;
+      return false;
+    } finally {
+      notifyListeners();
+    }
   }
 }

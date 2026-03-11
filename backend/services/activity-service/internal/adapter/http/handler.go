@@ -42,12 +42,17 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/activities", h.CreateActivity)
 	mux.HandleFunc("GET /v1/activities", h.ListActivities)
 
+	mux.HandleFunc("POST /v1/me/activities", h.CreateActivity)
 	mux.HandleFunc("GET /v1/me/activities/joined", h.ListMyJoinedActivities)
 	mux.HandleFunc("GET /v1/me/activities/hosted", h.ListMyHostedActivities)
 
 	mux.HandleFunc("GET /v1/activities/", h.handleActivityRoutes)
 	mux.HandleFunc("PATCH /v1/activities/", h.handleActivityRoutes)
 	mux.HandleFunc("POST /v1/activities/", h.handleActivityRoutes)
+
+	mux.HandleFunc("GET /v1/me/activities/", h.handleMyActivityRoutes)
+	mux.HandleFunc("PATCH /v1/me/activities/", h.handleMyActivityRoutes)
+	mux.HandleFunc("POST /v1/me/activities/", h.handleMyActivityRoutes)
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +60,15 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleActivityRoutes(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/v1/activities/")
+	h.dispatchActivitySubRoutes(w, r, "/v1/activities/")
+}
+
+func (h *Handler) handleMyActivityRoutes(w http.ResponseWriter, r *http.Request) {
+	h.dispatchActivitySubRoutes(w, r, "/v1/me/activities/")
+}
+
+func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Request, prefix string) {
+	path := strings.TrimPrefix(r.URL.Path, prefix)
 	path = strings.Trim(path, "/")
 	if path == "" {
 		writeError(w, http.StatusNotFound, "not found")

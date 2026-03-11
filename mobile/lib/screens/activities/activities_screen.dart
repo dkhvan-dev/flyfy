@@ -4,8 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/profile/profile_completion_gate.dart';
+import '../../features/profile/profile_guard_result.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
@@ -23,6 +26,21 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     });
   }
 
+  Future<void> _onCreateTap(BuildContext context) async {
+    final authProvider = context.read<AuthProvider>();
+
+    if (authProvider.state != AuthState.authenticated) {
+      context.push('/login?from=/activities/create');
+      return;
+    }
+
+    final result = await ProfileCompletionGate.ensureCompleted(context);
+    if (result == ProfileGuardResult.cancelled) return;
+    if (!context.mounted) return;
+
+    context.push('/activities/create');
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -36,6 +54,13 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           l10n.activitiesTitle,
           style: const TextStyle(color: Colors.white),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: const Color(0xFF00BCD4),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: Text(l10n.createActivityFab),
+        onPressed: () => _onCreateTap(context),
       ),
       body: Consumer<ActivityProvider>(
         builder: (context, provider, _) {

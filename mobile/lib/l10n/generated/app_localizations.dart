@@ -867,6 +867,372 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Coming soon'**
   String get comingSoon;
+
+  /// No description provided for @createActivityFab.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get createActivityFab;
+
+  /// No description provided for @createActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Activity'**
+  String get createActivityTitle;
+
+  /// No description provided for @createActivitySubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Activity'**
+  String get createActivitySubmit;
+
+  /// No description provided for @createActivitySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity created successfully'**
+  String get createActivitySuccess;
+
+  /// No description provided for @createActivityFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create activity'**
+  String get createActivityFailed;
+
+  /// No description provided for @createStepBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Info'**
+  String get createStepBasic;
+
+  /// No description provided for @createStepSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Format & Schedule'**
+  String get createStepSchedule;
+
+  /// No description provided for @createStepParticipation.
+  ///
+  /// In en, this message translates to:
+  /// **'Participation'**
+  String get createStepParticipation;
+
+  /// No description provided for @createStepLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get createStepLocation;
+
+  /// No description provided for @createStepNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get createStepNext;
+
+  /// No description provided for @createStepBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get createStepBack;
+
+  /// No description provided for @createBasicSection.
+  ///
+  /// In en, this message translates to:
+  /// **'BASIC INFORMATION'**
+  String get createBasicSection;
+
+  /// No description provided for @createTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get createTitleLabel;
+
+  /// No description provided for @createTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter activity title'**
+  String get createTitleHint;
+
+  /// No description provided for @createTitleValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Title must be at least 3 characters'**
+  String get createTitleValidation;
+
+  /// No description provided for @createDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get createDescriptionLabel;
+
+  /// No description provided for @createDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what will happen at the activity'**
+  String get createDescriptionHint;
+
+  /// No description provided for @createDescriptionValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Description must be at least 10 characters'**
+  String get createDescriptionValidation;
+
+  /// No description provided for @createCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get createCategoryLabel;
+
+  /// No description provided for @createCategoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. sports, education, music'**
+  String get createCategoryHint;
+
+  /// No description provided for @createCategoryValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please specify a category'**
+  String get createCategoryValidation;
+
+  /// No description provided for @createTagsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get createTagsLabel;
+
+  /// No description provided for @createTagsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Comma-separated: running, morning, park'**
+  String get createTagsHint;
+
+  /// No description provided for @createFormatSection.
+  ///
+  /// In en, this message translates to:
+  /// **'FORMAT'**
+  String get createFormatSection;
+
+  /// No description provided for @createScheduleSection.
+  ///
+  /// In en, this message translates to:
+  /// **'SCHEDULE'**
+  String get createScheduleSection;
+
+  /// No description provided for @createStartAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get createStartAtLabel;
+
+  /// No description provided for @createEndAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get createEndAtLabel;
+
+  /// No description provided for @createRegistrationDeadlineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration deadline'**
+  String get createRegistrationDeadlineLabel;
+
+  /// No description provided for @createEndDateValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'End date must be after start date'**
+  String get createEndDateValidation;
+
+  /// No description provided for @createLanguageSection.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVITY LANGUAGE'**
+  String get createLanguageSection;
+
+  /// No description provided for @createVisibilitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'VISIBILITY'**
+  String get createVisibilitySection;
+
+  /// No description provided for @createVisibilityPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get createVisibilityPublic;
+
+  /// No description provided for @createVisibilityPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get createVisibilityPrivate;
+
+  /// No description provided for @createVisibilityUnlisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlisted'**
+  String get createVisibilityUnlisted;
+
+  /// No description provided for @createJoinModeSection.
+  ///
+  /// In en, this message translates to:
+  /// **'JOIN MODE'**
+  String get createJoinModeSection;
+
+  /// No description provided for @createJoinModeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto approve'**
+  String get createJoinModeAuto;
+
+  /// No description provided for @createJoinModeManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual approve'**
+  String get createJoinModeManual;
+
+  /// No description provided for @createCapacitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'CAPACITY'**
+  String get createCapacitySection;
+
+  /// No description provided for @createCapacityUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get createCapacityUnlimited;
+
+  /// No description provided for @createCapacityLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited'**
+  String get createCapacityLimited;
+
+  /// No description provided for @createMinParticipantsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum'**
+  String get createMinParticipantsLabel;
+
+  /// No description provided for @createMaxParticipantsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum'**
+  String get createMaxParticipantsLabel;
+
+  /// No description provided for @createMaxParticipantsValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid maximum number'**
+  String get createMaxParticipantsValidation;
+
+  /// No description provided for @createPriceSection.
+  ///
+  /// In en, this message translates to:
+  /// **'PRICING'**
+  String get createPriceSection;
+
+  /// No description provided for @createPriceFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get createPriceFree;
+
+  /// No description provided for @createPricePaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get createPricePaid;
+
+  /// No description provided for @createPriceDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit'**
+  String get createPriceDeposit;
+
+  /// No description provided for @createPriceAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get createPriceAmountLabel;
+
+  /// No description provided for @createCurrencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get createCurrencyLabel;
+
+  /// No description provided for @createPriceValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid amount'**
+  String get createPriceValidation;
+
+  /// No description provided for @createOnlineSection.
+  ///
+  /// In en, this message translates to:
+  /// **'ONLINE ACCESS'**
+  String get createOnlineSection;
+
+  /// No description provided for @createMeetingUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting link'**
+  String get createMeetingUrlLabel;
+
+  /// No description provided for @createMeetingUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://zoom.us/...'**
+  String get createMeetingUrlHint;
+
+  /// No description provided for @createMeetingUrlValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide a meeting link'**
+  String get createMeetingUrlValidation;
+
+  /// No description provided for @createOfflineSection.
+  ///
+  /// In en, this message translates to:
+  /// **'VENUE'**
+  String get createOfflineSection;
+
+  /// No description provided for @createCountryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get createCountryLabel;
+
+  /// No description provided for @createCityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get createCityLabel;
+
+  /// No description provided for @createCityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Almaty'**
+  String get createCityHint;
+
+  /// No description provided for @createAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get createAddressLabel;
+
+  /// No description provided for @createAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Street, building, etc.'**
+  String get createAddressHint;
+
+  /// No description provided for @createLocationValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please specify a city or address'**
+  String get createLocationValidation;
 }
 
 class _AppLocalizationsDelegate

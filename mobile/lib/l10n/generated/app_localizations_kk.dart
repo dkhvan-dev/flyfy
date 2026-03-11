@@ -410,4 +410,191 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get comingSoon => 'Жақында пайда болады';
+
+  @override
+  String get createActivityFab => 'Жасау';
+
+  @override
+  String get createActivityTitle => 'Жаңа белсенділік';
+
+  @override
+  String get createActivitySubmit => 'Белсенділік жасау';
+
+  @override
+  String get createActivitySuccess => 'Белсенділік сәтті жасалды';
+
+  @override
+  String get createActivityFailed => 'Белсенділікті жасау сәтсіз аяқталды';
+
+  @override
+  String get createStepBasic => 'Негізгі';
+
+  @override
+  String get createStepSchedule => 'Формат және кесте';
+
+  @override
+  String get createStepParticipation => 'Қатысу';
+
+  @override
+  String get createStepLocation => 'Орналасу';
+
+  @override
+  String get createStepNext => 'Келесі';
+
+  @override
+  String get createStepBack => 'Артқа';
+
+  @override
+  String get createBasicSection => 'НЕГІЗГІ АҚПАРАТ';
+
+  @override
+  String get createTitleLabel => 'Атауы';
+
+  @override
+  String get createTitleHint => 'Белсенділік атауын енгізіңіз';
+
+  @override
+  String get createTitleValidation => 'Атау кемінде 3 таңбадан тұруы керек';
+
+  @override
+  String get createDescriptionLabel => 'Сипаттама';
+
+  @override
+  String get createDescriptionHint => 'Белсенділікте не болатынын сипаттаңыз';
+
+  @override
+  String get createDescriptionValidation =>
+      'Сипаттама кемінде 10 таңбадан тұруы керек';
+
+  @override
+  String get createCategoryLabel => 'Санат';
+
+  @override
+  String get createCategoryHint => 'Мысалы: спорт, білім, музыка';
+
+  @override
+  String get createCategoryValidation => 'Санатты көрсетіңіз';
+
+  @override
+  String get createTagsLabel => 'Тегтер';
+
+  @override
+  String get createTagsHint => 'Үтір арқылы: жүгіру, таңғы, саябақ';
+
+  @override
+  String get createFormatSection => 'ӨТКІЗУ ФОРМАТЫ';
+
+  @override
+  String get createScheduleSection => 'КЕСТЕ';
+
+  @override
+  String get createStartAtLabel => 'Басталуы';
+
+  @override
+  String get createEndAtLabel => 'Аяқталуы';
+
+  @override
+  String get createRegistrationDeadlineLabel => 'Тіркелу мерзімі';
+
+  @override
+  String get createEndDateValidation =>
+      'Аяқталу уақыты басталудан кейін болуы керек';
+
+  @override
+  String get createLanguageSection => 'БЕЛСЕНДІЛІК ТІЛІ';
+
+  @override
+  String get createVisibilitySection => 'КӨРІНУІ';
+
+  @override
+  String get createVisibilityPublic => 'Жалпыға қолжетімді';
+
+  @override
+  String get createVisibilityPrivate => 'Жабық';
+
+  @override
+  String get createVisibilityUnlisted => 'Сілтеме бойынша';
+
+  @override
+  String get createJoinModeSection => 'ҚОСЫЛУ РЕЖИМІ';
+
+  @override
+  String get createJoinModeAuto => 'Автоматты мақұлдау';
+
+  @override
+  String get createJoinModeManual => 'Қолмен мақұлдау';
+
+  @override
+  String get createCapacitySection => 'ОРЫН САНЫ';
+
+  @override
+  String get createCapacityUnlimited => 'Шектеусіз';
+
+  @override
+  String get createCapacityLimited => 'Шектеулі';
+
+  @override
+  String get createMinParticipantsLabel => 'Минимум';
+
+  @override
+  String get createMaxParticipantsLabel => 'Максимум';
+
+  @override
+  String get createMaxParticipantsValidation =>
+      'Дұрыс максималды санды енгізіңіз';
+
+  @override
+  String get createPriceSection => 'ҚҰНЫ';
+
+  @override
+  String get createPriceFree => 'Тегін';
+
+  @override
+  String get createPricePaid => 'Ақылы';
+
+  @override
+  String get createPriceDeposit => 'Депозит';
+
+  @override
+  String get createPriceAmountLabel => 'Сома';
+
+  @override
+  String get createCurrencyLabel => 'Валюта';
+
+  @override
+  String get createPriceValidation => 'Дұрыс соманы енгізіңіз';
+
+  @override
+  String get createOnlineSection => 'ОНЛАЙН ҚАТЫНАУ';
+
+  @override
+  String get createMeetingUrlLabel => 'Кездесу сілтемесі';
+
+  @override
+  String get createMeetingUrlHint => 'https://zoom.us/...';
+
+  @override
+  String get createMeetingUrlValidation =>
+      'Онлайн кездесу сілтемесін көрсетіңіз';
+
+  @override
+  String get createOfflineSection => 'ӨТКІЗУ ОРНЫ';
+
+  @override
+  String get createCountryLabel => 'Ел';
+
+  @override
+  String get createCityLabel => 'Қала';
+
+  @override
+  String get createCityHint => 'Мысалы: Алматы';
+
+  @override
+  String get createAddressLabel => 'Мекенжай';
+
+  @override
+  String get createAddressHint => 'Көше, үй, корпус';
+
+  @override
+  String get createLocationValidation => 'Қала немесе мекенжайды көрсетіңіз';
 }

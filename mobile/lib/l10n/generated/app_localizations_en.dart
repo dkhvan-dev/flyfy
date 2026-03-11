@@ -408,4 +408,190 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get comingSoon => 'Coming soon';
+
+  @override
+  String get createActivityFab => 'Create';
+
+  @override
+  String get createActivityTitle => 'New Activity';
+
+  @override
+  String get createActivitySubmit => 'Create Activity';
+
+  @override
+  String get createActivitySuccess => 'Activity created successfully';
+
+  @override
+  String get createActivityFailed => 'Failed to create activity';
+
+  @override
+  String get createStepBasic => 'Basic Info';
+
+  @override
+  String get createStepSchedule => 'Format & Schedule';
+
+  @override
+  String get createStepParticipation => 'Participation';
+
+  @override
+  String get createStepLocation => 'Location';
+
+  @override
+  String get createStepNext => 'Next';
+
+  @override
+  String get createStepBack => 'Back';
+
+  @override
+  String get createBasicSection => 'BASIC INFORMATION';
+
+  @override
+  String get createTitleLabel => 'Title';
+
+  @override
+  String get createTitleHint => 'Enter activity title';
+
+  @override
+  String get createTitleValidation => 'Title must be at least 3 characters';
+
+  @override
+  String get createDescriptionLabel => 'Description';
+
+  @override
+  String get createDescriptionHint =>
+      'Describe what will happen at the activity';
+
+  @override
+  String get createDescriptionValidation =>
+      'Description must be at least 10 characters';
+
+  @override
+  String get createCategoryLabel => 'Category';
+
+  @override
+  String get createCategoryHint => 'e.g. sports, education, music';
+
+  @override
+  String get createCategoryValidation => 'Please specify a category';
+
+  @override
+  String get createTagsLabel => 'Tags';
+
+  @override
+  String get createTagsHint => 'Comma-separated: running, morning, park';
+
+  @override
+  String get createFormatSection => 'FORMAT';
+
+  @override
+  String get createScheduleSection => 'SCHEDULE';
+
+  @override
+  String get createStartAtLabel => 'Start';
+
+  @override
+  String get createEndAtLabel => 'End';
+
+  @override
+  String get createRegistrationDeadlineLabel => 'Registration deadline';
+
+  @override
+  String get createEndDateValidation => 'End date must be after start date';
+
+  @override
+  String get createLanguageSection => 'ACTIVITY LANGUAGE';
+
+  @override
+  String get createVisibilitySection => 'VISIBILITY';
+
+  @override
+  String get createVisibilityPublic => 'Public';
+
+  @override
+  String get createVisibilityPrivate => 'Private';
+
+  @override
+  String get createVisibilityUnlisted => 'Unlisted';
+
+  @override
+  String get createJoinModeSection => 'JOIN MODE';
+
+  @override
+  String get createJoinModeAuto => 'Auto approve';
+
+  @override
+  String get createJoinModeManual => 'Manual approve';
+
+  @override
+  String get createCapacitySection => 'CAPACITY';
+
+  @override
+  String get createCapacityUnlimited => 'Unlimited';
+
+  @override
+  String get createCapacityLimited => 'Limited';
+
+  @override
+  String get createMinParticipantsLabel => 'Minimum';
+
+  @override
+  String get createMaxParticipantsLabel => 'Maximum';
+
+  @override
+  String get createMaxParticipantsValidation =>
+      'Please enter a valid maximum number';
+
+  @override
+  String get createPriceSection => 'PRICING';
+
+  @override
+  String get createPriceFree => 'Free';
+
+  @override
+  String get createPricePaid => 'Paid';
+
+  @override
+  String get createPriceDeposit => 'Deposit';
+
+  @override
+  String get createPriceAmountLabel => 'Amount';
+
+  @override
+  String get createCurrencyLabel => 'Currency';
+
+  @override
+  String get createPriceValidation => 'Please enter a valid amount';
+
+  @override
+  String get createOnlineSection => 'ONLINE ACCESS';
+
+  @override
+  String get createMeetingUrlLabel => 'Meeting link';
+
+  @override
+  String get createMeetingUrlHint => 'https://zoom.us/...';
+
+  @override
+  String get createMeetingUrlValidation => 'Please provide a meeting link';
+
+  @override
+  String get createOfflineSection => 'VENUE';
+
+  @override
+  String get createCountryLabel => 'Country';
+
+  @override
+  String get createCityLabel => 'City';
+
+  @override
+  String get createCityHint => 'e.g. Almaty';
+
+  @override
+  String get createAddressLabel => 'Address';
+
+  @override
+  String get createAddressHint => 'Street, building, etc.';
+
+  @override
+  String get createLocationValidation => 'Please specify a city or address';
 }

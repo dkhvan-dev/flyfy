@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/activities/models/create_activity_request.dart';
 import 'api_client.dart';
 
 class ActivityApi {
@@ -63,9 +64,31 @@ class ActivityApi {
 
   Future<Map<String, dynamic>> joinActivity(String activityId) async {
     final response = await _apiClient.dio.post(
-      '/activities/$activityId/join',
+      '/me/activities/$activityId/join',
     );
 
     return response.data as Map<String, dynamic>;
+  }
+
+  Future<ActivityListItemVm> createActivity(
+    CreateActivityRequest request,
+  ) async {
+    final response = await _apiClient.dio.post(
+      '/me/activities',
+      data: request.toJson(),
+    );
+
+    return ActivityListItemVm.fromJson(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
+  Future<void> leaveActivity(String activityId, {String? reason}) async {
+    await _apiClient.dio.post(
+      '/me/activities/$activityId/leave',
+      data: {
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason,
+      },
+    );
   }
 }
