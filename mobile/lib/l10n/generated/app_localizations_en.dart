@@ -594,4 +594,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createLocationValidation => 'Please specify a city or address';
+
+  @override
+  String get editActivityTitle => 'Edit Activity';
+
+  @override
+  String get editActivityButton => 'Edit';
+
+  @override
+  String get editActivitySubmit => 'Save Changes';
+
+  @override
+  String get editActivitySuccess => 'Activity updated successfully';
+
+  @override
+  String get editActivityFailed => 'Failed to update activity';
+
+  @override
+  String get activityPublishButton => 'Publish';
+
+  @override
+  String get activityPublishSuccess => 'Activity published successfully';
+
+  @override
+  String get activityPublishFailed => 'Failed to publish activity';
+
+  @override
+  String get editFormatLocked => 'Format cannot be changed after creation';
+
+  @override
+  String get editLocationLocked =>
+      'Location cannot be changed after publication';
+
+  @override
+  String get editPriceRestrictionHint =>
+      'Price cannot be changed if participants have already joined';
 }

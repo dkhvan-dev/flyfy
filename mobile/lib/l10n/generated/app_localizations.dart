@@ -1233,6 +1233,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please specify a city or address'**
   String get createLocationValidation;
+
+  /// No description provided for @editActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Activity'**
+  String get editActivityTitle;
+
+  /// No description provided for @editActivityButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editActivityButton;
+
+  /// No description provided for @editActivitySubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get editActivitySubmit;
+
+  /// No description provided for @editActivitySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity updated successfully'**
+  String get editActivitySuccess;
+
+  /// No description provided for @editActivityFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update activity'**
+  String get editActivityFailed;
+
+  /// No description provided for @activityPublishButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get activityPublishButton;
+
+  /// No description provided for @activityPublishSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity published successfully'**
+  String get activityPublishSuccess;
+
+  /// No description provided for @activityPublishFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to publish activity'**
+  String get activityPublishFailed;
+
+  /// No description provided for @editFormatLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Format cannot be changed after creation'**
+  String get editFormatLocked;
+
+  /// No description provided for @editLocationLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Location cannot be changed after publication'**
+  String get editLocationLocked;
+
+  /// No description provided for @editPriceRestrictionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Price cannot be changed if participants have already joined'**
+  String get editPriceRestrictionHint;
 }
 
 class _AppLocalizationsDelegate

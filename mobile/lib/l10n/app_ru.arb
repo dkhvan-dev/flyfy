@@ -203,5 +203,16 @@
   "createCityHint": "Например: Алматы",
   "createAddressLabel": "Адрес",
   "createAddressHint": "Улица, дом, корпус",
-  "createLocationValidation": "Укажите город или адрес проведения"
+  "createLocationValidation": "Укажите город или адрес проведения",
+  "editActivityTitle": "Редактирование",
+  "editActivityButton": "Редактировать",
+  "editActivitySubmit": "Сохранить",
+  "editActivitySuccess": "Активность обновлена",
+  "editActivityFailed": "Не удалось обновить активность",
+  "activityPublishButton": "Опубликовать",
+  "activityPublishSuccess": "Активность опубликована",
+  "activityPublishFailed": "Не удалось опубликовать активность",
+  "editFormatLocked": "Формат нельзя изменить после создания",
+  "editLocationLocked": "Место проведения нельзя изменить после публикации",
+  "editPriceRestrictionHint": "Цену нельзя изменить, если участники уже записались"
 }

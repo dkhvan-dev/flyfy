@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/otp_screen.dart';
@@ -69,6 +70,13 @@ class AppRouter {
           builder: (context, state) => const CreateActivityScreen(),
         ),
         GoRoute(
+          path: '/activities/:activityId/edit',
+          builder: (context, state) {
+            final activity = state.extra as ActivityListItemVm?;
+            return CreateActivityScreen(activity: activity);
+          },
+        ),
+        GoRoute(
           path: '/activities/:activityId',
           builder: (context, state) {
             final activityId = state.pathParameters['activityId'] ?? '';
@@ -89,7 +97,8 @@ class AppRouter {
     }
 
     if (location.startsWith('/activities/') &&
-        location != '/activities/create') {
+        location != '/activities/create' &&
+        !location.endsWith('/edit')) {
       return true;
     }
 

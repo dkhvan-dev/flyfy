@@ -203,5 +203,16 @@
   "createCityHint": "Мысалы: Алматы",
   "createAddressLabel": "Мекенжай",
   "createAddressHint": "Көше, үй, корпус",
-  "createLocationValidation": "Қала немесе мекенжайды көрсетіңіз"
+  "createLocationValidation": "Қала немесе мекенжайды көрсетіңіз",
+  "editActivityTitle": "Өңдеу",
+  "editActivityButton": "Өңдеу",
+  "editActivitySubmit": "Сақтау",
+  "editActivitySuccess": "Белсенділік жаңартылды",
+  "editActivityFailed": "Белсенділікті жаңарту сәтсіз аяқталды",
+  "activityPublishButton": "Жариялау",
+  "activityPublishSuccess": "Белсенділік жарияланды",
+  "activityPublishFailed": "Белсенділікті жариялау сәтсіз аяқталды",
+  "editFormatLocked": "Форматты жасалғаннан кейін өзгерту мүмкін емес",
+  "editLocationLocked": "Жарияланғаннан кейін орналасқан жерді өзгерту мүмкін емес",
+  "editPriceRestrictionHint": "Қатысушылар жазылғаннан кейін бағаны өзгерту мүмкін емес"
 }

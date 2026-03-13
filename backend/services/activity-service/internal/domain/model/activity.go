@@ -189,6 +189,10 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 }
 
 func (a *Activity) ValidateForCreate(now time.Time) error {
+	return a.Validate(now, false)
+}
+
+func (a *Activity) Validate(now time.Time, skipStartTimeCheck bool) error {
 	if a.ID == uuid.Nil {
 		return ErrInvalidActivityID
 	}
@@ -225,7 +229,7 @@ func (a *Activity) ValidateForCreate(now time.Time) error {
 	if strings.TrimSpace(a.Timezone) == "" {
 		return ErrInvalidTimezone
 	}
-	if !a.StartAt.After(now.Add(1 * time.Hour)) {
+	if !skipStartTimeCheck && !a.StartAt.After(now.Add(1*time.Hour)) {
 		return ErrActivityTooSoon
 	}
 	if !a.EndAt.After(a.StartAt) {

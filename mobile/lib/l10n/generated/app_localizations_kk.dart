@@ -597,4 +597,40 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createLocationValidation => 'Қала немесе мекенжайды көрсетіңіз';
+
+  @override
+  String get editActivityTitle => 'Өңдеу';
+
+  @override
+  String get editActivityButton => 'Өңдеу';
+
+  @override
+  String get editActivitySubmit => 'Сақтау';
+
+  @override
+  String get editActivitySuccess => 'Белсенділік жаңартылды';
+
+  @override
+  String get editActivityFailed => 'Белсенділікті жаңарту сәтсіз аяқталды';
+
+  @override
+  String get activityPublishButton => 'Жариялау';
+
+  @override
+  String get activityPublishSuccess => 'Белсенділік жарияланды';
+
+  @override
+  String get activityPublishFailed => 'Белсенділікті жариялау сәтсіз аяқталды';
+
+  @override
+  String get editFormatLocked =>
+      'Форматты жасалғаннан кейін өзгерту мүмкін емес';
+
+  @override
+  String get editLocationLocked =>
+      'Жарияланғаннан кейін орналасқан жерді өзгерту мүмкін емес';
+
+  @override
+  String get editPriceRestrictionHint =>
+      'Қатысушылар жазылғаннан кейін бағаны өзгерту мүмкін емес';
 }

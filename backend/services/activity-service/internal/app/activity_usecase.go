@@ -198,6 +198,30 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		_ = u.repo.CreateActivityEvent(ctx, event)
 	}
 
+	hostParticipant, participantErr := model.NewActivityParticipant(model.NewActivityParticipantParams{
+		ActivityID: item.ID,
+		UserID:     input.HostUserID,
+		Status:     enum.ParticipantStatusApproved,
+	})
+	if participantErr == nil {
+		now := time.Now().UTC()
+		hostParticipant.ApprovedAt = &now
+
+		if createErr := u.repo.CreateParticipant(ctx, hostParticipant); createErr == nil {
+			participantEvent, pEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
+				ActivityID:    item.ID,
+				ParticipantID: hostParticipant.ID,
+				UserID:        input.HostUserID,
+				EventType:     string(enum.ParticipantStatusApproved),
+				ActorUserID:   &input.HostUserID,
+				PayloadJSON:   mustJSON(map[string]any{"status": string(enum.ParticipantStatusApproved), "isHost": true}),
+			})
+			if pEventErr == nil {
+				_ = u.repo.CreateParticipantEvent(ctx, participantEvent)
+			}
+		}
+	}
+
 	return item, nil
 }
 
@@ -625,7 +649,7 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		return nil, err
 	}
 
-	if err = u.validateUpdateRules(ctx, item, beforePriceType, beforePriceAmount, beforeCurrency, beforeLocationSnapshot); err != nil {
+	if err = u.validateUpdateRules(ctx, item, beforePriceType, beforePriceAmount, beforeCurrency, beforeLocationSnapshot, input.StartAt != nil); err != nil {
 		return nil, err
 	}
 
@@ -697,11 +721,12 @@ func (u *ActivityUseCase) validateUpdateRules(
 	beforePriceAmount *float64,
 	beforeCurrency *string,
 	beforeLocationSnapshot string,
+	startAtChanged bool,
 ) error {
 	now := time.Now().UTC()
 
 	if item.Status != enum.ActivityStatusDraft && item.Status != enum.ActivityStatusReviewRequired {
-		if !item.StartAt.After(now.Add(1 * time.Hour)) {
+		if startAtChanged && !item.StartAt.After(now.Add(1*time.Hour)) {
 			return model.ErrActivityTooSoon
 		}
 		if item.Format != enum.ActivityFormatOnline && locationSnapshot(item) != beforeLocationSnapshot {
@@ -709,7 +734,8 @@ func (u *ActivityUseCase) validateUpdateRules(
 		}
 	}
 
-	if err := item.ValidateForCreate(now); err != nil {
+	skipStartTimeCheck := !startAtChanged
+	if err := item.Validate(now, skipStartTimeCheck); err != nil {
 		if item.Status != enum.ActivityStatusDraft && item.Status != enum.ActivityStatusReviewRequired {
 			switch {
 			case errors.Is(err, model.ErrInvalidOfflineLocation),

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
+import '../../features/activities/models/update_activity_request.dart';
 import 'api_client.dart';
 
 class ActivityApi {
@@ -89,6 +90,30 @@ class ActivityApi {
       data: {
         if (reason != null && reason.trim().isNotEmpty) 'reason': reason,
       },
+    );
+  }
+
+  Future<ActivityListItemVm> updateActivity(
+    String activityId,
+    UpdateActivityRequest request,
+  ) async {
+    final response = await _apiClient.dio.patch(
+      '/me/activities/$activityId',
+      data: request.toJson(),
+    );
+
+    return ActivityListItemVm.fromJson(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
+  Future<ActivityListItemVm> publishActivity(String activityId) async {
+    final response = await _apiClient.dio.post(
+      '/me/activities/$activityId/publish',
+    );
+
+    return ActivityListItemVm.fromJson(
+      response.data as Map<String, dynamic>,
     );
   }
 }

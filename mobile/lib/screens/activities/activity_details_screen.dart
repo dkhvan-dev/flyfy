@@ -8,6 +8,7 @@ import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/session_provider.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
   const ActivityDetailsScreen({
@@ -69,23 +70,84 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     );
   }
 
+  Future<void> _handlePublish() async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ActivityProvider>();
+    final success = await provider.publishActivity(widget.activityId);
+
+    if (!mounted) return;
+
+    if (success) {
+      provider.loadActivities();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.activityPublishSuccess)),
+      );
+    } else {
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: provider.actionErrorMessage ?? l10n.activityPublishFailed,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final sessionProvider = context.watch<SessionProvider>();
+    final currentUserId = sessionProvider.profile?.userId;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A0F),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          l10n.activityDetailsTitle,
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
-      body: Consumer<ActivityProvider>(
-        builder: (context, provider, _) {
+    return Consumer<ActivityProvider>(
+      builder: (context, provider, _) {
+        final activity = provider.selectedActivity;
+        final isOwner =
+            currentUserId != null && activity != null && currentUserId == activity.hostUserId;
+        final status = activity?.status.toUpperCase() ?? '';
+        final isDraft = status == 'DRAFT';
+        final isEditable = isDraft ||
+            status == 'REVIEW_REQUIRED' ||
+            status == 'ENROLLMENT_OPEN' ||
+            status == 'FULL';
+        final canEdit = isOwner && isEditable;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFF0A0A0F),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF0A0A0F),
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: Text(
+              l10n.activityDetailsTitle,
+              style: const TextStyle(color: Colors.white),
+            ),
+            actions: [
+              if (canEdit)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: l10n.editActivityButton,
+                  onPressed: () {
+                    context.push(
+                      '/activities/${widget.activityId}/edit',
+                      extra: activity,
+                    );
+                  },
+                ),
+            ],
+          ),
+          body: _buildBody(context, provider, activity, l10n, isOwner, isDraft),
+        );
+      },
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    ActivityProvider provider,
+    ActivityListItemVm? activity,
+    AppLocalizations l10n,
+    bool isOwner,
+    bool isDraft,
+  ) {
           if (provider.state == ActivitiesState.loading &&
               provider.selectedActivity == null) {
             return const Center(
@@ -101,7 +163,6 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
             );
           }
 
-          final activity = provider.selectedActivity;
           if (activity == null) {
             return _ActivityDetailsErrorView(
               message: l10n.activityNotFound,
@@ -234,47 +295,89 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                   ),
                   child: SizedBox(
                     width: double.infinity,
-                    child: Consumer<ActivityProvider>(
-                      builder: (context, provider, _) {
-                        final isLoading =
-                            provider.actionState == ActivityActionState.loading;
-
-                        return ElevatedButton(
-                          onPressed: isLoading ? null : _handleJoin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00BCD4),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(
-                                  l10n.activityJoinButton,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                        );
-                      },
+                    child: _buildBottomButton(
+                      context,
+                      provider,
+                      l10n,
+                      isOwner: isOwner,
+                      isDraft: isDraft,
                     ),
                   ),
                 ),
               ),
             ],
           );
-        },
+  }
+
+  Widget _buildBottomButton(
+    BuildContext context,
+    ActivityProvider provider,
+    AppLocalizations l10n, {
+    required bool isOwner,
+    required bool isDraft,
+  }) {
+    final isLoading = provider.actionState == ActivityActionState.loading;
+
+    if (isOwner && isDraft) {
+      return ElevatedButton(
+        onPressed: isLoading ? null : _handlePublish,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF00C853),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                l10n.activityPublishButton,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+      );
+    }
+
+    if (isOwner) {
+      return const SizedBox.shrink();
+    }
+
+    return ElevatedButton(
+      onPressed: isLoading ? null : _handleJoin,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF00BCD4),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
+      child: isLoading
+          ? const SizedBox(
+              height: 22,
+              width: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: Colors.white,
+              ),
+            )
+          : Text(
+              l10n.activityJoinButton,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
     );
   }
 

@@ -22,6 +22,14 @@ class ActivityListItemVm {
     this.countryCode,
     this.priceAmount,
     this.currency,
+    this.registrationDeadline,
+    this.minParticipants,
+    this.maxParticipants,
+    this.addressText,
+    this.meetingUrl,
+    this.mapUrl,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -47,6 +55,14 @@ class ActivityListItemVm {
   final String? countryCode;
   final double? priceAmount;
   final String? currency;
+  final DateTime? registrationDeadline;
+  final int? minParticipants;
+  final int? maxParticipants;
+  final String? addressText;
+  final String? meetingUrl;
+  final String? mapUrl;
+  final double? latitude;
+  final double? longitude;
 
   factory ActivityListItemVm.fromJson(Map<String, dynamic> json) {
     return ActivityListItemVm(
@@ -77,6 +93,15 @@ class ActivityListItemVm {
       countryCode: json['countryCode']?.toString(),
       priceAmount: (json['priceAmount'] as num?)?.toDouble(),
       currency: json['currency']?.toString(),
+      registrationDeadline:
+          DateTime.tryParse(json['registrationDeadline']?.toString() ?? ''),
+      minParticipants: (json['minParticipants'] as num?)?.toInt(),
+      maxParticipants: (json['maxParticipants'] as num?)?.toInt(),
+      addressText: json['addressText']?.toString(),
+      meetingUrl: json['meetingUrl']?.toString(),
+      mapUrl: json['mapUrl']?.toString(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 

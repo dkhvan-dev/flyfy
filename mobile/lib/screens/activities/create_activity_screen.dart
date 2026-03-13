@@ -4,12 +4,18 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/ui/error_dialog.dart';
+import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
+import '../../features/activities/models/update_activity_request.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 
 class CreateActivityScreen extends StatefulWidget {
-  const CreateActivityScreen({super.key});
+  const CreateActivityScreen({super.key, this.activity});
+
+  final ActivityListItemVm? activity;
+
+  bool get isEditMode => activity != null;
 
   @override
   State<CreateActivityScreen> createState() => _CreateActivityScreenState();
@@ -51,6 +57,68 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   final _meetingUrlCtrl = TextEditingController();
 
   bool _isSubmitting = false;
+
+  // Track whether the user changed date/time fields in edit mode.
+  bool _startAtChanged = false;
+  bool _endAtChanged = false;
+  bool _registrationDeadlineChanged = false;
+
+  bool get _isPublished {
+    final status = widget.activity?.status.toUpperCase() ?? '';
+    return status == 'ENROLLMENT_OPEN' ||
+        status == 'FULL' ||
+        status == 'PUBLISHED' ||
+        status == 'STARTED';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final a = widget.activity;
+    if (a != null) {
+      _titleCtrl.text = a.title;
+      _descriptionCtrl.text = a.description;
+      _categoryCtrl.text = a.categorySlug;
+      _tagsCtrl.text = a.tags.join(', ');
+      _format = a.format.toUpperCase();
+      _startAt = a.startAt.toLocal();
+      _endAt = a.endAt.toLocal();
+      _registrationDeadline =
+          a.registrationDeadline?.toLocal() ?? _startAt.subtract(const Duration(hours: 1));
+      _languageCode = a.languageCode;
+      _timezone = a.timezone;
+      _capacityType = a.capacityType.toUpperCase();
+      if (a.minParticipants != null) {
+        _minParticipantsCtrl.text = a.minParticipants.toString();
+      }
+      if (a.maxParticipants != null) {
+        _maxParticipantsCtrl.text = a.maxParticipants.toString();
+      }
+      _joinMode = a.joinMode.toUpperCase();
+      _visibility = a.visibility.toUpperCase();
+      _priceType = a.priceType.toUpperCase();
+      if (a.priceAmount != null) {
+        _priceAmountCtrl.text = a.priceAmount! % 1 == 0
+            ? a.priceAmount!.toStringAsFixed(0)
+            : a.priceAmount!.toStringAsFixed(2);
+      }
+      if (a.currency != null && a.currency!.trim().isNotEmpty) {
+        _currencyCtrl.text = a.currency!;
+      }
+      if (a.countryCode != null && a.countryCode!.trim().isNotEmpty) {
+        _countryCodeCtrl.text = a.countryCode!;
+      }
+      if (a.cityName != null && a.cityName!.trim().isNotEmpty) {
+        _cityNameCtrl.text = a.cityName!;
+      }
+      if (a.addressText != null && a.addressText!.trim().isNotEmpty) {
+        _addressTextCtrl.text = a.addressText!;
+      }
+      if (a.meetingUrl != null && a.meetingUrl!.trim().isNotEmpty) {
+        _meetingUrlCtrl.text = a.meetingUrl!;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -172,6 +240,16 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         .where((t) => t.isNotEmpty)
         .toList();
 
+    final provider = context.read<ActivityProvider>();
+
+    if (widget.isEditMode) {
+      await _submitUpdate(provider, tags);
+    } else {
+      await _submitCreate(provider, tags);
+    }
+  }
+
+  Future<void> _submitCreate(ActivityProvider provider, List<String> tags) async {
     final request = CreateActivityRequest(
       title: _titleCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
@@ -209,7 +287,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           (_format != 'OFFLINE') ? _meetingUrlCtrl.text.trim() : null,
     );
 
-    final provider = context.read<ActivityProvider>();
     final created = await provider.createActivity(request);
 
     if (!mounted) return;
@@ -220,13 +297,83 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.createActivitySuccess)),
       );
-      context.go('/activities/${created.id}');
+      context.read<ActivityProvider>().loadActivities();
+      context.pushReplacement('/activities/${created.id}');
     } else {
       final l10n = AppLocalizations.of(context)!;
       await showErrorDialog(
         context,
         title: l10n.error,
         message: provider.actionErrorMessage ?? l10n.createActivityFailed,
+      );
+    }
+  }
+
+  Future<void> _submitUpdate(ActivityProvider provider, List<String> tags) async {
+    final activityId = widget.activity!.id;
+
+    final request = UpdateActivityRequest(
+      title: _titleCtrl.text.trim(),
+      description: _descriptionCtrl.text.trim(),
+      visibility: _visibility,
+      joinMode: _joinMode,
+      categorySlug: _categoryCtrl.text.trim().toLowerCase().replaceAll(' ', '-'),
+      tags: tags,
+      languageCode: _languageCode,
+      timezone: _timezone,
+      startAt: _startAtChanged ? _startAt : null,
+      endAt: _endAtChanged ? _endAt : null,
+      registrationDeadline: _registrationDeadlineChanged ? _registrationDeadline : null,
+      capacityType: _capacityType,
+      minParticipants: _capacityType == 'LIMITED'
+          ? int.tryParse(_minParticipantsCtrl.text.trim())
+          : null,
+      hasMinParticipants: true,
+      maxParticipants: _capacityType == 'LIMITED'
+          ? int.tryParse(_maxParticipantsCtrl.text.trim())
+          : null,
+      hasMaxParticipants: true,
+      priceType: _priceType,
+      priceAmount: _priceType != 'FREE'
+          ? double.tryParse(_priceAmountCtrl.text.trim())
+          : null,
+      hasPriceAmount: true,
+      currency:
+          _priceType != 'FREE' ? _currencyCtrl.text.trim().toUpperCase() : null,
+      hasCurrency: true,
+      countryCode: (_format != 'ONLINE')
+          ? _countryCodeCtrl.text.trim().toUpperCase()
+          : null,
+      hasCountryCode: true,
+      cityName:
+          (_format != 'ONLINE') ? _cityNameCtrl.text.trim() : null,
+      hasCityName: true,
+      addressText:
+          (_format != 'ONLINE') ? _addressTextCtrl.text.trim() : null,
+      hasAddressText: true,
+      meetingUrl:
+          (_format != 'OFFLINE') ? _meetingUrlCtrl.text.trim() : null,
+      hasMeetingUrl: true,
+    );
+
+    final updated = await provider.updateActivity(activityId, request);
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (updated != null) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.editActivitySuccess)),
+      );
+      context.read<ActivityProvider>().loadActivities();
+      context.pop();
+    } else {
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: provider.actionErrorMessage ?? l10n.editActivityFailed,
       );
     }
   }
@@ -286,7 +433,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          l10n.createActivityTitle,
+          widget.isEditMode ? l10n.editActivityTitle : l10n.createActivityTitle,
           style: const TextStyle(color: Colors.white),
         ),
       ),
@@ -317,7 +464,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             onBack: () => _goToStep(_currentStep - 1),
             onNext: _nextStep,
             nextLabel: _currentStep == _totalSteps - 1
-                ? l10n.createActivitySubmit
+                ? (widget.isEditMode
+                    ? l10n.editActivitySubmit
+                    : l10n.createActivitySubmit)
                 : l10n.createStepNext,
             backLabel: l10n.createStepBack,
           ),
@@ -367,21 +516,35 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   Widget _buildStep2Schedule(AppLocalizations l10n) {
     final df = DateFormat('dd.MM.yyyy HH:mm');
+    final formatLocked = widget.isEditMode;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _SectionTitle(title: l10n.createFormatSection),
         const SizedBox(height: 12),
-        _SegmentedSelect<String>(
-          value: _format,
-          items: {
-            'OFFLINE': l10n.activityFormatOffline,
-            'ONLINE': l10n.activityFormatOnline,
-            'HYBRID': l10n.activityFormatHybrid,
-          },
-          onChanged: (v) => setState(() => _format = v),
+        IgnorePointer(
+          ignoring: formatLocked,
+          child: Opacity(
+            opacity: formatLocked ? 0.5 : 1.0,
+            child: _SegmentedSelect<String>(
+              value: _format,
+              items: {
+                'OFFLINE': l10n.activityFormatOffline,
+                'ONLINE': l10n.activityFormatOnline,
+                'HYBRID': l10n.activityFormatHybrid,
+              },
+              onChanged: (v) => setState(() => _format = v),
+            ),
+          ),
         ),
+        if (formatLocked) ...[
+          const SizedBox(height: 6),
+          Text(
+            l10n.editFormatLocked,
+            style: const TextStyle(color: Colors.white38, fontSize: 12),
+          ),
+        ],
         const SizedBox(height: 24),
         _SectionTitle(title: l10n.createScheduleSection),
         const SizedBox(height: 12),
@@ -390,7 +553,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           value: df.format(_startAt),
           onTap: () => _pickDateTime(
             initial: _startAt,
-            onPicked: (v) => setState(() => _startAt = v),
+            onPicked: (v) => setState(() {
+              _startAt = v;
+              _startAtChanged = true;
+            }),
           ),
         ),
         const SizedBox(height: 12),
@@ -399,7 +565,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           value: df.format(_endAt),
           onTap: () => _pickDateTime(
             initial: _endAt,
-            onPicked: (v) => setState(() => _endAt = v),
+            onPicked: (v) => setState(() {
+              _endAt = v;
+              _endAtChanged = true;
+            }),
           ),
         ),
         const SizedBox(height: 12),
@@ -408,7 +577,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           value: df.format(_registrationDeadline),
           onTap: () => _pickDateTime(
             initial: _registrationDeadline,
-            onPicked: (v) => setState(() => _registrationDeadline = v),
+            onPicked: (v) => setState(() {
+              _registrationDeadline = v;
+              _registrationDeadlineChanged = true;
+            }),
           ),
         ),
         const SizedBox(height: 24),
@@ -519,6 +691,13 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             ],
           ),
         ],
+        if (_isPublished) ...[
+          const SizedBox(height: 8),
+          Text(
+            l10n.editPriceRestrictionHint,
+            style: const TextStyle(color: Colors.white38, fontSize: 12),
+          ),
+        ],
       ],
     );
   }
@@ -528,6 +707,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   Widget _buildStep4Location(AppLocalizations l10n) {
     final showOffline = _format == 'OFFLINE' || _format == 'HYBRID';
     final showOnline = _format == 'ONLINE' || _format == 'HYBRID';
+    final locationLocked = _isPublished && showOffline;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -545,31 +725,48 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         ],
         if (showOffline) ...[
           _SectionTitle(title: l10n.createOfflineSection),
+          if (locationLocked) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.editLocationLocked,
+              style: const TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+          ],
           const SizedBox(height: 12),
-          Row(
-            children: [
-              SizedBox(
-                width: 100,
-                child: _InputField(
-                  controller: _countryCodeCtrl,
-                  label: l10n.createCountryLabel,
-                ),
+          IgnorePointer(
+            ignoring: locationLocked,
+            child: Opacity(
+              opacity: locationLocked ? 0.5 : 1.0,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 100,
+                        child: _InputField(
+                          controller: _countryCodeCtrl,
+                          label: l10n.createCountryLabel,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _InputField(
+                          controller: _cityNameCtrl,
+                          label: l10n.createCityLabel,
+                          hint: l10n.createCityHint,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _InputField(
+                    controller: _addressTextCtrl,
+                    label: l10n.createAddressLabel,
+                    hint: l10n.createAddressHint,
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _InputField(
-                  controller: _cityNameCtrl,
-                  label: l10n.createCityLabel,
-                  hint: l10n.createCityHint,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _InputField(
-            controller: _addressTextCtrl,
-            label: l10n.createAddressLabel,
-            hint: l10n.createAddressHint,
+            ),
           ),
         ],
       ],

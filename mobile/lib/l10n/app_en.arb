@@ -203,5 +203,16 @@
   "createCityHint": "e.g. Almaty",
   "createAddressLabel": "Address",
   "createAddressHint": "Street, building, etc.",
-  "createLocationValidation": "Please specify a city or address"
+  "createLocationValidation": "Please specify a city or address",
+  "editActivityTitle": "Edit Activity",
+  "editActivityButton": "Edit",
+  "editActivitySubmit": "Save Changes",
+  "editActivitySuccess": "Activity updated successfully",
+  "editActivityFailed": "Failed to update activity",
+  "activityPublishButton": "Publish",
+  "activityPublishSuccess": "Activity published successfully",
+  "activityPublishFailed": "Failed to publish activity",
+  "editFormatLocked": "Format cannot be changed after creation",
+  "editLocationLocked": "Location cannot be changed after publication",
+  "editPriceRestrictionHint": "Price cannot be changed if participants have already joined"
 }

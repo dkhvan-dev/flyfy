@@ -594,4 +594,39 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createLocationValidation => 'Укажите город или адрес проведения';
+
+  @override
+  String get editActivityTitle => 'Редактирование';
+
+  @override
+  String get editActivityButton => 'Редактировать';
+
+  @override
+  String get editActivitySubmit => 'Сохранить';
+
+  @override
+  String get editActivitySuccess => 'Активность обновлена';
+
+  @override
+  String get editActivityFailed => 'Не удалось обновить активность';
+
+  @override
+  String get activityPublishButton => 'Опубликовать';
+
+  @override
+  String get activityPublishSuccess => 'Активность опубликована';
+
+  @override
+  String get activityPublishFailed => 'Не удалось опубликовать активность';
+
+  @override
+  String get editFormatLocked => 'Формат нельзя изменить после создания';
+
+  @override
+  String get editLocationLocked =>
+      'Место проведения нельзя изменить после публикации';
+
+  @override
+  String get editPriceRestrictionHint =>
+      'Цену нельзя изменить, если участники уже записались';
 }
