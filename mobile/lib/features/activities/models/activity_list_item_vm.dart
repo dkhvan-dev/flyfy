@@ -1,10 +1,13 @@
 class ActivityListItemVm {
   ActivityListItemVm({
     required this.id,
+    required this.hostUserId,
     required this.title,
     required this.description,
     required this.format,
     required this.status,
+    required this.visibility,
+    required this.joinMode,
     required this.categorySlug,
     required this.languageCode,
     required this.timezone,
@@ -22,10 +25,13 @@ class ActivityListItemVm {
   });
 
   final String id;
+  final String hostUserId;
   final String title;
   final String description;
   final String format;
   final String status;
+  final String visibility;
+  final String joinMode;
   final String categorySlug;
   final List<String> tags;
   final String languageCode;
@@ -45,10 +51,13 @@ class ActivityListItemVm {
   factory ActivityListItemVm.fromJson(Map<String, dynamic> json) {
     return ActivityListItemVm(
       id: json['id']?.toString() ?? '',
+      hostUserId: json['hostUserId']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       format: json['format']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
+      visibility: json['visibility']?.toString() ?? '',
+      joinMode: json['joinMode']?.toString() ?? '',
       categorySlug: json['categorySlug']?.toString() ?? '',
       tags: (json['tags'] as List<dynamic>? ?? const [])
           .map((e) => e.toString())

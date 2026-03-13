@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -16,61 +15,64 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/config"
 	activityv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/activity/v1"
+	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("load config: %v", err)
-	}
-
 	ctx := context.Background()
-
-	poolCfg, err := pgxpool.ParseConfig(cfg.DatabaseURL())
+	cfg, err := config.Load(ctx)
 	if err != nil {
-		log.Fatalf("parse db config: %v", err)
+		log.Fatal().Err(err).Msg("load config")
 	}
 
-	poolCfg.MaxConns = cfg.DB.MaxConns
-	poolCfg.MinConns = cfg.DB.MinConns
-	poolCfg.MaxConnIdleTime = cfg.DB.MaxConnIdle
-	poolCfg.MaxConnLifetime = cfg.DB.MaxConnLife
-
-	dbpool, err := pgxpool.NewWithConfig(ctx, poolCfg)
+	pool, err := newPostgresPool(ctx, cfg)
 	if err != nil {
-		log.Fatalf("create db pool: %v", err)
+		log.Fatal().Err(err).Msg("failed to initialize postgres pool")
 	}
-	defer dbpool.Close()
+	defer pool.Close()
 
-	if err = dbpool.Ping(ctx); err != nil {
-		log.Fatalf("ping db: %v", err)
+	if err = pool.Ping(ctx); err != nil {
+		log.Fatal().Err(err).Msg("Failed ping db")
 	}
 
-	repo := repository.NewPGActivityRepository(dbpool)
+	repo := repository.NewPGActivityRepository(pool)
 
 	activityUC := app.NewActivityUseCase(repo)
 	joinUC := app.NewJoinUseCase(repo)
 	searchUC := app.NewSearchUseCase(repo)
 	moderationUC := app.NewModerationUseCase(activityUC)
 
-	httpHandler := httpadapter.NewHandler(activityUC, joinUC, repo)
+	userConn, err := grpc.NewClient(
+		cfg.UserService.GRPCAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+		)),
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed dial user-service grpc")
+	}
+	defer userConn.Close()
+
+	userClient := userv1.NewUserServiceClient(userConn)
+	actorResolver := grpcadapter.NewUserResolver(userClient)
+
+	httpHandler := httpadapter.NewHandler(activityUC, joinUC, repo, actorResolver)
 
 	httpMux := http.NewServeMux()
 	httpHandler.Register(httpMux)
 
-	httpRootHandler := httpadapter.Chain(
-		httpadapter.IdentityMiddleware,
-	)(httpMux)
-
 	httpServer := &http.Server{
-		Addr:              ":" + cfg.HTTP.Port,
-		Handler:           httpRootHandler,
-		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       20 * time.Second,
-		WriteTimeout:      20 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		Addr:         cfg.HTTP.Address(),
+		Handler:      httpadapter.Chain(cfg, withRequestLogging(httpMux)),
+		ReadTimeout:  cfg.HTTP.ReadTimeout,
+		WriteTimeout: cfg.HTTP.WriteTimeout,
+		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
 
 	grpcServer := grpc.NewServer()
@@ -82,16 +84,16 @@ func main() {
 	)
 	activityv1.RegisterActivityServiceServer(grpcServer, activityGRPCServer)
 
-	grpcLis, err := net.Listen("tcp", ":"+cfg.GRPC.Port)
+	grpcLis, err := net.Listen("tcp", cfg.GRPC.Address())
 	if err != nil {
-		log.Fatalf("listen grpc: %v", err)
+		log.Fatal().Err(err).Msg("Failed listen grpc")
 	}
 
 	httpErrCh := make(chan error, 1)
 	grpcErrCh := make(chan error, 1)
 
 	go func() {
-		log.Printf("%s HTTP started on :%s", cfg.App.Name, cfg.HTTP.Port)
+		log.Info().Str("service", cfg.App.Name).Int("port", cfg.HTTP.Port).Msg("HTTP server started")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			httpErrCh <- err
 			return
@@ -100,7 +102,7 @@ func main() {
 	}()
 
 	go func() {
-		log.Printf("%s gRPC started on :%s", cfg.App.Name, cfg.GRPC.Port)
+		log.Info().Str("service", cfg.App.Name).Int("port", cfg.GRPC.Port).Msg("gRPC server started")
 		if err := grpcServer.Serve(grpcLis); err != nil {
 			grpcErrCh <- err
 			return
@@ -113,24 +115,24 @@ func main() {
 
 	select {
 	case sig := <-stop:
-		log.Printf("received shutdown signal: %s", sig.String())
+		log.Info().Str("signal", sig.String()).Msg("received shutdown signal")
 	case err := <-httpErrCh:
 		if err != nil {
-			log.Fatalf("http server failed: %v", err)
+			log.Fatal().Err(err).Msg("http server failed")
 		}
 	case err := <-grpcErrCh:
 		if err != nil {
-			log.Fatalf("grpc server failed: %v", err)
+			log.Fatal().Err(err).Msg("grpc server failed")
 		}
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	log.Printf("shutting down %s", cfg.App.Name)
+	log.Info().Str("service", cfg.App.Name).Msg("shutting down")
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		log.Printf("http shutdown failed: %v", err)
+		log.Error().Err(err).Msg("http shutdown failed")
 	}
 
 	done := make(chan struct{})
@@ -141,11 +143,68 @@ func main() {
 
 	select {
 	case <-done:
-		log.Printf("grpc server stopped gracefully")
+		log.Info().Msg("grpc server stopped gracefully")
 	case <-time.After(10 * time.Second):
-		log.Printf("grpc graceful stop timeout reached, forcing stop")
+		log.Warn().Msg("grpc graceful stop timeout reached, forcing stop")
 		grpcServer.Stop()
 	}
 
-	log.Printf("%s stopped", cfg.App.Name)
+	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
+}
+
+func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
+	poolConfig, err := pgxpool.ParseConfig(cfg.DB.DSN())
+	if err != nil {
+		return nil, err
+	}
+
+	poolConfig.MaxConns = cfg.DB.MaxConns
+	poolConfig.MinConns = cfg.DB.MinConns
+	poolConfig.MaxConnLifetime = cfg.DB.ParsedMaxConnLifetime()
+	poolConfig.MaxConnIdleTime = cfg.DB.ParsedMaxConnIdleTime()
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if err = pool.Ping(pingCtx); err != nil {
+		pool.Close()
+		return nil, err
+	}
+
+	return pool, nil
+}
+
+func withRequestLogging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		startedAt := time.Now()
+
+		rw := &responseWriter{
+			ResponseWriter: w,
+			statusCode:     http.StatusOK,
+		}
+
+		next.ServeHTTP(rw, r)
+
+		log.Info().
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Int("status", rw.statusCode).
+			Dur("duration", time.Since(startedAt)).
+			Msg("http request handled")
+	})
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(statusCode int) {
+	rw.statusCode = statusCode
+	rw.ResponseWriter.WriteHeader(statusCode)
 }

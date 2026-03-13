@@ -8,6 +8,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/adapter"
 	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/config"
 )
 
@@ -132,22 +133,27 @@ func (h *ProxyHandler) injectTrustedHeaders(r *http.Request) {
 	r.Header.Del(h.cfg.Security.TrustedHeaderUser)
 	r.Header.Del(h.cfg.Security.TrustedHeaderRoles)
 	r.Header.Del(h.cfg.Security.TrustedHeaderSub)
-
-	requestID := RequestIDFromContext(r.Context())
-	if requestID != "" {
-		r.Header.Set(h.cfg.Security.RequestIDHeader, requestID)
-	}
+	r.Header.Del(h.cfg.Security.RequestIDHeader)
 
 	claims := ClaimsFromContext(r.Context())
+
 	if claims == nil {
 		return
 	}
 
-	r.Header.Set(h.cfg.Security.TrustedHeaderSub, claims.Subject)
-	r.Header.Set(h.cfg.Security.TrustedHeaderUser, claims.UserID)
+	if subject := strings.TrimSpace(claims.Subject); subject != "" {
+		r.Header.Set(h.cfg.Security.TrustedHeaderSub, subject)
+	}
 
-	if len(claims.Roles) > 0 {
-		r.Header.Set(h.cfg.Security.TrustedHeaderRoles, strings.Join(claims.Roles, ","))
+	roles := adapter.NormalizeRoles(claims.Roles, "")
+	if len(roles) > 0 {
+		r.Header.Set(h.cfg.Security.TrustedHeaderRoles, strings.Join(roles, ","))
+	} else {
+		r.Header.Del(h.cfg.Security.TrustedHeaderRoles)
+	}
+
+	if requestID := strings.TrimSpace(RequestIDFromContext(r.Context())); requestID != "" {
+		r.Header.Set(h.cfg.Security.RequestIDHeader, requestID)
 	}
 }
 

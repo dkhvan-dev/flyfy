@@ -477,6 +477,15 @@ services:
       DB_MAX_CONN_LIFETIME: 1h
 
       LOG_LEVEL: debug
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      REQUIRE_AUTHENTICATED_WRITES: "true"
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+
+      USER_SERVICE_GRPC_ADDR: dns:///user-service:9094
     restart: unless-stopped
     networks:
       - flyfy-network

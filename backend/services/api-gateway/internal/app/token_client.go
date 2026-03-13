@@ -1,11 +1,18 @@
 package app
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type TokenClaims struct {
-	Subject string
-	UserID  string
-	Roles   []string
+	Subject     string    `json:"sub"`
+	Role        string    `json:"role,omitempty"`
+	Roles       []string  `json:"roles,omitempty"`
+	Permissions []string  `json:"permissions,omitempty"`
+	JTI         string    `json:"jti"`
+	IssuedAt    time.Time `json:"iat"`
+	ExpiresAt   time.Time `json:"exp"`
 }
 
 type TokenVerifier interface {

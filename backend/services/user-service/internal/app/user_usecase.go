@@ -372,6 +372,46 @@ func (u *UserUseCase) GetOrCreateBySubjectWithIdentity(
 	return u.GetAggregateBySubject(ctx, input.SubjectID)
 }
 
+func (u *UserUseCase) GetUserBySubject(ctx context.Context, subjectID string) (*UserAggregate, error) {
+	subjectID = strings.TrimSpace(subjectID)
+	if subjectID == "" {
+		return nil, ErrInvalidSubjectID
+	}
+
+	user, err := u.repo.GetUserBySubject(ctx, subjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	profile, err := u.repo.GetProfileByUserID(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	settings, err := u.repo.GetSettingsByUserID(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	reputation, err := u.repo.GetReputationByUserID(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	roles, err := u.repo.ListRolesByUserID(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserAggregate{
+		User:       user,
+		Profile:    profile,
+		Settings:   settings,
+		Reputation: reputation,
+		Roles:      roles,
+	}, nil
+}
+
 func computeProfileCompleted(profile *model.UserProfile) bool {
 	if profile == nil {
 		return false

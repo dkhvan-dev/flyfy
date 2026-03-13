@@ -11,7 +11,7 @@ service FileService {
   rpc CreateDownloadUrl(CreateDownloadUrlRequest) returns (CreateDownloadUrlResponse);
   rpc SoftDeleteFile(SoftDeleteFileRequest) returns (SoftDeleteFileResponse);
   rpc BindFile(BindFileRequest) returns (BindFileResponse);
-rpc ListFileBindings(ListFileBindingsRequest) returns (ListFileBindingsResponse);
+  rpc ListFileBindings(ListFileBindingsRequest) returns (ListFileBindingsResponse);
 }
 
 message CreateUploadRequestRequest {

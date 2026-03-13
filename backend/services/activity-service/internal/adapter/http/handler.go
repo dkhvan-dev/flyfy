@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/enum"
@@ -19,20 +20,23 @@ import (
 )
 
 type Handler struct {
-	activityUC *app.ActivityUseCase
-	joinUC     *app.JoinUseCase
-	repo       port.ActivityRepository
+	activityUC    *app.ActivityUseCase
+	joinUC        *app.JoinUseCase
+	repo          port.ActivityRepository
+	actorResolver ActorResolver
 }
 
 func NewHandler(
 	activityUC *app.ActivityUseCase,
 	joinUC *app.JoinUseCase,
 	repo port.ActivityRepository,
+	actorResolver ActorResolver,
 ) *Handler {
 	return &Handler{
-		activityUC: activityUC,
-		joinUC:     joinUC,
-		repo:       repo,
+		activityUC:    activityUC,
+		joinUC:        joinUC,
+		repo:          repo,
+		actorResolver: actorResolver,
 	}
 }
 
@@ -156,9 +160,24 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
-	actorUserID, err := parseActorUserID(r)
+	log.Info().
+		Str("ctx_user_id", UserIDFromContext(r.Context())).
+		Str("ctx_subject", SubjectFromContext(r.Context())).
+		Str("ctx_role", RoleFromContext(r.Context())).
+		Strs("ctx_roles", RolesFromContext(r.Context())).
+		Msg("CreateActivity context values")
+
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		log.Error().
+			Err(err).
+			Str("ctx_user_id", UserIDFromContext(r.Context())).
+			Str("ctx_subject", SubjectFromContext(r.Context())).
+			Str("ctx_role", RoleFromContext(r.Context())).
+			Strs("ctx_roles", RolesFromContext(r.Context())).
+			Msg("CreateActivity failed to resolve actor user id")
+
+		writeError(w, http.StatusUnauthorized, "CreateActivity::missing authenticated user")
 		return
 	}
 
@@ -308,7 +327,7 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -424,7 +443,7 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 }
 
 func (h *Handler) PublishActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -454,7 +473,7 @@ func (h *Handler) PublishActivity(w http.ResponseWriter, r *http.Request, activi
 }
 
 func (h *Handler) ApproveModeration(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -476,7 +495,7 @@ func (h *Handler) ApproveModeration(w http.ResponseWriter, r *http.Request, acti
 }
 
 func (h *Handler) RejectModeration(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -498,7 +517,7 @@ func (h *Handler) RejectModeration(w http.ResponseWriter, r *http.Request, activ
 }
 
 func (h *Handler) DuplicateActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -549,7 +568,7 @@ func (h *Handler) DuplicateActivity(w http.ResponseWriter, r *http.Request, acti
 }
 
 func (h *Handler) StartActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -571,7 +590,7 @@ func (h *Handler) StartActivity(w http.ResponseWriter, r *http.Request, activity
 }
 
 func (h *Handler) CompleteActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -593,7 +612,7 @@ func (h *Handler) CompleteActivity(w http.ResponseWriter, r *http.Request, activ
 }
 
 func (h *Handler) CancelActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -621,7 +640,7 @@ func (h *Handler) CancelActivity(w http.ResponseWriter, r *http.Request, activit
 }
 
 func (h *Handler) JoinActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -640,7 +659,7 @@ func (h *Handler) JoinActivity(w http.ResponseWriter, r *http.Request, activityI
 }
 
 func (h *Handler) LeaveActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -686,7 +705,7 @@ func (h *Handler) ListActivityParticipants(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *Handler) ListMyJoinedActivities(w http.ResponseWriter, r *http.Request) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
@@ -718,7 +737,7 @@ func (h *Handler) ListMyJoinedActivities(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) ListMyHostedActivities(w http.ResponseWriter, r *http.Request) {
-	actorUserID, err := parseActorUserID(r)
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return

@@ -23,6 +23,7 @@ const (
 	contextKeyClaims    contextKey = "claims"
 	contextKeyRouteName contextKey = "route_name"
 	contextKeyPolicy    contextKey = "route_policy"
+	contextKeySubject   contextKey = "subject"
 )
 
 type rateLimiter struct {
@@ -239,9 +240,7 @@ func logMiddleware(next http.Handler) http.Handler {
 		}
 
 		if claims := ClaimsFromContext(r.Context()); claims != nil {
-			logger = logger.
-				Str("subject", claims.Subject).
-				Str("user_id", claims.UserID)
+			logger = logger.Str("subject", claims.Subject)
 		}
 
 		logger.Msg("gateway request completed")
@@ -309,7 +308,10 @@ func authMiddleware(cfg *config.Config, verifier app.TokenVerifier, next http.Ha
 			return
 		}
 
+		log.Info().Interface("claims", claims).Msg("claims")
+
 		ctx := context.WithValue(r.Context(), contextKeyClaims, claims)
+		ctx = context.WithValue(ctx, contextKeySubject, claims.Subject)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

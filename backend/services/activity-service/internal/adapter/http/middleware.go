@@ -3,6 +3,10 @@ package http
 import (
 	"net/http"
 	"strings"
+
+	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/config"
+	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 func IdentityMiddleware(next http.Handler) http.Handler {
@@ -12,23 +16,149 @@ func IdentityMiddleware(next http.Handler) http.Handler {
 		if userID := strings.TrimSpace(r.Header.Get("X-User-Id")); userID != "" {
 			ctx = withUserID(ctx, userID)
 		}
-		if subject := strings.TrimSpace(r.Header.Get("X-Subject")); subject != "" {
+
+		if subject := strings.TrimSpace(r.Header.Get("X-Auth-Subject")); subject != "" {
 			ctx = withSubject(ctx, subject)
 		}
-		if role := strings.TrimSpace(r.Header.Get("X-Role")); role != "" {
-			ctx = withRole(ctx, role)
+
+		roles := parseRolesHeader(r.Header.Get("X-User-Roles"))
+		if len(roles) > 0 {
+			ctx = withRole(ctx, roles[0])
+			ctx = withRoles(ctx, roles)
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func Chain(middlewares ...func(http.Handler) http.Handler) func(http.Handler) http.Handler {
-	return func(final http.Handler) http.Handler {
-		h := final
-		for i := len(middlewares) - 1; i >= 0; i-- {
-			h = middlewares[i](h)
+func parseRolesHeader(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+
+	parts := strings.Split(raw, ",")
+	result := make([]string, 0, len(parts))
+	seen := make(map[string]struct{}, len(parts))
+
+	for _, part := range parts {
+		role := strings.ToUpper(strings.TrimSpace(part))
+		if role == "" {
+			continue
 		}
-		return h
+		if _, ok := seen[role]; ok {
+			continue
+		}
+		seen[role] = struct{}{}
+		result = append(result, role)
+	}
+
+	return result
+}
+
+func Chain(cfg *config.Config, next http.Handler) http.Handler {
+	return requestIDMiddleware(cfg,
+		authContextMiddleware(cfg,
+			auditLoggingMiddleware(next),
+		),
+	)
+}
+
+func requestIDMiddleware(cfg *config.Config, next http.Handler) http.Handler {
+	headerName := cfg.Security.RequestIDHeader
+	if strings.TrimSpace(headerName) == "" {
+		headerName = "X-Request-Id"
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID := strings.TrimSpace(r.Header.Get(headerName))
+		if requestID == "" {
+			requestID = uuid.NewString()
+		}
+
+		w.Header().Set(headerName, requestID)
+		ctx := withRequestID(r.Context(), requestID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
+	userIDHeader := cfg.Security.TrustedGatewayHeaderUserID
+	rolesHeader := cfg.Security.TrustedGatewayHeaderRoles
+	subjectHeader := cfg.Security.TrustedGatewayHeaderSub
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := strings.TrimSpace(r.Header.Get(userIDHeader))
+		roles := splitCSV(strings.TrimSpace(r.Header.Get(rolesHeader)))
+		subject := strings.TrimSpace(r.Header.Get(subjectHeader))
+
+		ctx := r.Context()
+		if userID != "" {
+			ctx = withUserID(ctx, userID)
+		}
+		if len(roles) > 0 {
+			ctx = withRoles(ctx, roles)
+		}
+		if subject != "" {
+			ctx = withSubject(ctx, subject)
+		}
+
+		if cfg.Security.RequireAuthenticatedWrites && isWriteMethod(r.Method) {
+			if subject == "" {
+				writeError(w, http.StatusUnauthorized, "missing authenticated subject")
+				return
+			}
+		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func auditLoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rw := &responseWriter{
+			ResponseWriter: w,
+			statusCode:     http.StatusOK,
+		}
+
+		next.ServeHTTP(rw, r)
+
+		logger := log.Info().
+			Str("transport", "http").
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Int("status", rw.statusCode).
+			Str("request_id", RequestIDFromContext(r.Context()))
+
+		if userID := UserIDFromContext(r.Context()); userID != "" {
+			logger = logger.Str("user_id", userID)
+		}
+		if subject := SubjectFromContext(r.Context()); subject != "" {
+			logger = logger.Str("subject", subject)
+		}
+		if role := RoleFromContext(r.Context()); role != "" {
+			logger = logger.Str("role", role)
+		}
+
+		logger.Msg("http request completed")
+	})
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(statusCode int) {
+	rw.statusCode = statusCode
+	rw.ResponseWriter.WriteHeader(statusCode)
+}
+
+func isWriteMethod(method string) bool {
+	switch method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return true
+	default:
+		return false
 	}
 }

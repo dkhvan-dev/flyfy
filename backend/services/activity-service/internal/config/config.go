@@ -1,159 +1,109 @@
 package config
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
 	"time"
+
+	"github.com/sethvargo/go-envconfig"
 )
 
 type Config struct {
-	App  AppConfig
-	HTTP HTTPConfig
-	GRPC GRPCConfig
-	DB   DBConfig
-	Log  LogConfig
+	App         AppConfig
+	HTTP        HTTPConfig
+	GRPC        GRPCConfig
+	DB          DBConfig
+	Log         LogConfig
+	Security    SecurityConfig
+	UserService UserServiceConfig
 }
 
 type AppConfig struct {
-	Name string
-	Env  string
+	Name string `env:"APP_NAME, default=activity-service"`
+	Env  string `env:"APP_ENV, default=development"`
 }
 
 type HTTPConfig struct {
-	Port string
+	Port         int           `env:"HTTP_PORT, default=8080"`
+	ReadTimeout  time.Duration `env:"HTTP_READ_TIMEOUT, default=15s"`
+	WriteTimeout time.Duration `env:"HTTP_WRITE_TIMEOUT, default=15s"`
+	IdleTimeout  time.Duration `env:"HTTP_IDLE_TIMEOUT, default=60s"`
+}
+
+func (h HTTPConfig) Address() string {
+	return fmt.Sprintf(":%d", h.Port)
 }
 
 type GRPCConfig struct {
-	Port string
+	Port int `env:"GRPC_PORT, default=9090"`
+}
+
+func (g GRPCConfig) Address() string {
+	return fmt.Sprintf(":%d", g.Port)
 }
 
 type DBConfig struct {
-	Host        string
-	Port        string
-	Name        string
-	User        string
-	Password    string
-	SSLMode     string
-	MaxConns    int32
-	MinConns    int32
-	MaxConnIdle time.Duration
-	MaxConnLife time.Duration
+	Host            string `env:"DB_HOST, default=localhost"`
+	Port            int    `env:"DB_PORT, default=5432"`
+	Name            string `env:"DB_NAME, default=activity_service"`
+	User            string `env:"DB_USER, default=postgres"`
+	Password        string `env:"DB_PASSWORD, default=postgres"`
+	SSLMode         string `env:"DB_SSLMODE, default=disable"`
+	MaxConns        int32  `env:"DB_MAX_CONNS, default=10"`
+	MinConns        int32  `env:"DB_MIN_CONNS, default=2"`
+	MaxConnIdleTime string `env:"DB_MAX_CONN_IDLE, default=15m"`
+	MaxConnLifetime string `env:"DB_MAX_CONN_LIFETIME, default=1h"`
 }
 
-type LogConfig struct {
-	Level string
-}
-
-func Load() (*Config, error) {
-	cfg := &Config{
-		App: AppConfig{
-			Name: getEnv("APP_NAME", "activity-service"),
-			Env:  getEnv("APP_ENV", "local"),
-		},
-		HTTP: HTTPConfig{
-			Port: getEnv("HTTP_PORT", "8080"),
-		},
-		GRPC: GRPCConfig{
-			Port: getEnv("GRPC_PORT", "9090"),
-		},
-		DB: DBConfig{
-			Host:        getEnv("DB_HOST", "localhost"),
-			Port:        getEnv("DB_PORT", "5432"),
-			Name:        getEnv("DB_NAME", "activity_service"),
-			User:        getEnv("DB_USER", "postgres"),
-			Password:    getEnv("DB_PASSWORD", "postgres"),
-			SSLMode:     getEnv("DB_SSLMODE", "disable"),
-			MaxConns:    getEnvAsInt32("DB_MAX_CONNS", 10),
-			MinConns:    getEnvAsInt32("DB_MIN_CONNS", 2),
-			MaxConnIdle: getEnvAsDuration("DB_MAX_CONN_IDLE", 15*time.Minute),
-			MaxConnLife: getEnvAsDuration("DB_MAX_CONN_LIFETIME", time.Hour),
-		},
-		Log: LogConfig{
-			Level: strings.ToLower(getEnv("LOG_LEVEL", "info")),
-		},
-	}
-
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
-}
-
-func (c *Config) Validate() error {
-	if strings.TrimSpace(c.HTTP.Port) == "" {
-		return fmt.Errorf("http port is required")
-	}
-	if strings.TrimSpace(c.GRPC.Port) == "" {
-		return fmt.Errorf("grpc port is required")
-	}
-	if strings.TrimSpace(c.DB.Host) == "" {
-		return fmt.Errorf("db host is required")
-	}
-	if strings.TrimSpace(c.DB.Port) == "" {
-		return fmt.Errorf("db port is required")
-	}
-	if strings.TrimSpace(c.DB.Name) == "" {
-		return fmt.Errorf("db name is required")
-	}
-	if strings.TrimSpace(c.DB.User) == "" {
-		return fmt.Errorf("db user is required")
-	}
-	if c.DB.MaxConns <= 0 {
-		return fmt.Errorf("db max conns must be > 0")
-	}
-	if c.DB.MinConns < 0 {
-		return fmt.Errorf("db min conns must be >= 0")
-	}
-	return nil
-}
-
-func (c *Config) DatabaseURL() string {
+func (p DBConfig) DSN() string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		c.DB.User,
-		c.DB.Password,
-		c.DB.Host,
-		c.DB.Port,
-		c.DB.Name,
-		c.DB.SSLMode,
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		p.User,
+		p.Password,
+		p.Host,
+		p.Port,
+		p.Name,
+		p.SSLMode,
 	)
 }
 
-func getEnv(key string, fallback string) string {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
+func (p DBConfig) ParsedMaxConnLifetime() time.Duration {
+	d, err := time.ParseDuration(p.MaxConnLifetime)
+	if err != nil {
+		return time.Hour
 	}
-	return value
+	return d
 }
 
-func getEnvAsInt32(key string, fallback int32) int32 {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
-	}
-
-	parsed, err := strconv.ParseInt(value, 10, 32)
+func (p DBConfig) ParsedMaxConnIdleTime() time.Duration {
+	d, err := time.ParseDuration(p.MaxConnIdleTime)
 	if err != nil {
-		return fallback
+		return 30 * time.Minute
 	}
-
-	return int32(parsed)
+	return d
 }
 
-func getEnvAsDuration(key string, fallback time.Duration) time.Duration {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
-	}
+type LogConfig struct {
+	Level string `env:"LOG_LEVEL, default=info"`
+}
 
-	parsed, err := time.ParseDuration(value)
-	if err != nil {
-		return fallback
-	}
+type UserServiceConfig struct {
+	GRPCAddress string `env:"USER_SERVICE_GRPC_ADDR, default=user-service:9092"`
+}
 
-	return parsed
+func Load(ctx context.Context) (*Config, error) {
+	var cfg Config
+	if err := envconfig.Process(ctx, &cfg); err != nil {
+		return nil, fmt.Errorf("process env config: %w", err)
+	}
+	return &cfg, nil
+}
+
+type SecurityConfig struct {
+	InternalServiceToken       string `env:"INTERNAL_SERVICE_TOKEN, required"`
+	RequireAuthenticatedWrites bool   `env:"REQUIRE_AUTHENTICATED_WRITES, default=true"`
+	TrustedGatewayHeaderUserID string `env:"TRUSTED_GATEWAY_HEADER_USER_ID, default=X-User-Id"`
+	TrustedGatewayHeaderRoles  string `env:"TRUSTED_GATEWAY_HEADER_ROLES, default=X-User-Roles"`
+	TrustedGatewayHeaderSub    string `env:"TRUSTED_GATEWAY_HEADER_SUB, default=X-Auth-Subject"`
+	RequestIDHeader            string `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
 }

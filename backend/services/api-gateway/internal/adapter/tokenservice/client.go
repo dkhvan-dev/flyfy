@@ -8,11 +8,10 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/adapter"
 	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/api-gateway/internal/config"
 	tokenpb "github.com/dkhvan-dev/flyfy/proto/gen/go/token"
@@ -61,7 +60,7 @@ func (c *Client) VerifyAccessToken(ctx context.Context, accessToken string) (*ap
 		return claims, nil
 	}
 
-	if !isAuthFailure(err) {
+	if !adapter.IsAuthFailure(err) {
 		return nil, err
 	}
 
@@ -97,9 +96,8 @@ func (c *Client) verifyWithCachedServiceToken(ctx context.Context, accessToken s
 	}
 
 	claims := &app.TokenClaims{
-		Subject: valueOrEmpty(resp.GetSubject()),
-		UserID:  valueOrEmpty(resp.GetUserId()),
-		Roles:   normalizeRoles(resp.GetRoles()),
+		Subject: adapter.ValueOrEmpty(resp.GetSubject()),
+		Roles:   adapter.NormalizeRoles(resp.GetRoles(), resp.GetRole()),
 	}
 
 	if claims.Subject == "" {
@@ -156,32 +154,4 @@ func (c *Client) timeout() time.Duration {
 		return 3 * time.Second
 	}
 	return c.cfg.CallTimeout
-}
-
-func normalizeRoles(roles []string) []string {
-	if len(roles) == 0 {
-		return nil
-	}
-
-	result := make([]string, 0, len(roles))
-	for _, role := range roles {
-		role = strings.TrimSpace(role)
-		if role != "" {
-			result = append(result, role)
-		}
-	}
-	return result
-}
-
-func valueOrEmpty(v string) string {
-	return strings.TrimSpace(v)
-}
-
-func isAuthFailure(err error) bool {
-	st, ok := status.FromError(err)
-	if !ok {
-		return false
-	}
-
-	return st.Code() == codes.Unauthenticated || st.Code() == codes.PermissionDenied
 }

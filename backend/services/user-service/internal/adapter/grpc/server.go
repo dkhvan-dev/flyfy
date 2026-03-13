@@ -242,6 +242,20 @@ func (s *Server) GetPublicProfilesByUserIds(
 	return resp, nil
 }
 
+func (s *Server) GetUserBySubject(
+	ctx context.Context,
+	req *userv1.GetUserBySubjectRequest,
+) (*userv1.GetUserBySubjectResponse, error) {
+	aggregate, err := s.useCase.GetUserBySubject(ctx, req.GetSubjectId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &userv1.GetUserBySubjectResponse{
+		Aggregate: toProtoAggregate(aggregate),
+	}, nil
+}
+
 func toProtoAggregate(aggregate *app.UserAggregate) *userv1.UserAggregate {
 	roles := make([]string, 0, len(aggregate.Roles))
 	for _, role := range aggregate.Roles {
