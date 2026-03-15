@@ -9,21 +9,21 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceRoot}/services/auth-service/cmd/main.go"
+            "program": "${workspaceRoot}/backend/services/auth-service/cmd/main.go"
         },
         {
             "name": "User Service",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceRoot}/services/user-service/cmd/main.go"
+            "program": "${workspaceRoot}/backend/services/user-service/cmd/main.go"
         },
         {
             "name": "Token Service",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceRoot}/services/token-service/cmd/main.go"
+            "program": "${workspaceRoot}/backend/services/token-service/cmd/main.go"
         }
     ]
 }

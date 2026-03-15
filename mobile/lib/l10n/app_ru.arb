@@ -1,12 +1,17 @@
 {
   "@@locale": "ru",
   "appTitle": "FlyFy",
+  "welcomeTitle": "Ваш персональный мир.",
+  "welcomeDescription": "Оцените все возможности идеального суперприложения для путешествий, созданного для современного исследователя.",
   "welcomeToFlyFy": "Добро пожаловать в FlyFy",
+  "authByPhone": "Войти по номеру телефона",
+  "termsAgreementText": "Продолжая, вы соглашаетесь с нашими <terms>Условиями использования</terms> и <privacy>Политикой конфиденциальности</privacy>",
   "enterPhoneToContinue": "Введите номер телефона, чтобы продолжить",
-  "phoneNumber": "Номер телефона",
-  "sendCode": "Отправить код",
-  "enterAuthCode": "Введите код",
   "verifyAndLogin": "Подтвердить и войти",
+  "verifyYourPhone": "Подтвердите свой номер телефона",
+  "enterAuthCode": "Введите 6-значный код, который мы только что отправили на номер\n",
+  "didntReceiveOTP": "Не получили код?",
+  "resendCode": "Отправить код повторно",
   "or": "ИЛИ",
   "error": "Ошибка",
   "ok": "Понятно",
@@ -172,6 +177,10 @@
   "createEndAtLabel": "Окончание",
   "createRegistrationDeadlineLabel": "Крайний срок регистрации",
   "createEndDateValidation": "Дата окончания должна быть после начала",
+  "createStartAtTooSoonValidation": "Начало должно быть не менее чем через 1 час",
+  "createRegistrationDeadlineValidation": "Крайний срок регистрации должен быть до начала",
+  "createSaveDraft": "Сохранить черновик",
+  "createAndPublish": "Опубликовать",
   "createLanguageSection": "ЯЗЫК АКТИВНОСТИ",
   "createVisibilitySection": "ВИДИМОСТЬ",
   "createVisibilityPublic": "Публичная",
@@ -186,12 +195,14 @@
   "createMinParticipantsLabel": "Минимум",
   "createMaxParticipantsLabel": "Максимум",
   "createMaxParticipantsValidation": "Укажите корректное максимальное число",
+  "createMinExceedsMaxValidation": "Минимум не может превышать максимум",
   "createPriceSection": "СТОИМОСТЬ",
   "createPriceFree": "Бесплатно",
   "createPricePaid": "Платно",
   "createPriceDeposit": "Депозит",
   "createPriceAmountLabel": "Сумма",
   "createCurrencyLabel": "Валюта",
+  "createPricePerPersonHint": "за человека",
   "createPriceValidation": "Укажите корректную сумму",
   "createOnlineSection": "ОНЛАЙН-ДОСТУП",
   "createMeetingUrlLabel": "Ссылка на встречу",
@@ -214,5 +225,44 @@
   "activityPublishFailed": "Не удалось опубликовать активность",
   "editFormatLocked": "Формат нельзя изменить после создания",
   "editLocationLocked": "Место проведения нельзя изменить после публикации",
-  "editPriceRestrictionHint": "Цену нельзя изменить, если участники уже записались"
+  "editPriceRestrictionHint": "Цену нельзя изменить, если участники уже записались",
+  "myActivitiesTitle": "Мои активности",
+  "myActivitiesEmpty": "У вас пока нет созданных активностей",
+  "myActivitiesEmptyHint": "Создайте первую активность, и она появится здесь",
+  "myActivitiesLoadFailed": "Не удалось загрузить ваши активности",
+  "myActivitiesFilterAll": "Все",
+  "myActivitiesLastUpdated": "Обновлено {date}",
+  "@myActivitiesLastUpdated": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "myActivitiesContinueButton": "Продолжить",
+  "activityPerPerson": "/ чел.",
+  "activitySpotsLeft": "Осталось мест: {count}",
+  "@activitySpotsLeft": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activityUnlimitedSpots": "Без ограничений",
+  "activityMeetingPoint": "Место встречи",
+  "activityGetDirections": "Как добраться",
+  "activityHostSection": "Организатор",
+  "activityTotalCapacity": "Всего мест",
+  "activityPricing": "Стоимость",
+  "activityPeopleMax": "Макс. {count} чел.",
+  "@activityPeopleMax": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activityJoinActivity": "Записаться",
+  "activitiesSearchHint": "Поиск активностей, организаторов, городов",
+  "activitiesFilterCategory": "Категория",
+  "activitiesFilterDate": "Дата",
+  "activitiesFilterPricing": "Стоимость",
+  "activityViewDetails": "Подробнее",
+  "activityJoinSession": "Присоединиться",
+  "activityGetLink": "Получить ссылку"
 }

@@ -33,3 +33,5 @@ go.work.sum
 
 links.txt
 CLAUDE.md
+docs/
+.claude.json

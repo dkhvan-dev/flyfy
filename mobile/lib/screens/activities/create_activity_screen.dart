@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
@@ -42,8 +43,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   // — Step 3: Participation —
   String _capacityType = 'UNLIMITED';
-  final _minParticipantsCtrl = TextEditingController();
-  final _maxParticipantsCtrl = TextEditingController();
+  int _minParticipants = 2;
+  int _maxParticipants = 15;
   String _joinMode = 'AUTO_APPROVE';
   String _visibility = 'PUBLIC';
   String _priceType = 'FREE';
@@ -89,10 +90,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       _timezone = a.timezone;
       _capacityType = a.capacityType.toUpperCase();
       if (a.minParticipants != null) {
-        _minParticipantsCtrl.text = a.minParticipants.toString();
+        _minParticipants = a.minParticipants!;
       }
       if (a.maxParticipants != null) {
-        _maxParticipantsCtrl.text = a.maxParticipants.toString();
+        _maxParticipants = a.maxParticipants!;
       }
       _joinMode = a.joinMode.toUpperCase();
       _visibility = a.visibility.toUpperCase();
@@ -127,8 +128,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     _descriptionCtrl.dispose();
     _categoryCtrl.dispose();
     _tagsCtrl.dispose();
-    _minParticipantsCtrl.dispose();
-    _maxParticipantsCtrl.dispose();
     _priceAmountCtrl.dispose();
     _currencyCtrl.dispose();
     _countryCodeCtrl.dispose();
@@ -167,22 +166,34 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         }
         return true;
       case 1:
+        if (!widget.isEditMode &&
+            !_startAt.isAfter(DateTime.now().add(const Duration(hours: 1)))) {
+          _showValidationError(l10n.createStartAtTooSoonValidation);
+          return false;
+        }
         if (!_endAt.isAfter(_startAt)) {
           _showValidationError(l10n.createEndDateValidation);
+          return false;
+        }
+        if (_registrationDeadline.isAfter(_startAt)) {
+          _showValidationError(l10n.createRegistrationDeadlineValidation);
           return false;
         }
         return true;
       case 2:
         if (_capacityType == 'LIMITED') {
-          final max = int.tryParse(_maxParticipantsCtrl.text.trim());
-          if (max == null || max <= 0) {
+          if (_maxParticipants <= 0) {
             _showValidationError(l10n.createMaxParticipantsValidation);
+            return false;
+          }
+          if (_minParticipants > _maxParticipants) {
+            _showValidationError(l10n.createMinExceedsMaxValidation);
             return false;
           }
         }
         if (_priceType != 'FREE') {
           final amount = double.tryParse(_priceAmountCtrl.text.trim());
-          if (amount == null || amount < 0) {
+          if (amount == null || amount <= 0) {
             _showValidationError(l10n.createPriceValidation);
             return false;
           }
@@ -212,7 +223,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.redAccent.withOpacity(0.9),
+        backgroundColor: Colors.redAccent.withValues(alpha: 0.9),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -229,63 +240,129 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     }
   }
 
+  Future<void> _submitAndPublish() async {
+    if (!_validateCurrentStep()) return;
+
+    setState(() => _isSubmitting = true);
+
+    final provider = context.read<ActivityProvider>();
+    final request = _buildCreateRequest();
+    final created = await provider.createActivity(request);
+
+    if (!mounted) return;
+
+    if (created != null) {
+      final published = await provider.publishActivity(created.id);
+
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+
+      if (published) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.activityPublishSuccess)),
+        );
+        context.read<ActivityProvider>().loadActivities();
+        context.pushReplacement('/activities/${created.id}');
+      } else {
+        final l10n = AppLocalizations.of(context)!;
+        await showErrorDialog(
+          context,
+          title: l10n.error,
+          message: provider.actionErrorMessage ?? l10n.activityPublishFailed,
+        );
+      }
+    } else {
+      setState(() => _isSubmitting = false);
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: provider.actionErrorMessage ?? l10n.createActivityFailed,
+      );
+    }
+  }
+
+  // ── Shared field extraction helpers ────────────────────────────
+
+  String get _categorySlugNormalized =>
+      _categoryCtrl.text.trim().toLowerCase().replaceAll(' ', '-');
+
+  List<String> get _parsedTags => _tagsCtrl.text
+      .split(',')
+      .map((t) => t.trim())
+      .where((t) => t.isNotEmpty)
+      .toList();
+
+  int? get _minParticipantsValue =>
+      _capacityType == 'LIMITED' ? _minParticipants : null;
+
+  int? get _maxParticipantsValue =>
+      _capacityType == 'LIMITED' ? _maxParticipants : null;
+
+  double? get _priceAmountValue =>
+      _priceType != 'FREE' ? double.tryParse(_priceAmountCtrl.text.trim()) : null;
+
+  String? get _currencyValue =>
+      _priceType != 'FREE' ? _currencyCtrl.text.trim().toUpperCase() : null;
+
+  String? get _countryCodeValue =>
+      _format != 'ONLINE' ? _countryCodeCtrl.text.trim().toUpperCase() : null;
+
+  String? get _cityNameValue =>
+      _format != 'ONLINE' ? _cityNameCtrl.text.trim() : null;
+
+  String? get _addressTextValue =>
+      _format != 'ONLINE' ? _addressTextCtrl.text.trim() : null;
+
+  String? get _meetingUrlValue =>
+      _format != 'OFFLINE' ? _meetingUrlCtrl.text.trim() : null;
+
+  // ── Submit ─────────────────────────────────────────────────────
+
   Future<void> _submit() async {
     if (!_validateCurrentStep()) return;
 
     setState(() => _isSubmitting = true);
 
-    final tags = _tagsCtrl.text
-        .split(',')
-        .map((t) => t.trim())
-        .where((t) => t.isNotEmpty)
-        .toList();
-
     final provider = context.read<ActivityProvider>();
 
     if (widget.isEditMode) {
-      await _submitUpdate(provider, tags);
+      await _submitUpdate(provider);
     } else {
-      await _submitCreate(provider, tags);
+      await _submitCreate(provider);
     }
   }
 
-  Future<void> _submitCreate(ActivityProvider provider, List<String> tags) async {
-    final request = CreateActivityRequest(
+  CreateActivityRequest _buildCreateRequest() {
+    return CreateActivityRequest(
       title: _titleCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
       format: _format,
       visibility: _visibility,
       joinMode: _joinMode,
-      categorySlug: _categoryCtrl.text.trim().toLowerCase().replaceAll(' ', '-'),
-      tags: tags,
+      categorySlug: _categorySlugNormalized,
+      tags: _parsedTags,
       languageCode: _languageCode,
       timezone: _timezone,
       startAt: _startAt,
       endAt: _endAt,
       registrationDeadline: _registrationDeadline,
       capacityType: _capacityType,
-      minParticipants: _capacityType == 'LIMITED'
-          ? int.tryParse(_minParticipantsCtrl.text.trim())
-          : null,
-      maxParticipants: _capacityType == 'LIMITED'
-          ? int.tryParse(_maxParticipantsCtrl.text.trim())
-          : null,
+      minParticipants: _minParticipantsValue,
+      maxParticipants: _maxParticipantsValue,
       priceType: _priceType,
-      priceAmount: _priceType != 'FREE'
-          ? double.tryParse(_priceAmountCtrl.text.trim())
-          : null,
-      currency:
-          _priceType != 'FREE' ? _currencyCtrl.text.trim().toUpperCase() : null,
-      countryCode: (_format != 'ONLINE')
-          ? _countryCodeCtrl.text.trim().toUpperCase()
-          : null,
-      cityName:
-          (_format != 'ONLINE') ? _cityNameCtrl.text.trim() : null,
-      addressText:
-          (_format != 'ONLINE') ? _addressTextCtrl.text.trim() : null,
-      meetingUrl:
-          (_format != 'OFFLINE') ? _meetingUrlCtrl.text.trim() : null,
+      priceAmount: _priceAmountValue,
+      currency: _currencyValue,
+      countryCode: _countryCodeValue,
+      cityName: _cityNameValue,
+      addressText: _addressTextValue,
+      meetingUrl: _meetingUrlValue,
     );
+  }
+
+  Future<void> _submitCreate(ActivityProvider provider) async {
+    final request = _buildCreateRequest();
 
     final created = await provider.createActivity(request);
 
@@ -309,7 +386,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     }
   }
 
-  Future<void> _submitUpdate(ActivityProvider provider, List<String> tags) async {
+  Future<void> _submitUpdate(ActivityProvider provider) async {
     final activityId = widget.activity!.id;
 
     final request = UpdateActivityRequest(
@@ -317,42 +394,30 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       description: _descriptionCtrl.text.trim(),
       visibility: _visibility,
       joinMode: _joinMode,
-      categorySlug: _categoryCtrl.text.trim().toLowerCase().replaceAll(' ', '-'),
-      tags: tags,
+      categorySlug: _categorySlugNormalized,
+      tags: _parsedTags,
       languageCode: _languageCode,
       timezone: _timezone,
       startAt: _startAtChanged ? _startAt : null,
       endAt: _endAtChanged ? _endAt : null,
       registrationDeadline: _registrationDeadlineChanged ? _registrationDeadline : null,
       capacityType: _capacityType,
-      minParticipants: _capacityType == 'LIMITED'
-          ? int.tryParse(_minParticipantsCtrl.text.trim())
-          : null,
+      minParticipants: _minParticipantsValue,
       hasMinParticipants: true,
-      maxParticipants: _capacityType == 'LIMITED'
-          ? int.tryParse(_maxParticipantsCtrl.text.trim())
-          : null,
+      maxParticipants: _maxParticipantsValue,
       hasMaxParticipants: true,
       priceType: _priceType,
-      priceAmount: _priceType != 'FREE'
-          ? double.tryParse(_priceAmountCtrl.text.trim())
-          : null,
+      priceAmount: _priceAmountValue,
       hasPriceAmount: true,
-      currency:
-          _priceType != 'FREE' ? _currencyCtrl.text.trim().toUpperCase() : null,
+      currency: _currencyValue,
       hasCurrency: true,
-      countryCode: (_format != 'ONLINE')
-          ? _countryCodeCtrl.text.trim().toUpperCase()
-          : null,
+      countryCode: _countryCodeValue,
       hasCountryCode: true,
-      cityName:
-          (_format != 'ONLINE') ? _cityNameCtrl.text.trim() : null,
+      cityName: _cityNameValue,
       hasCityName: true,
-      addressText:
-          (_format != 'ONLINE') ? _addressTextCtrl.text.trim() : null,
+      addressText: _addressTextValue,
       hasAddressText: true,
-      meetingUrl:
-          (_format != 'OFFLINE') ? _meetingUrlCtrl.text.trim() : null,
+      meetingUrl: _meetingUrlValue,
       hasMeetingUrl: true,
     );
 
@@ -404,11 +469,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   Widget _datePickerTheme(BuildContext context, Widget? child) {
     return Theme(
       data: ThemeData.dark().copyWith(
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00BCD4),
-          onPrimary: Colors.white,
-          surface: Color(0xFF16161F),
-          onSurface: Colors.white,
+        colorScheme: ColorScheme.dark(
+          primary: AppColors.accent,
+          onPrimary: AppColors.background,
+          surface: AppColors.surfaceLight,
+          onSurface: AppColors.textPrimary,
         ),
       ),
       child: child!,
@@ -427,14 +492,14 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A0F),
+        backgroundColor: AppColors.background,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
         title: Text(
           widget.isEditMode ? l10n.editActivityTitle : l10n.createActivityTitle,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: AppColors.textPrimary),
         ),
       ),
       body: Column(
@@ -457,19 +522,28 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               ],
             ),
           ),
-          _BottomNavBar(
-            currentStep: _currentStep,
-            totalSteps: _totalSteps,
-            isSubmitting: _isSubmitting,
-            onBack: () => _goToStep(_currentStep - 1),
-            onNext: _nextStep,
-            nextLabel: _currentStep == _totalSteps - 1
-                ? (widget.isEditMode
-                    ? l10n.editActivitySubmit
-                    : l10n.createActivitySubmit)
-                : l10n.createStepNext,
-            backLabel: l10n.createStepBack,
-          ),
+          if (_currentStep == _totalSteps - 1 && !widget.isEditMode)
+            _DualCtaBar(
+              isSubmitting: _isSubmitting,
+              onBack: () => _goToStep(_currentStep - 1),
+              onSaveDraft: _nextStep,
+              onPublish: _submitAndPublish,
+              saveDraftLabel: l10n.createSaveDraft,
+              publishLabel: l10n.createAndPublish,
+              backLabel: l10n.createStepBack,
+            )
+          else
+            _BottomNavBar(
+              currentStep: _currentStep,
+              totalSteps: _totalSteps,
+              isSubmitting: _isSubmitting,
+              onBack: () => _goToStep(_currentStep - 1),
+              onNext: _nextStep,
+              nextLabel: _currentStep == _totalSteps - 1
+                  ? l10n.editActivitySubmit
+                  : l10n.createStepNext,
+              backLabel: l10n.createStepBack,
+            ),
         ],
       ),
     );
@@ -534,6 +608,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 'ONLINE': l10n.activityFormatOnline,
                 'HYBRID': l10n.activityFormatHybrid,
               },
+              icons: const {
+                'OFFLINE': Icons.location_on,
+                'ONLINE': Icons.videocam,
+                'HYBRID': Icons.devices,
+              },
               onChanged: (v) => setState(() => _format = v),
             ),
           ),
@@ -542,7 +621,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           const SizedBox(height: 6),
           Text(
             l10n.editFormatLocked,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
           ),
         ],
         const SizedBox(height: 24),
@@ -632,25 +711,35 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             'UNLIMITED': l10n.createCapacityUnlimited,
             'LIMITED': l10n.createCapacityLimited,
           },
-          onChanged: (v) => setState(() => _capacityType = v),
+          onChanged: (v) => setState(() {
+            _capacityType = v;
+            if (v == 'LIMITED' && _maxParticipants <= 0) {
+              _minParticipants = 2;
+              _maxParticipants = 15;
+            }
+          }),
         ),
         if (_capacityType == 'LIMITED') ...[
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
-                child: _InputField(
-                  controller: _minParticipantsCtrl,
+                child: _SpinnerField(
                   label: l10n.createMinParticipantsLabel,
-                  keyboardType: TextInputType.number,
+                  value: _minParticipants,
+                  min: 1,
+                  max: 999,
+                  onChanged: (v) => setState(() => _minParticipants = v),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _InputField(
-                  controller: _maxParticipantsCtrl,
+                child: _SpinnerField(
                   label: l10n.createMaxParticipantsLabel,
-                  keyboardType: TextInputType.number,
+                  value: _maxParticipants,
+                  min: 1,
+                  max: 999,
+                  onChanged: (v) => setState(() => _maxParticipants = v),
                 ),
               ),
             ],
@@ -677,6 +766,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 child: _InputField(
                   controller: _priceAmountCtrl,
                   label: l10n.createPriceAmountLabel,
+                  hint: l10n.createPricePerPersonHint,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                 ),
@@ -695,7 +785,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           const SizedBox(height: 8),
           Text(
             l10n.editPriceRestrictionHint,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
           ),
         ],
       ],
@@ -729,7 +819,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             const SizedBox(height: 8),
             Text(
               l10n.editLocationLocked,
-              style: const TextStyle(color: Colors.white38, fontSize: 12),
+              style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
             ),
           ],
           const SizedBox(height: 12),
@@ -775,7 +865,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  Reusable widgets
+//  Reusable widgets (private to this screen)
 // ════════════════════════════════════════════════════════════════
 
 class _StepIndicator extends StatelessWidget {
@@ -802,8 +892,8 @@ class _StepIndicator extends StatelessWidget {
                   child: Container(
                     height: 2,
                     color: (i ~/ 2) < currentStep
-                        ? const Color(0xFF00BCD4)
-                        : Colors.white.withOpacity(0.1),
+                        ? AppColors.accent
+                        : AppColors.background.withValues(alpha: 0.1),
                   ),
                 );
               }
@@ -816,22 +906,22 @@ class _StepIndicator extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isActive || isDone
-                      ? const Color(0xFF00BCD4)
-                      : Colors.white.withOpacity(0.08),
+                      ? AppColors.accent
+                      : AppColors.surfaceLight,
                   border: isActive
                       ? Border.all(
-                          color: const Color(0xFF00BCD4).withOpacity(0.5),
+                          color: AppColors.accent.withValues(alpha: 0.5),
                           width: 2,
                         )
                       : null,
                 ),
                 alignment: Alignment.center,
                 child: isDone
-                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    ? const Icon(Icons.check, size: 16, color: AppColors.background)
                     : Text(
                         '${step + 1}',
                         style: TextStyle(
-                          color: isActive ? Colors.white : Colors.white54,
+                          color: isActive ? AppColors.background : AppColors.textSecondary,
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
@@ -843,7 +933,7 @@ class _StepIndicator extends StatelessWidget {
           Text(
             titles[currentStep],
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
@@ -880,9 +970,9 @@ class _BottomNavBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF0A0A0F),
+          color: AppColors.background,
           border: Border(
-            top: BorderSide(color: Colors.white.withOpacity(0.06)),
+            top: BorderSide(color: AppColors.borderLight),
           ),
         ),
         child: Row(
@@ -892,8 +982,8 @@ class _BottomNavBar extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: isSubmitting ? null : onBack,
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.white.withOpacity(0.14)),
-                    foregroundColor: Colors.white,
+                    side: BorderSide(color: AppColors.borderLight),
+                    foregroundColor: AppColors.textPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -909,9 +999,9 @@ class _BottomNavBar extends StatelessWidget {
                 onPressed: isSubmitting ? null : onNext,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: currentStep == totalSteps - 1
-                      ? const Color(0xFF00C853)
-                      : const Color(0xFF00BCD4),
-                  foregroundColor: Colors.white,
+                      ? AppColors.success
+                      : AppColors.accent,
+                  foregroundColor: AppColors.background,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -923,7 +1013,7 @@ class _BottomNavBar extends StatelessWidget {
                         width: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          color: Colors.white,
+                          color: AppColors.background,
                         ),
                       )
                     : Text(
@@ -951,7 +1041,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       title,
       style: const TextStyle(
-        color: Color(0xFF00BCD4),
+        color: AppColors.accent,
         fontSize: 14,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.5,
@@ -984,26 +1074,26 @@ class _InputField extends StatelessWidget {
       maxLength: maxLength,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white, fontSize: 15),
+      style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: const TextStyle(color: Colors.white54),
-        hintStyle: const TextStyle(color: Colors.white24),
-        counterStyle: const TextStyle(color: Colors.white38),
+        labelStyle: const TextStyle(color: AppColors.textSecondary),
+        hintStyle: const TextStyle(color: AppColors.textCaption),
+        counterStyle: const TextStyle(color: AppColors.textCaption),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: AppColors.surfaceLight,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF00BCD4)),
+          borderSide: const BorderSide(color: AppColors.accent),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -1019,11 +1109,13 @@ class _SegmentedSelect<T> extends StatelessWidget {
     required this.value,
     required this.items,
     required this.onChanged,
+    this.icons,
   });
 
   final T value;
   final Map<T, String> items;
   final ValueChanged<T> onChanged;
+  final Map<T, IconData>? icons;
 
   @override
   Widget build(BuildContext context) {
@@ -1032,6 +1124,7 @@ class _SegmentedSelect<T> extends StatelessWidget {
       runSpacing: 8,
       children: items.entries.map((entry) {
         final isSelected = entry.key == value;
+        final icon = icons?[entry.key];
         return GestureDetector(
           onTap: () => onChanged(entry.key),
           child: AnimatedContainer(
@@ -1039,26 +1132,226 @@ class _SegmentedSelect<T> extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF00BCD4).withOpacity(0.2)
-                  : Colors.white.withOpacity(0.05),
+                  ? AppColors.accent.withValues(alpha: 0.2)
+                  : AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected
-                    ? const Color(0xFF00BCD4)
-                    : Colors.white.withOpacity(0.08),
+                color: isSelected ? AppColors.accent : AppColors.borderLight,
               ),
             ),
-            child: Text(
-              entry.value,
-              style: TextStyle(
-                color: isSelected ? const Color(0xFF7EE6F2) : Colors.white70,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 14,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: isSelected ? AppColors.accentLight : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  entry.value,
+                  style: TextStyle(
+                    color: isSelected ? AppColors.accentLight : AppColors.textSecondary,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+class _SpinnerField extends StatelessWidget {
+  const _SpinnerField({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int value;
+  final int min;
+  final int max;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _spinnerButton(
+                icon: Icons.remove,
+                onTap: value > min ? () => onChanged(value - 1) : null,
+              ),
+              Expanded(
+                child: Text(
+                  '$value',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              _spinnerButton(
+                icon: Icons.add,
+                onTap: value < max ? () => onChanged(value + 1) : null,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _spinnerButton({
+    required IconData icon,
+    required VoidCallback? onTap,
+  }) {
+    final enabled = onTap != null;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: enabled
+              ? AppColors.accent.withValues(alpha: 0.2)
+              : AppColors.surface,
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: enabled ? AppColors.accent : AppColors.textCaption,
+        ),
+      ),
+    );
+  }
+}
+
+class _DualCtaBar extends StatelessWidget {
+  const _DualCtaBar({
+    required this.isSubmitting,
+    required this.onBack,
+    required this.onSaveDraft,
+    required this.onPublish,
+    required this.saveDraftLabel,
+    required this.publishLabel,
+    required this.backLabel,
+  });
+
+  final bool isSubmitting;
+  final VoidCallback onBack;
+  final VoidCallback onSaveDraft;
+  final VoidCallback onPublish;
+  final String saveDraftLabel;
+  final String publishLabel;
+  final String backLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          border: Border(
+            top: BorderSide(color: AppColors.borderLight),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: isSubmitting ? null : onSaveDraft,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.borderLight),
+                      foregroundColor: AppColors.textPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(saveDraftLabel),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: isSubmitting ? null : onPublish,
+                    icon: isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: AppColors.background,
+                            ),
+                          )
+                        : const Icon(Icons.rocket_launch, size: 18),
+                    label: Text(
+                      publishLabel,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: AppColors.background,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: isSubmitting ? null : onBack,
+                child: Text(
+                  backLabel,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1082,9 +1375,9 @@ class _DatePickerTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: AppColors.borderLight),
         ),
         child: Row(
           children: [
@@ -1094,13 +1387,13 @@ class _DatePickerTile extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     value,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1111,7 +1404,7 @@ class _DatePickerTile extends StatelessWidget {
             const Icon(
               Icons.calendar_today_outlined,
               size: 20,
-              color: Color(0xFF00BCD4),
+              color: AppColors.accent,
             ),
           ],
         ),

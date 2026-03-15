@@ -12,6 +12,7 @@ import (
 type ActivityFilter struct {
 	HostUserID   *uuid.UUID
 	Statuses     []string
+	Visibility   *string
 	CategorySlug *string
 	CountryCode  *string
 	CityName     *string

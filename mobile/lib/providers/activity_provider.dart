@@ -37,6 +37,11 @@ class ActivityProvider extends ChangeNotifier {
   List<ActivityListItemVm> _items = const [];
   ActivityListItemVm? _selectedActivity;
 
+  ActivitiesState _myState = ActivitiesState.initial;
+  List<ActivityListItemVm> _myItems = const [];
+  String? _myErrorMessage;
+  bool _myIsRefreshing = false;
+
   ActivitiesState get state => _state;
   ActivityActionState get actionState => _actionState;
   bool get isRefreshing => _isRefreshing;
@@ -44,6 +49,11 @@ class ActivityProvider extends ChangeNotifier {
   String? get actionErrorMessage => _actionErrorMessage;
   List<ActivityListItemVm> get items => _items;
   ActivityListItemVm? get selectedActivity => _selectedActivity;
+
+  ActivitiesState get myState => _myState;
+  List<ActivityListItemVm> get myItems => _myItems;
+  String? get myErrorMessage => _myErrorMessage;
+  bool get myIsRefreshing => _myIsRefreshing;
 
   Future<void> loadActivities() async {
     _state = ActivitiesState.loading;
@@ -80,6 +90,45 @@ class ActivityProvider extends ChangeNotifier {
       _state = ActivitiesState.error;
     } finally {
       _isRefreshing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMyActivities() async {
+    _myState = ActivitiesState.loading;
+    _myErrorMessage = null;
+    notifyListeners();
+
+    try {
+      _myItems = await _activityApi.getMyHostedActivities();
+      _myState = ActivitiesState.success;
+    } on DioException catch (e) {
+      _myErrorMessage = DioErrorMapper.toMessage(e);
+      _myState = ActivitiesState.error;
+    } catch (_) {
+      _myErrorMessage = 'Failed to load activities';
+      _myState = ActivitiesState.error;
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> refreshMyActivities() async {
+    _myIsRefreshing = true;
+    _myErrorMessage = null;
+    notifyListeners();
+
+    try {
+      _myItems = await _activityApi.getMyHostedActivities();
+      _myState = ActivitiesState.success;
+    } on DioException catch (e) {
+      _myErrorMessage = DioErrorMapper.toMessage(e);
+      _myState = ActivitiesState.error;
+    } catch (_) {
+      _myErrorMessage = 'Failed to load activities';
+      _myState = ActivitiesState.error;
+    } finally {
+      _myIsRefreshing = false;
       notifyListeners();
     }
   }

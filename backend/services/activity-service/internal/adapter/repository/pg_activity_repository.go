@@ -268,6 +268,12 @@ func (r *PGActivityRepository) ListActivities(ctx context.Context, filter port.A
 		argPos++
 	}
 
+	if filter.Visibility != nil && strings.TrimSpace(*filter.Visibility) != "" {
+		parts = append(parts, fmt.Sprintf(" AND visibility = $%d", argPos))
+		args = append(args, strings.TrimSpace(*filter.Visibility))
+		argPos++
+	}
+
 	if filter.CategorySlug != nil && strings.TrimSpace(*filter.CategorySlug) != "" {
 		parts = append(parts, fmt.Sprintf(" AND category_slug = $%d", argPos))
 		args = append(args, strings.TrimSpace(*filter.CategorySlug))

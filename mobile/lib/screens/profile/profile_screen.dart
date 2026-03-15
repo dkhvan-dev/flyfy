@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/generated/app_localizations.dart';
@@ -134,6 +135,15 @@ class ProfileScreen extends StatelessWidget {
                             await context.read<LocaleProvider>().setLocale(value);
                           },
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.event_note_outlined),
+                        title: Text(l10n.myActivitiesTitle),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push('/me/activities'),
                       ),
                     ),
                     const SizedBox(height: 24),

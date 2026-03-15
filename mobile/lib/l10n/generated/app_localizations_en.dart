@@ -12,22 +12,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'FlyFy';
 
   @override
+  String get welcomeTitle => 'Your World,\nPersonalized.';
+
+  @override
+  String get welcomeDescription =>
+      'Experience the ultimate travel super app designed for the modern explorer.';
+
+  @override
   String get welcomeToFlyFy => 'Welcome to FlyFy';
+
+  @override
+  String get authByPhone => 'Sign in with Phone';
+
+  @override
+  String get termsAgreementText =>
+      'By continuing, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>';
 
   @override
   String get enterPhoneToContinue => 'Enter your phone number to continue';
 
   @override
-  String get phoneNumber => 'Phone Number';
-
-  @override
-  String get sendCode => 'Send Code';
-
-  @override
-  String get enterAuthCode => 'Enter Auth Code';
-
-  @override
   String get verifyAndLogin => 'Verify & Login';
+
+  @override
+  String get verifyYourPhone => 'Verify your phone';
+
+  @override
+  String get enterAuthCode => 'Enter the 6-digit code we just sent to\n';
+
+  @override
+  String get didntReceiveOTP => 'Didn\'t receive the code?';
+
+  @override
+  String get resendCode => 'Resend code';
 
   @override
   String get or => 'OR';
@@ -499,6 +516,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createEndDateValidation => 'End date must be after start date';
 
   @override
+  String get createStartAtTooSoonValidation =>
+      'Start time must be at least 1 hour from now';
+
+  @override
+  String get createRegistrationDeadlineValidation =>
+      'Registration deadline must be before the start time';
+
+  @override
+  String get createSaveDraft => 'Save Draft';
+
+  @override
+  String get createAndPublish => 'Publish';
+
+  @override
   String get createLanguageSection => 'ACTIVITY LANGUAGE';
 
   @override
@@ -542,6 +573,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please enter a valid maximum number';
 
   @override
+  String get createMinExceedsMaxValidation => 'Minimum cannot exceed maximum';
+
+  @override
   String get createPriceSection => 'PRICING';
 
   @override
@@ -558,6 +592,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createCurrencyLabel => 'Currency';
+
+  @override
+  String get createPricePerPersonHint => 'per person';
 
   @override
   String get createPriceValidation => 'Please enter a valid amount';
@@ -629,4 +666,83 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get editPriceRestrictionHint =>
       'Price cannot be changed if participants have already joined';
+
+  @override
+  String get myActivitiesTitle => 'My Activities';
+
+  @override
+  String get myActivitiesEmpty => 'You haven\'t created any activities yet';
+
+  @override
+  String get myActivitiesEmptyHint =>
+      'Create your first activity and it will appear here';
+
+  @override
+  String get myActivitiesLoadFailed => 'Failed to load your activities';
+
+  @override
+  String get myActivitiesFilterAll => 'All';
+
+  @override
+  String myActivitiesLastUpdated(Object date) {
+    return 'Last updated $date';
+  }
+
+  @override
+  String get myActivitiesContinueButton => 'Continue';
+
+  @override
+  String get activityPerPerson => '/ person';
+
+  @override
+  String activitySpotsLeft(Object count) {
+    return '$count Spots Left';
+  }
+
+  @override
+  String get activityUnlimitedSpots => 'Unlimited';
+
+  @override
+  String get activityMeetingPoint => 'Meeting Point';
+
+  @override
+  String get activityGetDirections => 'Get Directions';
+
+  @override
+  String get activityHostSection => 'Host';
+
+  @override
+  String get activityTotalCapacity => 'Total Capacity';
+
+  @override
+  String get activityPricing => 'Pricing';
+
+  @override
+  String activityPeopleMax(Object count) {
+    return '$count People Max';
+  }
+
+  @override
+  String get activityJoinActivity => 'Join Activity';
+
+  @override
+  String get activitiesSearchHint => 'Search activities, hosts, or cities';
+
+  @override
+  String get activitiesFilterCategory => 'Category';
+
+  @override
+  String get activitiesFilterDate => 'Date';
+
+  @override
+  String get activitiesFilterPricing => 'Pricing';
+
+  @override
+  String get activityViewDetails => 'View Details';
+
+  @override
+  String get activityJoinSession => 'Join Session';
+
+  @override
+  String get activityGetLink => 'Get Link';
 }

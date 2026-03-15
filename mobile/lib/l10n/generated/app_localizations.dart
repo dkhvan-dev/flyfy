@@ -106,11 +106,35 @@ abstract class AppLocalizations {
   /// **'FlyFy'**
   String get appTitle;
 
+  /// No description provided for @welcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your World,\nPersonalized.'**
+  String get welcomeTitle;
+
+  /// No description provided for @welcomeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Experience the ultimate travel super app designed for the modern explorer.'**
+  String get welcomeDescription;
+
   /// No description provided for @welcomeToFlyFy.
   ///
   /// In en, this message translates to:
   /// **'Welcome to FlyFy'**
   String get welcomeToFlyFy;
+
+  /// No description provided for @authByPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Phone'**
+  String get authByPhone;
+
+  /// No description provided for @termsAgreementText.
+  ///
+  /// In en, this message translates to:
+  /// **'By continuing, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>'**
+  String get termsAgreementText;
 
   /// No description provided for @enterPhoneToContinue.
   ///
@@ -118,29 +142,35 @@ abstract class AppLocalizations {
   /// **'Enter your phone number to continue'**
   String get enterPhoneToContinue;
 
-  /// No description provided for @phoneNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Phone Number'**
-  String get phoneNumber;
-
-  /// No description provided for @sendCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Send Code'**
-  String get sendCode;
-
-  /// No description provided for @enterAuthCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter Auth Code'**
-  String get enterAuthCode;
-
   /// No description provided for @verifyAndLogin.
   ///
   /// In en, this message translates to:
   /// **'Verify & Login'**
   String get verifyAndLogin;
+
+  /// No description provided for @verifyYourPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your phone'**
+  String get verifyYourPhone;
+
+  /// No description provided for @enterAuthCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code we just sent to\n'**
+  String get enterAuthCode;
+
+  /// No description provided for @didntReceiveOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t receive the code?'**
+  String get didntReceiveOTP;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get resendCode;
 
   /// No description provided for @or.
   ///
@@ -1042,6 +1072,30 @@ abstract class AppLocalizations {
   /// **'End date must be after start date'**
   String get createEndDateValidation;
 
+  /// No description provided for @createStartAtTooSoonValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time must be at least 1 hour from now'**
+  String get createStartAtTooSoonValidation;
+
+  /// No description provided for @createRegistrationDeadlineValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration deadline must be before the start time'**
+  String get createRegistrationDeadlineValidation;
+
+  /// No description provided for @createSaveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Draft'**
+  String get createSaveDraft;
+
+  /// No description provided for @createAndPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get createAndPublish;
+
   /// No description provided for @createLanguageSection.
   ///
   /// In en, this message translates to:
@@ -1126,6 +1180,12 @@ abstract class AppLocalizations {
   /// **'Please enter a valid maximum number'**
   String get createMaxParticipantsValidation;
 
+  /// No description provided for @createMinExceedsMaxValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum cannot exceed maximum'**
+  String get createMinExceedsMaxValidation;
+
   /// No description provided for @createPriceSection.
   ///
   /// In en, this message translates to:
@@ -1161,6 +1221,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Currency'**
   String get createCurrencyLabel;
+
+  /// No description provided for @createPricePerPersonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'per person'**
+  String get createPricePerPersonHint;
 
   /// No description provided for @createPriceValidation.
   ///
@@ -1299,6 +1365,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Price cannot be changed if participants have already joined'**
   String get editPriceRestrictionHint;
+
+  /// No description provided for @myActivitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Activities'**
+  String get myActivitiesTitle;
+
+  /// No description provided for @myActivitiesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t created any activities yet'**
+  String get myActivitiesEmpty;
+
+  /// No description provided for @myActivitiesEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first activity and it will appear here'**
+  String get myActivitiesEmptyHint;
+
+  /// No description provided for @myActivitiesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load your activities'**
+  String get myActivitiesLoadFailed;
+
+  /// No description provided for @myActivitiesFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get myActivitiesFilterAll;
+
+  /// No description provided for @myActivitiesLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated {date}'**
+  String myActivitiesLastUpdated(Object date);
+
+  /// No description provided for @myActivitiesContinueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get myActivitiesContinueButton;
+
+  /// No description provided for @activityPerPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'/ person'**
+  String get activityPerPerson;
+
+  /// No description provided for @activitySpotsLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Spots Left'**
+  String activitySpotsLeft(Object count);
+
+  /// No description provided for @activityUnlimitedSpots.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get activityUnlimitedSpots;
+
+  /// No description provided for @activityMeetingPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting Point'**
+  String get activityMeetingPoint;
+
+  /// No description provided for @activityGetDirections.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Directions'**
+  String get activityGetDirections;
+
+  /// No description provided for @activityHostSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get activityHostSection;
+
+  /// No description provided for @activityTotalCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Capacity'**
+  String get activityTotalCapacity;
+
+  /// No description provided for @activityPricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing'**
+  String get activityPricing;
+
+  /// No description provided for @activityPeopleMax.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} People Max'**
+  String activityPeopleMax(Object count);
+
+  /// No description provided for @activityJoinActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Activity'**
+  String get activityJoinActivity;
+
+  /// No description provided for @activitiesSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search activities, hosts, or cities'**
+  String get activitiesSearchHint;
+
+  /// No description provided for @activitiesFilterCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get activitiesFilterCategory;
+
+  /// No description provided for @activitiesFilterDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get activitiesFilterDate;
+
+  /// No description provided for @activitiesFilterPricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing'**
+  String get activitiesFilterPricing;
+
+  /// No description provided for @activityViewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View Details'**
+  String get activityViewDetails;
+
+  /// No description provided for @activityJoinSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Session'**
+  String get activityJoinSession;
+
+  /// No description provided for @activityGetLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Link'**
+  String get activityGetLink;
 }
 
 class _AppLocalizationsDelegate

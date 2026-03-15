@@ -1,12 +1,17 @@
 {
   "@@locale": "en",
   "appTitle": "FlyFy",
+  "welcomeTitle": "Your World,\nPersonalized.",
+  "welcomeDescription": "Experience the ultimate travel super app designed for the modern explorer.",
   "welcomeToFlyFy": "Welcome to FlyFy",
+  "authByPhone": "Sign in with Phone",
+  "termsAgreementText": "By continuing, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>",
   "enterPhoneToContinue": "Enter your phone number to continue",
-  "phoneNumber": "Phone Number",
-  "sendCode": "Send Code",
-  "enterAuthCode": "Enter Auth Code",
   "verifyAndLogin": "Verify & Login",
+  "verifyYourPhone": "Verify your phone",
+  "enterAuthCode": "Enter the 6-digit code we just sent to\n",
+  "didntReceiveOTP": "Didn't receive the code?",
+  "resendCode": "Resend code",
   "or": "OR",
   "error": "Error",
   "ok": "OK",
@@ -172,6 +177,10 @@
   "createEndAtLabel": "End",
   "createRegistrationDeadlineLabel": "Registration deadline",
   "createEndDateValidation": "End date must be after start date",
+  "createStartAtTooSoonValidation": "Start time must be at least 1 hour from now",
+  "createRegistrationDeadlineValidation": "Registration deadline must be before the start time",
+  "createSaveDraft": "Save Draft",
+  "createAndPublish": "Publish",
   "createLanguageSection": "ACTIVITY LANGUAGE",
   "createVisibilitySection": "VISIBILITY",
   "createVisibilityPublic": "Public",
@@ -186,12 +195,14 @@
   "createMinParticipantsLabel": "Minimum",
   "createMaxParticipantsLabel": "Maximum",
   "createMaxParticipantsValidation": "Please enter a valid maximum number",
+  "createMinExceedsMaxValidation": "Minimum cannot exceed maximum",
   "createPriceSection": "PRICING",
   "createPriceFree": "Free",
   "createPricePaid": "Paid",
   "createPriceDeposit": "Deposit",
   "createPriceAmountLabel": "Amount",
   "createCurrencyLabel": "Currency",
+  "createPricePerPersonHint": "per person",
   "createPriceValidation": "Please enter a valid amount",
   "createOnlineSection": "ONLINE ACCESS",
   "createMeetingUrlLabel": "Meeting link",
@@ -214,5 +225,44 @@
   "activityPublishFailed": "Failed to publish activity",
   "editFormatLocked": "Format cannot be changed after creation",
   "editLocationLocked": "Location cannot be changed after publication",
-  "editPriceRestrictionHint": "Price cannot be changed if participants have already joined"
+  "editPriceRestrictionHint": "Price cannot be changed if participants have already joined",
+  "myActivitiesTitle": "My Activities",
+  "myActivitiesEmpty": "You haven't created any activities yet",
+  "myActivitiesEmptyHint": "Create your first activity and it will appear here",
+  "myActivitiesLoadFailed": "Failed to load your activities",
+  "myActivitiesFilterAll": "All",
+  "myActivitiesLastUpdated": "Last updated {date}",
+  "@myActivitiesLastUpdated": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "myActivitiesContinueButton": "Continue",
+  "activityPerPerson": "/ person",
+  "activitySpotsLeft": "{count} Spots Left",
+  "@activitySpotsLeft": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activityUnlimitedSpots": "Unlimited",
+  "activityMeetingPoint": "Meeting Point",
+  "activityGetDirections": "Get Directions",
+  "activityHostSection": "Host",
+  "activityTotalCapacity": "Total Capacity",
+  "activityPricing": "Pricing",
+  "activityPeopleMax": "{count} People Max",
+  "@activityPeopleMax": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activityJoinActivity": "Join Activity",
+  "activitiesSearchHint": "Search activities, hosts, or cities",
+  "activitiesFilterCategory": "Category",
+  "activitiesFilterDate": "Date",
+  "activitiesFilterPricing": "Pricing",
+  "activityViewDetails": "View Details",
+  "activityJoinSession": "Join Session",
+  "activityGetLink": "Get Link"
 }

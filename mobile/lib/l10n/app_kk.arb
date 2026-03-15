@@ -1,12 +1,17 @@
 {
   "@@locale": "kk",
   "appTitle": "FlyFy",
+  "welcomeTitle": "Сіздің жеке әлеміңіз.",
+  "welcomeDescription": "Заманауи зерттеушіге арналған мінсіз саяхат суперқосымшасының барлық мүмкіндіктерін бағалаңыз.",
   "welcomeToFlyFy": "FlyFy қосымшасына қош келдіңіз",
+  "authByPhone": "Телефон нөмірі арқылы кіру",
+  "termsAgreementText": "<terms>Пайдалану шарттары</terms> мен <privacy>Құпиялылық саясаты</privacy> арқылы жалғастыра отырып, сіз келісесіз",
   "enterPhoneToContinue": "Жалғастыру үшін телефон нөмірін енгізіңіз",
-  "phoneNumber": "Телефон нөмірі",
-  "sendCode": "Код жіберу",
-  "enterAuthCode": "Кодты енгізіңіз",
   "verifyAndLogin": "Растап кіру",
+  "verifyYourPhone": "Телефон нөміріңізді растаңыз",
+  "enterAuthCode": "Жаңа ғана мына нөмірге жіберген 6 таңбалы кодты енгізіңіз:\n",
+  "didntReceiveOTP": "Кодты алмадыңыз ба?",
+  "resendCode": "Кодты қайта жіберу",
   "or": "НЕМЕСЕ",
   "error": "Қате",
   "ok": "Түсінікті",
@@ -172,6 +177,10 @@
   "createEndAtLabel": "Аяқталуы",
   "createRegistrationDeadlineLabel": "Тіркелу мерзімі",
   "createEndDateValidation": "Аяқталу уақыты басталудан кейін болуы керек",
+  "createStartAtTooSoonValidation": "Басталу уақыты кемінде 1 сағаттан кейін болуы керек",
+  "createRegistrationDeadlineValidation": "Тіркелу мерзімі басталу уақытынан бұрын болуы керек",
+  "createSaveDraft": "Жобаны сақтау",
+  "createAndPublish": "Жариялау",
   "createLanguageSection": "БЕЛСЕНДІЛІК ТІЛІ",
   "createVisibilitySection": "КӨРІНУІ",
   "createVisibilityPublic": "Жалпыға қолжетімді",
@@ -186,12 +195,14 @@
   "createMinParticipantsLabel": "Минимум",
   "createMaxParticipantsLabel": "Максимум",
   "createMaxParticipantsValidation": "Дұрыс максималды санды енгізіңіз",
+  "createMinExceedsMaxValidation": "Минимум максимумнан асып кетпеуі керек",
   "createPriceSection": "ҚҰНЫ",
   "createPriceFree": "Тегін",
   "createPricePaid": "Ақылы",
   "createPriceDeposit": "Депозит",
   "createPriceAmountLabel": "Сома",
   "createCurrencyLabel": "Валюта",
+  "createPricePerPersonHint": "адамға",
   "createPriceValidation": "Дұрыс соманы енгізіңіз",
   "createOnlineSection": "ОНЛАЙН ҚАТЫНАУ",
   "createMeetingUrlLabel": "Кездесу сілтемесі",
@@ -214,5 +225,44 @@
   "activityPublishFailed": "Белсенділікті жариялау сәтсіз аяқталды",
   "editFormatLocked": "Форматты жасалғаннан кейін өзгерту мүмкін емес",
   "editLocationLocked": "Жарияланғаннан кейін орналасқан жерді өзгерту мүмкін емес",
-  "editPriceRestrictionHint": "Қатысушылар жазылғаннан кейін бағаны өзгерту мүмкін емес"
+  "editPriceRestrictionHint": "Қатысушылар жазылғаннан кейін бағаны өзгерту мүмкін емес",
+  "myActivitiesTitle": "Менің белсенділіктерім",
+  "myActivitiesEmpty": "Сізде әлі жасалған белсенділіктер жоқ",
+  "myActivitiesEmptyHint": "Бірінші белсенділігіңізді жасаңыз, ол осы жерде пайда болады",
+  "myActivitiesLoadFailed": "Белсенділіктеріңізді жүктеу мүмкін болмады",
+  "myActivitiesFilterAll": "Барлығы",
+  "myActivitiesLastUpdated": "Жаңартылды {date}",
+  "@myActivitiesLastUpdated": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "myActivitiesContinueButton": "Жалғастыру",
+  "activityPerPerson": "/ адам",
+  "activitySpotsLeft": "{count} орын қалды",
+  "@activitySpotsLeft": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activityUnlimitedSpots": "Шектеусіз",
+  "activityMeetingPoint": "Кездесу орны",
+  "activityGetDirections": "Жол көрсету",
+  "activityHostSection": "Ұйымдастырушы",
+  "activityTotalCapacity": "Жалпы орын",
+  "activityPricing": "Құны",
+  "activityPeopleMax": "Макс. {count} адам",
+  "@activityPeopleMax": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activityJoinActivity": "Жазылу",
+  "activitiesSearchHint": "Белсенділіктер, ұйымдастырушылар, қалалар іздеу",
+  "activitiesFilterCategory": "Санат",
+  "activitiesFilterDate": "Күні",
+  "activitiesFilterPricing": "Құны",
+  "activityViewDetails": "Толығырақ",
+  "activityJoinSession": "Қосылу",
+  "activityGetLink": "Сілтемені алу"
 }

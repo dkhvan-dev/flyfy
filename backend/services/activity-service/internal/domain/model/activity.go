@@ -293,7 +293,7 @@ func (a *Activity) validatePrice() error {
 			return ErrInvalidPrice
 		}
 	case enum.ActivityPriceTypePaid, enum.ActivityPriceTypeDeposit:
-		if a.PriceAmount == nil || *a.PriceAmount < 0 {
+		if a.PriceAmount == nil || *a.PriceAmount <= 0 {
 			return ErrInvalidPrice
 		}
 		if a.Currency == nil || strings.TrimSpace(*a.Currency) == "" {

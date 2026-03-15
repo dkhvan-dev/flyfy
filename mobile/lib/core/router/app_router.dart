@@ -9,6 +9,7 @@ import '../../screens/profile/profile_screen.dart';
 import '../../screens/activities/activities_screen.dart';
 import '../../screens/activities/activity_details_screen.dart';
 import '../../screens/activities/create_activity_screen.dart';
+import '../../screens/activities/my_activities_screen.dart';
 
 class AppRouter {
   static GoRouter router(AuthProvider authProvider) {
@@ -64,6 +65,10 @@ class AppRouter {
         GoRoute(
           path: '/activities',
           builder: (context, state) => const ActivitiesScreen(),
+        ),
+        GoRoute(
+          path: '/me/activities',
+          builder: (context, state) => const MyActivitiesScreen(),
         ),
         GoRoute(
           path: '/activities/create',

@@ -6,6 +6,7 @@ class ActivityListItemVm {
     required this.description,
     required this.format,
     required this.status,
+    required this.moderationStatus,
     required this.visibility,
     required this.joinMode,
     required this.categorySlug,
@@ -38,6 +39,7 @@ class ActivityListItemVm {
   final String description;
   final String format;
   final String status;
+  final String moderationStatus;
   final String visibility;
   final String joinMode;
   final String categorySlug;
@@ -72,6 +74,7 @@ class ActivityListItemVm {
       description: json['description']?.toString() ?? '',
       format: json['format']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
+      moderationStatus: json['moderationStatus']?.toString() ?? '',
       visibility: json['visibility']?.toString() ?? '',
       joinMode: json['joinMode']?.toString() ?? '',
       categorySlug: json['categorySlug']?.toString() ?? '',

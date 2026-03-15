@@ -12,22 +12,40 @@ class AppLocalizationsRu extends AppLocalizations {
   String get appTitle => 'FlyFy';
 
   @override
+  String get welcomeTitle => 'Ваш персональный мир.';
+
+  @override
+  String get welcomeDescription =>
+      'Оцените все возможности идеального суперприложения для путешествий, созданного для современного исследователя.';
+
+  @override
   String get welcomeToFlyFy => 'Добро пожаловать в FlyFy';
+
+  @override
+  String get authByPhone => 'Войти по номеру телефона';
+
+  @override
+  String get termsAgreementText =>
+      'Продолжая, вы соглашаетесь с нашими <terms>Условиями использования</terms> и <privacy>Политикой конфиденциальности</privacy>';
 
   @override
   String get enterPhoneToContinue => 'Введите номер телефона, чтобы продолжить';
 
   @override
-  String get phoneNumber => 'Номер телефона';
-
-  @override
-  String get sendCode => 'Отправить код';
-
-  @override
-  String get enterAuthCode => 'Введите код';
-
-  @override
   String get verifyAndLogin => 'Подтвердить и войти';
+
+  @override
+  String get verifyYourPhone => 'Подтвердите свой номер телефона';
+
+  @override
+  String get enterAuthCode =>
+      'Введите 6-значный код, который мы только что отправили на номер\n';
+
+  @override
+  String get didntReceiveOTP => 'Не получили код?';
+
+  @override
+  String get resendCode => 'Отправить код повторно';
 
   @override
   String get or => 'ИЛИ';
@@ -499,6 +517,20 @@ class AppLocalizationsRu extends AppLocalizations {
       'Дата окончания должна быть после начала';
 
   @override
+  String get createStartAtTooSoonValidation =>
+      'Начало должно быть не менее чем через 1 час';
+
+  @override
+  String get createRegistrationDeadlineValidation =>
+      'Крайний срок регистрации должен быть до начала';
+
+  @override
+  String get createSaveDraft => 'Сохранить черновик';
+
+  @override
+  String get createAndPublish => 'Опубликовать';
+
+  @override
   String get createLanguageSection => 'ЯЗЫК АКТИВНОСТИ';
 
   @override
@@ -542,6 +574,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Укажите корректное максимальное число';
 
   @override
+  String get createMinExceedsMaxValidation =>
+      'Минимум не может превышать максимум';
+
+  @override
   String get createPriceSection => 'СТОИМОСТЬ';
 
   @override
@@ -558,6 +594,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createCurrencyLabel => 'Валюта';
+
+  @override
+  String get createPricePerPersonHint => 'за человека';
 
   @override
   String get createPriceValidation => 'Укажите корректную сумму';
@@ -629,4 +668,84 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get editPriceRestrictionHint =>
       'Цену нельзя изменить, если участники уже записались';
+
+  @override
+  String get myActivitiesTitle => 'Мои активности';
+
+  @override
+  String get myActivitiesEmpty => 'У вас пока нет созданных активностей';
+
+  @override
+  String get myActivitiesEmptyHint =>
+      'Создайте первую активность, и она появится здесь';
+
+  @override
+  String get myActivitiesLoadFailed => 'Не удалось загрузить ваши активности';
+
+  @override
+  String get myActivitiesFilterAll => 'Все';
+
+  @override
+  String myActivitiesLastUpdated(Object date) {
+    return 'Обновлено $date';
+  }
+
+  @override
+  String get myActivitiesContinueButton => 'Продолжить';
+
+  @override
+  String get activityPerPerson => '/ чел.';
+
+  @override
+  String activitySpotsLeft(Object count) {
+    return 'Осталось мест: $count';
+  }
+
+  @override
+  String get activityUnlimitedSpots => 'Без ограничений';
+
+  @override
+  String get activityMeetingPoint => 'Место встречи';
+
+  @override
+  String get activityGetDirections => 'Как добраться';
+
+  @override
+  String get activityHostSection => 'Организатор';
+
+  @override
+  String get activityTotalCapacity => 'Всего мест';
+
+  @override
+  String get activityPricing => 'Стоимость';
+
+  @override
+  String activityPeopleMax(Object count) {
+    return 'Макс. $count чел.';
+  }
+
+  @override
+  String get activityJoinActivity => 'Записаться';
+
+  @override
+  String get activitiesSearchHint =>
+      'Поиск активностей, организаторов, городов';
+
+  @override
+  String get activitiesFilterCategory => 'Категория';
+
+  @override
+  String get activitiesFilterDate => 'Дата';
+
+  @override
+  String get activitiesFilterPricing => 'Стоимость';
+
+  @override
+  String get activityViewDetails => 'Подробнее';
+
+  @override
+  String get activityJoinSession => 'Присоединиться';
+
+  @override
+  String get activityGetLink => 'Получить ссылку';
 }

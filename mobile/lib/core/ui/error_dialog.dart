@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_colors.dart';
+
 Future<void> showErrorDialog(
   BuildContext context, {
   required String title,
@@ -10,13 +12,13 @@ Future<void> showErrorDialog(
     barrierDismissible: true,
     builder: (context) {
       return AlertDialog(
-        backgroundColor: const Color(0xFF16161F),
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        title: const Text(
-          'Ошибка',
-          style: TextStyle(
+        title: Text(
+          title,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
@@ -32,9 +34,9 @@ Future<void> showErrorDialog(
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text(
-              'Понятно',
+              'OK',
               style: TextStyle(
-                color: Color(0xFF00BCD4),
+                color: AppColors.accent,
                 fontWeight: FontWeight.bold,
               ),
             ),

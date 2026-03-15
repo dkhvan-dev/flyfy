@@ -275,8 +275,13 @@ func (h *Handler) GetActivityByID(w http.ResponseWriter, r *http.Request, activi
 func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
+	requestedLimit := parseIntOrDefault(q.Get("limit"), 20)
+	if requestedLimit > 100 {
+		requestedLimit = 100
+	}
+
 	filter := port.ActivityFilter{
-		Limit:  parseIntOrDefault(q.Get("limit"), 20),
+		Limit:  requestedLimit + 1,
 		Offset: parseIntOrDefault(q.Get("offset"), 0),
 	}
 
@@ -287,6 +292,21 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 	}
 	if v := strings.TrimSpace(q.Get("status")); v != "" {
 		filter.Statuses = splitCSV(v)
+	} else {
+		filter.Statuses = []string{
+			string(enum.ActivityStatusPublished),
+			string(enum.ActivityStatusEnrollmentOpen),
+			string(enum.ActivityStatusFull),
+			string(enum.ActivityStatusStarted),
+			string(enum.ActivityStatusCompleted),
+		}
+	}
+
+	if v := strings.TrimSpace(q.Get("visibility")); v != "" {
+		filter.Visibility = &v
+	} else {
+		vis := string(enum.ActivityVisibilityPublic)
+		filter.Visibility = &vis
 	}
 	if v := strings.TrimSpace(q.Get("categorySlug")); v != "" {
 		filter.CategorySlug = &v
@@ -310,8 +330,14 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hasMore := len(items) > requestedLimit
+	if hasMore {
+		items = items[:requestedLimit]
+	}
+
 	resp := dto.ActivityListResponse{
-		Items: make([]dto.ActivityResponse, 0, len(items)),
+		Items:   make([]dto.ActivityResponse, 0, len(items)),
+		HasMore: hasMore,
 	}
 
 	for _, item := range items {
@@ -711,17 +737,26 @@ func (h *Handler) ListMyJoinedActivities(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	limit := parseIntOrDefault(r.URL.Query().Get("limit"), 20)
+	joinedLimit := parseIntOrDefault(r.URL.Query().Get("limit"), 20)
+	if joinedLimit > 100 {
+		joinedLimit = 100
+	}
 	offset := parseIntOrDefault(r.URL.Query().Get("offset"), 0)
 
-	items, err := h.activityUC.ListJoinedActivities(r.Context(), actorUserID, limit, offset)
+	items, err := h.activityUC.ListJoinedActivities(r.Context(), actorUserID, joinedLimit+1, offset)
 	if err != nil {
 		h.writeAppError(w, err, "failed to list joined activities")
 		return
 	}
 
+	hasMore := len(items) > joinedLimit
+	if hasMore {
+		items = items[:joinedLimit]
+	}
+
 	resp := dto.ActivityListResponse{
-		Items: make([]dto.ActivityResponse, 0, len(items)),
+		Items:   make([]dto.ActivityResponse, 0, len(items)),
+		HasMore: hasMore,
 	}
 
 	for _, item := range items {
@@ -743,17 +778,26 @@ func (h *Handler) ListMyHostedActivities(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	limit := parseIntOrDefault(r.URL.Query().Get("limit"), 20)
+	hostedLimit := parseIntOrDefault(r.URL.Query().Get("limit"), 20)
+	if hostedLimit > 100 {
+		hostedLimit = 100
+	}
 	offset := parseIntOrDefault(r.URL.Query().Get("offset"), 0)
 
-	items, err := h.activityUC.ListHostedActivities(r.Context(), actorUserID, limit, offset)
+	items, err := h.activityUC.ListHostedActivities(r.Context(), actorUserID, hostedLimit+1, offset)
 	if err != nil {
 		h.writeAppError(w, err, "failed to list hosted activities")
 		return
 	}
 
+	hasMore := len(items) > hostedLimit
+	if hasMore {
+		items = items[:hostedLimit]
+	}
+
 	resp := dto.ActivityListResponse{
-		Items: make([]dto.ActivityResponse, 0, len(items)),
+		Items:   make([]dto.ActivityResponse, 0, len(items)),
+		HasMore: hasMore,
 	}
 
 	for _, item := range items {

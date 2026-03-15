@@ -12,23 +12,41 @@ class AppLocalizationsKk extends AppLocalizations {
   String get appTitle => 'FlyFy';
 
   @override
+  String get welcomeTitle => 'Сіздің жеке әлеміңіз.';
+
+  @override
+  String get welcomeDescription =>
+      'Заманауи зерттеушіге арналған мінсіз саяхат суперқосымшасының барлық мүмкіндіктерін бағалаңыз.';
+
+  @override
   String get welcomeToFlyFy => 'FlyFy қосымшасына қош келдіңіз';
+
+  @override
+  String get authByPhone => 'Телефон нөмірі арқылы кіру';
+
+  @override
+  String get termsAgreementText =>
+      '<terms>Пайдалану шарттары</terms> мен <privacy>Құпиялылық саясаты</privacy> арқылы жалғастыра отырып, сіз келісесіз';
 
   @override
   String get enterPhoneToContinue =>
       'Жалғастыру үшін телефон нөмірін енгізіңіз';
 
   @override
-  String get phoneNumber => 'Телефон нөмірі';
-
-  @override
-  String get sendCode => 'Код жіберу';
-
-  @override
-  String get enterAuthCode => 'Кодты енгізіңіз';
-
-  @override
   String get verifyAndLogin => 'Растап кіру';
+
+  @override
+  String get verifyYourPhone => 'Телефон нөміріңізді растаңыз';
+
+  @override
+  String get enterAuthCode =>
+      'Жаңа ғана мына нөмірге жіберген 6 таңбалы кодты енгізіңіз:\n';
+
+  @override
+  String get didntReceiveOTP => 'Кодты алмадыңыз ба?';
+
+  @override
+  String get resendCode => 'Кодты қайта жіберу';
 
   @override
   String get or => 'НЕМЕСЕ';
@@ -501,6 +519,20 @@ class AppLocalizationsKk extends AppLocalizations {
       'Аяқталу уақыты басталудан кейін болуы керек';
 
   @override
+  String get createStartAtTooSoonValidation =>
+      'Басталу уақыты кемінде 1 сағаттан кейін болуы керек';
+
+  @override
+  String get createRegistrationDeadlineValidation =>
+      'Тіркелу мерзімі басталу уақытынан бұрын болуы керек';
+
+  @override
+  String get createSaveDraft => 'Жобаны сақтау';
+
+  @override
+  String get createAndPublish => 'Жариялау';
+
+  @override
   String get createLanguageSection => 'БЕЛСЕНДІЛІК ТІЛІ';
 
   @override
@@ -544,6 +576,10 @@ class AppLocalizationsKk extends AppLocalizations {
       'Дұрыс максималды санды енгізіңіз';
 
   @override
+  String get createMinExceedsMaxValidation =>
+      'Минимум максимумнан асып кетпеуі керек';
+
+  @override
   String get createPriceSection => 'ҚҰНЫ';
 
   @override
@@ -560,6 +596,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createCurrencyLabel => 'Валюта';
+
+  @override
+  String get createPricePerPersonHint => 'адамға';
 
   @override
   String get createPriceValidation => 'Дұрыс соманы енгізіңіз';
@@ -633,4 +672,85 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get editPriceRestrictionHint =>
       'Қатысушылар жазылғаннан кейін бағаны өзгерту мүмкін емес';
+
+  @override
+  String get myActivitiesTitle => 'Менің белсенділіктерім';
+
+  @override
+  String get myActivitiesEmpty => 'Сізде әлі жасалған белсенділіктер жоқ';
+
+  @override
+  String get myActivitiesEmptyHint =>
+      'Бірінші белсенділігіңізді жасаңыз, ол осы жерде пайда болады';
+
+  @override
+  String get myActivitiesLoadFailed =>
+      'Белсенділіктеріңізді жүктеу мүмкін болмады';
+
+  @override
+  String get myActivitiesFilterAll => 'Барлығы';
+
+  @override
+  String myActivitiesLastUpdated(Object date) {
+    return 'Жаңартылды $date';
+  }
+
+  @override
+  String get myActivitiesContinueButton => 'Жалғастыру';
+
+  @override
+  String get activityPerPerson => '/ адам';
+
+  @override
+  String activitySpotsLeft(Object count) {
+    return '$count орын қалды';
+  }
+
+  @override
+  String get activityUnlimitedSpots => 'Шектеусіз';
+
+  @override
+  String get activityMeetingPoint => 'Кездесу орны';
+
+  @override
+  String get activityGetDirections => 'Жол көрсету';
+
+  @override
+  String get activityHostSection => 'Ұйымдастырушы';
+
+  @override
+  String get activityTotalCapacity => 'Жалпы орын';
+
+  @override
+  String get activityPricing => 'Құны';
+
+  @override
+  String activityPeopleMax(Object count) {
+    return 'Макс. $count адам';
+  }
+
+  @override
+  String get activityJoinActivity => 'Жазылу';
+
+  @override
+  String get activitiesSearchHint =>
+      'Белсенділіктер, ұйымдастырушылар, қалалар іздеу';
+
+  @override
+  String get activitiesFilterCategory => 'Санат';
+
+  @override
+  String get activitiesFilterDate => 'Күні';
+
+  @override
+  String get activitiesFilterPricing => 'Құны';
+
+  @override
+  String get activityViewDetails => 'Толығырақ';
+
+  @override
+  String get activityJoinSession => 'Қосылу';
+
+  @override
+  String get activityGetLink => 'Сілтемені алу';
 }
