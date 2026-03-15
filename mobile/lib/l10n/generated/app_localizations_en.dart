@@ -417,6 +417,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTransportSubtitle => 'Plan your trips in advance';
 
   @override
+  String get homeCurrentLocationLabel => 'Current location';
+
+  @override
+  String homeExploringLocation(Object location) {
+    return '$location';
+  }
+
+  @override
+  String get homeSearchHint => 'Search destinations, stays or cars';
+
+  @override
+  String get homeTopDestinations => 'Top Destinations';
+
+  @override
+  String get homeSeeAll => 'See all';
+
+  @override
+  String get homeEditorialBadge => 'Editorial';
+
+  @override
+  String get homeStoryTitle => 'Hidden Gems of Central Asia';
+
+  @override
+  String get homeStoryDescription =>
+      'Discover secret trails and cultural corners across Almaty\'s adventurous side.';
+
+  @override
+  String get homeReadStory => 'Read Story';
+
+  @override
+  String get homeFeaturedStays => 'Featured Stays';
+
+  @override
+  String get homeCarRentals => 'Car Rentals';
+
+  @override
+  String get homeRecommendedActivities => 'Recommended Activities';
+
+  @override
+  String get homeFilterButton => 'Filter';
+
+  @override
+  String get homeNavHome => 'Home';
+
+  @override
+  String get homeNavMy => 'My';
+
+  @override
   String get activitiesEntryTitle => 'Activities';
 
   @override
@@ -486,10 +534,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createCategoryLabel => 'Category';
 
   @override
-  String get createCategoryHint => 'e.g. sports, education, music';
+  String get createCategoryHint => 'Choose a category from the catalog';
 
   @override
-  String get createCategoryValidation => 'Please specify a category';
+  String get createCategoryValidation => 'Please choose a category';
+
+  @override
+  String get createCategoryLoading => 'Loading categories';
+
+  @override
+  String get createCategoryLoadFailed => 'Failed to load categories';
+
+  @override
+  String get createCategoryEmpty => 'No categories available';
+
+  @override
+  String get createCategoryRetry => 'Retry';
 
   @override
   String get createTagsLabel => 'Tags';

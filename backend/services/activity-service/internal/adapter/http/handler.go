@@ -43,6 +43,7 @@ func NewHandler(
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", h.Health)
 
+	mux.HandleFunc("GET /v1/activity-categories", h.ListActivityCategories)
 	mux.HandleFunc("POST /v1/activities", h.CreateActivity)
 	mux.HandleFunc("GET /v1/activities", h.ListActivities)
 
@@ -257,6 +258,20 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetActivityByID(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
+	_, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("ctx_user_id", UserIDFromContext(r.Context())).
+			Str("ctx_subject", SubjectFromContext(r.Context())).
+			Str("ctx_role", RoleFromContext(r.Context())).
+			Strs("ctx_roles", RolesFromContext(r.Context())).
+			Msg("GetActivityByID failed to resolve actor user id")
+
+		writeError(w, http.StatusUnauthorized, "GetActivityByID::missing authenticated user")
+		return
+	}
+
 	item, err := h.activityUC.GetActivityByID(r.Context(), activityID)
 	if err != nil {
 		h.writeAppError(w, err, "failed to get activity")
@@ -267,6 +282,24 @@ func (h *Handler) GetActivityByID(w http.ResponseWriter, r *http.Request, activi
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to build activity response")
 		return
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) ListActivityCategories(w http.ResponseWriter, r *http.Request) {
+	items := h.activityUC.ListActivityCategories()
+	resp := dto.ActivityCategoryListResponse{
+		Items: make([]dto.ActivityCategoryResponse, 0, len(items)),
+	}
+
+	for _, item := range items {
+		resp.Items = append(resp.Items, dto.ActivityCategoryResponse{
+			Slug:   item.Slug,
+			Name:   item.Name,
+			NameRu: item.NameRu,
+			NameKk: item.NameKk,
+		})
 	}
 
 	writeJSON(w, http.StatusOK, resp)

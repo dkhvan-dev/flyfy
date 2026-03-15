@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
+import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
 import '../../features/activities/models/update_activity_request.dart';
@@ -30,8 +31,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   // — Step 1: Basic —
   final _titleCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
-  final _categoryCtrl = TextEditingController();
   final _tagsCtrl = TextEditingController();
+  String? _selectedCategorySlug;
+  String? _initialCategorySlug;
 
   // — Step 2: Format & Schedule —
   String _format = 'OFFLINE';
@@ -76,16 +78,18 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   void initState() {
     super.initState();
     final a = widget.activity;
+    _initialCategorySlug = _normalizeCategorySlug(a?.categorySlug);
+    _selectedCategorySlug = _initialCategorySlug;
     if (a != null) {
       _titleCtrl.text = a.title;
       _descriptionCtrl.text = a.description;
-      _categoryCtrl.text = a.categorySlug;
       _tagsCtrl.text = a.tags.join(', ');
       _format = a.format.toUpperCase();
       _startAt = a.startAt.toLocal();
       _endAt = a.endAt.toLocal();
       _registrationDeadline =
-          a.registrationDeadline?.toLocal() ?? _startAt.subtract(const Duration(hours: 1));
+          a.registrationDeadline?.toLocal() ??
+          _startAt.subtract(const Duration(hours: 1));
       _languageCode = a.languageCode;
       _timezone = a.timezone;
       _capacityType = a.capacityType.toUpperCase();
@@ -119,6 +123,16 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         _meetingUrlCtrl.text = a.meetingUrl!;
       }
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final provider = context.read<ActivityProvider>();
+      if (provider.categoryState == ActivitiesState.initial ||
+          (provider.categoryState == ActivitiesState.error &&
+              provider.categoryItems.isEmpty)) {
+        provider.loadActivityCategories();
+      }
+    });
   }
 
   @override
@@ -126,7 +140,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     _pageController.dispose();
     _titleCtrl.dispose();
     _descriptionCtrl.dispose();
-    _categoryCtrl.dispose();
     _tagsCtrl.dispose();
     _priceAmountCtrl.dispose();
     _currencyCtrl.dispose();
@@ -160,7 +173,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           _showValidationError(l10n.createDescriptionValidation);
           return false;
         }
-        if (_categoryCtrl.text.trim().isEmpty) {
+        if ((_selectedCategorySlug ?? '').trim().isEmpty) {
           _showValidationError(l10n.createCategoryValidation);
           return false;
         }
@@ -259,9 +272,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
       if (published) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.activityPublishSuccess)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.activityPublishSuccess)));
         context.read<ActivityProvider>().loadActivities();
         context.pushReplacement('/activities/${created.id}');
       } else {
@@ -285,8 +298,16 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   // ── Shared field extraction helpers ────────────────────────────
 
-  String get _categorySlugNormalized =>
-      _categoryCtrl.text.trim().toLowerCase().replaceAll(' ', '-');
+  String? _normalizeCategorySlug(String? value) {
+    final normalized = value?.trim().toLowerCase();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
+  }
+
+  bool get _didCategoryChange =>
+      _normalizeCategorySlug(_selectedCategorySlug) != _initialCategorySlug;
 
   List<String> get _parsedTags => _tagsCtrl.text
       .split(',')
@@ -300,8 +321,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   int? get _maxParticipantsValue =>
       _capacityType == 'LIMITED' ? _maxParticipants : null;
 
-  double? get _priceAmountValue =>
-      _priceType != 'FREE' ? double.tryParse(_priceAmountCtrl.text.trim()) : null;
+  double? get _priceAmountValue => _priceType != 'FREE'
+      ? double.tryParse(_priceAmountCtrl.text.trim())
+      : null;
 
   String? get _currencyValue =>
       _priceType != 'FREE' ? _currencyCtrl.text.trim().toUpperCase() : null;
@@ -341,7 +363,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       format: _format,
       visibility: _visibility,
       joinMode: _joinMode,
-      categorySlug: _categorySlugNormalized,
+      categorySlug: _selectedCategorySlug!,
       tags: _parsedTags,
       languageCode: _languageCode,
       timezone: _timezone,
@@ -371,9 +393,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
     if (created != null) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.createActivitySuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.createActivitySuccess)));
       context.read<ActivityProvider>().loadActivities();
       context.pushReplacement('/activities/${created.id}');
     } else {
@@ -394,13 +416,15 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       description: _descriptionCtrl.text.trim(),
       visibility: _visibility,
       joinMode: _joinMode,
-      categorySlug: _categorySlugNormalized,
+      categorySlug: _didCategoryChange ? _selectedCategorySlug : null,
       tags: _parsedTags,
       languageCode: _languageCode,
       timezone: _timezone,
       startAt: _startAtChanged ? _startAt : null,
       endAt: _endAtChanged ? _endAt : null,
-      registrationDeadline: _registrationDeadlineChanged ? _registrationDeadline : null,
+      registrationDeadline: _registrationDeadlineChanged
+          ? _registrationDeadline
+          : null,
       capacityType: _capacityType,
       minParticipants: _minParticipantsValue,
       hasMinParticipants: true,
@@ -428,9 +452,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
     if (updated != null) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.editActivitySuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.editActivitySuccess)));
       context.read<ActivityProvider>().loadActivities();
       context.pop();
     } else {
@@ -552,6 +576,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   // ── Step 1: Basic ──────────────────────────────────────────────
 
   Widget _buildStep1Basic(AppLocalizations l10n) {
+    final languageCode = Localizations.localeOf(context).languageCode;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -571,10 +597,70 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           maxLines: 5,
         ),
         const SizedBox(height: 16),
-        _InputField(
-          controller: _categoryCtrl,
-          label: l10n.createCategoryLabel,
-          hint: l10n.createCategoryHint,
+        Text(
+          l10n.createCategoryLabel,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.createCategoryHint,
+          style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        Consumer<ActivityProvider>(
+          builder: (context, provider, _) {
+            final items = _buildCategoryOptions(
+              provider.categoryItems,
+              languageCode,
+            );
+
+            if ((provider.categoryState == ActivitiesState.initial ||
+                    provider.categoryState == ActivitiesState.loading) &&
+                items.isEmpty) {
+              return _CategoryCatalogState(
+                message: l10n.createCategoryLoading,
+                trailing: const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: AppColors.accent,
+                  ),
+                ),
+              );
+            }
+
+            if (provider.categoryState == ActivitiesState.error &&
+                items.isEmpty) {
+              return _CategoryCatalogState(
+                message:
+                    provider.categoryErrorMessage ??
+                    l10n.createCategoryLoadFailed,
+                trailing: TextButton(
+                  onPressed: () => context
+                      .read<ActivityProvider>()
+                      .loadActivityCategories(force: true),
+                  child: Text(l10n.createCategoryRetry),
+                ),
+              );
+            }
+
+            if (items.isEmpty) {
+              return _CategoryCatalogState(message: l10n.createCategoryEmpty);
+            }
+
+            return _CategoryDropdownField(
+              value: _selectedCategorySlug,
+              items: items,
+              onChanged: (value) => setState(() {
+                _selectedCategorySlug = _normalizeCategorySlug(value);
+              }),
+            );
+          },
         ),
         const SizedBox(height: 16),
         _InputField(
@@ -584,6 +670,26 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         ),
       ],
     );
+  }
+
+  Map<String, String> _buildCategoryOptions(
+    List<ActivityCategoryVm> categories,
+    String languageCode,
+  ) {
+    final options = <String, String>{};
+    final selectedSlug = _normalizeCategorySlug(_selectedCategorySlug);
+
+    if (selectedSlug != null &&
+        selectedSlug.isNotEmpty &&
+        categories.every((item) => item.slug != selectedSlug)) {
+      options[selectedSlug] = ActivityCategoryVm.humanizeSlug(selectedSlug);
+    }
+
+    for (final item in categories) {
+      options[item.slug] = item.localizedName(languageCode);
+    }
+
+    return options;
   }
 
   // ── Step 2: Schedule ───────────────────────────────────────────
@@ -767,8 +873,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   controller: _priceAmountCtrl,
                   label: l10n.createPriceAmountLabel,
                   hint: l10n.createPricePerPersonHint,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -819,7 +926,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             const SizedBox(height: 8),
             Text(
               l10n.editLocationLocked,
-              style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
+              style: const TextStyle(
+                color: AppColors.textCaption,
+                fontSize: 12,
+              ),
             ),
           ],
           const SizedBox(height: 12),
@@ -917,11 +1027,17 @@ class _StepIndicator extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: isDone
-                    ? const Icon(Icons.check, size: 16, color: AppColors.background)
+                    ? const Icon(
+                        Icons.check,
+                        size: 16,
+                        color: AppColors.background,
+                      )
                     : Text(
                         '${step + 1}',
                         style: TextStyle(
-                          color: isActive ? AppColors.background : AppColors.textSecondary,
+                          color: isActive
+                              ? AppColors.background
+                              : AppColors.textSecondary,
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
@@ -971,9 +1087,7 @@ class _BottomNavBar extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
           color: AppColors.background,
-          border: Border(
-            top: BorderSide(color: AppColors.borderLight),
-          ),
+          border: Border(top: BorderSide(color: AppColors.borderLight)),
         ),
         child: Row(
           children: [
@@ -1104,6 +1218,97 @@ class _InputField extends StatelessWidget {
   }
 }
 
+class _CategoryCatalogState extends StatelessWidget {
+  const _CategoryCatalogState({required this.message, this.trailing});
+
+  final String message;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          if (trailing != null) ...[const SizedBox(width: 12), trailing!],
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryDropdownField extends StatelessWidget {
+  const _CategoryDropdownField({
+    required this.items,
+    required this.onChanged,
+    this.value,
+  });
+
+  final Map<String, String> items;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedValue = items.containsKey(value) ? value : null;
+    final l10n = AppLocalizations.of(context)!;
+
+    return DropdownButtonFormField<String>(
+      initialValue: selectedValue,
+      isExpanded: true,
+      menuMaxHeight: 360,
+      dropdownColor: AppColors.surfaceLight,
+      style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
+      decoration: InputDecoration(
+        hintText: l10n.createCategoryLabel,
+        hintStyle: const TextStyle(color: AppColors.textCaption),
+        filled: true,
+        fillColor: AppColors.surfaceLight,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.accent),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
+      iconEnabledColor: AppColors.accent,
+      items: items.entries
+          .map(
+            (entry) => DropdownMenuItem<String>(
+              value: entry.key,
+              child: Text(entry.value, overflow: TextOverflow.ellipsis),
+            ),
+          )
+          .toList(),
+      onChanged: onChanged,
+    );
+  }
+}
+
 class _SegmentedSelect<T> extends StatelessWidget {
   const _SegmentedSelect({
     required this.value,
@@ -1146,14 +1351,18 @@ class _SegmentedSelect<T> extends StatelessWidget {
                   Icon(
                     icon,
                     size: 16,
-                    color: isSelected ? AppColors.accentLight : AppColors.textSecondary,
+                    color: isSelected
+                        ? AppColors.accentLight
+                        : AppColors.textSecondary,
                   ),
                   const SizedBox(width: 6),
                 ],
                 Text(
                   entry.value,
                   style: TextStyle(
-                    color: isSelected ? AppColors.accentLight : AppColors.textSecondary,
+                    color: isSelected
+                        ? AppColors.accentLight
+                        : AppColors.textSecondary,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 14,
                   ),
@@ -1196,7 +1405,10 @@ class _SpinnerField extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 8),
           Row(
@@ -1281,9 +1493,7 @@ class _DualCtaBar extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
           color: AppColors.background,
-          border: Border(
-            top: BorderSide(color: AppColors.borderLight),
-          ),
+          border: Border(top: BorderSide(color: AppColors.borderLight)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1387,7 +1597,10 @@ class _DatePickerTile extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(

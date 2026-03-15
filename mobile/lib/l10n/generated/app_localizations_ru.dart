@@ -417,6 +417,54 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeTransportSubtitle => 'Планируйте перемещения заранее';
 
   @override
+  String get homeCurrentLocationLabel => 'Текущая локация';
+
+  @override
+  String homeExploringLocation(Object location) {
+    return '$location';
+  }
+
+  @override
+  String get homeSearchHint => 'Искать направления, жилье или авто';
+
+  @override
+  String get homeTopDestinations => 'Топ направления';
+
+  @override
+  String get homeSeeAll => 'Смотреть все';
+
+  @override
+  String get homeEditorialBadge => 'Редакция';
+
+  @override
+  String get homeStoryTitle => 'Скрытые жемчужины Центральной Азии';
+
+  @override
+  String get homeStoryDescription =>
+      'Откройте секретные тропы и культурные уголки вокруг Алматы.';
+
+  @override
+  String get homeReadStory => 'Читать историю';
+
+  @override
+  String get homeFeaturedStays => 'Рекомендуемое жилье';
+
+  @override
+  String get homeCarRentals => 'Аренда авто';
+
+  @override
+  String get homeRecommendedActivities => 'Рекомендованные активности';
+
+  @override
+  String get homeFilterButton => 'Фильтр';
+
+  @override
+  String get homeNavHome => 'Главная';
+
+  @override
+  String get homeNavMy => 'Мои';
+
+  @override
   String get activitiesEntryTitle => 'Активности';
 
   @override
@@ -486,10 +534,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createCategoryLabel => 'Категория';
 
   @override
-  String get createCategoryHint => 'Например: спорт, образование, музыка';
+  String get createCategoryHint => 'Выберите категорию из справочника';
 
   @override
-  String get createCategoryValidation => 'Укажите категорию';
+  String get createCategoryValidation => 'Выберите категорию';
+
+  @override
+  String get createCategoryLoading => 'Загружаем категории';
+
+  @override
+  String get createCategoryLoadFailed => 'Не удалось загрузить категории';
+
+  @override
+  String get createCategoryEmpty => 'Категории пока недоступны';
+
+  @override
+  String get createCategoryRetry => 'Повторить';
 
   @override
   String get createTagsLabel => 'Теги';

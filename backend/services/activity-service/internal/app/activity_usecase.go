@@ -27,6 +27,10 @@ func NewActivityUseCase(repo port.ActivityRepository) *ActivityUseCase {
 	}
 }
 
+func (u *ActivityUseCase) ListActivityCategories() []model.ActivityCategory {
+	return model.ListActivityCategories()
+}
+
 type CreateActivityInput struct {
 	HostUserID   uuid.UUID
 	Title        string
@@ -121,6 +125,12 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 	if input.HostUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
 	}
+
+	categorySlug, err := model.NormalizeAndValidateActivityCategorySlug(input.CategorySlug)
+	if err != nil {
+		return nil, err
+	}
+	input.CategorySlug = categorySlug
 
 	if err := u.policy.CheckCreateRateLimit(ctx, input.HostUserID); err != nil {
 		return nil, err
@@ -323,6 +333,11 @@ func (u *ActivityUseCase) DuplicateActivity(
 		return nil, err
 	}
 
+	categorySlug, err := model.NormalizeAndValidateActivityCategorySlug(source.CategorySlug)
+	if err != nil {
+		return nil, err
+	}
+
 	dup, err := model.NewActivity(model.NewActivityParams{
 		HostUserID:                     source.HostUserID,
 		SourceActivityID:               &source.ID,
@@ -331,7 +346,7 @@ func (u *ActivityUseCase) DuplicateActivity(
 		Format:                         source.Format,
 		Visibility:                     source.Visibility,
 		JoinMode:                       source.JoinMode,
-		CategorySlug:                   source.CategorySlug,
+		CategorySlug:                   categorySlug,
 		LanguageCode:                   source.LanguageCode,
 		Timezone:                       source.Timezone,
 		StartAt:                        newStartAt,
@@ -575,7 +590,11 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		item.JoinMode = *input.JoinMode
 	}
 	if input.CategorySlug != nil {
-		item.CategorySlug = strings.TrimSpace(*input.CategorySlug)
+		categorySlug, categoryErr := model.NormalizeAndValidateActivityCategorySlug(*input.CategorySlug)
+		if categoryErr != nil {
+			return nil, categoryErr
+		}
+		item.CategorySlug = categorySlug
 	}
 	if input.LanguageCode != nil {
 		item.LanguageCode = strings.TrimSpace(*input.LanguageCode)

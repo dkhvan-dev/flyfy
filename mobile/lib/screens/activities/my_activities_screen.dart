@@ -19,6 +19,7 @@ class MyActivitiesScreen extends StatefulWidget {
 
 class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
   String _selectedFilter = 'ALL';
+  final List<String> publishedStatuses = ['PUBLISHED', 'ENROLLMENT_OPEN'];
 
   @override
   void initState() {
@@ -30,6 +31,14 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
   List<ActivityListItemVm> _filterItems(List<ActivityListItemVm> items) {
     if (_selectedFilter == 'ALL') return items;
+
+    if (_selectedFilter == 'PUBLISHED') {
+      return items.where((item) {
+        final status = item.status.toUpperCase();
+        return publishedStatuses.contains(status);
+      }).toList();
+    }
+
     return items
         .where((i) => i.status.toUpperCase() == _selectedFilter)
         .toList();
@@ -79,16 +88,15 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                 if (provider.myState == ActivitiesState.loading &&
                     provider.myItems.isEmpty) {
                   return const Center(
-                    child:
-                        CircularProgressIndicator(color: AppColors.accent),
+                    child: CircularProgressIndicator(color: AppColors.accent),
                   );
                 }
 
                 if (provider.myState == ActivitiesState.error &&
                     provider.myItems.isEmpty) {
                   return ErrorView(
-                    message: provider.myErrorMessage ??
-                        l10n.myActivitiesLoadFailed,
+                    message:
+                        provider.myErrorMessage ?? l10n.myActivitiesLoadFailed,
                     onRetry: provider.loadMyActivities,
                   );
                 }
@@ -160,9 +168,7 @@ class _FilterTabs extends StatelessWidget {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.accent
-                    : AppColors.surfaceLight,
+                color: isSelected ? AppColors.accent : AppColors.surfaceLight,
                 borderRadius: BorderRadius.circular(20),
                 border: isSelected
                     ? null
@@ -171,10 +177,11 @@ class _FilterTabs extends StatelessWidget {
               child: Text(
                 entry.value,
                 style: TextStyle(
-                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                  color: isSelected
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
                   fontSize: 13,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ),
@@ -262,7 +269,9 @@ class _MyActivityCard extends StatelessWidget {
                   left: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: _statusColor().withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(8),
@@ -283,7 +292,9 @@ class _MyActivityCard extends StatelessWidget {
                   right: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(8),
@@ -291,11 +302,7 @@ class _MyActivityCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          _formatIcon(),
-                          size: 13,
-                          color: Colors.white70,
-                        ),
+                        Icon(_formatIcon(), size: 13, color: Colors.white70),
                         const SizedBox(width: 4),
                         Text(
                           formatActivityFormat(item.format, l10n),
@@ -337,9 +344,7 @@ class _MyActivityCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        item.isFree
-                            ? l10n.freeLabel
-                            : item.priceLabel,
+                        item.isFree ? l10n.freeLabel : item.priceLabel,
                         style: TextStyle(
                           color: item.isFree
                               ? AppColors.success
@@ -368,8 +373,11 @@ class _MyActivityCard extends StatelessWidget {
                   Row(
                     children: [
                       if (item.shortLocation.isNotEmpty) ...[
-                        const Icon(Icons.place,
-                            size: 14, color: AppColors.textCaption),
+                        const Icon(
+                          Icons.place,
+                          size: 14,
+                          color: AppColors.textCaption,
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
@@ -385,8 +393,11 @@ class _MyActivityCard extends StatelessWidget {
                       ],
                       if (item.capacityType.toUpperCase() == 'LIMITED' &&
                           item.maxParticipants != null) ...[
-                        const Icon(Icons.people_outline,
-                            size: 14, color: AppColors.textCaption),
+                        const Icon(
+                          Icons.people_outline,
+                          size: 14,
+                          color: AppColors.textCaption,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${item.maxParticipants}',
@@ -412,17 +423,20 @@ class _MyActivityCard extends StatelessWidget {
                                 extra: item,
                               );
                               if (context.mounted) {
-                                context.read<ActivityProvider>().loadMyActivities();
+                                context
+                                    .read<ActivityProvider>()
+                                    .loadMyActivities();
                               }
                             },
                             icon: const Icon(Icons.edit_outlined, size: 16),
                             label: Text(l10n.editActivityButton),
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(
-                                  color: AppColors.accent, width: 1),
+                                color: AppColors.accent,
+                                width: 1,
+                              ),
                               foregroundColor: AppColors.accent,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -437,8 +451,7 @@ class _MyActivityCard extends StatelessWidget {
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.accent,
                               foregroundColor: AppColors.textPrimary,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),

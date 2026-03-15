@@ -40,7 +40,8 @@ class _LoginScreenState extends State<LoginScreen> {
         path: '/otp',
         queryParameters: {
           'phone': phone,
-          if (widget.from != null && widget.from!.isNotEmpty) 'from': widget.from!,
+          if (widget.from != null && widget.from!.isNotEmpty)
+            'from': widget.from!,
         },
       );
 
@@ -66,7 +67,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Image.network(
             'https://lh3.googleusercontent.com/aida-public/AB6AXuBduazwzIicGU9fDEXAz9OgOyFeni4k4elOe6XduNdQoG3iY1-qa2p2g8PvzmXdNrTJctUljZlDddvYm99io6whN9d3A0r8s6v6c-1W2giZFcC3P3wiIhlpfiKdGpC0fK8sY4vBFTQDRjqXUHRHyTgxLx5_rxq0mI11TkZ2NTQ_Kmi8c9Sb7EtHqmi-DOVm2ZpH5eFB89IKkMgkReWTlea9VKkr7SlVd8mHVoYpo5204yiI4tQxuNcUlQrjU2R2epHWOD9Ij-h0bTHM',
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: AppColors.background),
+            errorBuilder: (_, __, ___) =>
+                Container(color: AppColors.background),
           ),
           // Dark gradient overlay
           Container(
@@ -90,29 +92,37 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: const BoxDecoration(
-                              color: AppColors.accent,
-                              shape: BoxShape.circle,
+                      InkWell(
+                        onTap: () => context.go('/'),
+                        borderRadius: BorderRadius.circular(999),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: const BoxDecoration(
+                                color: AppColors.accent,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.flight_takeoff,
+                                color: AppColors.background,
+                                size: 24,
+                              ),
                             ),
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.flight_takeoff, color: AppColors.background, size: 24),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'FlyFy',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -1,
+                            const SizedBox(width: 8),
+                            const Text(
+                              'FlyFy',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                                letterSpacing: -1,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       TextButton(
                         onPressed: () => context.go('/'),
@@ -128,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const Spacer(),
-                
+
                 // Glass-Morphic Card
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 48),
@@ -175,28 +185,48 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _phoneController,
                               focusNode: _phoneFocusNode,
                               keyboardType: TextInputType.phone,
-                              style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9+]'),
+                                ),
                                 LengthLimitingTextInputFormatter(16),
                                 _PhonePrefixFormatter(),
                               ],
                               decoration: InputDecoration(
-                                labelStyle: const TextStyle(color: AppColors.textSecondary),
+                                labelStyle: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
                                 hintText: '+7 705 169 8779',
-                                hintStyle: const TextStyle(color: AppColors.textCaption),
+                                hintStyle: const TextStyle(
+                                  color: AppColors.textCaption,
+                                ),
                                 filled: true,
                                 fillColor: Colors.white.withValues(alpha: 0.05),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 16,
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                  ),
                                 ),
-                                prefixIcon: const Icon(Icons.phone_iphone, color: AppColors.accent),
+                                prefixIcon: const Icon(
+                                  Icons.phone_iphone,
+                                  color: AppColors.accent,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -214,7 +244,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     child: const SizedBox(
                                       width: 24,
                                       height: 24,
-                                      child: CircularProgressIndicator(color: AppColors.background, strokeWidth: 2.5),
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.background,
+                                        strokeWidth: 2.5,
+                                      ),
                                     ),
                                   );
                                 }
@@ -224,7 +257,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.accent,
                                     foregroundColor: AppColors.background,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(999),
                                     ),
@@ -237,7 +272,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                       const SizedBox(width: 8),
                                       Text(
                                         l10n.authByPhone,
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -248,7 +286,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             // OAuth Buttons
                             Consumer<AuthProvider>(
                               builder: (consumerContext, auth, _) {
-                                final isAnyOAuthLoading = auth.isGoogleLoading || auth.isAppleLoading;
+                                final isAnyOAuthLoading =
+                                    auth.isGoogleLoading || auth.isAppleLoading;
 
                                 return Row(
                                   children: [
@@ -261,14 +300,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ? null
                                             : () async {
                                                 final ctx = context;
-                                                final authProvider = ctx.read<AuthProvider>();
-                                                final success = await authProvider.loginWithGoogle('mock_google_token');
+                                                final authProvider = ctx
+                                                    .read<AuthProvider>();
+                                                final success =
+                                                    await authProvider
+                                                        .loginWithGoogle(
+                                                          'mock_google_token',
+                                                        );
 
                                                 if (!ctx.mounted) return;
                                                 if (success) {
-                                                  await ctx.read<SessionProvider>().restoreSession(
-                                                        primaryPhoneHint: authProvider.lastPrimaryPhoneHint,
-                                                        primaryEmailHint: authProvider.lastPrimaryEmailHint,
+                                                  await ctx
+                                                      .read<SessionProvider>()
+                                                      .restoreSession(
+                                                        primaryPhoneHint:
+                                                            authProvider
+                                                                .lastPrimaryPhoneHint,
+                                                        primaryEmailHint:
+                                                            authProvider
+                                                                .lastPrimaryEmailHint,
                                                       );
                                                   if (!ctx.mounted) return;
                                                   ctx.go(widget.from ?? '/');
@@ -276,7 +326,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   await showErrorDialog(
                                                     ctx,
                                                     title: l10n.error,
-                                                    message: authProvider.errorMessage ?? l10n.googleLoginFailed,
+                                                    message:
+                                                        authProvider
+                                                            .errorMessage ??
+                                                        l10n.googleLoginFailed,
                                                   );
                                                 }
                                               },
@@ -292,14 +345,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ? null
                                             : () async {
                                                 final ctx = context;
-                                                final authProvider = ctx.read<AuthProvider>();
-                                                final success = await authProvider.loginWithApple('mock_apple_token');
+                                                final authProvider = ctx
+                                                    .read<AuthProvider>();
+                                                final success =
+                                                    await authProvider
+                                                        .loginWithApple(
+                                                          'mock_apple_token',
+                                                        );
 
                                                 if (!ctx.mounted) return;
                                                 if (success) {
-                                                  await ctx.read<SessionProvider>().restoreSession(
-                                                        primaryPhoneHint: authProvider.lastPrimaryPhoneHint,
-                                                        primaryEmailHint: authProvider.lastPrimaryEmailHint,
+                                                  await ctx
+                                                      .read<SessionProvider>()
+                                                      .restoreSession(
+                                                        primaryPhoneHint:
+                                                            authProvider
+                                                                .lastPrimaryPhoneHint,
+                                                        primaryEmailHint:
+                                                            authProvider
+                                                                .lastPrimaryEmailHint,
                                                       );
                                                   if (!ctx.mounted) return;
                                                   ctx.go(widget.from ?? '/');
@@ -307,7 +371,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   await showErrorDialog(
                                                     ctx,
                                                     title: l10n.error,
-                                                    message: authProvider.errorMessage ?? l10n.appleLoginFailed,
+                                                    message:
+                                                        authProvider
+                                                            .errorMessage ??
+                                                        l10n.appleLoginFailed,
                                                   );
                                                 }
                                               },
@@ -317,20 +384,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                 );
                               },
                             ),
-                            if (!_isCheckingBiometrics && _canUseBiometrics) ...[
+                            if (!_isCheckingBiometrics &&
+                                _canUseBiometrics) ...[
                               const SizedBox(height: 12),
                               Consumer<AuthProvider>(
                                 builder: (consumerContext, auth, _) {
-                                  final isAnyLoading = auth.isGoogleLoading ||
+                                  final isAnyLoading =
+                                      auth.isGoogleLoading ||
                                       auth.isAppleLoading ||
                                       auth.isSendingOtp ||
                                       auth.isVerifyingOtp;
-                                  
+
                                   return _OAuthButton(
                                     icon: Icons.fingerprint,
                                     label: l10n.loginWithBiometrics,
                                     isLoading: false,
-                                    onPressed: isAnyLoading ? null : _loginWithBiometrics,
+                                    onPressed: isAnyLoading
+                                        ? null
+                                        : _loginWithBiometrics,
                                   );
                                 },
                               ),
@@ -403,8 +474,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.read<AuthProvider>();
 
     try {
-      final hasRefreshToken =
-          await auth.hasRefreshTokenForBiometricLogin();
+      final hasRefreshToken = await auth.hasRefreshTokenForBiometricLogin();
 
       if (!mounted) return;
 

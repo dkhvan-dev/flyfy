@@ -880,6 +880,96 @@ abstract class AppLocalizations {
   /// **'Plan your trips in advance'**
   String get homeTransportSubtitle;
 
+  /// No description provided for @homeCurrentLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current location'**
+  String get homeCurrentLocationLabel;
+
+  /// No description provided for @homeExploringLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'{location}'**
+  String homeExploringLocation(Object location);
+
+  /// No description provided for @homeSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search destinations, stays or cars'**
+  String get homeSearchHint;
+
+  /// No description provided for @homeTopDestinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Destinations'**
+  String get homeTopDestinations;
+
+  /// No description provided for @homeSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get homeSeeAll;
+
+  /// No description provided for @homeEditorialBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Editorial'**
+  String get homeEditorialBadge;
+
+  /// No description provided for @homeStoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden Gems of Central Asia'**
+  String get homeStoryTitle;
+
+  /// No description provided for @homeStoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover secret trails and cultural corners across Almaty\'s adventurous side.'**
+  String get homeStoryDescription;
+
+  /// No description provided for @homeReadStory.
+  ///
+  /// In en, this message translates to:
+  /// **'Read Story'**
+  String get homeReadStory;
+
+  /// No description provided for @homeFeaturedStays.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured Stays'**
+  String get homeFeaturedStays;
+
+  /// No description provided for @homeCarRentals.
+  ///
+  /// In en, this message translates to:
+  /// **'Car Rentals'**
+  String get homeCarRentals;
+
+  /// No description provided for @homeRecommendedActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended Activities'**
+  String get homeRecommendedActivities;
+
+  /// No description provided for @homeFilterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get homeFilterButton;
+
+  /// No description provided for @homeNavHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get homeNavHome;
+
+  /// No description provided for @homeNavMy.
+  ///
+  /// In en, this message translates to:
+  /// **'My'**
+  String get homeNavMy;
+
   /// No description provided for @activitiesEntryTitle.
   ///
   /// In en, this message translates to:
@@ -1015,14 +1105,38 @@ abstract class AppLocalizations {
   /// No description provided for @createCategoryHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g. sports, education, music'**
+  /// **'Choose a category from the catalog'**
   String get createCategoryHint;
 
   /// No description provided for @createCategoryValidation.
   ///
   /// In en, this message translates to:
-  /// **'Please specify a category'**
+  /// **'Please choose a category'**
   String get createCategoryValidation;
+
+  /// No description provided for @createCategoryLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading categories'**
+  String get createCategoryLoading;
+
+  /// No description provided for @createCategoryLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load categories'**
+  String get createCategoryLoadFailed;
+
+  /// No description provided for @createCategoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories available'**
+  String get createCategoryEmpty;
+
+  /// No description provided for @createCategoryRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get createCategoryRetry;
 
   /// No description provided for @createTagsLabel.
   ///

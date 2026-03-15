@@ -47,16 +47,19 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final authState = context.watch<AuthProvider>().state;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.accent,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.createActivityFab),
-        onPressed: () => _onCreateTap(context),
-      ),
+      floatingActionButton: authState == AuthState.authenticated
+          ? FloatingActionButton.extended(
+              backgroundColor: AppColors.accent,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: Text(l10n.createActivityFab),
+              onPressed: () => _onCreateTap(context),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -65,21 +68,40 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(
                 children: [
-                  const Icon(Icons.local_fire_department,
-                      color: AppColors.accent, size: 28),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.appTitle,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                  InkWell(
+                    onTap: () => context.go('/'),
+                    borderRadius: BorderRadius.circular(999),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.local_fire_department,
+                            color: AppColors.accent,
+                            size: 28,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.appTitle,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.notifications_outlined,
-                        color: AppColors.textPrimary),
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: AppColors.textPrimary,
+                    ),
                     onPressed: () {},
                   ),
                 ],
@@ -102,7 +124,11 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.search, color: AppColors.textCaption, size: 20),
+                      const Icon(
+                        Icons.search,
+                        color: AppColors.textCaption,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -133,8 +159,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   if (provider.state == ActivitiesState.loading &&
                       provider.items.isEmpty) {
                     return const Center(
-                      child:
-                          CircularProgressIndicator(color: AppColors.accent),
+                      child: CircularProgressIndicator(color: AppColors.accent),
                     );
                   }
 
@@ -159,8 +184,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                       itemCount: provider.items.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 20),
+                      separatorBuilder: (_, __) => const SizedBox(height: 20),
                       itemBuilder: (context, index) {
                         final item = provider.items[index];
                         return _ActivityCard(item: item);
@@ -206,9 +230,7 @@ class _FilterChips extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: index == 0
-                    ? AppColors.accent
-                    : AppColors.surfaceLight,
+                color: index == 0 ? AppColors.accent : AppColors.surfaceLight,
                 borderRadius: BorderRadius.circular(20),
                 border: index == 0
                     ? null
@@ -217,19 +239,32 @@ class _FilterChips extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 16, color: index == 0 ? AppColors.background : AppColors.textPrimary),
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: index == 0
+                        ? AppColors.background
+                        : AppColors.textPrimary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     label,
                     style: TextStyle(
-                      color: index == 0 ? AppColors.background : AppColors.textPrimary,
+                      color: index == 0
+                          ? AppColors.background
+                          : AppColors.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(Icons.keyboard_arrow_down,
-                      size: 16, color: index == 0 ? AppColors.background : AppColors.textSecondary),
+                  Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: index == 0
+                        ? AppColors.background
+                        : AppColors.textSecondary,
+                  ),
                 ],
               ),
             ),
@@ -304,7 +339,9 @@ class _ActivityCard extends StatelessWidget {
                   right: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.background.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(20),
@@ -335,10 +372,14 @@ class _ActivityCard extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 16,
-                        backgroundColor:
-                            AppColors.accent.withValues(alpha: 0.2),
-                        child: const Icon(Icons.person,
-                            size: 16, color: AppColors.accent),
+                        backgroundColor: AppColors.accent.withValues(
+                          alpha: 0.2,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          size: 16,
+                          color: AppColors.accent,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Column(
@@ -386,8 +427,11 @@ class _ActivityCard extends StatelessWidget {
                   Row(
                     children: [
                       if (item.shortLocation.isNotEmpty) ...[
-                        const Icon(Icons.place,
-                            size: 14, color: AppColors.accent),
+                        const Icon(
+                          Icons.place,
+                          size: 14,
+                          color: AppColors.accent,
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
@@ -401,11 +445,7 @@ class _ActivityCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 14),
                       ],
-                      Icon(
-                        _formatIcon(),
-                        size: 14,
-                        color: AppColors.accent,
-                      ),
+                      Icon(_formatIcon(), size: 14, color: AppColors.accent),
                       const SizedBox(width: 4),
                       Text(
                         formatActivityFormat(item.format, l10n),
@@ -421,8 +461,11 @@ class _ActivityCard extends StatelessWidget {
                   // Date row
                   Row(
                     children: [
-                      const Icon(Icons.schedule,
-                          size: 14, color: AppColors.accent),
+                      const Icon(
+                        Icons.schedule,
+                        size: 14,
+                        color: AppColors.accent,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         dateText,
@@ -439,13 +482,11 @@ class _ActivityCard extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: () =>
-                          context.push('/activities/${item.id}'),
+                      onPressed: () => context.push('/activities/${item.id}'),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.accent,
                         foregroundColor: AppColors.background,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -490,10 +531,7 @@ class _ActivityCard extends StatelessWidget {
 // ── Empty View ──────────────────────────────────────────────
 
 class _ActivitiesEmptyView extends StatelessWidget {
-  const _ActivitiesEmptyView({
-    required this.title,
-    required this.subtitle,
-  });
+  const _ActivitiesEmptyView({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;

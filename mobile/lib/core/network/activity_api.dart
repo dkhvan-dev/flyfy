@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
 import '../../features/activities/models/update_activity_request.dart';
@@ -10,20 +11,37 @@ class ActivityApi {
 
   final ApiClient _apiClient;
 
+  Future<List<ActivityCategoryVm>> getActivityCategories() async {
+    final response = await _apiClient.dio.get(
+      '/activity-categories',
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    final data = response.data;
+    final items =
+        (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(ActivityCategoryVm.fromJson)
+        .toList();
+  }
+
   Future<List<ActivityListItemVm>> getMyHostedActivities({
     int limit = 50,
     int offset = 0,
   }) async {
     final response = await _apiClient.dio.get(
       '/me/activities/hosted',
-      queryParameters: {
-        'limit': limit,
-        'offset': offset,
-      },
+      queryParameters: {'limit': limit, 'offset': offset},
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -53,15 +71,12 @@ class ActivityApi {
         if ((cityName ?? '').trim().isNotEmpty) 'cityName': cityName,
         if ((query ?? '').trim().isNotEmpty) 'q': query,
       },
-      options: Options(
-        extra: const {
-          'requiresAuth': false,
-        },
-      ),
+      options: Options(extra: const {'requiresAuth': false}),
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -75,16 +90,10 @@ class ActivityApi {
   Future<ActivityListItemVm> getActivityById(String activityId) async {
     final response = await _apiClient.dio.get(
       '/activities/$activityId',
-      options: Options(
-        extra: const {
-          'requiresAuth': false,
-        },
-      ),
+      options: Options(extra: const {'requiresAuth': false}),
     );
 
-    return ActivityListItemVm.fromJson(
-      response.data as Map<String, dynamic>,
-    );
+    return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<Map<String, dynamic>> joinActivity(String activityId) async {
@@ -103,17 +112,13 @@ class ActivityApi {
       data: request.toJson(),
     );
 
-    return ActivityListItemVm.fromJson(
-      response.data as Map<String, dynamic>,
-    );
+    return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<void> leaveActivity(String activityId, {String? reason}) async {
     await _apiClient.dio.post(
       '/me/activities/$activityId/leave',
-      data: {
-        if (reason != null && reason.trim().isNotEmpty) 'reason': reason,
-      },
+      data: {if (reason != null && reason.trim().isNotEmpty) 'reason': reason},
     );
   }
 
@@ -126,9 +131,7 @@ class ActivityApi {
       data: request.toJson(),
     );
 
-    return ActivityListItemVm.fromJson(
-      response.data as Map<String, dynamic>,
-    );
+    return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<ActivityListItemVm> publishActivity(String activityId) async {
@@ -136,8 +139,6 @@ class ActivityApi {
       '/me/activities/$activityId/publish',
     );
 
-    return ActivityListItemVm.fromJson(
-      response.data as Map<String, dynamic>,
-    );
+    return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,37 +10,68 @@ import '../../providers/session_provider.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'terms_agreement_text.dart';
+
 class OtpScreen extends StatefulWidget {
   final String phone;
   final String? from;
-  
-  const OtpScreen({
-    super.key,
-    required this.phone,
-    this.from,
-  });
+
+  const OtpScreen({super.key, required this.phone, this.from});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
 }
 
 class _OtpScreenState extends State<OtpScreen> {
+  static const int _countdownDurationSeconds = 60;
+
   final _codeController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  Timer? _countdownTimer;
+  int _remainingSeconds = _countdownDurationSeconds;
 
   @override
   void initState() {
     super.initState();
     _codeController.addListener(() => setState(() {}));
-    
+    _startCountdown();
+
     // Auto focus the input when the screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
   }
 
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _remainingSeconds = _countdownDurationSeconds;
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (_remainingSeconds == 0) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _remainingSeconds -= 1;
+      });
+    });
+  }
+
+  String _formatCountdown() {
+    final minutes = _remainingSeconds ~/ 60;
+    final seconds = _remainingSeconds % 60;
+    final paddedMinutes = minutes.toString().padLeft(2, '0');
+    final paddedSeconds = seconds.toString().padLeft(2, '0');
+    return '$paddedMinutes:$paddedSeconds';
+  }
+
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _codeController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -60,9 +92,9 @@ class _OtpScreenState extends State<OtpScreen> {
       final updatedAuth = ctx.read<AuthProvider>();
 
       await ctx.read<SessionProvider>().restoreSession(
-            primaryPhoneHint: updatedAuth.lastPrimaryPhoneHint ?? widget.phone,
-            primaryEmailHint: updatedAuth.lastPrimaryEmailHint,
-          );
+        primaryPhoneHint: updatedAuth.lastPrimaryPhoneHint ?? widget.phone,
+        primaryEmailHint: updatedAuth.lastPrimaryEmailHint,
+      );
 
       if (!ctx.mounted) return;
 
@@ -85,7 +117,7 @@ class _OtpScreenState extends State<OtpScreen> {
         fit: StackFit.expand,
         children: [
           Container(color: AppColors.background),
-          
+
           // Background Decorative Elements
           Positioned(
             top: 0,
@@ -143,24 +175,37 @@ class _OtpScreenState extends State<OtpScreen> {
                           child: const SizedBox(
                             width: 48,
                             height: 48,
-                            child: Icon(Icons.arrow_back, color: AppColors.accent),
+                            child: Icon(
+                              Icons.arrow_back,
+                              color: AppColors.accent,
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Text(
-                        'FlyFy',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.accent,
-                          letterSpacing: -0.5,
+                      InkWell(
+                        onTap: () => context.go('/'),
+                        borderRadius: BorderRadius.circular(999),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 6,
+                          ),
+                          child: Text(
+                            'FlyFy',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.accent,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -210,20 +255,27 @@ class _OtpScreenState extends State<OtpScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: List.generate(6, (index) {
                                 final text = _codeController.text;
-                                final char = index < text.length ? text[index] : '';
-                                final isFocused = index == text.length && _focusNode.hasFocus;
-                                
+                                final char = index < text.length
+                                    ? text[index]
+                                    : '';
+                                final isFocused =
+                                    index == text.length && _focusNode.hasFocus;
+
                                 return Container(
                                   width: 48,
                                   height: 64,
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
-                                    color: AppColors.accent.withValues(alpha: 0.05),
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.05,
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: isFocused
                                           ? AppColors.accent
-                                          : AppColors.accent.withValues(alpha: 0.2),
+                                          : AppColors.accent.withValues(
+                                              alpha: 0.2,
+                                            ),
                                       width: 2,
                                     ),
                                   ),
@@ -246,7 +298,9 @@ class _OtpScreenState extends State<OtpScreen> {
                                 controller: _codeController,
                                 focusNode: _focusNode,
                                 keyboardType: TextInputType.number,
-                                style: const TextStyle(color: Colors.transparent),
+                                style: const TextStyle(
+                                  color: Colors.transparent,
+                                ),
                                 cursorColor: Colors.transparent,
                                 enableInteractiveSelection: false,
                                 autofocus: true,
@@ -272,15 +326,26 @@ class _OtpScreenState extends State<OtpScreen> {
                         // Timer & Resend Section (Visual)
                         Row(
                           children: [
-                            Expanded(child: Container(height: 1, color: AppColors.borderLight)),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: AppColors.borderLight,
+                              ),
+                            ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.schedule, size: 16, color: AppColors.textCaption),
+                                  const Icon(
+                                    Icons.schedule,
+                                    size: 16,
+                                    color: AppColors.textCaption,
+                                  ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    '00:59',
+                                  Text(
+                                    _formatCountdown(),
                                     style: TextStyle(
                                       color: AppColors.textCaption,
                                       fontSize: 14,
@@ -290,7 +355,12 @@ class _OtpScreenState extends State<OtpScreen> {
                                 ],
                               ),
                             ),
-                            Expanded(child: Container(height: 1, color: AppColors.borderLight)),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: AppColors.borderLight,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 24),
@@ -299,7 +369,10 @@ class _OtpScreenState extends State<OtpScreen> {
                           children: [
                             Text(
                               l10n.didntReceiveOTP,
-                              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -329,33 +402,45 @@ class _OtpScreenState extends State<OtpScreen> {
                                 child: const SizedBox(
                                   width: 24,
                                   height: 24,
-                                  child: CircularProgressIndicator(color: AppColors.background, strokeWidth: 2.5),
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.background,
+                                    strokeWidth: 2.5,
+                                  ),
                                 ),
                               );
                             }
 
-                            final canSubmit = _codeController.text.trim().length == 6;
+                            final canSubmit =
+                                _codeController.text.trim().length == 6;
 
                             return ElevatedButton(
                               onPressed: canSubmit ? _submit : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.accent,
                                 foregroundColor: AppColors.background,
-                                disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.5),
-                                padding: const EdgeInsets.symmetric(vertical: 0),
+                                disabledBackgroundColor: AppColors.accent
+                                    .withValues(alpha: 0.5),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 0,
+                                ),
                                 minimumSize: const Size(double.infinity, 64),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 elevation: canSubmit ? 4 : 0,
-                                shadowColor: AppColors.accent.withValues(alpha: 0.5),
+                                shadowColor: AppColors.accent.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     l10n.verifyAndLogin,
-                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                   SizedBox(width: 8),
                                   Icon(Icons.arrow_forward, size: 24),
@@ -384,4 +469,3 @@ class _OtpScreenState extends State<OtpScreen> {
     );
   }
 }
-

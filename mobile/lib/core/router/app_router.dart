@@ -101,12 +101,6 @@ class AppRouter {
       return true;
     }
 
-    if (location.startsWith('/activities/') &&
-        location != '/activities/create' &&
-        !location.endsWith('/edit')) {
-      return true;
-    }
-
     return false;
   }
 }

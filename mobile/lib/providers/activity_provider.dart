@@ -3,39 +3,33 @@ import 'package:flutter/foundation.dart';
 
 import '../core/network/activity_api.dart';
 import '../core/network/dio_error_mapper.dart';
+import '../features/activities/models/activity_category_vm.dart';
 import '../features/activities/models/activity_list_item_vm.dart';
 import '../features/activities/models/create_activity_request.dart';
 import '../features/activities/models/update_activity_request.dart';
 
-enum ActivitiesState {
-  initial,
-  loading,
-  success,
-  error,
-}
+enum ActivitiesState { initial, loading, success, error }
 
-enum ActivityActionState {
-  idle,
-  loading,
-  success,
-  error,
-}
+enum ActivityActionState { idle, loading, success, error }
 
 class ActivityProvider extends ChangeNotifier {
   ActivityProvider({ActivityApi? activityApi})
-      : _activityApi = activityApi ?? ActivityApi();
+    : _activityApi = activityApi ?? ActivityApi();
 
   final ActivityApi _activityApi;
 
   ActivitiesState _state = ActivitiesState.initial;
   ActivityActionState _actionState = ActivityActionState.idle;
+  ActivitiesState _categoryState = ActivitiesState.initial;
 
   bool _isRefreshing = false;
   String? _errorMessage;
   String? _actionErrorMessage;
+  String? _categoryErrorMessage;
 
   List<ActivityListItemVm> _items = const [];
   ActivityListItemVm? _selectedActivity;
+  List<ActivityCategoryVm> _categoryItems = const [];
 
   ActivitiesState _myState = ActivitiesState.initial;
   List<ActivityListItemVm> _myItems = const [];
@@ -49,11 +43,40 @@ class ActivityProvider extends ChangeNotifier {
   String? get actionErrorMessage => _actionErrorMessage;
   List<ActivityListItemVm> get items => _items;
   ActivityListItemVm? get selectedActivity => _selectedActivity;
+  ActivitiesState get categoryState => _categoryState;
+  String? get categoryErrorMessage => _categoryErrorMessage;
+  List<ActivityCategoryVm> get categoryItems => _categoryItems;
 
   ActivitiesState get myState => _myState;
   List<ActivityListItemVm> get myItems => _myItems;
   String? get myErrorMessage => _myErrorMessage;
   bool get myIsRefreshing => _myIsRefreshing;
+
+  Future<void> loadActivityCategories({bool force = false}) async {
+    if (!force &&
+        (_categoryState == ActivitiesState.loading ||
+            (_categoryState == ActivitiesState.success &&
+                _categoryItems.isNotEmpty))) {
+      return;
+    }
+
+    _categoryState = ActivitiesState.loading;
+    _categoryErrorMessage = null;
+    notifyListeners();
+
+    try {
+      _categoryItems = await _activityApi.getActivityCategories();
+      _categoryState = ActivitiesState.success;
+    } on DioException catch (e) {
+      _categoryErrorMessage = DioErrorMapper.toMessage(e);
+      _categoryState = ActivitiesState.error;
+    } catch (_) {
+      _categoryErrorMessage = 'Failed to load categories';
+      _categoryState = ActivitiesState.error;
+    }
+
+    notifyListeners();
+  }
 
   Future<void> loadActivities() async {
     _state = ActivitiesState.loading;

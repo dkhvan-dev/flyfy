@@ -87,6 +87,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RewritePrefix:      "/v1/me/activities",
 		},
 		{
+			Name:               "activity-categories",
+			Prefix:             apiPrefix + "/activity-categories",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "activity",
+			RateLimitPerMinute: &activityLimit,
+			RewritePrefix:      "/v1/activity-categories",
+		},
+		{
 			Name:               "activities",
 			Prefix:             apiPrefix + "/activities",
 			AuthMode:           RouteAuthPublic,

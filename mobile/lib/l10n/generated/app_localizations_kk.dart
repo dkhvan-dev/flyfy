@@ -420,6 +420,54 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeTransportSubtitle => 'Қозғалысты алдын ала жоспарлаңыз';
 
   @override
+  String get homeCurrentLocationLabel => 'Ағымдағы локация';
+
+  @override
+  String homeExploringLocation(Object location) {
+    return '$location';
+  }
+
+  @override
+  String get homeSearchHint => 'Бағыттарды, тұрғын орынды немесе көлікті іздеу';
+
+  @override
+  String get homeTopDestinations => 'Үздік бағыттар';
+
+  @override
+  String get homeSeeAll => 'Барлығын көру';
+
+  @override
+  String get homeEditorialBadge => 'Редакция';
+
+  @override
+  String get homeStoryTitle => 'Орталық Азияның жасырын інжу-маржандары';
+
+  @override
+  String get homeStoryDescription =>
+      'Алматы маңындағы құпия соқпақтар мен мәдени бұрыштарды ашыңыз.';
+
+  @override
+  String get homeReadStory => 'Оқиғаны оқу';
+
+  @override
+  String get homeFeaturedStays => 'Ұсынылған тұру орындары';
+
+  @override
+  String get homeCarRentals => 'Көлік жалдау';
+
+  @override
+  String get homeRecommendedActivities => 'Ұсынылатын белсенділіктер';
+
+  @override
+  String get homeFilterButton => 'Сүзгі';
+
+  @override
+  String get homeNavHome => 'Басты';
+
+  @override
+  String get homeNavMy => 'Менің';
+
+  @override
   String get activitiesEntryTitle => 'Белсенділіктер';
 
   @override
@@ -488,10 +536,22 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createCategoryLabel => 'Санат';
 
   @override
-  String get createCategoryHint => 'Мысалы: спорт, білім, музыка';
+  String get createCategoryHint => 'Санатты анықтамалықтан таңдаңыз';
 
   @override
-  String get createCategoryValidation => 'Санатты көрсетіңіз';
+  String get createCategoryValidation => 'Санатты таңдаңыз';
+
+  @override
+  String get createCategoryLoading => 'Санаттар жүктелуде';
+
+  @override
+  String get createCategoryLoadFailed => 'Санаттарды жүктеу мүмкін болмады';
+
+  @override
+  String get createCategoryEmpty => 'Санаттар әзірге қолжетімсіз';
+
+  @override
+  String get createCategoryRetry => 'Қайталау';
 
   @override
   String get createTagsLabel => 'Тегтер';
