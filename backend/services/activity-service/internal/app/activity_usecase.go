@@ -43,9 +43,8 @@ type CreateActivityInput struct {
 	LanguageCode string
 	Timezone     string
 
-	StartAt              time.Time
-	EndAt                time.Time
-	RegistrationDeadline time.Time
+	StartAt time.Time
+	EndAt   time.Time
 
 	CapacityType    enum.ActivityCapacityType
 	MinParticipants *int
@@ -67,6 +66,8 @@ type CreateActivityInput struct {
 	MapURL      *string
 	MeetingURL  *string
 
+	VisibilityPassword *string
+
 	ReviewRequired bool
 }
 
@@ -84,9 +85,8 @@ type UpdateActivityInput struct {
 	LanguageCode *string
 	Timezone     *string
 
-	StartAt              *time.Time
-	EndAt                *time.Time
-	RegistrationDeadline *time.Time
+	StartAt *time.Time
+	EndAt   *time.Time
 
 	CapacityType       *enum.ActivityCapacityType
 	MinParticipants    *int
@@ -119,6 +119,9 @@ type UpdateActivityInput struct {
 	HasMapURL      bool
 	MeetingURL     *string
 	HasMeetingURL  bool
+
+	VisibilityPassword    *string
+	HasVisibilityPassword bool
 }
 
 func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivityInput) (*model.Activity, error) {
@@ -144,6 +147,18 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		return nil, err
 	}
 
+	visibilityPassword, err := normalizeVisibilityPassword(
+		input.Visibility,
+		input.VisibilityPassword,
+	)
+	if err != nil {
+		return nil, err
+	}
+	visibilityPasswordHash, err := hashVisibilityPassword(visibilityPassword)
+	if err != nil {
+		return nil, fmt.Errorf("hash visibility password: %w", err)
+	}
+
 	item, err := model.NewActivity(model.NewActivityParams{
 		HostUserID:                     input.HostUserID,
 		Title:                          input.Title,
@@ -156,7 +171,7 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		Timezone:                       input.Timezone,
 		StartAt:                        input.StartAt,
 		EndAt:                          input.EndAt,
-		RegistrationDeadline:           input.RegistrationDeadline,
+		RegistrationDeadline:           input.StartAt.UTC().Add(-1 * time.Hour),
 		CapacityType:                   input.CapacityType,
 		MinParticipants:                input.MinParticipants,
 		MaxParticipants:                input.MaxParticipants,
@@ -173,6 +188,7 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		Longitude:                      input.Longitude,
 		MapURL:                         input.MapURL,
 		MeetingURL:                     input.MeetingURL,
+		VisibilityPasswordHash:         visibilityPasswordHash,
 	})
 	if err != nil {
 		return nil, err
@@ -368,6 +384,7 @@ func (u *ActivityUseCase) DuplicateActivity(
 		Longitude:                      source.Longitude,
 		MapURL:                         source.MapURL,
 		MeetingURL:                     source.MeetingURL,
+		VisibilityPasswordHash:         source.VisibilityPasswordHash,
 	})
 	if err != nil {
 		return nil, err
@@ -608,8 +625,8 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	if input.EndAt != nil {
 		item.EndAt = input.EndAt.UTC()
 	}
-	if input.RegistrationDeadline != nil {
-		item.RegistrationDeadline = input.RegistrationDeadline.UTC()
+	if input.StartAt != nil {
+		item.RegistrationDeadline = input.StartAt.UTC().Add(-1 * time.Hour)
 	}
 	if input.CapacityType != nil {
 		item.CapacityType = *input.CapacityType
@@ -658,6 +675,22 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	}
 	if input.HasMeetingURL {
 		item.MeetingURL = model.NormalizeOptionalString(input.MeetingURL)
+	}
+	if input.HasVisibilityPassword {
+		visibilityPassword, passwordErr := normalizeVisibilityPassword(
+			item.Visibility,
+			input.VisibilityPassword,
+		)
+		if passwordErr != nil {
+			return nil, passwordErr
+		}
+		visibilityPasswordHash, hashErr := hashVisibilityPassword(visibilityPassword)
+		if hashErr != nil {
+			return nil, fmt.Errorf("hash visibility password: %w", hashErr)
+		}
+		item.VisibilityPasswordHash = visibilityPasswordHash
+	} else if item.Visibility != enum.ActivityVisibilityPrivate {
+		item.VisibilityPasswordHash = nil
 	}
 
 	if err = u.policy.ValidateURLs(

@@ -10,7 +10,6 @@ class CreateActivityRequest {
     required this.timezone,
     required this.startAt,
     required this.endAt,
-    required this.registrationDeadline,
     required this.capacityType,
     required this.priceType,
     this.tags = const [],
@@ -25,6 +24,7 @@ class CreateActivityRequest {
     this.longitude,
     this.mapUrl,
     this.meetingUrl,
+    this.visibilityPassword,
   });
 
   final String title;
@@ -38,7 +38,6 @@ class CreateActivityRequest {
   final String timezone;
   final DateTime startAt;
   final DateTime endAt;
-  final DateTime registrationDeadline;
   final String capacityType;
   final int? minParticipants;
   final int? maxParticipants;
@@ -52,6 +51,7 @@ class CreateActivityRequest {
   final double? longitude;
   final String? mapUrl;
   final String? meetingUrl;
+  final String? visibilityPassword;
 
   Map<String, dynamic> toJson() {
     return {
@@ -66,7 +66,6 @@ class CreateActivityRequest {
       'timezone': timezone,
       'startAt': startAt.toUtc().toIso8601String(),
       'endAt': endAt.toUtc().toIso8601String(),
-      'registrationDeadline': registrationDeadline.toUtc().toIso8601String(),
       'capacityType': capacityType,
       'priceType': priceType,
       if (minParticipants != null) 'minParticipants': minParticipants,
@@ -83,6 +82,8 @@ class CreateActivityRequest {
       if (mapUrl != null && mapUrl!.trim().isNotEmpty) 'mapUrl': mapUrl,
       if (meetingUrl != null && meetingUrl!.trim().isNotEmpty)
         'meetingUrl': meetingUrl,
+      if (visibilityPassword != null && visibilityPassword!.trim().isNotEmpty)
+        'visibilityPassword': visibilityPassword,
     };
   }
 }

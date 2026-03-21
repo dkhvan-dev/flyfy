@@ -11,9 +11,9 @@ type CreateActivityRequest struct {
 	LanguageCode string   `json:"languageCode"`
 	Timezone     string   `json:"timezone"`
 
-	StartAt              string `json:"startAt"`
-	EndAt                string `json:"endAt"`
-	RegistrationDeadline string `json:"registrationDeadline"`
+	StartAt              string  `json:"startAt"`
+	EndAt                string  `json:"endAt"`
+	RegistrationDeadline *string `json:"registrationDeadline,omitempty"`
 
 	CapacityType    string `json:"capacityType"`
 	MinParticipants *int   `json:"minParticipants,omitempty"`
@@ -34,6 +34,8 @@ type CreateActivityRequest struct {
 	Longitude   *float64 `json:"longitude,omitempty"`
 	MapURL      *string  `json:"mapUrl,omitempty"`
 	MeetingURL  *string  `json:"meetingUrl,omitempty"`
+
+	VisibilityPassword *string `json:"visibilityPassword,omitempty"`
 
 	ReviewRequired *bool `json:"reviewRequired,omitempty"`
 }

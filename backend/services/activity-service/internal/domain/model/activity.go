@@ -33,6 +33,7 @@ var (
 	ErrInvalidCurrency                 = errors.New("invalid currency")
 	ErrInvalidMeetingURL               = errors.New("invalid meeting url")
 	ErrInvalidOfflineLocation          = errors.New("invalid offline location")
+	ErrInvalidVisibilityPassword       = errors.New("invalid activity visibility password")
 	ErrPriceLocked                     = errors.New("activity price is locked")
 	ErrOnlyAuthorCanDuplicate          = errors.New("only author can duplicate activity")
 	ErrActivityCannotBePublished       = errors.New("activity cannot be published")
@@ -82,6 +83,8 @@ type Activity struct {
 	MapURL      *string
 	MeetingURL  *string
 
+	VisibilityPasswordHash *string
+
 	CancellationReason *string
 	CancelledAt        *time.Time
 	StartedAt          *time.Time
@@ -129,6 +132,8 @@ type NewActivityParams struct {
 	Longitude   *float64
 	MapURL      *string
 	MeetingURL  *string
+
+	VisibilityPasswordHash *string
 }
 
 func NewActivity(params NewActivityParams) (*Activity, error) {
@@ -175,6 +180,9 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 		Longitude:   params.Longitude,
 		MapURL:      NormalizeOptionalString(params.MapURL),
 		MeetingURL:  NormalizeOptionalString(params.MeetingURL),
+		VisibilityPasswordHash: NormalizeOptionalString(
+			params.VisibilityPasswordHash,
+		),
 
 		Revision:  1,
 		CreatedAt: now,
@@ -253,9 +261,27 @@ func (a *Activity) Validate(now time.Time, skipStartTimeCheck bool) error {
 	if err := a.validateLocation(); err != nil {
 		return err
 	}
+	if err := a.validateVisibilityPassword(); err != nil {
+		return err
+	}
 	if a.RequiresAttendanceConfirmation && a.ConfirmationDeadline != nil {
 		if a.ConfirmationDeadline.After(a.StartAt) {
 			return ErrInvalidRegistrationDeadline
+		}
+	}
+
+	return nil
+}
+
+func (a *Activity) validateVisibilityPassword() error {
+	switch a.Visibility {
+	case enum.ActivityVisibilityPrivate:
+		if NormalizeOptionalString(a.VisibilityPasswordHash) == nil {
+			return ErrInvalidVisibilityPassword
+		}
+	default:
+		if NormalizeOptionalString(a.VisibilityPasswordHash) != nil {
+			return ErrInvalidVisibilityPassword
 		}
 	}
 

@@ -10,7 +10,6 @@ class UpdateActivityRequest {
     this.timezone,
     this.startAt,
     this.endAt,
-    this.registrationDeadline,
     this.capacityType,
     this.minParticipants,
     this.hasMinParticipants = false,
@@ -27,8 +26,16 @@ class UpdateActivityRequest {
     this.hasCityName = false,
     this.addressText,
     this.hasAddressText = false,
+    this.latitude,
+    this.hasLatitude = false,
+    this.longitude,
+    this.hasLongitude = false,
+    this.mapUrl,
+    this.hasMapUrl = false,
     this.meetingUrl,
     this.hasMeetingUrl = false,
+    this.visibilityPassword,
+    this.hasVisibilityPassword = false,
   });
 
   final String? title;
@@ -42,7 +49,6 @@ class UpdateActivityRequest {
 
   final DateTime? startAt;
   final DateTime? endAt;
-  final DateTime? registrationDeadline;
 
   final String? capacityType;
   final int? minParticipants;
@@ -62,8 +68,16 @@ class UpdateActivityRequest {
   final bool hasCityName;
   final String? addressText;
   final bool hasAddressText;
+  final double? latitude;
+  final bool hasLatitude;
+  final double? longitude;
+  final bool hasLongitude;
+  final String? mapUrl;
+  final bool hasMapUrl;
   final String? meetingUrl;
   final bool hasMeetingUrl;
+  final String? visibilityPassword;
+  final bool hasVisibilityPassword;
 
   Map<String, dynamic> toJson() {
     return {
@@ -72,17 +86,11 @@ class UpdateActivityRequest {
       if (visibility != null) 'visibility': visibility,
       if (joinMode != null) 'joinMode': joinMode,
       if (categorySlug != null) 'categorySlug': categorySlug,
-      if (tags != null) ...{
-        'tags': tags,
-        'hasTags': true,
-      },
+      if (tags != null) ...{'tags': tags, 'hasTags': true},
       if (languageCode != null) 'languageCode': languageCode,
       if (timezone != null) 'timezone': timezone,
       if (startAt != null) 'startAt': startAt!.toUtc().toIso8601String(),
       if (endAt != null) 'endAt': endAt!.toUtc().toIso8601String(),
-      if (registrationDeadline != null)
-        'registrationDeadline':
-            registrationDeadline!.toUtc().toIso8601String(),
       if (capacityType != null) 'capacityType': capacityType,
       if (hasMinParticipants) 'hasMinParticipants': true,
       if (minParticipants != null) 'minParticipants': minParticipants,
@@ -99,8 +107,16 @@ class UpdateActivityRequest {
       if (cityName != null) 'cityName': cityName,
       if (hasAddressText) 'hasAddressText': true,
       if (addressText != null) 'addressText': addressText,
+      if (hasLatitude) 'hasLatitude': true,
+      if (latitude != null) 'latitude': latitude,
+      if (hasLongitude) 'hasLongitude': true,
+      if (longitude != null) 'longitude': longitude,
+      if (hasMapUrl) 'hasMapUrl': true,
+      if (mapUrl != null) 'mapUrl': mapUrl,
       if (hasMeetingUrl) 'hasMeetingUrl': true,
       if (meetingUrl != null) 'meetingUrl': meetingUrl,
+      if (hasVisibilityPassword) 'hasVisibilityPassword': true,
+      if (visibilityPassword != null) 'visibilityPassword': visibilityPassword,
     };
   }
 }

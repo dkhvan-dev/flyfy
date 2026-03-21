@@ -150,6 +150,26 @@ services:
     networks:
       - flyfy-network
 
+  activity-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: activity-postgres-migrator
+    environment:
+      PGHOST: activity-postgres
+      PGPORT: 5432
+      POSTGRES_DB: activity_service_db
+      POSTGRES_USER: activity_service
+      POSTGRES_PASSWORD: activity_secret_dev
+    volumes:
+      - ./init-scripts/006_activity_service_migrate.sh:/usr/local/bin/006_activity_service_migrate.sh:ro
+      - ../backend/services/activity-service/migrations:/migrations/activity-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/006_activity_service_migrate.sh"]
+    depends_on:
+      activity-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
   # ============================================
   # Redis
   # ============================================
@@ -455,6 +475,8 @@ services:
     depends_on:
       activity-postgres:
         condition: service_healthy
+      activity-postgres-migrator:
+        condition: service_completed_successfully
     ports:
       - "8086:8086"
       - "9096:9096"

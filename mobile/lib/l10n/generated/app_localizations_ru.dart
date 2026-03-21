@@ -478,7 +478,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createActivityFab => 'Создать';
 
   @override
-  String get createActivityTitle => 'Новая активность';
+  String get createActivityTitle => 'Создать активность';
 
   @override
   String get createActivitySubmit => 'Создать активность';
@@ -490,7 +490,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createActivityFailed => 'Не удалось создать активность';
 
   @override
-  String get createStepBasic => 'Основное';
+  String get createStepBasic => 'Основная информация';
+
+  @override
+  String get createStepDetailsLogistics => 'Детали и логистика';
+
+  @override
+  String get createStepRulesPricing => 'Правила и стоимость';
 
   @override
   String get createStepSchedule => 'Формат и расписание';
@@ -502,19 +508,36 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createStepLocation => 'Локация';
 
   @override
-  String get createStepNext => 'Далее';
+  String createStepCounter(Object current, Object total) {
+    return 'Шаг $current из $total';
+  }
+
+  @override
+  String get createHelpAction => 'Помощь';
+
+  @override
+  String get createStepNext => 'Следующий шаг';
 
   @override
   String get createStepBack => 'Назад';
 
   @override
+  String get createCoverSection => 'Загрузить обложку активности';
+
+  @override
+  String get createCoverUploadTitle => 'Загрузить качественное изображение';
+
+  @override
+  String get createCoverUploadHint => 'Минимум 1600x900px, максимум 5MB';
+
+  @override
   String get createBasicSection => 'ОСНОВНАЯ ИНФОРМАЦИЯ';
 
   @override
-  String get createTitleLabel => 'Название';
+  String get createTitleLabel => 'Название активности';
 
   @override
-  String get createTitleHint => 'Введите название активности';
+  String get createTitleHint => 'Например, йога на закате у пирса';
 
   @override
   String get createTitleValidation =>
@@ -524,7 +547,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createDescriptionLabel => 'Описание';
 
   @override
-  String get createDescriptionHint => 'Расскажите, что будет на активности';
+  String get createDescriptionHint => 'Расскажите подробнее об активности...';
 
   @override
   String get createDescriptionValidation =>
@@ -534,7 +557,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createCategoryLabel => 'Категория';
 
   @override
-  String get createCategoryHint => 'Выберите категорию из справочника';
+  String get createCategoryHint => 'Выберите категорию';
 
   @override
   String get createCategoryValidation => 'Выберите категорию';
@@ -552,10 +575,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createCategoryRetry => 'Повторить';
 
   @override
+  String get createCategoryPickerTitle => 'Выберите категорию';
+
+  @override
+  String get createCategoryApply => 'Применить';
+
+  @override
   String get createTagsLabel => 'Теги';
 
   @override
   String get createTagsHint => 'Через запятую: бег, утро, парк';
+
+  @override
+  String get createEventFormatLabel => 'Формат события';
 
   @override
   String get createFormatSection => 'ФОРМАТ ПРОВЕДЕНИЯ';
@@ -564,10 +596,31 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createScheduleSection => 'РАСПИСАНИЕ';
 
   @override
+  String get createDatePartLabel => 'Дата';
+
+  @override
+  String get createTimePartLabel => 'Время';
+
+  @override
   String get createStartAtLabel => 'Начало';
 
   @override
   String get createEndAtLabel => 'Окончание';
+
+  @override
+  String get createStartDateLabel => 'Дата начала';
+
+  @override
+  String get createEndDateLabel => 'Дата окончания';
+
+  @override
+  String get createStartTimeLabel => 'Время начала';
+
+  @override
+  String get createEndTimeLabel => 'Время окончания';
+
+  @override
+  String get createScheduleInputValidation => 'Введите корректные дату и время';
 
   @override
   String get createRegistrationDeadlineLabel => 'Крайний срок регистрации';
@@ -585,10 +638,17 @@ class AppLocalizationsRu extends AppLocalizations {
       'Крайний срок регистрации должен быть до начала';
 
   @override
+  String get createRegistrationAutoHint =>
+      'Регистрация закрывается автоматически за 1 час до начала активности';
+
+  @override
   String get createSaveDraft => 'Сохранить черновик';
 
   @override
   String get createAndPublish => 'Опубликовать';
+
+  @override
+  String get createPublishActivityCta => 'Опубликовать активность';
 
   @override
   String get createLanguageSection => 'ЯЗЫК АКТИВНОСТИ';
@@ -606,6 +666,47 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createVisibilityUnlisted => 'По ссылке';
 
   @override
+  String get createActivityPrivacyTitle => 'Приватность активности';
+
+  @override
+  String get createVisibilityPrivateWithPassword => 'Приватная с паролем';
+
+  @override
+  String get createVisibilityByLink => 'По ссылке';
+
+  @override
+  String get createVisibilityPublicDescription =>
+      'Видно всем пользователям FlyFy';
+
+  @override
+  String get createVisibilityPrivateDescription =>
+      'Видно только тем, у кого есть код';
+
+  @override
+  String get createVisibilityUnlistedDescription =>
+      'Доступно только по пригласительной ссылке';
+
+  @override
+  String get createVisibilityPickerTitle => 'Выберите приватность';
+
+  @override
+  String get createVisibilityApply => 'Применить';
+
+  @override
+  String get createVisibilityPasswordLabel => 'Пароль активности';
+
+  @override
+  String get createVisibilityPasswordPlaceholder => 'Введите пароль';
+
+  @override
+  String get createVisibilityPasswordValidation =>
+      'Введите пароль длиной от 4 до 64 символов';
+
+  @override
+  String get createVisibilityPasswordEditHint =>
+      'Оставьте поле пустым, чтобы сохранить текущий пароль';
+
+  @override
   String get createJoinModeSection => 'РЕЖИМ ЗАПИСИ';
 
   @override
@@ -613,6 +714,21 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createJoinModeManual => 'Ручное одобрение';
+
+  @override
+  String get createJoinApprovalTitle => 'Подтверждение участия';
+
+  @override
+  String get createJoinModeAutomaticShort => 'Автоматически';
+
+  @override
+  String get createJoinModeManualShort => 'Вручную';
+
+  @override
+  String get createJoinModePickerTitle => 'Выберите режим подтверждения';
+
+  @override
+  String get createJoinModeApply => 'Применить';
 
   @override
   String get createCapacitySection => 'КОЛИЧЕСТВО МЕСТ';
@@ -628,6 +744,21 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createMaxParticipantsLabel => 'Максимум';
+
+  @override
+  String get createParticipantLimitsTitle => 'Лимиты участников';
+
+  @override
+  String get createUnlimitedParticipantsLabel => 'Безлимитное число участников';
+
+  @override
+  String get createParticipantsMinShort => 'МИН';
+
+  @override
+  String get createParticipantsMaxShort => 'МАКС';
+
+  @override
+  String get createNoLimitPlaceholder => 'Без лимита';
 
   @override
   String get createMaxParticipantsValidation =>
@@ -650,7 +781,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createPriceDeposit => 'Депозит';
 
   @override
+  String get createPricingModelTitle => 'Модель оплаты';
+
+  @override
   String get createPriceAmountLabel => 'Сумма';
+
+  @override
+  String get createPriceAmountOptionalLabel => 'Стоимость (необязательно)';
+
+  @override
+  String get createPriceAmountPlaceholder => '\$ 0.00';
 
   @override
   String get createCurrencyLabel => 'Валюта';
@@ -665,6 +805,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createOnlineSection => 'ОНЛАЙН-ДОСТУП';
 
   @override
+  String get createOnlineAccessHint =>
+      'Укажите ссылку, по которой участники смогут подключиться онлайн';
+
+  @override
   String get createMeetingUrlLabel => 'Ссылка на встречу';
 
   @override
@@ -674,7 +818,26 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createMeetingUrlValidation => 'Укажите ссылку на онлайн-встречу';
 
   @override
+  String get createMeetingPointLocationLabel => 'Точка встречи / локация';
+
+  @override
+  String get createMeetingPointTitle => 'ТОЧКА ВСТРЕЧИ';
+
+  @override
+  String get createVenueOrAddressHint => 'Введите место или адрес';
+
+  @override
+  String get createMapLinkLabel => 'Ссылка на карту';
+
+  @override
+  String get createMapLinkHint => 'Вставьте ссылку на карту';
+
+  @override
   String get createOfflineSection => 'МЕСТО ПРОВЕДЕНИЯ';
+
+  @override
+  String get createLocationPreviewHint =>
+      'Добавьте город или адрес, чтобы участники понимали, где встречаться';
 
   @override
   String get createCountryLabel => 'Страна';
@@ -690,6 +853,17 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createAddressHint => 'Улица, дом, корпус';
+
+  @override
+  String get createMapTapHint =>
+      'Нажмите на карту, чтобы отметить точку встречи';
+
+  @override
+  String get createMapResolvingHint => 'Определяем адрес...';
+
+  @override
+  String get createMapUnavailable =>
+      'Google Maps доступен в настроенных iOS и Android сборках';
 
   @override
   String get createLocationValidation => 'Укажите город или адрес проведения';

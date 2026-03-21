@@ -46,4 +46,7 @@ type UpdateActivityRequest struct {
 	HasMapURL      bool     `json:"hasMapUrl,omitempty"`
 	MeetingURL     *string  `json:"meetingUrl,omitempty"`
 	HasMeetingURL  bool     `json:"hasMeetingUrl,omitempty"`
+
+	VisibilityPassword    *string `json:"visibilityPassword,omitempty"`
+	HasVisibilityPassword bool    `json:"hasVisibilityPassword,omitempty"`
 }

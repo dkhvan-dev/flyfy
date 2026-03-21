@@ -481,7 +481,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createActivityFab => 'Жасау';
 
   @override
-  String get createActivityTitle => 'Жаңа белсенділік';
+  String get createActivityTitle => 'Белсенділік құру';
 
   @override
   String get createActivitySubmit => 'Белсенділік жасау';
@@ -493,7 +493,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createActivityFailed => 'Белсенділікті жасау сәтсіз аяқталды';
 
   @override
-  String get createStepBasic => 'Негізгі';
+  String get createStepBasic => 'Негізгі ақпарат';
+
+  @override
+  String get createStepDetailsLogistics => 'Детальдар мен логистика';
+
+  @override
+  String get createStepRulesPricing => 'Ережелер мен құны';
 
   @override
   String get createStepSchedule => 'Формат және кесте';
@@ -505,19 +511,36 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createStepLocation => 'Орналасу';
 
   @override
-  String get createStepNext => 'Келесі';
+  String createStepCounter(Object current, Object total) {
+    return '$current / $total қадам';
+  }
+
+  @override
+  String get createHelpAction => 'Көмек';
+
+  @override
+  String get createStepNext => 'Келесі қадам';
 
   @override
   String get createStepBack => 'Артқа';
 
   @override
+  String get createCoverSection => 'Белсенділік қаптамасын жүктеңіз';
+
+  @override
+  String get createCoverUploadTitle => 'Сапалы сурет жүктеу';
+
+  @override
+  String get createCoverUploadHint => 'Кемінде 1600x900px, ең көбі 5MB';
+
+  @override
   String get createBasicSection => 'НЕГІЗГІ АҚПАРАТ';
 
   @override
-  String get createTitleLabel => 'Атауы';
+  String get createTitleLabel => 'Белсенділік атауы';
 
   @override
-  String get createTitleHint => 'Белсенділік атауын енгізіңіз';
+  String get createTitleHint => 'Мысалы, пирс жанындағы күн батуы йогасы';
 
   @override
   String get createTitleValidation => 'Атау кемінде 3 таңбадан тұруы керек';
@@ -526,7 +549,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createDescriptionLabel => 'Сипаттама';
 
   @override
-  String get createDescriptionHint => 'Белсенділікте не болатынын сипаттаңыз';
+  String get createDescriptionHint => 'Белсенділік туралы толығырақ жазыңыз...';
 
   @override
   String get createDescriptionValidation =>
@@ -536,7 +559,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createCategoryLabel => 'Санат';
 
   @override
-  String get createCategoryHint => 'Санатты анықтамалықтан таңдаңыз';
+  String get createCategoryHint => 'Санат таңдаңыз';
 
   @override
   String get createCategoryValidation => 'Санатты таңдаңыз';
@@ -554,10 +577,19 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createCategoryRetry => 'Қайталау';
 
   @override
+  String get createCategoryPickerTitle => 'Санатты таңдаңыз';
+
+  @override
+  String get createCategoryApply => 'Қолдану';
+
+  @override
   String get createTagsLabel => 'Тегтер';
 
   @override
   String get createTagsHint => 'Үтір арқылы: жүгіру, таңғы, саябақ';
+
+  @override
+  String get createEventFormatLabel => 'Оқиға форматы';
 
   @override
   String get createFormatSection => 'ӨТКІЗУ ФОРМАТЫ';
@@ -566,10 +598,31 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createScheduleSection => 'КЕСТЕ';
 
   @override
+  String get createDatePartLabel => 'Күні';
+
+  @override
+  String get createTimePartLabel => 'Уақыты';
+
+  @override
   String get createStartAtLabel => 'Басталуы';
 
   @override
   String get createEndAtLabel => 'Аяқталуы';
+
+  @override
+  String get createStartDateLabel => 'Басталу күні';
+
+  @override
+  String get createEndDateLabel => 'Аяқталу күні';
+
+  @override
+  String get createStartTimeLabel => 'Басталу уақыты';
+
+  @override
+  String get createEndTimeLabel => 'Аяқталу уақыты';
+
+  @override
+  String get createScheduleInputValidation => 'Күн мен уақытты дұрыс енгізіңіз';
 
   @override
   String get createRegistrationDeadlineLabel => 'Тіркелу мерзімі';
@@ -587,10 +640,17 @@ class AppLocalizationsKk extends AppLocalizations {
       'Тіркелу мерзімі басталу уақытынан бұрын болуы керек';
 
   @override
+  String get createRegistrationAutoHint =>
+      'Тіркелу белсенділік басталғанға дейін 1 сағат бұрын автоматты түрде жабылады';
+
+  @override
   String get createSaveDraft => 'Жобаны сақтау';
 
   @override
   String get createAndPublish => 'Жариялау';
+
+  @override
+  String get createPublishActivityCta => 'Белсенділікті жариялау';
 
   @override
   String get createLanguageSection => 'БЕЛСЕНДІЛІК ТІЛІ';
@@ -608,6 +668,46 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createVisibilityUnlisted => 'Сілтеме бойынша';
 
   @override
+  String get createActivityPrivacyTitle => 'Белсенділік құпиялығы';
+
+  @override
+  String get createVisibilityPrivateWithPassword => 'Құпиясөзбен жабық';
+
+  @override
+  String get createVisibilityByLink => 'Сілтеме арқылы';
+
+  @override
+  String get createVisibilityPublicDescription => 'FlyFy-дегі баршаға көрінеді';
+
+  @override
+  String get createVisibilityPrivateDescription =>
+      'Коды бар адамдар ғана көре алады';
+
+  @override
+  String get createVisibilityUnlistedDescription =>
+      'Тек шақыру сілтемесі арқылы қолжетімді';
+
+  @override
+  String get createVisibilityPickerTitle => 'Құпиялықты таңдаңыз';
+
+  @override
+  String get createVisibilityApply => 'Қолдану';
+
+  @override
+  String get createVisibilityPasswordLabel => 'Белсенділік құпиясөзі';
+
+  @override
+  String get createVisibilityPasswordPlaceholder => 'Құпиясөзді енгізіңіз';
+
+  @override
+  String get createVisibilityPasswordValidation =>
+      '4-тен 64 таңбаға дейінгі құпиясөзді енгізіңіз';
+
+  @override
+  String get createVisibilityPasswordEditHint =>
+      'Ағымдағы құпиясөзді сақтау үшін өрісті бос қалдырыңыз';
+
+  @override
   String get createJoinModeSection => 'ҚОСЫЛУ РЕЖИМІ';
 
   @override
@@ -615,6 +715,21 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createJoinModeManual => 'Қолмен мақұлдау';
+
+  @override
+  String get createJoinApprovalTitle => 'Қатысуды мақұлдау';
+
+  @override
+  String get createJoinModeAutomaticShort => 'Автоматты';
+
+  @override
+  String get createJoinModeManualShort => 'Қолмен';
+
+  @override
+  String get createJoinModePickerTitle => 'Мақұлдау режимін таңдаңыз';
+
+  @override
+  String get createJoinModeApply => 'Қолдану';
 
   @override
   String get createCapacitySection => 'ОРЫН САНЫ';
@@ -630,6 +745,21 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createMaxParticipantsLabel => 'Максимум';
+
+  @override
+  String get createParticipantLimitsTitle => 'Қатысушылар лимиті';
+
+  @override
+  String get createUnlimitedParticipantsLabel => 'Қатысушылар саны шектеусіз';
+
+  @override
+  String get createParticipantsMinShort => 'МИН';
+
+  @override
+  String get createParticipantsMaxShort => 'МАКС';
+
+  @override
+  String get createNoLimitPlaceholder => 'Шектеу жоқ';
 
   @override
   String get createMaxParticipantsValidation =>
@@ -652,7 +782,16 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createPriceDeposit => 'Депозит';
 
   @override
+  String get createPricingModelTitle => 'Баға моделі';
+
+  @override
   String get createPriceAmountLabel => 'Сома';
+
+  @override
+  String get createPriceAmountOptionalLabel => 'Баға мөлшері (міндетті емес)';
+
+  @override
+  String get createPriceAmountPlaceholder => '\$ 0.00';
 
   @override
   String get createCurrencyLabel => 'Валюта';
@@ -667,6 +806,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createOnlineSection => 'ОНЛАЙН ҚАТЫНАУ';
 
   @override
+  String get createOnlineAccessHint =>
+      'Қатысушылар онлайн қосылу үшін пайдаланатын сілтемені көрсетіңіз';
+
+  @override
   String get createMeetingUrlLabel => 'Кездесу сілтемесі';
 
   @override
@@ -677,7 +820,27 @@ class AppLocalizationsKk extends AppLocalizations {
       'Онлайн кездесу сілтемесін көрсетіңіз';
 
   @override
+  String get createMeetingPointLocationLabel => 'Кездесу орны / локация';
+
+  @override
+  String get createMeetingPointTitle => 'КЕЗДЕСУ НҮКТЕСІ';
+
+  @override
+  String get createVenueOrAddressHint =>
+      'Өтетін жерді немесе мекенжайды енгізіңіз';
+
+  @override
+  String get createMapLinkLabel => 'Карта сілтемесі';
+
+  @override
+  String get createMapLinkHint => 'Карта сілтемесін қойыңыз';
+
+  @override
   String get createOfflineSection => 'ӨТКІЗУ ОРНЫ';
+
+  @override
+  String get createLocationPreviewHint =>
+      'Қатысушылар қай жерде кездесетінін түсінуі үшін қала немесе мекенжай қосыңыз';
 
   @override
   String get createCountryLabel => 'Ел';
@@ -693,6 +856,17 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createAddressHint => 'Көше, үй, корпус';
+
+  @override
+  String get createMapTapHint =>
+      'Кездесу нүктесін белгілеу үшін картаға түртіңіз';
+
+  @override
+  String get createMapResolvingHint => 'Мекенжай анықталып жатыр...';
+
+  @override
+  String get createMapUnavailable =>
+      'Google Maps бапталған iOS және Android жинақтарында қолжетімді';
 
   @override
   String get createLocationValidation => 'Қала немесе мекенжайды көрсетіңіз';

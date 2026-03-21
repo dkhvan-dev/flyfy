@@ -198,11 +198,7 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid endAt")
 		return
 	}
-	registrationDeadline, err := parseRFC3339(req.RegistrationDeadline)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid registrationDeadline")
-		return
-	}
+
 	confirmationDeadline, err := parseOptionalRFC3339(req.ConfirmationDeadline)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid confirmationDeadline")
@@ -222,7 +218,6 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		Timezone:                       req.Timezone,
 		StartAt:                        startAt,
 		EndAt:                          endAt,
-		RegistrationDeadline:           registrationDeadline,
 		CapacityType:                   enum.ActivityCapacityType(strings.TrimSpace(req.CapacityType)),
 		MinParticipants:                req.MinParticipants,
 		MaxParticipants:                req.MaxParticipants,
@@ -239,6 +234,7 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		Longitude:                      req.Longitude,
 		MapURL:                         req.MapURL,
 		MeetingURL:                     req.MeetingURL,
+		VisibilityPassword:             req.VisibilityPassword,
 		ReviewRequired:                 valueOrDefaultBool(req.ReviewRequired, false),
 	}
 
@@ -408,11 +404,6 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		writeError(w, http.StatusBadRequest, "invalid endAt")
 		return
 	}
-	registrationDeadline, err := parseOptionalRFC3339(req.RegistrationDeadline)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid registrationDeadline")
-		return
-	}
 	confirmationDeadline, err := parseOptionalRFC3339(req.ConfirmationDeadline)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid confirmationDeadline")
@@ -457,7 +448,6 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		Timezone:                       req.Timezone,
 		StartAt:                        startAt,
 		EndAt:                          endAt,
-		RegistrationDeadline:           registrationDeadline,
 		CapacityType:                   capacityType,
 		MinParticipants:                req.MinParticipants,
 		HasMinParticipants:             req.HasMinParticipants,
@@ -486,6 +476,8 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		HasMapURL:                      req.HasMapURL,
 		MeetingURL:                     req.MeetingURL,
 		HasMeetingURL:                  req.HasMeetingURL,
+		VisibilityPassword:             req.VisibilityPassword,
+		HasVisibilityPassword:          req.HasVisibilityPassword,
 	})
 	if err != nil {
 		h.writeAppError(w, err, "failed to update activity")
@@ -961,6 +953,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, model.ErrInvalidCurrency),
 		errors.Is(err, model.ErrInvalidMeetingURL),
 		errors.Is(err, model.ErrInvalidOfflineLocation),
+		errors.Is(err, model.ErrInvalidVisibilityPassword),
 		errors.Is(err, model.ErrPriceLocked),
 		errors.Is(err, model.ErrOnlyAuthorCanDuplicate),
 		errors.Is(err, model.ErrActivityCannotBePublished),

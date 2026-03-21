@@ -478,7 +478,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createActivityFab => 'Create';
 
   @override
-  String get createActivityTitle => 'New Activity';
+  String get createActivityTitle => 'Create Activity';
 
   @override
   String get createActivitySubmit => 'Create Activity';
@@ -490,7 +490,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createActivityFailed => 'Failed to create activity';
 
   @override
-  String get createStepBasic => 'Basic Info';
+  String get createStepBasic => 'Main Info';
+
+  @override
+  String get createStepDetailsLogistics => 'Details & Logistics';
+
+  @override
+  String get createStepRulesPricing => 'Rules & Pricing';
 
   @override
   String get createStepSchedule => 'Format & Schedule';
@@ -502,19 +508,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createStepLocation => 'Location';
 
   @override
-  String get createStepNext => 'Next';
+  String createStepCounter(Object current, Object total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get createHelpAction => 'Help';
+
+  @override
+  String get createStepNext => 'Next Step';
 
   @override
   String get createStepBack => 'Back';
 
   @override
+  String get createCoverSection => 'Upload Activity Cover';
+
+  @override
+  String get createCoverUploadTitle => 'Upload High-Res Image';
+
+  @override
+  String get createCoverUploadHint => 'Minimal 1600x900px, max 5MB';
+
+  @override
   String get createBasicSection => 'BASIC INFORMATION';
 
   @override
-  String get createTitleLabel => 'Title';
+  String get createTitleLabel => 'Activity Title';
 
   @override
-  String get createTitleHint => 'Enter activity title';
+  String get createTitleHint => 'e.g. Sunset Yoga by the Pier';
 
   @override
   String get createTitleValidation => 'Title must be at least 3 characters';
@@ -523,8 +546,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createDescriptionLabel => 'Description';
 
   @override
-  String get createDescriptionHint =>
-      'Describe what will happen at the activity';
+  String get createDescriptionHint => 'Tell us more about the activity...';
 
   @override
   String get createDescriptionValidation =>
@@ -534,7 +556,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createCategoryLabel => 'Category';
 
   @override
-  String get createCategoryHint => 'Choose a category from the catalog';
+  String get createCategoryHint => 'Select a category';
 
   @override
   String get createCategoryValidation => 'Please choose a category';
@@ -552,10 +574,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createCategoryRetry => 'Retry';
 
   @override
+  String get createCategoryPickerTitle => 'Choose Category';
+
+  @override
+  String get createCategoryApply => 'Apply Category';
+
+  @override
   String get createTagsLabel => 'Tags';
 
   @override
   String get createTagsHint => 'Comma-separated: running, morning, park';
+
+  @override
+  String get createEventFormatLabel => 'Event Format';
 
   @override
   String get createFormatSection => 'FORMAT';
@@ -564,10 +595,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createScheduleSection => 'SCHEDULE';
 
   @override
+  String get createDatePartLabel => 'Date';
+
+  @override
+  String get createTimePartLabel => 'Time';
+
+  @override
   String get createStartAtLabel => 'Start';
 
   @override
   String get createEndAtLabel => 'End';
+
+  @override
+  String get createStartDateLabel => 'Start date';
+
+  @override
+  String get createEndDateLabel => 'End date';
+
+  @override
+  String get createStartTimeLabel => 'Start time';
+
+  @override
+  String get createEndTimeLabel => 'End time';
+
+  @override
+  String get createScheduleInputValidation =>
+      'Please enter a valid date and time';
 
   @override
   String get createRegistrationDeadlineLabel => 'Registration deadline';
@@ -584,10 +637,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Registration deadline must be before the start time';
 
   @override
+  String get createRegistrationAutoHint =>
+      'Registration closes automatically 1 hour before the activity starts';
+
+  @override
   String get createSaveDraft => 'Save Draft';
 
   @override
   String get createAndPublish => 'Publish';
+
+  @override
+  String get createPublishActivityCta => 'Publish Activity';
 
   @override
   String get createLanguageSection => 'ACTIVITY LANGUAGE';
@@ -605,6 +665,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createVisibilityUnlisted => 'Unlisted';
 
   @override
+  String get createActivityPrivacyTitle => 'Activity Privacy';
+
+  @override
+  String get createVisibilityPrivateWithPassword => 'Private with password';
+
+  @override
+  String get createVisibilityByLink => 'By link';
+
+  @override
+  String get createVisibilityPublicDescription =>
+      'Visible to everyone on FlyFy';
+
+  @override
+  String get createVisibilityPrivateDescription =>
+      'Only people with the code can see';
+
+  @override
+  String get createVisibilityUnlistedDescription =>
+      'Accessible only via invite link';
+
+  @override
+  String get createVisibilityPickerTitle => 'Choose privacy';
+
+  @override
+  String get createVisibilityApply => 'Apply';
+
+  @override
+  String get createVisibilityPasswordLabel => 'Activity password';
+
+  @override
+  String get createVisibilityPasswordPlaceholder => 'Enter password';
+
+  @override
+  String get createVisibilityPasswordValidation =>
+      'Enter a password from 4 to 64 characters';
+
+  @override
+  String get createVisibilityPasswordEditHint =>
+      'Leave blank to keep the current password';
+
+  @override
   String get createJoinModeSection => 'JOIN MODE';
 
   @override
@@ -612,6 +713,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createJoinModeManual => 'Manual approve';
+
+  @override
+  String get createJoinApprovalTitle => 'Join Approval';
+
+  @override
+  String get createJoinModeAutomaticShort => 'Automatic';
+
+  @override
+  String get createJoinModeManualShort => 'Manual';
+
+  @override
+  String get createJoinModePickerTitle => 'Choose approval mode';
+
+  @override
+  String get createJoinModeApply => 'Apply';
 
   @override
   String get createCapacitySection => 'CAPACITY';
@@ -627,6 +743,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createMaxParticipantsLabel => 'Maximum';
+
+  @override
+  String get createParticipantLimitsTitle => 'Participant Limits';
+
+  @override
+  String get createUnlimitedParticipantsLabel => 'Unlimited participants';
+
+  @override
+  String get createParticipantsMinShort => 'MIN';
+
+  @override
+  String get createParticipantsMaxShort => 'MAX';
+
+  @override
+  String get createNoLimitPlaceholder => 'No limit';
 
   @override
   String get createMaxParticipantsValidation =>
@@ -648,7 +779,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createPriceDeposit => 'Deposit';
 
   @override
+  String get createPricingModelTitle => 'Pricing Model';
+
+  @override
   String get createPriceAmountLabel => 'Amount';
+
+  @override
+  String get createPriceAmountOptionalLabel => 'Price amount (optional)';
+
+  @override
+  String get createPriceAmountPlaceholder => '\$ 0.00';
 
   @override
   String get createCurrencyLabel => 'Currency';
@@ -663,6 +803,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createOnlineSection => 'ONLINE ACCESS';
 
   @override
+  String get createOnlineAccessHint =>
+      'Share the meeting link participants should use to join online';
+
+  @override
   String get createMeetingUrlLabel => 'Meeting link';
 
   @override
@@ -672,7 +816,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createMeetingUrlValidation => 'Please provide a meeting link';
 
   @override
+  String get createMeetingPointLocationLabel => 'Meeting point / Location';
+
+  @override
+  String get createMeetingPointTitle => 'MEETING POINT';
+
+  @override
+  String get createVenueOrAddressHint => 'Enter venue or address';
+
+  @override
+  String get createMapLinkLabel => 'Map Link';
+
+  @override
+  String get createMapLinkHint => 'Paste Maps URL';
+
+  @override
   String get createOfflineSection => 'VENUE';
+
+  @override
+  String get createLocationPreviewHint =>
+      'Add a city or address so participants know where to meet';
 
   @override
   String get createCountryLabel => 'Country';
@@ -688,6 +851,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createAddressHint => 'Street, building, etc.';
+
+  @override
+  String get createMapTapHint => 'Tap the map to pin the meeting point';
+
+  @override
+  String get createMapResolvingHint => 'Looking up the address...';
+
+  @override
+  String get createMapUnavailable =>
+      'Google Maps preview is available in configured iOS and Android builds';
 
   @override
   String get createLocationValidation => 'Please specify a city or address';

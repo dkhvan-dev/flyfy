@@ -63,7 +63,7 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			capacity_type, min_participants, max_participants,
 			price_type, price_amount, currency, price_locked_at,
 			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url,
+			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
 			cancellation_reason, cancelled_at, started_at, completed_at, published_at,
 			revision, created_at, updated_at
 		) VALUES (
@@ -75,9 +75,9 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			$17, $18, $19,
 			$20, $21, $22, $23,
 			$24, $25, $26,
-			$27, $28, $29, $30, $31, $32, $33,
-			$34, $35, $36, $37, $38,
-			$39, $40, $41
+			$27, $28, $29, $30, $31, $32, $33, $34,
+			$35, $36, $37, $38, $39,
+			$40, $41, $42
 		)
 	`
 
@@ -92,7 +92,7 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 		string(item.CapacityType), item.MinParticipants, item.MaxParticipants,
 		string(item.PriceType), item.PriceAmount, item.Currency, item.PriceLockedAt,
 		item.RequiresProfileCompletion, item.RequiresAttendanceConfirmation, item.ConfirmationDeadline,
-		item.CountryCode, item.CityName, item.AddressText, item.Latitude, item.Longitude, item.MapURL, item.MeetingURL,
+		item.CountryCode, item.CityName, item.AddressText, item.Latitude, item.Longitude, item.MapURL, item.MeetingURL, item.VisibilityPasswordHash,
 		item.CancellationReason, item.CancelledAt, item.StartedAt, item.CompletedAt, item.PublishedAt,
 		item.Revision, item.CreatedAt, item.UpdatedAt,
 	)
@@ -139,13 +139,14 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 			longitude = $31,
 			map_url = $32,
 			meeting_url = $33,
-			cancellation_reason = $34,
-			cancelled_at = $35,
-			started_at = $36,
-			completed_at = $37,
-			published_at = $38,
-			revision = $39,
-			updated_at = $40
+			visibility_password_hash = $34,
+			cancellation_reason = $35,
+			cancelled_at = $36,
+			started_at = $37,
+			completed_at = $38,
+			published_at = $39,
+			revision = $40,
+			updated_at = $41
 		WHERE id = $1
 	`
 
@@ -185,6 +186,7 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 		item.Longitude,
 		item.MapURL,
 		item.MeetingURL,
+		item.VisibilityPasswordHash,
 		item.CancellationReason,
 		item.CancelledAt,
 		item.StartedAt,
@@ -214,7 +216,7 @@ func (r *PGActivityRepository) GetActivityByID(ctx context.Context, activityID u
 			capacity_type, min_participants, max_participants,
 			price_type, price_amount, currency, price_locked_at,
 			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url,
+			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
 			cancellation_reason, cancelled_at, started_at, completed_at, published_at,
 			revision, created_at, updated_at
 		FROM activities
@@ -245,7 +247,7 @@ func (r *PGActivityRepository) ListActivities(ctx context.Context, filter port.A
 			capacity_type, min_participants, max_participants,
 			price_type, price_amount, currency, price_locked_at,
 			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url,
+			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
 			cancellation_reason, cancelled_at, started_at, completed_at, published_at,
 			revision, created_at, updated_at
 		FROM activities
@@ -898,13 +900,14 @@ func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model
 			longitude = $31,
 			map_url = $32,
 			meeting_url = $33,
-			cancellation_reason = $34,
-			cancelled_at = $35,
-			started_at = $36,
-			completed_at = $37,
-			published_at = $38,
-			revision = $39,
-			updated_at = $40
+			visibility_password_hash = $34,
+			cancellation_reason = $35,
+			cancelled_at = $36,
+			started_at = $37,
+			completed_at = $38,
+			published_at = $39,
+			revision = $40,
+			updated_at = $41
 		WHERE id = $1
 	`
 
@@ -944,6 +947,7 @@ func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model
 		item.Longitude,
 		item.MapURL,
 		item.MeetingURL,
+		item.VisibilityPasswordHash,
 		item.CancellationReason,
 		item.CancelledAt,
 		item.StartedAt,
@@ -975,7 +979,7 @@ func (r *PGActivityRepository) ListHostedActivitiesByUserID(
 			capacity_type, min_participants, max_participants,
 			price_type, price_amount, currency, price_locked_at,
 			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url,
+			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
 			cancellation_reason, cancelled_at, started_at, completed_at, published_at,
 			revision, created_at, updated_at
 		FROM activities
@@ -1018,7 +1022,7 @@ func (r *PGActivityRepository) ListJoinedActivitiesByUserID(
 			a.capacity_type, a.min_participants, a.max_participants,
 			a.price_type, a.price_amount, a.currency, a.price_locked_at,
 			a.requires_profile_completion, a.requires_attendance_confirmation, a.confirmation_deadline,
-			a.country_code, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url,
+			a.country_code, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url, a.visibility_password_hash,
 			a.cancellation_reason, a.cancelled_at, a.started_at, a.completed_at, a.published_at,
 			a.revision, a.created_at, a.updated_at
 		FROM activities a
@@ -1182,6 +1186,7 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 		&item.Longitude,
 		&item.MapURL,
 		&item.MeetingURL,
+		&item.VisibilityPasswordHash,
 
 		&item.CancellationReason,
 		&item.CancelledAt,

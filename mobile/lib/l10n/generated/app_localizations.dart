@@ -997,7 +997,7 @@ abstract class AppLocalizations {
   /// No description provided for @createActivityTitle.
   ///
   /// In en, this message translates to:
-  /// **'New Activity'**
+  /// **'Create Activity'**
   String get createActivityTitle;
 
   /// No description provided for @createActivitySubmit.
@@ -1021,8 +1021,20 @@ abstract class AppLocalizations {
   /// No description provided for @createStepBasic.
   ///
   /// In en, this message translates to:
-  /// **'Basic Info'**
+  /// **'Main Info'**
   String get createStepBasic;
+
+  /// No description provided for @createStepDetailsLogistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Details & Logistics'**
+  String get createStepDetailsLogistics;
+
+  /// No description provided for @createStepRulesPricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules & Pricing'**
+  String get createStepRulesPricing;
 
   /// No description provided for @createStepSchedule.
   ///
@@ -1042,10 +1054,22 @@ abstract class AppLocalizations {
   /// **'Location'**
   String get createStepLocation;
 
+  /// No description provided for @createStepCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String createStepCounter(Object current, Object total);
+
+  /// No description provided for @createHelpAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get createHelpAction;
+
   /// No description provided for @createStepNext.
   ///
   /// In en, this message translates to:
-  /// **'Next'**
+  /// **'Next Step'**
   String get createStepNext;
 
   /// No description provided for @createStepBack.
@@ -1053,6 +1077,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back'**
   String get createStepBack;
+
+  /// No description provided for @createCoverSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Activity Cover'**
+  String get createCoverSection;
+
+  /// No description provided for @createCoverUploadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload High-Res Image'**
+  String get createCoverUploadTitle;
+
+  /// No description provided for @createCoverUploadHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal 1600x900px, max 5MB'**
+  String get createCoverUploadHint;
 
   /// No description provided for @createBasicSection.
   ///
@@ -1063,13 +1105,13 @@ abstract class AppLocalizations {
   /// No description provided for @createTitleLabel.
   ///
   /// In en, this message translates to:
-  /// **'Title'**
+  /// **'Activity Title'**
   String get createTitleLabel;
 
   /// No description provided for @createTitleHint.
   ///
   /// In en, this message translates to:
-  /// **'Enter activity title'**
+  /// **'e.g. Sunset Yoga by the Pier'**
   String get createTitleHint;
 
   /// No description provided for @createTitleValidation.
@@ -1087,7 +1129,7 @@ abstract class AppLocalizations {
   /// No description provided for @createDescriptionHint.
   ///
   /// In en, this message translates to:
-  /// **'Describe what will happen at the activity'**
+  /// **'Tell us more about the activity...'**
   String get createDescriptionHint;
 
   /// No description provided for @createDescriptionValidation.
@@ -1105,7 +1147,7 @@ abstract class AppLocalizations {
   /// No description provided for @createCategoryHint.
   ///
   /// In en, this message translates to:
-  /// **'Choose a category from the catalog'**
+  /// **'Select a category'**
   String get createCategoryHint;
 
   /// No description provided for @createCategoryValidation.
@@ -1138,6 +1180,18 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get createCategoryRetry;
 
+  /// No description provided for @createCategoryPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Category'**
+  String get createCategoryPickerTitle;
+
+  /// No description provided for @createCategoryApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Category'**
+  String get createCategoryApply;
+
   /// No description provided for @createTagsLabel.
   ///
   /// In en, this message translates to:
@@ -1149,6 +1203,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Comma-separated: running, morning, park'**
   String get createTagsHint;
+
+  /// No description provided for @createEventFormatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Event Format'**
+  String get createEventFormatLabel;
 
   /// No description provided for @createFormatSection.
   ///
@@ -1162,6 +1222,18 @@ abstract class AppLocalizations {
   /// **'SCHEDULE'**
   String get createScheduleSection;
 
+  /// No description provided for @createDatePartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get createDatePartLabel;
+
+  /// No description provided for @createTimePartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get createTimePartLabel;
+
   /// No description provided for @createStartAtLabel.
   ///
   /// In en, this message translates to:
@@ -1173,6 +1245,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'End'**
   String get createEndAtLabel;
+
+  /// No description provided for @createStartDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get createStartDateLabel;
+
+  /// No description provided for @createEndDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get createEndDateLabel;
+
+  /// No description provided for @createStartTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get createStartTimeLabel;
+
+  /// No description provided for @createEndTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get createEndTimeLabel;
+
+  /// No description provided for @createScheduleInputValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid date and time'**
+  String get createScheduleInputValidation;
 
   /// No description provided for @createRegistrationDeadlineLabel.
   ///
@@ -1198,6 +1300,12 @@ abstract class AppLocalizations {
   /// **'Registration deadline must be before the start time'**
   String get createRegistrationDeadlineValidation;
 
+  /// No description provided for @createRegistrationAutoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration closes automatically 1 hour before the activity starts'**
+  String get createRegistrationAutoHint;
+
   /// No description provided for @createSaveDraft.
   ///
   /// In en, this message translates to:
@@ -1209,6 +1317,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Publish'**
   String get createAndPublish;
+
+  /// No description provided for @createPublishActivityCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish Activity'**
+  String get createPublishActivityCta;
 
   /// No description provided for @createLanguageSection.
   ///
@@ -1240,6 +1354,78 @@ abstract class AppLocalizations {
   /// **'Unlisted'**
   String get createVisibilityUnlisted;
 
+  /// No description provided for @createActivityPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Privacy'**
+  String get createActivityPrivacyTitle;
+
+  /// No description provided for @createVisibilityPrivateWithPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Private with password'**
+  String get createVisibilityPrivateWithPassword;
+
+  /// No description provided for @createVisibilityByLink.
+  ///
+  /// In en, this message translates to:
+  /// **'By link'**
+  String get createVisibilityByLink;
+
+  /// No description provided for @createVisibilityPublicDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible to everyone on FlyFy'**
+  String get createVisibilityPublicDescription;
+
+  /// No description provided for @createVisibilityPrivateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Only people with the code can see'**
+  String get createVisibilityPrivateDescription;
+
+  /// No description provided for @createVisibilityUnlistedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessible only via invite link'**
+  String get createVisibilityUnlistedDescription;
+
+  /// No description provided for @createVisibilityPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose privacy'**
+  String get createVisibilityPickerTitle;
+
+  /// No description provided for @createVisibilityApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get createVisibilityApply;
+
+  /// No description provided for @createVisibilityPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity password'**
+  String get createVisibilityPasswordLabel;
+
+  /// No description provided for @createVisibilityPasswordPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter password'**
+  String get createVisibilityPasswordPlaceholder;
+
+  /// No description provided for @createVisibilityPasswordValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a password from 4 to 64 characters'**
+  String get createVisibilityPasswordValidation;
+
+  /// No description provided for @createVisibilityPasswordEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to keep the current password'**
+  String get createVisibilityPasswordEditHint;
+
   /// No description provided for @createJoinModeSection.
   ///
   /// In en, this message translates to:
@@ -1257,6 +1443,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manual approve'**
   String get createJoinModeManual;
+
+  /// No description provided for @createJoinApprovalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Approval'**
+  String get createJoinApprovalTitle;
+
+  /// No description provided for @createJoinModeAutomaticShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get createJoinModeAutomaticShort;
+
+  /// No description provided for @createJoinModeManualShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get createJoinModeManualShort;
+
+  /// No description provided for @createJoinModePickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose approval mode'**
+  String get createJoinModePickerTitle;
+
+  /// No description provided for @createJoinModeApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get createJoinModeApply;
 
   /// No description provided for @createCapacitySection.
   ///
@@ -1287,6 +1503,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Maximum'**
   String get createMaxParticipantsLabel;
+
+  /// No description provided for @createParticipantLimitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Participant Limits'**
+  String get createParticipantLimitsTitle;
+
+  /// No description provided for @createUnlimitedParticipantsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited participants'**
+  String get createUnlimitedParticipantsLabel;
+
+  /// No description provided for @createParticipantsMinShort.
+  ///
+  /// In en, this message translates to:
+  /// **'MIN'**
+  String get createParticipantsMinShort;
+
+  /// No description provided for @createParticipantsMaxShort.
+  ///
+  /// In en, this message translates to:
+  /// **'MAX'**
+  String get createParticipantsMaxShort;
+
+  /// No description provided for @createNoLimitPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get createNoLimitPlaceholder;
 
   /// No description provided for @createMaxParticipantsValidation.
   ///
@@ -1324,11 +1570,29 @@ abstract class AppLocalizations {
   /// **'Deposit'**
   String get createPriceDeposit;
 
+  /// No description provided for @createPricingModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing Model'**
+  String get createPricingModelTitle;
+
   /// No description provided for @createPriceAmountLabel.
   ///
   /// In en, this message translates to:
   /// **'Amount'**
   String get createPriceAmountLabel;
+
+  /// No description provided for @createPriceAmountOptionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price amount (optional)'**
+  String get createPriceAmountOptionalLabel;
+
+  /// No description provided for @createPriceAmountPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'\$ 0.00'**
+  String get createPriceAmountPlaceholder;
 
   /// No description provided for @createCurrencyLabel.
   ///
@@ -1354,6 +1618,12 @@ abstract class AppLocalizations {
   /// **'ONLINE ACCESS'**
   String get createOnlineSection;
 
+  /// No description provided for @createOnlineAccessHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the meeting link participants should use to join online'**
+  String get createOnlineAccessHint;
+
   /// No description provided for @createMeetingUrlLabel.
   ///
   /// In en, this message translates to:
@@ -1372,11 +1642,47 @@ abstract class AppLocalizations {
   /// **'Please provide a meeting link'**
   String get createMeetingUrlValidation;
 
+  /// No description provided for @createMeetingPointLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting point / Location'**
+  String get createMeetingPointLocationLabel;
+
+  /// No description provided for @createMeetingPointTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MEETING POINT'**
+  String get createMeetingPointTitle;
+
+  /// No description provided for @createVenueOrAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter venue or address'**
+  String get createVenueOrAddressHint;
+
+  /// No description provided for @createMapLinkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Map Link'**
+  String get createMapLinkLabel;
+
+  /// No description provided for @createMapLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste Maps URL'**
+  String get createMapLinkHint;
+
   /// No description provided for @createOfflineSection.
   ///
   /// In en, this message translates to:
   /// **'VENUE'**
   String get createOfflineSection;
+
+  /// No description provided for @createLocationPreviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a city or address so participants know where to meet'**
+  String get createLocationPreviewHint;
 
   /// No description provided for @createCountryLabel.
   ///
@@ -1407,6 +1713,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Street, building, etc.'**
   String get createAddressHint;
+
+  /// No description provided for @createMapTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to pin the meeting point'**
+  String get createMapTapHint;
+
+  /// No description provided for @createMapResolvingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking up the address...'**
+  String get createMapResolvingHint;
+
+  /// No description provided for @createMapUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps preview is available in configured iOS and Android builds'**
+  String get createMapUnavailable;
 
   /// No description provided for @createLocationValidation.
   ///
