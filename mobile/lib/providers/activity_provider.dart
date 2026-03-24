@@ -36,6 +36,11 @@ class ActivityProvider extends ChangeNotifier {
   String? _myErrorMessage;
   bool _myIsRefreshing = false;
 
+  ActivitiesState _joinedState = ActivitiesState.initial;
+  List<ActivityListItemVm> _joinedItems = const [];
+  String? _joinedErrorMessage;
+  bool _joinedIsRefreshing = false;
+
   ActivitiesState get state => _state;
   ActivityActionState get actionState => _actionState;
   bool get isRefreshing => _isRefreshing;
@@ -51,6 +56,11 @@ class ActivityProvider extends ChangeNotifier {
   List<ActivityListItemVm> get myItems => _myItems;
   String? get myErrorMessage => _myErrorMessage;
   bool get myIsRefreshing => _myIsRefreshing;
+
+  ActivitiesState get joinedState => _joinedState;
+  List<ActivityListItemVm> get joinedItems => _joinedItems;
+  String? get joinedErrorMessage => _joinedErrorMessage;
+  bool get joinedIsRefreshing => _joinedIsRefreshing;
 
   Future<void> loadActivityCategories({bool force = false}) async {
     if (!force &&
@@ -152,6 +162,45 @@ class ActivityProvider extends ChangeNotifier {
       _myState = ActivitiesState.error;
     } finally {
       _myIsRefreshing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadJoinedActivities() async {
+    _joinedState = ActivitiesState.loading;
+    _joinedErrorMessage = null;
+    notifyListeners();
+
+    try {
+      _joinedItems = await _activityApi.getMyJoinedActivities();
+      _joinedState = ActivitiesState.success;
+    } on DioException catch (e) {
+      _joinedErrorMessage = DioErrorMapper.toMessage(e);
+      _joinedState = ActivitiesState.error;
+    } catch (_) {
+      _joinedErrorMessage = 'Failed to load joined activities';
+      _joinedState = ActivitiesState.error;
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> refreshJoinedActivities() async {
+    _joinedIsRefreshing = true;
+    _joinedErrorMessage = null;
+    notifyListeners();
+
+    try {
+      _joinedItems = await _activityApi.getMyJoinedActivities();
+      _joinedState = ActivitiesState.success;
+    } on DioException catch (e) {
+      _joinedErrorMessage = DioErrorMapper.toMessage(e);
+      _joinedState = ActivitiesState.error;
+    } catch (_) {
+      _joinedErrorMessage = 'Failed to load joined activities';
+      _joinedState = ActivitiesState.error;
+    } finally {
+      _joinedIsRefreshing = false;
       notifyListeners();
     }
   }

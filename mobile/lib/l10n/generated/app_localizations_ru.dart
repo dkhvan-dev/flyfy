@@ -928,6 +928,73 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myActivitiesContinueButton => 'Продолжить';
 
   @override
+  String get myActivitiesAttendedTab => 'Посещенные';
+
+  @override
+  String get myActivitiesAttendedEmpty => 'Вы пока не посещали активности';
+
+  @override
+  String get myActivitiesAttendedEmptyHint =>
+      'Активности, в которые вы записались, появятся здесь';
+
+  @override
+  String get myActivitiesAttendedLoadFailed =>
+      'Не удалось загрузить посещенные активности';
+
+  @override
+  String get myActivitiesFilterButton => 'Фильтры';
+
+  @override
+  String get myActivitiesFilterTitle => 'Фильтры';
+
+  @override
+  String get myActivitiesFilterDateRange => 'Диапазон дат';
+
+  @override
+  String get myActivitiesFilterStartDate => 'Дата начала';
+
+  @override
+  String get myActivitiesFilterEndDate => 'Дата окончания';
+
+  @override
+  String get myActivitiesFilterDatePlaceholder => 'dd.mm.yyyy';
+
+  @override
+  String get myActivitiesFilterDateHint =>
+      'Введите дату вручную в формате dd.mm.yyyy';
+
+  @override
+  String get myActivitiesFilterInvalidDate => 'Введите корректную дату';
+
+  @override
+  String get myActivitiesFilterInvalidRange =>
+      'Дата окончания не может быть раньше даты начала';
+
+  @override
+  String get myActivitiesFilterStatus => 'Фильтр по статусу';
+
+  @override
+  String get myActivitiesFilterClear => 'Очистить';
+
+  @override
+  String get myActivitiesFilterApply => 'Применить фильтры';
+
+  @override
+  String get myActivitiesRecreateButton => 'Повторить';
+
+  @override
+  String get myActivitiesRestrictedButton => 'Редактирование ограничено';
+
+  @override
+  String get myActivitiesOpenButton => 'Открыть активность';
+
+  @override
+  String get myActivitiesRetryButton => 'Повторить';
+
+  @override
+  String get myActivitiesPriceNoteFree => 'без оплаты';
+
+  @override
   String get activityPerPerson => '/ чел.';
 
   @override

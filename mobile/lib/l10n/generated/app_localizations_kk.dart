@@ -933,6 +933,74 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myActivitiesContinueButton => 'Жалғастыру';
 
   @override
+  String get myActivitiesAttendedTab => 'Қатысқан';
+
+  @override
+  String get myActivitiesAttendedEmpty =>
+      'Сіз әлі ешқандай белсенділікке қатысқан жоқсыз';
+
+  @override
+  String get myActivitiesAttendedEmptyHint =>
+      'Сіз қосылған белсенділіктер осы жерде пайда болады';
+
+  @override
+  String get myActivitiesAttendedLoadFailed =>
+      'Қатысқан белсенділіктерді жүктеу мүмкін болмады';
+
+  @override
+  String get myActivitiesFilterButton => 'Сүзгілер';
+
+  @override
+  String get myActivitiesFilterTitle => 'Сүзгілер';
+
+  @override
+  String get myActivitiesFilterDateRange => 'Күн аралығы';
+
+  @override
+  String get myActivitiesFilterStartDate => 'Басталу күні';
+
+  @override
+  String get myActivitiesFilterEndDate => 'Аяқталу күні';
+
+  @override
+  String get myActivitiesFilterDatePlaceholder => 'dd.mm.yyyy';
+
+  @override
+  String get myActivitiesFilterDateHint =>
+      'Күнді dd.mm.yyyy форматында қолмен енгізіңіз';
+
+  @override
+  String get myActivitiesFilterInvalidDate => 'Дұрыс күнді енгізіңіз';
+
+  @override
+  String get myActivitiesFilterInvalidRange =>
+      'Аяқталу күні басталу күнінен ерте болмауы керек';
+
+  @override
+  String get myActivitiesFilterStatus => 'Мәртебе бойынша сүзу';
+
+  @override
+  String get myActivitiesFilterClear => 'Тазалау';
+
+  @override
+  String get myActivitiesFilterApply => 'Сүзгілерді қолдану';
+
+  @override
+  String get myActivitiesRecreateButton => 'Қайта жасау';
+
+  @override
+  String get myActivitiesRestrictedButton => 'Өңдеу шектелген';
+
+  @override
+  String get myActivitiesOpenButton => 'Белсенділікті ашу';
+
+  @override
+  String get myActivitiesRetryButton => 'Қайталау';
+
+  @override
+  String get myActivitiesPriceNoteFree => 'тегін';
+
+  @override
   String get activityPerPerson => '/ адам';
 
   @override

@@ -52,6 +52,28 @@ class ActivityApi {
         .toList();
   }
 
+  Future<List<ActivityListItemVm>> getMyJoinedActivities({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final response = await _apiClient.dio.get(
+      '/me/activities/joined',
+      queryParameters: {'limit': limit, 'offset': offset},
+    );
+
+    final data = response.data;
+    final items =
+        (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(ActivityListItemVm.fromJson)
+        .toList();
+  }
+
   Future<List<ActivityListItemVm>> getActivities({
     int limit = 20,
     int offset = 0,
@@ -88,10 +110,7 @@ class ActivityApi {
   }
 
   Future<ActivityListItemVm> getActivityById(String activityId) async {
-    final response = await _apiClient.dio.get(
-      '/activities/$activityId',
-      options: Options(extra: const {'requiresAuth': false}),
-    );
+    final response = await _apiClient.dio.get('/activities/$activityId');
 
     return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }

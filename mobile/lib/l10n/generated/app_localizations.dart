@@ -1846,6 +1846,132 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get myActivitiesContinueButton;
 
+  /// No description provided for @myActivitiesAttendedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Attended'**
+  String get myActivitiesAttendedTab;
+
+  /// No description provided for @myActivitiesAttendedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t attended any activities yet'**
+  String get myActivitiesAttendedEmpty;
+
+  /// No description provided for @myActivitiesAttendedEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities you join will appear here'**
+  String get myActivitiesAttendedEmptyHint;
+
+  /// No description provided for @myActivitiesAttendedLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load attended activities'**
+  String get myActivitiesAttendedLoadFailed;
+
+  /// No description provided for @myActivitiesFilterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get myActivitiesFilterButton;
+
+  /// No description provided for @myActivitiesFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get myActivitiesFilterTitle;
+
+  /// No description provided for @myActivitiesFilterDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Date Range'**
+  String get myActivitiesFilterDateRange;
+
+  /// No description provided for @myActivitiesFilterStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Date'**
+  String get myActivitiesFilterStartDate;
+
+  /// No description provided for @myActivitiesFilterEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End Date'**
+  String get myActivitiesFilterEndDate;
+
+  /// No description provided for @myActivitiesFilterDatePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'dd.mm.yyyy'**
+  String get myActivitiesFilterDatePlaceholder;
+
+  /// No description provided for @myActivitiesFilterDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the date manually in dd.mm.yyyy format'**
+  String get myActivitiesFilterDateHint;
+
+  /// No description provided for @myActivitiesFilterInvalidDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid date'**
+  String get myActivitiesFilterInvalidDate;
+
+  /// No description provided for @myActivitiesFilterInvalidRange.
+  ///
+  /// In en, this message translates to:
+  /// **'The end date cannot be earlier than the start date'**
+  String get myActivitiesFilterInvalidRange;
+
+  /// No description provided for @myActivitiesFilterStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by Status'**
+  String get myActivitiesFilterStatus;
+
+  /// No description provided for @myActivitiesFilterClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get myActivitiesFilterClear;
+
+  /// No description provided for @myActivitiesFilterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Filters'**
+  String get myActivitiesFilterApply;
+
+  /// No description provided for @myActivitiesRecreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Recreate'**
+  String get myActivitiesRecreateButton;
+
+  /// No description provided for @myActivitiesRestrictedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Restricted'**
+  String get myActivitiesRestrictedButton;
+
+  /// No description provided for @myActivitiesOpenButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Activity'**
+  String get myActivitiesOpenButton;
+
+  /// No description provided for @myActivitiesRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get myActivitiesRetryButton;
+
+  /// No description provided for @myActivitiesPriceNoteFree.
+  ///
+  /// In en, this message translates to:
+  /// **'no fee'**
+  String get myActivitiesPriceNoteFree;
+
   /// No description provided for @activityPerPerson.
   ///
   /// In en, this message translates to:

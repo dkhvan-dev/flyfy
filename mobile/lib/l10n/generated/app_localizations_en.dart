@@ -925,6 +925,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myActivitiesContinueButton => 'Continue';
 
   @override
+  String get myActivitiesAttendedTab => 'Attended';
+
+  @override
+  String get myActivitiesAttendedEmpty =>
+      'You haven\'t attended any activities yet';
+
+  @override
+  String get myActivitiesAttendedEmptyHint =>
+      'Activities you join will appear here';
+
+  @override
+  String get myActivitiesAttendedLoadFailed =>
+      'Failed to load attended activities';
+
+  @override
+  String get myActivitiesFilterButton => 'Filters';
+
+  @override
+  String get myActivitiesFilterTitle => 'Filters';
+
+  @override
+  String get myActivitiesFilterDateRange => 'Date Range';
+
+  @override
+  String get myActivitiesFilterStartDate => 'Start Date';
+
+  @override
+  String get myActivitiesFilterEndDate => 'End Date';
+
+  @override
+  String get myActivitiesFilterDatePlaceholder => 'dd.mm.yyyy';
+
+  @override
+  String get myActivitiesFilterDateHint =>
+      'Enter the date manually in dd.mm.yyyy format';
+
+  @override
+  String get myActivitiesFilterInvalidDate => 'Enter a valid date';
+
+  @override
+  String get myActivitiesFilterInvalidRange =>
+      'The end date cannot be earlier than the start date';
+
+  @override
+  String get myActivitiesFilterStatus => 'Filter by Status';
+
+  @override
+  String get myActivitiesFilterClear => 'Clear';
+
+  @override
+  String get myActivitiesFilterApply => 'Apply Filters';
+
+  @override
+  String get myActivitiesRecreateButton => 'Recreate';
+
+  @override
+  String get myActivitiesRestrictedButton => 'Edit Restricted';
+
+  @override
+  String get myActivitiesOpenButton => 'Open Activity';
+
+  @override
+  String get myActivitiesRetryButton => 'Try Again';
+
+  @override
+  String get myActivitiesPriceNoteFree => 'no fee';
+
+  @override
   String get activityPerPerson => '/ person';
 
   @override
