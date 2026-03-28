@@ -13,18 +13,22 @@ final class AppConfig {
     }
 
     if (kIsWeb) {
-      return 'http://localhost:8080/api/v1';
+      return "https://improvement-continuity-office-aluminum.trycloudflare.com/api/v1";
+      // return 'http://localhost:8080/api/v1';
     }
 
     if (Platform.isIOS || Platform.isMacOS) {
-      return 'http://localhost:8080/api/v1';
+      return "https://improvement-continuity-office-aluminum.trycloudflare.com/api/v1";
+      // return 'http://localhost:8080/api/v1';
     }
 
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8080/api/v1';
+      return "https://improvement-continuity-office-aluminum.trycloudflare.com/api/v1";
+      // return 'http://10.0.2.2:8080/api/v1';
     }
 
-    return 'http://localhost:8080/api/v1';
+      return "https://improvement-continuity-office-aluminum.trycloudflare.com/api/v1";
+    // return 'http://localhost:8080/api/v1';
   }
 
   static String _normalize(String value) {

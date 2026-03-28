@@ -29,6 +29,34 @@ type PGActivityTxRepository struct {
 	tx pgx.Tx
 }
 
+const activitySelectColumns = `
+	id, host_user_id, source_activity_id,
+	title, description,
+	format, status, visibility, join_mode, moderation_status,
+	category_slug, language_code, timezone,
+	start_at, end_at, registration_deadline,
+	capacity_type, min_participants, max_participants,
+	price_type, price_amount, currency, price_locked_at,
+	requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
+	country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
+	cancellation_reason, cancelled_at, started_at, completed_at, published_at,
+	revision, created_at, updated_at
+`
+
+const qualifiedActivitySelectColumns = `
+	a.id, a.host_user_id, a.source_activity_id,
+	a.title, a.description,
+	a.format, a.status, a.visibility, a.join_mode, a.moderation_status,
+	a.category_slug, a.language_code, a.timezone,
+	a.start_at, a.end_at, a.registration_deadline,
+	a.capacity_type, a.min_participants, a.max_participants,
+	a.price_type, a.price_amount, a.currency, a.price_locked_at,
+	a.requires_profile_completion, a.requires_attendance_confirmation, a.confirmation_deadline,
+	a.country_code, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url, a.visibility_password_hash,
+	a.cancellation_reason, a.cancelled_at, a.started_at, a.completed_at, a.published_at,
+	a.revision, a.created_at, a.updated_at
+`
+
 func (r *PGActivityRepository) WithTx(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
 	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -208,17 +236,7 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 func (r *PGActivityRepository) GetActivityByID(ctx context.Context, activityID uuid.UUID) (*model.Activity, error) {
 	const query = `
 		SELECT
-			id, host_user_id, source_activity_id,
-			title, description,
-			format, status, visibility, join_mode, moderation_status,
-			category_slug, language_code, timezone,
-			start_at, end_at, registration_deadline,
-			capacity_type, min_participants, max_participants,
-			price_type, price_amount, currency, price_locked_at,
-			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
-			cancellation_reason, cancelled_at, started_at, completed_at, published_at,
-			revision, created_at, updated_at
+	` + activitySelectColumns + `
 		FROM activities
 		WHERE id = $1
 		LIMIT 1
@@ -239,17 +257,7 @@ func (r *PGActivityRepository) GetActivityByID(ctx context.Context, activityID u
 func (r *PGActivityRepository) ListActivities(ctx context.Context, filter port.ActivityFilter) ([]*model.Activity, error) {
 	base := `
 		SELECT
-			id, host_user_id, source_activity_id,
-			title, description,
-			format, status, visibility, join_mode, moderation_status,
-			category_slug, language_code, timezone,
-			start_at, end_at, registration_deadline,
-			capacity_type, min_participants, max_participants,
-			price_type, price_amount, currency, price_locked_at,
-			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
-			cancellation_reason, cancelled_at, started_at, completed_at, published_at,
-			revision, created_at, updated_at
+	` + activitySelectColumns + `
 		FROM activities
 		WHERE 1 = 1
 	`
@@ -659,17 +667,7 @@ func (r *PGActivityRepository) CreateParticipantEvent(ctx context.Context, item 
 func (r *PGActivityTxRepository) GetActivityByIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Activity, error) {
 	const query = `
 		SELECT
-			id, host_user_id, source_activity_id,
-			title, description,
-			format, status, visibility, join_mode, moderation_status,
-			category_slug, language_code, timezone,
-			start_at, end_at, registration_deadline,
-			capacity_type, min_participants, max_participants,
-			price_type, price_amount, currency, price_locked_at,
-			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url,
-			cancellation_reason, cancelled_at, started_at, completed_at, published_at,
-			revision, created_at, updated_at
+	` + activitySelectColumns + `
 		FROM activities
 		WHERE id = $1
 		FOR UPDATE
@@ -971,17 +969,7 @@ func (r *PGActivityRepository) ListHostedActivitiesByUserID(
 ) ([]*model.Activity, error) {
 	const query = `
 		SELECT
-			id, host_user_id, source_activity_id,
-			title, description,
-			format, status, visibility, join_mode, moderation_status,
-			category_slug, language_code, timezone,
-			start_at, end_at, registration_deadline,
-			capacity_type, min_participants, max_participants,
-			price_type, price_amount, currency, price_locked_at,
-			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
-			cancellation_reason, cancelled_at, started_at, completed_at, published_at,
-			revision, created_at, updated_at
+	` + activitySelectColumns + `
 		FROM activities
 		WHERE host_user_id = $1
 		ORDER BY start_at DESC, created_at DESC
@@ -1014,17 +1002,7 @@ func (r *PGActivityRepository) ListJoinedActivitiesByUserID(
 ) ([]*model.Activity, error) {
 	const query = `
 		SELECT DISTINCT
-			a.id, a.host_user_id, a.source_activity_id,
-			a.title, a.description,
-			a.format, a.status, a.visibility, a.join_mode, a.moderation_status,
-			a.category_slug, a.language_code, a.timezone,
-			a.start_at, a.end_at, a.registration_deadline,
-			a.capacity_type, a.min_participants, a.max_participants,
-			a.price_type, a.price_amount, a.currency, a.price_locked_at,
-			a.requires_profile_completion, a.requires_attendance_confirmation, a.confirmation_deadline,
-			a.country_code, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url, a.visibility_password_hash,
-			a.cancellation_reason, a.cancelled_at, a.started_at, a.completed_at, a.published_at,
-			a.revision, a.created_at, a.updated_at
+	` + qualifiedActivitySelectColumns + `
 		FROM activities a
 		INNER JOIN activity_participants ap ON ap.activity_id = a.id
 		WHERE ap.user_id = $1

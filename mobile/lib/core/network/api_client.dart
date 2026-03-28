@@ -6,22 +6,20 @@ import '../models/auth_result.dart';
 import '../storage/secure_storage.dart';
 
 class ApiClient {
-  ApiClient({
-    String? baseUrl,
-    SecureStorage? secureStorage,
-    Dio? dio,
-  })  : _secureStorage = secureStorage ?? SecureStorage(),
-        _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
-                sendTimeout: const Duration(seconds: 10),
-                contentType: 'application/json',
-                responseType: ResponseType.json,
-              ),
-            ) {
+  ApiClient({String? baseUrl, SecureStorage? secureStorage, Dio? dio})
+    : _secureStorage = secureStorage ?? SecureStorage(),
+      _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+              sendTimeout: const Duration(seconds: 10),
+              contentType: 'application/json',
+              responseType: ResponseType.json,
+            ),
+          ) {
     _configureInterceptors();
   }
 
@@ -142,6 +140,11 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getUserById(String userId) async {
+    final response = await _dio.get('/users/$userId');
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<void> sendCode(String phone) async {
     await _dio.post('/auth/phone/send-code', data: {'phone': phone});
   }
@@ -173,10 +176,7 @@ class ApiClient {
   Future<void> logout(String accessToken, String refreshToken) async {
     await _dio.post(
       '/auth/logout',
-      data: {
-        'access_token': accessToken,
-        'refresh_token': refreshToken,
-      },
+      data: {'access_token': accessToken, 'refresh_token': refreshToken},
     );
   }
 
@@ -188,7 +188,9 @@ class ApiClient {
     return AuthResult.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<Map<String, dynamic>> updateMeProfile(Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> updateMeProfile(
+    Map<String, dynamic> body,
+  ) async {
     final response = await _dio.put('/users/me/profile', data: body);
     return response.data as Map<String, dynamic>;
   }

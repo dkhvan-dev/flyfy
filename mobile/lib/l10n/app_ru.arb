@@ -130,10 +130,63 @@
   "activityLimitedCapacity": "Количество мест ограничено",
   "activityJoinButton": "Записаться",
   "activityLeaveButton": "Покинуть",
+  "activityLeaveInlineButton": "Покинуть активность",
   "activityJoinSuccess": "Вы записались на активность",
   "activityLeaveSuccess": "Вы покинули активность",
   "activityJoinFailed": "Не удалось записаться на активность",
   "activityLeaveFailed": "Не удалось покинуть активность",
+  "activityGoingTitle": "Участвуют ({count})",
+  "@activityGoingTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityDetailsViewAll": "Показать всех",
+  "activityDetailsLinkCopied": "Ссылка скопирована",
+  "activityDetailsHostedBadge": "Ваша активность",
+  "activityDetailsJoinedBadge": "Вы участвуете",
+  "activityDetailsTotalLabel": "Итого",
+  "activityDetailsChatButton": "Чат активности",
+  "activityDetailsHostFallbackName": "Организатор FlyFy",
+  "activityPaymentScreenTitle": "FLYFY CHECKOUT",
+  "activityPaymentSummaryTitle": "Сводка активности",
+  "activityPaymentBreakdownTitle": "Состав суммы",
+  "activityPaymentMethodTitle": "Способ оплаты",
+  "activityPaymentHostedBy": "Организатор: {host}",
+  "@activityPaymentHostedBy": {
+    "placeholders": {
+      "host": {}
+    }
+  },
+  "activityPaymentAdmissionLabel": "1x участие в активности",
+  "activityPaymentServiceFeeLabel": "Сервисный сбор",
+  "activityPaymentSavedCardLabel": "Сохраненная карта",
+  "activityPaymentCardHolderFallback": "Участник FlyFy",
+  "activityPaymentApplePayLabel": "Apple Pay",
+  "activityPaymentGooglePayLabel": "Google Pay",
+  "activityPaymentConfirmButton": "Подтвердить и оплатить {amount}",
+  "@activityPaymentConfirmButton": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "activityPaymentSecureNote": "Безопасная оплата с 256-битным SSL-шифрованием",
+  "activityPaymentPayButton": "Оплатить",
+  "activityPaymentSuccess": "Оплата отмечена как успешная",
+  "activityPaymentStatusLabel": "Оплата",
+  "activityPaymentPaidValue": "ОПЛАЧЕНО",
+  "activityParticipantFallbackName": "Участник",
+  "activityParticipantsEmpty": "Пока никто не записался",
+  "activityParticipantsLoadFailed": "Не удалось загрузить участников",
+  "activityPrivateJoinTitle": "Приватная активность",
+  "activityPrivateJoinDescription": "Эта активность доступна только по приглашению. Введите пароль, чтобы присоединиться.",
+  "activityPrivateJoinPasswordLabel": "Пароль доступа",
+  "activityPrivateJoinPasswordPlaceholder": "Введите пароль доступа",
+  "activityPrivateJoinPasswordValidation": "Введите пароль от 4 до 64 символов",
+  "activityPrivateJoinInvalidPassword": "Неверный пароль. Попробуйте снова.",
+  "activityPrivateJoinSubmit": "Проверить и присоединиться",
   "homeTitle": "FlyFy",
   "homeSubtitle": "Путешествуйте, находите активности и открывайте новые впечатления",
   "servicesSectionTitle": "Сервисы",
@@ -155,15 +208,33 @@
   "homeSearchHint": "Искать направления, жилье или авто",
   "homeTopDestinations": "Топ направления",
   "homeSeeAll": "Смотреть все",
+  "homeRecommendedBlogs": "Рекомендованные блоги",
   "homeEditorialBadge": "Редакция",
   "homeStoryTitle": "Скрытые жемчужины Центральной Азии",
   "homeStoryDescription": "Откройте секретные тропы и культурные уголки вокруг Алматы.",
-  "homeReadStory": "Читать историю",
+  "homeReadStory": "Читать",
   "homeFeaturedStays": "Рекомендуемое жилье",
   "homeCarRentals": "Аренда авто",
   "homeRecommendedActivities": "Рекомендованные активности",
   "homeFilterButton": "Фильтр",
+  "homeMoreButton": "Ещё",
+  "homeDestinationCharynTitle": "Чарынский каньон",
+  "homeDestinationCharynSubtitle": "Природа и приключения",
+  "homeDestinationLakeTitle": "Большое Алматинское озеро",
+  "homeDestinationLakeSubtitle": "Живописные виды",
+  "homeDestinationKolsaiTitle": "Кольсайские озёра",
+  "homeDestinationKolsaiSubtitle": "Горный отдых",
+  "homeDurationHours": "{hours} ч",
+  "@homeDurationHours": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "homeBookNow": "Забронировать",
   "homeNavHome": "Главная",
+  "homeNavQr": "QR",
+  "homeNavMap": "Карта",
+  "homeNavChats": "Чаты",
   "homeNavMy": "Мои",
   "activitiesEntryTitle": "Активности",
   "activitiesEntrySubtitle": "Найдите офлайн и онлайн события, к которым можно присоединиться",
@@ -367,6 +438,34 @@
   "activitiesFilterCategory": "Категория",
   "activitiesFilterDate": "Дата",
   "activitiesFilterPricing": "Стоимость",
+  "activitiesFilterVisibility": "Видимость",
+  "activitiesDiscoverTitle": "Поиск активностей",
+  "activitiesFilteredEmptyTitle": "По этим фильтрам ничего не найдено",
+  "activitiesFilteredEmptySubtitle": "Попробуйте расширить категорию, диапазон дат или стоимость",
+  "activitiesResultsCount": "{count, plural, =0{Нет активностей} one{{count} активность} few{{count} активности} many{{count} активностей} other{{count} активности}}",
+  "@activitiesResultsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activitiesFiltersCategoriesTitle": "Категории",
+  "activitiesFiltersSelectedCategories": "Выбранные категории",
+  "activitiesShowResults": "Показать {count, plural, =0{0 активностей} one{{count} активность} few{{count} активности} many{{count} активностей} other{{count} активности}}",
+  "@activitiesShowResults": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activitiesAllCategories": "Все категории",
+  "activitiesFiltersPriceRangeTitle": "Диапазон стоимости",
+  "activitiesFiltersVisibilityTitle": "Видимость",
+  "activitiesFilterMinPrice": "Цена от",
+  "activitiesFilterMaxPrice": "Цена до",
+  "activitiesDatePresetToday": "Сегодня",
+  "activitiesDatePresetTomorrow": "Завтра",
+  "activitiesDatePresetThisWeekend": "В эти выходные",
+  "activitiesDatePresetThisWeek": "На этой неделе",
+  "activitiesDatePresetThisMonth": "В этом месяце",
   "activityViewDetails": "Подробнее",
   "activityJoinSession": "Присоединиться",
   "activityGetLink": "Получить ссылку"

@@ -130,10 +130,63 @@
   "activityLimitedCapacity": "Орын саны шектеулі",
   "activityJoinButton": "Жазылу",
   "activityLeaveButton": "Шығу",
+  "activityLeaveInlineButton": "Белсенділіктен шығу",
   "activityJoinSuccess": "Сіз белсенділікке жазылдыңыз",
   "activityLeaveSuccess": "Сіз белсенділіктен шықтыңыз",
   "activityJoinFailed": "Белсенділікке жазылу мүмкін болмады",
   "activityLeaveFailed": "Белсенділіктен шығу мүмкін болмады",
+  "activityGoingTitle": "Қатысушылар ({count})",
+  "@activityGoingTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityDetailsViewAll": "Барлығын көру",
+  "activityDetailsLinkCopied": "Сілтеме көшірілді",
+  "activityDetailsHostedBadge": "Сіздің белсенділігіңіз",
+  "activityDetailsJoinedBadge": "Сіз қатысасыз",
+  "activityDetailsTotalLabel": "Барлығы",
+  "activityDetailsChatButton": "Белсенділік чаты",
+  "activityDetailsHostFallbackName": "FlyFy ұйымдастырушысы",
+  "activityPaymentScreenTitle": "FLYFY CHECKOUT",
+  "activityPaymentSummaryTitle": "Белсенділік туралы мәлімет",
+  "activityPaymentBreakdownTitle": "Сома құрамы",
+  "activityPaymentMethodTitle": "Төлем тәсілі",
+  "activityPaymentHostedBy": "Ұйымдастырушы: {host}",
+  "@activityPaymentHostedBy": {
+    "placeholders": {
+      "host": {}
+    }
+  },
+  "activityPaymentAdmissionLabel": "1x белсенділікке қатысу",
+  "activityPaymentServiceFeeLabel": "Сервис ақысы",
+  "activityPaymentSavedCardLabel": "Сақталған карта",
+  "activityPaymentCardHolderFallback": "FlyFy қатысушысы",
+  "activityPaymentApplePayLabel": "Apple Pay",
+  "activityPaymentGooglePayLabel": "Google Pay",
+  "activityPaymentConfirmButton": "{amount} сомасын растау және төлеу",
+  "@activityPaymentConfirmButton": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "activityPaymentSecureNote": "256-биттік SSL шифрлауымен қорғалған төлем",
+  "activityPaymentPayButton": "Төлеу",
+  "activityPaymentSuccess": "Төлем сәтті деп белгіленді",
+  "activityPaymentStatusLabel": "Төлем",
+  "activityPaymentPaidValue": "ТӨЛЕНДІ",
+  "activityParticipantFallbackName": "Қатысушы",
+  "activityParticipantsEmpty": "Әзірге қатысушы жоқ",
+  "activityParticipantsLoadFailed": "Қатысушыларды жүктеу мүмкін болмады",
+  "activityPrivateJoinTitle": "Жеке белсенділік",
+  "activityPrivateJoinDescription": "Бұл белсенділік тек шақырылғандарға арналған. Қосылу үшін құпиясөзді енгізіңіз.",
+  "activityPrivateJoinPasswordLabel": "Қол жеткізу құпиясөзі",
+  "activityPrivateJoinPasswordPlaceholder": "Қол жеткізу құпиясөзін енгізіңіз",
+  "activityPrivateJoinPasswordValidation": "4-тен 64 таңбаға дейінгі құпиясөзді енгізіңіз",
+  "activityPrivateJoinInvalidPassword": "Қате құпиясөз. Қайта көріңіз.",
+  "activityPrivateJoinSubmit": "Тексеру және қосылу",
   "homeTitle": "FlyFy",
   "homeSubtitle": "Саяхаттап, белсенділіктерді тауып, жаңа әсерлер ашыңыз",
   "servicesSectionTitle": "Сервистер",
@@ -155,15 +208,33 @@
   "homeSearchHint": "Бағыттарды, тұрғын орынды немесе көлікті іздеу",
   "homeTopDestinations": "Үздік бағыттар",
   "homeSeeAll": "Барлығын көру",
+  "homeRecommendedBlogs": "Ұсынылатын блогтар",
   "homeEditorialBadge": "Редакция",
   "homeStoryTitle": "Орталық Азияның жасырын інжу-маржандары",
   "homeStoryDescription": "Алматы маңындағы құпия соқпақтар мен мәдени бұрыштарды ашыңыз.",
-  "homeReadStory": "Оқиғаны оқу",
+  "homeReadStory": "Оқу",
   "homeFeaturedStays": "Ұсынылған тұру орындары",
   "homeCarRentals": "Көлік жалдау",
   "homeRecommendedActivities": "Ұсынылатын белсенділіктер",
   "homeFilterButton": "Сүзгі",
+  "homeMoreButton": "Көбірек",
+  "homeDestinationCharynTitle": "Шарын шатқалы",
+  "homeDestinationCharynSubtitle": "Табиғат пен шытырман",
+  "homeDestinationLakeTitle": "Үлкен Алматы көлі",
+  "homeDestinationLakeSubtitle": "Көркем көріністер",
+  "homeDestinationKolsaiTitle": "Көлсай көлдері",
+  "homeDestinationKolsaiSubtitle": "Таудағы демалыс",
+  "homeDurationHours": "{hours} сағ",
+  "@homeDurationHours": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "homeBookNow": "Брондау",
   "homeNavHome": "Басты",
+  "homeNavQr": "QR",
+  "homeNavMap": "Карта",
+  "homeNavChats": "Чаттар",
   "homeNavMy": "Менің",
   "activitiesEntryTitle": "Белсенділіктер",
   "activitiesEntrySubtitle": "Қосылуға болатын офлайн және онлайн іс-шараларды табыңыз",
@@ -367,6 +438,34 @@
   "activitiesFilterCategory": "Санат",
   "activitiesFilterDate": "Күні",
   "activitiesFilterPricing": "Құны",
+  "activitiesFilterVisibility": "Көрінуі",
+  "activitiesDiscoverTitle": "Белсенділіктерді табу",
+  "activitiesFilteredEmptyTitle": "Бұл сүзгілерге сай белсенділік табылмады",
+  "activitiesFilteredEmptySubtitle": "Санатты, күн аралығын немесе баға шегін кеңейтіп көріңіз",
+  "activitiesResultsCount": "{count, plural, =0{Белсенділік жоқ} =1{1 белсенділік} other{{count} белсенділік}}",
+  "@activitiesResultsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activitiesFiltersCategoriesTitle": "Санаттар",
+  "activitiesFiltersSelectedCategories": "Таңдалған санаттар",
+  "activitiesShowResults": "{count, plural, =0{0 белсенділікті} =1{1 белсенділікті} other{{count} белсенділікті}} көрсету",
+  "@activitiesShowResults": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activitiesAllCategories": "Барлық санат",
+  "activitiesFiltersPriceRangeTitle": "Баға ауқымы",
+  "activitiesFiltersVisibilityTitle": "Көрінуі",
+  "activitiesFilterMinPrice": "Ең төмен баға",
+  "activitiesFilterMaxPrice": "Ең жоғары баға",
+  "activitiesDatePresetToday": "Бүгін",
+  "activitiesDatePresetTomorrow": "Ертең",
+  "activitiesDatePresetThisWeekend": "Осы демалыста",
+  "activitiesDatePresetThisWeek": "Осы аптада",
+  "activitiesDatePresetThisMonth": "Осы айда",
   "activityViewDetails": "Толығырақ",
   "activityJoinSession": "Қосылу",
   "activityGetLink": "Сілтемені алу"

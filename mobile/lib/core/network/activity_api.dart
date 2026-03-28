@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/activities/models/activity_participant_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
 import '../../features/activities/models/update_activity_request.dart';
 import 'api_client.dart';
@@ -115,9 +116,39 @@ class ActivityApi {
     return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<Map<String, dynamic>> joinActivity(String activityId) async {
+  Future<List<ActivityParticipantVm>> getActivityParticipants(
+    String activityId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final response = await _apiClient.dio.get(
+      '/activities/$activityId/participants',
+      queryParameters: {'limit': limit, 'offset': offset},
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    final data = response.data;
+    final items =
+        (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(ActivityParticipantVm.fromJson)
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> joinActivity(
+    String activityId, {
+    String? visibilityPassword,
+  }) async {
     final response = await _apiClient.dio.post(
       '/me/activities/$activityId/join',
+      data: visibilityPassword == null || visibilityPassword.trim().isEmpty
+          ? null
+          : {'password': visibilityPassword.trim()},
     );
 
     return response.data as Map<String, dynamic>;

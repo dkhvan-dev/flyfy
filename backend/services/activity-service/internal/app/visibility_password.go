@@ -44,3 +44,26 @@ func hashVisibilityPassword(password *string) (*string, error) {
 	value := string(hash)
 	return &value, nil
 }
+
+func verifyVisibilityPassword(hash *string, password *string) error {
+	if hash == nil {
+		return model.ErrInvalidVisibilityPassword
+	}
+
+	normalized, err := normalizeVisibilityPassword(
+		enum.ActivityVisibilityPrivate,
+		password,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := bcrypt.CompareHashAndPassword(
+		[]byte(*hash),
+		[]byte(*normalized),
+	); err != nil {
+		return model.ErrInvalidVisibilityPassword
+	}
+
+	return nil
+}

@@ -371,6 +371,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityLeaveButton => 'Покинуть';
 
   @override
+  String get activityLeaveInlineButton => 'Покинуть активность';
+
+  @override
   String get activityJoinSuccess => 'Вы записались на активность';
 
   @override
@@ -381,6 +384,122 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activityLeaveFailed => 'Не удалось покинуть активность';
+
+  @override
+  String activityGoingTitle(int count) {
+    return 'Участвуют ($count)';
+  }
+
+  @override
+  String get activityDetailsViewAll => 'Показать всех';
+
+  @override
+  String get activityDetailsLinkCopied => 'Ссылка скопирована';
+
+  @override
+  String get activityDetailsHostedBadge => 'Ваша активность';
+
+  @override
+  String get activityDetailsJoinedBadge => 'Вы участвуете';
+
+  @override
+  String get activityDetailsTotalLabel => 'Итого';
+
+  @override
+  String get activityDetailsChatButton => 'Чат активности';
+
+  @override
+  String get activityDetailsHostFallbackName => 'Организатор FlyFy';
+
+  @override
+  String get activityPaymentScreenTitle => 'FLYFY CHECKOUT';
+
+  @override
+  String get activityPaymentSummaryTitle => 'Сводка активности';
+
+  @override
+  String get activityPaymentBreakdownTitle => 'Состав суммы';
+
+  @override
+  String get activityPaymentMethodTitle => 'Способ оплаты';
+
+  @override
+  String activityPaymentHostedBy(Object host) {
+    return 'Организатор: $host';
+  }
+
+  @override
+  String get activityPaymentAdmissionLabel => '1x участие в активности';
+
+  @override
+  String get activityPaymentServiceFeeLabel => 'Сервисный сбор';
+
+  @override
+  String get activityPaymentSavedCardLabel => 'Сохраненная карта';
+
+  @override
+  String get activityPaymentCardHolderFallback => 'Участник FlyFy';
+
+  @override
+  String get activityPaymentApplePayLabel => 'Apple Pay';
+
+  @override
+  String get activityPaymentGooglePayLabel => 'Google Pay';
+
+  @override
+  String activityPaymentConfirmButton(Object amount) {
+    return 'Подтвердить и оплатить $amount';
+  }
+
+  @override
+  String get activityPaymentSecureNote =>
+      'Безопасная оплата с 256-битным SSL-шифрованием';
+
+  @override
+  String get activityPaymentPayButton => 'Оплатить';
+
+  @override
+  String get activityPaymentSuccess => 'Оплата отмечена как успешная';
+
+  @override
+  String get activityPaymentStatusLabel => 'Оплата';
+
+  @override
+  String get activityPaymentPaidValue => 'ОПЛАЧЕНО';
+
+  @override
+  String get activityParticipantFallbackName => 'Участник';
+
+  @override
+  String get activityParticipantsEmpty => 'Пока никто не записался';
+
+  @override
+  String get activityParticipantsLoadFailed =>
+      'Не удалось загрузить участников';
+
+  @override
+  String get activityPrivateJoinTitle => 'Приватная активность';
+
+  @override
+  String get activityPrivateJoinDescription =>
+      'Эта активность доступна только по приглашению. Введите пароль, чтобы присоединиться.';
+
+  @override
+  String get activityPrivateJoinPasswordLabel => 'Пароль доступа';
+
+  @override
+  String get activityPrivateJoinPasswordPlaceholder => 'Введите пароль доступа';
+
+  @override
+  String get activityPrivateJoinPasswordValidation =>
+      'Введите пароль от 4 до 64 символов';
+
+  @override
+  String get activityPrivateJoinInvalidPassword =>
+      'Неверный пароль. Попробуйте снова.';
+
+  @override
+  String get activityPrivateJoinSubmit => 'Проверить и присоединиться';
 
   @override
   String get homeTitle => 'FlyFy';
@@ -434,6 +553,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeSeeAll => 'Смотреть все';
 
   @override
+  String get homeRecommendedBlogs => 'Рекомендованные блоги';
+
+  @override
   String get homeEditorialBadge => 'Редакция';
 
   @override
@@ -444,7 +566,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Откройте секретные тропы и культурные уголки вокруг Алматы.';
 
   @override
-  String get homeReadStory => 'Читать историю';
+  String get homeReadStory => 'Читать';
 
   @override
   String get homeFeaturedStays => 'Рекомендуемое жилье';
@@ -459,7 +581,45 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeFilterButton => 'Фильтр';
 
   @override
+  String get homeMoreButton => 'Ещё';
+
+  @override
+  String get homeDestinationCharynTitle => 'Чарынский каньон';
+
+  @override
+  String get homeDestinationCharynSubtitle => 'Природа и приключения';
+
+  @override
+  String get homeDestinationLakeTitle => 'Большое Алматинское озеро';
+
+  @override
+  String get homeDestinationLakeSubtitle => 'Живописные виды';
+
+  @override
+  String get homeDestinationKolsaiTitle => 'Кольсайские озёра';
+
+  @override
+  String get homeDestinationKolsaiSubtitle => 'Горный отдых';
+
+  @override
+  String homeDurationHours(Object hours) {
+    return '$hours ч';
+  }
+
+  @override
+  String get homeBookNow => 'Забронировать';
+
+  @override
   String get homeNavHome => 'Главная';
+
+  @override
+  String get homeNavQr => 'QR';
+
+  @override
+  String get homeNavMap => 'Карта';
+
+  @override
+  String get homeNavChats => 'Чаты';
 
   @override
   String get homeNavMy => 'Мои';
@@ -1040,6 +1200,84 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activitiesFilterPricing => 'Стоимость';
+
+  @override
+  String get activitiesFilterVisibility => 'Видимость';
+
+  @override
+  String get activitiesDiscoverTitle => 'Поиск активностей';
+
+  @override
+  String get activitiesFilteredEmptyTitle =>
+      'По этим фильтрам ничего не найдено';
+
+  @override
+  String get activitiesFilteredEmptySubtitle =>
+      'Попробуйте расширить категорию, диапазон дат или стоимость';
+
+  @override
+  String activitiesResultsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count активности',
+      many: '$count активностей',
+      few: '$count активности',
+      one: '$count активность',
+      zero: 'Нет активностей',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get activitiesFiltersCategoriesTitle => 'Категории';
+
+  @override
+  String get activitiesFiltersSelectedCategories => 'Выбранные категории';
+
+  @override
+  String activitiesShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count активности',
+      many: '$count активностей',
+      few: '$count активности',
+      one: '$count активность',
+      zero: '0 активностей',
+    );
+    return 'Показать $_temp0';
+  }
+
+  @override
+  String get activitiesAllCategories => 'Все категории';
+
+  @override
+  String get activitiesFiltersPriceRangeTitle => 'Диапазон стоимости';
+
+  @override
+  String get activitiesFiltersVisibilityTitle => 'Видимость';
+
+  @override
+  String get activitiesFilterMinPrice => 'Цена от';
+
+  @override
+  String get activitiesFilterMaxPrice => 'Цена до';
+
+  @override
+  String get activitiesDatePresetToday => 'Сегодня';
+
+  @override
+  String get activitiesDatePresetTomorrow => 'Завтра';
+
+  @override
+  String get activitiesDatePresetThisWeekend => 'В эти выходные';
+
+  @override
+  String get activitiesDatePresetThisWeek => 'На этой неделе';
+
+  @override
+  String get activitiesDatePresetThisMonth => 'В этом месяце';
 
   @override
   String get activityViewDetails => 'Подробнее';

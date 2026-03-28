@@ -14,6 +14,11 @@ class ProfileApi {
     return UserProfileVm.fromJson(data);
   }
 
+  Future<UserProfileVm> getUserById(String userId) async {
+    final data = await _apiClient.getUserById(userId);
+    return UserProfileVm.fromJson(data);
+  }
+
   Future<UserProfileVm> getOrInitMe({
     String? primaryPhoneHint,
     String? primaryEmailHint,

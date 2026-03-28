@@ -58,6 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 375;
+    final isNarrow = screenWidth < 360;
 
     return Scaffold(
       body: Stack(
@@ -84,342 +87,548 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           SafeArea(
-            child: Column(
-              children: [
-                // Nav & Logo
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      InkWell(
-                        onTap: () => context.go('/'),
-                        borderRadius: BorderRadius.circular(999),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: const BoxDecoration(
-                                color: AppColors.accent,
-                                shape: BoxShape.circle,
-                              ),
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                Icons.flight_takeoff,
-                                color: AppColors.background,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'FlyFy',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                                letterSpacing: -1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => context.go('/'),
-                        child: Text(
-                          'Skip',
-                          style: TextStyle(
-                            color: AppColors.textPrimary.withValues(alpha: 0.8),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+                final keyboardOpen = bottomInset > 0;
+                final horizontalPadding = isCompact ? 20.0 : 24.0;
+                final cardPadding = isCompact ? 24.0 : 32.0;
+                final bottomCardPadding = keyboardOpen ? 20.0 : 48.0;
+                final titleSize = isCompact ? 28.0 : 32.0;
+                final sectionGap = keyboardOpen ? 24.0 : 32.0;
 
-                // Glass-Morphic Card
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 48),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: AppColors.background.withValues(alpha: 0.4),
-                          border: Border.all(
-                            color: AppColors.accent.withValues(alpha: 0.1),
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              l10n.welcomeTitle,
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                                height: 1.1,
-                                letterSpacing: -0.5,
-                              ),
+                return AnimatedPadding(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  padding: EdgeInsets.only(bottom: bottomInset),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: isCompact ? 20.0 : 24.0,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.welcomeDescription,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textSecondary,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            // Phone Input
-                            TextField(
-                              controller: _phoneController,
-                              focusNode: _phoneFocusNode,
-                              keyboardType: TextInputType.phone,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'[0-9+]'),
-                                ),
-                                LengthLimitingTextInputFormatter(16),
-                                _PhonePrefixFormatter(),
-                              ],
-                              decoration: InputDecoration(
-                                labelStyle: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                ),
-                                hintText: '+7 705 169 8779',
-                                hintStyle: const TextStyle(
-                                  color: AppColors.textCaption,
-                                ),
-                                filled: true,
-                                fillColor: Colors.white.withValues(alpha: 0.05),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 16,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                  ),
-                                ),
-                                prefixIcon: const Icon(
-                                  Icons.phone_iphone,
-                                  color: AppColors.accent,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            // Send Code
-                            Consumer<AuthProvider>(
-                              builder: (consumerContext, auth, _) {
-                                if (auth.isSendingOtp) {
-                                  return Container(
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accent,
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: AppColors.background,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    ),
-                                  );
-                                }
-
-                                return ElevatedButton(
-                                  onPressed: _submit,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.accent,
-                                    foregroundColor: AppColors.background,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    elevation: 0,
-                                  ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                InkWell(
+                                  onTap: () => context.go('/'),
+                                  borderRadius: BorderRadius.circular(999),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(Icons.sms_rounded, size: 20),
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.accent,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: const Icon(
+                                          Icons.flight_takeoff,
+                                          color: AppColors.background,
+                                          size: 24,
+                                        ),
+                                      ),
                                       const SizedBox(width: 8),
-                                      Text(
-                                        l10n.authByPhone,
+                                      const Text(
+                                        'FlyFy',
                                         style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.textPrimary,
+                                          letterSpacing: -1,
                                         ),
                                       ),
                                     ],
                                   ),
-                                );
-                              },
+                                ),
+                                TextButton(
+                                  onPressed: () => context.go('/'),
+                                  child: Text(
+                                    'Skip',
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 12),
-                            // OAuth Buttons
-                            Consumer<AuthProvider>(
-                              builder: (consumerContext, auth, _) {
-                                final isAnyOAuthLoading =
-                                    auth.isGoogleLoading || auth.isAppleLoading;
-
-                                return Row(
-                                  children: [
-                                    Expanded(
-                                      child: _OAuthButton(
-                                        icon: Icons.g_mobiledata,
-                                        label: 'Google',
-                                        isLoading: auth.isGoogleLoading,
-                                        onPressed: isAnyOAuthLoading
-                                            ? null
-                                            : () async {
-                                                final ctx = context;
-                                                final authProvider = ctx
-                                                    .read<AuthProvider>();
-                                                final success =
-                                                    await authProvider
-                                                        .loginWithGoogle(
-                                                          'mock_google_token',
-                                                        );
-
-                                                if (!ctx.mounted) return;
-                                                if (success) {
-                                                  await ctx
-                                                      .read<SessionProvider>()
-                                                      .restoreSession(
-                                                        primaryPhoneHint:
-                                                            authProvider
-                                                                .lastPrimaryPhoneHint,
-                                                        primaryEmailHint:
-                                                            authProvider
-                                                                .lastPrimaryEmailHint,
-                                                      );
-                                                  if (!ctx.mounted) return;
-                                                  ctx.go(widget.from ?? '/');
-                                                } else {
-                                                  await showErrorDialog(
-                                                    ctx,
-                                                    title: l10n.error,
-                                                    message:
-                                                        authProvider
-                                                            .errorMessage ??
-                                                        l10n.googleLoginFailed,
-                                                  );
-                                                }
-                                              },
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: bottomCardPadding),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 12,
+                                  sigmaY: 12,
+                                ),
+                                child: Container(
+                                  padding: EdgeInsets.all(cardPadding),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.background.withValues(
+                                      alpha: 0.4,
+                                    ),
+                                    border: Border.all(
+                                      color: AppColors.accent.withValues(
+                                        alpha: 0.1,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _OAuthButton(
-                                        icon: Icons.apple,
-                                        label: 'Apple',
-                                        isLoading: auth.isAppleLoading,
-                                        onPressed: isAnyOAuthLoading
-                                            ? null
-                                            : () async {
-                                                final ctx = context;
-                                                final authProvider = ctx
-                                                    .read<AuthProvider>();
-                                                final success =
-                                                    await authProvider
-                                                        .loginWithApple(
-                                                          'mock_apple_token',
-                                                        );
-
-                                                if (!ctx.mounted) return;
-                                                if (success) {
-                                                  await ctx
-                                                      .read<SessionProvider>()
-                                                      .restoreSession(
-                                                        primaryPhoneHint:
-                                                            authProvider
-                                                                .lastPrimaryPhoneHint,
-                                                        primaryEmailHint:
-                                                            authProvider
-                                                                .lastPrimaryEmailHint,
-                                                      );
-                                                  if (!ctx.mounted) return;
-                                                  ctx.go(widget.from ?? '/');
-                                                } else {
-                                                  await showErrorDialog(
-                                                    ctx,
-                                                    title: l10n.error,
-                                                    message:
-                                                        authProvider
-                                                            .errorMessage ??
-                                                        l10n.appleLoginFailed,
-                                                  );
-                                                }
-                                              },
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        l10n.welcomeTitle,
+                                        style: TextStyle(
+                                          fontSize: titleSize,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                          height: 1.1,
+                                          letterSpacing: -0.5,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            if (!_isCheckingBiometrics &&
-                                _canUseBiometrics) ...[
-                              const SizedBox(height: 12),
-                              Consumer<AuthProvider>(
-                                builder: (consumerContext, auth, _) {
-                                  final isAnyLoading =
-                                      auth.isGoogleLoading ||
-                                      auth.isAppleLoading ||
-                                      auth.isSendingOtp ||
-                                      auth.isVerifyingOtp;
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        l10n.welcomeDescription,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: AppColors.textSecondary,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                      SizedBox(height: sectionGap),
+                                      TextField(
+                                        controller: _phoneController,
+                                        focusNode: _phoneFocusNode,
+                                        keyboardType: TextInputType.phone,
+                                        onTapOutside: (_) =>
+                                            FocusScope.of(context).unfocus(),
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.allow(
+                                            RegExp(r'[0-9+]'),
+                                          ),
+                                          LengthLimitingTextInputFormatter(16),
+                                          _PhonePrefixFormatter(),
+                                        ],
+                                        decoration: InputDecoration(
+                                          labelStyle: const TextStyle(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                          hintText: '+7 705 169 8779',
+                                          hintStyle: const TextStyle(
+                                            color: AppColors.textCaption,
+                                          ),
+                                          filled: true,
+                                          fillColor: Colors.white.withValues(
+                                            alpha: 0.05,
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 20,
+                                                vertical: 16,
+                                              ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                            ),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                            ),
+                                          ),
+                                          prefixIcon: const Icon(
+                                            Icons.phone_iphone,
+                                            color: AppColors.accent,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Consumer<AuthProvider>(
+                                        builder: (consumerContext, auth, _) {
+                                          if (auth.isSendingOtp) {
+                                            return Container(
+                                              height: 56,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.accent,
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: const SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color:
+                                                          AppColors.background,
+                                                      strokeWidth: 2.5,
+                                                    ),
+                                              ),
+                                            );
+                                          }
 
-                                  return _OAuthButton(
-                                    icon: Icons.fingerprint,
-                                    label: l10n.loginWithBiometrics,
-                                    isLoading: false,
-                                    onPressed: isAnyLoading
-                                        ? null
-                                        : _loginWithBiometrics,
-                                  );
-                                },
+                                          return ElevatedButton(
+                                            onPressed: _submit,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.accent,
+                                              foregroundColor:
+                                                  AppColors.background,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 16,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                              ),
+                                              elevation: 0,
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(
+                                                  Icons.sms_rounded,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  l10n.authByPhone,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Consumer<AuthProvider>(
+                                        builder: (consumerContext, auth, _) {
+                                          final isAnyOAuthLoading =
+                                              auth.isGoogleLoading ||
+                                              auth.isAppleLoading;
+
+                                          if (isNarrow) {
+                                            return Column(
+                                              children: [
+                                                _OAuthButton(
+                                                  icon: Icons.g_mobiledata,
+                                                  label: 'Google',
+                                                  isLoading:
+                                                      auth.isGoogleLoading,
+                                                  onPressed: isAnyOAuthLoading
+                                                      ? null
+                                                      : () async {
+                                                          final ctx = context;
+                                                          final authProvider =
+                                                              ctx
+                                                                  .read<
+                                                                    AuthProvider
+                                                                  >();
+                                                          final success =
+                                                              await authProvider
+                                                                  .loginWithGoogle(
+                                                                    'mock_google_token',
+                                                                  );
+
+                                                          if (!ctx.mounted) {
+                                                            return;
+                                                          }
+                                                          if (success) {
+                                                            await ctx
+                                                                .read<
+                                                                  SessionProvider
+                                                                >()
+                                                                .restoreSession(
+                                                                  primaryPhoneHint:
+                                                                      authProvider
+                                                                          .lastPrimaryPhoneHint,
+                                                                  primaryEmailHint:
+                                                                      authProvider
+                                                                          .lastPrimaryEmailHint,
+                                                                );
+                                                            if (!ctx.mounted) {
+                                                              return;
+                                                            }
+                                                            ctx.go(
+                                                              widget.from ??
+                                                                  '/',
+                                                            );
+                                                          } else {
+                                                            await showErrorDialog(
+                                                              ctx,
+                                                              title: l10n.error,
+                                                              message:
+                                                                  authProvider
+                                                                      .errorMessage ??
+                                                                  l10n.googleLoginFailed,
+                                                            );
+                                                          }
+                                                        },
+                                                ),
+                                                const SizedBox(height: 12),
+                                                _OAuthButton(
+                                                  icon: Icons.apple,
+                                                  label: 'Apple',
+                                                  isLoading:
+                                                      auth.isAppleLoading,
+                                                  onPressed: isAnyOAuthLoading
+                                                      ? null
+                                                      : () async {
+                                                          final ctx = context;
+                                                          final authProvider =
+                                                              ctx
+                                                                  .read<
+                                                                    AuthProvider
+                                                                  >();
+                                                          final success =
+                                                              await authProvider
+                                                                  .loginWithApple(
+                                                                    'mock_apple_token',
+                                                                  );
+
+                                                          if (!ctx.mounted) {
+                                                            return;
+                                                          }
+                                                          if (success) {
+                                                            await ctx
+                                                                .read<
+                                                                  SessionProvider
+                                                                >()
+                                                                .restoreSession(
+                                                                  primaryPhoneHint:
+                                                                      authProvider
+                                                                          .lastPrimaryPhoneHint,
+                                                                  primaryEmailHint:
+                                                                      authProvider
+                                                                          .lastPrimaryEmailHint,
+                                                                );
+                                                            if (!ctx.mounted) {
+                                                              return;
+                                                            }
+                                                            ctx.go(
+                                                              widget.from ??
+                                                                  '/',
+                                                            );
+                                                          } else {
+                                                            await showErrorDialog(
+                                                              ctx,
+                                                              title: l10n.error,
+                                                              message:
+                                                                  authProvider
+                                                                      .errorMessage ??
+                                                                  l10n.appleLoginFailed,
+                                                            );
+                                                          }
+                                                        },
+                                                ),
+                                              ],
+                                            );
+                                          }
+
+                                          return Row(
+                                            children: [
+                                              Expanded(
+                                                child: _OAuthButton(
+                                                  icon: Icons.g_mobiledata,
+                                                  label: 'Google',
+                                                  isLoading:
+                                                      auth.isGoogleLoading,
+                                                  onPressed: isAnyOAuthLoading
+                                                      ? null
+                                                      : () async {
+                                                          final ctx = context;
+                                                          final authProvider =
+                                                              ctx
+                                                                  .read<
+                                                                    AuthProvider
+                                                                  >();
+                                                          final success =
+                                                              await authProvider
+                                                                  .loginWithGoogle(
+                                                                    'mock_google_token',
+                                                                  );
+
+                                                          if (!ctx.mounted) {
+                                                            return;
+                                                          }
+                                                          if (success) {
+                                                            await ctx
+                                                                .read<
+                                                                  SessionProvider
+                                                                >()
+                                                                .restoreSession(
+                                                                  primaryPhoneHint:
+                                                                      authProvider
+                                                                          .lastPrimaryPhoneHint,
+                                                                  primaryEmailHint:
+                                                                      authProvider
+                                                                          .lastPrimaryEmailHint,
+                                                                );
+                                                            if (!ctx.mounted) {
+                                                              return;
+                                                            }
+                                                            ctx.go(
+                                                              widget.from ??
+                                                                  '/',
+                                                            );
+                                                          } else {
+                                                            await showErrorDialog(
+                                                              ctx,
+                                                              title: l10n.error,
+                                                              message:
+                                                                  authProvider
+                                                                      .errorMessage ??
+                                                                  l10n.googleLoginFailed,
+                                                            );
+                                                          }
+                                                        },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: _OAuthButton(
+                                                  icon: Icons.apple,
+                                                  label: 'Apple',
+                                                  isLoading:
+                                                      auth.isAppleLoading,
+                                                  onPressed: isAnyOAuthLoading
+                                                      ? null
+                                                      : () async {
+                                                          final ctx = context;
+                                                          final authProvider =
+                                                              ctx
+                                                                  .read<
+                                                                    AuthProvider
+                                                                  >();
+                                                          final success =
+                                                              await authProvider
+                                                                  .loginWithApple(
+                                                                    'mock_apple_token',
+                                                                  );
+
+                                                          if (!ctx.mounted) {
+                                                            return;
+                                                          }
+                                                          if (success) {
+                                                            await ctx
+                                                                .read<
+                                                                  SessionProvider
+                                                                >()
+                                                                .restoreSession(
+                                                                  primaryPhoneHint:
+                                                                      authProvider
+                                                                          .lastPrimaryPhoneHint,
+                                                                  primaryEmailHint:
+                                                                      authProvider
+                                                                          .lastPrimaryEmailHint,
+                                                                );
+                                                            if (!ctx.mounted) {
+                                                              return;
+                                                            }
+                                                            ctx.go(
+                                                              widget.from ??
+                                                                  '/',
+                                                            );
+                                                          } else {
+                                                            await showErrorDialog(
+                                                              ctx,
+                                                              title: l10n.error,
+                                                              message:
+                                                                  authProvider
+                                                                      .errorMessage ??
+                                                                  l10n.appleLoginFailed,
+                                                            );
+                                                          }
+                                                        },
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                      if (!_isCheckingBiometrics &&
+                                          _canUseBiometrics) ...[
+                                        const SizedBox(height: 12),
+                                        Consumer<AuthProvider>(
+                                          builder: (consumerContext, auth, _) {
+                                            final isAnyLoading =
+                                                auth.isGoogleLoading ||
+                                                auth.isAppleLoading ||
+                                                auth.isSendingOtp ||
+                                                auth.isVerifyingOtp;
+
+                                            return _OAuthButton(
+                                              icon: Icons.fingerprint,
+                                              label: l10n.loginWithBiometrics,
+                                              isLoading: false,
+                                              onPressed: isAnyLoading
+                                                  ? null
+                                                  : _loginWithBiometrics,
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                      const SizedBox(height: 24),
+                                      TermsAgreementRichText(
+                                        text: l10n.termsAgreementText,
+                                        onTermsTap: () {},
+                                        onPrivacyTap: () {},
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ],
-                            const SizedBox(height: 24),
-                            // Footer Terms
-                            TermsAgreementRichText(
-                              text: l10n.termsAgreementText,
-                              onTermsTap: () {},
-                              onPrivacyTap: () {},
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
           // Decorative border at bottom absolute

@@ -374,6 +374,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityLeaveButton => 'Шығу';
 
   @override
+  String get activityLeaveInlineButton => 'Белсенділіктен шығу';
+
+  @override
   String get activityJoinSuccess => 'Сіз белсенділікке жазылдыңыз';
 
   @override
@@ -384,6 +387,123 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get activityLeaveFailed => 'Белсенділіктен шығу мүмкін болмады';
+
+  @override
+  String activityGoingTitle(int count) {
+    return 'Қатысушылар ($count)';
+  }
+
+  @override
+  String get activityDetailsViewAll => 'Барлығын көру';
+
+  @override
+  String get activityDetailsLinkCopied => 'Сілтеме көшірілді';
+
+  @override
+  String get activityDetailsHostedBadge => 'Сіздің белсенділігіңіз';
+
+  @override
+  String get activityDetailsJoinedBadge => 'Сіз қатысасыз';
+
+  @override
+  String get activityDetailsTotalLabel => 'Барлығы';
+
+  @override
+  String get activityDetailsChatButton => 'Белсенділік чаты';
+
+  @override
+  String get activityDetailsHostFallbackName => 'FlyFy ұйымдастырушысы';
+
+  @override
+  String get activityPaymentScreenTitle => 'FLYFY CHECKOUT';
+
+  @override
+  String get activityPaymentSummaryTitle => 'Белсенділік туралы мәлімет';
+
+  @override
+  String get activityPaymentBreakdownTitle => 'Сома құрамы';
+
+  @override
+  String get activityPaymentMethodTitle => 'Төлем тәсілі';
+
+  @override
+  String activityPaymentHostedBy(Object host) {
+    return 'Ұйымдастырушы: $host';
+  }
+
+  @override
+  String get activityPaymentAdmissionLabel => '1x белсенділікке қатысу';
+
+  @override
+  String get activityPaymentServiceFeeLabel => 'Сервис ақысы';
+
+  @override
+  String get activityPaymentSavedCardLabel => 'Сақталған карта';
+
+  @override
+  String get activityPaymentCardHolderFallback => 'FlyFy қатысушысы';
+
+  @override
+  String get activityPaymentApplePayLabel => 'Apple Pay';
+
+  @override
+  String get activityPaymentGooglePayLabel => 'Google Pay';
+
+  @override
+  String activityPaymentConfirmButton(Object amount) {
+    return '$amount сомасын растау және төлеу';
+  }
+
+  @override
+  String get activityPaymentSecureNote =>
+      '256-биттік SSL шифрлауымен қорғалған төлем';
+
+  @override
+  String get activityPaymentPayButton => 'Төлеу';
+
+  @override
+  String get activityPaymentSuccess => 'Төлем сәтті деп белгіленді';
+
+  @override
+  String get activityPaymentStatusLabel => 'Төлем';
+
+  @override
+  String get activityPaymentPaidValue => 'ТӨЛЕНДІ';
+
+  @override
+  String get activityParticipantFallbackName => 'Қатысушы';
+
+  @override
+  String get activityParticipantsEmpty => 'Әзірге қатысушы жоқ';
+
+  @override
+  String get activityParticipantsLoadFailed =>
+      'Қатысушыларды жүктеу мүмкін болмады';
+
+  @override
+  String get activityPrivateJoinTitle => 'Жеке белсенділік';
+
+  @override
+  String get activityPrivateJoinDescription =>
+      'Бұл белсенділік тек шақырылғандарға арналған. Қосылу үшін құпиясөзді енгізіңіз.';
+
+  @override
+  String get activityPrivateJoinPasswordLabel => 'Қол жеткізу құпиясөзі';
+
+  @override
+  String get activityPrivateJoinPasswordPlaceholder =>
+      'Қол жеткізу құпиясөзін енгізіңіз';
+
+  @override
+  String get activityPrivateJoinPasswordValidation =>
+      '4-тен 64 таңбаға дейінгі құпиясөзді енгізіңіз';
+
+  @override
+  String get activityPrivateJoinInvalidPassword =>
+      'Қате құпиясөз. Қайта көріңіз.';
+
+  @override
+  String get activityPrivateJoinSubmit => 'Тексеру және қосылу';
 
   @override
   String get homeTitle => 'FlyFy';
@@ -437,6 +557,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeSeeAll => 'Барлығын көру';
 
   @override
+  String get homeRecommendedBlogs => 'Ұсынылатын блогтар';
+
+  @override
   String get homeEditorialBadge => 'Редакция';
 
   @override
@@ -447,7 +570,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Алматы маңындағы құпия соқпақтар мен мәдени бұрыштарды ашыңыз.';
 
   @override
-  String get homeReadStory => 'Оқиғаны оқу';
+  String get homeReadStory => 'Оқу';
 
   @override
   String get homeFeaturedStays => 'Ұсынылған тұру орындары';
@@ -462,7 +585,45 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeFilterButton => 'Сүзгі';
 
   @override
+  String get homeMoreButton => 'Көбірек';
+
+  @override
+  String get homeDestinationCharynTitle => 'Шарын шатқалы';
+
+  @override
+  String get homeDestinationCharynSubtitle => 'Табиғат пен шытырман';
+
+  @override
+  String get homeDestinationLakeTitle => 'Үлкен Алматы көлі';
+
+  @override
+  String get homeDestinationLakeSubtitle => 'Көркем көріністер';
+
+  @override
+  String get homeDestinationKolsaiTitle => 'Көлсай көлдері';
+
+  @override
+  String get homeDestinationKolsaiSubtitle => 'Таудағы демалыс';
+
+  @override
+  String homeDurationHours(Object hours) {
+    return '$hours сағ';
+  }
+
+  @override
+  String get homeBookNow => 'Брондау';
+
+  @override
   String get homeNavHome => 'Басты';
+
+  @override
+  String get homeNavQr => 'QR';
+
+  @override
+  String get homeNavMap => 'Карта';
+
+  @override
+  String get homeNavChats => 'Чаттар';
 
   @override
   String get homeNavMy => 'Менің';
@@ -1046,6 +1207,80 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get activitiesFilterPricing => 'Құны';
+
+  @override
+  String get activitiesFilterVisibility => 'Көрінуі';
+
+  @override
+  String get activitiesDiscoverTitle => 'Белсенділіктерді табу';
+
+  @override
+  String get activitiesFilteredEmptyTitle =>
+      'Бұл сүзгілерге сай белсенділік табылмады';
+
+  @override
+  String get activitiesFilteredEmptySubtitle =>
+      'Санатты, күн аралығын немесе баға шегін кеңейтіп көріңіз';
+
+  @override
+  String activitiesResultsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count белсенділік',
+      one: '1 белсенділік',
+      zero: 'Белсенділік жоқ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get activitiesFiltersCategoriesTitle => 'Санаттар';
+
+  @override
+  String get activitiesFiltersSelectedCategories => 'Таңдалған санаттар';
+
+  @override
+  String activitiesShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count белсенділікті',
+      one: '1 белсенділікті',
+      zero: '0 белсенділікті',
+    );
+    return '$_temp0 көрсету';
+  }
+
+  @override
+  String get activitiesAllCategories => 'Барлық санат';
+
+  @override
+  String get activitiesFiltersPriceRangeTitle => 'Баға ауқымы';
+
+  @override
+  String get activitiesFiltersVisibilityTitle => 'Көрінуі';
+
+  @override
+  String get activitiesFilterMinPrice => 'Ең төмен баға';
+
+  @override
+  String get activitiesFilterMaxPrice => 'Ең жоғары баға';
+
+  @override
+  String get activitiesDatePresetToday => 'Бүгін';
+
+  @override
+  String get activitiesDatePresetTomorrow => 'Ертең';
+
+  @override
+  String get activitiesDatePresetThisWeekend => 'Осы демалыста';
+
+  @override
+  String get activitiesDatePresetThisWeek => 'Осы аптада';
+
+  @override
+  String get activitiesDatePresetThisMonth => 'Осы айда';
 
   @override
   String get activityViewDetails => 'Толығырақ';

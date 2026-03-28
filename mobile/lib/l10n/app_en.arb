@@ -130,10 +130,63 @@
   "activityLimitedCapacity": "Limited number of places",
   "activityJoinButton": "Join",
   "activityLeaveButton": "Leave",
+  "activityLeaveInlineButton": "Leave Activity",
   "activityJoinSuccess": "You joined the activity",
   "activityLeaveSuccess": "You left the activity",
   "activityJoinFailed": "Failed to join the activity",
   "activityLeaveFailed": "Failed to leave the activity",
+  "activityGoingTitle": "Going ({count})",
+  "@activityGoingTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityDetailsViewAll": "View all",
+  "activityDetailsLinkCopied": "Link copied",
+  "activityDetailsHostedBadge": "Hosted by you",
+  "activityDetailsJoinedBadge": "Joined",
+  "activityDetailsTotalLabel": "Total",
+  "activityDetailsChatButton": "Open chat",
+  "activityDetailsHostFallbackName": "FlyFy Host",
+  "activityPaymentScreenTitle": "FLYFY CHECKOUT",
+  "activityPaymentSummaryTitle": "Activity Summary",
+  "activityPaymentBreakdownTitle": "Price Breakdown",
+  "activityPaymentMethodTitle": "Payment Method",
+  "activityPaymentHostedBy": "Hosted by {host}",
+  "@activityPaymentHostedBy": {
+    "placeholders": {
+      "host": {}
+    }
+  },
+  "activityPaymentAdmissionLabel": "1x Activity Access",
+  "activityPaymentServiceFeeLabel": "Service Fee",
+  "activityPaymentSavedCardLabel": "Saved Card",
+  "activityPaymentCardHolderFallback": "FlyFy Member",
+  "activityPaymentApplePayLabel": "Apple Pay",
+  "activityPaymentGooglePayLabel": "Google Pay",
+  "activityPaymentConfirmButton": "Confirm & Pay {amount}",
+  "@activityPaymentConfirmButton": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "activityPaymentSecureNote": "Secure 256-bit SSL encrypted payment",
+  "activityPaymentPayButton": "Pay",
+  "activityPaymentSuccess": "Payment marked as paid",
+  "activityPaymentStatusLabel": "Payment",
+  "activityPaymentPaidValue": "PAID",
+  "activityParticipantFallbackName": "Participant",
+  "activityParticipantsEmpty": "No participants yet",
+  "activityParticipantsLoadFailed": "Could not load participants right now",
+  "activityPrivateJoinTitle": "Private Activity",
+  "activityPrivateJoinDescription": "This activity is curated for a select group. Please enter the invitation password to join.",
+  "activityPrivateJoinPasswordLabel": "Access Password",
+  "activityPrivateJoinPasswordPlaceholder": "Enter access password",
+  "activityPrivateJoinPasswordValidation": "Enter a password from 4 to 64 characters",
+  "activityPrivateJoinInvalidPassword": "Incorrect password. Try again.",
+  "activityPrivateJoinSubmit": "Verify & Join",
   "homeTitle": "FlyFy",
   "homeSubtitle": "Travel, discover activities, and explore new experiences",
   "servicesSectionTitle": "Services",
@@ -155,15 +208,33 @@
   "homeSearchHint": "Search destinations, stays or cars",
   "homeTopDestinations": "Top Destinations",
   "homeSeeAll": "See all",
+  "homeRecommendedBlogs": "Recommended Blogs",
   "homeEditorialBadge": "Editorial",
   "homeStoryTitle": "Hidden Gems of Central Asia",
   "homeStoryDescription": "Discover secret trails and cultural corners across Almaty's adventurous side.",
-  "homeReadStory": "Read Story",
+  "homeReadStory": "Read",
   "homeFeaturedStays": "Featured Stays",
   "homeCarRentals": "Car Rentals",
   "homeRecommendedActivities": "Recommended Activities",
   "homeFilterButton": "Filter",
+  "homeMoreButton": "More",
+  "homeDestinationCharynTitle": "Charyn Canyon",
+  "homeDestinationCharynSubtitle": "Nature & Adventure",
+  "homeDestinationLakeTitle": "Big Almaty Lake",
+  "homeDestinationLakeSubtitle": "Scenic Views",
+  "homeDestinationKolsaiTitle": "Kolsai Lakes",
+  "homeDestinationKolsaiSubtitle": "Mountain Escape",
+  "homeDurationHours": "{hours} h",
+  "@homeDurationHours": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "homeBookNow": "Book Now",
   "homeNavHome": "Home",
+  "homeNavQr": "QR",
+  "homeNavMap": "Map",
+  "homeNavChats": "Chats",
   "homeNavMy": "My",
   "activitiesEntryTitle": "Activities",
   "activitiesEntrySubtitle": "Find offline and online events you can join",
@@ -367,6 +438,34 @@
   "activitiesFilterCategory": "Category",
   "activitiesFilterDate": "Date",
   "activitiesFilterPricing": "Pricing",
+  "activitiesFilterVisibility": "Visibility",
+  "activitiesDiscoverTitle": "Discover Activities",
+  "activitiesFilteredEmptyTitle": "No activities match these filters",
+  "activitiesFilteredEmptySubtitle": "Try widening the category, date range, or pricing filters",
+  "activitiesResultsCount": "{count, plural, =0{No activities} =1{1 activity} other{{count} activities}}",
+  "@activitiesResultsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activitiesFiltersCategoriesTitle": "Categories",
+  "activitiesFiltersSelectedCategories": "Selected Categories",
+  "activitiesShowResults": "Show {count, plural, =0{0 activities} =1{1 activity} other{{count} activities}}",
+  "@activitiesShowResults": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "activitiesAllCategories": "All categories",
+  "activitiesFiltersPriceRangeTitle": "Price Range",
+  "activitiesFiltersVisibilityTitle": "Visibility",
+  "activitiesFilterMinPrice": "Min Price",
+  "activitiesFilterMaxPrice": "Max Price",
+  "activitiesDatePresetToday": "Today",
+  "activitiesDatePresetTomorrow": "Tomorrow",
+  "activitiesDatePresetThisWeekend": "This Weekend",
+  "activitiesDatePresetThisWeek": "This Week",
+  "activitiesDatePresetThisMonth": "This Month",
   "activityViewDetails": "View Details",
   "activityJoinSession": "Join Session",
   "activityGetLink": "Get Link"

@@ -370,6 +370,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityLeaveButton => 'Leave';
 
   @override
+  String get activityLeaveInlineButton => 'Leave Activity';
+
+  @override
   String get activityJoinSuccess => 'You joined the activity';
 
   @override
@@ -380,6 +383,122 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityLeaveFailed => 'Failed to leave the activity';
+
+  @override
+  String activityGoingTitle(int count) {
+    return 'Going ($count)';
+  }
+
+  @override
+  String get activityDetailsViewAll => 'View all';
+
+  @override
+  String get activityDetailsLinkCopied => 'Link copied';
+
+  @override
+  String get activityDetailsHostedBadge => 'Hosted by you';
+
+  @override
+  String get activityDetailsJoinedBadge => 'Joined';
+
+  @override
+  String get activityDetailsTotalLabel => 'Total';
+
+  @override
+  String get activityDetailsChatButton => 'Open chat';
+
+  @override
+  String get activityDetailsHostFallbackName => 'FlyFy Host';
+
+  @override
+  String get activityPaymentScreenTitle => 'FLYFY CHECKOUT';
+
+  @override
+  String get activityPaymentSummaryTitle => 'Activity Summary';
+
+  @override
+  String get activityPaymentBreakdownTitle => 'Price Breakdown';
+
+  @override
+  String get activityPaymentMethodTitle => 'Payment Method';
+
+  @override
+  String activityPaymentHostedBy(Object host) {
+    return 'Hosted by $host';
+  }
+
+  @override
+  String get activityPaymentAdmissionLabel => '1x Activity Access';
+
+  @override
+  String get activityPaymentServiceFeeLabel => 'Service Fee';
+
+  @override
+  String get activityPaymentSavedCardLabel => 'Saved Card';
+
+  @override
+  String get activityPaymentCardHolderFallback => 'FlyFy Member';
+
+  @override
+  String get activityPaymentApplePayLabel => 'Apple Pay';
+
+  @override
+  String get activityPaymentGooglePayLabel => 'Google Pay';
+
+  @override
+  String activityPaymentConfirmButton(Object amount) {
+    return 'Confirm & Pay $amount';
+  }
+
+  @override
+  String get activityPaymentSecureNote =>
+      'Secure 256-bit SSL encrypted payment';
+
+  @override
+  String get activityPaymentPayButton => 'Pay';
+
+  @override
+  String get activityPaymentSuccess => 'Payment marked as paid';
+
+  @override
+  String get activityPaymentStatusLabel => 'Payment';
+
+  @override
+  String get activityPaymentPaidValue => 'PAID';
+
+  @override
+  String get activityParticipantFallbackName => 'Participant';
+
+  @override
+  String get activityParticipantsEmpty => 'No participants yet';
+
+  @override
+  String get activityParticipantsLoadFailed =>
+      'Could not load participants right now';
+
+  @override
+  String get activityPrivateJoinTitle => 'Private Activity';
+
+  @override
+  String get activityPrivateJoinDescription =>
+      'This activity is curated for a select group. Please enter the invitation password to join.';
+
+  @override
+  String get activityPrivateJoinPasswordLabel => 'Access Password';
+
+  @override
+  String get activityPrivateJoinPasswordPlaceholder => 'Enter access password';
+
+  @override
+  String get activityPrivateJoinPasswordValidation =>
+      'Enter a password from 4 to 64 characters';
+
+  @override
+  String get activityPrivateJoinInvalidPassword =>
+      'Incorrect password. Try again.';
+
+  @override
+  String get activityPrivateJoinSubmit => 'Verify & Join';
 
   @override
   String get homeTitle => 'FlyFy';
@@ -434,6 +553,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeSeeAll => 'See all';
 
   @override
+  String get homeRecommendedBlogs => 'Recommended Blogs';
+
+  @override
   String get homeEditorialBadge => 'Editorial';
 
   @override
@@ -444,7 +566,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Discover secret trails and cultural corners across Almaty\'s adventurous side.';
 
   @override
-  String get homeReadStory => 'Read Story';
+  String get homeReadStory => 'Read';
 
   @override
   String get homeFeaturedStays => 'Featured Stays';
@@ -459,7 +581,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeFilterButton => 'Filter';
 
   @override
+  String get homeMoreButton => 'More';
+
+  @override
+  String get homeDestinationCharynTitle => 'Charyn Canyon';
+
+  @override
+  String get homeDestinationCharynSubtitle => 'Nature & Adventure';
+
+  @override
+  String get homeDestinationLakeTitle => 'Big Almaty Lake';
+
+  @override
+  String get homeDestinationLakeSubtitle => 'Scenic Views';
+
+  @override
+  String get homeDestinationKolsaiTitle => 'Kolsai Lakes';
+
+  @override
+  String get homeDestinationKolsaiSubtitle => 'Mountain Escape';
+
+  @override
+  String homeDurationHours(Object hours) {
+    return '$hours h';
+  }
+
+  @override
+  String get homeBookNow => 'Book Now';
+
+  @override
   String get homeNavHome => 'Home';
+
+  @override
+  String get homeNavQr => 'QR';
+
+  @override
+  String get homeNavMap => 'Map';
+
+  @override
+  String get homeNavChats => 'Chats';
 
   @override
   String get homeNavMy => 'My';
@@ -1037,6 +1197,80 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activitiesFilterPricing => 'Pricing';
+
+  @override
+  String get activitiesFilterVisibility => 'Visibility';
+
+  @override
+  String get activitiesDiscoverTitle => 'Discover Activities';
+
+  @override
+  String get activitiesFilteredEmptyTitle =>
+      'No activities match these filters';
+
+  @override
+  String get activitiesFilteredEmptySubtitle =>
+      'Try widening the category, date range, or pricing filters';
+
+  @override
+  String activitiesResultsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count activities',
+      one: '1 activity',
+      zero: 'No activities',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get activitiesFiltersCategoriesTitle => 'Categories';
+
+  @override
+  String get activitiesFiltersSelectedCategories => 'Selected Categories';
+
+  @override
+  String activitiesShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count activities',
+      one: '1 activity',
+      zero: '0 activities',
+    );
+    return 'Show $_temp0';
+  }
+
+  @override
+  String get activitiesAllCategories => 'All categories';
+
+  @override
+  String get activitiesFiltersPriceRangeTitle => 'Price Range';
+
+  @override
+  String get activitiesFiltersVisibilityTitle => 'Visibility';
+
+  @override
+  String get activitiesFilterMinPrice => 'Min Price';
+
+  @override
+  String get activitiesFilterMaxPrice => 'Max Price';
+
+  @override
+  String get activitiesDatePresetToday => 'Today';
+
+  @override
+  String get activitiesDatePresetTomorrow => 'Tomorrow';
+
+  @override
+  String get activitiesDatePresetThisWeekend => 'This Weekend';
+
+  @override
+  String get activitiesDatePresetThisWeek => 'This Week';
+
+  @override
+  String get activitiesDatePresetThisMonth => 'This Month';
 
   @override
   String get activityViewDetails => 'View Details';

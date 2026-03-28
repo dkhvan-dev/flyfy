@@ -111,6 +111,8 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 375;
 
     return Scaffold(
       body: Stack(
@@ -159,309 +161,387 @@ class _OtpScreenState extends State<OtpScreen> {
           ),
 
           SafeArea(
-            child: Column(
-              children: [
-                // Top Navigation Bar
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Row(
-                    children: [
-                      Material(
-                        color: AppColors.accent.withValues(alpha: 0.1),
-                        shape: const CircleBorder(),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          onTap: () => context.pop(),
-                          child: const SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: Icon(
-                              Icons.arrow_back,
-                              color: AppColors.accent,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      InkWell(
-                        onTap: () => context.go('/'),
-                        borderRadius: BorderRadius.circular(999),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 6,
-                          ),
-                          child: Text(
-                            'FlyFy',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.accent,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+                final keyboardOpen = bottomInset > 0;
+                final horizontalPadding = isCompact ? 20.0 : 24.0;
+                final headerTopGap = isCompact ? 12.0 : 16.0;
+                final sectionGap = keyboardOpen ? 28.0 : 48.0;
+                final timerGap = keyboardOpen ? 20.0 : 24.0;
+                final footerTopGap = keyboardOpen ? 24.0 : 32.0;
+                final footerBottomGap = keyboardOpen ? 16.0 : 40.0;
 
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 16),
-                        // Header Section
-                        Text(
-                          l10n.verifyYourPhone,
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                            height: 1.2,
-                            letterSpacing: -0.5,
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
-                        const SizedBox(height: 12),
-                        Text.rich(
-                          TextSpan(
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: AppColors.textSecondary,
-                              height: 1.5,
-                            ),
+                return AnimatedPadding(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  padding: EdgeInsets.only(bottom: bottomInset),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              TextSpan(text: l10n.enterAuthCode),
-                              TextSpan(
-                                text: widget.phone,
-                                style: const TextStyle(
-                                  color: AppColors.accent,
-                                  fontWeight: FontWeight.w600,
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: isCompact ? 20.0 : 24.0,
                                 ),
+                                child: Row(
+                                  children: [
+                                    Material(
+                                      color: AppColors.accent.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      shape: const CircleBorder(),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: InkWell(
+                                        onTap: () => context.pop(),
+                                        child: const SizedBox(
+                                          width: 48,
+                                          height: 48,
+                                          child: Icon(
+                                            Icons.arrow_back,
+                                            color: AppColors.accent,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    InkWell(
+                                      onTap: () => context.go('/'),
+                                      borderRadius: BorderRadius.circular(999),
+                                      child: const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 6,
+                                        ),
+                                        child: Text(
+                                          'FlyFy',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.accent,
+                                            letterSpacing: -0.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: headerTopGap),
+                              Text(
+                                l10n.verifyYourPhone,
+                                style: TextStyle(
+                                  fontSize: isCompact ? 28 : 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                  height: 1.2,
+                                  letterSpacing: -0.5,
+                                ),
+                                textAlign: TextAlign.left,
+                              ),
+                              const SizedBox(height: 12),
+                              Text.rich(
+                                TextSpan(
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: AppColors.textSecondary,
+                                    height: 1.5,
+                                  ),
+                                  children: [
+                                    TextSpan(text: l10n.enterAuthCode),
+                                    TextSpan(
+                                      text: widget.phone,
+                                      style: const TextStyle(
+                                        color: AppColors.accent,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                textAlign: TextAlign.left,
+                              ),
+                              SizedBox(height: sectionGap),
+                              LayoutBuilder(
+                                builder: (context, otpConstraints) {
+                                  final gap = isCompact ? 8.0 : 10.0;
+                                  final boxWidth =
+                                      ((otpConstraints.maxWidth - gap * 5) / 6)
+                                          .clamp(42.0, 52.0);
+                                  final boxHeight = isCompact ? 60.0 : 64.0;
+
+                                  return Stack(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          for (
+                                            var index = 0;
+                                            index < 6;
+                                            index++
+                                          ) ...[
+                                            Builder(
+                                              builder: (context) {
+                                                final text =
+                                                    _codeController.text;
+                                                final char = index < text.length
+                                                    ? text[index]
+                                                    : '';
+                                                final isFocused =
+                                                    index == text.length &&
+                                                    _focusNode.hasFocus;
+
+                                                return Container(
+                                                  width: boxWidth,
+                                                  height: boxHeight,
+                                                  alignment: Alignment.center,
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.accent
+                                                        .withValues(
+                                                          alpha: 0.05,
+                                                        ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: isFocused
+                                                          ? AppColors.accent
+                                                          : AppColors.accent
+                                                                .withValues(
+                                                                  alpha: 0.2,
+                                                                ),
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    char.isEmpty ? '·' : char,
+                                                    style: TextStyle(
+                                                      fontSize: isCompact
+                                                          ? 22
+                                                          : 24,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: char.isEmpty
+                                                          ? AppColors
+                                                                .textCaption
+                                                          : AppColors
+                                                                .textPrimary,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                            if (index != 5)
+                                              SizedBox(width: gap),
+                                          ],
+                                        ],
+                                      ),
+                                      Positioned.fill(
+                                        child: TextField(
+                                          controller: _codeController,
+                                          focusNode: _focusNode,
+                                          keyboardType: TextInputType.number,
+                                          style: const TextStyle(
+                                            color: Colors.transparent,
+                                          ),
+                                          cursorColor: Colors.transparent,
+                                          enableInteractiveSelection: false,
+                                          autofocus: true,
+                                          onTapOutside: (_) =>
+                                              FocusScope.of(context).unfocus(),
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter
+                                                .digitsOnly,
+                                            LengthLimitingTextInputFormatter(6),
+                                          ],
+                                          decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                            focusedBorder: InputBorder.none,
+                                            enabledBorder: InputBorder.none,
+                                            errorBorder: InputBorder.none,
+                                            disabledBorder: InputBorder.none,
+                                            contentPadding: EdgeInsets.zero,
+                                            fillColor: Colors.transparent,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                              SizedBox(height: sectionGap),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      color: AppColors.borderLight,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.schedule,
+                                          size: 16,
+                                          color: AppColors.textCaption,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _formatCountdown(),
+                                          style: const TextStyle(
+                                            color: AppColors.textCaption,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      color: AppColors.borderLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: timerGap),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 4,
+                                runSpacing: 4,
+                                children: [
+                                  Text(
+                                    l10n.didntReceiveOTP,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    l10n.resendCode,
+                                    style: const TextStyle(
+                                      color: AppColors.accent,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          textAlign: TextAlign.left,
-                        ),
-                        const SizedBox(height: 48),
+                          Padding(
+                            padding: EdgeInsets.only(top: footerTopGap),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Consumer<AuthProvider>(
+                                  builder: (context, auth, _) {
+                                    if (auth.isVerifyingOtp) {
+                                      return Container(
+                                        height: 64,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.accent,
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.background,
+                                            strokeWidth: 2.5,
+                                          ),
+                                        ),
+                                      );
+                                    }
 
-                        // OTP Input Fields
-                        Stack(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: List.generate(6, (index) {
-                                final text = _codeController.text;
-                                final char = index < text.length
-                                    ? text[index]
-                                    : '';
-                                final isFocused =
-                                    index == text.length && _focusNode.hasFocus;
+                                    final canSubmit =
+                                        _codeController.text.trim().length == 6;
 
-                                return Container(
-                                  width: 48,
-                                  height: 64,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.accent.withValues(
-                                      alpha: 0.05,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isFocused
-                                          ? AppColors.accent
-                                          : AppColors.accent.withValues(
-                                              alpha: 0.2,
+                                    return ElevatedButton(
+                                      onPressed: canSubmit ? _submit : null,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.accent,
+                                        foregroundColor: AppColors.background,
+                                        disabledBackgroundColor: AppColors
+                                            .accent
+                                            .withValues(alpha: 0.5),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 0,
+                                        ),
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          64,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                        elevation: canSubmit ? 4 : 0,
+                                        shadowColor: AppColors.accent
+                                            .withValues(alpha: 0.5),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            l10n.verifyAndLogin,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    char.isEmpty ? '·' : char,
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: char.isEmpty
-                                          ? AppColors.textCaption
-                                          : AppColors.textPrimary,
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                            // Invisible text field taking full width to capture input
-                            Positioned.fill(
-                              child: TextField(
-                                controller: _codeController,
-                                focusNode: _focusNode,
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(
-                                  color: Colors.transparent,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Icon(
+                                            Icons.arrow_forward,
+                                            size: 24,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
-                                cursorColor: Colors.transparent,
-                                enableInteractiveSelection: false,
-                                autofocus: true,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  LengthLimitingTextInputFormatter(6),
-                                ],
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  errorBorder: InputBorder.none,
-                                  disabledBorder: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
-                                  fillColor: Colors.transparent,
+                                const SizedBox(height: 24),
+                                TermsAgreementRichText(
+                                  text: l10n.termsAgreementText,
+                                  onTermsTap: () {},
+                                  onPrivacyTap: () {},
                                 ),
-                              ),
+                                SizedBox(height: footerBottomGap),
+                              ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 48),
-
-                        // Timer & Resend Section (Visual)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: AppColors.borderLight,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.schedule,
-                                    size: 16,
-                                    color: AppColors.textCaption,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _formatCountdown(),
-                                    style: TextStyle(
-                                      color: AppColors.textCaption,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: AppColors.borderLight,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              l10n.didntReceiveOTP,
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              l10n.resendCode,
-                              style: TextStyle(
-                                color: AppColors.accent,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const Spacer(),
-
-                        // Footer Action
-                        Consumer<AuthProvider>(
-                          builder: (context, auth, _) {
-                            if (auth.isVerifyingOtp) {
-                              return Container(
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: AppColors.accent,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                alignment: Alignment.center,
-                                child: const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.background,
-                                    strokeWidth: 2.5,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            final canSubmit =
-                                _codeController.text.trim().length == 6;
-
-                            return ElevatedButton(
-                              onPressed: canSubmit ? _submit : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.accent,
-                                foregroundColor: AppColors.background,
-                                disabledBackgroundColor: AppColors.accent
-                                    .withValues(alpha: 0.5),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 0,
-                                ),
-                                minimumSize: const Size(double.infinity, 64),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: canSubmit ? 4 : 0,
-                                shadowColor: AppColors.accent.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    l10n.verifyAndLogin,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward, size: 24),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        // Footer Terms
-                        TermsAgreementRichText(
-                          text: l10n.termsAgreementText,
-                          onTermsTap: () {},
-                          onPrivacyTap: () {},
-                        ),
-                        const SizedBox(height: 40),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],

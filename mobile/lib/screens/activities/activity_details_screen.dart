@@ -1,24 +1,33 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/network/activity_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
-import '../../core/ui/tag_chip.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/activities/models/activity_participant_vm.dart';
+import '../../features/profile/profile_completion_gate.dart';
+import '../../features/profile/profile_guard_result.dart';
+import '../../features/profile/data/profile_api.dart';
+import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
+import 'activity_payment_screen.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
-  const ActivityDetailsScreen({
-    super.key,
-    required this.activityId,
-  });
+  const ActivityDetailsScreen({super.key, required this.activityId});
 
   final String activityId;
 
@@ -26,19 +35,68 @@ class ActivityDetailsScreen extends StatefulWidget {
   State<ActivityDetailsScreen> createState() => _ActivityDetailsScreenState();
 }
 
+enum _FooterAction { join, leave, publish }
+
 class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
+  final ActivityApi _activityApi = ActivityApi();
+  final ProfileApi _profileApi = ProfileApi();
+
+  bool _participantsLoading = true;
+  String? _participantsError;
+  List<ActivityParticipantVm> _participants = const [];
+  Map<String, UserProfileVm> _resolvedProfiles = const {};
+  _FooterAction? _pendingAction;
+  bool _isPaymentSuccessful = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ActivityProvider>().loadActivityDetails(widget.activityId);
+      _refreshScreen();
     });
   }
 
   @override
   void dispose() {
-    context.read<ActivityProvider>().clearSelectedActivity();
+    final provider = context.read<ActivityProvider>();
+    provider.clearSelectedActivity();
+    provider.resetActionState();
     super.dispose();
+  }
+
+  Future<void> _refreshScreen() async {
+    final provider = context.read<ActivityProvider>();
+    await Future.wait<void>([
+      provider.loadActivityDetails(widget.activityId),
+      _loadParticipants(),
+    ]);
+    await _loadVisibleProfiles(provider.selectedActivity);
+  }
+
+  Future<void> _loadParticipants() async {
+    if (mounted) {
+      setState(() {
+        _participantsLoading = true;
+        _participantsError = null;
+      });
+    }
+
+    try {
+      final items = await _activityApi.getActivityParticipants(
+        widget.activityId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _participants = items;
+        _participantsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _participantsLoading = false;
+        _participantsError = 'failed';
+      });
+    }
   }
 
   Future<void> _handleJoin() async {
@@ -55,263 +113,1372 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       return;
     }
 
+    final gateResult = await ProfileCompletionGate.ensureCompleted(context);
+    if (gateResult == ProfileGuardResult.cancelled) {
+      return;
+    }
+    if (!mounted) return;
+
+    final activity = context.read<ActivityProvider>().selectedActivity;
+    if (_isPrivateActivity(activity)) {
+      final joined = await _showPrivateJoinDialog(l10n);
+      if (!mounted || joined != true) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityJoinSuccess)));
+      return;
+    }
+
+    final success = await _submitJoin(showSuccessFeedback: true);
+    if (!mounted || success) {
+      return;
+    }
+
     final provider = context.read<ActivityProvider>();
-    final success = await provider.joinActivity(widget.activityId);
+    await showErrorDialog(
+      context,
+      title: l10n.error,
+      message: provider.actionErrorMessage ?? l10n.activityJoinFailed,
+    );
+  }
+
+  bool _isPrivateActivity(ActivityListItemVm? activity) =>
+      activity?.visibility.toUpperCase() == 'PRIVATE';
+
+  Future<bool> _submitJoin({
+    String? visibilityPassword,
+    required bool showSuccessFeedback,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final provider = context.read<ActivityProvider>();
+    setState(() => _pendingAction = _FooterAction.join);
+    final success = await provider.joinActivity(
+      widget.activityId,
+      visibilityPassword: visibilityPassword,
+    );
+
+    if (!mounted) return success;
+
+    if (!success) {
+      setState(() => _pendingAction = null);
+      return false;
+    }
+
+    await _reloadAfterAction(includeJoined: true);
+    if (!mounted) return true;
+    setState(() => _pendingAction = null);
+    if (showSuccessFeedback) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityJoinSuccess)));
+    }
+    return true;
+  }
+
+  Future<bool?> _showPrivateJoinDialog(AppLocalizations l10n) {
+    return showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (dialogContext, _, _) {
+        return _PrivateActivityPasswordDialog(
+          l10n: l10n,
+          onSubmit: (password) async {
+            final success = await _submitJoin(
+              visibilityPassword: password,
+              showSuccessFeedback: false,
+            );
+            if (success) {
+              return null;
+            }
+            if (!mounted) {
+              return l10n.activityJoinFailed;
+            }
+            return _mapPrivateJoinError(
+              context.read<ActivityProvider>().actionErrorMessage,
+              l10n,
+            );
+          },
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curve = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(opacity: curve, child: child);
+      },
+    );
+  }
+
+  String _mapPrivateJoinError(
+    String? actionErrorMessage,
+    AppLocalizations l10n,
+  ) {
+    final raw = (actionErrorMessage ?? '').trim();
+    if (raw.isEmpty) {
+      return l10n.activityJoinFailed;
+    }
+
+    final normalized = raw.toLowerCase();
+    if (normalized.contains('invalid activity visibility password')) {
+      return l10n.activityPrivateJoinInvalidPassword;
+    }
+
+    return raw;
+  }
+
+  Future<void> _handleLeave() async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ActivityProvider>();
+
+    setState(() => _pendingAction = _FooterAction.leave);
+    final success = await provider.leaveActivity(widget.activityId);
 
     if (!mounted) return;
 
     if (!success) {
+      setState(() => _pendingAction = null);
       await showErrorDialog(
         context,
         title: l10n.error,
-        message: provider.actionErrorMessage ?? l10n.activityJoinFailed,
+        message: provider.actionErrorMessage ?? l10n.activityLeaveFailed,
       );
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.activityJoinSuccess)),
+    await _reloadAfterAction(includeJoined: true);
+    if (!mounted) return;
+    setState(() {
+      _pendingAction = null;
+      _isPaymentSuccessful = false;
+    });
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.activityLeaveSuccess)));
+  }
+
+  Future<void> _openPayment(
+    ActivityListItemVm activity, {
+    required String hostName,
+  }) async {
+    if (_isPaymentSuccessful || activity.isFree) {
+      return;
+    }
+
+    final success = await context.push<bool>(
+      '/activities/${activity.id}/payment',
+      extra: ActivityPaymentRouteArgs(activity: activity, hostName: hostName),
     );
+
+    if (!mounted || success != true) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _isPaymentSuccessful = true);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.activityPaymentSuccess)));
   }
 
   Future<void> _handlePublish() async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<ActivityProvider>();
+
+    setState(() => _pendingAction = _FooterAction.publish);
     final success = await provider.publishActivity(widget.activityId);
 
     if (!mounted) return;
 
-    if (success) {
-      provider.loadActivities();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.activityPublishSuccess)),
-      );
-    } else {
+    if (!success) {
+      setState(() => _pendingAction = null);
       await showErrorDialog(
         context,
         title: l10n.error,
         message: provider.actionErrorMessage ?? l10n.activityPublishFailed,
       );
+      return;
     }
+
+    await _reloadAfterAction(includeJoined: false);
+    if (!mounted) return;
+    setState(() => _pendingAction = null);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.activityPublishSuccess)));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final sessionProvider = context.watch<SessionProvider>();
-    final currentUserId = sessionProvider.profile?.userId;
+  Future<void> _reloadAfterAction({required bool includeJoined}) async {
+    final provider = context.read<ActivityProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final futures = <Future<void>>[
+      provider.loadActivityDetails(widget.activityId),
+      _loadParticipants(),
+    ];
 
-    return Consumer<ActivityProvider>(
-      builder: (context, provider, _) {
-        final activity = provider.selectedActivity;
-        final isOwner = currentUserId != null &&
-            activity != null &&
-            currentUserId == activity.hostUserId;
-        final status = activity?.status.toUpperCase() ?? '';
-        final isDraft = status == 'DRAFT';
-        final isEditable = isDraft ||
-            status == 'REVIEW_REQUIRED' ||
-            status == 'ENROLLMENT_OPEN' ||
-            status == 'FULL';
-        final canEdit = isOwner && isEditable;
+    if (includeJoined && authProvider.state == AuthState.authenticated) {
+      futures.add(provider.loadJoinedActivities());
+    }
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          body: _buildBody(
-              context, provider, activity, l10n, isOwner, isDraft, canEdit),
+    await Future.wait<void>(futures);
+    await _loadVisibleProfiles(provider.selectedActivity);
+    provider.resetActionState();
+  }
+
+  Future<void> _loadVisibleProfiles(ActivityListItemVm? activity) async {
+    final session = context.read<SessionProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final currentProfile = session.profile;
+
+    if (activity == null) {
+      if (!mounted) return;
+      setState(() {
+        _resolvedProfiles = currentProfile == null
+            ? const {}
+            : {currentProfile.userId: currentProfile};
+      });
+      return;
+    }
+
+    final nextProfiles = <String, UserProfileVm>{};
+    if (currentProfile != null) {
+      nextProfiles[currentProfile.userId] = currentProfile;
+    }
+
+    if (authProvider.state != AuthState.authenticated) {
+      if (!mounted) return;
+      setState(() => _resolvedProfiles = nextProfiles);
+      return;
+    }
+
+    final ids = <String>{activity.hostUserId};
+    for (final participant in _participants) {
+      ids.add(participant.userId);
+    }
+    ids.removeWhere((id) => id.trim().isEmpty || nextProfiles.containsKey(id));
+
+    if (ids.isNotEmpty) {
+      final entries = await Future.wait(
+        ids.map((userId) async {
+          try {
+            final profile = await _profileApi.getUserById(userId);
+            return MapEntry(userId, profile);
+          } catch (_) {
+            return null;
+          }
+        }),
+      );
+
+      for (final entry in entries) {
+        if (entry == null) continue;
+        nextProfiles[entry.key] = entry.value;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _resolvedProfiles = nextProfiles);
+  }
+
+  void _openEdit(ActivityListItemVm activity) {
+    context.push('/activities/${widget.activityId}/edit', extra: activity);
+  }
+
+  Future<void> _copyValue(String value, String message) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showParticipantsSheet(
+    List<ActivityParticipantVm> participants,
+    AppLocalizations l10n,
+  ) async {
+    if (participants.isEmpty) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final locale = Localizations.localeOf(sheetContext).toString();
+        final dateFormat = DateFormat.MMMd(locale).add_Hm();
+
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.72,
+              ),
+              decoration: BoxDecoration(
+                color: _DetailsColors.sheet,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 18, 22, 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.activityGoingTitle(participants.length),
+                            style: const TextStyle(
+                              color: _DetailsColors.text,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.03,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: _DetailsColors.text,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, color: Color(0x14FFFFFF)),
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
+                      itemCount: participants.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final participant = participants[index];
+                        return Row(
+                          children: [
+                            _ParticipantAvatar(
+                              seed: participant.userId,
+                              radius: 24,
+                              borderColor: _DetailsColors.sheet,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _resolveUserName(
+                                      participant.userId,
+                                      l10n,
+                                      resolvedProfiles: _resolvedProfiles,
+                                    ),
+                                    style: const TextStyle(
+                                      color: _DetailsColors.text,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    dateFormat.format(
+                                      participant.joinedAt.toLocal(),
+                                    ),
+                                    style: const TextStyle(
+                                      color: _DetailsColors.muted,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _StatusPill(
+                              label: _prettyToken(participant.status),
+                              backgroundColor: _statusPillColor(
+                                participant.status,
+                              ),
+                              textColor: _statusTextColor(participant.status),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    ActivityProvider provider,
-    ActivityListItemVm? activity,
-    AppLocalizations l10n,
-    bool isOwner,
-    bool isDraft,
-    bool canEdit,
-  ) {
-    if (provider.state == ActivitiesState.loading &&
-        provider.selectedActivity == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.watch<ActivityProvider>();
+    final session = context.watch<SessionProvider>();
+    final activity = provider.selectedActivity;
+    final currentUserId = (session.profile?.userId ?? '').trim();
+
+    if (provider.state == ActivitiesState.loading && activity == null) {
+      return const Scaffold(
+        backgroundColor: _DetailsColors.base,
+        body: Stack(
+          children: [
+            Positioned.fill(child: _DetailsBackdrop()),
+            Center(child: CircularProgressIndicator(color: AppColors.accent)),
+          ],
+        ),
       );
     }
 
-    if (provider.state == ActivitiesState.error &&
-        provider.selectedActivity == null) {
-      return ErrorView(
-        message: provider.errorMessage ?? l10n.activityDetailsLoadFailed,
-        onRetry: () => provider.loadActivityDetails(widget.activityId),
+    if (provider.state == ActivitiesState.error && activity == null) {
+      return Scaffold(
+        backgroundColor: _DetailsColors.base,
+        body: Stack(
+          children: [
+            const Positioned.fill(child: _DetailsBackdrop()),
+            SafeArea(
+              child: ErrorView(
+                message:
+                    provider.errorMessage ?? l10n.activityDetailsLoadFailed,
+                onRetry: _refreshScreen,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
     if (activity == null) {
-      return ErrorView(
-        message: l10n.activityNotFound,
-        onRetry: () => provider.loadActivityDetails(widget.activityId),
+      return Scaffold(
+        backgroundColor: _DetailsColors.base,
+        body: Stack(
+          children: [
+            const Positioned.fill(child: _DetailsBackdrop()),
+            SafeArea(
+              child: ErrorView(
+                message: l10n.activityNotFound,
+                onRetry: _refreshScreen,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    final showBottomBar = (isOwner && isDraft) || !isOwner;
+    final activeParticipants =
+        _participants.where((participant) => participant.isActive).toList()
+          ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
+    final occupyingCount = _participants
+        .where((participant) => participant.occupiesSlot)
+        .length;
+    final isOwner =
+        currentUserId.isNotEmpty && currentUserId == activity.hostUserId;
+    ActivityParticipantVm? currentParticipant;
+    if (!isOwner && currentUserId.isNotEmpty) {
+      for (final participant in activeParticipants) {
+        if (participant.userId == currentUserId) {
+          currentParticipant = participant;
+          break;
+        }
+      }
+    }
 
-    return Column(
-      children: [
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () => provider.loadActivityDetails(widget.activityId),
-            child: CustomScrollView(
-              slivers: [
-                // Hero image with transparent app bar
-                _HeroSliverAppBar(
-                  activity: activity,
-                  canEdit: canEdit,
-                  l10n: l10n,
-                  activityId: widget.activityId,
-                ),
-                // Content
-                SliverToBoxAdapter(
-                  child: _ContentSection(
-                    activity: activity,
-                    l10n: l10n,
+    final isJoined = currentParticipant != null;
+    final status = activity.status.toUpperCase();
+    final isDraft = status == 'DRAFT';
+    final showPublish = isOwner && isDraft;
+    final hostName = _resolveHostName(
+      activity.hostUserId,
+      session.profile,
+      resolvedProfiles: _resolvedProfiles,
+      l10n: l10n,
+    );
+
+    return Scaffold(
+      backgroundColor: _DetailsColors.base,
+      extendBody: true,
+      bottomNavigationBar: _DetailsActionBar(
+        activity: activity,
+        l10n: l10n,
+        isOwner: isOwner,
+        isJoined: isJoined,
+        isPaid: _isPaymentSuccessful,
+        showPublish: showPublish,
+        isBusy: provider.actionState == ActivityActionState.loading,
+        pendingAction: _pendingAction,
+        onJoin: _handleJoin,
+        onPublish: _handlePublish,
+        onEdit: () => _openEdit(activity),
+        onPay: isJoined && !isOwner && !activity.isFree
+            ? () => _openPayment(activity, hostName: hostName)
+            : null,
+        onOpenChat: isJoined
+            ? () => context.push('/activities/${activity.id}/chat')
+            : null,
+      ),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: _DetailsBackdrop()),
+          SafeArea(
+            bottom: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final horizontalPadding = width < 360 ? 16.0 : 22.0;
+                final heroHeight = width < 360
+                    ? 332.0
+                    : width > 430
+                    ? 392.0
+                    : 368.0;
+                final compact = width < 360;
+
+                return RefreshIndicator(
+                  onRefresh: _refreshScreen,
+                  color: AppColors.accent,
+                  backgroundColor: _DetailsColors.sheet,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      12,
+                      horizontalPadding,
+                      158 + MediaQuery.paddingOf(context).bottom,
+                    ),
+                    children: [
+                      _DetailsTopBar(
+                        title: l10n.activityDetailsTitle,
+                        status: formatActivityStatus(activity.status, l10n),
+                        statusColor: _activityStatusColor(activity.status),
+                        compact: compact,
+                        onBack: () => context.pop(),
+                        onShare: () => _copyValue(
+                          '/activities/${activity.id}',
+                          l10n.activityDetailsLinkCopied,
+                        ),
+                      ),
+                      SizedBox(height: compact ? 14 : 18),
+                      _DetailsHero(
+                        height: heroHeight,
+                        categoryLabel: _prettyCategory(activity.categorySlug),
+                        contextLabel: _resolveHeroContextLabel(
+                          activity: activity,
+                          l10n: l10n,
+                          isOwner: isOwner,
+                          isJoined: isJoined,
+                          occupyingCount: occupyingCount,
+                        ),
+                      ),
+                      SizedBox(height: compact ? 18 : 20),
+                      _HeadingSection(
+                        title: activity.title,
+                        description: activity.description,
+                        compact: compact,
+                      ),
+                      const SizedBox(height: 24),
+                      _HostCard(
+                        hostName: hostName,
+                        subtitle: _resolveHostSubtitle(
+                          activity: activity,
+                          l10n: l10n,
+                        ),
+                        buttonLabel: l10n.profileTitle,
+                        onPressed: () {
+                          if (isOwner) {
+                            context.push('/profile');
+                            return;
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l10n.profileNotAvailable)),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 26),
+                      _StatsGrid(
+                        activity: activity,
+                        l10n: l10n,
+                        compact: compact,
+                      ),
+                      const SizedBox(height: 26),
+                      _ParticipantsSection(
+                        l10n: l10n,
+                        participants: activeParticipants,
+                        compact: compact,
+                        isLoading: _participantsLoading,
+                        loadFailed: _participantsError != null,
+                        onViewAll: activeParticipants.isNotEmpty
+                            ? () => _showParticipantsSheet(
+                                activeParticipants,
+                                l10n,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: 8),
+                      _MeetingSection(
+                        activity: activity,
+                        l10n: l10n,
+                        isJoined: isJoined,
+                        isOwner: isOwner,
+                        canLeaveActivity: isJoined && !isOwner,
+                        isLeaving:
+                            provider.actionState ==
+                                ActivityActionState.loading &&
+                            _pendingAction == _FooterAction.leave,
+                        onLeaveTap: _handleLeave,
+                        onActionTap: () {
+                          final copyValue = _resolveMeetingActionCopyValue(
+                            activity,
+                          );
+                          if (copyValue == null || copyValue.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.notSpecified)),
+                            );
+                            return;
+                          }
+                          _copyValue(copyValue, l10n.activityDetailsLinkCopied);
+                        },
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+abstract final class _DetailsColors {
+  static const base = Color(0xFF140901);
+  static const sheet = Color(0xFF1A0F08);
+  static const text = Color(0xFFF4F1EB);
+  static const muted = Color(0xFFB8B3B4);
+  static const subtle = Color(0xFF97929A);
+  static const success = Color(0xFF18C26E);
+  static const mutedPill = Color(0xB4959A96);
+}
+
+class _DetailsBackdrop extends StatelessWidget {
+  const _DetailsBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [const Color(0xFF1B0F07), _DetailsColors.base],
         ),
-        if (showBottomBar)
-          _BottomBar(
-            activity: activity,
-            isOwner: isOwner,
-            isDraft: isDraft,
-            provider: provider,
-            l10n: l10n,
-            onJoin: _handleJoin,
-            onPublish: _handlePublish,
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -120,
+            left: -40,
+            right: -40,
+            height: 260,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.topCenter,
+                  radius: 0.8,
+                  colors: [
+                    AppColors.accent.withValues(alpha: 0.14),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
           ),
+          Positioned(
+            bottom: -80,
+            left: -20,
+            right: -20,
+            height: 220,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.bottomCenter,
+                  radius: 0.9,
+                  colors: [
+                    AppColors.accent.withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrivateActivityPasswordDialog extends StatefulWidget {
+  const _PrivateActivityPasswordDialog({
+    required this.l10n,
+    required this.onSubmit,
+  });
+
+  final AppLocalizations l10n;
+  final Future<String?> Function(String password) onSubmit;
+
+  @override
+  State<_PrivateActivityPasswordDialog> createState() =>
+      _PrivateActivityPasswordDialogState();
+}
+
+class _PrivateActivityPasswordDialogState
+    extends State<_PrivateActivityPasswordDialog> {
+  final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _passwordFocusNode = FocusNode();
+
+  bool _obscureText = true;
+  bool _isSubmitting = false;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _passwordFocusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _passwordFocusNode.dispose();
+    super.dispose();
+  }
+
+  String? _validatePassword(String value) {
+    final trimmed = value.trim();
+    if (trimmed.length < 4 || trimmed.length > 64) {
+      return widget.l10n.activityPrivateJoinPasswordValidation;
+    }
+    return null;
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    final password = _passwordController.text.trim();
+    final validationError = _validatePassword(password);
+    if (validationError != null) {
+      setState(() => _errorText = validationError);
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _errorText = null;
+    });
+
+    try {
+      final submitError = await widget.onSubmit(password);
+      if (!mounted) return;
+      if (submitError == null) {
+        Navigator.of(context).pop(true);
+        return;
+      }
+      setState(() {
+        _isSubmitting = false;
+        _errorText = submitError;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorText = widget.l10n.activityJoinFailed;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final width = mediaQuery.size.width;
+    final compact = width < 390;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Material(
+        color: Colors.transparent,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0x6605060A),
+                      const Color(0xC2080A12),
+                      const Color(0xEB090B12),
+                    ],
+                  ),
+                ),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.12),
+                  ),
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: SafeArea(
+                top: false,
+                child: AnimatedPadding(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  padding: EdgeInsets.only(
+                    left: 12,
+                    right: 12,
+                    bottom: mediaQuery.viewInsets.bottom,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(34),
+                        ),
+                        border: Border.all(color: const Color(0x2EFFAB4F)),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0xF029190A), Color(0xFA170E08)],
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x47000000),
+                            blurRadius: 60,
+                            offset: Offset(0, -28),
+                          ),
+                        ],
+                      ),
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(
+                          compact ? 18 : 20,
+                          18,
+                          compact ? 18 : 20,
+                          compact ? 20 : 24,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 58,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withValues(alpha: 0.42),
+                                borderRadius: BorderRadius.circular(999),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x14FFFFFF),
+                                    blurRadius: 1,
+                                    offset: Offset(0, 1),
+                                    spreadRadius: -0.4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            Container(
+                              width: compact ? 76 : 84,
+                              height: compact ? 76 : 84,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.accent.withValues(alpha: 0.14),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x1F000000),
+                                    blurRadius: 16,
+                                    offset: Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.lock_outline_rounded,
+                                size: 34,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              widget.l10n.activityPrivateJoinTitle,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _DetailsColors.text,
+                                fontSize: compact ? 28 : 32,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -1.3,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 320),
+                              child: Text(
+                                widget.l10n.activityPrivateJoinDescription,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: const Color(0xFFB7B2BD),
+                                  fontSize: compact ? 16 : 18,
+                                  height: 1.45,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: compact ? 36 : 56),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                widget.l10n.activityPrivateJoinPasswordLabel,
+                                style: const TextStyle(
+                                  color: _DetailsColors.text,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: const Color(0xC21F130A),
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: _errorText == null
+                                      ? const Color(0x57FF9900)
+                                      : const Color(0xCCFF7A59),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _errorText == null
+                                        ? const Color(0x0DFFB854)
+                                        : const Color(0x14FF7A59),
+                                    blurRadius: 0,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: TextField(
+                                controller: _passwordController,
+                                focusNode: _passwordFocusNode,
+                                enabled: !_isSubmitting,
+                                obscureText: _obscureText,
+                                obscuringCharacter: '*',
+                                keyboardType: TextInputType.visiblePassword,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const [AutofillHints.password],
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: compact ? 18 : 20,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.2,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: widget
+                                      .l10n
+                                      .activityPrivateJoinPasswordPlaceholder,
+                                  hintStyle: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.72),
+                                    fontSize: compact ? 17 : 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 22,
+                                    vertical: compact ? 18 : 20,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    onPressed: _isSubmitting
+                                        ? null
+                                        : () => setState(
+                                            () => _obscureText = !_obscureText,
+                                          ),
+                                    icon: Icon(
+                                      _obscureText
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                      color: AppColors.accent,
+                                    ),
+                                  ),
+                                ),
+                                onTapOutside: (_) =>
+                                    FocusScope.of(context).unfocus(),
+                                onChanged: (_) {
+                                  if (_errorText == null) {
+                                    return;
+                                  }
+                                  setState(() => _errorText = null);
+                                },
+                                onSubmitted: _isSubmitting
+                                    ? null
+                                    : (_) => _submit(),
+                              ),
+                            ),
+                            if (_errorText != null) ...[
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                  ),
+                                  child: Text(
+                                    _errorText!,
+                                    style: const TextStyle(
+                                      color: Color(0xFFFF8A65),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 26),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Color(0xFFFF9900),
+                                    Color(0xFFFF9300),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.28,
+                                    ),
+                                    blurRadius: 28,
+                                    offset: const Offset(0, 12),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(999),
+                                  onTap: _isSubmitting ? null : _submit,
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    height: compact ? 64 : 70,
+                                    child: Center(
+                                      child: _isSubmitting
+                                          ? const SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.6,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation(
+                                                      Colors.white,
+                                                    ),
+                                              ),
+                                            )
+                                          : Text(
+                                              widget
+                                                  .l10n
+                                                  .activityPrivateJoinSubmit,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: compact ? 18 : 20,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: -0.4,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailsTopBar extends StatelessWidget {
+  const _DetailsTopBar({
+    required this.title,
+    required this.status,
+    required this.statusColor,
+    required this.compact,
+    required this.onBack,
+    required this.onShare,
+  });
+
+  final String title;
+  final String status;
+  final Color statusColor;
+  final bool compact;
+  final VoidCallback onBack;
+  final VoidCallback onShare;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _CircleIconButton(
+          icon: Icons.arrow_back_ios_new_rounded,
+          onTap: onBack,
+        ),
+        SizedBox(width: compact ? 10 : 12),
+        Expanded(
+          child: Column(
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: _DetailsColors.text,
+                  fontSize: compact ? 16 : 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.03,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor.withValues(alpha: 0.42),
+                          blurRadius: 12,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: Text(
+                      status,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _DetailsColors.subtle,
+                        fontSize: compact ? 10 : 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.9,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        SizedBox(width: compact ? 10 : 12),
+        _CircleIconButton(icon: Icons.share_outlined, onTap: onShare),
       ],
     );
   }
 }
 
-// ── Hero Sliver App Bar ─────────────────────────────────────
+class _CircleIconButton extends StatelessWidget {
+  const _CircleIconButton({required this.icon, required this.onTap});
 
-class _HeroSliverAppBar extends StatelessWidget {
-  const _HeroSliverAppBar({
-    required this.activity,
-    required this.canEdit,
-    required this.l10n,
-    required this.activityId,
-  });
-
-  final ActivityListItemVm activity;
-  final bool canEdit;
-  final AppLocalizations l10n;
-  final String activityId;
+  final IconData icon;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 260,
-      pinned: true,
-      backgroundColor: AppColors.background,
-      iconTheme: const IconThemeData(color: Colors.white),
-      title: Column(
-        children: [
-          Text(
-            l10n.activityDetailsTitle,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
-          ),
-          Text(
-            formatActivityStatus(activity.status, l10n).toUpperCase(),
-            style: TextStyle(
-              color: _statusColor(activity.status),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Ink(
+          width: 40,
+          height: 40,
+          decoration: const BoxDecoration(shape: BoxShape.circle),
+          child: Icon(icon, color: _DetailsColors.text, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailsHero extends StatelessWidget {
+  const _DetailsHero({
+    required this.height,
+    required this.categoryLabel,
+    required this.contextLabel,
+  });
+
+  final double height;
+  final String categoryLabel;
+  final String contextLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(34),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.36),
+            blurRadius: 34,
+            offset: const Offset(0, 18),
           ),
         ],
       ),
-      centerTitle: true,
-      actions: [
-        if (canEdit)
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: l10n.editActivityButton,
-            onPressed: () {
-              context.push(
-                '/activities/$activityId/edit',
-                extra: activity,
-              );
-            },
-          ),
-        IconButton(
-          icon: const Icon(Icons.share_outlined),
-          onPressed: () {},
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(34),
+        child: Stack(
           fit: StackFit.expand,
           children: [
-            // Hero image placeholder
-            Container(
+            DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.3),
-                    AppColors.background,
+                    const Color(0xFF96CFF1),
+                    const Color(0xFFABC4D6).withValues(alpha: 0.86),
+                    const Color(0xFF5F7E83).withValues(alpha: 0.72),
+                    const Color(0xFF2C4840).withValues(alpha: 0.88),
+                    const Color(0xFF151D13),
                   ],
-                ),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.image_outlined,
-                  size: 48,
-                  color: Colors.white24,
+                  stops: const [0, 0.28, 0.5, 0.78, 1],
                 ),
               ),
             ),
-            // Gradient overlay at bottom
             Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 100,
-              child: Container(
-                decoration: const BoxDecoration(
+              left: -18,
+              right: -18,
+              bottom: -10,
+              height: height * 0.42,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.transparent,
-                      AppColors.background,
+                      Colors.white.withValues(alpha: 0.06),
+                      Colors.white.withValues(alpha: 0.01),
                     ],
                   ),
                 ),
               ),
             ),
-            // Category + spots chips at bottom
             Positioned(
-              bottom: 16,
-              left: 16,
-              right: 16,
-              child: Row(
+              left: -24,
+              right: -24,
+              bottom: 24,
+              height: height * 0.22,
+              child: Transform(
+                alignment: Alignment.bottomCenter,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.002)
+                  ..rotateX(1.18),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: List.generate(
+                        10,
+                        (index) => index.isEven
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.transparent,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: height * 0.38,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.15),
+                      Colors.black.withValues(alpha: 0.34),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 24,
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
                 children: [
-                  TagChip(label: activity.categorySlug.toUpperCase()),
-                  const SizedBox(width: 8),
-                  if (activity.capacityType.toUpperCase() == 'LIMITED' &&
-                      activity.maxParticipants != null)
-                    TagChip(
-                      label: l10n.activitySpotsLeft(activity.maxParticipants!),
-                    )
-                  else
-                    TagChip(label: l10n.activityUnlimitedSpots),
+                  _StatusPill(
+                    label: categoryLabel,
+                    backgroundColor: AppColors.accent,
+                    textColor: Colors.white,
+                  ),
+                  _StatusPill(
+                    label: contextLabel,
+                    backgroundColor: _DetailsColors.mutedPill,
+                    textColor: _DetailsColors.text,
+                  ),
                 ],
               ),
             ),
@@ -320,282 +1487,274 @@ class _HeroSliverAppBar extends StatelessWidget {
       ),
     );
   }
-
-  Color _statusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'DRAFT':
-        return Colors.grey;
-      case 'PUBLISHED':
-      case 'ENROLLMENT_OPEN':
-        return AppColors.success;
-      case 'REVIEW_REQUIRED':
-        return Colors.orange;
-      case 'COMPLETED':
-        return AppColors.accent;
-      case 'CANCELLED':
-        return Colors.redAccent;
-      case 'FULL':
-        return Colors.amber;
-      default:
-        return Colors.grey;
-    }
-  }
 }
 
-// ── Content Section ─────────────────────────────────────────
-
-class _ContentSection extends StatelessWidget {
-  const _ContentSection({
-    required this.activity,
-    required this.l10n,
+class _HeadingSection extends StatelessWidget {
+  const _HeadingSection({
+    required this.title,
+    required this.description,
+    required this.compact,
   });
 
-  final ActivityListItemVm activity;
-  final AppLocalizations l10n;
+  final String title;
+  final String description;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title
-          Text(
-            activity.title,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Description
-          Text(
-            activity.description,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 15,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Host profile section
-          _HostSection(activity: activity, l10n: l10n),
-          const SizedBox(height: 24),
-
-          // Info grid 2x2
-          _InfoGrid(activity: activity, l10n: l10n),
-          const SizedBox(height: 24),
-
-          // Meeting point
-          if (activity.addressText != null &&
-              activity.addressText!.trim().isNotEmpty)
-            _MeetingPointSection(activity: activity, l10n: l10n),
-
-          // Tags
-          if (activity.tags.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  activity.tags.map((tag) => TagChip(label: '#$tag')).toList(),
-            ),
-          ],
-
-          // Access and safety
-          const SizedBox(height: 24),
-          Text(
-            l10n.activityAccessSection,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.activitySensitiveDetailsProtected,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.activitySensitiveDetailsHint,
-            style: const TextStyle(
-              color: AppColors.textCaption,
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Host Section ────────────────────────────────────────────
-
-class _HostSection extends StatelessWidget {
-  const _HostSection({required this.activity, required this.l10n});
-
-  final ActivityListItemVm activity;
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Row(
-        children: [
-          // Avatar placeholder
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: AppColors.accent.withValues(alpha: 0.2),
-            child: const Icon(
-              Icons.person,
-              color: AppColors.accent,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 14),
-          // Name and role
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.activityHostSection,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  activity.categorySlug,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Profile button
-          OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.accent, width: 1),
-              foregroundColor: AppColors.accent,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              l10n.profileTitle,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Info Grid (2x2) ─────────────────────────────────────────
-
-class _InfoGrid extends StatelessWidget {
-  const _InfoGrid({required this.activity, required this.l10n});
-
-  final ActivityListItemVm activity;
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    final start = activity.startAt.toLocal();
-    final locale = Localizations.localeOf(context).toString();
-    final dateStr = DateFormat.yMMMd(locale).add_Hm().format(start);
-
-    final priceStr = activity.isFree
-        ? l10n.freeLabel
-        : '${activity.priceLabel} ${l10n.activityPerPerson}';
-
-    final formatStr = formatActivityFormat(activity.format, l10n);
-    final formatDetail = activity.format.toUpperCase() == 'OFFLINE'
-        ? '(${activity.categorySlug})'
-        : '';
-
-    final capacityStr = activity.capacityType.toUpperCase() == 'LIMITED' &&
-            activity.maxParticipants != null
-        ? l10n.activityPeopleMax(activity.maxParticipants!)
-        : l10n.activityUnlimitedSpots;
-
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _InfoGridCell(
-                icon: Icons.calendar_today_outlined,
-                label: l10n.activityDateAndTime.toUpperCase(),
-                value: dateStr,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _InfoGridCell(
-                icon: Icons.payments_outlined,
-                label: l10n.activityPricing.toUpperCase(),
-                value: priceStr,
-              ),
-            ),
-          ],
+        Text(
+          title,
+          style: TextStyle(
+            color: _DetailsColors.text,
+            fontSize: compact ? 28 : 31,
+            fontWeight: FontWeight.w800,
+            height: 1.0,
+            letterSpacing: -1.4,
+          ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _InfoGridCell(
-                icon: Icons.language,
-                label: l10n.activityCategory.toUpperCase(),
-                value: '$formatStr $formatDetail'.trim(),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _InfoGridCell(
-                icon: Icons.people_outline,
-                label: l10n.activityTotalCapacity.toUpperCase(),
-                value: capacityStr,
-              ),
-            ),
-          ],
+        Text(
+          description,
+          style: TextStyle(
+            color: _DetailsColors.muted,
+            fontSize: compact ? 15 : 17,
+            height: 1.55,
+            letterSpacing: -0.18,
+          ),
         ),
       ],
     );
   }
 }
 
-class _InfoGridCell extends StatelessWidget {
-  const _InfoGridCell({
+class _HostCard extends StatelessWidget {
+  const _HostCard({
+    required this.hostName,
+    required this.subtitle,
+    required this.buttonLabel,
+    required this.onPressed,
+  });
+
+  final String hostName;
+  final String subtitle;
+  final String buttonLabel;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.05),
+            Colors.white.withValues(alpha: 0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF2A9EA4), Color(0xFF2D7478)],
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    width: 3,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              Positioned(
+                right: -1,
+                bottom: -1,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: const BoxDecoration(
+                    color: AppColors.accent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.star_rounded,
+                    color: Colors.white,
+                    size: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hostName,
+                  style: const TextStyle(
+                    color: _DetailsColors.text,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppColors.accent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(999),
+              child: Ink(
+                height: 46,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Center(
+                  child: Text(
+                    buttonLabel,
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.22,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatsGrid extends StatelessWidget {
+  const _StatsGrid({
+    required this.activity,
+    required this.l10n,
+    required this.compact,
+  });
+
+  final ActivityListItemVm activity;
+  final AppLocalizations l10n;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
+    final dateText = DateFormat.MMMd(
+      locale,
+    ).add_jm().format(activity.startAt.toLocal());
+    final pricingText = activity.isFree
+        ? l10n.freeLabel
+        : '${activity.priceLabel} ${l10n.activityPerPerson}';
+    final formatText = formatActivityFormat(activity.format, l10n);
+    final capacityText =
+        activity.capacityType.toUpperCase() == 'LIMITED' &&
+            activity.maxParticipants != null
+        ? l10n.activityPeopleMax(activity.maxParticipants!)
+        : l10n.activityUnlimitedSpots;
+
+    final items = [
+      _DetailsStatItem(
+        icon: Icons.calendar_today_outlined,
+        label: l10n.activityDateAndTime,
+        value: dateText,
+      ),
+      _DetailsStatItem(
+        icon: Icons.payments_outlined,
+        label: l10n.activityPrice,
+        value: pricingText,
+      ),
+      _DetailsStatItem(
+        icon: Icons.language_rounded,
+        label: l10n.activityFormatOffline,
+        value: formatText,
+      ),
+      _DetailsStatItem(
+        icon: Icons.people_outline_rounded,
+        label: l10n.activityCapacity,
+        value: capacityText,
+      ),
+    ];
+
+    final horizontalSpacing = compact ? 14.0 : 16.0;
+    final verticalSpacing = compact ? 10.0 : 12.0;
+    final cardAspectRatio = compact ? 1.0 : 1.06;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = (constraints.maxWidth - horizontalSpacing) / 2;
+        final itemHeight = itemWidth / cardAspectRatio;
+
+        Widget buildRow(int startIndex) {
+          return SizedBox(
+            height: itemHeight,
+            child: Row(
+              children: [
+                Expanded(child: _DetailsStatCard(item: items[startIndex])),
+                SizedBox(width: horizontalSpacing),
+                Expanded(child: _DetailsStatCard(item: items[startIndex + 1])),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          padding: EdgeInsets.zero,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              buildRow(0),
+              SizedBox(height: verticalSpacing),
+              buildRow(2),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DetailsStatItem {
+  const _DetailsStatItem({
     required this.icon,
     required this.label,
     required this.value,
@@ -604,38 +1763,51 @@ class _InfoGridCell extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+}
+
+class _DetailsStatCard extends StatelessWidget {
+  const _DetailsStatCard({required this.item});
+
+  final _DetailsStatItem item;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.045),
+            Colors.white.withValues(alpha: 0.035),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: AppColors.accent),
-          const SizedBox(height: 10),
+          Icon(item.icon, color: AppColors.accent, size: 24),
+          const Spacer(),
           Text(
-            label,
+            item.label.toUpperCase(),
             style: const TextStyle(
-              color: AppColors.textCaption,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
+              color: _DetailsColors.subtle,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
-            value,
+            item.value,
             style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              height: 1.3,
+              color: _DetailsColors.text,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              height: 1.32,
+              letterSpacing: -0.25,
             ),
           ),
         ],
@@ -644,16 +1816,463 @@ class _InfoGridCell extends StatelessWidget {
   }
 }
 
-// ── Meeting Point Section ───────────────────────────────────
-
-class _MeetingPointSection extends StatelessWidget {
-  const _MeetingPointSection({
+class _MeetingSection extends StatelessWidget {
+  const _MeetingSection({
     required this.activity,
     required this.l10n,
+    required this.isJoined,
+    required this.isOwner,
+    required this.canLeaveActivity,
+    required this.isLeaving,
+    required this.onLeaveTap,
+    required this.onActionTap,
   });
 
   final ActivityListItemVm activity;
   final AppLocalizations l10n;
+  final bool isJoined;
+  final bool isOwner;
+  final bool canLeaveActivity;
+  final bool isLeaving;
+  final VoidCallback onLeaveTap;
+  final VoidCallback onActionTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMeetingLink = (activity.meetingUrl ?? '').trim().isNotEmpty;
+    final hasLocation =
+        (activity.addressText ?? '').trim().isNotEmpty ||
+        activity.shortLocation.isNotEmpty;
+    if (!hasMeetingLink && !hasLocation) {
+      return const SizedBox.shrink();
+    }
+
+    final showProtectedNotice = hasMeetingLink && !(isJoined || isOwner);
+    final actionLabel = hasMeetingLink && (isJoined || isOwner)
+        ? l10n.createMeetingUrlLabel
+        : l10n.activityGetDirections;
+    final locationLine = (activity.addressText ?? '').trim().isNotEmpty
+        ? activity.addressText!.trim()
+        : activity.shortLocation;
+    final meetingPoint = _resolveMeetingPoint(activity);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.activityMeetingPoint,
+                style: const TextStyle(
+                  color: _DetailsColors.text,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.25,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: onActionTap,
+              child: Text(
+                actionLabel,
+                style: const TextStyle(
+                  color: AppColors.accent,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Container(
+          height: 248,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.24),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (meetingPoint != null)
+                  _MeetingMapCard(
+                    point: meetingPoint,
+                    showProtectedNotice: showProtectedNotice,
+                  )
+                else
+                  _MeetingLocationFallbackCard(
+                    label: locationLine.isNotEmpty
+                        ? locationLine
+                        : l10n.notSpecified,
+                  ),
+                if (showProtectedNotice)
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.26),
+                    padding: const EdgeInsets.all(20),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: BackdropFilter(
+                        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 62,
+                              height: 62,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.lock_outline_rounded,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              l10n.activitySensitiveDetailsProtected,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  left: 16,
+                  top: 16,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A0F08).withValues(alpha: 0.86),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.place_rounded,
+                            size: 15,
+                            color: AppColors.accent,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            l10n.activityMeetingPoint,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.place_outlined,
+                color: _DetailsColors.subtle,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                showProtectedNotice
+                    ? l10n.activitySensitiveDetailsHint
+                    : (locationLine.isNotEmpty
+                          ? locationLine
+                          : l10n.notSpecified),
+                style: const TextStyle(
+                  color: _DetailsColors.muted,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (canLeaveActivity) ...[
+          const SizedBox(height: 18),
+          Center(
+            child: _MeetingLeaveAction(
+              label: l10n.activityLeaveInlineButton,
+              isBusy: isLeaving,
+              onTap: onLeaveTap,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _MeetingMapCard extends StatelessWidget {
+  const _MeetingMapCard({
+    required this.point,
+    required this.showProtectedNotice,
+  });
+
+  final LatLng point;
+  final bool showProtectedNotice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        FlutterMap(
+          options: MapOptions(
+            initialCenter: point,
+            initialZoom: 15.4,
+            backgroundColor: const Color(0xFFB3A28D),
+            interactionOptions: InteractionOptions(
+              flags: showProtectedNotice
+                  ? InteractiveFlag.none
+                  : InteractiveFlag.none,
+            ),
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'dev.dkhvan.flyfy.superapp',
+            ),
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: point,
+                  width: 66,
+                  height: 66,
+                  alignment: Alignment.topCenter,
+                  child: const _MeetingPointMarker(),
+                ),
+              ],
+            ),
+          ],
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0x1F25160B),
+                    Colors.transparent,
+                    const Color(0x33140B04),
+                  ],
+                  stops: const [0, 0.48, 1],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MeetingPointMarker extends StatelessWidget {
+  const _MeetingPointMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            color: AppColors.accent,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.26),
+                blurRadius: 16,
+                spreadRadius: 4,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          width: 2,
+          height: 18,
+          color: Colors.white.withValues(alpha: 0.88),
+        ),
+      ],
+    );
+  }
+}
+
+class _MeetingLocationFallbackCard extends StatelessWidget {
+  const _MeetingLocationFallbackCard({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF2D1C0F), Color(0xFF1C110A)],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 66,
+                height: 66,
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.34),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.place_rounded,
+                  color: AppColors.accent,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  height: 1.45,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MeetingLeaveAction extends StatelessWidget {
+  const _MeetingLeaveAction({
+    required this.label,
+    required this.isBusy,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isBusy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: isBusy ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isBusy)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.1,
+                    color: AppColors.accent,
+                  ),
+                )
+              else
+                Icon(
+                  Icons.logout_rounded,
+                  size: 17,
+                  color: AppColors.accent.withValues(alpha: 0.9),
+                ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: AppColors.accent.withValues(alpha: 0.94),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.18,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ParticipantsSection extends StatelessWidget {
+  const _ParticipantsSection({
+    required this.l10n,
+    required this.participants,
+    required this.compact,
+    required this.isLoading,
+    required this.loadFailed,
+    this.onViewAll,
+  });
+
+  final AppLocalizations l10n;
+  final List<ActivityParticipantVm> participants;
+  final bool compact;
+  final bool isLoading;
+  final bool loadFailed;
+  final VoidCallback? onViewAll;
 
   @override
   Widget build(BuildContext context) {
@@ -661,195 +2280,746 @@ class _MeetingPointSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              l10n.activityMeetingPoint,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {},
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    l10n.activityGetDirections,
-                    style: const TextStyle(
-                      color: AppColors.accent,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.open_in_new,
-                    size: 14,
-                    color: AppColors.accent,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Map placeholder
-        Container(
-          height: 120,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderLight),
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.map_outlined,
-              size: 40,
-              color: Colors.white24,
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            const Icon(Icons.place, size: 16, color: AppColors.accent),
-            const SizedBox(width: 6),
             Expanded(
               child: Text(
-                activity.addressText ?? activity.shortLocation,
+                l10n.activityGoingTitle(participants.length),
                 style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                  height: 1.4,
+                  color: _DetailsColors.text,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.25,
                 ),
               ),
             ),
+            if (onViewAll != null)
+              TextButton(
+                onPressed: onViewAll,
+                child: Text(
+                  l10n.activityDetailsViewAll,
+                  style: const TextStyle(
+                    color: Color(0xFF7881A4),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
           ],
         ),
+        const SizedBox(height: 12),
+        if (participants.isNotEmpty)
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      for (var i = 0; i < math.min(participants.length, 6); i++)
+                        Positioned(
+                          left: i * 30,
+                          child: _ParticipantAvatar(
+                            seed: participants[i].userId,
+                            radius: 21,
+                            borderColor: _DetailsColors.base,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              if (participants.length > 6)
+                Text(
+                  '+${participants.length - 6}',
+                  style: const TextStyle(
+                    color: _DetailsColors.muted,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ],
+          )
+        else if (isLoading)
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: AppColors.accent,
+                ),
+              ),
+            ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(compact ? 16 : 18),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Text(
+              loadFailed
+                  ? l10n.activityParticipantsLoadFailed
+                  : l10n.activityParticipantsEmpty,
+              style: const TextStyle(
+                color: _DetailsColors.muted,
+                fontSize: 14,
+                height: 1.45,
+              ),
+            ),
+          ),
       ],
     );
   }
 }
 
-// ── Bottom Bar ──────────────────────────────────────────────
-
-class _BottomBar extends StatelessWidget {
-  const _BottomBar({
-    required this.activity,
-    required this.isOwner,
-    required this.isDraft,
-    required this.provider,
-    required this.l10n,
-    required this.onJoin,
-    required this.onPublish,
+class _ParticipantAvatar extends StatelessWidget {
+  const _ParticipantAvatar({
+    required this.seed,
+    required this.radius,
+    required this.borderColor,
   });
 
-  final ActivityListItemVm activity;
-  final bool isOwner;
-  final bool isDraft;
-  final ActivityProvider provider;
-  final AppLocalizations l10n;
-  final VoidCallback onJoin;
-  final VoidCallback onPublish;
+  final String seed;
+  final double radius;
+  final Color borderColor;
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = provider.actionState == ActivityActionState.loading;
+    final colors = _seedGradient(seed);
+    final initials = _seedInitials(seed);
 
-    String buttonLabel;
-    Color buttonColor;
-    VoidCallback? onPressed;
-
-    if (isOwner && isDraft) {
-      buttonLabel = l10n.activityPublishButton;
-      buttonColor = AppColors.success;
-      onPressed = isLoading ? null : onPublish;
-    } else {
-      buttonLabel = l10n.activityJoinActivity;
-      buttonColor = AppColors.accent;
-      onPressed = isLoading ? null : onJoin;
-    }
-
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          border: Border(
-            top: BorderSide(color: AppColors.borderLight),
-          ),
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: 3),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: colors,
         ),
-        child: Row(
-          children: [
-            // Price column
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'TOTAL',
-                  style: const TextStyle(
-                    color: AppColors.textCaption,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  activity.isFree ? l10n.freeLabel : activity.priceLabel,
-                  style: TextStyle(
-                    color: activity.isFree
-                        ? AppColors.success
-                        : AppColors.accent,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 16),
-            // CTA button
-            Expanded(
-              child: SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: onPressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: buttonColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          buttonLabel,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                ),
-              ),
-            ),
-          ],
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: radius * 0.62,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
+          ),
         ),
       ),
     );
   }
+}
+
+class _DetailsActionBar extends StatelessWidget {
+  const _DetailsActionBar({
+    required this.activity,
+    required this.l10n,
+    required this.isOwner,
+    required this.isJoined,
+    required this.isPaid,
+    required this.showPublish,
+    required this.isBusy,
+    required this.pendingAction,
+    required this.onJoin,
+    required this.onPublish,
+    required this.onEdit,
+    required this.onPay,
+    required this.onOpenChat,
+  });
+
+  final ActivityListItemVm activity;
+  final AppLocalizations l10n;
+  final bool isOwner;
+  final bool isJoined;
+  final bool isPaid;
+  final bool showPublish;
+  final bool isBusy;
+  final _FooterAction? pendingAction;
+  final VoidCallback onJoin;
+  final VoidCallback onPublish;
+  final VoidCallback onEdit;
+  final VoidCallback? onPay;
+  final VoidCallback? onOpenChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final priceLabel = activity.isFree ? l10n.freeLabel : activity.priceLabel;
+    final shouldShowPaymentAction =
+        isJoined && !isOwner && !activity.isFree && !isPaid && onPay != null;
+    final secondaryAction = showPublish
+        ? _FooterButtonSpec(
+            label: l10n.activityPublishButton,
+            icon: Icons.publish_rounded,
+            onTap: onPublish,
+            style: _FooterButtonStyle.secondary,
+            action: _FooterAction.publish,
+          )
+        : shouldShowPaymentAction
+        ? _FooterButtonSpec(
+            label: l10n.activityDetailsChatButton,
+            icon: Icons.forum_rounded,
+            onTap: onOpenChat ?? () {},
+            style: _FooterButtonStyle.secondary,
+            action: null,
+          )
+        : null;
+    final primaryAction = isOwner
+        ? _FooterButtonSpec(
+            label: l10n.editActivityButton,
+            icon: Icons.edit_outlined,
+            onTap: onEdit,
+            style: _FooterButtonStyle.primary,
+            action: null,
+          )
+        : isJoined
+        ? shouldShowPaymentAction
+              ? _FooterButtonSpec(
+                  label: l10n.activityPaymentPayButton,
+                  icon: Icons.payments_rounded,
+                  onTap: onPay ?? () {},
+                  style: _FooterButtonStyle.primary,
+                  action: null,
+                )
+              : _FooterButtonSpec(
+                  label: l10n.activityDetailsChatButton,
+                  icon: Icons.forum_rounded,
+                  onTap: onOpenChat ?? () {},
+                  style: _FooterButtonStyle.primary,
+                  action: null,
+                )
+        : _FooterButtonSpec(
+            label: l10n.activityJoinActivity,
+            icon: Icons.chevron_right_rounded,
+            onTap: onJoin,
+            style: _FooterButtonStyle.primary,
+            action: _FooterAction.join,
+          );
+    final priceBlockLabel = isPaid
+        ? l10n.activityPaymentStatusLabel
+        : l10n.activityDetailsTotalLabel;
+    final priceBlockValue = isPaid ? l10n.activityPaymentPaidValue : priceLabel;
+    final priceBlockLabelColor = isPaid
+        ? _DetailsColors.success.withValues(alpha: 0.72)
+        : const Color(0xFF9C9695);
+    final priceBlockValueColor = isPaid ? _DetailsColors.success : Colors.white;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(22, 14, 22, 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [const Color(0xE02F1809), const Color(0xF51D0E06)],
+          ),
+          border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final stackVertically =
+                secondaryAction != null && constraints.maxWidth < 360;
+            if (stackVertically) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _FooterPriceBlock(
+                    label: priceBlockLabel,
+                    value: priceBlockValue,
+                    labelColor: priceBlockLabelColor,
+                    valueColor: priceBlockValueColor,
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _FooterButton(
+                          spec: secondaryAction,
+                          isBusy:
+                              isBusy && pendingAction == secondaryAction.action,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _FooterButton(
+                          spec: primaryAction,
+                          isBusy:
+                              isBusy && pendingAction == primaryAction.action,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                _FooterPriceBlock(
+                  label: priceBlockLabel,
+                  value: priceBlockValue,
+                  labelColor: priceBlockLabelColor,
+                  valueColor: priceBlockValueColor,
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: secondaryAction == null
+                      ? _FooterButton(
+                          spec: primaryAction,
+                          isBusy:
+                              isBusy && pendingAction == primaryAction.action,
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: _FooterButton(
+                                spec: secondaryAction,
+                                isBusy:
+                                    isBusy &&
+                                    pendingAction == secondaryAction.action,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _FooterButton(
+                                spec: primaryAction,
+                                isBusy:
+                                    isBusy &&
+                                    pendingAction == primaryAction.action,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _FooterPriceBlock extends StatelessWidget {
+  const _FooterPriceBlock({
+    required this.label,
+    required this.value,
+    this.labelColor = const Color(0xFF9C9695),
+    this.valueColor = Colors.white,
+  });
+
+  final String label;
+  final String value;
+  final Color labelColor;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 96),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: labelColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                color: valueColor,
+                fontSize: 24,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.8,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _FooterButtonStyle { primary, secondary }
+
+class _FooterButtonSpec {
+  const _FooterButtonSpec({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    required this.style,
+    required this.action,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final _FooterButtonStyle style;
+  final _FooterAction? action;
+}
+
+class _FooterButton extends StatelessWidget {
+  const _FooterButton({required this.spec, required this.isBusy});
+
+  final _FooterButtonSpec spec;
+  final bool isBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPrimary = spec.style == _FooterButtonStyle.primary;
+    final backgroundColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.08);
+    final borderColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.1);
+    final foreground = isPrimary ? Colors.white : _DetailsColors.text;
+
+    return SizedBox(
+      height: 62,
+      child: ElevatedButton(
+        onPressed: isBusy ? null : spec.onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: foreground,
+          disabledBackgroundColor: backgroundColor,
+          disabledForegroundColor: foreground,
+          elevation: isPrimary ? 0 : 0,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: borderColor),
+          ),
+        ),
+        child: isBusy
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      spec.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.28,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(spec.icon, size: 20),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({
+    required this.label,
+    required this.backgroundColor,
+    required this.textColor,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: backgroundColor == AppColors.accent
+            ? [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : null,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+}
+
+String _resolveHeroContextLabel({
+  required ActivityListItemVm activity,
+  required AppLocalizations l10n,
+  required bool isOwner,
+  required bool isJoined,
+  required int occupyingCount,
+}) {
+  if (isOwner) {
+    return l10n.activityDetailsHostedBadge;
+  }
+  if (isJoined) {
+    return l10n.activityDetailsJoinedBadge;
+  }
+  if (activity.capacityType.toUpperCase() == 'LIMITED' &&
+      activity.maxParticipants != null) {
+    final spotsLeft = math.max(activity.maxParticipants! - occupyingCount, 0);
+    return l10n.activitySpotsLeft(spotsLeft);
+  }
+  return l10n.activityUnlimitedSpots;
+}
+
+String _resolveHostName(
+  String hostUserId,
+  UserProfileVm? profile, {
+  required Map<String, UserProfileVm> resolvedProfiles,
+  required AppLocalizations l10n,
+}) {
+  if (profile != null && profile.userId == hostUserId) {
+    return profile.preferredName;
+  }
+  final hostProfile = resolvedProfiles[hostUserId];
+  if (hostProfile != null) {
+    return hostProfile.preferredName;
+  }
+  return l10n.activityDetailsHostFallbackName;
+}
+
+String _resolveHostSubtitle({
+  required ActivityListItemVm activity,
+  required AppLocalizations l10n,
+}) {
+  final visibility = activity.visibility.toUpperCase() == 'PRIVATE'
+      ? l10n.profilePrivate
+      : l10n.profilePublic;
+  final format = formatActivityFormat(activity.format, l10n);
+  return '$format • $visibility';
+}
+
+String _prettyCategory(String value) {
+  final normalized = value.trim();
+  if (normalized.isEmpty) {
+    return 'Activity';
+  }
+
+  return normalized
+      .split(RegExp(r'[_\-\s]+'))
+      .where((part) => part.isNotEmpty)
+      .map(
+        (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+      )
+      .join(' ');
+}
+
+String _prettyToken(String value) {
+  final normalized = value.trim();
+  if (normalized.isEmpty) {
+    return value;
+  }
+  return normalized
+      .split('_')
+      .where((part) => part.isNotEmpty)
+      .map(
+        (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+      )
+      .join(' ');
+}
+
+LatLng? _resolveMeetingPoint(ActivityListItemVm activity) {
+  final latitude = activity.latitude;
+  final longitude = activity.longitude;
+  if (_isValidMeetingPoint(latitude, longitude)) {
+    return LatLng(latitude!, longitude!);
+  }
+
+  final mapUrl = (activity.mapUrl ?? '').trim();
+  if (mapUrl.isEmpty) {
+    return null;
+  }
+
+  final parsedUri = Uri.tryParse(mapUrl);
+  final mlat = double.tryParse(parsedUri?.queryParameters['mlat'] ?? '');
+  final mlon = double.tryParse(parsedUri?.queryParameters['mlon'] ?? '');
+  if (_isValidMeetingPoint(mlat, mlon)) {
+    return LatLng(mlat!, mlon!);
+  }
+
+  final fragment = parsedUri?.fragment ?? '';
+  final fragmentMatch = RegExp(
+    r'map=\d+(?:\.\d+)?/(-?\d+(?:\.\d+)?)/(-?\d+(?:\.\d+)?)',
+  ).firstMatch(fragment);
+  if (fragmentMatch != null) {
+    final fragmentLat = double.tryParse(fragmentMatch.group(1) ?? '');
+    final fragmentLon = double.tryParse(fragmentMatch.group(2) ?? '');
+    if (_isValidMeetingPoint(fragmentLat, fragmentLon)) {
+      return LatLng(fragmentLat!, fragmentLon!);
+    }
+  }
+
+  return null;
+}
+
+bool _isValidMeetingPoint(double? latitude, double? longitude) {
+  if (latitude == null || longitude == null) {
+    return false;
+  }
+  return latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180;
+}
+
+String _resolveUserName(
+  String userId,
+  AppLocalizations l10n, {
+  Map<String, UserProfileVm> resolvedProfiles = const {},
+}) {
+  final profile = resolvedProfiles[userId];
+  if (profile != null) {
+    return profile.preferredName;
+  }
+  return l10n.activityParticipantFallbackName;
+}
+
+Color _activityStatusColor(String status) {
+  switch (status.toUpperCase()) {
+    case 'PUBLISHED':
+    case 'ENROLLMENT_OPEN':
+      return _DetailsColors.success;
+    case 'FULL':
+      return const Color(0xFFF7B955);
+    case 'REVIEW_REQUIRED':
+      return const Color(0xFFF6A63D);
+    case 'DRAFT':
+      return const Color(0xFF8C8582);
+    case 'COMPLETED':
+      return const Color(0xFF80B7FF);
+    case 'CANCELLED':
+      return const Color(0xFFFF6B6B);
+    default:
+      return const Color(0xFF8C8582);
+  }
+}
+
+Color _statusPillColor(String status) {
+  switch (status.toUpperCase()) {
+    case 'APPROVED':
+    case 'CONFIRMED':
+    case 'CHECKED_IN':
+      return _DetailsColors.success.withValues(alpha: 0.18);
+    case 'WAITLISTED':
+      return AppColors.accent.withValues(alpha: 0.18);
+    case 'REQUESTED':
+      return const Color(0x2280B7FF);
+    default:
+      return Colors.white.withValues(alpha: 0.08);
+  }
+}
+
+Color _statusTextColor(String status) {
+  switch (status.toUpperCase()) {
+    case 'APPROVED':
+    case 'CONFIRMED':
+    case 'CHECKED_IN':
+      return _DetailsColors.success;
+    case 'WAITLISTED':
+      return AppColors.accent;
+    case 'REQUESTED':
+      return const Color(0xFF80B7FF);
+    default:
+      return _DetailsColors.text;
+  }
+}
+
+List<Color> _seedGradient(String seed) {
+  const palettes = <List<Color>>[
+    [Color(0xFF2A7A6E), Color(0xFF7ABDA9)],
+    [Color(0xFFC8CDB5), Color(0xFFF3EFE2)],
+    [Color(0xFFA6B686), Color(0xFF6F8E55)],
+    [Color(0xFF3A302C), Color(0xFFC9B09B)],
+    [Color(0xFF6CB5B1), Color(0xFF5F9E98)],
+    [Color(0xFF6E78A6), Color(0xFFA6ABD8)],
+  ];
+
+  final hash = seed.codeUnits.fold<int>(0, (sum, unit) => sum + unit);
+  return palettes[hash % palettes.length];
+}
+
+String _seedInitials(String seed) {
+  final compact = seed.replaceAll('-', '');
+  if (compact.length >= 2) {
+    return compact.substring(0, 2).toUpperCase();
+  }
+  if (compact.isNotEmpty) {
+    return compact[0].toUpperCase();
+  }
+  return 'F';
+}
+
+String? _resolveMeetingActionCopyValue(ActivityListItemVm activity) {
+  final meetingUrl = (activity.meetingUrl ?? '').trim();
+  if (meetingUrl.isNotEmpty) {
+    return meetingUrl;
+  }
+  final mapUrl = (activity.mapUrl ?? '').trim();
+  if (mapUrl.isNotEmpty) {
+    return mapUrl;
+  }
+  final address = (activity.addressText ?? '').trim();
+  if (address.isNotEmpty) {
+    return address;
+  }
+  if (activity.shortLocation.isNotEmpty) {
+    return activity.shortLocation;
+  }
+  return null;
 }

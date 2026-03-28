@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -333,9 +334,6 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 
 	if v := strings.TrimSpace(q.Get("visibility")); v != "" {
 		filter.Visibility = &v
-	} else {
-		vis := string(enum.ActivityVisibilityPublic)
-		filter.Visibility = &vis
 	}
 	if v := strings.TrimSpace(q.Get("categorySlug")); v != "" {
 		filter.CategorySlug = &v
@@ -345,9 +343,6 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 	}
 	if v := strings.TrimSpace(q.Get("cityName")); v != "" {
 		filter.CityName = &v
-	}
-	if v := strings.TrimSpace(q.Get("languageCode")); v != "" {
-		filter.LanguageCode = &v
 	}
 	if v := strings.TrimSpace(q.Get("q")); v != "" {
 		filter.SearchQuery = &v
@@ -697,9 +692,17 @@ func (h *Handler) JoinActivity(w http.ResponseWriter, r *http.Request, activityI
 		return
 	}
 
+	var req dto.JoinActivityRequest
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil &&
+		!errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
 	item, err := h.joinUC.JoinActivity(r.Context(), app.JoinActivityInput{
-		ActivityID: activityID,
-		UserID:     actorUserID,
+		ActivityID:         activityID,
+		UserID:             actorUserID,
+		VisibilityPassword: req.Password,
 	})
 	if err != nil {
 		h.writeAppError(w, err, "failed to join activity")

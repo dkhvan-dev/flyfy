@@ -53,9 +53,7 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
         ChangeNotifierProvider<SessionProvider>.value(value: _sessionProvider),
         ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
-        ChangeNotifierProvider(
-          create: (_) => ActivityProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => ActivityProvider()),
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, _) {
@@ -64,6 +62,11 @@ class _SuperAppState extends State<SuperApp> {
             debugShowCheckedModeBanner: false,
             routerConfig: _router,
             locale: localeProvider.locale,
+            builder: (context, child) {
+              return _DismissKeyboardOnTap(
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
             theme: ThemeData(
               useMaterial3: true,
               scaffoldBackgroundColor: const Color(0xFF0A0A0F),
@@ -83,6 +86,21 @@ class _SuperAppState extends State<SuperApp> {
           );
         },
       ),
+    );
+  }
+}
+
+class _DismissKeyboardOnTap extends StatelessWidget {
+  const _DismissKeyboardOnTap({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: child,
     );
   }
 }

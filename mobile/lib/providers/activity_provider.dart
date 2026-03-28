@@ -224,13 +224,19 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> joinActivity(String activityId) async {
+  Future<bool> joinActivity(
+    String activityId, {
+    String? visibilityPassword,
+  }) async {
     _actionState = ActivityActionState.loading;
     _actionErrorMessage = null;
     notifyListeners();
 
     try {
-      await _activityApi.joinActivity(activityId);
+      await _activityApi.joinActivity(
+        activityId,
+        visibilityPassword: visibilityPassword,
+      );
       _actionState = ActivityActionState.success;
       return true;
     } on DioException catch (e) {

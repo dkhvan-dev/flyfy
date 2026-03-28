@@ -21,8 +21,9 @@ func NewJoinUseCase(repo port.ActivityRepository) *JoinUseCase {
 }
 
 type JoinActivityInput struct {
-	ActivityID uuid.UUID
-	UserID     uuid.UUID
+	ActivityID         uuid.UUID
+	UserID             uuid.UUID
+	VisibilityPassword *string
 }
 
 type LeaveActivityInput struct {
@@ -67,6 +68,15 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 		}
 		if existing != nil && existing.Status.IsActive() {
 			return ErrAlreadyJoined
+		}
+
+		if activity.Visibility == enum.ActivityVisibilityPrivate {
+			if err = verifyVisibilityPassword(
+				activity.VisibilityPasswordHash,
+				input.VisibilityPassword,
+			); err != nil {
+				return err
+			}
 		}
 
 		occupied, err := txRepo.CountOccupiedSlotsForUpdate(ctx, input.ActivityID)

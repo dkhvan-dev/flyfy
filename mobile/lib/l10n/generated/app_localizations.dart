@@ -790,6 +790,12 @@ abstract class AppLocalizations {
   /// **'Leave'**
   String get activityLeaveButton;
 
+  /// No description provided for @activityLeaveInlineButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Activity'**
+  String get activityLeaveInlineButton;
+
   /// No description provided for @activityJoinSuccess.
   ///
   /// In en, this message translates to:
@@ -813,6 +819,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to leave the activity'**
   String get activityLeaveFailed;
+
+  /// No description provided for @activityGoingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Going ({count})'**
+  String activityGoingTitle(int count);
+
+  /// No description provided for @activityDetailsViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get activityDetailsViewAll;
+
+  /// No description provided for @activityDetailsLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get activityDetailsLinkCopied;
+
+  /// No description provided for @activityDetailsHostedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Hosted by you'**
+  String get activityDetailsHostedBadge;
+
+  /// No description provided for @activityDetailsJoinedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined'**
+  String get activityDetailsJoinedBadge;
+
+  /// No description provided for @activityDetailsTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get activityDetailsTotalLabel;
+
+  /// No description provided for @activityDetailsChatButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chat'**
+  String get activityDetailsChatButton;
+
+  /// No description provided for @activityDetailsHostFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'FlyFy Host'**
+  String get activityDetailsHostFallbackName;
+
+  /// No description provided for @activityPaymentScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FLYFY CHECKOUT'**
+  String get activityPaymentScreenTitle;
+
+  /// No description provided for @activityPaymentSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Summary'**
+  String get activityPaymentSummaryTitle;
+
+  /// No description provided for @activityPaymentBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Price Breakdown'**
+  String get activityPaymentBreakdownTitle;
+
+  /// No description provided for @activityPaymentMethodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method'**
+  String get activityPaymentMethodTitle;
+
+  /// No description provided for @activityPaymentHostedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Hosted by {host}'**
+  String activityPaymentHostedBy(Object host);
+
+  /// No description provided for @activityPaymentAdmissionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'1x Activity Access'**
+  String get activityPaymentAdmissionLabel;
+
+  /// No description provided for @activityPaymentServiceFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Fee'**
+  String get activityPaymentServiceFeeLabel;
+
+  /// No description provided for @activityPaymentSavedCardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved Card'**
+  String get activityPaymentSavedCardLabel;
+
+  /// No description provided for @activityPaymentCardHolderFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'FlyFy Member'**
+  String get activityPaymentCardHolderFallback;
+
+  /// No description provided for @activityPaymentApplePayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple Pay'**
+  String get activityPaymentApplePayLabel;
+
+  /// No description provided for @activityPaymentGooglePayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Pay'**
+  String get activityPaymentGooglePayLabel;
+
+  /// No description provided for @activityPaymentConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm & Pay {amount}'**
+  String activityPaymentConfirmButton(Object amount);
+
+  /// No description provided for @activityPaymentSecureNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure 256-bit SSL encrypted payment'**
+  String get activityPaymentSecureNote;
+
+  /// No description provided for @activityPaymentPayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay'**
+  String get activityPaymentPayButton;
+
+  /// No description provided for @activityPaymentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment marked as paid'**
+  String get activityPaymentSuccess;
+
+  /// No description provided for @activityPaymentStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get activityPaymentStatusLabel;
+
+  /// No description provided for @activityPaymentPaidValue.
+  ///
+  /// In en, this message translates to:
+  /// **'PAID'**
+  String get activityPaymentPaidValue;
+
+  /// No description provided for @activityParticipantFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'Participant'**
+  String get activityParticipantFallbackName;
+
+  /// No description provided for @activityParticipantsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No participants yet'**
+  String get activityParticipantsEmpty;
+
+  /// No description provided for @activityParticipantsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load participants right now'**
+  String get activityParticipantsLoadFailed;
+
+  /// No description provided for @activityPrivateJoinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private Activity'**
+  String get activityPrivateJoinTitle;
+
+  /// No description provided for @activityPrivateJoinDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This activity is curated for a select group. Please enter the invitation password to join.'**
+  String get activityPrivateJoinDescription;
+
+  /// No description provided for @activityPrivateJoinPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Password'**
+  String get activityPrivateJoinPasswordLabel;
+
+  /// No description provided for @activityPrivateJoinPasswordPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter access password'**
+  String get activityPrivateJoinPasswordPlaceholder;
+
+  /// No description provided for @activityPrivateJoinPasswordValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a password from 4 to 64 characters'**
+  String get activityPrivateJoinPasswordValidation;
+
+  /// No description provided for @activityPrivateJoinInvalidPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect password. Try again.'**
+  String get activityPrivateJoinInvalidPassword;
+
+  /// No description provided for @activityPrivateJoinSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & Join'**
+  String get activityPrivateJoinSubmit;
 
   /// No description provided for @homeTitle.
   ///
@@ -910,6 +1126,12 @@ abstract class AppLocalizations {
   /// **'See all'**
   String get homeSeeAll;
 
+  /// No description provided for @homeRecommendedBlogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended Blogs'**
+  String get homeRecommendedBlogs;
+
   /// No description provided for @homeEditorialBadge.
   ///
   /// In en, this message translates to:
@@ -931,7 +1153,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeReadStory.
   ///
   /// In en, this message translates to:
-  /// **'Read Story'**
+  /// **'Read'**
   String get homeReadStory;
 
   /// No description provided for @homeFeaturedStays.
@@ -958,11 +1180,83 @@ abstract class AppLocalizations {
   /// **'Filter'**
   String get homeFilterButton;
 
+  /// No description provided for @homeMoreButton.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get homeMoreButton;
+
+  /// No description provided for @homeDestinationCharynTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Charyn Canyon'**
+  String get homeDestinationCharynTitle;
+
+  /// No description provided for @homeDestinationCharynSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nature & Adventure'**
+  String get homeDestinationCharynSubtitle;
+
+  /// No description provided for @homeDestinationLakeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Big Almaty Lake'**
+  String get homeDestinationLakeTitle;
+
+  /// No description provided for @homeDestinationLakeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scenic Views'**
+  String get homeDestinationLakeSubtitle;
+
+  /// No description provided for @homeDestinationKolsaiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Kolsai Lakes'**
+  String get homeDestinationKolsaiTitle;
+
+  /// No description provided for @homeDestinationKolsaiSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mountain Escape'**
+  String get homeDestinationKolsaiSubtitle;
+
+  /// No description provided for @homeDurationHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String homeDurationHours(Object hours);
+
+  /// No description provided for @homeBookNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Now'**
+  String get homeBookNow;
+
   /// No description provided for @homeNavHome.
   ///
   /// In en, this message translates to:
   /// **'Home'**
   String get homeNavHome;
+
+  /// No description provided for @homeNavQr.
+  ///
+  /// In en, this message translates to:
+  /// **'QR'**
+  String get homeNavQr;
+
+  /// No description provided for @homeNavMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get homeNavMap;
+
+  /// No description provided for @homeNavChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats'**
+  String get homeNavChats;
 
   /// No description provided for @homeNavMy.
   ///
@@ -2055,6 +2349,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pricing'**
   String get activitiesFilterPricing;
+
+  /// No description provided for @activitiesFilterVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get activitiesFilterVisibility;
+
+  /// No description provided for @activitiesDiscoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover Activities'**
+  String get activitiesDiscoverTitle;
+
+  /// No description provided for @activitiesFilteredEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No activities match these filters'**
+  String get activitiesFilteredEmptyTitle;
+
+  /// No description provided for @activitiesFilteredEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try widening the category, date range, or pricing filters'**
+  String get activitiesFilteredEmptySubtitle;
+
+  /// No description provided for @activitiesResultsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No activities} =1{1 activity} other{{count} activities}}'**
+  String activitiesResultsCount(num count);
+
+  /// No description provided for @activitiesFiltersCategoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get activitiesFiltersCategoriesTitle;
+
+  /// No description provided for @activitiesFiltersSelectedCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected Categories'**
+  String get activitiesFiltersSelectedCategories;
+
+  /// No description provided for @activitiesShowResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count, plural, =0{0 activities} =1{1 activity} other{{count} activities}}'**
+  String activitiesShowResults(num count);
+
+  /// No description provided for @activitiesAllCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get activitiesAllCategories;
+
+  /// No description provided for @activitiesFiltersPriceRangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Price Range'**
+  String get activitiesFiltersPriceRangeTitle;
+
+  /// No description provided for @activitiesFiltersVisibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get activitiesFiltersVisibilityTitle;
+
+  /// No description provided for @activitiesFilterMinPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Price'**
+  String get activitiesFilterMinPrice;
+
+  /// No description provided for @activitiesFilterMaxPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Price'**
+  String get activitiesFilterMaxPrice;
+
+  /// No description provided for @activitiesDatePresetToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get activitiesDatePresetToday;
+
+  /// No description provided for @activitiesDatePresetTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get activitiesDatePresetTomorrow;
+
+  /// No description provided for @activitiesDatePresetThisWeekend.
+  ///
+  /// In en, this message translates to:
+  /// **'This Weekend'**
+  String get activitiesDatePresetThisWeekend;
+
+  /// No description provided for @activitiesDatePresetThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This Week'**
+  String get activitiesDatePresetThisWeek;
+
+  /// No description provided for @activitiesDatePresetThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This Month'**
+  String get activitiesDatePresetThisMonth;
 
   /// No description provided for @activityViewDetails.
   ///

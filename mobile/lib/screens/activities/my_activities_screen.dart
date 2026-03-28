@@ -10,6 +10,7 @@ import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
+import 'widgets/activities_bottom_bar.dart';
 
 enum _MyActivitiesTab { hosted, attended }
 
@@ -92,8 +93,12 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     context.go('/activities');
   }
 
-  void _goProfile() {
-    context.go('/profile');
+  void _openQrStub() {
+    context.push('/qr');
+  }
+
+  void _openChatsStub() {
+    context.push('/chats');
   }
 
   void _showComingSoon() {
@@ -272,12 +277,13 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
     return Scaffold(
       backgroundColor: _MyActivitiesPalette.background,
-      bottomNavigationBar: _MyActivitiesBottomNav(
-        l10n: l10n,
+      bottomNavigationBar: ActivitiesBottomBar(
+        backgroundStyle: ActivitiesBottomBarBackgroundStyle.home,
         onHomeTap: _goHome,
-        onActivitiesTap: _goActivities,
+        onQrTap: _openQrStub,
         onCreateTap: _openCreateActivity,
-        onProfileTap: _goProfile,
+        onServicesTap: _goActivities,
+        onChatsTap: _openChatsStub,
       ),
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -310,8 +316,9 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                 onRefresh: () => _refreshActive(provider),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints:
-                        BoxConstraints(maxWidth: layout.maxContentWidth),
+                    constraints: BoxConstraints(
+                      maxWidth: layout.maxContentWidth,
+                    ),
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: EdgeInsets.fromLTRB(
@@ -352,7 +359,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                             title: _activeTab == _MyActivitiesTab.hosted
                                 ? l10n.myActivitiesLoadFailed
                                 : l10n.myActivitiesAttendedLoadFailed,
-                            message: errorMessage ??
+                            message:
+                                errorMessage ??
                                 (_activeTab == _MyActivitiesTab.hosted
                                     ? l10n.myActivitiesLoadFailed
                                     : l10n.myActivitiesAttendedLoadFailed),
@@ -385,8 +393,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                                   return;
                                 }
 
-                                final status =
-                                    filteredItems[i].status.toUpperCase();
+                                final status = filteredItems[i].status
+                                    .toUpperCase();
                                 if (status == 'DRAFT') {
                                   _openEdit(filteredItems[i]);
                                   return;
@@ -398,10 +406,10 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                               },
                               onSecondaryTap:
                                   _activeTab == _MyActivitiesTab.hosted
-                                      ? () => _showComingSoon()
-                                      : null,
-                              onTertiaryTap: _activeTab ==
-                                          _MyActivitiesTab.hosted &&
+                                  ? () => _showComingSoon()
+                                  : null,
+                              onTertiaryTap:
+                                  _activeTab == _MyActivitiesTab.hosted &&
                                       filteredItems[i].status.toUpperCase() ==
                                           'DRAFT'
                                   ? _showComingSoon
@@ -475,7 +483,6 @@ abstract final class _MyActivitiesPalette {
   static const Color surface = Color(0xFF1A1009);
   static const Color surfaceSoft = Color(0xFF241405);
   static const Color card = Color(0xFF21150D);
-  static const Color cardStrong = Color(0xFF2A180D);
   static const Color accent = Color(0xFFFF9800);
   static const Color text = Color(0xFFFFF4E5);
   static const Color textMuted = Color(0xFFB9A88F);
@@ -510,8 +517,8 @@ class _MyActivitiesAdaptiveLayout {
   double get horizontalPadding => isCompact
       ? 16
       : isLargePhone
-          ? 24
-          : 20;
+      ? 24
+      : 20;
   double get topPadding => isCompact ? 12 : 14;
   double get topSectionSpacing => isCompact ? 14 : 16;
   double get sectionSpacing => isCompact ? 16 : 18;
@@ -871,8 +878,9 @@ class _MyActivitiesCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _PriceBlock(
-                            value:
-                                item.isFree ? l10n.freeLabel : item.priceLabel,
+                            value: item.isFree
+                                ? l10n.freeLabel
+                                : item.priceLabel,
                             note: item.isFree
                                 ? l10n.myActivitiesPriceNoteFree
                                 : l10n.createPricePerPersonHint,
@@ -1198,8 +1206,9 @@ class _PriceBlock extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: alignStart ? 220 : 112),
       child: Column(
-        crossAxisAlignment:
-            alignStart ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        crossAxisAlignment: alignStart
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.end,
         children: [
           Text(
             value,
@@ -1284,11 +1293,11 @@ class _CardActionButton extends StatelessWidget {
     final backgroundColor = switch (variant) {
       _CardActionVariant.primary => _MyActivitiesPalette.accent,
       _CardActionVariant.secondary => _MyActivitiesPalette.accent.withValues(
-          alpha: 0.08,
-        ),
+        alpha: 0.08,
+      ),
       _CardActionVariant.disabled => _MyActivitiesPalette.accent.withValues(
-          alpha: 0.05,
-        ),
+        alpha: 0.05,
+      ),
     };
 
     final foregroundColor = switch (variant) {
@@ -1538,137 +1547,6 @@ class _CircleIconButton extends StatelessWidget {
             icon,
             size: compact ? 18 : 20,
             color: _MyActivitiesPalette.text,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MyActivitiesBottomNav extends StatelessWidget {
-  const _MyActivitiesBottomNav({
-    required this.l10n,
-    required this.onHomeTap,
-    required this.onActivitiesTap,
-    required this.onCreateTap,
-    required this.onProfileTap,
-  });
-
-  final AppLocalizations l10n;
-  final VoidCallback onHomeTap;
-  final VoidCallback onActivitiesTap;
-  final VoidCallback onCreateTap;
-  final VoidCallback onProfileTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final layout = _MyActivitiesAdaptiveLayout.of(context);
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            _MyActivitiesPalette.cardStrong.withValues(alpha: 0.96),
-            const Color(0xFF42311D),
-          ],
-        ),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            layout.navHorizontalPadding,
-            layout.isCompact ? 8 : 10,
-            layout.navHorizontalPadding,
-            layout.isCompact ? 10 : 12,
-          ),
-          child: Row(
-            children: [
-              _BottomNavItem(
-                label: l10n.homeNavHome,
-                icon: Icons.home_rounded,
-                onTap: onHomeTap,
-              ),
-              _BottomNavItem(
-                label: l10n.activitiesEntryTitle,
-                icon: Icons.explore_rounded,
-                onTap: onActivitiesTap,
-              ),
-              _BottomNavItem(
-                label: l10n.createActivityFab,
-                icon: Icons.add_circle_rounded,
-                onTap: onCreateTap,
-              ),
-              _BottomNavItem(
-                label: l10n.homeNavMy,
-                icon: Icons.event_note_rounded,
-                isActive: true,
-                onTap: () {},
-              ),
-              _BottomNavItem(
-                label: l10n.profileTitle,
-                icon: Icons.person_rounded,
-                onTap: onProfileTap,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomNavItem extends StatelessWidget {
-  const _BottomNavItem({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.isActive = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final layout = _MyActivitiesAdaptiveLayout.of(context);
-    final color =
-        isActive ? _MyActivitiesPalette.accent : const Color(0xFFD8C7B0);
-
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: layout.navVerticalPadding),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: layout.navIconSize, color: color),
-                SizedBox(height: layout.isCompact ? 4 : 6),
-                Text(
-                  label,
-                  maxLines: layout.isCompact ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: layout.navLabelSize,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
@@ -1943,7 +1821,8 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                                 controller: _startDateController,
                                 focusNode: _startDateFocusNode,
                                 hintText: widget
-                                    .l10n.myActivitiesFilterDatePlaceholder,
+                                    .l10n
+                                    .myActivitiesFilterDatePlaceholder,
                                 errorText: _startDateError,
                                 onChanged: (_) => _handleDateChanged(),
                                 onSubmitted: (_) =>
@@ -1958,7 +1837,8 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                                 controller: _endDateController,
                                 focusNode: _endDateFocusNode,
                                 hintText: widget
-                                    .l10n.myActivitiesFilterDatePlaceholder,
+                                    .l10n
+                                    .myActivitiesFilterDatePlaceholder,
                                 errorText: _endDateError,
                                 onChanged: (_) => _handleDateChanged(),
                                 onSubmitted: (_) => _applyFilters(),
@@ -2050,8 +1930,9 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                           child: _SheetActionButton(
                             label: widget.l10n.myActivitiesFilterClear,
                             variant: _CardActionVariant.secondary,
-                            onTap: () => Navigator.of(context)
-                                .pop(const _MyActivitiesFilters()),
+                            onTap: () => Navigator.of(
+                              context,
+                            ).pop(const _MyActivitiesFilters()),
                           ),
                         ),
                       ],
@@ -2064,8 +1945,9 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                         child: _SheetActionButton(
                           label: widget.l10n.myActivitiesFilterClear,
                           variant: _CardActionVariant.secondary,
-                          onTap: () => Navigator.of(context)
-                              .pop(const _MyActivitiesFilters()),
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pop(const _MyActivitiesFilters()),
                         ),
                       ),
                       const SizedBox(width: 18),
@@ -2237,9 +2119,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-            .substring(0, newValue.selection.end)
-            .replaceAll(RegExp(r'[^0-9]'), '')
-            .length;
+              .substring(0, newValue.selection.end)
+              .replaceAll(RegExp(r'[^0-9]'), '')
+              .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;

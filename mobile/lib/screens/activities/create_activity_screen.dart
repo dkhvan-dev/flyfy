@@ -32,7 +32,10 @@ class CreateActivityScreen extends StatefulWidget {
 class _CreateActivityScreenState extends State<CreateActivityScreen> {
   final _pageController = PageController();
   int _currentStep = 0;
+  int? _pendingProgrammaticStep;
   static const _totalSteps = 3;
+  static const double _stepBackSwipeMinDistance = 56;
+  static const double _stepBackSwipeMinVelocity = 700;
 
   // — Step 1: Basic —
   final _titleCtrl = TextEditingController();
@@ -81,6 +84,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   static const _dateTimeInputFormatter = _DateTimeInputFormatter();
 
   bool _isSubmitting = false;
+  bool _isTrackingStepBackSwipe = false;
+  double _stepBackSwipeDistance = 0;
 
   // Track whether the user changed date/time fields in edit mode.
   bool _startAtChanged = false;
@@ -348,14 +353,99 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     });
   }
 
-  void _goToStep(int step) {
+  void _goToStep(int step, {bool animate = true}) {
     if (step < 0 || step >= _totalSteps) return;
-    _pageController.animateToPage(
-      step,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    if (_currentStep == step && _pendingProgrammaticStep == null) return;
+
+    _pendingProgrammaticStep = step;
     setState(() => _currentStep = step);
+
+    if (animate) {
+      _pageController.animateToPage(
+        step,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      return;
+    }
+
+    _pageController.jumpToPage(step);
+    _pendingProgrammaticStep = null;
+  }
+
+  void _handlePageChanged(int step) {
+    final pendingStep = _pendingProgrammaticStep;
+    if (pendingStep != null && step != pendingStep) {
+      return;
+    }
+
+    if (_currentStep == step && _pendingProgrammaticStep == null) {
+      return;
+    }
+
+    setState(() {
+      _currentStep = step;
+      if (_pendingProgrammaticStep == step) {
+        _pendingProgrammaticStep = null;
+      }
+    });
+  }
+
+  void _resetStepBackSwipe() {
+    _isTrackingStepBackSwipe = false;
+    _stepBackSwipeDistance = 0;
+  }
+
+  double _stepBackSwipeEdgeWidth(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return width <= 393 ? 68.0 : 76.0;
+  }
+
+  void _handleStepBackSwipeStart(DragStartDetails details) {
+    if (_currentStep <= 0) {
+      _resetStepBackSwipe();
+      return;
+    }
+
+    final edgeWidth = _stepBackSwipeEdgeWidth(context);
+    _isTrackingStepBackSwipe = details.localPosition.dx <= edgeWidth;
+    _stepBackSwipeDistance = 0;
+  }
+
+  void _handleStepBackSwipeUpdate(DragUpdateDetails details) {
+    if (!_isTrackingStepBackSwipe) return;
+
+    final delta = details.primaryDelta ?? 0;
+    if (delta < 0 && _stepBackSwipeDistance <= 0) {
+      _resetStepBackSwipe();
+      return;
+    }
+
+    _stepBackSwipeDistance += delta;
+  }
+
+  void _handleStepBackSwipeEnd(DragEndDetails details) {
+    final primaryVelocity = details.primaryVelocity ?? 0;
+    final shouldGoBack =
+        _isTrackingStepBackSwipe &&
+        _currentStep > 0 &&
+        (_stepBackSwipeDistance >= _stepBackSwipeMinDistance ||
+            primaryVelocity >= _stepBackSwipeMinVelocity);
+
+    _resetStepBackSwipe();
+    if (!shouldGoBack) return;
+
+    FocusScope.of(context).unfocus();
+    _goToStep(_currentStep - 1);
+  }
+
+  void _handleRoutePopInvoked(bool didPop) {
+    if (didPop || _currentStep <= 0) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    _goToStep(_currentStep - 1, animate: false);
   }
 
   bool _validateCurrentStep() {
@@ -661,8 +751,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       longitude: _longitudeValue,
       mapUrl: _mapUrlValue,
       meetingUrl: _meetingUrlValue,
-      visibilityPassword:
-          _visibility == 'PRIVATE' ? _visibilityPasswordValue : null,
+      visibilityPassword: _visibility == 'PRIVATE'
+          ? _visibilityPasswordValue
+          : null,
     );
   }
 
@@ -955,89 +1046,109 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final stepBackSwipeEdgeWidth = _stepBackSwipeEdgeWidth(context);
 
     final stepTitles = [
       l10n.createStepDetailsLogistics,
       l10n.createStepParticipation,
     ];
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF231A0F), Color(0xFF2A1F12), Color(0xFF231A0F)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+    return PopScope(
+      canPop: _currentStep == 0,
+      onPopInvokedWithResult: (didPop, _) => _handleRoutePopInvoked(didPop),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF231A0F), Color(0xFF2A1F12), Color(0xFF231A0F)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _CreateTopBar(
-                title: widget.isEditMode
-                    ? l10n.editActivityTitle
-                    : l10n.createActivityTitle,
-                onLeadingPressed: () {
-                  if (_currentStep > 0) {
-                    _goToStep(_currentStep - 1);
-                    return;
-                  }
-                  context.pop();
-                },
-              ),
-              _StepIndicator(
-                currentStep: _currentStep,
-                totalSteps: _totalSteps,
-                titles: stepTitles,
-                counterLabel: l10n.createStepCounter(
-                  _currentStep + 1,
-                  _totalSteps,
+          child: SafeArea(
+            child: Column(
+              children: [
+                _CreateTopBar(
+                  title: widget.isEditMode
+                      ? l10n.editActivityTitle
+                      : l10n.createActivityTitle,
                 ),
-                compact: true,
-              ),
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (i) => setState(() => _currentStep = i),
-                  children: [
-                    _buildStep1Basic(l10n),
-                    _buildStep2Schedule(l10n),
-                    _buildStep3Participation(l10n),
-                  ],
+                _StepIndicator(
+                  currentStep: _currentStep,
+                  totalSteps: _totalSteps,
+                  titles: stepTitles,
+                  counterLabel: l10n.createStepCounter(
+                    _currentStep + 1,
+                    _totalSteps,
+                  ),
+                  compact: true,
+                  onStepTap: (step) {
+                    if (step < _currentStep) {
+                      _goToStep(step, animate: false);
+                    }
+                  },
                 ),
-              ),
-              if (_currentStep == _totalSteps - 1)
-                _Step3ActionBar(
-                  isSubmitting: _isSubmitting,
-                  onBack: () => _goToStep(_currentStep - 1),
-                  onPrimaryAction:
-                      widget.isEditMode ? _submit : _submitAndPublish,
-                  backLabel: l10n.createStepBack,
-                  primaryLabel: widget.isEditMode
-                      ? l10n.editActivitySubmit
-                      : l10n.createPublishActivityCta,
-                  showPrimaryIcon: !widget.isEditMode,
-                )
-              else if (_currentStep == 1)
-                _Step2NavBar(
-                  isSubmitting: _isSubmitting,
-                  onBack: () => _goToStep(_currentStep - 1),
-                  onNext: _nextStep,
-                  backLabel: l10n.createStepBack,
-                  nextLabel: l10n.createStepNext,
-                )
-              else
-                _BottomNavBar(
-                  isSubmitting: _isSubmitting,
-                  onNext: _nextStep,
-                  nextLabel: _currentStep == _totalSteps - 1
-                      ? l10n.editActivitySubmit
-                      : l10n.createStepNext,
-                  heroStyle: _currentStep == 0,
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: PageView(
+                          controller: _pageController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onPageChanged: _handlePageChanged,
+                          children: [
+                            _buildStep1Basic(l10n),
+                            _buildStep2Schedule(l10n),
+                            _buildStep3Participation(l10n),
+                          ],
+                        ),
+                      ),
+                      if (_currentStep > 0)
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: stepBackSwipeEdgeWidth,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onHorizontalDragStart: _handleStepBackSwipeStart,
+                            onHorizontalDragUpdate: _handleStepBackSwipeUpdate,
+                            onHorizontalDragEnd: _handleStepBackSwipeEnd,
+                            onHorizontalDragCancel: _resetStepBackSwipe,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-            ],
+                if (_currentStep == _totalSteps - 1)
+                  _Step3ActionBar(
+                    isSubmitting: _isSubmitting,
+                    onPrimaryAction: widget.isEditMode
+                        ? _submit
+                        : _submitAndPublish,
+                    primaryLabel: widget.isEditMode
+                        ? l10n.editActivitySubmit
+                        : l10n.createPublishActivityCta,
+                    showPrimaryIcon: !widget.isEditMode,
+                  )
+                else if (_currentStep == 1)
+                  _Step2NavBar(
+                    isSubmitting: _isSubmitting,
+                    onNext: _nextStep,
+                    nextLabel: l10n.createStepNext,
+                  )
+                else
+                  _BottomNavBar(
+                    isSubmitting: _isSubmitting,
+                    onNext: _nextStep,
+                    nextLabel: _currentStep == _totalSteps - 1
+                        ? l10n.editActivitySubmit
+                        : l10n.createStepNext,
+                    heroStyle: _currentStep == 0,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1117,7 +1228,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               if (provider.categoryState == ActivitiesState.error &&
                   items.isEmpty) {
                 return _CategoryCatalogState(
-                  message: provider.categoryErrorMessage ??
+                  message:
+                      provider.categoryErrorMessage ??
                       l10n.createCategoryLoadFailed,
                   trailing: TextButton(
                     onPressed: () => context
@@ -1263,8 +1375,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             locationLocked
                 ? l10n.editLocationLocked
                 : (_isResolvingMapSelection
-                    ? l10n.createMapResolvingHint
-                    : l10n.createMapTapHint),
+                      ? l10n.createMapResolvingHint
+                      : l10n.createMapTapHint),
             style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
           ),
           const SizedBox(height: 18),
@@ -1482,8 +1594,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMinShort,
-                            controller:
-                                isUnlimited ? null : _minParticipantsCtrl,
+                            controller: isUnlimited
+                                ? null
+                                : _minParticipantsCtrl,
                             placeholder: '1',
                             readOnly: isUnlimited,
                             readOnlyValue: '1',
@@ -1494,8 +1607,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMaxShort,
-                            controller:
-                                isUnlimited ? null : _maxParticipantsCtrl,
+                            controller: isUnlimited
+                                ? null
+                                : _maxParticipantsCtrl,
                             placeholder: l10n.createNoLimitPlaceholder,
                             readOnly: isUnlimited,
                             readOnlyValue: l10n.createNoLimitPlaceholder,
@@ -1517,10 +1631,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 // ════════════════════════════════════════════════════════════════
 
 class _CreateTopBar extends StatelessWidget {
-  const _CreateTopBar({required this.title, required this.onLeadingPressed});
+  const _CreateTopBar({required this.title});
 
   final String title;
-  final VoidCallback onLeadingPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -1532,36 +1645,22 @@ class _CreateTopBar extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(10, compact ? 6 : 8, 10, compact ? 2 : 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: IconButton(
-              onPressed: onLeadingPressed,
-              icon: const Icon(
-                Icons.arrow_back_rounded,
-                color: AppColors.textPrimary,
-                size: 26,
-              ),
+      child: SizedBox(
+        height: 40,
+        child: Center(
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: titleSize,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
             ),
           ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: titleSize,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ),
-          const SizedBox(width: 40, height: 40),
-        ],
+        ),
       ),
     );
   }
@@ -1574,6 +1673,7 @@ class _StepIndicator extends StatelessWidget {
     required this.titles,
     required this.counterLabel,
     this.compact = false,
+    this.onStepTap,
   });
 
   final int currentStep;
@@ -1581,6 +1681,7 @@ class _StepIndicator extends StatelessWidget {
   final List<String> titles;
   final String counterLabel;
   final bool compact;
+  final ValueChanged<int>? onStepTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1622,33 +1723,42 @@ class _StepIndicator extends StatelessWidget {
             final stepIndex = index ~/ 2;
             final isActive = stepIndex == currentStep;
             final isDone = stepIndex < currentStep;
-            return Container(
-              width: stepSize,
-              height: stepSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDone
-                    ? AppColors.success
-                    : isActive
+            final isStepTappable = onStepTap != null && stepIndex < currentStep;
+            final stepChild = isDone
+                ? Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: stepFontSize + 1,
+                  )
+                : Text(
+                    '${stepIndex + 1}',
+                    style: TextStyle(
+                      color: isActive ? Colors.white : const Color(0xFFF6DEC2),
+                      fontSize: stepFontSize,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  );
+
+            return Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: isStepTappable ? () => onStepTap!(stepIndex) : null,
+                customBorder: const CircleBorder(),
+                child: Ink(
+                  width: stepSize,
+                  height: stepSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDone
+                        ? AppColors.success
+                        : isActive
                         ? AppColors.accent
                         : const Color(0xFF6B4208),
+                  ),
+                  child: Center(child: stepChild),
+                ),
               ),
-              alignment: Alignment.center,
-              child: isDone
-                  ? Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: stepFontSize + 1,
-                    )
-                  : Text(
-                      '${stepIndex + 1}',
-                      style: TextStyle(
-                        color:
-                            isActive ? Colors.white : const Color(0xFFF6DEC2),
-                        fontSize: stepFontSize,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
             );
           }),
         ),
@@ -1843,50 +1953,19 @@ class _BottomNavBar extends StatelessWidget {
 class _Step2NavBar extends StatelessWidget {
   const _Step2NavBar({
     required this.isSubmitting,
-    required this.onBack,
     required this.onNext,
-    required this.backLabel,
     required this.nextLabel,
   });
 
   final bool isSubmitting;
-  final VoidCallback onBack;
   final VoidCallback onNext;
-  final String backLabel;
   final String nextLabel;
 
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final width = media.size.width;
-    final textScale = media.textScaler.scale(1);
     final horizontalPadding = width <= 393 ? 16.0 : 20.0;
-    final stackButtons = width <= 430 || textScale > 1.05;
-
-    final backButton = OutlinedButton(
-      onPressed: isSubmitting ? null : onBack,
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(60),
-        foregroundColor: AppColors.accent,
-        side: BorderSide(
-          color: AppColors.accent.withValues(alpha: 0.26),
-          width: 1.5,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-        backgroundColor: const Color(0x614D2A07),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          backLabel,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.4,
-          ),
-        ),
-      ),
-    );
 
     final nextButton = ElevatedButton(
       onPressed: isSubmitting ? null : onNext,
@@ -1952,22 +2031,7 @@ class _Step2NavBar extends StatelessWidget {
             ),
           ),
         ),
-        child: stackButtons
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(width: double.infinity, child: backButton),
-                  const SizedBox(height: 12),
-                  SizedBox(width: double.infinity, child: nextButton),
-                ],
-              )
-            : Row(
-                children: [
-                  Expanded(flex: 10, child: backButton),
-                  const SizedBox(width: 12),
-                  Expanded(flex: 14, child: nextButton),
-                ],
-              ),
+        child: SizedBox(width: double.infinity, child: nextButton),
       ),
     );
   }
@@ -2082,13 +2146,18 @@ class _Step2FormatSegmented extends StatelessWidget {
                       : null,
                 ),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 10,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(icons[entry.key],
-                          size: iconSize, color: Colors.white),
+                      Icon(
+                        icons[entry.key],
+                        size: iconSize,
+                        color: Colors.white,
+                      ),
                       SizedBox(width: spacing),
                       Flexible(
                         child: Text(
@@ -2265,8 +2334,9 @@ class _DateTimeInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final trimmed =
-        digits.length > _maxDigits ? digits.substring(0, _maxDigits) : digits;
+    final trimmed = digits.length > _maxDigits
+        ? digits.substring(0, _maxDigits)
+        : digits;
     final buffer = StringBuffer();
     for (var i = 0; i < trimmed.length; i++) {
       if (i == 2 || i == 4) {
@@ -2353,8 +2423,10 @@ class _Step3ChoiceChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           constraints: const BoxConstraints(minHeight: 50),
-          padding:
-              EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 10),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 10,
+          ),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.accent : const Color(0xFF3A2108),
             borderRadius: BorderRadius.circular(999),
@@ -2661,17 +2733,13 @@ class _Step3LimitField extends StatelessWidget {
 class _Step3ActionBar extends StatelessWidget {
   const _Step3ActionBar({
     required this.isSubmitting,
-    required this.onBack,
     required this.onPrimaryAction,
-    required this.backLabel,
     required this.primaryLabel,
     this.showPrimaryIcon = true,
   });
 
   final bool isSubmitting;
-  final VoidCallback onBack;
   final VoidCallback onPrimaryAction;
-  final String backLabel;
   final String primaryLabel;
   final bool showPrimaryIcon;
 
@@ -2679,34 +2747,7 @@ class _Step3ActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final width = media.size.width;
-    final textScale = media.textScaler.scale(1);
-    final stackButtons = width <= 430 || textScale > 1.05;
     final horizontalPadding = width <= 360 ? 16.0 : 18.0;
-
-    final backButton = OutlinedButton(
-      onPressed: isSubmitting ? null : onBack,
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(62),
-        foregroundColor: AppColors.accent,
-        backgroundColor: const Color(0x8C462707),
-        side: BorderSide(
-          color: AppColors.accent.withValues(alpha: 0.22),
-          width: 1.5,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          backLabel,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
-        ),
-      ),
-    );
 
     final primaryButton = ElevatedButton(
       onPressed: isSubmitting ? null : onPrimaryAction,
@@ -2774,22 +2815,7 @@ class _Step3ActionBar extends StatelessWidget {
             ),
           ),
         ),
-        child: stackButtons
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(width: double.infinity, child: backButton),
-                  const SizedBox(height: 12),
-                  SizedBox(width: double.infinity, child: primaryButton),
-                ],
-              )
-            : Row(
-                children: [
-                  Expanded(flex: 10, child: backButton),
-                  const SizedBox(width: 12),
-                  Expanded(flex: 19, child: primaryButton),
-                ],
-              ),
+        child: SizedBox(width: double.infinity, child: primaryButton),
       ),
     );
   }
@@ -2869,17 +2895,18 @@ class _Step1TextFieldState extends State<_Step1TextField> {
         controller: widget.controller,
         focusNode: _focusNode,
         maxLength: widget.maxLength,
-        buildCounter: (
-          context, {
-          required int currentLength,
-          required bool isFocused,
-          int? maxLength,
-        }) =>
-            null,
+        buildCounter:
+            (
+              context, {
+              required int currentLength,
+              required bool isFocused,
+              int? maxLength,
+            }) => null,
         maxLines: widget.maxLines,
         minLines: widget.isMultiline ? widget.maxLines : 1,
-        keyboardType:
-            widget.isMultiline ? TextInputType.multiline : TextInputType.text,
+        keyboardType: widget.isMultiline
+            ? TextInputType.multiline
+            : TextInputType.text,
         textAlignVertical: widget.isMultiline
             ? TextAlignVertical.top
             : TextAlignVertical.center,
@@ -2937,8 +2964,10 @@ class _CategorySelectorField extends StatelessWidget {
       onTap: onTap,
       child: Container(
         constraints: BoxConstraints(minHeight: height),
-        padding:
-            EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 10),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: 10,
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFF3A2107),
           borderRadius: BorderRadius.circular(32),
@@ -3179,8 +3208,10 @@ class _CategoryCatalogState extends StatelessWidget {
 
     return Container(
       constraints: BoxConstraints(minHeight: height),
-      padding:
-          EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: 10,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFF3A2107),
         borderRadius: BorderRadius.circular(32),

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/activities/models/activity_list_item_vm.dart';
@@ -8,8 +9,10 @@ import '../../screens/home/home_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/activities/activities_screen.dart';
 import '../../screens/activities/activity_details_screen.dart';
+import '../../screens/activities/activity_payment_screen.dart';
 import '../../screens/activities/create_activity_screen.dart';
 import '../../screens/activities/my_activities_screen.dart';
+import '../../screens/common/feature_stub_screen.dart';
 
 class AppRouter {
   static GoRouter router(AuthProvider authProvider) {
@@ -39,10 +42,7 @@ class AppRouter {
         return null;
       },
       routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const HomeScreen(),
-        ),
+        GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
         GoRoute(
           path: '/login',
           builder: (context, state) {
@@ -72,13 +72,31 @@ class AppRouter {
         ),
         GoRoute(
           path: '/activities/create',
-          builder: (context, state) => const CreateActivityScreen(),
+          pageBuilder: (context, state) => _buildActivityEditorPage(
+            state: state,
+            child: const CreateActivityScreen(),
+          ),
         ),
         GoRoute(
           path: '/activities/:activityId/edit',
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             final activity = state.extra as ActivityListItemVm?;
-            return CreateActivityScreen(activity: activity);
+            return _buildActivityEditorPage(
+              state: state,
+              child: CreateActivityScreen(activity: activity),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/activities/:activityId/payment',
+          builder: (context, state) {
+            final activityId = state.pathParameters['activityId'] ?? '';
+            final args = state.extra as ActivityPaymentRouteArgs?;
+            return ActivityPaymentScreen(
+              activityId: activityId,
+              initialActivity: args?.activity,
+              initialHostName: args?.hostName,
+            );
           },
         ),
         GoRoute(
@@ -87,6 +105,70 @@ class AppRouter {
             final activityId = state.pathParameters['activityId'] ?? '';
             return ActivityDetailsScreen(activityId: activityId);
           },
+        ),
+        GoRoute(
+          path: '/activities/:activityId/chat',
+          builder: (context, state) =>
+              const FeatureStubScreen(title: 'Activity Chat'),
+        ),
+        GoRoute(
+          path: '/qr',
+          builder: (context, state) => const FeatureStubScreen(title: 'QR'),
+        ),
+        GoRoute(
+          path: '/menu',
+          builder: (context, state) => const FeatureStubScreen(title: 'Menu'),
+        ),
+        GoRoute(
+          path: '/map',
+          builder: (context, state) => const FeatureStubScreen(title: 'Map'),
+        ),
+        GoRoute(
+          path: '/notifications',
+          builder: (context, state) =>
+              const FeatureStubScreen(title: 'Notifications'),
+        ),
+        GoRoute(
+          path: '/services',
+          builder: (context, state) =>
+              const FeatureStubScreen(title: 'Services'),
+        ),
+        GoRoute(
+          path: '/chats',
+          builder: (context, state) => const FeatureStubScreen(title: 'Chats'),
+        ),
+        GoRoute(
+          path: '/yandex-go',
+          builder: (context, state) =>
+              const FeatureStubScreen(title: 'Yandex Go'),
+        ),
+        GoRoute(
+          path: '/glovo',
+          builder: (context, state) => const FeatureStubScreen(title: 'Glovo'),
+        ),
+        GoRoute(
+          path: '/wolt',
+          builder: (context, state) => const FeatureStubScreen(title: 'Wolt'),
+        ),
+        GoRoute(
+          path: '/more-services',
+          builder: (context, state) =>
+              const FeatureStubScreen(title: 'More Services'),
+        ),
+        GoRoute(
+          path: '/featured-stays',
+          builder: (context, state) =>
+              const FeatureStubScreen(title: 'Featured Stays'),
+        ),
+        GoRoute(
+          path: '/car-rentals',
+          builder: (context, state) =>
+              const FeatureStubScreen(title: 'Car Rentals'),
+        ),
+        GoRoute(
+          path: '/editorial',
+          builder: (context, state) =>
+              const FeatureStubScreen(title: 'Editorial'),
         ),
       ],
     );
@@ -97,10 +179,51 @@ class AppRouter {
       return true;
     }
 
-    if (location == '/activities') {
+    if (location == '/activities' ||
+        location == '/qr' ||
+        location == '/menu' ||
+        location == '/map' ||
+        location == '/notifications' ||
+        location == '/services' ||
+        location == '/chats' ||
+        location == '/yandex-go' ||
+        location == '/glovo' ||
+        location == '/wolt' ||
+        location == '/more-services' ||
+        location == '/featured-stays' ||
+        location == '/car-rentals' ||
+        location == '/editorial') {
       return true;
     }
 
     return false;
   }
+}
+
+CustomTransitionPage<void> _buildActivityEditorPage({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, pageChild) {
+      final curvedAnimation = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+
+      return FadeTransition(
+        opacity: Tween<double>(begin: 0.92, end: 1).animate(curvedAnimation),
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.03, 0),
+            end: Offset.zero,
+          ).animate(curvedAnimation),
+          child: pageChild,
+        ),
+      );
+    },
+  );
 }
