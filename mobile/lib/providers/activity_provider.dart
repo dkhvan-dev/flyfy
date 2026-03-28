@@ -14,7 +14,7 @@ enum ActivityActionState { idle, loading, success, error }
 
 class ActivityProvider extends ChangeNotifier {
   ActivityProvider({ActivityApi? activityApi})
-    : _activityApi = activityApi ?? ActivityApi();
+      : _activityApi = activityApi ?? ActivityApi();
 
   final ActivityApi _activityApi;
 
@@ -61,6 +61,19 @@ class ActivityProvider extends ChangeNotifier {
   List<ActivityListItemVm> get joinedItems => _joinedItems;
   String? get joinedErrorMessage => _joinedErrorMessage;
   bool get joinedIsRefreshing => _joinedIsRefreshing;
+
+  void _replaceActivityInCaches(ActivityListItemVm activity) {
+    ActivityListItemVm replace(ActivityListItemVm current) =>
+        current.id == activity.id ? activity : current;
+
+    if (_selectedActivity?.id == activity.id) {
+      _selectedActivity = activity;
+    }
+
+    _items = _items.map(replace).toList(growable: false);
+    _myItems = _myItems.map(replace).toList(growable: false);
+    _joinedItems = _joinedItems.map(replace).toList(growable: false);
+  }
 
   Future<void> loadActivityCategories({bool force = false}) async {
     if (!force &&
@@ -320,7 +333,7 @@ class ActivityProvider extends ChangeNotifier {
 
     try {
       final updated = await _activityApi.updateActivity(activityId, request);
-      _selectedActivity = updated;
+      _replaceActivityInCaches(updated);
       _actionState = ActivityActionState.success;
       notifyListeners();
       return updated;
@@ -343,7 +356,8 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _selectedActivity = await _activityApi.publishActivity(activityId);
+      final updated = await _activityApi.publishActivity(activityId);
+      _replaceActivityInCaches(updated);
       _actionState = ActivityActionState.success;
       return true;
     } on DioException catch (e) {
@@ -354,6 +368,35 @@ class ActivityProvider extends ChangeNotifier {
       _actionErrorMessage = 'Failed to publish activity';
       _actionState = ActivityActionState.error;
       return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<ActivityListItemVm?> cancelActivity(
+    String activityId, {
+    String? reason,
+  }) async {
+    _actionState = ActivityActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final updated = await _activityApi.cancelActivity(
+        activityId,
+        reason: reason,
+      );
+      _replaceActivityInCaches(updated);
+      _actionState = ActivityActionState.success;
+      return updated;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ActivityActionState.error;
+      return null;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to cancel activity';
+      _actionState = ActivityActionState.error;
+      return null;
     } finally {
       notifyListeners();
     }

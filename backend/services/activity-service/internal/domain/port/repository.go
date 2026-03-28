@@ -30,6 +30,13 @@ type JoinAvailability struct {
 type ActivityTxRepository interface {
 	GetActivityByIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
 	GetParticipantByActivityAndUserForUpdate(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
+	HasActiveOverlappingJoinedActivity(
+		ctx context.Context,
+		userID uuid.UUID,
+		excludeActivityID uuid.UUID,
+		startAt time.Time,
+		endAt time.Time,
+	) (bool, error)
 	CountOccupiedSlotsForUpdate(ctx context.Context, activityID uuid.UUID) (int, error)
 
 	CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error

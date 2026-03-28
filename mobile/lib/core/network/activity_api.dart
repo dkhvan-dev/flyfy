@@ -19,8 +19,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -41,8 +40,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -63,8 +61,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -98,8 +95,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -128,8 +124,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -170,6 +165,21 @@ class ActivityApi {
       '/me/activities/$activityId/leave',
       data: {if (reason != null && reason.trim().isNotEmpty) 'reason': reason},
     );
+  }
+
+  Future<ActivityListItemVm> cancelActivity(
+    String activityId, {
+    String? reason,
+  }) async {
+    final trimmedReason = reason?.trim() ?? '';
+    final response = await _apiClient.dio.post(
+      '/me/activities/$activityId/cancel',
+      data: {
+        if (trimmedReason.isNotEmpty) 'reason': trimmedReason,
+      },
+    );
+
+    return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<ActivityListItemVm> updateActivity(

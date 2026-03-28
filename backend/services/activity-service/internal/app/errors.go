@@ -10,10 +10,11 @@ var (
 	ErrActivityNotFound    = errors.New("activity not found")
 	ErrParticipantNotFound = errors.New("participant not found")
 
-	ErrActivityAlreadyPublished = errors.New("activity already published")
-	ErrActivityAlreadyStarted   = errors.New("activity already started")
-	ErrActivityAlreadyCompleted = errors.New("activity already completed")
-	ErrActivityAlreadyCancelled = errors.New("activity already cancelled")
+	ErrActivityAlreadyPublished           = errors.New("activity already published")
+	ErrActivityAlreadyStarted             = errors.New("activity already started")
+	ErrActivityAlreadyCompleted           = errors.New("activity already completed")
+	ErrActivityAlreadyCancelled           = errors.New("activity already cancelled")
+	ErrActivityCancellationReasonRequired = errors.New("activity cancellation reason is required")
 
 	ErrActivityNotPublishable = errors.New("activity is not publishable")
 	ErrActivityNotStartable   = errors.New("activity is not startable")
@@ -23,6 +24,7 @@ var (
 	ErrActivityJoinClosed          = errors.New("activity join is closed")
 	ErrActivityFull                = errors.New("activity is full")
 	ErrAlreadyJoined               = errors.New("user already joined activity")
+	ErrParticipantScheduleConflict = errors.New("user already joined another activity with overlapping time")
 	ErrParticipantAlreadyCancelled = errors.New("participant already cancelled")
 	ErrParticipantStateInvalid     = errors.New("participant state is invalid for this action")
 

@@ -1119,7 +1119,7 @@ class _DiscoverActivityCard extends StatelessWidget {
     final artSpec = _cardArtForItem(item);
     final badgeText = item.isFree ? l10n.createPriceFree : item.priceLabel;
     final visibilityBadge = _visibilityBadge(item.visibility, l10n);
-    final dateText = DateFormat.MMMd(locale).add_Hm().format(item.startAt);
+    final dateText = DateFormat.MMMd(locale).add_Hm().format(item.startAt.toLocal());
     final locationText = item.shortLocation.isNotEmpty
         ? item.shortLocation
         : formatActivityStatus(item.status, l10n);

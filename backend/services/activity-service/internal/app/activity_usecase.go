@@ -564,6 +564,9 @@ func (u *ActivityUseCase) CancelActivity(
 
 	now := time.Now().UTC()
 	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return nil, ErrActivityCancellationReasonRequired
+	}
 
 	item.Status = enum.ActivityStatusCancelled
 	item.CancelledAt = &now

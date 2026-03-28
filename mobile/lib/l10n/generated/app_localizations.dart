@@ -796,6 +796,54 @@ abstract class AppLocalizations {
   /// **'Leave Activity'**
   String get activityLeaveInlineButton;
 
+  /// No description provided for @activityCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel activity'**
+  String get activityCancelButton;
+
+  /// No description provided for @activityCancelConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this activity?'**
+  String get activityCancelConfirmTitle;
+
+  /// No description provided for @activityCancelConfirmDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants will see that the activity was cancelled. Add a reason so they understand what happened.'**
+  String get activityCancelConfirmDescription;
+
+  /// No description provided for @activityCancelReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reason'**
+  String get activityCancelReasonLabel;
+
+  /// No description provided for @activityCancelReasonPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: host is sick or the venue changed'**
+  String get activityCancelReasonPlaceholder;
+
+  /// No description provided for @activityCancelReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a cancellation reason'**
+  String get activityCancelReasonRequired;
+
+  /// No description provided for @activityCancelKeepButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get activityCancelKeepButton;
+
+  /// No description provided for @activityCancelConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm cancellation'**
+  String get activityCancelConfirmButton;
+
   /// No description provided for @activityJoinSuccess.
   ///
   /// In en, this message translates to:
@@ -808,17 +856,53 @@ abstract class AppLocalizations {
   /// **'You left the activity'**
   String get activityLeaveSuccess;
 
+  /// No description provided for @activityCancelSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity cancelled'**
+  String get activityCancelSuccess;
+
   /// No description provided for @activityJoinFailed.
   ///
   /// In en, this message translates to:
   /// **'Failed to join the activity'**
   String get activityJoinFailed;
 
+  /// No description provided for @activityJoinAlreadyJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'You have already joined this activity'**
+  String get activityJoinAlreadyJoined;
+
+  /// No description provided for @activityJoinScheduleConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot join because you already have another activity at an overlapping time'**
+  String get activityJoinScheduleConflict;
+
   /// No description provided for @activityLeaveFailed.
   ///
   /// In en, this message translates to:
   /// **'Failed to leave the activity'**
   String get activityLeaveFailed;
+
+  /// No description provided for @activityCancelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel the activity'**
+  String get activityCancelFailed;
+
+  /// No description provided for @activityCancelAlreadyCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'This activity is already cancelled'**
+  String get activityCancelAlreadyCancelled;
+
+  /// No description provided for @activityCancelNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This activity can no longer be cancelled'**
+  String get activityCancelNotAllowed;
 
   /// No description provided for @activityGoingTitle.
   ///

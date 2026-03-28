@@ -1033,6 +1033,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 	case errors.Is(err, app.ErrInvalidActivityID),
 		errors.Is(err, app.ErrInvalidActorUserID),
 		errors.Is(err, app.ErrInvalidParticipantUserID),
+		errors.Is(err, app.ErrActivityCancellationReasonRequired),
 		errors.Is(err, app.ErrActivityNotPublishable),
 		errors.Is(err, app.ErrActivityNotStartable),
 		errors.Is(err, app.ErrActivityNotCompletable),
@@ -1085,6 +1086,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrActivityAlreadyStarted),
 		errors.Is(err, app.ErrActivityAlreadyCompleted),
 		errors.Is(err, app.ErrActivityAlreadyCancelled),
+		errors.Is(err, app.ErrParticipantScheduleConflict),
 		errors.Is(err, app.ErrParticipantAlreadyCancelled),
 		errors.Is(err, app.ErrModerationStateInvalid):
 		writeError(w, http.StatusConflict, err.Error())

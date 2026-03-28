@@ -710,6 +710,46 @@ func (r *PGActivityTxRepository) GetParticipantByActivityAndUserForUpdate(ctx co
 	return item, nil
 }
 
+func (r *PGActivityTxRepository) HasActiveOverlappingJoinedActivity(
+	ctx context.Context,
+	userID uuid.UUID,
+	excludeActivityID uuid.UUID,
+	startAt time.Time,
+	endAt time.Time,
+) (bool, error) {
+	const query = `
+		SELECT 1
+		FROM activity_participants ap
+		INNER JOIN activities a ON a.id = ap.activity_id
+		WHERE ap.user_id = $1
+		  AND ap.activity_id <> $2
+		  AND ap.status IN (
+		    'REQUESTED',
+		    'APPROVED',
+		    'WAITLISTED',
+		    'PENDING_PAYMENT',
+		    'CONFIRMED',
+		    'CHECKED_IN'
+		  )
+		  AND a.status <> 'CANCELLED'
+		  AND a.start_at < $4
+		  AND a.end_at > $3
+		LIMIT 1
+		FOR UPDATE OF ap, a
+	`
+
+	var matched int
+	err := r.tx.QueryRow(ctx, query, userID, excludeActivityID, startAt, endAt).Scan(&matched)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("check overlapping joined activities: %w", err)
+	}
+
+	return matched == 1, nil
+}
+
 func (r *PGActivityTxRepository) CountOccupiedSlotsForUpdate(ctx context.Context, activityID uuid.UUID) (int, error) {
 	const query = `
 		SELECT COUNT(*)

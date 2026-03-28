@@ -377,16 +377,65 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityLeaveInlineButton => 'Белсенділіктен шығу';
 
   @override
+  String get activityCancelButton => 'Белсенділікті тоқтату';
+
+  @override
+  String get activityCancelConfirmTitle => 'Осы белсенділікті тоқтатасыз ба?';
+
+  @override
+  String get activityCancelConfirmDescription =>
+      'Қатысушылар белсенділіктің тоқтатылғанын көреді. Не болғанын түсінуі үшін себебін көрсетіңіз.';
+
+  @override
+  String get activityCancelReasonLabel => 'Тоқтату себебі';
+
+  @override
+  String get activityCancelReasonPlaceholder =>
+      'Мысалы: ұйымдастырушы ауырып қалды немесе орын өзгерді';
+
+  @override
+  String get activityCancelReasonRequired =>
+      'Белсенділікті тоқтату себебін көрсетіңіз';
+
+  @override
+  String get activityCancelKeepButton => 'Артқа';
+
+  @override
+  String get activityCancelConfirmButton => 'Тоқтатуды растау';
+
+  @override
   String get activityJoinSuccess => 'Сіз белсенділікке жазылдыңыз';
 
   @override
   String get activityLeaveSuccess => 'Сіз белсенділіктен шықтыңыз';
 
   @override
+  String get activityCancelSuccess => 'Белсенділік тоқтатылды';
+
+  @override
   String get activityJoinFailed => 'Белсенділікке жазылу мүмкін болмады';
 
   @override
+  String get activityJoinAlreadyJoined =>
+      'Сіз бұл белсенділікке әлдеқашан жазылғансыз';
+
+  @override
+  String get activityJoinScheduleConflict =>
+      'Жазылу мүмкін емес: уақыты қабаттасатын басқа белсенділікке жазылып қойғансыз';
+
+  @override
   String get activityLeaveFailed => 'Белсенділіктен шығу мүмкін болмады';
+
+  @override
+  String get activityCancelFailed => 'Белсенділікті тоқтату мүмкін болмады';
+
+  @override
+  String get activityCancelAlreadyCancelled =>
+      'Белсенділік әлдеқашан тоқтатылған';
+
+  @override
+  String get activityCancelNotAllowed =>
+      'Бұл белсенділікті енді тоқтату мүмкін емес';
 
   @override
   String activityGoingTitle(int count) {

@@ -18,6 +18,7 @@ func mapError(err error) error {
 	case errors.Is(err, app.ErrInvalidActivityID),
 		errors.Is(err, app.ErrInvalidActorUserID),
 		errors.Is(err, app.ErrInvalidParticipantUserID),
+		errors.Is(err, app.ErrActivityCancellationReasonRequired),
 		errors.Is(err, app.ErrActivityNotPublishable),
 		errors.Is(err, app.ErrActivityNotStartable),
 		errors.Is(err, app.ErrActivityNotCompletable),
@@ -66,6 +67,7 @@ func mapError(err error) error {
 		errors.Is(err, app.ErrActivityAlreadyStarted),
 		errors.Is(err, app.ErrActivityAlreadyCompleted),
 		errors.Is(err, app.ErrActivityAlreadyCancelled),
+		errors.Is(err, app.ErrParticipantScheduleConflict),
 		errors.Is(err, app.ErrParticipantAlreadyCancelled),
 		errors.Is(err, app.ErrModerationStateInvalid):
 		return status.Error(codes.FailedPrecondition, err.Error())

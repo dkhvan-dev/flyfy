@@ -374,16 +374,63 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityLeaveInlineButton => 'Покинуть активность';
 
   @override
+  String get activityCancelButton => 'Отменить активность';
+
+  @override
+  String get activityCancelConfirmTitle => 'Отменить эту активность?';
+
+  @override
+  String get activityCancelConfirmDescription =>
+      'Участники увидят, что активность отменена. Укажите причину, чтобы им было понятно, что произошло.';
+
+  @override
+  String get activityCancelReasonLabel => 'Причина отмены';
+
+  @override
+  String get activityCancelReasonPlaceholder =>
+      'Например: организатор заболел или изменилась локация';
+
+  @override
+  String get activityCancelReasonRequired =>
+      'Укажите причину отмены активности';
+
+  @override
+  String get activityCancelKeepButton => 'Назад';
+
+  @override
+  String get activityCancelConfirmButton => 'Подтвердить отмену';
+
+  @override
   String get activityJoinSuccess => 'Вы записались на активность';
 
   @override
   String get activityLeaveSuccess => 'Вы покинули активность';
 
   @override
+  String get activityCancelSuccess => 'Активность отменена';
+
+  @override
   String get activityJoinFailed => 'Не удалось записаться на активность';
 
   @override
+  String get activityJoinAlreadyJoined => 'Вы уже записаны на эту активность';
+
+  @override
+  String get activityJoinScheduleConflict =>
+      'Нельзя записаться: вы уже записаны на другую активность с пересекающимся временем';
+
+  @override
   String get activityLeaveFailed => 'Не удалось покинуть активность';
+
+  @override
+  String get activityCancelFailed => 'Не удалось отменить активность';
+
+  @override
+  String get activityCancelAlreadyCancelled => 'Активность уже отменена';
+
+  @override
+  String get activityCancelNotAllowed =>
+      'Эту активность больше нельзя отменить';
 
   @override
   String activityGoingTitle(int count) {

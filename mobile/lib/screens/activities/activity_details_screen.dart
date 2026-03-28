@@ -36,7 +36,7 @@ class ActivityDetailsScreen extends StatefulWidget {
   State<ActivityDetailsScreen> createState() => _ActivityDetailsScreenState();
 }
 
-enum _FooterAction { join, leave, publish }
+enum _FooterAction { join, leave, publish, cancel }
 
 class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   final ActivityApi _activityApi = ActivityApi();
@@ -141,7 +141,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     await showErrorDialog(
       context,
       title: l10n.error,
-      message: provider.actionErrorMessage ?? l10n.activityJoinFailed,
+      message: _mapJoinError(provider.actionErrorMessage, l10n),
     );
   }
 
@@ -231,6 +231,29 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     if (normalized.contains('invalid activity visibility password')) {
       return l10n.activityPrivateJoinInvalidPassword;
     }
+    if (normalized.contains('overlapping time')) {
+      return l10n.activityJoinScheduleConflict;
+    }
+    if (normalized.contains('already joined activity')) {
+      return l10n.activityJoinAlreadyJoined;
+    }
+
+    return raw;
+  }
+
+  String _mapJoinError(String? actionErrorMessage, AppLocalizations l10n) {
+    final raw = (actionErrorMessage ?? '').trim();
+    if (raw.isEmpty) {
+      return l10n.activityJoinFailed;
+    }
+
+    final normalized = raw.toLowerCase();
+    if (normalized.contains('overlapping time')) {
+      return l10n.activityJoinScheduleConflict;
+    }
+    if (normalized.contains('already joined activity')) {
+      return l10n.activityJoinAlreadyJoined;
+    }
 
     return raw;
   }
@@ -316,6 +339,40 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     ).showSnackBar(SnackBar(content: Text(l10n.activityPublishSuccess)));
   }
 
+  Future<void> _handleCancel() async {
+    final l10n = AppLocalizations.of(context)!;
+    final reason = await _showCancelActivitySheet(l10n);
+    if (!mounted || reason == null) {
+      return;
+    }
+
+    final provider = context.read<ActivityProvider>();
+    setState(() => _pendingAction = _FooterAction.cancel);
+    final updated = await provider.cancelActivity(
+      widget.activityId,
+      reason: reason,
+    );
+
+    if (!mounted) return;
+
+    if (updated == null) {
+      setState(() => _pendingAction = null);
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: _mapCancelError(provider.actionErrorMessage, l10n),
+      );
+      return;
+    }
+
+    await _reloadAfterAction(includeJoined: false);
+    if (!mounted) return;
+    setState(() => _pendingAction = null);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.activityCancelSuccess)));
+  }
+
   Future<void> _reloadAfterAction({required bool includeJoined}) async {
     final provider = context.read<ActivityProvider>();
     final authProvider = context.read<AuthProvider>();
@@ -331,6 +388,56 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     await Future.wait<void>(futures);
     await _loadVisibleProfiles(provider.selectedActivity);
     provider.resetActionState();
+  }
+
+  Future<String?> _showCancelActivitySheet(AppLocalizations l10n) {
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _CancelActivitySheet(l10n: l10n),
+    );
+  }
+
+  String _mapCancelError(
+    String? actionErrorMessage,
+    AppLocalizations l10n,
+  ) {
+    final raw = (actionErrorMessage ?? '').trim();
+    if (raw.isEmpty) {
+      return l10n.activityCancelFailed;
+    }
+
+    final normalized = raw.toLowerCase();
+    if (normalized.contains('already cancelled')) {
+      return l10n.activityCancelAlreadyCancelled;
+    }
+    if (normalized.contains('not cancellable')) {
+      return l10n.activityCancelNotAllowed;
+    }
+    if (normalized.contains('cancellation reason is required')) {
+      return l10n.activityCancelReasonRequired;
+    }
+
+    return raw;
+  }
+
+  bool _canCancelActivity(
+    ActivityListItemVm activity, {
+    required bool isOwner,
+  }) {
+    if (!isOwner) {
+      return false;
+    }
+
+    switch (activity.status.toUpperCase()) {
+      case 'DRAFT':
+      case 'COMPLETED':
+      case 'CANCELLED':
+        return false;
+      default:
+        return true;
+    }
   }
 
   Future<void> _loadVisibleProfiles(ActivityListItemVm? activity) async {
@@ -610,6 +717,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final status = activity.status.toUpperCase();
     final isDraft = status == 'DRAFT';
     final showPublish = isOwner && isDraft;
+    final canCancelActivity = _canCancelActivity(activity, isOwner: isOwner);
     final hostName = _resolveHostName(
       activity.hostUserId,
       session.profile,
@@ -746,10 +854,15 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         isJoined: isJoined,
                         isOwner: isOwner,
                         canLeaveActivity: isJoined && !isOwner,
+                        canCancelActivity: canCancelActivity,
                         isLeaving: provider.actionState ==
                                 ActivityActionState.loading &&
                             _pendingAction == _FooterAction.leave,
+                        isCancelling: provider.actionState ==
+                                ActivityActionState.loading &&
+                            _pendingAction == _FooterAction.cancel,
                         onLeaveTap: _handleLeave,
+                        onCancelTap: _handleCancel,
                         onActionTap: () {
                           final copyValue = _resolveMeetingActionCopyValue(
                             activity,
@@ -1234,6 +1347,337 @@ class _PrivateActivityPasswordDialogState
                       ),
                     ),
                   ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CancelActivitySheet extends StatefulWidget {
+  const _CancelActivitySheet({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  State<_CancelActivitySheet> createState() => _CancelActivitySheetState();
+}
+
+class _CancelActivitySheetState extends State<_CancelActivitySheet> {
+  final TextEditingController _reasonController = TextEditingController();
+  final FocusNode _reasonFocusNode = FocusNode();
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    _reasonFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      setState(() => _errorText = widget.l10n.activityCancelReasonRequired);
+      _reasonFocusNode.requestFocus();
+      return;
+    }
+    Navigator.of(context).pop(reason);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final compact = mediaQuery.size.width < 390;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: SafeArea(
+        top: false,
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.only(
+            left: 12,
+            right: 12,
+            bottom: mediaQuery.viewInsets.bottom,
+          ),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(32),
+                  ),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xF92A190D), Color(0xFA180E08)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.34),
+                      blurRadius: 36,
+                      offset: const Offset(0, -18),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    compact ? 18 : 22,
+                    16,
+                    compact ? 18 : 22,
+                    compact ? 20 : 24,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 52,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Center(
+                        child: Container(
+                          width: compact ? 66 : 72,
+                          height: compact ? 66 : 72,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.accent.withValues(alpha: 0.12),
+                            border: Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.26),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.event_busy_rounded,
+                            color: AppColors.accent,
+                            size: 30,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          widget.l10n.activityCancelConfirmTitle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _DetailsColors.text,
+                            fontSize: compact ? 25 : 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 360),
+                          child: Text(
+                            widget.l10n.activityCancelConfirmDescription,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: _DetailsColors.muted,
+                              fontSize: compact ? 15 : 16,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      Text(
+                        widget.l10n.activityCancelReasonLabel,
+                        style: const TextStyle(
+                          color: _DetailsColors.text,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _reasonController,
+                          focusNode: _reasonFocusNode,
+                          maxLines: 4,
+                          minLines: 3,
+                          maxLength: 160,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: const TextStyle(
+                            color: _DetailsColors.text,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
+                          decoration: InputDecoration(
+                            hintText:
+                                widget.l10n.activityCancelReasonPlaceholder,
+                            hintStyle: TextStyle(
+                              color:
+                                  _DetailsColors.muted.withValues(alpha: 0.72),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            border: InputBorder.none,
+                            counterStyle: const TextStyle(
+                              color: _DetailsColors.subtle,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            contentPadding: const EdgeInsets.fromLTRB(
+                              16,
+                              14,
+                              16,
+                              10,
+                            ),
+                          ),
+                          onChanged: (_) {
+                            if (_errorText == null) {
+                              return;
+                            }
+                            if (_reasonController.text.trim().isNotEmpty) {
+                              setState(() => _errorText = null);
+                            }
+                          },
+                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        ),
+                      ),
+                      if (_errorText != null) ...[
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            _errorText!,
+                            style: const TextStyle(
+                              color: Color(0xFFFF8A65),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final stackVertically = constraints.maxWidth < 360;
+                          final keepButton = _SheetActionButton(
+                            label: widget.l10n.activityCancelKeepButton,
+                            icon: Icons.arrow_back_rounded,
+                            isPrimary: false,
+                            onTap: () => Navigator.of(context).pop(),
+                          );
+                          final confirmButton = _SheetActionButton(
+                            label: widget.l10n.activityCancelConfirmButton,
+                            icon: Icons.event_busy_rounded,
+                            isPrimary: true,
+                            onTap: _submit,
+                          );
+
+                          if (stackVertically) {
+                            return Column(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: keepButton,
+                                ),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: confirmButton,
+                                ),
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              Expanded(child: keepButton),
+                              const SizedBox(width: 12),
+                              Expanded(child: confirmButton),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetActionButton extends StatelessWidget {
+  const _SheetActionButton({
+    required this.label,
+    required this.icon,
+    required this.isPrimary,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isPrimary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final backgroundColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.06);
+    final foregroundColor = isPrimary ? Colors.white : _DetailsColors.text;
+    final borderColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
+
+    return SizedBox(
+      height: 58,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: borderColor),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
                 ),
               ),
             ),
@@ -1858,9 +2302,7 @@ class _StatsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
-    final dateText = DateFormat.MMMd(
-      locale,
-    ).add_jm().format(activity.startAt.toLocal());
+    final dateText = DateFormat.MMMd(locale).add_jm().format(activity.startAt.toLocal());
     final pricingText = activity.isFree
         ? l10n.freeLabel
         : '${activity.priceLabel} ${l10n.activityPerPerson}';
@@ -2002,8 +2444,11 @@ class _MeetingSection extends StatelessWidget {
     required this.isJoined,
     required this.isOwner,
     required this.canLeaveActivity,
+    required this.canCancelActivity,
     required this.isLeaving,
+    required this.isCancelling,
     required this.onLeaveTap,
+    required this.onCancelTap,
     required this.onActionTap,
   });
 
@@ -2012,8 +2457,11 @@ class _MeetingSection extends StatelessWidget {
   final bool isJoined;
   final bool isOwner;
   final bool canLeaveActivity;
+  final bool canCancelActivity;
   final bool isLeaving;
+  final bool isCancelling;
   final VoidCallback onLeaveTap;
+  final VoidCallback onCancelTap;
   final VoidCallback onActionTap;
 
   @override
@@ -2210,6 +2658,16 @@ class _MeetingSection extends StatelessWidget {
               label: l10n.activityLeaveInlineButton,
               isBusy: isLeaving,
               onTap: onLeaveTap,
+            ),
+          ),
+        ],
+        if (canCancelActivity) ...[
+          const SizedBox(height: 18),
+          Center(
+            child: _MeetingOwnerCancelAction(
+              label: l10n.activityCancelButton,
+              isBusy: isCancelling,
+              onTap: onCancelTap,
             ),
           ),
         ],
@@ -2428,6 +2886,71 @@ class _MeetingLeaveAction extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MeetingOwnerCancelAction extends StatelessWidget {
+  const _MeetingOwnerCancelAction({
+    required this.label,
+    required this.isBusy,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isBusy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: isBusy ? null : onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: AppColors.accent.withValues(alpha: 0.24),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isBusy)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.1,
+                      color: AppColors.accent,
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.event_busy_rounded,
+                    size: 18,
+                    color: AppColors.accent.withValues(alpha: 0.94),
+                  ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: AppColors.accent.withValues(alpha: 0.96),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.18,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

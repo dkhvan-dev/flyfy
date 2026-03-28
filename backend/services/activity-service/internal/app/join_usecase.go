@@ -70,6 +70,20 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			return ErrAlreadyJoined
 		}
 
+		hasScheduleConflict, err := txRepo.HasActiveOverlappingJoinedActivity(
+			ctx,
+			input.UserID,
+			input.ActivityID,
+			activity.StartAt,
+			activity.EndAt,
+		)
+		if err != nil {
+			return fmt.Errorf("check overlapping joined activities: %w", err)
+		}
+		if hasScheduleConflict {
+			return ErrParticipantScheduleConflict
+		}
+
 		if activity.Visibility == enum.ActivityVisibilityPrivate {
 			if err = verifyVisibilityPassword(
 				activity.VisibilityPasswordHash,

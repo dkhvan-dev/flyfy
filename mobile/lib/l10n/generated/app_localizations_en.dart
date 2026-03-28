@@ -373,16 +373,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityLeaveInlineButton => 'Leave Activity';
 
   @override
+  String get activityCancelButton => 'Cancel activity';
+
+  @override
+  String get activityCancelConfirmTitle => 'Cancel this activity?';
+
+  @override
+  String get activityCancelConfirmDescription =>
+      'Participants will see that the activity was cancelled. Add a reason so they understand what happened.';
+
+  @override
+  String get activityCancelReasonLabel => 'Cancellation reason';
+
+  @override
+  String get activityCancelReasonPlaceholder =>
+      'For example: host is sick or the venue changed';
+
+  @override
+  String get activityCancelReasonRequired => 'Enter a cancellation reason';
+
+  @override
+  String get activityCancelKeepButton => 'Back';
+
+  @override
+  String get activityCancelConfirmButton => 'Confirm cancellation';
+
+  @override
   String get activityJoinSuccess => 'You joined the activity';
 
   @override
   String get activityLeaveSuccess => 'You left the activity';
 
   @override
+  String get activityCancelSuccess => 'Activity cancelled';
+
+  @override
   String get activityJoinFailed => 'Failed to join the activity';
 
   @override
+  String get activityJoinAlreadyJoined =>
+      'You have already joined this activity';
+
+  @override
+  String get activityJoinScheduleConflict =>
+      'You cannot join because you already have another activity at an overlapping time';
+
+  @override
   String get activityLeaveFailed => 'Failed to leave the activity';
+
+  @override
+  String get activityCancelFailed => 'Failed to cancel the activity';
+
+  @override
+  String get activityCancelAlreadyCancelled =>
+      'This activity is already cancelled';
+
+  @override
+  String get activityCancelNotAllowed =>
+      'This activity can no longer be cancelled';
 
   @override
   String activityGoingTitle(int count) {
