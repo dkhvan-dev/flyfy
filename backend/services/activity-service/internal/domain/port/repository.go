@@ -30,6 +30,8 @@ type JoinAvailability struct {
 type ActivityTxRepository interface {
 	GetActivityByIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
 	GetParticipantByActivityAndUserForUpdate(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
+	GetAttendanceQRIssueByJTIForUpdate(ctx context.Context, jti uuid.UUID) (*model.AttendanceQRIssue, error)
+	GetAttendanceSyncAttemptByScanIDForUpdate(ctx context.Context, scanID uuid.UUID) (*model.AttendanceSyncAttempt, error)
 	HasActiveOverlappingJoinedActivity(
 		ctx context.Context,
 		userID uuid.UUID,
@@ -41,6 +43,8 @@ type ActivityTxRepository interface {
 
 	CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error
 	UpdateParticipant(ctx context.Context, item *model.ActivityParticipant) error
+	CreateAttendanceSyncAttempt(ctx context.Context, item *model.AttendanceSyncAttempt) error
+	UpdateAttendanceSyncAttempt(ctx context.Context, item *model.AttendanceSyncAttempt) error
 
 	CreateParticipantEvent(ctx context.Context, item *model.ParticipantEvent) error
 	CreateActivityEvent(ctx context.Context, item *model.ActivityEvent) error
@@ -61,6 +65,7 @@ type ActivityRepository interface {
 
 	ListMediaByActivityID(ctx context.Context, activityID uuid.UUID) ([]*model.ActivityMedia, error)
 	ReplaceMedia(ctx context.Context, activityID uuid.UUID, items []*model.ActivityMedia) error
+	CreateAttendanceQRIssue(ctx context.Context, item *model.AttendanceQRIssue) error
 
 	GetParticipantByActivityAndUser(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
 	ListParticipantsByActivityID(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error)

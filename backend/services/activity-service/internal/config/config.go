@@ -15,6 +15,7 @@ type Config struct {
 	DB          DBConfig
 	Log         LogConfig
 	Security    SecurityConfig
+	Attendance  AttendanceConfig
 	UserService UserServiceConfig
 	FileManager FileManagerConfig
 }
@@ -111,4 +112,10 @@ type SecurityConfig struct {
 	TrustedGatewayHeaderRoles  string `env:"TRUSTED_GATEWAY_HEADER_ROLES, default=X-User-Roles"`
 	TrustedGatewayHeaderSub    string `env:"TRUSTED_GATEWAY_HEADER_SUB, default=X-Auth-Subject"`
 	RequestIDHeader            string `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
+}
+
+type AttendanceConfig struct {
+	QRSigningSecret string        `env:"ATTENDANCE_QR_SIGNING_SECRET, default=dev-attendance-qr-secret"`
+	QRTTL           time.Duration `env:"ATTENDANCE_QR_TTL, default=45s"`
+	OfflineWindow   time.Duration `env:"ATTENDANCE_QR_OFFLINE_WINDOW, default=6h"`
 }

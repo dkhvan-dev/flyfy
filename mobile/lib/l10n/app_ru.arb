@@ -111,6 +111,7 @@
   "activityFormatOffline": "Офлайн",
   "activityFormatOnline": "Онлайн",
   "activityFormatHybrid": "Гибрид",
+  "activityFormatLabel": "Формат",
   "activityDetailsTitle": "Активность",
   "activityDetailsLoadFailed": "Не удалось загрузить активность",
   "activityNotFound": "Активность не найдена",
@@ -488,5 +489,43 @@
   "activitiesDatePresetThisMonth": "В этом месяце",
   "activityViewDetails": "Подробнее",
   "activityJoinSession": "Присоединиться",
-  "activityGetLink": "Получить ссылку"
+  "activityGetLink": "Получить ссылку",
+  "activityAttendanceQrButton": "QR для отметки",
+  "activityAttendanceQrTitle": "QR активности",
+  "activityAttendanceQrFallbackTitle": "Активность",
+  "activityAttendanceQrSubtitle": "Покажите этот QR участнику, чтобы он подтвердил свое прибытие через приложение.",
+  "activityAttendanceQrHelper": "QR автоматически обновляется. Участник должен сканировать актуальный код через кнопку QR в нижней панели.",
+  "activityAttendanceQrLoadFailed": "Не удалось загрузить QR активности",
+  "activityAttendanceQrRefreshHint": "Код обновляется автоматически для защиты от дублей и скриншотов.",
+  "activityAttendanceQrRefreshing": "Обновляем QR…",
+  "activityAttendanceQrExpiresIn": "Обновление через {seconds} сек.",
+  "@activityAttendanceQrExpiresIn": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
+  "qrScannerTitle": "Сканирование QR",
+  "qrScannerSubtitle": "Наведите камеру на QR организатора, чтобы подтвердить свое прибытие на активность.",
+  "qrScannerReady": "Наведите камеру на QR код",
+  "qrScannerInvalidCode": "Это не QR активности FlyFy",
+  "qrScannerSessionUnavailable": "Не удалось определить текущую сессию. Попробуйте открыть экран снова.",
+  "qrScannerAlreadyQueued": "Эта отметка уже ожидает синхронизации",
+  "qrScannerQueuedOffline": "Отметка сохранена и синхронизируется, когда появится соединение",
+  "qrScannerSuccess": "Прибытие подтверждено",
+  "qrScannerAlreadyCheckedIn": "Вы уже отмечены на этой активности",
+  "qrScannerNotRegistered": "Вы не записаны на эту активность",
+  "qrScannerNotEligible": "Для этой записи отметка пока недоступна",
+  "qrScannerQrExpired": "QR уже устарел. Попросите организатора открыть новый код.",
+  "qrScannerHostNotAllowed": "Организатор не может сканировать свой собственный QR",
+  "qrScannerActivityUnavailable": "Для этой активности отметка сейчас недоступна",
+  "qrScannerCameraUnavailable": "Камера недоступна. Проверьте разрешение на доступ к камере.",
+  "qrScannerSyncNow": "Синхронизировать",
+  "qrScannerScanAgain": "Сканировать снова",
+  "qrScannerPendingCount": "Ожидают синхронизации: {count}",
+  "@qrScannerPendingCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "qrScannerNoPending": "Нет ожидающих отметок"
 }

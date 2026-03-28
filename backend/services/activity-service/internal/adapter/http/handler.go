@@ -23,6 +23,7 @@ import (
 
 type Handler struct {
 	activityUC    *app.ActivityUseCase
+	attendanceUC  *app.AttendanceUseCase
 	joinUC        *app.JoinUseCase
 	repo          port.ActivityRepository
 	fileManager   port.ActivityMediaFileManager
@@ -31,6 +32,7 @@ type Handler struct {
 
 func NewHandler(
 	activityUC *app.ActivityUseCase,
+	attendanceUC *app.AttendanceUseCase,
 	joinUC *app.JoinUseCase,
 	repo port.ActivityRepository,
 	fileManager port.ActivityMediaFileManager,
@@ -38,6 +40,7 @@ func NewHandler(
 ) *Handler {
 	return &Handler{
 		activityUC:    activityUC,
+		attendanceUC:  attendanceUC,
 		joinUC:        joinUC,
 		repo:          repo,
 		fileManager:   fileManager,
@@ -55,6 +58,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/me/activities", h.CreateActivity)
 	mux.HandleFunc("GET /v1/me/activities/joined", h.ListMyJoinedActivities)
 	mux.HandleFunc("GET /v1/me/activities/hosted", h.ListMyHostedActivities)
+	mux.HandleFunc("POST /v1/me/attendance/sync", h.SyncAttendanceProofs)
 
 	mux.HandleFunc("GET /v1/activities/", h.handleActivityRoutes)
 	mux.HandleFunc("PATCH /v1/activities/", h.handleActivityRoutes)
@@ -115,6 +119,11 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 			h.ListActivityParticipants(w, r, activityID)
 			return
 		}
+	case "attendance-qr":
+		if r.Method == http.MethodGet {
+			h.GetAttendanceQR(w, r, activityID)
+			return
+		}
 	case "cover":
 		if r.Method == http.MethodGet {
 			h.GetActivityCover(w, r, activityID)
@@ -168,6 +177,102 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeError(w, http.StatusNotFound, "not found")
+}
+
+func (h *Handler) GetAttendanceQR(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "GetAttendanceQR::missing authenticated user")
+		return
+	}
+
+	item, err := h.attendanceUC.GenerateAttendanceQR(r.Context(), activityID, actorUserID)
+	if err != nil {
+		h.writeAppError(w, err, "failed to generate attendance qr")
+		return
+	}
+
+	writeJSON(
+		w,
+		http.StatusOK,
+		dto.AttendanceQRResponse{
+			ActivityID: item.ActivityID,
+			Token:      item.Token,
+			ExpiresAt:  item.ExpiresAt.Format(time.RFC3339),
+			RefreshAt:  item.RefreshAt.Format(time.RFC3339),
+		},
+	)
+}
+
+func (h *Handler) SyncAttendanceProofs(w http.ResponseWriter, r *http.Request) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "SyncAttendanceProofs::missing authenticated user")
+		return
+	}
+
+	var req dto.AttendanceSyncRequest
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if len(req.Items) == 0 {
+		writeError(w, http.StatusBadRequest, "attendance sync items are required")
+		return
+	}
+
+	inputs := make([]app.AttendanceProofInput, 0, len(req.Items))
+	for _, item := range req.Items {
+		scanID, scanErr := uuid.Parse(strings.TrimSpace(item.ScanID))
+		if scanErr != nil {
+			inputs = append(inputs, app.AttendanceProofInput{
+				QRToken:         item.QRToken,
+				InstallationID:  item.InstallationID,
+				ScannedAtDevice: nil,
+			})
+			continue
+		}
+
+		scannedAtDevice, parseErr := parseOptionalRFC3339(item.ScannedAtDevice)
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "invalid scannedAtDevice")
+			return
+		}
+
+		inputs = append(inputs, app.AttendanceProofInput{
+			ScanID:          scanID,
+			QRToken:         item.QRToken,
+			InstallationID:  item.InstallationID,
+			ScannedAtDevice: scannedAtDevice,
+		})
+	}
+
+	results, err := h.attendanceUC.SyncAttendanceProofs(r.Context(), actorUserID, inputs)
+	if err != nil {
+		h.writeAppError(w, err, "failed to sync attendance proofs")
+		return
+	}
+
+	items := make([]dto.AttendanceSyncItemResponse, 0, len(results))
+	for _, result := range results {
+		var activityID *string
+		if result.ActivityID != nil {
+			value := result.ActivityID.String()
+			activityID = &value
+		}
+
+		items = append(items, dto.AttendanceSyncItemResponse{
+			ScanID:      result.ScanID.String(),
+			ActivityID:  activityID,
+			Status:      result.Status,
+			Code:        result.Code,
+			Message:     result.Message,
+			CheckedInAt: formatOptionalTime(result.CheckedInAt),
+			SyncedAt:    result.SyncedAt.Format(time.RFC3339),
+		})
+	}
+
+	writeJSON(w, http.StatusOK, dto.AttendanceSyncResponse{Items: items})
 }
 
 func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
@@ -1046,6 +1151,12 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrCriticalFieldsUpdateForbidden),
 		errors.Is(err, app.ErrActivityMediaFileNotReady),
 		errors.Is(err, app.ErrActivityMediaFileNotAllowed),
+		errors.Is(err, app.ErrAttendanceQRUnavailable),
+		errors.Is(err, app.ErrAttendanceQRInvalid),
+		errors.Is(err, app.ErrAttendanceQRVersionInvalid),
+		errors.Is(err, app.ErrAttendanceQRExpired),
+		errors.Is(err, app.ErrAttendanceAlreadyCheckedIn),
+		errors.Is(err, app.ErrAttendanceParticipantInvalid),
 
 		errors.Is(err, model.ErrInvalidActivityTitle),
 		errors.Is(err, model.ErrInvalidActivityDescription),
@@ -1081,6 +1192,9 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrParticipantNotFound),
 		errors.Is(err, app.ErrActivityMediaFileNotFound):
 		writeError(w, http.StatusNotFound, err.Error())
+
+	case errors.Is(err, app.ErrAttendanceAccessDenied):
+		writeError(w, http.StatusForbidden, err.Error())
 
 	case errors.Is(err, app.ErrActivityAlreadyPublished),
 		errors.Is(err, app.ErrActivityAlreadyStarted),

@@ -111,6 +111,7 @@
   "activityFormatOffline": "Offline",
   "activityFormatOnline": "Online",
   "activityFormatHybrid": "Hybrid",
+  "activityFormatLabel": "Format",
   "activityDetailsTitle": "Activity",
   "activityDetailsLoadFailed": "Failed to load activity",
   "activityNotFound": "Activity not found",
@@ -488,5 +489,43 @@
   "activitiesDatePresetThisMonth": "This Month",
   "activityViewDetails": "View Details",
   "activityJoinSession": "Join Session",
-  "activityGetLink": "Get Link"
+  "activityGetLink": "Get Link",
+  "activityAttendanceQrButton": "Attendance QR",
+  "activityAttendanceQrTitle": "Activity QR",
+  "activityAttendanceQrFallbackTitle": "Activity",
+  "activityAttendanceQrSubtitle": "Show this QR to participants so they can confirm arrival in the app.",
+  "activityAttendanceQrHelper": "The QR refreshes automatically. Participants should scan the current code using the QR button in the bottom bar.",
+  "activityAttendanceQrLoadFailed": "Failed to load the activity QR",
+  "activityAttendanceQrRefreshHint": "The code refreshes automatically to reduce duplicates and screenshot reuse.",
+  "activityAttendanceQrRefreshing": "Refreshing QR…",
+  "activityAttendanceQrExpiresIn": "Refresh in {seconds}s",
+  "@activityAttendanceQrExpiresIn": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
+  "qrScannerTitle": "Scan QR",
+  "qrScannerSubtitle": "Point your camera at the host QR to confirm that you arrived at the activity.",
+  "qrScannerReady": "Point the camera at the QR code",
+  "qrScannerInvalidCode": "This is not a FlyFy activity QR",
+  "qrScannerSessionUnavailable": "Current session is unavailable. Reopen the screen and try again.",
+  "qrScannerAlreadyQueued": "This check-in is already waiting to sync",
+  "qrScannerQueuedOffline": "Check-in saved. It will sync when the connection is back.",
+  "qrScannerSuccess": "Arrival confirmed",
+  "qrScannerAlreadyCheckedIn": "You are already checked in to this activity",
+  "qrScannerNotRegistered": "You are not registered for this activity",
+  "qrScannerNotEligible": "Check-in is not available for this booking yet",
+  "qrScannerQrExpired": "This QR already expired. Ask the host to open a new one.",
+  "qrScannerHostNotAllowed": "The host cannot scan their own QR",
+  "qrScannerActivityUnavailable": "Check-in is unavailable for this activity right now",
+  "qrScannerCameraUnavailable": "Camera is unavailable. Check camera permission and try again.",
+  "qrScannerSyncNow": "Sync now",
+  "qrScannerScanAgain": "Scan again",
+  "qrScannerPendingCount": "Pending sync: {count}",
+  "@qrScannerPendingCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "qrScannerNoPending": "No pending check-ins"
 }

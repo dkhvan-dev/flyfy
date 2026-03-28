@@ -111,6 +111,7 @@
   "activityFormatOffline": "Офлайн",
   "activityFormatOnline": "Онлайн",
   "activityFormatHybrid": "Гибрид",
+  "activityFormatLabel": "Формат",
   "activityDetailsTitle": "Белсенділік",
   "activityDetailsLoadFailed": "Белсенділікті жүктеу мүмкін болмады",
   "activityNotFound": "Белсенділік табылмады",
@@ -488,5 +489,43 @@
   "activitiesDatePresetThisMonth": "Осы айда",
   "activityViewDetails": "Толығырақ",
   "activityJoinSession": "Қосылу",
-  "activityGetLink": "Сілтемені алу"
+  "activityGetLink": "Сілтемені алу",
+  "activityAttendanceQrButton": "Белгілеу QR-ы",
+  "activityAttendanceQrTitle": "Белсенділік QR-ы",
+  "activityAttendanceQrFallbackTitle": "Белсенділік",
+  "activityAttendanceQrSubtitle": "Қатысушы қолданба арқылы келгенін растауы үшін осы QR-ды көрсетіңіз.",
+  "activityAttendanceQrHelper": "QR автоматты түрде жаңарады. Қатысушы төменгі панельдегі QR батырмасы арқылы өзекті кодты сканерлеуі керек.",
+  "activityAttendanceQrLoadFailed": "Белсенділік QR-ын жүктеу мүмкін болмады",
+  "activityAttendanceQrRefreshHint": "Код қайталанулар мен скриншоттарды азайту үшін автоматты түрде жаңарады.",
+  "activityAttendanceQrRefreshing": "QR жаңартылып жатыр…",
+  "activityAttendanceQrExpiresIn": "{seconds} сек. кейін жаңарады",
+  "@activityAttendanceQrExpiresIn": {
+    "placeholders": {
+      "seconds": {}
+    }
+  },
+  "qrScannerTitle": "QR сканерлеу",
+  "qrScannerSubtitle": "Белсенділікке келгеніңізді растау үшін камераны ұйымдастырушының QR кодының үстіне апарыңыз.",
+  "qrScannerReady": "Камераны QR кодқа бағыттаңыз",
+  "qrScannerInvalidCode": "Бұл FlyFy белсенділігінің QR коды емес",
+  "qrScannerSessionUnavailable": "Ағымдағы сессияны анықтау мүмкін болмады. Экранды қайта ашып көріңіз.",
+  "qrScannerAlreadyQueued": "Бұл белгілеу синхрондауды күтіп тұр",
+  "qrScannerQueuedOffline": "Белгілеу сақталды. Байланыс пайда болғанда синхрондалады.",
+  "qrScannerSuccess": "Келу расталды",
+  "qrScannerAlreadyCheckedIn": "Сіз бұл белсенділікке әлдеқашан белгілендіңіз",
+  "qrScannerNotRegistered": "Сіз бұл белсенділікке жазылмағансыз",
+  "qrScannerNotEligible": "Бұл жазба үшін белгілеу әзірге қолжетімсіз",
+  "qrScannerQrExpired": "Бұл QR ескірген. Ұйымдастырушыдан жаңасын ашуын сұраңыз.",
+  "qrScannerHostNotAllowed": "Ұйымдастырушы өзінің QR кодын сканерлей алмайды",
+  "qrScannerActivityUnavailable": "Бұл белсенділік үшін белгілеу қазір қолжетімсіз",
+  "qrScannerCameraUnavailable": "Камера қолжетімсіз. Камера рұқсатын тексеріп, қайта көріңіз.",
+  "qrScannerSyncNow": "Синхрондау",
+  "qrScannerScanAgain": "Қайта сканерлеу",
+  "qrScannerPendingCount": "Синхрондауды күтіп тұрғаны: {count}",
+  "@qrScannerPendingCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "qrScannerNoPending": "Күтіп тұрған белгілеулер жоқ"
 }

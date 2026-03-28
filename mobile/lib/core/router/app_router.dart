@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/profile/models/user_profile_vm.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/otp_screen.dart';
@@ -9,9 +10,11 @@ import '../../screens/home/home_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/activities/activities_screen.dart';
 import '../../screens/activities/activity_details_screen.dart';
+import '../../screens/activities/activity_attendance_qr_screen.dart';
 import '../../screens/activities/activity_payment_screen.dart';
 import '../../screens/activities/create_activity_screen.dart';
 import '../../screens/activities/my_activities_screen.dart';
+import '../../screens/attendance/attendance_scanner_screen.dart';
 import '../../screens/common/feature_stub_screen.dart';
 
 class AppRouter {
@@ -63,6 +66,19 @@ class AppRouter {
           builder: (context, state) => const ProfileScreen(),
         ),
         GoRoute(
+          path: '/users/:userId/profile',
+          builder: (context, state) {
+            final userId = state.pathParameters['userId'] ?? '';
+            final initialProfile = state.extra is UserProfileVm
+                ? state.extra! as UserProfileVm
+                : null;
+            return ProfileScreen(
+              userId: userId,
+              initialProfile: initialProfile,
+            );
+          },
+        ),
+        GoRoute(
           path: '/activities',
           builder: (context, state) => const ActivitiesScreen(),
         ),
@@ -107,13 +123,20 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/activities/:activityId/attendance-qr',
+          builder: (context, state) {
+            final activityId = state.pathParameters['activityId'] ?? '';
+            return ActivityAttendanceQrScreen(activityId: activityId);
+          },
+        ),
+        GoRoute(
           path: '/activities/:activityId/chat',
           builder: (context, state) =>
               const FeatureStubScreen(title: 'Activity Chat'),
         ),
         GoRoute(
           path: '/qr',
-          builder: (context, state) => const FeatureStubScreen(title: 'QR'),
+          builder: (context, state) => const AttendanceScannerScreen(),
         ),
         GoRoute(
           path: '/menu',
@@ -180,7 +203,6 @@ class AppRouter {
     }
 
     if (location == '/activities' ||
-        location == '/qr' ||
         location == '/menu' ||
         location == '/map' ||
         location == '/notifications' ||

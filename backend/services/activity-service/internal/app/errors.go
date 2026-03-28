@@ -41,4 +41,12 @@ var (
 	ErrActivityMediaFileNotFound   = errors.New("activity media file not found")
 	ErrActivityMediaFileNotReady   = errors.New("activity media file is not ready")
 	ErrActivityMediaFileNotAllowed = errors.New("activity media file is not allowed")
+
+	ErrAttendanceAccessDenied       = errors.New("attendance access denied")
+	ErrAttendanceQRUnavailable      = errors.New("attendance qr is unavailable for this activity")
+	ErrAttendanceQRInvalid          = errors.New("attendance qr is invalid")
+	ErrAttendanceQRVersionInvalid   = errors.New("attendance qr version is not supported")
+	ErrAttendanceQRExpired          = errors.New("attendance qr is no longer usable")
+	ErrAttendanceAlreadyCheckedIn   = errors.New("participant already checked in")
+	ErrAttendanceParticipantInvalid = errors.New("participant is not eligible for attendance check-in")
 )

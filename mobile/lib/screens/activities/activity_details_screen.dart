@@ -399,10 +399,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     );
   }
 
-  String _mapCancelError(
-    String? actionErrorMessage,
-    AppLocalizations l10n,
-  ) {
+  String _mapCancelError(String? actionErrorMessage, AppLocalizations l10n) {
     final raw = (actionErrorMessage ?? '').trim();
     if (raw.isEmpty) {
       return l10n.activityCancelFailed;
@@ -695,12 +692,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       );
     }
 
-    final activeParticipants = _participants
-        .where((participant) => participant.isActive)
-        .toList()
-      ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
-    final occupyingCount =
-        _participants.where((participant) => participant.occupiesSlot).length;
+    final activeParticipants =
+        _participants.where((participant) => participant.isActive).toList()
+          ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
+    final occupyingCount = _participants
+        .where((participant) => participant.occupiesSlot)
+        .length;
     final isOwner =
         currentUserId.isNotEmpty && currentUserId == activity.hostUserId;
     ActivityParticipantVm? currentParticipant;
@@ -718,6 +715,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final isDraft = status == 'DRAFT';
     final showPublish = isOwner && isDraft;
     final canCancelActivity = _canCancelActivity(activity, isOwner: isOwner);
+    final canShowAttendanceQr =
+        isOwner &&
+        !const {'CANCELLED', 'COMPLETED', 'ARCHIVED'}.contains(status);
     final hostName = _resolveHostName(
       activity.hostUserId,
       session.profile,
@@ -759,8 +759,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                 final heroHeight = width < 360
                     ? 332.0
                     : width > 430
-                        ? 392.0
-                        : 368.0;
+                    ? 392.0
+                    : 368.0;
                 final compact = width < 360;
 
                 return RefreshIndicator(
@@ -822,8 +822,16 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             context.push('/profile');
                             return;
                           }
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(l10n.profileNotAvailable)),
+                          final hostUserId = activity.hostUserId.trim();
+                          if (hostUserId.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.profileNotAvailable)),
+                            );
+                            return;
+                          }
+                          context.push(
+                            '/users/$hostUserId/profile',
+                            extra: _resolvedProfiles[hostUserId],
                           );
                         },
                       ),
@@ -842,9 +850,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         loadFailed: _participantsError != null,
                         onViewAll: activeParticipants.isNotEmpty
                             ? () => _showParticipantsSheet(
-                                  activeParticipants,
-                                  l10n,
-                                )
+                                activeParticipants,
+                                l10n,
+                              )
                             : null,
                       ),
                       const SizedBox(height: 8),
@@ -853,16 +861,24 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         l10n: l10n,
                         isJoined: isJoined,
                         isOwner: isOwner,
+                        canShowAttendanceQr: canShowAttendanceQr,
                         canLeaveActivity: isJoined && !isOwner,
                         canCancelActivity: canCancelActivity,
-                        isLeaving: provider.actionState ==
+                        isLeaving:
+                            provider.actionState ==
                                 ActivityActionState.loading &&
                             _pendingAction == _FooterAction.leave,
-                        isCancelling: provider.actionState ==
+                        isCancelling:
+                            provider.actionState ==
                                 ActivityActionState.loading &&
                             _pendingAction == _FooterAction.cancel,
                         onLeaveTap: _handleLeave,
                         onCancelTap: _handleCancel,
+                        onShowAttendanceQrTap: () {
+                          context.push(
+                            '/activities/${activity.id}/attendance-qr',
+                          );
+                        },
                         onActionTap: () {
                           final copyValue = _resolveMeetingActionCopyValue(
                             activity,
@@ -1226,7 +1242,8 @@ class _PrivateActivityPasswordDialogState
                                   letterSpacing: 0.2,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: widget.l10n
+                                  hintText: widget
+                                      .l10n
                                       .activityPrivateJoinPasswordPlaceholder,
                                   hintStyle: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.72),
@@ -1242,9 +1259,8 @@ class _PrivateActivityPasswordDialogState
                                     onPressed: _isSubmitting
                                         ? null
                                         : () => setState(
-                                              () =>
-                                                  _obscureText = !_obscureText,
-                                            ),
+                                            () => _obscureText = !_obscureText,
+                                          ),
                                     icon: Icon(
                                       _obscureText
                                           ? Icons.visibility_outlined
@@ -1261,8 +1277,9 @@ class _PrivateActivityPasswordDialogState
                                   }
                                   setState(() => _errorText = null);
                                 },
-                                onSubmitted:
-                                    _isSubmitting ? null : (_) => _submit(),
+                                onSubmitted: _isSubmitting
+                                    ? null
+                                    : (_) => _submit(),
                               ),
                             ),
                             if (_errorText != null) ...[
@@ -1323,12 +1340,13 @@ class _PrivateActivityPasswordDialogState
                                                 strokeWidth: 2.6,
                                                 valueColor:
                                                     AlwaysStoppedAnimation(
-                                                  Colors.white,
-                                                ),
+                                                      Colors.white,
+                                                    ),
                                               ),
                                             )
                                           : Text(
-                                              widget.l10n
+                                              widget
+                                                  .l10n
                                                   .activityPrivateJoinSubmit,
                                               style: TextStyle(
                                                 color: Colors.white,
@@ -1415,8 +1433,9 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(32),
                   ),
-                  border:
-                      Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -1533,8 +1552,9 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
                             hintText:
                                 widget.l10n.activityCancelReasonPlaceholder,
                             hintStyle: TextStyle(
-                              color:
-                                  _DetailsColors.muted.withValues(alpha: 0.72),
+                              color: _DetailsColors.muted.withValues(
+                                alpha: 0.72,
+                              ),
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1645,11 +1665,13 @@ class _SheetActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor =
-        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.06);
+    final backgroundColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.06);
     final foregroundColor = isPrimary ? Colors.white : _DetailsColors.text;
-    final borderColor =
-        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
+    final borderColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.1);
 
     return SizedBox(
       height: 58,
@@ -2060,11 +2082,7 @@ class _DetailsHeroArtwork extends StatelessWidget {
                         width: 1.4,
                       ),
                     ),
-                    child: Icon(
-                      visual.icon,
-                      color: Colors.white,
-                      size: 48,
-                    ),
+                    child: Icon(visual.icon, color: Colors.white, size: 48),
                   ),
                 ),
               ],
@@ -2242,16 +2260,18 @@ class _HostCard extends StatelessWidget {
                     letterSpacing: -0.4,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppColors.accent,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    height: 1.35,
+                if (subtitle.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -2302,21 +2322,32 @@ class _StatsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
-    final dateText = DateFormat.MMMd(locale).add_jm().format(activity.startAt.toLocal());
+    final dateFormat = DateFormat.MMMd(locale).add_Hm();
+    final startText = dateFormat.format(activity.startAt.toLocal());
+    final endText = dateFormat.format(activity.endAt.toLocal());
     final pricingText = activity.isFree
         ? l10n.freeLabel
         : '${activity.priceLabel} ${l10n.activityPerPerson}';
     final formatText = formatActivityFormat(activity.format, l10n);
-    final capacityText = activity.capacityType.toUpperCase() == 'LIMITED' &&
+    final capacityText =
+        activity.capacityType.toUpperCase() == 'LIMITED' &&
             activity.maxParticipants != null
         ? l10n.activityPeopleMax(activity.maxParticipants!)
         : l10n.activityUnlimitedSpots;
+    final visibilityText = activity.visibility.toUpperCase() == 'PRIVATE'
+        ? l10n.createVisibilityPrivate
+        : l10n.createVisibilityPublic;
 
     final items = [
       _DetailsStatItem(
         icon: Icons.calendar_today_outlined,
-        label: l10n.activityDateAndTime,
-        value: dateText,
+        label: l10n.createStartAtLabel,
+        value: startText,
+      ),
+      _DetailsStatItem(
+        icon: Icons.event_available_rounded,
+        label: l10n.createEndAtLabel,
+        value: endText,
       ),
       _DetailsStatItem(
         icon: Icons.payments_outlined,
@@ -2325,13 +2356,20 @@ class _StatsGrid extends StatelessWidget {
       ),
       _DetailsStatItem(
         icon: Icons.language_rounded,
-        label: l10n.activityFormatOffline,
+        label: l10n.activityFormatLabel,
         value: formatText,
       ),
       _DetailsStatItem(
         icon: Icons.people_outline_rounded,
         label: l10n.activityCapacity,
         value: capacityText,
+      ),
+      _DetailsStatItem(
+        icon: activity.visibility.toUpperCase() == 'PRIVATE'
+            ? Icons.lock_outline_rounded
+            : Icons.public_rounded,
+        label: l10n.activitiesFilterVisibility,
+        value: visibilityText,
       ),
     ];
 
@@ -2366,6 +2404,8 @@ class _StatsGrid extends StatelessWidget {
               buildRow(0),
               SizedBox(height: verticalSpacing),
               buildRow(2),
+              SizedBox(height: verticalSpacing),
+              buildRow(4),
             ],
           ),
         );
@@ -2423,6 +2463,8 @@ class _DetailsStatCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             item.value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: _DetailsColors.text,
               fontSize: 17,
@@ -2443,12 +2485,14 @@ class _MeetingSection extends StatelessWidget {
     required this.l10n,
     required this.isJoined,
     required this.isOwner,
+    required this.canShowAttendanceQr,
     required this.canLeaveActivity,
     required this.canCancelActivity,
     required this.isLeaving,
     required this.isCancelling,
     required this.onLeaveTap,
     required this.onCancelTap,
+    required this.onShowAttendanceQrTap,
     required this.onActionTap,
   });
 
@@ -2456,18 +2500,21 @@ class _MeetingSection extends StatelessWidget {
   final AppLocalizations l10n;
   final bool isJoined;
   final bool isOwner;
+  final bool canShowAttendanceQr;
   final bool canLeaveActivity;
   final bool canCancelActivity;
   final bool isLeaving;
   final bool isCancelling;
   final VoidCallback onLeaveTap;
   final VoidCallback onCancelTap;
+  final VoidCallback onShowAttendanceQrTap;
   final VoidCallback onActionTap;
 
   @override
   Widget build(BuildContext context) {
     final hasMeetingLink = (activity.meetingUrl ?? '').trim().isNotEmpty;
-    final hasLocation = (activity.addressText ?? '').trim().isNotEmpty ||
+    final hasLocation =
+        (activity.addressText ?? '').trim().isNotEmpty ||
         activity.shortLocation.isNotEmpty;
     if (!hasMeetingLink && !hasLocation) {
       return const SizedBox.shrink();
@@ -2640,8 +2687,8 @@ class _MeetingSection extends StatelessWidget {
                 showProtectedNotice
                     ? l10n.activitySensitiveDetailsHint
                     : (locationLine.isNotEmpty
-                        ? locationLine
-                        : l10n.notSpecified),
+                          ? locationLine
+                          : l10n.notSpecified),
                 style: const TextStyle(
                   color: _DetailsColors.muted,
                   fontSize: 15,
@@ -2658,6 +2705,15 @@ class _MeetingSection extends StatelessWidget {
               label: l10n.activityLeaveInlineButton,
               isBusy: isLeaving,
               onTap: onLeaveTap,
+            ),
+          ),
+        ],
+        if (canShowAttendanceQr) ...[
+          const SizedBox(height: 18),
+          Center(
+            child: _MeetingOwnerQrAction(
+              label: l10n.activityAttendanceQrButton,
+              onTap: onShowAttendanceQrTap,
             ),
           ),
         ],
@@ -2915,9 +2971,7 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.accent.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.24),
-            ),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -2946,6 +3000,67 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
                     color: AppColors.accent.withValues(alpha: 0.96),
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: -0.18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MeetingOwnerQrAction extends StatelessWidget {
+  const _MeetingOwnerQrAction({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.accent,
+                AppColors.accent.withValues(alpha: 0.84),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.2),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.qr_code_2_rounded,
+                  size: 18,
+                  color: AppColors.textPrimary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: -0.18,
                   ),
                 ),
@@ -3173,14 +3288,14 @@ class _DetailsActionBar extends StatelessWidget {
             action: _FooterAction.publish,
           )
         : shouldShowPaymentAction
-            ? _FooterButtonSpec(
-                label: l10n.activityDetailsChatButton,
-                icon: Icons.forum_rounded,
-                onTap: onOpenChat ?? () {},
-                style: _FooterButtonStyle.secondary,
-                action: null,
-              )
-            : null;
+        ? _FooterButtonSpec(
+            label: l10n.activityDetailsChatButton,
+            icon: Icons.forum_rounded,
+            onTap: onOpenChat ?? () {},
+            style: _FooterButtonStyle.secondary,
+            action: null,
+          )
+        : null;
     final primaryAction = isOwner
         ? _FooterButtonSpec(
             label: l10n.editActivityButton,
@@ -3190,28 +3305,28 @@ class _DetailsActionBar extends StatelessWidget {
             action: null,
           )
         : isJoined
-            ? shouldShowPaymentAction
-                ? _FooterButtonSpec(
-                    label: l10n.activityPaymentPayButton,
-                    icon: Icons.payments_rounded,
-                    onTap: onPay ?? () {},
-                    style: _FooterButtonStyle.primary,
-                    action: null,
-                  )
-                : _FooterButtonSpec(
-                    label: l10n.activityDetailsChatButton,
-                    icon: Icons.forum_rounded,
-                    onTap: onOpenChat ?? () {},
-                    style: _FooterButtonStyle.primary,
-                    action: null,
-                  )
-            : _FooterButtonSpec(
-                label: l10n.activityJoinActivity,
-                icon: Icons.chevron_right_rounded,
-                onTap: onJoin,
-                style: _FooterButtonStyle.primary,
-                action: _FooterAction.join,
-              );
+        ? shouldShowPaymentAction
+              ? _FooterButtonSpec(
+                  label: l10n.activityPaymentPayButton,
+                  icon: Icons.payments_rounded,
+                  onTap: onPay ?? () {},
+                  style: _FooterButtonStyle.primary,
+                  action: null,
+                )
+              : _FooterButtonSpec(
+                  label: l10n.activityDetailsChatButton,
+                  icon: Icons.forum_rounded,
+                  onTap: onOpenChat ?? () {},
+                  style: _FooterButtonStyle.primary,
+                  action: null,
+                )
+        : _FooterButtonSpec(
+            label: l10n.activityJoinActivity,
+            icon: Icons.chevron_right_rounded,
+            onTap: onJoin,
+            style: _FooterButtonStyle.primary,
+            action: _FooterAction.join,
+          );
     final priceBlockLabel = isPaid
         ? l10n.activityPaymentStatusLabel
         : l10n.activityDetailsTotalLabel;
@@ -3295,7 +3410,8 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: secondaryAction,
-                                isBusy: isBusy &&
+                                isBusy:
+                                    isBusy &&
                                     pendingAction == secondaryAction.action,
                               ),
                             ),
@@ -3303,7 +3419,8 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: primaryAction,
-                                isBusy: isBusy &&
+                                isBusy:
+                                    isBusy &&
                                     pendingAction == primaryAction.action,
                               ),
                             ),
@@ -3397,10 +3514,12 @@ class _FooterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPrimary = spec.style == _FooterButtonStyle.primary;
-    final backgroundColor =
-        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.08);
-    final borderColor =
-        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
+    final backgroundColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.08);
+    final borderColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.1);
     final foreground = isPrimary ? Colors.white : _DetailsColors.text;
 
     return SizedBox(
@@ -3681,11 +3800,7 @@ String _resolveHostSubtitle({
   required ActivityListItemVm activity,
   required AppLocalizations l10n,
 }) {
-  final visibility = activity.visibility.toUpperCase() == 'PRIVATE'
-      ? l10n.profilePrivate
-      : l10n.profilePublic;
-  final format = formatActivityFormat(activity.format, l10n);
-  return '$format • $visibility';
+  return '';
 }
 
 String _prettyCategory(String value) {

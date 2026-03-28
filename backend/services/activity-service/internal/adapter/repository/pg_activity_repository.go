@@ -496,6 +496,31 @@ func (r *PGActivityRepository) ReplaceMedia(ctx context.Context, activityID uuid
 	return nil
 }
 
+func (r *PGActivityRepository) CreateAttendanceQRIssue(ctx context.Context, item *model.AttendanceQRIssue) error {
+	const query = `
+		INSERT INTO activity_attendance_qr_issues (
+			jti, activity_id, host_user_id, issued_at, expires_at, usable_until, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+
+	_, err := r.pool.Exec(
+		ctx,
+		query,
+		item.JTI,
+		item.ActivityID,
+		item.HostUserID,
+		item.IssuedAt,
+		item.ExpiresAt,
+		item.UsableUntil,
+		item.CreatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("insert attendance qr issue: %w", err)
+	}
+
+	return nil
+}
+
 func (r *PGActivityRepository) GetParticipantByActivityAndUser(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error) {
 	const query = `
 		SELECT
@@ -710,6 +735,58 @@ func (r *PGActivityTxRepository) GetParticipantByActivityAndUserForUpdate(ctx co
 	return item, nil
 }
 
+func (r *PGActivityTxRepository) GetAttendanceQRIssueByJTIForUpdate(
+	ctx context.Context,
+	jti uuid.UUID,
+) (*model.AttendanceQRIssue, error) {
+	const query = `
+		SELECT
+			jti, activity_id, host_user_id, issued_at, expires_at, usable_until, created_at
+		FROM activity_attendance_qr_issues
+		WHERE jti = $1
+		LIMIT 1
+		FOR UPDATE
+	`
+
+	row := r.tx.QueryRow(ctx, query, jti)
+	item, err := scanAttendanceQRIssue(row)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get attendance qr issue for update: %w", err)
+	}
+
+	return item, nil
+}
+
+func (r *PGActivityTxRepository) GetAttendanceSyncAttemptByScanIDForUpdate(
+	ctx context.Context,
+	scanID uuid.UUID,
+) (*model.AttendanceSyncAttempt, error) {
+	const query = `
+		SELECT
+			scan_id, activity_id, participant_user_id, qr_jti, installation_id,
+			scanned_at_device, result_status, failure_code, failure_message, checked_in_at,
+			created_at, updated_at
+		FROM activity_attendance_sync_attempts
+		WHERE scan_id = $1
+		LIMIT 1
+		FOR UPDATE
+	`
+
+	row := r.tx.QueryRow(ctx, query, scanID)
+	item, err := scanAttendanceSyncAttempt(row)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get attendance sync attempt for update: %w", err)
+	}
+
+	return item, nil
+}
+
 func (r *PGActivityTxRepository) HasActiveOverlappingJoinedActivity(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -847,6 +924,81 @@ func (r *PGActivityTxRepository) UpdateParticipant(ctx context.Context, item *mo
 	)
 	if err != nil {
 		return fmt.Errorf("update participant in tx: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PGActivityTxRepository) CreateAttendanceSyncAttempt(
+	ctx context.Context,
+	item *model.AttendanceSyncAttempt,
+) error {
+	const query = `
+		INSERT INTO activity_attendance_sync_attempts (
+			scan_id, activity_id, participant_user_id, qr_jti, installation_id,
+			scanned_at_device, result_status, failure_code, failure_message, checked_in_at,
+			created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5,
+			$6, $7, $8, $9, $10,
+			$11, $12
+		)
+	`
+
+	_, err := r.tx.Exec(
+		ctx,
+		query,
+		item.ScanID,
+		item.ActivityID,
+		item.ParticipantUserID,
+		item.QRJTI,
+		item.InstallationID,
+		item.ScannedAtDevice,
+		item.ResultStatus,
+		item.FailureCode,
+		item.FailureMessage,
+		item.CheckedInAt,
+		item.CreatedAt,
+		item.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("insert attendance sync attempt in tx: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PGActivityTxRepository) UpdateAttendanceSyncAttempt(
+	ctx context.Context,
+	item *model.AttendanceSyncAttempt,
+) error {
+	const query = `
+		UPDATE activity_attendance_sync_attempts
+		SET
+			installation_id = $2,
+			scanned_at_device = $3,
+			result_status = $4,
+			failure_code = $5,
+			failure_message = $6,
+			checked_in_at = $7,
+			updated_at = $8
+		WHERE scan_id = $1
+	`
+
+	_, err := r.tx.Exec(
+		ctx,
+		query,
+		item.ScanID,
+		item.InstallationID,
+		item.ScannedAtDevice,
+		item.ResultStatus,
+		item.FailureCode,
+		item.FailureMessage,
+		item.CheckedInAt,
+		item.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("update attendance sync attempt in tx: %w", err)
 	}
 
 	return nil
@@ -1292,6 +1444,59 @@ func scanParticipant(row participantScanner) (*model.ActivityParticipant, error)
 	}
 
 	item.Status = enum.ParticipantStatus(statusRaw)
+	return &item, nil
+}
+
+type attendanceQRIssueScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanAttendanceQRIssue(row attendanceQRIssueScanner) (*model.AttendanceQRIssue, error) {
+	var item model.AttendanceQRIssue
+
+	err := row.Scan(
+		&item.JTI,
+		&item.ActivityID,
+		&item.HostUserID,
+		&item.IssuedAt,
+		&item.ExpiresAt,
+		&item.UsableUntil,
+		&item.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &item, nil
+}
+
+type attendanceSyncAttemptScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanAttendanceSyncAttempt(
+	row attendanceSyncAttemptScanner,
+) (*model.AttendanceSyncAttempt, error) {
+	var item model.AttendanceSyncAttempt
+
+	err := row.Scan(
+		&item.ScanID,
+		&item.ActivityID,
+		&item.ParticipantUserID,
+		&item.QRJTI,
+		&item.InstallationID,
+		&item.ScannedAtDevice,
+		&item.ResultStatus,
+		&item.FailureCode,
+		&item.FailureMessage,
+		&item.CheckedInAt,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &item, nil
 }
 

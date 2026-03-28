@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'features/attendance/attendance_sync_manager.dart';
 import 'providers/auth_provider.dart';
 import 'providers/session_provider.dart';
 import 'providers/locale_provider.dart';
@@ -64,7 +65,9 @@ class _SuperAppState extends State<SuperApp> {
             locale: localeProvider.locale,
             builder: (context, child) {
               return _DismissKeyboardOnTap(
-                child: child ?? const SizedBox.shrink(),
+                child: _AttendanceSyncBridge(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               );
             },
             theme: ThemeData(
@@ -87,6 +90,67 @@ class _SuperAppState extends State<SuperApp> {
         },
       ),
     );
+  }
+}
+
+class _AttendanceSyncBridge extends StatefulWidget {
+  const _AttendanceSyncBridge({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AttendanceSyncBridge> createState() => _AttendanceSyncBridgeState();
+}
+
+class _AttendanceSyncBridgeState extends State<_AttendanceSyncBridge>
+    with WidgetsBindingObserver {
+  String? _lastSyncedUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _scheduleSync();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.watch<SessionProvider>();
+    final userId = session.profile?.userId ?? '';
+    if (session.isAuthenticated &&
+        userId.isNotEmpty &&
+        _lastSyncedUserId != userId) {
+      _lastSyncedUserId = userId;
+      _scheduleSync();
+    }
+    if (!session.isAuthenticated) {
+      _lastSyncedUserId = null;
+    }
+    return widget.child;
+  }
+
+  void _scheduleSync() {
+    final session = context.read<SessionProvider>();
+    final userId = session.profile?.userId ?? '';
+    if (!session.isAuthenticated || userId.isEmpty) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AttendanceSyncManager.instance.syncPendingForUser(userId);
+    });
   }
 }
 

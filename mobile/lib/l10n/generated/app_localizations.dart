@@ -676,6 +676,12 @@ abstract class AppLocalizations {
   /// **'Hybrid'**
   String get activityFormatHybrid;
 
+  /// No description provided for @activityFormatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get activityFormatLabel;
+
   /// No description provided for @activityDetailsTitle.
   ///
   /// In en, this message translates to:
@@ -2595,6 +2601,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get Link'**
   String get activityGetLink;
+
+  /// No description provided for @activityAttendanceQrButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance QR'**
+  String get activityAttendanceQrButton;
+
+  /// No description provided for @activityAttendanceQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity QR'**
+  String get activityAttendanceQrTitle;
+
+  /// No description provided for @activityAttendanceQrFallbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get activityAttendanceQrFallbackTitle;
+
+  /// No description provided for @activityAttendanceQrSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this QR to participants so they can confirm arrival in the app.'**
+  String get activityAttendanceQrSubtitle;
+
+  /// No description provided for @activityAttendanceQrHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'The QR refreshes automatically. Participants should scan the current code using the QR button in the bottom bar.'**
+  String get activityAttendanceQrHelper;
+
+  /// No description provided for @activityAttendanceQrLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load the activity QR'**
+  String get activityAttendanceQrLoadFailed;
+
+  /// No description provided for @activityAttendanceQrRefreshHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The code refreshes automatically to reduce duplicates and screenshot reuse.'**
+  String get activityAttendanceQrRefreshHint;
+
+  /// No description provided for @activityAttendanceQrRefreshing.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing QR…'**
+  String get activityAttendanceQrRefreshing;
+
+  /// No description provided for @activityAttendanceQrExpiresIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh in {seconds}s'**
+  String activityAttendanceQrExpiresIn(Object seconds);
+
+  /// No description provided for @qrScannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR'**
+  String get qrScannerTitle;
+
+  /// No description provided for @qrScannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Point your camera at the host QR to confirm that you arrived at the activity.'**
+  String get qrScannerSubtitle;
+
+  /// No description provided for @qrScannerReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at the QR code'**
+  String get qrScannerReady;
+
+  /// No description provided for @qrScannerInvalidCode.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a FlyFy activity QR'**
+  String get qrScannerInvalidCode;
+
+  /// No description provided for @qrScannerSessionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Current session is unavailable. Reopen the screen and try again.'**
+  String get qrScannerSessionUnavailable;
+
+  /// No description provided for @qrScannerAlreadyQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'This check-in is already waiting to sync'**
+  String get qrScannerAlreadyQueued;
+
+  /// No description provided for @qrScannerQueuedOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in saved. It will sync when the connection is back.'**
+  String get qrScannerQueuedOffline;
+
+  /// No description provided for @qrScannerSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival confirmed'**
+  String get qrScannerSuccess;
+
+  /// No description provided for @qrScannerAlreadyCheckedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'You are already checked in to this activity'**
+  String get qrScannerAlreadyCheckedIn;
+
+  /// No description provided for @qrScannerNotRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not registered for this activity'**
+  String get qrScannerNotRegistered;
+
+  /// No description provided for @qrScannerNotEligible.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in is not available for this booking yet'**
+  String get qrScannerNotEligible;
+
+  /// No description provided for @qrScannerQrExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR already expired. Ask the host to open a new one.'**
+  String get qrScannerQrExpired;
+
+  /// No description provided for @qrScannerHostNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'The host cannot scan their own QR'**
+  String get qrScannerHostNotAllowed;
+
+  /// No description provided for @qrScannerActivityUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in is unavailable for this activity right now'**
+  String get qrScannerActivityUnavailable;
+
+  /// No description provided for @qrScannerCameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera is unavailable. Check camera permission and try again.'**
+  String get qrScannerCameraUnavailable;
+
+  /// No description provided for @qrScannerSyncNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get qrScannerSyncNow;
+
+  /// No description provided for @qrScannerScanAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan again'**
+  String get qrScannerScanAgain;
+
+  /// No description provided for @qrScannerPendingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending sync: {count}'**
+  String qrScannerPendingCount(Object count);
+
+  /// No description provided for @qrScannerNoPending.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending check-ins'**
+  String get qrScannerNoPending;
 }
 
 class _AppLocalizationsDelegate

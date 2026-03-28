@@ -65,6 +65,10 @@ func (s *activityRepoStub) ReplaceMedia(ctx context.Context, activityID uuid.UUI
 	return nil
 }
 
+func (s *activityRepoStub) CreateAttendanceQRIssue(ctx context.Context, item *model.AttendanceQRIssue) error {
+	return nil
+}
+
 func (s *activityRepoStub) GetParticipantByActivityAndUser(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error) {
 	return nil, nil
 }

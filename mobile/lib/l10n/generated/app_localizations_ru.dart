@@ -312,6 +312,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityFormatHybrid => 'Гибрид';
 
   @override
+  String get activityFormatLabel => 'Формат';
+
+  @override
   String get activityDetailsTitle => 'Активность';
 
   @override
@@ -1358,4 +1361,103 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activityGetLink => 'Получить ссылку';
+
+  @override
+  String get activityAttendanceQrButton => 'QR для отметки';
+
+  @override
+  String get activityAttendanceQrTitle => 'QR активности';
+
+  @override
+  String get activityAttendanceQrFallbackTitle => 'Активность';
+
+  @override
+  String get activityAttendanceQrSubtitle =>
+      'Покажите этот QR участнику, чтобы он подтвердил свое прибытие через приложение.';
+
+  @override
+  String get activityAttendanceQrHelper =>
+      'QR автоматически обновляется. Участник должен сканировать актуальный код через кнопку QR в нижней панели.';
+
+  @override
+  String get activityAttendanceQrLoadFailed =>
+      'Не удалось загрузить QR активности';
+
+  @override
+  String get activityAttendanceQrRefreshHint =>
+      'Код обновляется автоматически для защиты от дублей и скриншотов.';
+
+  @override
+  String get activityAttendanceQrRefreshing => 'Обновляем QR…';
+
+  @override
+  String activityAttendanceQrExpiresIn(Object seconds) {
+    return 'Обновление через $seconds сек.';
+  }
+
+  @override
+  String get qrScannerTitle => 'Сканирование QR';
+
+  @override
+  String get qrScannerSubtitle =>
+      'Наведите камеру на QR организатора, чтобы подтвердить свое прибытие на активность.';
+
+  @override
+  String get qrScannerReady => 'Наведите камеру на QR код';
+
+  @override
+  String get qrScannerInvalidCode => 'Это не QR активности FlyFy';
+
+  @override
+  String get qrScannerSessionUnavailable =>
+      'Не удалось определить текущую сессию. Попробуйте открыть экран снова.';
+
+  @override
+  String get qrScannerAlreadyQueued => 'Эта отметка уже ожидает синхронизации';
+
+  @override
+  String get qrScannerQueuedOffline =>
+      'Отметка сохранена и синхронизируется, когда появится соединение';
+
+  @override
+  String get qrScannerSuccess => 'Прибытие подтверждено';
+
+  @override
+  String get qrScannerAlreadyCheckedIn => 'Вы уже отмечены на этой активности';
+
+  @override
+  String get qrScannerNotRegistered => 'Вы не записаны на эту активность';
+
+  @override
+  String get qrScannerNotEligible => 'Для этой записи отметка пока недоступна';
+
+  @override
+  String get qrScannerQrExpired =>
+      'QR уже устарел. Попросите организатора открыть новый код.';
+
+  @override
+  String get qrScannerHostNotAllowed =>
+      'Организатор не может сканировать свой собственный QR';
+
+  @override
+  String get qrScannerActivityUnavailable =>
+      'Для этой активности отметка сейчас недоступна';
+
+  @override
+  String get qrScannerCameraUnavailable =>
+      'Камера недоступна. Проверьте разрешение на доступ к камере.';
+
+  @override
+  String get qrScannerSyncNow => 'Синхронизировать';
+
+  @override
+  String get qrScannerScanAgain => 'Сканировать снова';
+
+  @override
+  String qrScannerPendingCount(Object count) {
+    return 'Ожидают синхронизации: $count';
+  }
+
+  @override
+  String get qrScannerNoPending => 'Нет ожидающих отметок';
 }

@@ -311,6 +311,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityFormatHybrid => 'Hybrid';
 
   @override
+  String get activityFormatLabel => 'Format';
+
+  @override
   String get activityDetailsTitle => 'Activity';
 
   @override
@@ -1352,4 +1355,105 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityGetLink => 'Get Link';
+
+  @override
+  String get activityAttendanceQrButton => 'Attendance QR';
+
+  @override
+  String get activityAttendanceQrTitle => 'Activity QR';
+
+  @override
+  String get activityAttendanceQrFallbackTitle => 'Activity';
+
+  @override
+  String get activityAttendanceQrSubtitle =>
+      'Show this QR to participants so they can confirm arrival in the app.';
+
+  @override
+  String get activityAttendanceQrHelper =>
+      'The QR refreshes automatically. Participants should scan the current code using the QR button in the bottom bar.';
+
+  @override
+  String get activityAttendanceQrLoadFailed => 'Failed to load the activity QR';
+
+  @override
+  String get activityAttendanceQrRefreshHint =>
+      'The code refreshes automatically to reduce duplicates and screenshot reuse.';
+
+  @override
+  String get activityAttendanceQrRefreshing => 'Refreshing QR…';
+
+  @override
+  String activityAttendanceQrExpiresIn(Object seconds) {
+    return 'Refresh in ${seconds}s';
+  }
+
+  @override
+  String get qrScannerTitle => 'Scan QR';
+
+  @override
+  String get qrScannerSubtitle =>
+      'Point your camera at the host QR to confirm that you arrived at the activity.';
+
+  @override
+  String get qrScannerReady => 'Point the camera at the QR code';
+
+  @override
+  String get qrScannerInvalidCode => 'This is not a FlyFy activity QR';
+
+  @override
+  String get qrScannerSessionUnavailable =>
+      'Current session is unavailable. Reopen the screen and try again.';
+
+  @override
+  String get qrScannerAlreadyQueued =>
+      'This check-in is already waiting to sync';
+
+  @override
+  String get qrScannerQueuedOffline =>
+      'Check-in saved. It will sync when the connection is back.';
+
+  @override
+  String get qrScannerSuccess => 'Arrival confirmed';
+
+  @override
+  String get qrScannerAlreadyCheckedIn =>
+      'You are already checked in to this activity';
+
+  @override
+  String get qrScannerNotRegistered =>
+      'You are not registered for this activity';
+
+  @override
+  String get qrScannerNotEligible =>
+      'Check-in is not available for this booking yet';
+
+  @override
+  String get qrScannerQrExpired =>
+      'This QR already expired. Ask the host to open a new one.';
+
+  @override
+  String get qrScannerHostNotAllowed => 'The host cannot scan their own QR';
+
+  @override
+  String get qrScannerActivityUnavailable =>
+      'Check-in is unavailable for this activity right now';
+
+  @override
+  String get qrScannerCameraUnavailable =>
+      'Camera is unavailable. Check camera permission and try again.';
+
+  @override
+  String get qrScannerSyncNow => 'Sync now';
+
+  @override
+  String get qrScannerScanAgain => 'Scan again';
+
+  @override
+  String qrScannerPendingCount(Object count) {
+    return 'Pending sync: $count';
+  }
+
+  @override
+  String get qrScannerNoPending => 'No pending check-ins';
 }

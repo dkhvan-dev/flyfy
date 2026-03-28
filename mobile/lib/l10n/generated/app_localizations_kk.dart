@@ -315,6 +315,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityFormatHybrid => 'Гибрид';
 
   @override
+  String get activityFormatLabel => 'Формат';
+
+  @override
   String get activityDetailsTitle => 'Белсенділік';
 
   @override
@@ -1363,4 +1366,105 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get activityGetLink => 'Сілтемені алу';
+
+  @override
+  String get activityAttendanceQrButton => 'Белгілеу QR-ы';
+
+  @override
+  String get activityAttendanceQrTitle => 'Белсенділік QR-ы';
+
+  @override
+  String get activityAttendanceQrFallbackTitle => 'Белсенділік';
+
+  @override
+  String get activityAttendanceQrSubtitle =>
+      'Қатысушы қолданба арқылы келгенін растауы үшін осы QR-ды көрсетіңіз.';
+
+  @override
+  String get activityAttendanceQrHelper =>
+      'QR автоматты түрде жаңарады. Қатысушы төменгі панельдегі QR батырмасы арқылы өзекті кодты сканерлеуі керек.';
+
+  @override
+  String get activityAttendanceQrLoadFailed =>
+      'Белсенділік QR-ын жүктеу мүмкін болмады';
+
+  @override
+  String get activityAttendanceQrRefreshHint =>
+      'Код қайталанулар мен скриншоттарды азайту үшін автоматты түрде жаңарады.';
+
+  @override
+  String get activityAttendanceQrRefreshing => 'QR жаңартылып жатыр…';
+
+  @override
+  String activityAttendanceQrExpiresIn(Object seconds) {
+    return '$seconds сек. кейін жаңарады';
+  }
+
+  @override
+  String get qrScannerTitle => 'QR сканерлеу';
+
+  @override
+  String get qrScannerSubtitle =>
+      'Белсенділікке келгеніңізді растау үшін камераны ұйымдастырушының QR кодының үстіне апарыңыз.';
+
+  @override
+  String get qrScannerReady => 'Камераны QR кодқа бағыттаңыз';
+
+  @override
+  String get qrScannerInvalidCode => 'Бұл FlyFy белсенділігінің QR коды емес';
+
+  @override
+  String get qrScannerSessionUnavailable =>
+      'Ағымдағы сессияны анықтау мүмкін болмады. Экранды қайта ашып көріңіз.';
+
+  @override
+  String get qrScannerAlreadyQueued => 'Бұл белгілеу синхрондауды күтіп тұр';
+
+  @override
+  String get qrScannerQueuedOffline =>
+      'Белгілеу сақталды. Байланыс пайда болғанда синхрондалады.';
+
+  @override
+  String get qrScannerSuccess => 'Келу расталды';
+
+  @override
+  String get qrScannerAlreadyCheckedIn =>
+      'Сіз бұл белсенділікке әлдеқашан белгілендіңіз';
+
+  @override
+  String get qrScannerNotRegistered => 'Сіз бұл белсенділікке жазылмағансыз';
+
+  @override
+  String get qrScannerNotEligible =>
+      'Бұл жазба үшін белгілеу әзірге қолжетімсіз';
+
+  @override
+  String get qrScannerQrExpired =>
+      'Бұл QR ескірген. Ұйымдастырушыдан жаңасын ашуын сұраңыз.';
+
+  @override
+  String get qrScannerHostNotAllowed =>
+      'Ұйымдастырушы өзінің QR кодын сканерлей алмайды';
+
+  @override
+  String get qrScannerActivityUnavailable =>
+      'Бұл белсенділік үшін белгілеу қазір қолжетімсіз';
+
+  @override
+  String get qrScannerCameraUnavailable =>
+      'Камера қолжетімсіз. Камера рұқсатын тексеріп, қайта көріңіз.';
+
+  @override
+  String get qrScannerSyncNow => 'Синхрондау';
+
+  @override
+  String get qrScannerScanAgain => 'Қайта сканерлеу';
+
+  @override
+  String qrScannerPendingCount(Object count) {
+    return 'Синхрондауды күтіп тұрғаны: $count';
+  }
+
+  @override
+  String get qrScannerNoPending => 'Күтіп тұрған белгілеулер жоқ';
 }

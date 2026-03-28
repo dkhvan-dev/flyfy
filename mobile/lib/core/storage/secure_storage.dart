@@ -7,7 +7,8 @@ class SecureStorage {
   static const _keyRefreshToken = 'refresh_token';
   static const _keyBiometricEnabled = 'biometric_enabled';
 
-  Future<void> saveTokens({required String accessToken, required String refreshToken}) async {
+  Future<void> saveTokens(
+      {required String accessToken, required String refreshToken}) async {
     await _storage.write(key: _keyAccessToken, value: accessToken);
     await _storage.write(key: _keyRefreshToken, value: refreshToken);
   }
@@ -23,6 +24,21 @@ class SecureStorage {
   Future<void> deleteTokens() async {
     await _storage.delete(key: _keyAccessToken);
     await _storage.delete(key: _keyRefreshToken);
+  }
+
+  Future<void> writeString({
+    required String key,
+    required String? value,
+  }) async {
+    await _storage.write(key: key, value: value);
+  }
+
+  Future<String?> readString(String key) async {
+    return await _storage.read(key: key);
+  }
+
+  Future<void> deleteKey(String key) async {
+    await _storage.delete(key: key);
   }
 
   Future<void> setBiometricEnabled(bool enabled) async {

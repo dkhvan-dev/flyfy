@@ -72,11 +72,24 @@ func main() {
 	defer fileManagerClient.Close()
 
 	activityUC := app.NewActivityUseCase(repo, fileManagerClient)
+	attendanceUC := app.NewAttendanceUseCase(
+		repo,
+		cfg.Attendance.QRSigningSecret,
+		cfg.Attendance.QRTTL,
+		cfg.Attendance.OfflineWindow,
+	)
 	joinUC := app.NewJoinUseCase(repo)
 	searchUC := app.NewSearchUseCase(repo)
 	moderationUC := app.NewModerationUseCase(activityUC)
 
-	httpHandler := httpadapter.NewHandler(activityUC, joinUC, repo, fileManagerClient, actorResolver)
+	httpHandler := httpadapter.NewHandler(
+		activityUC,
+		attendanceUC,
+		joinUC,
+		repo,
+		fileManagerClient,
+		actorResolver,
+	)
 
 	httpMux := http.NewServeMux()
 	httpHandler.Register(httpMux)
