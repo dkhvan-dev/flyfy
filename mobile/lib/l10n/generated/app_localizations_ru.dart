@@ -69,6 +69,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get otpInvalid => 'Неверный код подтверждения.';
 
   @override
+  String get phoneRequiredError => 'Введите номер телефона';
+
+  @override
+  String get phoneInvalidError => 'Введите корректный номер телефона';
+
+  @override
   String get homeWelcomeBack => 'С возвращением!';
 
   @override
@@ -171,6 +177,76 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get biometricLoginFailed => 'Не удалось выполнить вход по биометрии';
+
+  @override
+  String get appLockLoading => 'Проверяем защищённую сессию';
+
+  @override
+  String get appLockSetupTitle => 'Создайте PIN-код';
+
+  @override
+  String get appLockSetupDescription =>
+      'PIN-код понадобится для быстрого входа в приложение, если сессия завершится после повторного открытия.';
+
+  @override
+  String get appLockSetupConfirmDescription =>
+      'Повторите PIN-код, чтобы подтвердить и сохранить его.';
+
+  @override
+  String get appLockSetupCreateButton => 'Продолжить';
+
+  @override
+  String get appLockSetupConfirmButton => 'Сохранить PIN-код';
+
+  @override
+  String get appLockSetupMismatch => 'PIN-коды не совпадают';
+
+  @override
+  String get appLockPinInvalid => 'Введите 4 цифры PIN-кода';
+
+  @override
+  String get appLockPinIncorrect => 'Неверный PIN-код';
+
+  @override
+  String get appLockUnlockTitle => 'Подтвердите вход';
+
+  @override
+  String get appLockPinUnlockDescription =>
+      'Введите PIN-код, чтобы продолжить работу в приложении.';
+
+  @override
+  String get appLockBiometricUnlockDescription =>
+      'Подтвердите вход с помощью Face ID или биометрии. После 3 неудачных попыток будет доступен PIN-код.';
+
+  @override
+  String get appLockUsePinButton => 'Ввести PIN-код';
+
+  @override
+  String get appLockUnlockButton => 'Разблокировать';
+
+  @override
+  String get appLockRetryBiometricButton => 'Сканировать лицо';
+
+  @override
+  String get appLockBiometricEnableTitle => 'Включить вход по биометрии?';
+
+  @override
+  String get appLockBiometricEnableDescription =>
+      'При следующем входе можно будет быстро подтверждать доступ с помощью Face ID или отпечатка пальца.';
+
+  @override
+  String get appLockBiometricEnableButton => 'Включить';
+
+  @override
+  String get appLockBiometricSkipButton => 'Пока не нужно';
+
+  @override
+  String get appLockBiometricFailed =>
+      'Биометрия не подтверждена. Попробуйте еще раз или перейдите к PIN-коду.';
+
+  @override
+  String get appLockBiometricFallback =>
+      'Доступ по биометрии временно отключен. Введите PIN-код.';
 
   @override
   String get profileIncompleteTitle => 'Профиль заполнен не полностью';

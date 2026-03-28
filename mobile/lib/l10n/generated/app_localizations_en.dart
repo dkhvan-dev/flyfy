@@ -68,6 +68,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpInvalid => 'Invalid verification code.';
 
   @override
+  String get phoneRequiredError => 'Enter your phone number';
+
+  @override
+  String get phoneInvalidError => 'Enter a valid phone number';
+
+  @override
   String get homeWelcomeBack => 'Welcome back!';
 
   @override
@@ -170,6 +176,76 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get biometricLoginFailed => 'Failed to sign in with biometrics';
+
+  @override
+  String get appLockLoading => 'Checking your protected session';
+
+  @override
+  String get appLockSetupTitle => 'Create a PIN';
+
+  @override
+  String get appLockSetupDescription =>
+      'You will use this PIN for quick access if the session expires after reopening the app.';
+
+  @override
+  String get appLockSetupConfirmDescription =>
+      'Enter the PIN again to confirm and save it.';
+
+  @override
+  String get appLockSetupCreateButton => 'Continue';
+
+  @override
+  String get appLockSetupConfirmButton => 'Save PIN';
+
+  @override
+  String get appLockSetupMismatch => 'PIN codes do not match';
+
+  @override
+  String get appLockPinInvalid => 'Enter a 4-digit PIN';
+
+  @override
+  String get appLockPinIncorrect => 'Incorrect PIN';
+
+  @override
+  String get appLockUnlockTitle => 'Confirm sign in';
+
+  @override
+  String get appLockPinUnlockDescription =>
+      'Enter your PIN to continue using the app.';
+
+  @override
+  String get appLockBiometricUnlockDescription =>
+      'Confirm access with Face ID or biometrics. After 3 failed attempts, PIN unlock will be shown.';
+
+  @override
+  String get appLockUsePinButton => 'Use PIN';
+
+  @override
+  String get appLockUnlockButton => 'Unlock';
+
+  @override
+  String get appLockRetryBiometricButton => 'Scan face';
+
+  @override
+  String get appLockBiometricEnableTitle => 'Enable biometric sign in?';
+
+  @override
+  String get appLockBiometricEnableDescription =>
+      'Next time you can quickly confirm access with Face ID or your fingerprint.';
+
+  @override
+  String get appLockBiometricEnableButton => 'Enable';
+
+  @override
+  String get appLockBiometricSkipButton => 'Not now';
+
+  @override
+  String get appLockBiometricFailed =>
+      'Biometric confirmation failed. Try again or switch to PIN.';
+
+  @override
+  String get appLockBiometricFallback =>
+      'Biometric access is temporarily unavailable. Enter your PIN.';
 
   @override
   String get profileIncompleteTitle => 'Profile is incomplete';

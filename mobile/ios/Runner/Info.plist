@@ -68,13 +68,15 @@
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We use your location to suggest your country and city in your profile.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We use your photos so you can upload an activity cover image.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>We use your camera so you can scan activity attendance QR codes.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>We use your photos so you can upload an activity cover image.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>We use your camera so you can scan activity attendance QR codes.</string>
+		<key>NSFaceIDUsageDescription</key>
+		<string>We use Face ID to quickly and securely unlock your protected session.</string>
 
-	<key>NSAppTransportSecurity</key>
-	<dict>
+		<key>NSAppTransportSecurity</key>
+		<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>

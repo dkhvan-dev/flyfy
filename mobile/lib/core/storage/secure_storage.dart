@@ -6,9 +6,12 @@ class SecureStorage {
   static const _keyAccessToken = 'access_token';
   static const _keyRefreshToken = 'refresh_token';
   static const _keyBiometricEnabled = 'biometric_enabled';
+  static const _keyAppLockPin = 'app_lock_pin';
 
-  Future<void> saveTokens(
-      {required String accessToken, required String refreshToken}) async {
+  Future<void> saveTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
     await _storage.write(key: _keyAccessToken, value: accessToken);
     await _storage.write(key: _keyRefreshToken, value: refreshToken);
   }
@@ -50,5 +53,27 @@ class SecureStorage {
 
   Future<bool> isBiometricEnabled() async {
     return (await _storage.read(key: _keyBiometricEnabled)) == 'true';
+  }
+
+  Future<void> saveAppLockPin(String pin) async {
+    await _storage.write(key: _keyAppLockPin, value: pin);
+  }
+
+  Future<String?> getAppLockPin() async {
+    return await _storage.read(key: _keyAppLockPin);
+  }
+
+  Future<bool> hasAppLockPin() async {
+    final pin = await _storage.read(key: _keyAppLockPin);
+    return pin != null && pin.isNotEmpty;
+  }
+
+  Future<void> deleteAppLockPin() async {
+    await _storage.delete(key: _keyAppLockPin);
+  }
+
+  Future<void> clearLocalAuthConfig() async {
+    await deleteAppLockPin();
+    await _storage.delete(key: _keyBiometricEnabled);
   }
 }

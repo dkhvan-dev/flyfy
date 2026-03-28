@@ -1,25 +1,21 @@
-import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../core/network/api_client.dart';
-import '../core/storage/secure_storage.dart';
-import '../core/network/dio_error_mapper.dart';
-import '../core/auth/biometric_auth_service.dart';
+import 'package:flutter/material.dart';
 
-enum AuthState { 
-  initial,
-  authenticated,
-  unauthenticated,
-}
+import '../core/network/api_client.dart';
+import '../core/auth/biometric_auth_service.dart';
+import '../core/network/dio_error_mapper.dart';
+import '../core/storage/secure_storage.dart';
+
+enum AuthState { initial, authenticated, unauthenticated }
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider({
     ApiClient? apiClient,
     SecureStorage? secureStorage,
     BiometricAuthService? biometricAuthService,
-  })  : _apiClient = apiClient ?? ApiClient(),
-        _secureStorage = secureStorage ?? SecureStorage(),
-        _biometricAuthService =
-            biometricAuthService ?? BiometricAuthService();
+  }) : _apiClient = apiClient ?? ApiClient(),
+       _secureStorage = secureStorage ?? SecureStorage(),
+       _biometricAuthService = biometricAuthService ?? BiometricAuthService();
 
   final ApiClient _apiClient;
   final SecureStorage _secureStorage;
@@ -46,7 +42,11 @@ class AuthProvider extends ChangeNotifier {
   Future<void> checkAuthStatus() async {
     try {
       final token = await _secureStorage.getAccessToken();
-      _state = (token != null && token.isNotEmpty)
+      final refreshToken = await _secureStorage.getRefreshToken();
+      final hasPin = await _secureStorage.hasAppLockPin();
+      final hasRestorableSession =
+          hasPin && refreshToken != null && refreshToken.isNotEmpty;
+      _state = (token != null && token.isNotEmpty) || hasRestorableSession
           ? AuthState.authenticated
           : AuthState.unauthenticated;
     } catch (_) {
@@ -170,6 +170,7 @@ class AuthProvider extends ChangeNotifier {
       // ignore
     } finally {
       await _secureStorage.deleteTokens();
+      await _secureStorage.clearLocalAuthConfig();
       _lastPrimaryPhoneHint = null;
       _lastPrimaryEmailHint = null;
       _state = AuthState.unauthenticated;
@@ -222,7 +223,21 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> hasRefreshTokenForBiometricLogin() async {
     try {
       final refreshToken = await _secureStorage.getRefreshToken();
-      return refreshToken != null && refreshToken.isNotEmpty;
+      final biometricEnabled = await _secureStorage.isBiometricEnabled();
+      return biometricEnabled &&
+          refreshToken != null &&
+          refreshToken.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> hasStoredSessionForUnlock() async {
+    try {
+      final accessToken = await _secureStorage.getAccessToken();
+      final refreshToken = await _secureStorage.getRefreshToken();
+      return (accessToken != null && accessToken.isNotEmpty) ||
+          (refreshToken != null && refreshToken.isNotEmpty);
     } catch (_) {
       return false;
     }

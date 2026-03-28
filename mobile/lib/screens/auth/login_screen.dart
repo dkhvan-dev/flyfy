@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/auth/app_lock_gate.dart';
 import '../../core/ui/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
@@ -23,12 +24,24 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneFocusNode = FocusNode();
   bool _canUseBiometrics = false;
   bool _isCheckingBiometrics = true;
+  bool _showPhoneValidation = false;
 
   void _submit() async {
     final ctx = context;
     final l10n = AppLocalizations.of(ctx)!;
-    final phone = _phoneController.text.trim();
-    if (phone.isEmpty) return;
+    final validationMessage = _phoneValidationMessage(l10n);
+    if (validationMessage != null) {
+      setState(() {
+        _showPhoneValidation = true;
+      });
+      _phoneFocusNode.requestFocus();
+      return;
+    }
+
+    final phone = _normalizedPhone();
+    if (phone.isEmpty) {
+      return;
+    }
 
     final auth = ctx.read<AuthProvider>();
     final success = await auth.sendOtp(phone);
@@ -61,6 +74,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 375;
     final isNarrow = screenWidth < 360;
+    final phoneErrorText = _showPhoneValidation
+        ? _phoneValidationMessage(l10n)
+        : null;
+    final canSubmitPhone = _isPhoneValid();
 
     return Scaffold(
       body: Stack(
@@ -224,8 +241,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                         controller: _phoneController,
                                         focusNode: _phoneFocusNode,
                                         keyboardType: TextInputType.phone,
+                                        textInputAction: TextInputAction.done,
                                         onTapOutside: (_) =>
                                             FocusScope.of(context).unfocus(),
+                                        onSubmitted: (_) => _submit(),
                                         style: const TextStyle(
                                           color: AppColors.textPrimary,
                                           fontSize: 16,
@@ -246,6 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           hintStyle: const TextStyle(
                                             color: AppColors.textCaption,
                                           ),
+                                          errorText: phoneErrorText,
                                           filled: true,
                                           fillColor: Colors.white.withValues(
                                             alpha: 0.05,
@@ -307,7 +327,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                           }
 
                                           return ElevatedButton(
-                                            onPressed: _submit,
+                                            onPressed: canSubmitPhone
+                                                ? _submit
+                                                : null,
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: AppColors.accent,
                                               foregroundColor:
@@ -377,24 +399,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                             return;
                                                           }
                                                           if (success) {
-                                                            await ctx
-                                                                .read<
-                                                                  SessionProvider
-                                                                >()
-                                                                .restoreSession(
-                                                                  primaryPhoneHint:
-                                                                      authProvider
-                                                                          .lastPrimaryPhoneHint,
-                                                                  primaryEmailHint:
-                                                                      authProvider
-                                                                          .lastPrimaryEmailHint,
-                                                                );
-                                                            if (!ctx.mounted) {
-                                                              return;
-                                                            }
-                                                            ctx.go(
-                                                              widget.from ??
-                                                                  '/',
+                                                            await _completeAuthenticatedEntry(
+                                                              ctx,
+                                                              authProvider,
                                                             );
                                                           } else {
                                                             await showErrorDialog(
@@ -433,24 +440,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                             return;
                                                           }
                                                           if (success) {
-                                                            await ctx
-                                                                .read<
-                                                                  SessionProvider
-                                                                >()
-                                                                .restoreSession(
-                                                                  primaryPhoneHint:
-                                                                      authProvider
-                                                                          .lastPrimaryPhoneHint,
-                                                                  primaryEmailHint:
-                                                                      authProvider
-                                                                          .lastPrimaryEmailHint,
-                                                                );
-                                                            if (!ctx.mounted) {
-                                                              return;
-                                                            }
-                                                            ctx.go(
-                                                              widget.from ??
-                                                                  '/',
+                                                            await _completeAuthenticatedEntry(
+                                                              ctx,
+                                                              authProvider,
                                                             );
                                                           } else {
                                                             await showErrorDialog(
@@ -495,24 +487,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                             return;
                                                           }
                                                           if (success) {
-                                                            await ctx
-                                                                .read<
-                                                                  SessionProvider
-                                                                >()
-                                                                .restoreSession(
-                                                                  primaryPhoneHint:
-                                                                      authProvider
-                                                                          .lastPrimaryPhoneHint,
-                                                                  primaryEmailHint:
-                                                                      authProvider
-                                                                          .lastPrimaryEmailHint,
-                                                                );
-                                                            if (!ctx.mounted) {
-                                                              return;
-                                                            }
-                                                            ctx.go(
-                                                              widget.from ??
-                                                                  '/',
+                                                            await _completeAuthenticatedEntry(
+                                                              ctx,
+                                                              authProvider,
                                                             );
                                                           } else {
                                                             await showErrorDialog(
@@ -553,24 +530,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                             return;
                                                           }
                                                           if (success) {
-                                                            await ctx
-                                                                .read<
-                                                                  SessionProvider
-                                                                >()
-                                                                .restoreSession(
-                                                                  primaryPhoneHint:
-                                                                      authProvider
-                                                                          .lastPrimaryPhoneHint,
-                                                                  primaryEmailHint:
-                                                                      authProvider
-                                                                          .lastPrimaryEmailHint,
-                                                                );
-                                                            if (!ctx.mounted) {
-                                                              return;
-                                                            }
-                                                            ctx.go(
-                                                              widget.from ??
-                                                                  '/',
+                                                            await _completeAuthenticatedEntry(
+                                                              ctx,
+                                                              authProvider,
                                                             );
                                                           } else {
                                                             await showErrorDialog(
@@ -658,6 +620,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
 
+    _phoneController.addListener(_handlePhoneChanged);
     _phoneFocusNode.addListener(() {
       if (_phoneFocusNode.hasFocus && _phoneController.text.isEmpty) {
         _phoneController.value = const TextEditingValue(
@@ -674,9 +637,63 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _phoneController.removeListener(_handlePhoneChanged);
     _phoneController.dispose();
     _phoneFocusNode.dispose();
     super.dispose();
+  }
+
+  void _handlePhoneChanged() {
+    if (!mounted) return;
+    setState(() {
+      // Rebuild is needed both for button enabled state and inline validation.
+    });
+  }
+
+  String _normalizedPhone() {
+    final digits = _extractPhoneDigits(_phoneController.text);
+    if (digits.isEmpty) {
+      return '';
+    }
+    return '+$digits';
+  }
+
+  bool _isPhoneValid() {
+    final digits = _extractPhoneDigits(_phoneController.text);
+    return digits.length >= 10 && digits.length <= 15;
+  }
+
+  String? _phoneValidationMessage(AppLocalizations l10n) {
+    final digits = _extractPhoneDigits(_phoneController.text);
+    if (digits.isEmpty) {
+      return l10n.phoneRequiredError;
+    }
+    if (digits.length < 10 || digits.length > 15) {
+      return l10n.phoneInvalidError;
+    }
+    return null;
+  }
+
+  String _extractPhoneDigits(String value) {
+    return value.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  Future<void> _completeAuthenticatedEntry(
+    BuildContext ctx,
+    AuthProvider authProvider,
+  ) async {
+    await ctx.read<SessionProvider>().restoreSession(
+      primaryPhoneHint: authProvider.lastPrimaryPhoneHint,
+      primaryEmailHint: authProvider.lastPrimaryEmailHint,
+    );
+
+    if (!ctx.mounted) return;
+
+    await ensureAppLockSetup(ctx);
+
+    if (!ctx.mounted) return;
+
+    ctx.go(widget.from ?? '/');
   }
 
   Future<void> _checkBiometricAvailability() async {
@@ -711,11 +728,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!ctx.mounted) return;
 
     if (success) {
-      await ctx.read<SessionProvider>().restoreSession();
-
-      if (!ctx.mounted) return;
-
-      ctx.go(widget.from ?? '/');
+      await _completeAuthenticatedEntry(ctx, authProvider);
     } else {
       await showErrorDialog(
         ctx,

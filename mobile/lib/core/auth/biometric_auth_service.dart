@@ -4,15 +4,25 @@ class BiometricAuthService {
   final LocalAuthentication _auth = LocalAuthentication();
 
   Future<bool> isAvailable() async {
-    final canCheckBiometrics = await _auth.canCheckBiometrics;
-    final isSupported = await _auth.isDeviceSupported();
-    return canCheckBiometrics || isSupported;
+    try {
+      final canCheckBiometrics = await _auth.canCheckBiometrics;
+      if (!canCheckBiometrics) {
+        return false;
+      }
+      final availableBiometrics = await _auth.getAvailableBiometrics();
+      return availableBiometrics.isNotEmpty;
+    } on LocalAuthException {
+      return false;
+    }
   }
 
-  Future<bool> authenticate() async {
+  Future<bool> authenticate({
+    String reason = 'Подтвердите вход в аккаунт',
+  }) async {
     try {
       return await _auth.authenticate(
-        localizedReason: 'Подтвердите вход в аккаунт',
+        localizedReason: reason,
+        biometricOnly: true,
         persistAcrossBackgrounding: true,
       );
     } on LocalAuthException {

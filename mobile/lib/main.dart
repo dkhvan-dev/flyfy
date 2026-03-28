@@ -3,6 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'core/auth/app_lock_gate.dart';
+import 'core/auth/app_lock_service.dart';
 import 'features/attendance/attendance_sync_manager.dart';
 import 'providers/auth_provider.dart';
 import 'providers/session_provider.dart';
@@ -28,15 +30,18 @@ class _SuperAppState extends State<SuperApp> {
   late final SessionProvider _sessionProvider;
   late final LocaleProvider _localeProvider;
   late final GoRouter _router;
+  final AppLockService _appLockService = AppLockService();
 
   @override
   void initState() {
     super.initState();
 
-    _authProvider = AuthProvider()..checkAuthStatus();
-    _sessionProvider = SessionProvider()..restoreSession();
+    _authProvider = AuthProvider();
+    _sessionProvider = SessionProvider();
     _localeProvider = LocaleProvider()..load();
     _router = AppRouter.router(_authProvider);
+
+    _bootstrapAuth();
   }
 
   @override
@@ -65,8 +70,10 @@ class _SuperAppState extends State<SuperApp> {
             locale: localeProvider.locale,
             builder: (context, child) {
               return _DismissKeyboardOnTap(
-                child: _AttendanceSyncBridge(
-                  child: child ?? const SizedBox.shrink(),
+                child: AppLockGate(
+                  child: _AttendanceSyncBridge(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 ),
               );
             },
@@ -90,6 +97,15 @@ class _SuperAppState extends State<SuperApp> {
         },
       ),
     );
+  }
+
+  Future<void> _bootstrapAuth() async {
+    await _authProvider.checkAuthStatus();
+    final hasPin = await _appLockService.hasPin();
+    if (!hasPin) {
+      await _sessionProvider.restoreSession();
+      await _authProvider.checkAuthStatus();
+    }
   }
 }
 

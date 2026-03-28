@@ -70,6 +70,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get otpInvalid => 'Растау коды қате.';
 
   @override
+  String get phoneRequiredError => 'Телефон нөмірін енгізіңіз';
+
+  @override
+  String get phoneInvalidError => 'Дұрыс телефон нөмірін енгізіңіз';
+
+  @override
   String get homeWelcomeBack => 'Қайта келгеніңізге қуаныштымыз!';
 
   @override
@@ -173,6 +179,77 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get biometricLoginFailed => 'Биометрия арқылы кіру сәтсіз аяқталды';
+
+  @override
+  String get appLockLoading => 'Қорғалған сессия тексерілуде';
+
+  @override
+  String get appLockSetupTitle => 'PIN-код жасаңыз';
+
+  @override
+  String get appLockSetupDescription =>
+      'Қосымшаны қайта ашқаннан кейін сессия аяқталса, жылдам кіру үшін осы PIN-код қажет болады.';
+
+  @override
+  String get appLockSetupConfirmDescription =>
+      'Растау және сақтау үшін PIN-кодты қайта енгізіңіз.';
+
+  @override
+  String get appLockSetupCreateButton => 'Жалғастыру';
+
+  @override
+  String get appLockSetupConfirmButton => 'PIN-кодты сақтау';
+
+  @override
+  String get appLockSetupMismatch => 'PIN-кодтар сәйкес келмейді';
+
+  @override
+  String get appLockPinInvalid => '4 таңбалы PIN-код енгізіңіз';
+
+  @override
+  String get appLockPinIncorrect => 'PIN-код қате';
+
+  @override
+  String get appLockUnlockTitle => 'Кіруді растаңыз';
+
+  @override
+  String get appLockPinUnlockDescription =>
+      'Қосымшада жалғастыру үшін PIN-кодты енгізіңіз.';
+
+  @override
+  String get appLockBiometricUnlockDescription =>
+      'Face ID немесе биометрия арқылы кіруді растаңыз. 3 сәтсіз әрекеттен кейін PIN-код сұралады.';
+
+  @override
+  String get appLockUsePinButton => 'PIN-код енгізу';
+
+  @override
+  String get appLockUnlockButton => 'Құлыпты ашу';
+
+  @override
+  String get appLockRetryBiometricButton => 'Бетті сканерлеу';
+
+  @override
+  String get appLockBiometricEnableTitle =>
+      'Биометрия арқылы кіруді қосасыз ба?';
+
+  @override
+  String get appLockBiometricEnableDescription =>
+      'Келесі жолы қолжетімділікті Face ID немесе саусақ ізі арқылы жылдам растауға болады.';
+
+  @override
+  String get appLockBiometricEnableButton => 'Қосу';
+
+  @override
+  String get appLockBiometricSkipButton => 'Әзірге емес';
+
+  @override
+  String get appLockBiometricFailed =>
+      'Биометрия расталмады. Қайта көріңіз немесе PIN-кодқа ауысыңыз.';
+
+  @override
+  String get appLockBiometricFallback =>
+      'Биометрия арқылы кіру уақытша қолжетімсіз. PIN-кодты енгізіңіз.';
 
   @override
   String get profileIncompleteTitle => 'Профиль толық толтырылмаған';
