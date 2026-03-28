@@ -144,6 +144,13 @@ func (h *ProxyHandler) injectTrustedHeaders(r *http.Request) {
 	if subject := strings.TrimSpace(claims.Subject); subject != "" {
 		r.Header.Set(h.cfg.Security.TrustedHeaderSub, subject)
 	}
+	userID := strings.TrimSpace(claims.UserID)
+	if userID == "" {
+		userID = strings.TrimSpace(claims.Subject)
+	}
+	if userID != "" {
+		r.Header.Set(h.cfg.Security.TrustedHeaderUser, userID)
+	}
 
 	roles := adapter.NormalizeRoles(claims.Roles, "")
 	if len(roles) > 0 {

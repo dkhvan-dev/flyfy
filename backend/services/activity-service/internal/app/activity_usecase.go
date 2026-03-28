@@ -16,14 +16,21 @@ import (
 )
 
 type ActivityUseCase struct {
-	repo   port.ActivityRepository
-	policy *PolicyService
+	repo        port.ActivityRepository
+	policy      *PolicyService
+	fileManager port.ActivityMediaFileManager
 }
 
-func NewActivityUseCase(repo port.ActivityRepository) *ActivityUseCase {
+func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.ActivityMediaFileManager) *ActivityUseCase {
+	var mediaFiles port.ActivityMediaFileManager
+	if len(fileManager) > 0 {
+		mediaFiles = fileManager[0]
+	}
+
 	return &ActivityUseCase{
-		repo:   repo,
-		policy: NewPolicyService(repo),
+		repo:        repo,
+		policy:      NewPolicyService(repo),
+		fileManager: mediaFiles,
 	}
 }
 
@@ -65,6 +72,7 @@ type CreateActivityInput struct {
 	Longitude   *float64
 	MapURL      *string
 	MeetingURL  *string
+	CoverFileID *uuid.UUID
 
 	VisibilityPassword *string
 
@@ -119,6 +127,8 @@ type UpdateActivityInput struct {
 	HasMapURL      bool
 	MeetingURL     *string
 	HasMeetingURL  bool
+	CoverFileID    *uuid.UUID
+	HasCoverFileID bool
 
 	VisibilityPassword    *string
 	HasVisibilityPassword bool
@@ -136,6 +146,10 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 	input.CategorySlug = categorySlug
 
 	if err := u.policy.CheckCreateRateLimit(ctx, input.HostUserID); err != nil {
+		return nil, err
+	}
+
+	if err := u.validateCoverMediaFile(ctx, input.CoverFileID); err != nil {
 		return nil, err
 	}
 
@@ -207,6 +221,10 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		if err = u.repo.ReplaceTags(ctx, item.ID, normalizeTags(input.Tags)); err != nil {
 			return nil, fmt.Errorf("replace tags: %w", err)
 		}
+	}
+
+	if err = u.syncCoverMedia(ctx, item.ID, input.HostUserID, input.CoverFileID, input.CoverFileID != nil); err != nil {
+		return nil, err
 	}
 
 	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
@@ -701,6 +719,12 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		return nil, err
 	}
 
+	if input.HasCoverFileID {
+		if err = u.validateCoverMediaFile(ctx, input.CoverFileID); err != nil {
+			return nil, err
+		}
+	}
+
 	if err = u.validateUpdateRules(ctx, item, beforePriceType, beforePriceAmount, beforeCurrency, beforeLocationSnapshot, input.StartAt != nil); err != nil {
 		return nil, err
 	}
@@ -716,6 +740,10 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		if err = u.repo.ReplaceTags(ctx, item.ID, normalizeTags(input.Tags)); err != nil {
 			return nil, fmt.Errorf("replace tags: %w", err)
 		}
+	}
+
+	if err = u.syncCoverMedia(ctx, item.ID, input.ActorUserID, input.CoverFileID, input.HasCoverFileID); err != nil {
+		return nil, err
 	}
 
 	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
@@ -946,6 +974,54 @@ func (u *ActivityUseCase) ListJoinedActivities(
 	}
 
 	return items, nil
+}
+
+func (u *ActivityUseCase) validateCoverMediaFile(ctx context.Context, fileID *uuid.UUID) error {
+	if fileID == nil || *fileID == uuid.Nil || u.fileManager == nil {
+		return nil
+	}
+
+	return u.fileManager.ValidateActivityMediaFile(ctx, *fileID)
+}
+
+func (u *ActivityUseCase) syncCoverMedia(
+	ctx context.Context,
+	activityID uuid.UUID,
+	actorUserID uuid.UUID,
+	coverFileID *uuid.UUID,
+	hasCover bool,
+) error {
+	if !hasCover {
+		return nil
+	}
+
+	if coverFileID == nil || *coverFileID == uuid.Nil {
+		if err := u.repo.ReplaceMedia(ctx, activityID, nil); err != nil {
+			return fmt.Errorf("clear cover media: %w", err)
+		}
+		return nil
+	}
+
+	coverMedia, err := model.NewActivityMedia(model.NewActivityMediaParams{
+		ActivityID: activityID,
+		FileID:     *coverFileID,
+		MediaType:  model.ActivityMediaTypeImage,
+		SortOrder:  0,
+		IsCover:    true,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err = u.repo.ReplaceMedia(ctx, activityID, []*model.ActivityMedia{coverMedia}); err != nil {
+		return fmt.Errorf("replace cover media: %w", err)
+	}
+
+	if u.fileManager != nil {
+		_ = u.fileManager.BindActivityMediaToActivity(ctx, *coverFileID, activityID, actorUserID)
+	}
+
+	return nil
 }
 
 func normalizeTags(tags []string) []string {

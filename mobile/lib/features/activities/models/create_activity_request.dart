@@ -25,6 +25,7 @@ class CreateActivityRequest {
     this.mapUrl,
     this.meetingUrl,
     this.visibilityPassword,
+    this.coverFileId,
   });
 
   final String title;
@@ -52,6 +53,7 @@ class CreateActivityRequest {
   final String? mapUrl;
   final String? meetingUrl;
   final String? visibilityPassword;
+  final String? coverFileId;
 
   Map<String, dynamic> toJson() {
     return {
@@ -84,6 +86,8 @@ class CreateActivityRequest {
         'meetingUrl': meetingUrl,
       if (visibilityPassword != null && visibilityPassword!.trim().isNotEmpty)
         'visibilityPassword': visibilityPassword,
+      if (coverFileId != null && coverFileId!.trim().isNotEmpty)
+        'coverFileId': coverFileId,
     };
   }
 }

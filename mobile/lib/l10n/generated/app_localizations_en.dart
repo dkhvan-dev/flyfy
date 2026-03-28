@@ -688,7 +688,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createCoverUploadTitle => 'Upload High-Res Image';
 
   @override
-  String get createCoverUploadHint => 'Minimal 1600x900px, max 5MB';
+  String get createCoverChangeAction => 'Change Cover';
+
+  @override
+  String get createCoverUploadHint =>
+      'JPG, PNG or WEBP. Recommended 1600x900px, max 20MB';
+
+  @override
+  String get createCoverUploadFailed =>
+      'Failed to upload the cover image. Please try again.';
+
+  @override
+  String get createCoverUploadTooLarge =>
+      'The image is too large. Maximum size is 20MB.';
+
+  @override
+  String get createCoverUploadUnsupportedFormat =>
+      'Unsupported image format. Use JPG, PNG or WEBP.';
+
+  @override
+  String get createCoverUploadInProgress =>
+      'Wait until the cover image upload finishes.';
+
+  @override
+  String get createCoverUploadRetryRequired =>
+      'Upload the cover image again before continuing.';
 
   @override
   String get createBasicSection => 'BASIC INFORMATION';

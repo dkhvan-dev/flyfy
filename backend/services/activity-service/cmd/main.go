@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/filemanager"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/grpc"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/repository"
@@ -41,11 +42,6 @@ func main() {
 
 	repo := repository.NewPGActivityRepository(pool)
 
-	activityUC := app.NewActivityUseCase(repo)
-	joinUC := app.NewJoinUseCase(repo)
-	searchUC := app.NewSearchUseCase(repo)
-	moderationUC := app.NewModerationUseCase(activityUC)
-
 	userConn, err := grpc.NewClient(
 		cfg.UserService.GRPCAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -62,7 +58,25 @@ func main() {
 	userClient := userv1.NewUserServiceClient(userConn)
 	actorResolver := grpcadapter.NewUserResolver(userClient)
 
-	httpHandler := httpadapter.NewHandler(activityUC, joinUC, repo, actorResolver)
+	fileManagerClient, err := filemanageradapter.New(
+		cfg.FileManager.Target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+		)),
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed dial file-manager grpc")
+	}
+	defer fileManagerClient.Close()
+
+	activityUC := app.NewActivityUseCase(repo, fileManagerClient)
+	joinUC := app.NewJoinUseCase(repo)
+	searchUC := app.NewSearchUseCase(repo)
+	moderationUC := app.NewModerationUseCase(activityUC)
+
+	httpHandler := httpadapter.NewHandler(activityUC, joinUC, repo, fileManagerClient, actorResolver)
 
 	httpMux := http.NewServeMux()
 	httpHandler.Register(httpMux)

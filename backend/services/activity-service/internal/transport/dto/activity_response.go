@@ -36,13 +36,15 @@ type ActivityResponse struct {
 	RequiresAttendanceConfirmation bool    `json:"requiresAttendanceConfirmation"`
 	ConfirmationDeadline           *string `json:"confirmationDeadline,omitempty"`
 
-	CountryCode *string  `json:"countryCode,omitempty"`
-	CityName    *string  `json:"cityName,omitempty"`
-	AddressText *string  `json:"addressText,omitempty"`
-	Latitude    *float64 `json:"latitude,omitempty"`
-	Longitude   *float64 `json:"longitude,omitempty"`
-	MapURL      *string  `json:"mapUrl,omitempty"`
-	MeetingURL  *string  `json:"meetingUrl,omitempty"`
+	CountryCode   *string  `json:"countryCode,omitempty"`
+	CityName      *string  `json:"cityName,omitempty"`
+	AddressText   *string  `json:"addressText,omitempty"`
+	Latitude      *float64 `json:"latitude,omitempty"`
+	Longitude     *float64 `json:"longitude,omitempty"`
+	MapURL        *string  `json:"mapUrl,omitempty"`
+	MeetingURL    *string  `json:"meetingUrl,omitempty"`
+	CoverFileID   *string  `json:"coverFileId,omitempty"`
+	CoverImageURL *string  `json:"coverImageUrl,omitempty"`
 
 	CancellationReason *string `json:"cancellationReason,omitempty"`
 	CancelledAt        *string `json:"cancelledAt,omitempty"`

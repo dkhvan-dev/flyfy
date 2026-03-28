@@ -13,6 +13,7 @@ import '../../core/network/activity_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
+import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/activity_participant_vm.dart';
@@ -587,12 +588,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       );
     }
 
-    final activeParticipants =
-        _participants.where((participant) => participant.isActive).toList()
-          ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
-    final occupyingCount = _participants
-        .where((participant) => participant.occupiesSlot)
-        .length;
+    final activeParticipants = _participants
+        .where((participant) => participant.isActive)
+        .toList()
+      ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
+    final occupyingCount =
+        _participants.where((participant) => participant.occupiesSlot).length;
     final isOwner =
         currentUserId.isNotEmpty && currentUserId == activity.hostUserId;
     ActivityParticipantVm? currentParticipant;
@@ -650,8 +651,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                 final heroHeight = width < 360
                     ? 332.0
                     : width > 430
-                    ? 392.0
-                    : 368.0;
+                        ? 392.0
+                        : 368.0;
                 final compact = width < 360;
 
                 return RefreshIndicator(
@@ -683,6 +684,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                       SizedBox(height: compact ? 14 : 18),
                       _DetailsHero(
                         height: heroHeight,
+                        categorySlug: activity.categorySlug,
                         categoryLabel: _prettyCategory(activity.categorySlug),
                         contextLabel: _resolveHeroContextLabel(
                           activity: activity,
@@ -691,6 +693,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           isJoined: isJoined,
                           occupyingCount: occupyingCount,
                         ),
+                        imageUrl: resolveActivityCoverUrl(activity),
                       ),
                       SizedBox(height: compact ? 18 : 20),
                       _HeadingSection(
@@ -731,9 +734,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         loadFailed: _participantsError != null,
                         onViewAll: activeParticipants.isNotEmpty
                             ? () => _showParticipantsSheet(
-                                activeParticipants,
-                                l10n,
-                              )
+                                  activeParticipants,
+                                  l10n,
+                                )
                             : null,
                       ),
                       const SizedBox(height: 8),
@@ -743,8 +746,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         isJoined: isJoined,
                         isOwner: isOwner,
                         canLeaveActivity: isJoined && !isOwner,
-                        isLeaving:
-                            provider.actionState ==
+                        isLeaving: provider.actionState ==
                                 ActivityActionState.loading &&
                             _pendingAction == _FooterAction.leave,
                         onLeaveTap: _handleLeave,
@@ -1111,8 +1113,7 @@ class _PrivateActivityPasswordDialogState
                                   letterSpacing: 0.2,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: widget
-                                      .l10n
+                                  hintText: widget.l10n
                                       .activityPrivateJoinPasswordPlaceholder,
                                   hintStyle: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.72),
@@ -1128,8 +1129,9 @@ class _PrivateActivityPasswordDialogState
                                     onPressed: _isSubmitting
                                         ? null
                                         : () => setState(
-                                            () => _obscureText = !_obscureText,
-                                          ),
+                                              () =>
+                                                  _obscureText = !_obscureText,
+                                            ),
                                     icon: Icon(
                                       _obscureText
                                           ? Icons.visibility_outlined
@@ -1146,9 +1148,8 @@ class _PrivateActivityPasswordDialogState
                                   }
                                   setState(() => _errorText = null);
                                 },
-                                onSubmitted: _isSubmitting
-                                    ? null
-                                    : (_) => _submit(),
+                                onSubmitted:
+                                    _isSubmitting ? null : (_) => _submit(),
                               ),
                             ),
                             if (_errorText != null) ...[
@@ -1209,13 +1210,12 @@ class _PrivateActivityPasswordDialogState
                                                 strokeWidth: 2.6,
                                                 valueColor:
                                                     AlwaysStoppedAnimation(
-                                                      Colors.white,
-                                                    ),
+                                                  Colors.white,
+                                                ),
                                               ),
                                             )
                                           : Text(
-                                              widget
-                                                  .l10n
+                                              widget.l10n
                                                   .activityPrivateJoinSubmit,
                                               style: TextStyle(
                                                 color: Colors.white,
@@ -1357,16 +1357,22 @@ class _CircleIconButton extends StatelessWidget {
 class _DetailsHero extends StatelessWidget {
   const _DetailsHero({
     required this.height,
+    required this.categorySlug,
     required this.categoryLabel,
     required this.contextLabel,
+    this.imageUrl,
   });
 
   final double height;
+  final String categorySlug;
   final String categoryLabel;
   final String contextLabel;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
+    final visual = _detailsHeroVisual(categorySlug);
+
     return Container(
       height: height,
       decoration: BoxDecoration(
@@ -1389,14 +1395,33 @@ class _DetailsHero extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF96CFF1),
-                    const Color(0xFFABC4D6).withValues(alpha: 0.86),
-                    const Color(0xFF5F7E83).withValues(alpha: 0.72),
-                    const Color(0xFF2C4840).withValues(alpha: 0.88),
-                    const Color(0xFF151D13),
-                  ],
-                  stops: const [0, 0.28, 0.5, 0.78, 1],
+                  colors: visual.backgroundColors,
+                  stops: const [0, 0.32, 0.58, 0.82, 1],
+                ),
+              ),
+            ),
+            Positioned.fill(child: _DetailsHeroArtwork(visual: visual)),
+            if (imageUrl?.trim().isNotEmpty == true)
+              Image.network(
+                imageUrl!.trim(),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.08),
+                      Colors.black.withValues(alpha: 0.16),
+                      Colors.black.withValues(alpha: 0.48),
+                      Colors.black.withValues(alpha: 0.72),
+                    ],
+                    stops: const [0, 0.28, 0.68, 1],
+                  ),
                 ),
               ),
             ),
@@ -1485,6 +1510,161 @@ class _DetailsHero extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DetailsHeroArtwork extends StatelessWidget {
+  const _DetailsHeroArtwork({required this.visual});
+
+  final _DetailsHeroVisualSpec visual;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned(
+          top: -36,
+          right: -18,
+          child: Container(
+            width: 188,
+            height: 188,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  visual.glowColor.withValues(alpha: 0.48),
+                  visual.glowColor.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: -26,
+          top: 72,
+          child: Container(
+            width: 132,
+            height: 132,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Colors.white.withValues(alpha: 0.18),
+                  Colors.white.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 24,
+          right: 24,
+          top: 28,
+          bottom: 98,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.12),
+                  Colors.white.withValues(alpha: 0.02),
+                ],
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 18,
+                  right: 18,
+                  top: 14,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(
+                      4,
+                      (index) => Container(
+                        width: 30 + (index * 10),
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(
+                            alpha: index.isEven ? 0.14 : 0.08,
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Container(
+                    width: 112,
+                    height: 112,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.28),
+                          Colors.white.withValues(alpha: 0.08),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        width: 1.4,
+                      ),
+                    ),
+                    child: Icon(
+                      visual.icon,
+                      color: Colors.white,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: -18,
+          right: -18,
+          bottom: 64,
+          height: 118,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  visual.ridgeColor.withValues(alpha: 0.0),
+                  visual.ridgeColor.withValues(alpha: 0.74),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: -24,
+          right: -24,
+          bottom: -18,
+          height: 150,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  visual.baseColor.withValues(alpha: 0.0),
+                  visual.baseColor.withValues(alpha: 0.88),
+                  visual.baseColor,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1685,8 +1865,7 @@ class _StatsGrid extends StatelessWidget {
         ? l10n.freeLabel
         : '${activity.priceLabel} ${l10n.activityPerPerson}';
     final formatText = formatActivityFormat(activity.format, l10n);
-    final capacityText =
-        activity.capacityType.toUpperCase() == 'LIMITED' &&
+    final capacityText = activity.capacityType.toUpperCase() == 'LIMITED' &&
             activity.maxParticipants != null
         ? l10n.activityPeopleMax(activity.maxParticipants!)
         : l10n.activityUnlimitedSpots;
@@ -1840,8 +2019,7 @@ class _MeetingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasMeetingLink = (activity.meetingUrl ?? '').trim().isNotEmpty;
-    final hasLocation =
-        (activity.addressText ?? '').trim().isNotEmpty ||
+    final hasLocation = (activity.addressText ?? '').trim().isNotEmpty ||
         activity.shortLocation.isNotEmpty;
     if (!hasMeetingLink && !hasLocation) {
       return const SizedBox.shrink();
@@ -2014,8 +2192,8 @@ class _MeetingSection extends StatelessWidget {
                 showProtectedNotice
                     ? l10n.activitySensitiveDetailsHint
                     : (locationLine.isNotEmpty
-                          ? locationLine
-                          : l10n.notSpecified),
+                        ? locationLine
+                        : l10n.notSpecified),
                 style: const TextStyle(
                   color: _DetailsColors.muted,
                   fontSize: 15,
@@ -2298,7 +2476,7 @@ class _ParticipantsSection extends StatelessWidget {
                 child: Text(
                   l10n.activityDetailsViewAll,
                   style: const TextStyle(
-                    color: Color(0xFF7881A4),
+                    color: AppColors.accent,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -2472,14 +2650,14 @@ class _DetailsActionBar extends StatelessWidget {
             action: _FooterAction.publish,
           )
         : shouldShowPaymentAction
-        ? _FooterButtonSpec(
-            label: l10n.activityDetailsChatButton,
-            icon: Icons.forum_rounded,
-            onTap: onOpenChat ?? () {},
-            style: _FooterButtonStyle.secondary,
-            action: null,
-          )
-        : null;
+            ? _FooterButtonSpec(
+                label: l10n.activityDetailsChatButton,
+                icon: Icons.forum_rounded,
+                onTap: onOpenChat ?? () {},
+                style: _FooterButtonStyle.secondary,
+                action: null,
+              )
+            : null;
     final primaryAction = isOwner
         ? _FooterButtonSpec(
             label: l10n.editActivityButton,
@@ -2489,28 +2667,28 @@ class _DetailsActionBar extends StatelessWidget {
             action: null,
           )
         : isJoined
-        ? shouldShowPaymentAction
-              ? _FooterButtonSpec(
-                  label: l10n.activityPaymentPayButton,
-                  icon: Icons.payments_rounded,
-                  onTap: onPay ?? () {},
-                  style: _FooterButtonStyle.primary,
-                  action: null,
-                )
-              : _FooterButtonSpec(
-                  label: l10n.activityDetailsChatButton,
-                  icon: Icons.forum_rounded,
-                  onTap: onOpenChat ?? () {},
-                  style: _FooterButtonStyle.primary,
-                  action: null,
-                )
-        : _FooterButtonSpec(
-            label: l10n.activityJoinActivity,
-            icon: Icons.chevron_right_rounded,
-            onTap: onJoin,
-            style: _FooterButtonStyle.primary,
-            action: _FooterAction.join,
-          );
+            ? shouldShowPaymentAction
+                ? _FooterButtonSpec(
+                    label: l10n.activityPaymentPayButton,
+                    icon: Icons.payments_rounded,
+                    onTap: onPay ?? () {},
+                    style: _FooterButtonStyle.primary,
+                    action: null,
+                  )
+                : _FooterButtonSpec(
+                    label: l10n.activityDetailsChatButton,
+                    icon: Icons.forum_rounded,
+                    onTap: onOpenChat ?? () {},
+                    style: _FooterButtonStyle.primary,
+                    action: null,
+                  )
+            : _FooterButtonSpec(
+                label: l10n.activityJoinActivity,
+                icon: Icons.chevron_right_rounded,
+                onTap: onJoin,
+                style: _FooterButtonStyle.primary,
+                action: _FooterAction.join,
+              );
     final priceBlockLabel = isPaid
         ? l10n.activityPaymentStatusLabel
         : l10n.activityDetailsTotalLabel;
@@ -2594,8 +2772,7 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: secondaryAction,
-                                isBusy:
-                                    isBusy &&
+                                isBusy: isBusy &&
                                     pendingAction == secondaryAction.action,
                               ),
                             ),
@@ -2603,8 +2780,7 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: primaryAction,
-                                isBusy:
-                                    isBusy &&
+                                isBusy: isBusy &&
                                     pendingAction == primaryAction.action,
                               ),
                             ),
@@ -2698,12 +2874,10 @@ class _FooterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPrimary = spec.style == _FooterButtonStyle.primary;
-    final backgroundColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.08);
-    final borderColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.1);
+    final backgroundColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.08);
+    final borderColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
     final foreground = isPrimary ? Colors.white : _DetailsColors.text;
 
     return SizedBox(
@@ -2797,6 +2971,22 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
+class _DetailsHeroVisualSpec {
+  const _DetailsHeroVisualSpec({
+    required this.icon,
+    required this.backgroundColors,
+    required this.glowColor,
+    required this.ridgeColor,
+    required this.baseColor,
+  });
+
+  final IconData icon;
+  final List<Color> backgroundColors;
+  final Color glowColor;
+  final Color ridgeColor;
+  final Color baseColor;
+}
+
 String _resolveHeroContextLabel({
   required ActivityListItemVm activity,
   required AppLocalizations l10n,
@@ -2816,6 +3006,136 @@ String _resolveHeroContextLabel({
     return l10n.activitySpotsLeft(spotsLeft);
   }
   return l10n.activityUnlimitedSpots;
+}
+
+_DetailsHeroVisualSpec _detailsHeroVisual(String rawSlug) {
+  final slug = rawSlug.trim().toLowerCase();
+
+  if (slug.contains('wellness') || slug.contains('health')) {
+    return const _DetailsHeroVisualSpec(
+      icon: Icons.spa_rounded,
+      backgroundColors: [
+        Color(0xFF9EDFD3),
+        Color(0xFF74CBB5),
+        Color(0xFF357B70),
+        Color(0xFF1D4B45),
+        Color(0xFF10211E),
+      ],
+      glowColor: Color(0xFFB8F6DF),
+      ridgeColor: Color(0xFF1B6258),
+      baseColor: Color(0xFF0C1816),
+    );
+  }
+  if (slug.contains('nature') ||
+      slug.contains('outdoor') ||
+      slug.contains('hiking')) {
+    return const _DetailsHeroVisualSpec(
+      icon: Icons.forest_rounded,
+      backgroundColors: [
+        Color(0xFFB8DB95),
+        Color(0xFF7BBE6D),
+        Color(0xFF3C7B42),
+        Color(0xFF1D4726),
+        Color(0xFF0E1D13),
+      ],
+      glowColor: Color(0xFFD6F2B8),
+      ridgeColor: Color(0xFF2A5F31),
+      baseColor: Color(0xFF101A10),
+    );
+  }
+  if (slug.contains('food')) {
+    return const _DetailsHeroVisualSpec(
+      icon: Icons.restaurant_rounded,
+      backgroundColors: [
+        Color(0xFFFFD0A1),
+        Color(0xFFFFA65F),
+        Color(0xFFB95D28),
+        Color(0xFF5A2F13),
+        Color(0xFF231108),
+      ],
+      glowColor: Color(0xFFFFD9A8),
+      ridgeColor: Color(0xFF7A3B18),
+      baseColor: Color(0xFF211109),
+    );
+  }
+  if (slug.contains('culture') ||
+      slug.contains('art') ||
+      slug.contains('history')) {
+    return const _DetailsHeroVisualSpec(
+      icon: Icons.palette_outlined,
+      backgroundColors: [
+        Color(0xFFE0C3EF),
+        Color(0xFFC58EDC),
+        Color(0xFF7A4D94),
+        Color(0xFF3F264F),
+        Color(0xFF190E22),
+      ],
+      glowColor: Color(0xFFF0D4FF),
+      ridgeColor: Color(0xFF5A356D),
+      baseColor: Color(0xFF170F1F),
+    );
+  }
+  if (slug.contains('sport') || slug.contains('adventure')) {
+    return const _DetailsHeroVisualSpec(
+      icon: Icons.kayaking_rounded,
+      backgroundColors: [
+        Color(0xFFF4C07D),
+        Color(0xFFE48D44),
+        Color(0xFF9E5523),
+        Color(0xFF4F2914),
+        Color(0xFF1D1008),
+      ],
+      glowColor: Color(0xFFFFD09A),
+      ridgeColor: Color(0xFF6E3717),
+      baseColor: Color(0xFF1C1109),
+    );
+  }
+  if (slug.contains('workshop') ||
+      slug.contains('learning') ||
+      slug.contains('education')) {
+    return const _DetailsHeroVisualSpec(
+      icon: Icons.auto_stories_rounded,
+      backgroundColors: [
+        Color(0xFFD7D2FF),
+        Color(0xFFAAA0F0),
+        Color(0xFF665CB6),
+        Color(0xFF342E63),
+        Color(0xFF161329),
+      ],
+      glowColor: Color(0xFFE2DDFF),
+      ridgeColor: Color(0xFF4A418D),
+      baseColor: Color(0xFF171428),
+    );
+  }
+  if (slug.contains('night') || slug.contains('social')) {
+    return const _DetailsHeroVisualSpec(
+      icon: Icons.celebration_rounded,
+      backgroundColors: [
+        Color(0xFFF5BEDD),
+        Color(0xFFE58BBE),
+        Color(0xFF9A3F75),
+        Color(0xFF501D3D),
+        Color(0xFF1F0A17),
+      ],
+      glowColor: Color(0xFFFFD1EC),
+      ridgeColor: Color(0xFF712651),
+      baseColor: Color(0xFF1D0B17),
+    );
+  }
+
+  return const _DetailsHeroVisualSpec(
+    icon: Icons.travel_explore_rounded,
+    backgroundColors: [
+      Color(0xFFB7D2E7),
+      Color(0xFF7AA4C9),
+      Color(0xFF47698A),
+      Color(0xFF263C53),
+      Color(0xFF101A25),
+    ],
+    glowColor: Color(0xFFD3E8FA),
+    ridgeColor: Color(0xFF33516E),
+    baseColor: Color(0xFF101923),
+  );
 }
 
 String _resolveHostName(

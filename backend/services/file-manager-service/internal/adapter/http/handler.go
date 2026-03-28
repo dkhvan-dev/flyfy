@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -31,6 +32,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/files/upload-requests", h.CreateUploadRequest)
 	mux.HandleFunc("POST /v1/files/", h.handleFileActions)
 	mux.HandleFunc("GET /v1/files/", h.handleFileActions)
+	mux.HandleFunc("PUT /v1/files/", h.handleFileActions)
 	mux.HandleFunc("DELETE /v1/files/", h.handleFileActions)
 	mux.HandleFunc("GET /health", h.Health)
 }
@@ -121,6 +123,9 @@ func (h *Handler) handleFileActions(w http.ResponseWriter, r *http.Request) {
 	case r.Method == http.MethodDelete && len(parts) == 1:
 		h.DeleteFile(w, r, fileID)
 		return
+	case r.Method == http.MethodPut && len(parts) == 2 && parts[1] == "binary":
+		h.UploadBinary(w, r, fileID)
+		return
 	case r.Method == http.MethodPost && len(parts) == 2 && parts[1] == "complete":
 		h.CompleteUpload(w, r, fileID)
 		return
@@ -159,6 +164,40 @@ func (h *Handler) CompleteUpload(w http.ResponseWriter, r *http.Request, fileID 
 		DetectedContentType: resp.DetectedContentType,
 		SizeBytes:           resp.SizeBytes,
 	})
+}
+
+func (h *Handler) UploadBinary(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
+	bodyReader := http.MaxBytesReader(w, r.Body, h.useCase.MaxUploadSizeBytes()+1)
+	defer bodyReader.Close()
+
+	body, err := io.ReadAll(bodyReader)
+	if err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			writeError(w, http.StatusRequestEntityTooLarge, app.ErrUploadTooLarge.Error())
+			return
+		}
+		writeError(w, http.StatusBadRequest, "failed to read upload body")
+		return
+	}
+
+	if err = h.useCase.UploadBinary(r.Context(), fileID, r.Header.Get("Content-Type"), body); err != nil {
+		switch {
+		case errors.Is(err, app.ErrFileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, app.ErrUploadTooLarge):
+			writeError(w, http.StatusRequestEntityTooLarge, err.Error())
+		case errors.Is(err, app.ErrInvalidFileID),
+			errors.Is(err, app.ErrInvalidFileSize),
+			errors.Is(err, app.ErrContentTypeRequired):
+			writeError(w, http.StatusBadRequest, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to upload file binary")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) GetFile(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {

@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -88,6 +89,31 @@ func (c *Client) CreatePresignedUpload(ctx context.Context, req port.PresignUplo
 			"Content-Type": req.ContentType,
 		},
 	}, nil
+}
+
+func (c *Client) PutObject(ctx context.Context, req port.PutObjectRequest) error {
+	if strings.TrimSpace(req.Bucket) == "" {
+		return fmt.Errorf("bucket is required")
+	}
+	if strings.TrimSpace(req.ObjectKey) == "" {
+		return fmt.Errorf("object key is required")
+	}
+	if strings.TrimSpace(req.ContentType) == "" {
+		return fmt.Errorf("content type is required")
+	}
+
+	_, err := c.s3Client.PutObject(ctx, &awss3.PutObjectInput{
+		Bucket:        aws.String(req.Bucket),
+		Key:           aws.String(req.ObjectKey),
+		Body:          bytes.NewReader(req.Body),
+		ContentLength: aws.Int64(int64(len(req.Body))),
+		ContentType:   aws.String(req.ContentType),
+	})
+	if err != nil {
+		return fmt.Errorf("put object: %w", err)
+	}
+
+	return nil
 }
 
 func (c *Client) StatObject(ctx context.Context, bucket, objectKey string) (*port.ObjectMeta, error) {

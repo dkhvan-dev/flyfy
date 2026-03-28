@@ -282,6 +282,51 @@ func (u *FileUseCase) CompleteUpload(ctx context.Context, fileID uuid.UUID) (*Co
 	}, nil
 }
 
+func (u *FileUseCase) UploadBinary(
+	ctx context.Context,
+	fileID uuid.UUID,
+	contentType string,
+	body []byte,
+) error {
+	if fileID == uuid.Nil {
+		return ErrInvalidFileID
+	}
+
+	file, err := u.repo.GetByID(ctx, fileID)
+	if err != nil {
+		return fmt.Errorf("get file by id: %w", err)
+	}
+	if file == nil || file.IsDeleted {
+		return ErrFileNotFound
+	}
+
+	if int64(len(body)) > u.cfg.Storage.MaxUploadSizeBytes {
+		return ErrUploadTooLarge
+	}
+	if int64(len(body)) != file.SizeBytes {
+		return ErrInvalidFileSize
+	}
+
+	resolvedContentType := normalizeContentType(contentType)
+	if resolvedContentType == "" {
+		resolvedContentType = normalizeContentType(file.ContentType)
+	}
+	if resolvedContentType == "" {
+		return ErrContentTypeRequired
+	}
+
+	if err = u.storage.PutObject(ctx, port.PutObjectRequest{
+		Bucket:      file.Bucket,
+		ObjectKey:   file.ObjectKey,
+		ContentType: resolvedContentType,
+		Body:        body,
+	}); err != nil {
+		return fmt.Errorf("put object: %w", err)
+	}
+
+	return nil
+}
+
 func (u *FileUseCase) GetFile(ctx context.Context, fileID uuid.UUID) (*model.File, error) {
 	if fileID == uuid.Nil {
 		return nil, ErrInvalidFileID
@@ -295,6 +340,10 @@ func (u *FileUseCase) GetFile(ctx context.Context, fileID uuid.UUID) (*model.Fil
 		return nil, ErrFileNotFound
 	}
 	return file, nil
+}
+
+func (u *FileUseCase) MaxUploadSizeBytes() int64 {
+	return u.cfg.Storage.MaxUploadSizeBytes
 }
 
 func (u *FileUseCase) CreateDownloadURL(ctx context.Context, fileID uuid.UUID) (string, time.Time, error) {

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
+import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
@@ -530,8 +531,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                 0,
                               ),
                               child: ErrorView(
-                                message:
-                                    provider.errorMessage ??
+                                message: provider.errorMessage ??
                                     l10n.activitiesLoadFailed,
                                 onRetry: () async {
                                   await provider.loadActivities();
@@ -584,8 +584,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                 final categorySlug = _normalizeSlug(
                                   item.categorySlug,
                                 );
-                                final categoryLabel =
-                                    categoryOptions
+                                final categoryLabel = categoryOptions
                                         .cast<_DiscoverCategoryOption?>()
                                         .firstWhere(
                                           (option) =>
@@ -601,8 +600,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   item: item,
                                   layout: layout,
                                   categoryLabel: categoryLabel,
-                                  isOwner:
-                                      currentUserId.isNotEmpty &&
+                                  isOwner: currentUserId.isNotEmpty &&
                                       currentUserId == item.hostUserId,
                                   onOpenDetails: () =>
                                       _openActivityDetails(context, item.id),
@@ -954,12 +952,10 @@ class _DiscoverFilterRow extends StatelessWidget {
 
     final locale = Localizations.localeOf(context).toString();
     final formatter = DateFormat('dd MMM', locale);
-    final start = filters.startDate == null
-        ? null
-        : formatter.format(filters.startDate!);
-    final end = filters.endDate == null
-        ? null
-        : formatter.format(filters.endDate!);
+    final start =
+        filters.startDate == null ? null : formatter.format(filters.startDate!);
+    final end =
+        filters.endDate == null ? null : formatter.format(filters.endDate!);
 
     if (start != null && end != null) {
       return '$start-$end';
@@ -998,9 +994,8 @@ class _DiscoverFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = active
-        ? const Color(0xFF241204)
-        : const Color(0xFFF3DFCA);
+    final foreground =
+        active ? const Color(0xFF241204) : const Color(0xFFF3DFCA);
 
     return Material(
       color: Colors.transparent,
@@ -1179,7 +1174,10 @@ class _DiscoverActivityCard extends StatelessWidget {
                   children: [
                     AspectRatio(
                       aspectRatio: layout.coverAspectRatio,
-                      child: _DecorativeActivityCover(spec: artSpec),
+                      child: _DecorativeActivityCover(
+                        spec: artSpec,
+                        imageUrl: resolveActivityCoverUrl(item),
+                      ),
                     ),
                     Positioned.fill(
                       child: DecoratedBox(
@@ -1423,7 +1421,29 @@ class _CardMetaItem extends StatelessWidget {
 }
 
 class _DecorativeActivityCover extends StatelessWidget {
-  const _DecorativeActivityCover({required this.spec});
+  const _DecorativeActivityCover({required this.spec, this.imageUrl});
+
+  final _CardArtSpec spec;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedImageUrl = imageUrl?.trim() ?? '';
+    if (normalizedImageUrl.isNotEmpty) {
+      return Image.network(
+        normalizedImageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            _DecorativeActivityCoverFallback(spec: spec),
+      );
+    }
+
+    return _DecorativeActivityCoverFallback(spec: spec);
+  }
+}
+
+class _DecorativeActivityCoverFallback extends StatelessWidget {
+  const _DecorativeActivityCoverFallback({required this.spec});
 
   final _CardArtSpec spec;
 
@@ -1662,11 +1682,11 @@ class _CategoryFilterSheetState extends State<_CategoryFilterSheet> {
                           itemCount: widget.options.length,
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 18,
-                                crossAxisSpacing: 18,
-                                childAspectRatio: 0.94,
-                              ),
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 18,
+                            crossAxisSpacing: 18,
+                            childAspectRatio: 0.94,
+                          ),
                           itemBuilder: (context, index) {
                             final option = widget.options[index];
                             final selected = _selectedSlugs.contains(
@@ -2622,7 +2642,7 @@ class _PrimaryPillButton extends StatelessWidget {
       onPressed: onTap,
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.accent,
-        foregroundColor: const Color(0xFF271300),
+        foregroundColor: AppColors.textPrimary,
         minimumSize: Size(0, minHeight),
         padding: const EdgeInsets.symmetric(horizontal: 22),
         shape: RoundedRectangleBorder(
@@ -2687,12 +2707,10 @@ class _DiscoverFilters {
           ? this.startDate
           : startDate as DateTime?,
       endDate: identical(endDate, _unset) ? this.endDate : endDate as DateTime?,
-      minPrice: identical(minPrice, _unset)
-          ? this.minPrice
-          : minPrice as double?,
-      maxPrice: identical(maxPrice, _unset)
-          ? this.maxPrice
-          : maxPrice as double?,
+      minPrice:
+          identical(minPrice, _unset) ? this.minPrice : minPrice as double?,
+      maxPrice:
+          identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
     );
   }
 }
@@ -2827,9 +2845,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-              .substring(0, newValue.selection.end)
-              .replaceAll(RegExp(r'[^0-9]'), '')
-              .length;
+            .substring(0, newValue.selection.end)
+            .replaceAll(RegExp(r'[^0-9]'), '')
+            .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;
@@ -2977,8 +2995,7 @@ List<_DiscoverCategoryOption> _buildCategoryOptions(
     options.add(
       _DiscoverCategoryOption(
         slug: slug,
-        label:
-            matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
+        label: matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
                 true
             ? matchedCategory!.localizedName(languageCode)
             : ActivityCategoryVm.humanizeSlug(slug),
@@ -3209,12 +3226,11 @@ List<_PricePreset> _buildPricePresets(
   String currencySymbol,
   AppLocalizations l10n,
 ) {
-  final values =
-      items
-          .where((item) => !item.isFree && (item.priceAmount ?? 0) > 0)
-          .map((item) => item.priceAmount!)
-          .toList()
-        ..sort();
+  final values = items
+      .where((item) => !item.isFree && (item.priceAmount ?? 0) > 0)
+      .map((item) => item.priceAmount!)
+      .toList()
+    ..sort();
 
   if (values.isEmpty) {
     return [

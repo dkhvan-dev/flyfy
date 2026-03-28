@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/ui/app_colors.dart';
+import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
@@ -1231,9 +1232,8 @@ class _TopDestinationsRow extends StatelessWidget {
               _DestinationCard(
                 data: destinations[index],
                 onTap: onTap,
-                width: destinations[index].compact
-                    ? compactWidth
-                    : regularWidth,
+                width:
+                    destinations[index].compact ? compactWidth : regularWidth,
                 height: cardHeight,
               ),
               if (index != destinations.length - 1) const SizedBox(width: 14),
@@ -1533,15 +1533,12 @@ class _RecommendedActivitiesSection extends StatelessWidget {
       hostedItems: provider.myItems,
       currentUserId: currentUserId,
     );
-    final isLoadingPublic =
-        provider.state == ActivitiesState.loading ||
+    final isLoadingPublic = provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
-    final isLoadingHosted =
-        currentUserId.isNotEmpty &&
+    final isLoadingHosted = currentUserId.isNotEmpty &&
         (provider.myState == ActivitiesState.loading ||
             provider.myState == ActivitiesState.initial);
-    final hasLoadError =
-        provider.state == ActivitiesState.error ||
+    final hasLoadError = provider.state == ActivitiesState.error ||
         (currentUserId.isNotEmpty && provider.myState == ActivitiesState.error);
 
     if (recommendedItems.isEmpty && (isLoadingPublic || isLoadingHosted)) {
@@ -1665,7 +1662,6 @@ class _RecommendedActivitiesSection extends StatelessWidget {
       children: [
         for (var index = 0; index < items.length; index++) ...[
           _RecommendedActivityCard(
-            index: index,
             item: items[index],
             isJoined: joinedIds.contains(items[index].id),
             onTap: () => onActivityTap(items[index].id),
@@ -1679,13 +1675,11 @@ class _RecommendedActivitiesSection extends StatelessWidget {
 
 class _RecommendedActivityCard extends StatelessWidget {
   const _RecommendedActivityCard({
-    required this.index,
     required this.item,
     required this.isJoined,
     required this.onTap,
   });
 
-  final int index;
   final ActivityListItemVm item;
   final bool isJoined;
   final VoidCallback onTap;
@@ -1717,9 +1711,8 @@ class _RecommendedActivityCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _ActivityThumb(
-                imageUrl:
-                    _homeRecommendedImageUrls[index %
-                        _homeRecommendedImageUrls.length],
+                item: item,
+                imageUrl: resolveActivityCoverUrl(item),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -1808,18 +1801,83 @@ class _RecommendedActivityCard extends StatelessWidget {
 }
 
 class _ActivityThumb extends StatelessWidget {
-  const _ActivityThumb({required this.imageUrl});
+  const _ActivityThumb({required this.item, this.imageUrl});
 
-  final String imageUrl;
+  final ActivityListItemVm item;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
+    final normalizedImageUrl = imageUrl?.trim() ?? '';
+    final art = _homeCardArtForItem(item);
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: SizedBox(
         width: 88,
         height: 88,
-        child: _NetworkCardImage(imageUrl: imageUrl),
+        child: normalizedImageUrl.isNotEmpty
+            ? _NetworkCardImage(imageUrl: normalizedImageUrl)
+            : _HomeDecorativeActivityThumb(spec: art),
+      ),
+    );
+  }
+}
+
+class _HomeDecorativeActivityThumb extends StatelessWidget {
+  const _HomeDecorativeActivityThumb({required this.spec});
+
+  final _HomeCardArtSpec spec;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: spec.colors,
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            left: -22,
+            top: -18,
+            child: Container(
+              width: 78,
+              height: 78,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.12),
+              ),
+            ),
+          ),
+          Positioned(
+            right: -28,
+            bottom: -24,
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.16),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+              child: Icon(
+                spec.icon,
+                size: 34,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1882,6 +1940,87 @@ class _NetworkCardImage extends StatelessWidget {
       ],
     );
   }
+}
+
+class _HomeCardArtSpec {
+  const _HomeCardArtSpec({required this.icon, required this.colors});
+
+  final IconData icon;
+  final List<Color> colors;
+}
+
+_HomeCardArtSpec _homeCategoryVisual(String slug) {
+  if (slug.contains('wellness') || slug.contains('health')) {
+    return const _HomeCardArtSpec(
+      icon: Icons.spa_rounded,
+      colors: [Color(0xFF295E54), Color(0xFF74D2AE)],
+    );
+  }
+  if (slug.contains('nature') ||
+      slug.contains('outdoor') ||
+      slug.contains('hiking')) {
+    return const _HomeCardArtSpec(
+      icon: Icons.forest_rounded,
+      colors: [Color(0xFF2A4B2B), Color(0xFF78C36A)],
+    );
+  }
+  if (slug.contains('food')) {
+    return const _HomeCardArtSpec(
+      icon: Icons.restaurant_rounded,
+      colors: [Color(0xFF66371A), Color(0xFFFFA657)],
+    );
+  }
+  if (slug.contains('culture') ||
+      slug.contains('art') ||
+      slug.contains('history')) {
+    return const _HomeCardArtSpec(
+      icon: Icons.palette_outlined,
+      colors: [Color(0xFF5A3055), Color(0xFFCB84BA)],
+    );
+  }
+  if (slug.contains('sport') || slug.contains('adventure')) {
+    return const _HomeCardArtSpec(
+      icon: Icons.kayaking_rounded,
+      colors: [Color(0xFF5F3D1F), Color(0xFFE69B4B)],
+    );
+  }
+  if (slug.contains('workshop') ||
+      slug.contains('learning') ||
+      slug.contains('education')) {
+    return const _HomeCardArtSpec(
+      icon: Icons.auto_stories_rounded,
+      colors: [Color(0xFF443A73), Color(0xFF9A89E2)],
+    );
+  }
+  if (slug.contains('night') || slug.contains('social')) {
+    return const _HomeCardArtSpec(
+      icon: Icons.celebration_rounded,
+      colors: [Color(0xFF5A2348), Color(0xFFE07AB8)],
+    );
+  }
+
+  return const _HomeCardArtSpec(
+    icon: Icons.travel_explore_rounded,
+    colors: [Color(0xFF52301B), Color(0xFFCB8B50)],
+  );
+}
+
+_HomeCardArtSpec _homeCardArtForItem(ActivityListItemVm item) {
+  final fromCategory =
+      _homeCategoryVisual(item.categorySlug.trim().toLowerCase());
+  if (item.format.toUpperCase() == 'ONLINE') {
+    return const _HomeCardArtSpec(
+      icon: Icons.videocam_rounded,
+      colors: [Color(0xFF1F4D8A), Color(0xFF67A8F5)],
+    );
+  }
+  if (item.format.toUpperCase() == 'HYBRID') {
+    return const _HomeCardArtSpec(
+      icon: Icons.devices_rounded,
+      colors: [Color(0xFF5E3E86), Color(0xFFB08CF6)],
+    );
+  }
+  return fromCategory;
 }
 
 class _StoryImageClipper extends CustomClipper<Path> {
@@ -2014,9 +2153,8 @@ class _HomeSideDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = _HomeDrawerLayout.of(context);
-    final profileTitle = isLoggedIn
-        ? profile?.preferredName ?? 'FlyFy'
-        : 'FlyFy';
+    final profileTitle =
+        isLoggedIn ? profile?.preferredName ?? 'FlyFy' : 'FlyFy';
     final profileSubtitle = isLoggedIn ? location : l10n.homeSubtitle;
     final avatarText = profile?.initials ?? 'F';
     final badgeIcon = isLoggedIn && (profile?.isProfileCompleted ?? false)
@@ -2216,9 +2354,9 @@ class _HomeSideDrawer extends StatelessWidget {
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
-                                                  ),
+                                                horizontal: 10,
+                                                vertical: 6,
+                                              ),
                                               decoration: BoxDecoration(
                                                 color: AppColors.accent
                                                     .withValues(alpha: 0.18),
@@ -2389,9 +2527,8 @@ class _HomeSideDrawer extends StatelessWidget {
                                         ? Icons.logout_rounded
                                         : Icons.login_rounded,
                                     isAccent: !isLoggedIn,
-                                    onTap: isLoggedIn
-                                        ? onLogoutTap
-                                        : onLoginTap,
+                                    onTap:
+                                        isLoggedIn ? onLogoutTap : onLoginTap,
                                   ),
                                 ],
                               ),
@@ -2660,26 +2797,26 @@ class _DrawerMenuItem extends StatelessWidget {
                       ],
                     )
                   : matchesPreferencePalette
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.03),
-                        AppColors.accent.withValues(alpha: 0.07),
-                      ],
-                    )
-                  : null,
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.03),
+                            AppColors.accent.withValues(alpha: 0.07),
+                          ],
+                        )
+                      : null,
               color: isActive
                   ? null
                   : matchesPreferencePalette
-                  ? null
-                  : Colors.white.withValues(alpha: 0.02),
+                      ? null
+                      : Colors.white.withValues(alpha: 0.02),
               border: Border.all(
                 color: isActive
                     ? AppColors.accent.withValues(alpha: 0.20)
                     : matchesPreferencePalette
-                    ? AppColors.accent.withValues(alpha: 0.20)
-                    : Colors.transparent,
+                        ? AppColors.accent.withValues(alpha: 0.20)
+                        : Colors.transparent,
               ),
             ),
             child: Row(
@@ -2699,16 +2836,16 @@ class _DrawerMenuItem extends StatelessWidget {
                     color: isActive
                         ? null
                         : matchesPreferencePalette
-                        ? AppColors.accent.withValues(alpha: 0.12)
-                        : Colors.white.withValues(alpha: 0.04),
+                            ? AppColors.accent.withValues(alpha: 0.12)
+                            : Colors.white.withValues(alpha: 0.04),
                   ),
                   child: Icon(
                     icon,
                     color: isActive
                         ? Colors.white
                         : matchesPreferencePalette
-                        ? AppColors.accent
-                        : foregroundColor,
+                            ? AppColors.accent
+                            : foregroundColor,
                     size: layout.iconBoxSize * 0.48,
                   ),
                 ),
@@ -2724,8 +2861,8 @@ class _DrawerMenuItem extends StatelessWidget {
                       fontWeight: isActive
                           ? FontWeight.w700
                           : matchesPreferencePalette
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                       height: 1.2,
                     ),
                   ),
@@ -3055,12 +3192,6 @@ const List<_LanguageOption> _languageOptions = [
   _LanguageOption(code: 'ru', label: 'Русский'),
   _LanguageOption(code: 'en', label: 'English'),
   _LanguageOption(code: 'kk', label: 'Қазақша'),
-];
-
-const List<String> _homeRecommendedImageUrls = [
-  'https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1519904981063-b0cf448d479e?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1466721591366-2d5fba72006d?auto=format&fit=crop&w=600&q=80',
 ];
 
 List<ActivityListItemVm> _mergeHomeRecommendedItems({

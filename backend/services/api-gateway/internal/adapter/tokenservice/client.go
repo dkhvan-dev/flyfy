@@ -97,6 +97,7 @@ func (c *Client) verifyWithCachedServiceToken(ctx context.Context, accessToken s
 
 	claims := &app.TokenClaims{
 		Subject: adapter.ValueOrEmpty(resp.GetSubject()),
+		UserID:  adapter.ValueOrEmpty(resp.GetUserId()),
 		Roles:   adapter.NormalizeRoles(resp.GetRoles(), resp.GetRole()),
 	}
 

@@ -8,8 +8,10 @@ import (
 
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/config"
 	"github.com/dkhvan-dev/flyfy/backend/services/auth-service/internal/domain/model"
@@ -110,6 +112,19 @@ func (c *TokenServiceClient) authenticateService(ctx context.Context) (string, t
 	return resp.GetToken(), resp.GetExpiresAt().AsTime(), nil
 }
 
+func (c *TokenServiceClient) invalidateServiceToken() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.serviceToken = ""
+	c.tokenExpiry = time.Time{}
+}
+
+func isUnauthenticatedRPC(err error) bool {
+	st, ok := status.FromError(err)
+	return ok && st.Code() == codes.Unauthenticated
+}
+
 func (c *TokenServiceClient) GenerateUserTokens(
 	ctx context.Context,
 	userID, role string,
@@ -127,6 +142,13 @@ func (c *TokenServiceClient) GenerateUserTokens(
 	}
 
 	resp, err := c.client.GenerateUserTokens(authCtx, req)
+	if err != nil && isUnauthenticatedRPC(err) {
+		c.invalidateServiceToken()
+		retryCtx, retryErr := c.withServiceAuth(ctx)
+		if retryErr == nil {
+			resp, err = c.client.GenerateUserTokens(retryCtx, req)
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("GenerateUserTokens RPC: %w", err)
 	}
@@ -148,6 +170,13 @@ func (c *TokenServiceClient) RefreshTokens(ctx context.Context, refreshToken str
 	}
 
 	resp, err := c.client.RefreshTokens(authCtx, req)
+	if err != nil && isUnauthenticatedRPC(err) {
+		c.invalidateServiceToken()
+		retryCtx, retryErr := c.withServiceAuth(ctx)
+		if retryErr == nil {
+			resp, err = c.client.RefreshTokens(retryCtx, req)
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("RefreshTokens RPC: %w", err)
 	}
@@ -171,6 +200,13 @@ func (c *TokenServiceClient) RevokeToken(ctx context.Context, jti string, expire
 	}
 
 	_, err = c.client.RevokeToken(authCtx, req)
+	if err != nil && isUnauthenticatedRPC(err) {
+		c.invalidateServiceToken()
+		retryCtx, retryErr := c.withServiceAuth(ctx)
+		if retryErr == nil {
+			_, err = c.client.RevokeToken(retryCtx, req)
+		}
+	}
 	if err != nil {
 		return fmt.Errorf("RevokeToken RPC: %w", err)
 	}
@@ -189,6 +225,13 @@ func (c *TokenServiceClient) ValidateAccessToken(ctx context.Context, token stri
 	}
 
 	resp, err := c.client.ValidateAccessToken(authCtx, req)
+	if err != nil && isUnauthenticatedRPC(err) {
+		c.invalidateServiceToken()
+		retryCtx, retryErr := c.withServiceAuth(ctx)
+		if retryErr == nil {
+			resp, err = c.client.ValidateAccessToken(retryCtx, req)
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("ValidateAccessToken RPC: %w", err)
 	}
@@ -218,6 +261,13 @@ func (c *TokenServiceClient) ValidateRefreshToken(ctx context.Context, token str
 	}
 
 	resp, err := c.client.ValidateRefreshToken(authCtx, req)
+	if err != nil && isUnauthenticatedRPC(err) {
+		c.invalidateServiceToken()
+		retryCtx, retryErr := c.withServiceAuth(ctx)
+		if retryErr == nil {
+			resp, err = c.client.ValidateRefreshToken(retryCtx, req)
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("ValidateRefreshToken RPC: %w", err)
 	}

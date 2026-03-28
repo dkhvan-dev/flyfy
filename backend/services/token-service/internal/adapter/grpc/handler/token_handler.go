@@ -177,6 +177,7 @@ type ServiceTokenResult struct {
 type ValidatedClaimsResult struct {
 	Valid       bool
 	Subject     string
+	UserID      string
 	Type        string
 	Role        string
 	Roles       []string
@@ -210,6 +211,7 @@ func claimsToResult(c *model.ValidatedClaims) *ValidatedClaimsResult {
 	return &ValidatedClaimsResult{
 		Valid:       true,
 		Subject:     c.Subject,
+		UserID:      c.UserID,
 		Type:        string(c.Type),
 		Role:        c.Role,
 		Roles:       c.Roles,

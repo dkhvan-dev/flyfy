@@ -28,6 +28,8 @@ func mapError(err error) error {
 		errors.Is(err, app.ErrParticipantStateInvalid),
 		errors.Is(err, app.ErrPriceChangeForbidden),
 		errors.Is(err, app.ErrCriticalFieldsUpdateForbidden),
+		errors.Is(err, app.ErrActivityMediaFileNotReady),
+		errors.Is(err, app.ErrActivityMediaFileNotAllowed),
 
 		errors.Is(err, model.ErrInvalidActivityTitle),
 		errors.Is(err, model.ErrInvalidActivityDescription),
@@ -56,7 +58,8 @@ func mapError(err error) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 
 	case errors.Is(err, app.ErrActivityNotFound),
-		errors.Is(err, app.ErrParticipantNotFound):
+		errors.Is(err, app.ErrParticipantNotFound),
+		errors.Is(err, app.ErrActivityMediaFileNotFound):
 		return status.Error(codes.NotFound, err.Error())
 
 	case errors.Is(err, app.ErrActivityAlreadyPublished),

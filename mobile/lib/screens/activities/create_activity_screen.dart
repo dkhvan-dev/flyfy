@@ -1,16 +1,21 @@
 import 'dart:ui' as ui;
 
+import 'package:dio/dio.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/network/dio_error_mapper.dart';
+import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
+import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
@@ -31,11 +36,14 @@ class CreateActivityScreen extends StatefulWidget {
 
 class _CreateActivityScreenState extends State<CreateActivityScreen> {
   final _pageController = PageController();
+  final _imagePicker = ImagePicker();
+  final _fileApi = FileApi();
   int _currentStep = 0;
   int? _pendingProgrammaticStep;
   static const _totalSteps = 3;
   static const double _stepBackSwipeMinDistance = 56;
   static const double _stepBackSwipeMinVelocity = 700;
+  static const int _maxCoverUploadBytes = 20 * 1024 * 1024;
 
   // — Step 1: Basic —
   final _titleCtrl = TextEditingController();
@@ -43,6 +51,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   final _tagsCtrl = TextEditingController();
   String? _selectedCategorySlug;
   String? _initialCategorySlug;
+  Uint8List? _coverPreviewBytes;
+  String? _coverFileId;
+  bool _coverChanged = false;
+  bool _isCoverUploading = false;
+  String? _coverUploadErrorMessage;
 
   // — Step 2: Format & Schedule —
   String _format = 'OFFLINE';
@@ -113,6 +126,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       _titleCtrl.text = a.title;
       _descriptionCtrl.text = a.description;
       _tagsCtrl.text = a.tags.join(', ');
+      _coverFileId = a.coverFileId;
       _format = a.format.toUpperCase();
       _startAt = a.startAt.toLocal();
       _endAt = a.endAt.toLocal();
@@ -212,6 +226,145 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   void _handleLocationPreviewChanged() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  bool get _hasExistingCoverImage {
+    final existingUrl = widget.activity == null
+        ? ''
+        : (resolveActivityCoverUrl(widget.activity!) ?? '').trim();
+    return !_coverChanged && existingUrl.isNotEmpty;
+  }
+
+  bool get _hasAnyCoverPreview {
+    return (_coverPreviewBytes?.isNotEmpty ?? false) || _hasExistingCoverImage;
+  }
+
+  Future<void> _pickCoverImage() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_isCoverUploading) return;
+
+    FocusScope.of(context).unfocus();
+
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 2400,
+      imageQuality: 92,
+    );
+    if (picked == null) {
+      return;
+    }
+
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+
+    if (bytes.isEmpty) {
+      _showValidationError(l10n.createCoverUploadFailed);
+      return;
+    }
+    if (bytes.lengthInBytes > _maxCoverUploadBytes) {
+      _showValidationError(l10n.createCoverUploadTooLarge);
+      return;
+    }
+
+    final contentType = _detectCoverMimeType(bytes);
+    if (contentType == null) {
+      _showValidationError(l10n.createCoverUploadUnsupportedFormat);
+      return;
+    }
+
+    final normalizedName = _normalizeCoverFileName(picked.name, contentType);
+
+    setState(() {
+      _coverChanged = true;
+      _coverPreviewBytes = bytes;
+      _coverFileId = null;
+      _coverUploadErrorMessage = null;
+      _isCoverUploading = true;
+    });
+
+    try {
+      final upload = await _fileApi.createActivityMediaUpload(
+        originalName: normalizedName,
+        contentType: contentType,
+        sizeBytes: bytes.lengthInBytes,
+      );
+
+      await _fileApi.uploadBinary(
+        upload: upload,
+        bytes: bytes,
+        contentType: contentType,
+      );
+      await _fileApi.completeUpload(upload.fileId);
+
+      if (!mounted) return;
+      setState(() {
+        _coverFileId = upload.fileId;
+        _coverUploadErrorMessage = null;
+        _isCoverUploading = false;
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _coverUploadErrorMessage = DioErrorMapper.toMessage(e);
+        _isCoverUploading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _coverUploadErrorMessage = l10n.createCoverUploadFailed;
+        _isCoverUploading = false;
+      });
+    }
+  }
+
+  String? _detectCoverMimeType(Uint8List bytes) {
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF) {
+      return 'image/jpeg';
+    }
+
+    if (bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47 &&
+        bytes[4] == 0x0D &&
+        bytes[5] == 0x0A &&
+        bytes[6] == 0x1A &&
+        bytes[7] == 0x0A) {
+      return 'image/png';
+    }
+
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
+      return 'image/webp';
+    }
+
+    return null;
+  }
+
+  String _normalizeCoverFileName(String rawName, String contentType) {
+    final trimmed = rawName.trim();
+    final dotIndex = trimmed.lastIndexOf('.');
+    final baseName = dotIndex > 0 ? trimmed.substring(0, dotIndex) : trimmed;
+    final safeBase = baseName.isEmpty ? 'activity-cover' : baseName;
+
+    final extension = switch (contentType) {
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      _ => 'jpg',
+    };
+
+    return '$safeBase.$extension';
   }
 
   void _setUnlimitedParticipants(bool value) {
@@ -426,8 +579,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   void _handleStepBackSwipeEnd(DragEndDetails details) {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldGoBack =
-        _isTrackingStepBackSwipe &&
+    final shouldGoBack = _isTrackingStepBackSwipe &&
         _currentStep > 0 &&
         (_stepBackSwipeDistance >= _stepBackSwipeMinDistance ||
             primaryVelocity >= _stepBackSwipeMinVelocity);
@@ -463,6 +615,14 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         }
         if ((_selectedCategorySlug ?? '').trim().isEmpty) {
           _showValidationError(l10n.createCategoryValidation);
+          return false;
+        }
+        if (_isCoverUploading) {
+          _showValidationError(l10n.createCoverUploadInProgress);
+          return false;
+        }
+        if (_coverChanged && _coverFileId == null) {
+          _showValidationError(l10n.createCoverUploadRetryRequired);
           return false;
         }
         return true;
@@ -751,9 +911,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       longitude: _longitudeValue,
       mapUrl: _mapUrlValue,
       meetingUrl: _meetingUrlValue,
-      visibilityPassword: _visibility == 'PRIVATE'
-          ? _visibilityPasswordValue
-          : null,
+      visibilityPassword:
+          _visibility == 'PRIVATE' ? _visibilityPasswordValue : null,
+      coverFileId: _coverFileId,
     );
   }
 
@@ -824,6 +984,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           ? (_visibility == 'PRIVATE' ? _visibilityPasswordValue : null)
           : null,
       hasVisibilityPassword: _shouldSendVisibilityPasswordChange,
+      coverFileId: _coverChanged ? _coverFileId : null,
+      hasCoverFileId: _coverChanged,
     );
 
     final updated = await provider.updateActivity(activityId, request);
@@ -1073,6 +1235,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   title: widget.isEditMode
                       ? l10n.editActivityTitle
                       : l10n.createActivityTitle,
+                  onBack: _currentStep == 0 ? () => context.pop() : null,
                 ),
                 _StepIndicator(
                   currentStep: _currentStep,
@@ -1124,9 +1287,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 if (_currentStep == _totalSteps - 1)
                   _Step3ActionBar(
                     isSubmitting: _isSubmitting,
-                    onPrimaryAction: widget.isEditMode
-                        ? _submit
-                        : _submitAndPublish,
+                    onPrimaryAction:
+                        widget.isEditMode ? _submit : _submitAndPublish,
                     primaryLabel: widget.isEditMode
                         ? l10n.editActivitySubmit
                         : l10n.createPublishActivityCta,
@@ -1177,7 +1339,19 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       children: [
         _Step1FieldSection(
           label: l10n.createCoverSection,
-          child: const _CoverUploadCard(),
+          child: _CoverUploadCard(
+            title: _hasAnyCoverPreview
+                ? l10n.createCoverChangeAction
+                : l10n.createCoverUploadTitle,
+            hint: _coverUploadErrorMessage ?? l10n.createCoverUploadHint,
+            imageUrl: _hasExistingCoverImage
+                ? resolveActivityCoverUrl(widget.activity!)
+                : null,
+            previewBytes: _coverPreviewBytes,
+            isUploading: _isCoverUploading,
+            hasError: _coverUploadErrorMessage != null,
+            onTap: _pickCoverImage,
+          ),
         ),
         SizedBox(height: blockSpacing),
         _Step1FieldSection(
@@ -1228,8 +1402,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               if (provider.categoryState == ActivitiesState.error &&
                   items.isEmpty) {
                 return _CategoryCatalogState(
-                  message:
-                      provider.categoryErrorMessage ??
+                  message: provider.categoryErrorMessage ??
                       l10n.createCategoryLoadFailed,
                   trailing: TextButton(
                     onPressed: () => context
@@ -1375,8 +1548,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             locationLocked
                 ? l10n.editLocationLocked
                 : (_isResolvingMapSelection
-                      ? l10n.createMapResolvingHint
-                      : l10n.createMapTapHint),
+                    ? l10n.createMapResolvingHint
+                    : l10n.createMapTapHint),
             style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
           ),
           const SizedBox(height: 18),
@@ -1594,9 +1767,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMinShort,
-                            controller: isUnlimited
-                                ? null
-                                : _minParticipantsCtrl,
+                            controller:
+                                isUnlimited ? null : _minParticipantsCtrl,
                             placeholder: '1',
                             readOnly: isUnlimited,
                             readOnlyValue: '1',
@@ -1607,9 +1779,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMaxShort,
-                            controller: isUnlimited
-                                ? null
-                                : _maxParticipantsCtrl,
+                            controller:
+                                isUnlimited ? null : _maxParticipantsCtrl,
                             placeholder: l10n.createNoLimitPlaceholder,
                             readOnly: isUnlimited,
                             readOnlyValue: l10n.createNoLimitPlaceholder,
@@ -1631,9 +1802,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 // ════════════════════════════════════════════════════════════════
 
 class _CreateTopBar extends StatelessWidget {
-  const _CreateTopBar({required this.title});
+  const _CreateTopBar({required this.title, this.onBack});
 
   final String title;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -1647,19 +1819,40 @@ class _CreateTopBar extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(10, compact ? 6 : 8, 10, compact ? 2 : 4),
       child: SizedBox(
         height: 40,
-        child: Center(
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: titleSize,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 40,
+              child: onBack == null
+                  ? null
+                  : IconButton(
+                      onPressed: onBack,
+                      splashRadius: 20,
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.textPrimary,
+                        size: 18,
+                      ),
+                    ),
             ),
-          ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 40),
+          ],
         ),
       ),
     );
@@ -1753,8 +1946,8 @@ class _StepIndicator extends StatelessWidget {
                     color: isDone
                         ? AppColors.success
                         : isActive
-                        ? AppColors.accent
-                        : const Color(0xFF6B4208),
+                            ? AppColors.accent
+                            : const Color(0xFF6B4208),
                   ),
                   child: Center(child: stepChild),
                 ),
@@ -2334,9 +2527,8 @@ class _DateTimeInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final trimmed = digits.length > _maxDigits
-        ? digits.substring(0, _maxDigits)
-        : digits;
+    final trimmed =
+        digits.length > _maxDigits ? digits.substring(0, _maxDigits) : digits;
     final buffer = StringBuffer();
     for (var i = 0; i < trimmed.length; i++) {
       if (i == 2 || i == 4) {
@@ -2895,18 +3087,17 @@ class _Step1TextFieldState extends State<_Step1TextField> {
         controller: widget.controller,
         focusNode: _focusNode,
         maxLength: widget.maxLength,
-        buildCounter:
-            (
-              context, {
-              required int currentLength,
-              required bool isFocused,
-              int? maxLength,
-            }) => null,
+        buildCounter: (
+          context, {
+          required int currentLength,
+          required bool isFocused,
+          int? maxLength,
+        }) =>
+            null,
         maxLines: widget.maxLines,
         minLines: widget.isMultiline ? widget.maxLines : 1,
-        keyboardType: widget.isMultiline
-            ? TextInputType.multiline
-            : TextInputType.text,
+        keyboardType:
+            widget.isMultiline ? TextInputType.multiline : TextInputType.text,
         textAlignVertical: widget.isMultiline
             ? TextAlignVertical.top
             : TextAlignVertical.center,
@@ -3007,10 +3198,23 @@ class _CategorySelectorField extends StatelessWidget {
 }
 
 class _CoverUploadCard extends StatelessWidget {
-  const _CoverUploadCard();
+  const _CoverUploadCard({
+    required this.title,
+    required this.hint,
+    required this.onTap,
+    this.imageUrl,
+    this.previewBytes,
+    this.isUploading = false,
+    this.hasError = false,
+  });
 
-  static const _previewUrl =
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80';
+  final String title;
+  final String hint;
+  final String? imageUrl;
+  final Uint8List? previewBytes;
+  final bool isUploading;
+  final bool hasError;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -3020,43 +3224,232 @@ class _CoverUploadCard extends StatelessWidget {
     final radius = isCompact ? 28.0 : 34.0;
     final height = isCompact ? 190.0 : (isWide ? 230.0 : 210.0);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: SizedBox(
-        width: double.infinity,
-        height: height,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            DecoratedBox(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF238FE7),
-                    Color(0xFF89D1FF),
-                    Color(0xFF8AB8DF),
-                  ],
+    final hasPreview = (previewBytes?.isNotEmpty ?? false) || _hasImageUrl;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isUploading ? null : onTap,
+        borderRadius: BorderRadius.circular(radius),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(radius),
+          child: SizedBox(
+            width: double.infinity,
+            height: height,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildBackground(hasPreview),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(
+                            alpha: hasPreview ? 0.08 : 0.12,
+                          ),
+                          Colors.black.withValues(
+                            alpha: hasPreview ? 0.44 : 0.18,
+                          ),
+                          Colors.black.withValues(alpha: 0.68),
+                        ],
+                        stops: const [0, 0.52, 1],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              child: Image.network(
-                _previewUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.expand(),
-              ),
-            ),
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _DashedCoverBorderPainter(
-                  color: const Color(0xFFBE965D).withValues(alpha: 0.45),
-                  radius: radius,
+                Positioned(
+                  left: isCompact ? 18 : 22,
+                  right: isCompact ? 18 : 22,
+                  bottom: isCompact ? 18 : 22,
+                  child: _CoverCardCopy(
+                    title: title,
+                    hint: hint,
+                    hasPreview: hasPreview,
+                    hasError: hasError,
+                    compact: isCompact,
+                  ),
                 ),
-              ),
+                if (isUploading)
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.42),
+                      ),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.accent,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _DashedCoverBorderPainter(
+                      color: hasError
+                          ? const Color(0xFFFF7B6E).withValues(alpha: 0.74)
+                          : const Color(0xFFBE965D).withValues(alpha: 0.45),
+                      radius: radius,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  bool get _hasImageUrl => (imageUrl?.trim().isNotEmpty ?? false);
+
+  Widget _buildBackground(bool hasPreview) {
+    if (previewBytes != null && previewBytes!.isNotEmpty) {
+      return Image.memory(previewBytes!, fit: BoxFit.cover);
+    }
+    if (_hasImageUrl) {
+      return Image.network(
+        imageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildPlaceholder(hasPreview: false),
+      );
+    }
+    return _buildPlaceholder(hasPreview: hasPreview);
+  }
+
+  Widget _buildPlaceholder({required bool hasPreview}) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3A240D), Color(0xFF181109)],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            top: -36,
+            right: -30,
+            child: Container(
+              width: 138,
+              height: 138,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.accent.withValues(alpha: 0.17),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -26,
+            bottom: -44,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.05),
+              ),
+            ),
+          ),
+          if (!hasPreview)
+            Center(
+              child: Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.08),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.14),
+                  ),
+                ),
+                child: Icon(
+                  Icons.add_photo_alternate_rounded,
+                  color: Colors.white.withValues(alpha: 0.92),
+                  size: 32,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoverCardCopy extends StatelessWidget {
+  const _CoverCardCopy({
+    required this.title,
+    required this.hint,
+    required this.hasPreview,
+    required this.hasError,
+    required this.compact,
+  });
+
+  final String title;
+  final String hint;
+  final bool hasPreview;
+  final bool hasError;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.26)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                hasPreview ? Icons.refresh_rounded : Icons.file_upload_outlined,
+                color: AppColors.accent,
+                size: compact ? 14 : 15,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  color: AppColors.accent,
+                  fontSize: compact ? 12 : 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          hint,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: hasError
+                ? const Color(0xFFFFC0B8)
+                : Colors.white.withValues(alpha: 0.88),
+            fontSize: compact ? 13 : 14,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

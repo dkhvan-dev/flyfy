@@ -34,6 +34,7 @@ type CreateActivityRequest struct {
 	Longitude   *float64 `json:"longitude,omitempty"`
 	MapURL      *string  `json:"mapUrl,omitempty"`
 	MeetingURL  *string  `json:"meetingUrl,omitempty"`
+	CoverFileID *string  `json:"coverFileId,omitempty"`
 
 	VisibilityPassword *string `json:"visibilityPassword,omitempty"`
 

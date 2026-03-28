@@ -688,7 +688,31 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createCoverUploadTitle => 'Загрузить качественное изображение';
 
   @override
-  String get createCoverUploadHint => 'Минимум 1600x900px, максимум 5MB';
+  String get createCoverChangeAction => 'Изменить обложку';
+
+  @override
+  String get createCoverUploadHint =>
+      'JPG, PNG или WEBP. Рекомендуется 1600x900px, максимум 20MB';
+
+  @override
+  String get createCoverUploadFailed =>
+      'Не удалось загрузить обложку. Попробуйте еще раз.';
+
+  @override
+  String get createCoverUploadTooLarge =>
+      'Изображение слишком большое. Максимальный размер — 20MB.';
+
+  @override
+  String get createCoverUploadUnsupportedFormat =>
+      'Неподдерживаемый формат изображения. Используйте JPG, PNG или WEBP.';
+
+  @override
+  String get createCoverUploadInProgress =>
+      'Дождитесь завершения загрузки обложки.';
+
+  @override
+  String get createCoverUploadRetryRequired =>
+      'Повторно загрузите обложку перед продолжением.';
 
   @override
   String get createBasicSection => 'ОСНОВНАЯ ИНФОРМАЦИЯ';

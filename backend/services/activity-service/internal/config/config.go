@@ -16,6 +16,7 @@ type Config struct {
 	Log         LogConfig
 	Security    SecurityConfig
 	UserService UserServiceConfig
+	FileManager FileManagerConfig
 }
 
 type AppConfig struct {
@@ -89,6 +90,10 @@ type LogConfig struct {
 
 type UserServiceConfig struct {
 	GRPCAddress string `env:"USER_SERVICE_GRPC_ADDR, default=user-service:9092"`
+}
+
+type FileManagerConfig struct {
+	Target string `env:"FILE_MANAGER_GRPC_TARGET, default=dns:///file-manager-service:9093"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

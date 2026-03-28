@@ -32,6 +32,10 @@ func (c *Client) CreatePresignedUpload(ctx context.Context, req port.PresignUplo
 	}, nil
 }
 
+func (c *Client) PutObject(ctx context.Context, req port.PutObjectRequest) error {
+	return nil
+}
+
 func (c *Client) StatObject(ctx context.Context, bucket, objectKey string) (*port.ObjectMeta, error) {
 	return &port.ObjectMeta{
 		Bucket:      bucket,

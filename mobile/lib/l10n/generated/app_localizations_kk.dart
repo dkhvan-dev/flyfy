@@ -692,7 +692,31 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createCoverUploadTitle => 'Сапалы сурет жүктеу';
 
   @override
-  String get createCoverUploadHint => 'Кемінде 1600x900px, ең көбі 5MB';
+  String get createCoverChangeAction => 'Қаптаманы өзгерту';
+
+  @override
+  String get createCoverUploadHint =>
+      'JPG, PNG немесе WEBP. Ұсынылатын өлшем 1600x900px, ең көбі 20MB';
+
+  @override
+  String get createCoverUploadFailed =>
+      'Қаптаманы жүктеу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get createCoverUploadTooLarge =>
+      'Сурет тым үлкен. Ең үлкен өлшемі — 20MB.';
+
+  @override
+  String get createCoverUploadUnsupportedFormat =>
+      'Сурет форматы қолдау таппайды. JPG, PNG немесе WEBP пайдаланыңыз.';
+
+  @override
+  String get createCoverUploadInProgress =>
+      'Қаптама жүктеліп болғанша күтіңіз.';
+
+  @override
+  String get createCoverUploadRetryRequired =>
+      'Жалғастырмас бұрын қаптаманы қайта жүктеңіз.';
 
   @override
   String get createBasicSection => 'НЕГІЗГІ АҚПАРАТ';

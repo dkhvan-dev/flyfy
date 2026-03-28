@@ -35,4 +35,8 @@ var (
 	ErrBlockedURLDetected          = errors.New("blocked url detected")
 	ErrSuspiciousURLRequiresReview = errors.New("suspicious url requires review")
 	ErrActivityCreationRateLimited = errors.New("activity creation rate limited")
+
+	ErrActivityMediaFileNotFound   = errors.New("activity media file not found")
+	ErrActivityMediaFileNotReady   = errors.New("activity media file is not ready")
+	ErrActivityMediaFileNotAllowed = errors.New("activity media file is not allowed")
 )

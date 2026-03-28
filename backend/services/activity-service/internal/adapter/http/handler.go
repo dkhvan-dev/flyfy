@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -24,6 +25,7 @@ type Handler struct {
 	activityUC    *app.ActivityUseCase
 	joinUC        *app.JoinUseCase
 	repo          port.ActivityRepository
+	fileManager   port.ActivityMediaFileManager
 	actorResolver ActorResolver
 }
 
@@ -31,12 +33,14 @@ func NewHandler(
 	activityUC *app.ActivityUseCase,
 	joinUC *app.JoinUseCase,
 	repo port.ActivityRepository,
+	fileManager port.ActivityMediaFileManager,
 	actorResolver ActorResolver,
 ) *Handler {
 	return &Handler{
 		activityUC:    activityUC,
 		joinUC:        joinUC,
 		repo:          repo,
+		fileManager:   fileManager,
 		actorResolver: actorResolver,
 	}
 }
@@ -109,6 +113,11 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 	case "participants":
 		if r.Method == http.MethodGet {
 			h.ListActivityParticipants(w, r, activityID)
+			return
+		}
+	case "cover":
+		if r.Method == http.MethodGet {
+			h.GetActivityCover(w, r, activityID)
 			return
 		}
 	case "publish":
@@ -205,6 +214,11 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid confirmationDeadline")
 		return
 	}
+	coverFileID, err := parseOptionalUUIDString(req.CoverFileID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid coverFileId")
+		return
+	}
 
 	input := app.CreateActivityInput{
 		HostUserID:                     actorUserID,
@@ -235,6 +249,7 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		Longitude:                      req.Longitude,
 		MapURL:                         req.MapURL,
 		MeetingURL:                     req.MeetingURL,
+		CoverFileID:                    coverFileID,
 		VisibilityPassword:             req.VisibilityPassword,
 		ReviewRequired:                 valueOrDefaultBool(req.ReviewRequired, false),
 	}
@@ -404,6 +419,11 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		writeError(w, http.StatusBadRequest, "invalid confirmationDeadline")
 		return
 	}
+	coverFileID, err := parseOptionalUUIDString(req.CoverFileID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid coverFileId")
+		return
+	}
 
 	var visibility *enum.ActivityVisibility
 	if req.Visibility != nil {
@@ -471,6 +491,8 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		HasMapURL:                      req.HasMapURL,
 		MeetingURL:                     req.MeetingURL,
 		HasMeetingURL:                  req.HasMeetingURL,
+		CoverFileID:                    coverFileID,
+		HasCoverFileID:                 req.HasCoverFileID,
 		VisibilityPassword:             req.VisibilityPassword,
 		HasVisibilityPassword:          req.HasVisibilityPassword,
 	})
@@ -845,11 +867,24 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 	if err != nil {
 		return dto.ActivityResponse{}, err
 	}
+	media, err := h.repo.ListMediaByActivityID(ctx, item.ID)
+	if err != nil {
+		return dto.ActivityResponse{}, err
+	}
 
 	var sourceActivityID *string
 	if item.SourceActivityID != nil {
 		v := item.SourceActivityID.String()
 		sourceActivityID = &v
+	}
+	coverMedia := selectCoverMedia(media)
+	var coverFileID *string
+	var coverImageURL *string
+	if coverMedia != nil {
+		v := coverMedia.FileID.String()
+		coverFileID = &v
+		coverURL := fmt.Sprintf("/api/v1/activities/%s/cover", item.ID.String())
+		coverImageURL = &coverURL
 	}
 
 	return dto.ActivityResponse{
@@ -887,6 +922,8 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 		Longitude:                      item.Longitude,
 		MapURL:                         item.MapURL,
 		MeetingURL:                     item.MeetingURL,
+		CoverFileID:                    coverFileID,
+		CoverImageURL:                  coverImageURL,
 		CancellationReason:             item.CancellationReason,
 		CancelledAt:                    formatOptionalTime(item.CancelledAt),
 		StartedAt:                      formatOptionalTime(item.StartedAt),
@@ -896,6 +933,77 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 		CreatedAt:                      item.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:                      item.UpdatedAt.UTC().Format(time.RFC3339),
 	}, nil
+}
+
+func (h *Handler) GetActivityCover(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
+	if _, err := h.activityUC.GetActivityByID(r.Context(), activityID); err != nil {
+		switch {
+		case errors.Is(err, app.ErrActivityNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to load activity")
+		}
+		return
+	}
+
+	media, err := h.repo.ListMediaByActivityID(r.Context(), activityID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load activity cover")
+		return
+	}
+
+	coverMedia := selectCoverMedia(media)
+	if coverMedia == nil {
+		writeError(w, http.StatusNotFound, "activity cover not found")
+		return
+	}
+	if h.fileManager == nil {
+		writeError(w, http.StatusServiceUnavailable, "file manager unavailable")
+		return
+	}
+
+	downloadURL, err := h.fileManager.CreateDownloadURL(r.Context(), coverMedia.FileID)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrActivityMediaFileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusBadGateway, "failed to resolve activity cover")
+		}
+		return
+	}
+
+	proxyReq, err := http.NewRequestWithContext(r.Context(), http.MethodGet, downloadURL, nil)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to build cover request")
+		return
+	}
+
+	resp, err := http.DefaultClient.Do(proxyReq)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "failed to fetch activity cover")
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		writeError(w, http.StatusNotFound, "activity cover not found")
+		return
+	}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		writeError(w, http.StatusBadGateway, "failed to fetch activity cover")
+		return
+	}
+
+	if contentType := strings.TrimSpace(resp.Header.Get("Content-Type")); contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	if contentLength := strings.TrimSpace(resp.Header.Get("Content-Length")); contentLength != "" {
+		w.Header().Set("Content-Length", contentLength)
+	}
+	w.Header().Set("Cache-Control", "public, max-age=300")
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(w, resp.Body)
 }
 
 func toParticipantResponse(item *model.ActivityParticipant) dto.ParticipantResponse {
@@ -935,6 +1043,8 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrParticipantStateInvalid),
 		errors.Is(err, app.ErrPriceChangeForbidden),
 		errors.Is(err, app.ErrCriticalFieldsUpdateForbidden),
+		errors.Is(err, app.ErrActivityMediaFileNotReady),
+		errors.Is(err, app.ErrActivityMediaFileNotAllowed),
 
 		errors.Is(err, model.ErrInvalidActivityTitle),
 		errors.Is(err, model.ErrInvalidActivityDescription),
@@ -967,7 +1077,8 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		writeError(w, http.StatusBadRequest, err.Error())
 
 	case errors.Is(err, app.ErrActivityNotFound),
-		errors.Is(err, app.ErrParticipantNotFound):
+		errors.Is(err, app.ErrParticipantNotFound),
+		errors.Is(err, app.ErrActivityMediaFileNotFound):
 		writeError(w, http.StatusNotFound, err.Error())
 
 	case errors.Is(err, app.ErrActivityAlreadyPublished),
@@ -1005,6 +1116,19 @@ func parseOptionalRFC3339(v *string) (*time.Time, error) {
 	}
 	t := parsed.UTC()
 	return &t, nil
+}
+
+func parseOptionalUUIDString(v *string) (*uuid.UUID, error) {
+	if v == nil || strings.TrimSpace(*v) == "" {
+		return nil, nil
+	}
+
+	parsed, err := uuid.Parse(strings.TrimSpace(*v))
+	if err != nil {
+		return nil, err
+	}
+
+	return &parsed, nil
 }
 
 func parseIntOrDefault(v string, fallback int) int {
@@ -1051,6 +1175,20 @@ func formatOptionalUUID(v *uuid.UUID) *string {
 	}
 	s := v.String()
 	return &s
+}
+
+func selectCoverMedia(items []*model.ActivityMedia) *model.ActivityMedia {
+	if len(items) == 0 {
+		return nil
+	}
+
+	for _, item := range items {
+		if item != nil && item.IsCover {
+			return item
+		}
+	}
+
+	return items[0]
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {

@@ -1384,11 +1384,47 @@ abstract class AppLocalizations {
   /// **'Upload High-Res Image'**
   String get createCoverUploadTitle;
 
+  /// No description provided for @createCoverChangeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Cover'**
+  String get createCoverChangeAction;
+
   /// No description provided for @createCoverUploadHint.
   ///
   /// In en, this message translates to:
-  /// **'Minimal 1600x900px, max 5MB'**
+  /// **'JPG, PNG or WEBP. Recommended 1600x900px, max 20MB'**
   String get createCoverUploadHint;
+
+  /// No description provided for @createCoverUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload the cover image. Please try again.'**
+  String get createCoverUploadFailed;
+
+  /// No description provided for @createCoverUploadTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The image is too large. Maximum size is 20MB.'**
+  String get createCoverUploadTooLarge;
+
+  /// No description provided for @createCoverUploadUnsupportedFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported image format. Use JPG, PNG or WEBP.'**
+  String get createCoverUploadUnsupportedFormat;
+
+  /// No description provided for @createCoverUploadInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait until the cover image upload finishes.'**
+  String get createCoverUploadInProgress;
+
+  /// No description provided for @createCoverUploadRetryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload the cover image again before continuing.'**
+  String get createCoverUploadRetryRequired;
 
   /// No description provided for @createBasicSection.
   ///

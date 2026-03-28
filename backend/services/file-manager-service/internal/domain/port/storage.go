@@ -19,6 +19,13 @@ type PresignUploadResponse struct {
 	Headers   map[string]string
 }
 
+type PutObjectRequest struct {
+	Bucket      string
+	ObjectKey   string
+	ContentType string
+	Body        []byte
+}
+
 type ObjectMeta struct {
 	Bucket      string
 	ObjectKey   string
@@ -29,6 +36,7 @@ type ObjectMeta struct {
 
 type StorageProvider interface {
 	CreatePresignedUpload(ctx context.Context, req PresignUploadRequest) (*PresignUploadResponse, error)
+	PutObject(ctx context.Context, req PutObjectRequest) error
 	StatObject(ctx context.Context, bucket, objectKey string) (*ObjectMeta, error)
 	CreatePresignedDownload(ctx context.Context, bucket, objectKey string, ttl time.Duration) (string, error)
 	DeleteObject(ctx context.Context, bucket, objectKey string) error

@@ -31,6 +31,8 @@ class ActivityListItemVm {
     this.mapUrl,
     this.latitude,
     this.longitude,
+    this.coverFileId,
+    this.coverImageUrl,
   });
 
   final String id;
@@ -65,6 +67,8 @@ class ActivityListItemVm {
   final String? mapUrl;
   final double? latitude;
   final double? longitude;
+  final String? coverFileId;
+  final String? coverImageUrl;
 
   factory ActivityListItemVm.fromJson(Map<String, dynamic> json) {
     return ActivityListItemVm(
@@ -83,9 +87,11 @@ class ActivityListItemVm {
           .toList(),
       languageCode: json['languageCode']?.toString() ?? 'ru',
       timezone: json['timezone']?.toString() ?? 'Asia/Almaty',
-      startAt: DateTime.tryParse(json['startAt']?.toString() ?? '') ??
+      startAt:
+          DateTime.tryParse(json['startAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      endAt: DateTime.tryParse(json['endAt']?.toString() ?? '') ??
+      endAt:
+          DateTime.tryParse(json['endAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       capacityType: json['capacityType']?.toString() ?? '',
       priceType: json['priceType']?.toString() ?? 'FREE',
@@ -96,8 +102,9 @@ class ActivityListItemVm {
       countryCode: json['countryCode']?.toString(),
       priceAmount: (json['priceAmount'] as num?)?.toDouble(),
       currency: json['currency']?.toString(),
-      registrationDeadline:
-          DateTime.tryParse(json['registrationDeadline']?.toString() ?? ''),
+      registrationDeadline: DateTime.tryParse(
+        json['registrationDeadline']?.toString() ?? '',
+      ),
       minParticipants: (json['minParticipants'] as num?)?.toInt(),
       maxParticipants: (json['maxParticipants'] as num?)?.toInt(),
       addressText: json['addressText']?.toString(),
@@ -105,6 +112,8 @@ class ActivityListItemVm {
       mapUrl: json['mapUrl']?.toString(),
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
+      coverFileId: json['coverFileId']?.toString(),
+      coverImageUrl: json['coverImageUrl']?.toString(),
     );
   }
 

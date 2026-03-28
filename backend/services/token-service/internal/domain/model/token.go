@@ -96,6 +96,7 @@ type RevokedToken struct {
 // ValidatedClaims is the result of successful token validation.
 type ValidatedClaims struct {
 	Subject     string    `json:"sub"`
+	UserID      string    `json:"user_id,omitempty"`
 	Type        TokenType `json:"type"`
 	Role        string    `json:"role,omitempty"`  // for user tokens
 	Roles       []string  `json:"roles,omitempty"` // for service tokens

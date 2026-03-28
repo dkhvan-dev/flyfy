@@ -36,6 +36,8 @@ class UpdateActivityRequest {
     this.hasMeetingUrl = false,
     this.visibilityPassword,
     this.hasVisibilityPassword = false,
+    this.coverFileId,
+    this.hasCoverFileId = false,
   });
 
   final String? title;
@@ -78,6 +80,8 @@ class UpdateActivityRequest {
   final bool hasMeetingUrl;
   final String? visibilityPassword;
   final bool hasVisibilityPassword;
+  final String? coverFileId;
+  final bool hasCoverFileId;
 
   Map<String, dynamic> toJson() {
     return {
@@ -117,6 +121,8 @@ class UpdateActivityRequest {
       if (meetingUrl != null) 'meetingUrl': meetingUrl,
       if (hasVisibilityPassword) 'hasVisibilityPassword': true,
       if (visibilityPassword != null) 'visibilityPassword': visibilityPassword,
+      if (hasCoverFileId) 'hasCoverFileId': true,
+      if (coverFileId != null) 'coverFileId': coverFileId,
     };
   }
 }

@@ -334,6 +334,7 @@ func (uc *TokenUseCase) validateToken(ctx context.Context, tokenStr string, expe
 
 	return &model.ValidatedClaims{
 		Subject:     stdClaims.Subject,
+		UserID:      userIDForValidatedClaims(custom.Type, stdClaims.Subject),
 		Type:        custom.Type,
 		Role:        custom.Role,
 		Roles:       custom.Roles,
@@ -342,4 +343,11 @@ func (uc *TokenUseCase) validateToken(ctx context.Context, tokenStr string, expe
 		IssuedAt:    stdClaims.IssuedAt.Time(),
 		ExpiresAt:   stdClaims.Expiry.Time(),
 	}, nil
+}
+
+func userIDForValidatedClaims(tokenType model.TokenType, subject string) string {
+	if tokenType != model.TokenTypeUser {
+		return ""
+	}
+	return subject
 }

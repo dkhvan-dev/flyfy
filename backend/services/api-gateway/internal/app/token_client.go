@@ -7,6 +7,7 @@ import (
 
 type TokenClaims struct {
 	Subject     string    `json:"sub"`
+	UserID      string    `json:"user_id,omitempty"`
 	Role        string    `json:"role,omitempty"`
 	Roles       []string  `json:"roles,omitempty"`
 	Permissions []string  `json:"permissions,omitempty"`

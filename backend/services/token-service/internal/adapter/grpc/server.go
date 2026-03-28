@@ -163,6 +163,7 @@ func validatedClaimsToProto(c *handler.ValidatedClaimsResult) *pb.ValidatedClaim
 	return &pb.ValidatedClaimsResponse{
 		Valid:       c.Valid,
 		Subject:     c.Subject,
+		UserId:      c.UserID,
 		Type:        c.Type,
 		Role:        c.Role,
 		Roles:       c.Roles,
