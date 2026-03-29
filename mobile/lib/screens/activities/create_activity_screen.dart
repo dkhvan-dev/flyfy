@@ -24,11 +24,20 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 
 class CreateActivityScreen extends StatefulWidget {
-  const CreateActivityScreen({super.key, this.activity});
+  const CreateActivityScreen({
+    super.key,
+    this.activity,
+    this.repeatFromActivity = false,
+  });
 
   final ActivityListItemVm? activity;
+  final bool repeatFromActivity;
 
-  bool get isEditMode => activity != null;
+  bool get hasInitialActivity => activity != null;
+
+  bool get isRepeatMode => repeatFromActivity && activity != null;
+
+  bool get isEditMode => activity != null && !repeatFromActivity;
 
   @override
   State<CreateActivityScreen> createState() => _CreateActivityScreenState();
@@ -196,7 +205,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_didSetInitialLanguage || widget.isEditMode) {
+    if (_didSetInitialLanguage || widget.hasInitialActivity) {
       return;
     }
     final localeCode = Localizations.localeOf(context).languageCode;
@@ -885,7 +894,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
     final provider = context.read<ActivityProvider>();
 
-    if (_shouldRepublishCancelledActivity) {
+    if (widget.isRepeatMode) {
+      await _submitAndPublish();
+    } else if (_shouldRepublishCancelledActivity) {
       await _submitUpdateAndPublish(provider);
     } else if (widget.isEditMode) {
       await _submitUpdate(provider);
@@ -1342,18 +1353,24 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 if (_currentStep == _totalSteps - 1)
                   _Step3ActionBar(
                     isSubmitting: _isSubmitting,
-                    onPrimaryAction: _shouldRepublishCancelledActivity
+                    onPrimaryAction: widget.isRepeatMode
+                        ? _submitAndPublish
+                        : _shouldRepublishCancelledActivity
                         ? _submit
                         : widget.isEditMode
                         ? _submit
                         : _submitAndPublish,
-                    primaryLabel: _shouldRepublishCancelledActivity
+                    primaryLabel: widget.isRepeatMode
+                        ? l10n.activityPublishButton
+                        : _shouldRepublishCancelledActivity
                         ? l10n.activityPublishButton
                         : widget.isEditMode
                         ? l10n.editActivitySubmit
                         : l10n.createPublishActivityCta,
                     showPrimaryIcon:
-                        !widget.isEditMode || _shouldRepublishCancelledActivity,
+                        !widget.isEditMode ||
+                        widget.isRepeatMode ||
+                        _shouldRepublishCancelledActivity,
                   )
                 else if (_currentStep == 1)
                   _Step2NavBar(

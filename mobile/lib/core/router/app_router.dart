@@ -88,10 +88,18 @@ class AppRouter {
         ),
         GoRoute(
           path: '/activities/create',
-          pageBuilder: (context, state) => _buildActivityEditorPage(
-            state: state,
-            child: const CreateActivityScreen(),
-          ),
+          pageBuilder: (context, state) {
+            final activity = state.extra is ActivityListItemVm
+                ? state.extra! as ActivityListItemVm
+                : null;
+            return _buildActivityEditorPage(
+              state: state,
+              child: CreateActivityScreen(
+                activity: activity,
+                repeatFromActivity: activity != null,
+              ),
+            );
+          },
         ),
         GoRoute(
           path: '/activities/:activityId/edit',

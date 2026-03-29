@@ -75,6 +75,17 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     provider.loadJoinedActivities();
   }
 
+  Future<void> _openRepeat(ActivityListItemVm item) async {
+    final result = await ProfileCompletionGate.ensureCompleted(context);
+    if (result == ProfileGuardResult.cancelled || !mounted) return;
+
+    final provider = context.read<ActivityProvider>();
+    await context.push('/activities/create', extra: item);
+    if (!mounted) return;
+    provider.loadMyActivities();
+    provider.loadJoinedActivities();
+  }
+
   void _openDetails(ActivityListItemVm item) {
     context.push('/activities/${item.id}');
   }
@@ -414,7 +425,15 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                               },
                               onSecondaryTap:
                                   _activeTab == _MyActivitiesTab.hosted
-                                  ? () => _showComingSoon()
+                                  ? () {
+                                      final item = filteredItems[i];
+                                      if (item.status.toUpperCase() ==
+                                          'CANCELLED') {
+                                        _openRepeat(item);
+                                        return;
+                                      }
+                                      _showComingSoon();
+                                    }
                                   : null,
                               onTertiaryTap:
                                   _activeTab == _MyActivitiesTab.hosted &&

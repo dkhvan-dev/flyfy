@@ -501,6 +501,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     context.push('/activities/${widget.activityId}/edit', extra: activity);
   }
 
+  void _openRepeat(ActivityListItemVm activity) {
+    context.push('/activities/create', extra: activity);
+  }
+
   Future<void> _copyValue(String value, String message) async {
     await Clipboard.setData(ClipboardData(text: value));
     if (!mounted) return;
@@ -750,7 +754,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         pendingAction: _pendingAction,
         onJoin: _handleJoin,
         onPublish: _handlePublish,
-        onEdit: () => _openEdit(activity),
+        onEdit: () =>
+            status == 'CANCELLED' ? _openRepeat(activity) : _openEdit(activity),
         onPay: isJoined && !isOwner && !activity.isFree
             ? () => _openPayment(activity, hostName: hostName)
             : null,
@@ -3307,10 +3312,16 @@ class _DetailsActionBar extends StatelessWidget {
             action: null,
           )
         : null;
+    final isCancelledOwnerActivity =
+        isOwner && activity.status.toUpperCase() == 'CANCELLED';
     final primaryAction = isOwner
         ? _FooterButtonSpec(
-            label: l10n.editActivityButton,
-            icon: Icons.edit_outlined,
+            label: isCancelledOwnerActivity
+                ? l10n.myActivitiesRecreateButton
+                : l10n.editActivityButton,
+            icon: isCancelledOwnerActivity
+                ? Icons.refresh_rounded
+                : Icons.edit_outlined,
             onTap: onEdit,
             style: _FooterButtonStyle.primary,
             action: null,
