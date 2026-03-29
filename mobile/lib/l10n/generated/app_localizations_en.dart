@@ -378,6 +378,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityStatusCancelled => 'Cancelled';
 
   @override
+  String get activityStatusArchived => 'Archived';
+
+  @override
   String get activityFormatOffline => 'Offline';
 
   @override
@@ -487,6 +490,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityCancelSuccess => 'Activity cancelled';
 
   @override
+  String get activityArchiveButton => 'Archive';
+
+  @override
+  String get activityArchiveSuccess => 'Activity moved to archive';
+
+  @override
   String get activityJoinFailed => 'Failed to join the activity';
 
   @override
@@ -504,12 +513,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityCancelFailed => 'Failed to cancel the activity';
 
   @override
+  String get activityArchiveFailed => 'Failed to move the activity to archive';
+
+  @override
   String get activityCancelAlreadyCancelled =>
       'This activity is already cancelled';
 
   @override
   String get activityCancelNotAllowed =>
       'This activity can no longer be cancelled';
+
+  @override
+  String get activityArchiveAlreadyArchived =>
+      'This activity is already archived';
+
+  @override
+  String get activityArchiveNotAllowed =>
+      'Only cancelled activities can be archived';
 
   @override
   String activityGoingTitle(int count) {

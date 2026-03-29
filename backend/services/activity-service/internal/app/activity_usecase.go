@@ -594,6 +594,49 @@ func (u *ActivityUseCase) CancelActivity(
 	return item, nil
 }
 
+func (u *ActivityUseCase) ArchiveActivity(
+	ctx context.Context,
+	activityID uuid.UUID,
+	actorUserID uuid.UUID,
+) (*model.Activity, error) {
+	item, err := u.GetActivityByID(ctx, activityID)
+	if err != nil {
+		return nil, err
+	}
+	if actorUserID == uuid.Nil || actorUserID != item.HostUserID {
+		return nil, ErrInvalidActorUserID
+	}
+	if item.Status == enum.ActivityStatusArchived {
+		return nil, ErrActivityAlreadyArchived
+	}
+	if item.Status != enum.ActivityStatusCancelled {
+		return nil, ErrActivityNotArchivable
+	}
+
+	now := time.Now().UTC()
+	item.Status = enum.ActivityStatusArchived
+	item.Revision++
+	item.UpdatedAt = now
+
+	if err = u.repo.UpdateActivity(ctx, item); err != nil {
+		return nil, fmt.Errorf("archive activity: %w", err)
+	}
+
+	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
+		ActivityID:  item.ID,
+		EventType:   enum.ActivityEventTypeArchived,
+		ActorUserID: &actorUserID,
+		PayloadJSON: mustJSON(map[string]any{
+			"archivedAt": now.Format(time.RFC3339),
+		}),
+	})
+	if eventErr == nil {
+		_ = u.repo.CreateActivityEvent(ctx, event)
+	}
+
+	return item, nil
+}
+
 func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivityInput) (*model.Activity, error) {
 	if input.ActorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID

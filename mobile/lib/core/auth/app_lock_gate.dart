@@ -276,6 +276,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionProvider>();
+    final auth = context.watch<AuthProvider>();
 
     if (!_setupPromptActive && session.isAuthenticated && !_pinConfigured) {
       _setupPromptActive = true;
@@ -289,11 +290,38 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
       });
     }
 
+    final shouldSuppressLockOverlay =
+        auth.state == AuthState.unauthenticated && !session.isAuthenticated;
+
+    if (shouldSuppressLockOverlay &&
+        (_isLocked ||
+            _showPinUnlock ||
+            _unlockError != null ||
+            _isLoadingState ||
+            _isUnlocking ||
+            _isBiometricInFlight ||
+            _failedBiometricAttempts != 0 ||
+            _unlockPinController.text.isNotEmpty)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _isLocked = false;
+          _showPinUnlock = false;
+          _isBiometricInFlight = false;
+          _isUnlocking = false;
+          _isLoadingState = false;
+          _unlockError = null;
+          _failedBiometricAttempts = 0;
+          _unlockPinController.clear();
+        });
+      });
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
         widget.child,
-        if (_isLocked || _isLoadingState)
+        if ((_isLocked || _isLoadingState) && !shouldSuppressLockOverlay)
           _AppLockOverlay(
             isLoadingState: _isLoadingState,
             isUnlocking: _isUnlocking,

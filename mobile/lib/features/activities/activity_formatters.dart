@@ -18,6 +18,8 @@ String formatActivityStatus(String value, AppLocalizations l10n) {
       return l10n.activityStatusCompleted;
     case 'CANCELLED':
       return l10n.activityStatusCancelled;
+    case 'ARCHIVED':
+      return l10n.activityStatusArchived;
     default:
       return value;
   }

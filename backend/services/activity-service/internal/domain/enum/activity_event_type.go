@@ -13,6 +13,7 @@ const (
 	ActivityEventTypeStarted              ActivityEventType = "STARTED"
 	ActivityEventTypeCompleted            ActivityEventType = "COMPLETED"
 	ActivityEventTypeCancelled            ActivityEventType = "CANCELLED"
+	ActivityEventTypeArchived             ActivityEventType = "ARCHIVED"
 	ActivityEventTypeDuplicated           ActivityEventType = "DUPLICATED"
 	ActivityEventTypeCapacityChanged      ActivityEventType = "CAPACITY_CHANGED"
 	ActivityEventTypePriceChanged         ActivityEventType = "PRICE_CHANGED"
@@ -30,10 +31,11 @@ func (v ActivityEventType) IsValid() bool {
 		ActivityEventTypeModerationRejected,
 		ActivityEventTypePublished,
 		ActivityEventTypeUnpublished,
-		ActivityEventTypeStarted,
-		ActivityEventTypeCompleted,
-		ActivityEventTypeCancelled,
-		ActivityEventTypeDuplicated,
+			ActivityEventTypeStarted,
+			ActivityEventTypeCompleted,
+			ActivityEventTypeCancelled,
+			ActivityEventTypeArchived,
+			ActivityEventTypeDuplicated,
 		ActivityEventTypeCapacityChanged,
 		ActivityEventTypePriceChanged,
 		ActivityEventTypeLocationChanged,

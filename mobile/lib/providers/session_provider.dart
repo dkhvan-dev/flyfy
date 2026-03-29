@@ -31,8 +31,13 @@ class SessionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final token = await _secureStorage.getAccessToken();
-      if (token == null || token.isEmpty) {
+      final accessToken = await _secureStorage.getAccessToken();
+      final refreshToken = await _secureStorage.getRefreshToken();
+      final hasStoredTokens =
+          (accessToken != null && accessToken.isNotEmpty) ||
+          (refreshToken != null && refreshToken.isNotEmpty);
+
+      if (!hasStoredTokens) {
         _profile = null;
         _status = SessionStatus.unauthenticated;
         notifyListeners();

@@ -19,7 +19,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -40,7 +41,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -61,7 +63,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -95,7 +98,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -124,7 +128,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -174,9 +179,15 @@ class ActivityApi {
     final trimmedReason = reason?.trim() ?? '';
     final response = await _apiClient.dio.post(
       '/me/activities/$activityId/cancel',
-      data: {
-        if (trimmedReason.isNotEmpty) 'reason': trimmedReason,
-      },
+      data: {if (trimmedReason.isNotEmpty) 'reason': trimmedReason},
+    );
+
+    return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<ActivityListItemVm> archiveActivity(String activityId) async {
+    final response = await _apiClient.dio.post(
+      '/me/activities/$activityId/archive',
     );
 
     return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);

@@ -14,12 +14,14 @@ var (
 	ErrActivityAlreadyStarted             = errors.New("activity already started")
 	ErrActivityAlreadyCompleted           = errors.New("activity already completed")
 	ErrActivityAlreadyCancelled           = errors.New("activity already cancelled")
+	ErrActivityAlreadyArchived            = errors.New("activity already archived")
 	ErrActivityCancellationReasonRequired = errors.New("activity cancellation reason is required")
 
 	ErrActivityNotPublishable = errors.New("activity is not publishable")
 	ErrActivityNotStartable   = errors.New("activity is not startable")
 	ErrActivityNotCompletable = errors.New("activity is not completable")
 	ErrActivityNotCancellable = errors.New("activity is not cancellable")
+	ErrActivityNotArchivable  = errors.New("activity is not archivable")
 
 	ErrActivityJoinClosed          = errors.New("activity join is closed")
 	ErrActivityFull                = errors.New("activity is full")

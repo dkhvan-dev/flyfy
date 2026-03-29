@@ -531,7 +531,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                 0,
                               ),
                               child: ErrorView(
-                                message: provider.errorMessage ??
+                                message:
+                                    provider.errorMessage ??
                                     l10n.activitiesLoadFailed,
                                 onRetry: () async {
                                   await provider.loadActivities();
@@ -584,7 +585,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                 final categorySlug = _normalizeSlug(
                                   item.categorySlug,
                                 );
-                                final categoryLabel = categoryOptions
+                                final categoryLabel =
+                                    categoryOptions
                                         .cast<_DiscoverCategoryOption?>()
                                         .firstWhere(
                                           (option) =>
@@ -600,7 +602,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   item: item,
                                   layout: layout,
                                   categoryLabel: categoryLabel,
-                                  isOwner: currentUserId.isNotEmpty &&
+                                  isOwner:
+                                      currentUserId.isNotEmpty &&
                                       currentUserId == item.hostUserId,
                                   onOpenDetails: () =>
                                       _openActivityDetails(context, item.id),
@@ -952,10 +955,12 @@ class _DiscoverFilterRow extends StatelessWidget {
 
     final locale = Localizations.localeOf(context).toString();
     final formatter = DateFormat('dd MMM', locale);
-    final start =
-        filters.startDate == null ? null : formatter.format(filters.startDate!);
-    final end =
-        filters.endDate == null ? null : formatter.format(filters.endDate!);
+    final start = filters.startDate == null
+        ? null
+        : formatter.format(filters.startDate!);
+    final end = filters.endDate == null
+        ? null
+        : formatter.format(filters.endDate!);
 
     if (start != null && end != null) {
       return '$start-$end';
@@ -994,8 +999,9 @@ class _DiscoverFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground =
-        active ? const Color(0xFF241204) : const Color(0xFFF3DFCA);
+    final foreground = active
+        ? const Color(0xFF241204)
+        : const Color(0xFFF3DFCA);
 
     return Material(
       color: Colors.transparent,
@@ -1119,7 +1125,9 @@ class _DiscoverActivityCard extends StatelessWidget {
     final artSpec = _cardArtForItem(item);
     final badgeText = item.isFree ? l10n.createPriceFree : item.priceLabel;
     final visibilityBadge = _visibilityBadge(item.visibility, l10n);
-    final dateText = DateFormat.MMMd(locale).add_Hm().format(item.startAt.toLocal());
+    final dateText = DateFormat.MMMd(
+      locale,
+    ).add_Hm().format(item.startAt.toLocal());
     final locationText = item.shortLocation.isNotEmpty
         ? item.shortLocation
         : formatActivityStatus(item.status, l10n);
@@ -1682,11 +1690,11 @@ class _CategoryFilterSheetState extends State<_CategoryFilterSheet> {
                           itemCount: widget.options.length,
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 18,
-                            crossAxisSpacing: 18,
-                            childAspectRatio: 0.94,
-                          ),
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 18,
+                                crossAxisSpacing: 18,
+                                childAspectRatio: 0.94,
+                              ),
                           itemBuilder: (context, index) {
                             final option = widget.options[index];
                             final selected = _selectedSlugs.contains(
@@ -2707,10 +2715,12 @@ class _DiscoverFilters {
           ? this.startDate
           : startDate as DateTime?,
       endDate: identical(endDate, _unset) ? this.endDate : endDate as DateTime?,
-      minPrice:
-          identical(minPrice, _unset) ? this.minPrice : minPrice as double?,
-      maxPrice:
-          identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
+      minPrice: identical(minPrice, _unset)
+          ? this.minPrice
+          : minPrice as double?,
+      maxPrice: identical(maxPrice, _unset)
+          ? this.maxPrice
+          : maxPrice as double?,
     );
   }
 }
@@ -2845,9 +2855,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-            .substring(0, newValue.selection.end)
-            .replaceAll(RegExp(r'[^0-9]'), '')
-            .length;
+              .substring(0, newValue.selection.end)
+              .replaceAll(RegExp(r'[^0-9]'), '')
+              .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;
@@ -2874,6 +2884,10 @@ List<ActivityListItemVm> _mergePublishedActivities({
   final itemsById = <String, ActivityListItemVm>{};
 
   for (final item in publicItems) {
+    if (!_isDiscoverListStatus(item.status) ||
+        !_isDiscoverVisibility(item.visibility)) {
+      continue;
+    }
     itemsById[item.id] = item;
   }
 
@@ -2995,7 +3009,8 @@ List<_DiscoverCategoryOption> _buildCategoryOptions(
     options.add(
       _DiscoverCategoryOption(
         slug: slug,
-        label: matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
+        label:
+            matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
                 true
             ? matchedCategory!.localizedName(languageCode)
             : ActivityCategoryVm.humanizeSlug(slug),
@@ -3226,11 +3241,12 @@ List<_PricePreset> _buildPricePresets(
   String currencySymbol,
   AppLocalizations l10n,
 ) {
-  final values = items
-      .where((item) => !item.isFree && (item.priceAmount ?? 0) > 0)
-      .map((item) => item.priceAmount!)
-      .toList()
-    ..sort();
+  final values =
+      items
+          .where((item) => !item.isFree && (item.priceAmount ?? 0) > 0)
+          .map((item) => item.priceAmount!)
+          .toList()
+        ..sort();
 
   if (values.isEmpty) {
     return [

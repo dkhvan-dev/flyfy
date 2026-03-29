@@ -796,6 +796,12 @@ abstract class AppLocalizations {
   /// **'Cancelled'**
   String get activityStatusCancelled;
 
+  /// No description provided for @activityStatusArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get activityStatusArchived;
+
   /// No description provided for @activityFormatOffline.
   ///
   /// In en, this message translates to:
@@ -1006,6 +1012,18 @@ abstract class AppLocalizations {
   /// **'Activity cancelled'**
   String get activityCancelSuccess;
 
+  /// No description provided for @activityArchiveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get activityArchiveButton;
+
+  /// No description provided for @activityArchiveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity moved to archive'**
+  String get activityArchiveSuccess;
+
   /// No description provided for @activityJoinFailed.
   ///
   /// In en, this message translates to:
@@ -1036,6 +1054,12 @@ abstract class AppLocalizations {
   /// **'Failed to cancel the activity'**
   String get activityCancelFailed;
 
+  /// No description provided for @activityArchiveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to move the activity to archive'**
+  String get activityArchiveFailed;
+
   /// No description provided for @activityCancelAlreadyCancelled.
   ///
   /// In en, this message translates to:
@@ -1047,6 +1071,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This activity can no longer be cancelled'**
   String get activityCancelNotAllowed;
+
+  /// No description provided for @activityArchiveAlreadyArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'This activity is already archived'**
+  String get activityArchiveAlreadyArchived;
+
+  /// No description provided for @activityArchiveNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Only cancelled activities can be archived'**
+  String get activityArchiveNotAllowed;
 
   /// No description provided for @activityGoingTitle.
   ///

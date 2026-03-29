@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'core/auth/app_lock_gate.dart';
-import 'core/auth/app_lock_service.dart';
 import 'features/attendance/attendance_sync_manager.dart';
 import 'providers/auth_provider.dart';
 import 'providers/session_provider.dart';
@@ -30,7 +29,6 @@ class _SuperAppState extends State<SuperApp> {
   late final SessionProvider _sessionProvider;
   late final LocaleProvider _localeProvider;
   late final GoRouter _router;
-  final AppLockService _appLockService = AppLockService();
 
   @override
   void initState() {
@@ -101,8 +99,8 @@ class _SuperAppState extends State<SuperApp> {
 
   Future<void> _bootstrapAuth() async {
     await _authProvider.checkAuthStatus();
-    final hasPin = await _appLockService.hasPin();
-    if (!hasPin) {
+    final hasStoredSession = await _authProvider.hasStoredSessionForUnlock();
+    if (hasStoredSession) {
       await _sessionProvider.restoreSession();
       await _authProvider.checkAuthStatus();
     }

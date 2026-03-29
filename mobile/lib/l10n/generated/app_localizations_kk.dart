@@ -383,6 +383,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityStatusCancelled => 'Бас тартылды';
 
   @override
+  String get activityStatusArchived => 'Мұрағатта';
+
+  @override
   String get activityFormatOffline => 'Офлайн';
 
   @override
@@ -493,6 +496,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityCancelSuccess => 'Белсенділік тоқтатылды';
 
   @override
+  String get activityArchiveButton => 'Мұрағатқа жіберу';
+
+  @override
+  String get activityArchiveSuccess => 'Белсенділік мұрағатқа жіберілді';
+
+  @override
   String get activityJoinFailed => 'Белсенділікке жазылу мүмкін болмады';
 
   @override
@@ -510,12 +519,24 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityCancelFailed => 'Белсенділікті тоқтату мүмкін болмады';
 
   @override
+  String get activityArchiveFailed =>
+      'Белсенділікті мұрағатқа жіберу мүмкін болмады';
+
+  @override
   String get activityCancelAlreadyCancelled =>
       'Белсенділік әлдеқашан тоқтатылған';
 
   @override
   String get activityCancelNotAllowed =>
       'Бұл белсенділікті енді тоқтату мүмкін емес';
+
+  @override
+  String get activityArchiveAlreadyArchived =>
+      'Белсенділік әлдеқашан мұрағатта';
+
+  @override
+  String get activityArchiveNotAllowed =>
+      'Мұрағатқа тек тоқтатылған белсенділікті жіберуге болады';
 
   @override
   String activityGoingTitle(int count) {

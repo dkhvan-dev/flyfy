@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:superapp/core/ui/app_colors.dart';
 
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
@@ -29,12 +30,14 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     'REVIEW_REQUIRED',
     'COMPLETED',
     'CANCELLED',
+    'ARCHIVED',
   ];
 
   static const List<String> _attendedFilterOrder = <String>[
     'PUBLISHED',
     'COMPLETED',
     'CANCELLED',
+    'ARCHIVED',
   ];
 
   static const Set<String> _publishedStatuses = <String>{
@@ -231,6 +234,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
         return l10n.activityStatusCompleted;
       case 'CANCELLED':
         return l10n.activityStatusCancelled;
+      case 'ARCHIVED':
+        return l10n.activityStatusArchived;
       default:
         return key;
     }
@@ -360,7 +365,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                             title: _activeTab == _MyActivitiesTab.hosted
                                 ? l10n.myActivitiesLoadFailed
                                 : l10n.myActivitiesAttendedLoadFailed,
-                            message: errorMessage ??
+                            message:
+                                errorMessage ??
                                 (_activeTab == _MyActivitiesTab.hosted
                                     ? l10n.myActivitiesLoadFailed
                                     : l10n.myActivitiesAttendedLoadFailed),
@@ -393,8 +399,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                                   return;
                                 }
 
-                                final status =
-                                    filteredItems[i].status.toUpperCase();
+                                final status = filteredItems[i].status
+                                    .toUpperCase();
                                 if (status == 'DRAFT') {
                                   _openEdit(filteredItems[i]);
                                   return;
@@ -402,14 +408,20 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                                 if (status == 'REVIEW_REQUIRED') {
                                   return;
                                 }
+                                if (status == 'COMPLETED' ||
+                                    status == 'CANCELLED' ||
+                                    status == 'ARCHIVED') {
+                                  _openDetails(filteredItems[i]);
+                                  return;
+                                }
                                 _openEdit(filteredItems[i]);
                               },
                               onSecondaryTap:
                                   _activeTab == _MyActivitiesTab.hosted
-                                      ? () => _showComingSoon()
-                                      : null,
-                              onTertiaryTap: _activeTab ==
-                                          _MyActivitiesTab.hosted &&
+                                  ? () => _showComingSoon()
+                                  : null,
+                              onTertiaryTap:
+                                  _activeTab == _MyActivitiesTab.hosted &&
                                       filteredItems[i].status.toUpperCase() ==
                                           'DRAFT'
                                   ? _showComingSoon
@@ -517,8 +529,8 @@ class _MyActivitiesAdaptiveLayout {
   double get horizontalPadding => isCompact
       ? 16
       : isLargePhone
-          ? 24
-          : 20;
+      ? 24
+      : 20;
   double get topPadding => isCompact ? 12 : 14;
   double get topSectionSpacing => isCompact ? 14 : 16;
   double get sectionSpacing => isCompact ? 16 : 18;
@@ -805,6 +817,13 @@ class _MyActivitiesCard extends StatelessWidget {
 
   bool get _isDraft => item.status.toUpperCase() == 'DRAFT';
   bool get _isReviewRequired => item.status.toUpperCase() == 'REVIEW_REQUIRED';
+  bool get _isHostedReadOnly =>
+      tab == _MyActivitiesTab.hosted &&
+      const {
+        'COMPLETED',
+        'CANCELLED',
+        'ARCHIVED',
+      }.contains(item.status.toUpperCase());
 
   @override
   Widget build(BuildContext context) {
@@ -878,8 +897,9 @@ class _MyActivitiesCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _PriceBlock(
-                            value:
-                                item.isFree ? l10n.freeLabel : item.priceLabel,
+                            value: item.isFree
+                                ? l10n.freeLabel
+                                : item.priceLabel,
                             note: item.isFree
                                 ? l10n.myActivitiesPriceNoteFree
                                 : l10n.createPricePerPersonHint,
@@ -1001,6 +1021,56 @@ class _MyActivitiesCard extends StatelessWidget {
           _IconOnlyActionButton(
             icon: Icons.delete_outline_rounded,
             onTap: onTertiaryTap,
+          ),
+        ],
+      );
+    }
+
+    if (_isHostedReadOnly) {
+      if (stackPrimaryActions) {
+        return Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: _CardActionButton(
+                label: l10n.myActivitiesOpenButton,
+                icon: Icons.open_in_new_rounded,
+                onTap: onPrimaryTap,
+                variant: _CardActionVariant.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: _CardActionButton(
+                label: l10n.myActivitiesRecreateButton,
+                icon: Icons.copy_rounded,
+                onTap: onSecondaryTap,
+                variant: _CardActionVariant.secondary,
+              ),
+            ),
+          ],
+        );
+      }
+
+      return Row(
+        children: [
+          Expanded(
+            child: _CardActionButton(
+              label: l10n.myActivitiesOpenButton,
+              icon: Icons.open_in_new_rounded,
+              onTap: onPrimaryTap,
+              variant: _CardActionVariant.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _CardActionButton(
+              label: l10n.myActivitiesRecreateButton,
+              icon: Icons.copy_rounded,
+              onTap: onSecondaryTap,
+              variant: _CardActionVariant.secondary,
+            ),
           ),
         ],
       );
@@ -1142,6 +1212,11 @@ class _ActivityCover extends StatelessWidget {
           background: _MyActivitiesPalette.badgeCancelled,
           foreground: Color(0xFFF8D1CB),
         );
+      case 'ARCHIVED':
+        return const _StatusBadgeStyle(
+          background: Color(0xFF3C342E),
+          foreground: Color(0xFFE7D7C7),
+        );
       default:
         return const _StatusBadgeStyle(
           background: _MyActivitiesPalette.accent,
@@ -1230,8 +1305,9 @@ class _PriceBlock extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: alignStart ? 220 : 112),
       child: Column(
-        crossAxisAlignment:
-            alignStart ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        crossAxisAlignment: alignStart
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.end,
         children: [
           Text(
             value,
@@ -1316,15 +1392,15 @@ class _CardActionButton extends StatelessWidget {
     final backgroundColor = switch (variant) {
       _CardActionVariant.primary => _MyActivitiesPalette.accent,
       _CardActionVariant.secondary => _MyActivitiesPalette.accent.withValues(
-          alpha: 0.08,
-        ),
+        alpha: 0.08,
+      ),
       _CardActionVariant.disabled => _MyActivitiesPalette.accent.withValues(
-          alpha: 0.05,
-        ),
+        alpha: 0.05,
+      ),
     };
 
     final foregroundColor = switch (variant) {
-      _CardActionVariant.primary => const Color(0xFF201000),
+      _CardActionVariant.primary => AppColors.textPrimary,
       _CardActionVariant.secondary => const Color(0xFFF0DFC8),
       _CardActionVariant.disabled => const Color(0xFF9A856F),
     };
@@ -1844,7 +1920,8 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                                 controller: _startDateController,
                                 focusNode: _startDateFocusNode,
                                 hintText: widget
-                                    .l10n.myActivitiesFilterDatePlaceholder,
+                                    .l10n
+                                    .myActivitiesFilterDatePlaceholder,
                                 errorText: _startDateError,
                                 onChanged: (_) => _handleDateChanged(),
                                 onSubmitted: (_) =>
@@ -1859,7 +1936,8 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                                 controller: _endDateController,
                                 focusNode: _endDateFocusNode,
                                 hintText: widget
-                                    .l10n.myActivitiesFilterDatePlaceholder,
+                                    .l10n
+                                    .myActivitiesFilterDatePlaceholder,
                                 errorText: _endDateError,
                                 onChanged: (_) => _handleDateChanged(),
                                 onSubmitted: (_) => _applyFilters(),
@@ -2140,9 +2218,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-            .substring(0, newValue.selection.end)
-            .replaceAll(RegExp(r'[^0-9]'), '')
-            .length;
+              .substring(0, newValue.selection.end)
+              .replaceAll(RegExp(r'[^0-9]'), '')
+              .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;
