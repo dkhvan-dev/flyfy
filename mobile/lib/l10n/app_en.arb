@@ -341,6 +341,22 @@
   "createRegistrationDeadlineLabel": "Registration deadline",
   "createEndDateValidation": "End date must be after start date",
   "createStartAtTooSoonValidation": "Start time must be at least 1 hour from now",
+  "createStartAtMonthLimitValidation": "Start date must be no later than {date}",
+  "@createStartAtMonthLimitValidation": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "createEndAtMonthLimitValidation": "End date must be no later than {date}",
+  "@createEndAtMonthLimitValidation": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "createRegistrationDeadlineValidation": "Registration deadline must be before the start time",
   "createRegistrationAutoHint": "Registration closes automatically 1 hour before the activity starts",
   "createSaveDraft": "Save Draft",
@@ -381,7 +397,8 @@
   "createParticipantsMinShort": "MIN",
   "createParticipantsMaxShort": "MAX",
   "createNoLimitPlaceholder": "No limit",
-  "createMaxParticipantsValidation": "Please enter a valid maximum number",
+  "createMaxParticipantsValidation": "Please enter a maximum between 1 and 100 participants",
+  "createMinParticipantsValidation": "Please enter a minimum of at least 1 participant",
   "createMinExceedsMaxValidation": "Minimum cannot exceed maximum",
   "createPriceSection": "PRICING",
   "createPriceFree": "Free",
@@ -425,7 +442,7 @@
   "activityPublishFailed": "Failed to publish activity",
   "editFormatLocked": "Format cannot be changed after creation",
   "editLocationLocked": "Location cannot be changed after publication",
-  "editPriceRestrictionHint": "Price cannot be changed if participants have already joined",
+  "editPriceRestrictionHint": "Price cannot be changed if other participants have already joined",
   "myActivitiesTitle": "My Activities",
   "myActivitiesEmpty": "You haven't created any activities yet",
   "myActivitiesEmptyHint": "Create your first activity and it will appear here",

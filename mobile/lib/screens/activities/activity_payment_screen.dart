@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
+import '../../features/activities/activity_currency.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
@@ -158,7 +159,11 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
         ? sessionProfile!.preferredName
         : l10n.activityPaymentCardHolderFallback;
     final compact = MediaQuery.sizeOf(context).width < 360;
-    final totalLabel = _formatMoney(activity.priceAmount, activity.currency);
+    final totalLabel = formatActivityMoney(
+      amount: activity.priceAmount,
+      currency: activity.currency,
+      countryCode: activity.countryCode,
+    );
 
     return Scaffold(
       backgroundColor: _PaymentColors.base,
@@ -227,9 +232,10 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
                                 admissionValue: totalLabel,
                                 serviceFeeLabel:
                                     l10n.activityPaymentServiceFeeLabel,
-                                serviceFeeValue: _formatMoney(
-                                  0,
-                                  activity.currency,
+                                serviceFeeValue: formatActivityMoney(
+                                  amount: 0,
+                                  currency: activity.currency,
+                                  countryCode: activity.countryCode,
                                 ),
                                 totalLabel: l10n.activityDetailsTotalLabel,
                                 totalValue: totalLabel,
@@ -1087,19 +1093,4 @@ String _formatPaymentDateTime(DateTime value, String locale) {
   final date = DateFormat.MMMd(locale).format(local);
   final time = DateFormat.jm(locale).format(local);
   return '$date • $time';
-}
-
-String _formatMoney(num? amount, String? currency) {
-  if (amount == null) {
-    return (currency ?? '').trim().isEmpty ? '0' : '0 ${currency!.trim()}';
-  }
-
-  final numeric = amount % 1 == 0
-      ? amount.toStringAsFixed(0)
-      : amount.toStringAsFixed(2);
-  final trimmedCurrency = (currency ?? '').trim();
-  if (trimmedCurrency.isEmpty) {
-    return numeric;
-  }
-  return '$numeric $trimmedCurrency';
 }

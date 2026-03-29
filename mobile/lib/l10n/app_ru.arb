@@ -341,6 +341,22 @@
   "createRegistrationDeadlineLabel": "Крайний срок регистрации",
   "createEndDateValidation": "Дата окончания должна быть после начала",
   "createStartAtTooSoonValidation": "Начало должно быть не менее чем через 1 час",
+  "createStartAtMonthLimitValidation": "Дата начала должна быть не позднее {date}",
+  "@createStartAtMonthLimitValidation": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "createEndAtMonthLimitValidation": "Дата окончания должна быть не позднее {date}",
+  "@createEndAtMonthLimitValidation": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "createRegistrationDeadlineValidation": "Крайний срок регистрации должен быть до начала",
   "createRegistrationAutoHint": "Регистрация закрывается автоматически за 1 час до начала активности",
   "createSaveDraft": "Сохранить черновик",
@@ -381,7 +397,8 @@
   "createParticipantsMinShort": "МИН",
   "createParticipantsMaxShort": "МАКС",
   "createNoLimitPlaceholder": "Без лимита",
-  "createMaxParticipantsValidation": "Укажите корректное максимальное число",
+  "createMaxParticipantsValidation": "Укажите максимум от 1 до 100 участников",
+  "createMinParticipantsValidation": "Укажите минимум не меньше 1 участника",
   "createMinExceedsMaxValidation": "Минимум не может превышать максимум",
   "createPriceSection": "СТОИМОСТЬ",
   "createPriceFree": "Бесплатно",
@@ -425,7 +442,7 @@
   "activityPublishFailed": "Не удалось опубликовать активность",
   "editFormatLocked": "Формат нельзя изменить после создания",
   "editLocationLocked": "Место проведения нельзя изменить после публикации",
-  "editPriceRestrictionHint": "Цену нельзя изменить, если участники уже записались",
+  "editPriceRestrictionHint": "Цену нельзя изменить, если записались другие участники",
   "myActivitiesTitle": "Мои активности",
   "myActivitiesEmpty": "У вас пока нет созданных активностей",
   "myActivitiesEmptyHint": "Создайте первую активность, и она появится здесь",

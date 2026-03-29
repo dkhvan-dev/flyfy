@@ -1,3 +1,5 @@
+import '../activity_currency.dart';
+
 class ActivityListItemVm {
   ActivityListItemVm({
     required this.id,
@@ -131,13 +133,17 @@ class ActivityListItemVm {
 
   bool get isFree => priceType.toUpperCase() == 'FREE';
 
+  String? get resolvedCurrencyCode =>
+      resolveActivityCurrencyCode(currency: currency, countryCode: countryCode);
+
   String get priceLabel {
     if (isFree) return 'FREE';
     if (priceAmount == null) return priceType;
     final amount = priceAmount! % 1 == 0
         ? priceAmount!.toStringAsFixed(0)
         : priceAmount!.toStringAsFixed(2);
-    if ((currency ?? '').trim().isEmpty) return amount;
-    return '$amount $currency';
+    final resolvedCurrency = resolvedCurrencyCode;
+    if (resolvedCurrency == null) return amount;
+    return '$amount $resolvedCurrency';
   }
 }

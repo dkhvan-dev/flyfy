@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/device/device_context_service.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
@@ -22,6 +23,9 @@ import '../../features/activities/models/create_activity_request.dart';
 import '../../features/activities/models/update_activity_request.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
+import '../../providers/session_provider.dart';
+
+const _inlineValidationColor = Color(0xFFFF8A65);
 
 class CreateActivityScreen extends StatefulWidget {
   const CreateActivityScreen({
@@ -47,12 +51,15 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   final _pageController = PageController();
   final _imagePicker = ImagePicker();
   final _fileApi = FileApi();
+  final _deviceContextService = const DeviceContextService();
   int _currentStep = 0;
   int? _pendingProgrammaticStep;
   static const _totalSteps = 3;
   static const double _stepBackSwipeMinDistance = 56;
   static const double _stepBackSwipeMinVelocity = 700;
   static const int _maxCoverUploadBytes = 20 * 1024 * 1024;
+  static const int _lateMonthCarryoverDays = 3;
+  static const int _maxLimitedParticipants = 100;
 
   // — Step 1: Basic —
   final _titleCtrl = TextEditingController();
@@ -108,6 +115,18 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   bool _isSubmitting = false;
   bool _isTrackingStepBackSwipe = false;
   double _stepBackSwipeDistance = 0;
+
+  String? _titleErrorText;
+  String? _descriptionErrorText;
+  String? _categoryErrorText;
+  String? _addressErrorText;
+  String? _meetingUrlErrorText;
+  String? _startAtErrorText;
+  String? _endAtErrorText;
+  String? _visibilityPasswordErrorText;
+  String? _priceAmountErrorText;
+  String? _minParticipantsErrorText;
+  String? _maxParticipantsErrorText;
 
   // Track whether the user changed date/time fields in edit mode.
   bool _startAtChanged = false;
@@ -196,6 +215,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               provider.categoryItems.isEmpty)) {
         provider.loadActivityCategories();
       }
+      _prefillPricingContext();
     });
 
     _cityNameCtrl.addListener(_handleLocationPreviewChanged);
@@ -241,6 +261,226 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   void _handleLocationPreviewChanged() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  Future<void> _prefillPricingContext() async {
+    final profile = context.read<SessionProvider>().profile;
+    final profileCountryCode = _normalizeCountryCode(profile?.countryCode);
+    final profileCurrencyCode = _normalizeCurrencyCode(profile?.currency);
+    final currentCountryCode = _normalizeCountryCode(_countryCodeCtrl.text);
+    final currentCurrencyCode = _normalizeCurrencyCode(_currencyCtrl.text);
+    final initialCountryCode = widget.hasInitialActivity
+        ? currentCountryCode
+        : (profileCountryCode ?? currentCountryCode);
+    final initialCurrencyCode = widget.hasInitialActivity
+        ? (currentCurrencyCode ??
+              _currencyForCountryCode(initialCountryCode) ??
+              profileCurrencyCode)
+        : (profileCurrencyCode ??
+              _currencyForCountryCode(initialCountryCode) ??
+              currentCurrencyCode);
+
+    if (mounted) {
+      setState(() {
+        _applyCountryAndCurrency(
+          initialCountryCode,
+          fallbackCurrency: initialCurrencyCode,
+        );
+      });
+    }
+
+    if (widget.hasInitialActivity) {
+      return;
+    }
+
+    try {
+      final suggestion = await _deviceContextService.detectLocationSuggestion();
+      if (!mounted || suggestion == null) return;
+
+      final detectedCountryCode = _normalizeCountryCode(suggestion.countryCode);
+      if (detectedCountryCode == null) return;
+
+      setState(() {
+        _applyCountryAndCurrency(
+          detectedCountryCode,
+          fallbackCurrency:
+              profileCurrencyCode ?? _normalizeCurrencyCode(_currencyCtrl.text),
+        );
+      });
+    } catch (_) {
+      // Keep profile/default pricing context when device location is unavailable.
+    }
+  }
+
+  void _applyCountryAndCurrency(
+    String? countryCode, {
+    String? fallbackCurrency,
+  }) {
+    final normalizedCountryCode = _normalizeCountryCode(countryCode);
+    if (normalizedCountryCode != null) {
+      _countryCodeCtrl.text = normalizedCountryCode;
+    }
+
+    final resolvedCurrencyCode =
+        _currencyForCountryCode(normalizedCountryCode) ??
+        _normalizeCurrencyCode(fallbackCurrency);
+    if (resolvedCurrencyCode != null) {
+      _currencyCtrl.text = resolvedCurrencyCode;
+    }
+  }
+
+  String? _normalizeCountryCode(String? value) {
+    final normalized = value?.trim().toUpperCase();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
+  }
+
+  String? _normalizeCurrencyCode(String? value) {
+    final normalized = value?.trim().toUpperCase();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
+  }
+
+  String? _currencyForCountryCode(String? countryCode) {
+    switch (_normalizeCountryCode(countryCode)) {
+      case 'KZ':
+        return 'KZT';
+      case 'KG':
+        return 'KGS';
+      case 'UZ':
+        return 'UZS';
+      case 'TJ':
+        return 'TJS';
+      case 'TM':
+        return 'TMT';
+      case 'RU':
+        return 'RUB';
+      case 'BY':
+        return 'BYN';
+      case 'UA':
+        return 'UAH';
+      case 'AZ':
+        return 'AZN';
+      case 'AM':
+        return 'AMD';
+      case 'GE':
+        return 'GEL';
+      case 'TR':
+        return 'TRY';
+      case 'AE':
+        return 'AED';
+      case 'SA':
+        return 'SAR';
+      case 'QA':
+        return 'QAR';
+      case 'KW':
+        return 'KWD';
+      case 'BH':
+        return 'BHD';
+      case 'OM':
+        return 'OMR';
+      case 'EG':
+        return 'EGP';
+      case 'IL':
+        return 'ILS';
+      case 'JO':
+        return 'JOD';
+      case 'US':
+        return 'USD';
+      case 'CA':
+        return 'CAD';
+      case 'MX':
+        return 'MXN';
+      case 'BR':
+        return 'BRL';
+      case 'AR':
+        return 'ARS';
+      case 'CL':
+        return 'CLP';
+      case 'CO':
+        return 'COP';
+      case 'PE':
+        return 'PEN';
+      case 'GB':
+        return 'GBP';
+      case 'CH':
+        return 'CHF';
+      case 'NO':
+        return 'NOK';
+      case 'SE':
+        return 'SEK';
+      case 'DK':
+        return 'DKK';
+      case 'PL':
+        return 'PLN';
+      case 'CZ':
+        return 'CZK';
+      case 'HU':
+        return 'HUF';
+      case 'RO':
+        return 'RON';
+      case 'BG':
+        return 'BGN';
+      case 'RS':
+        return 'RSD';
+      case 'IS':
+        return 'ISK';
+      case 'DE':
+      case 'FR':
+      case 'ES':
+      case 'IT':
+      case 'NL':
+      case 'BE':
+      case 'AT':
+      case 'IE':
+      case 'PT':
+      case 'FI':
+      case 'GR':
+      case 'LU':
+      case 'SI':
+      case 'SK':
+      case 'EE':
+      case 'LV':
+      case 'LT':
+      case 'CY':
+      case 'MT':
+      case 'HR':
+        return 'EUR';
+      case 'IN':
+        return 'INR';
+      case 'CN':
+        return 'CNY';
+      case 'JP':
+        return 'JPY';
+      case 'KR':
+        return 'KRW';
+      case 'HK':
+        return 'HKD';
+      case 'SG':
+        return 'SGD';
+      case 'MY':
+        return 'MYR';
+      case 'TH':
+        return 'THB';
+      case 'ID':
+        return 'IDR';
+      case 'PH':
+        return 'PHP';
+      case 'VN':
+        return 'VND';
+      case 'PK':
+        return 'PKR';
+      case 'AU':
+        return 'AUD';
+      case 'NZ':
+        return 'NZD';
+      default:
+        return null;
+    }
   }
 
   bool get _hasExistingCoverImage {
@@ -385,6 +625,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   void _setUnlimitedParticipants(bool value) {
     setState(() {
       _capacityType = value ? 'UNLIMITED' : 'LIMITED';
+      _minParticipantsErrorText = null;
+      _maxParticipantsErrorText = null;
       if (!value) {
         if (_minParticipants <= 0) {
           _minParticipants = 1;
@@ -400,17 +642,26 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   void _handleMinParticipantsChanged(String value) {
     final parsed = int.tryParse(value.trim());
-    setState(() => _minParticipants = parsed ?? 0);
+    setState(() {
+      _minParticipants = parsed ?? 0;
+      _minParticipantsErrorText = null;
+      _maxParticipantsErrorText = null;
+    });
   }
 
   void _handleMaxParticipantsChanged(String value) {
     final parsed = int.tryParse(value.trim());
-    setState(() => _maxParticipants = parsed ?? 0);
+    setState(() {
+      _maxParticipants = parsed ?? 0;
+      _maxParticipantsErrorText = null;
+      _minParticipantsErrorText = null;
+    });
   }
 
   void _setVisibility(String value) {
     setState(() {
       _visibility = value;
+      _visibilityPasswordErrorText = null;
       if (value != 'PRIVATE') {
         _visibilityPasswordCtrl.clear();
         _visibilityPasswordChanged = true;
@@ -419,16 +670,16 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   }
 
   void _handleVisibilityPasswordChanged(String _) {
-    if (_visibilityPasswordChanged) return;
-    setState(() => _visibilityPasswordChanged = true);
+    setState(() {
+      _visibilityPasswordChanged = true;
+      _visibilityPasswordErrorText = null;
+    });
   }
 
   void _setPriceType(String value) {
     setState(() {
       _priceType = value;
-      if (value == 'FREE') {
-        _priceAmountCtrl.clear();
-      }
+      _priceAmountErrorText = null;
     });
   }
 
@@ -446,6 +697,61 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   DateTime _defaultEndAt(DateTime startAt) =>
       startAt.add(const Duration(minutes: 30));
+
+  DateTime _endOfDay(DateTime value) =>
+      DateTime(value.year, value.month, value.day, 23, 59, 59, 999, 999);
+
+  DateTime _endOfMonth(DateTime value) =>
+      _endOfDay(DateTime(value.year, value.month + 1, 0));
+
+  DateTime _addCalendarMonthClamped(DateTime value) {
+    final nextMonth = DateTime(
+      value.year,
+      value.month + 1,
+      1,
+      value.hour,
+      value.minute,
+      value.second,
+      value.millisecond,
+      value.microsecond,
+    );
+    final lastDayOfNextMonth = DateTime(
+      nextMonth.year,
+      nextMonth.month + 1,
+      0,
+    ).day;
+    final clampedDay = value.day > lastDayOfNextMonth
+        ? lastDayOfNextMonth
+        : value.day;
+    return DateTime(
+      nextMonth.year,
+      nextMonth.month,
+      clampedDay,
+      value.hour,
+      value.minute,
+      value.second,
+      value.millisecond,
+      value.microsecond,
+    );
+  }
+
+  bool _isNearMonthEnd(DateTime value) {
+    final lastDay = DateTime(value.year, value.month + 1, 0).day;
+    return value.day >= lastDay - (_lateMonthCarryoverDays - 1);
+  }
+
+  DateTime _maxAllowedStartAt(DateTime now) {
+    final monthWindowLimit = _isNearMonthEnd(now)
+        ? _endOfMonth(DateTime(now.year, now.month + 2, 0))
+        : _endOfMonth(now);
+    final monthAheadLimit = _endOfDay(_addCalendarMonthClamped(now));
+    return monthWindowLimit.isBefore(monthAheadLimit)
+        ? monthWindowLimit
+        : monthAheadLimit;
+  }
+
+  DateTime _maxAllowedEndAt(DateTime startAt) =>
+      _addCalendarMonthClamped(startAt);
 
   bool get _hasCustomEndScheduleInput => _endAtCtrl.text.trim().isNotEmpty;
 
@@ -468,56 +774,93 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     }
   }
 
-  DateTime? _resolveScheduleInput({
-    required TextEditingController controller,
-    required DateTime fallback,
-  }) {
-    final text = controller.text.trim();
-    return text.isEmpty ? fallback : _parseDateTimeInput(text);
-  }
+  bool _validateScheduleStep(AppLocalizations l10n) {
+    final parsedStartAt = _parseDateTimeInput(_startAtCtrl.text.trim());
+    final parsedEndAt = _parseDateTimeInput(_endAtCtrl.text.trim());
 
-  bool _syncScheduleStateFromInputs() {
-    final nextStartAt = _resolveScheduleInput(
-      controller: _startAtCtrl,
-      fallback: _startAt,
-    );
-    final nextEndAt = _resolveScheduleInput(
-      controller: _endAtCtrl,
-      fallback: _endAt,
-    );
+    String? startError;
+    String? endError;
 
-    if (nextStartAt == null || nextEndAt == null) {
-      return false;
+    if (parsedStartAt == null) {
+      startError = l10n.createScheduleInputValidation;
+    }
+    if (parsedEndAt == null) {
+      endError = l10n.createScheduleInputValidation;
     }
 
-    final startChanged = nextStartAt != _startAt;
-    final endChanged = nextEndAt != _endAt;
+    if (parsedStartAt != null && parsedEndAt != null) {
+      final now = DateTime.now();
+      final shouldValidateStartWindow = !widget.isEditMode || _startAtChanged;
+      if (shouldValidateStartWindow &&
+          !parsedStartAt.isAfter(now.add(const Duration(hours: 1)))) {
+        startError = l10n.createStartAtTooSoonValidation;
+      }
 
-    _startAt = nextStartAt;
-    _endAt = nextEndAt;
-    _startAtChanged = _startAtChanged || startChanged;
-    _endAtChanged = _endAtChanged || endChanged;
-    return true;
+      if (startError == null && shouldValidateStartWindow) {
+        final maxStartAt = _maxAllowedStartAt(now);
+        if (parsedStartAt.isAfter(maxStartAt)) {
+          startError = l10n.createStartAtMonthLimitValidation(
+            _formatDateTimeInput(maxStartAt),
+          );
+        }
+      }
+
+      if (startError == null && !parsedEndAt.isAfter(parsedStartAt)) {
+        endError = l10n.createEndDateValidation;
+      }
+
+      final shouldValidateEndWindow =
+          !widget.isEditMode || _startAtChanged || _endAtChanged;
+      if (startError == null && endError == null && shouldValidateEndWindow) {
+        final maxEndAt = _maxAllowedEndAt(parsedStartAt);
+        if (parsedEndAt.isAfter(maxEndAt)) {
+          endError = l10n.createEndAtMonthLimitValidation(
+            _formatDateTimeInput(maxEndAt),
+          );
+        }
+      }
+
+      if (startError == null && endError == null) {
+        final startChanged = parsedStartAt != _startAt;
+        final endChanged = parsedEndAt != _endAt;
+        _startAt = parsedStartAt;
+        _endAt = parsedEndAt;
+        _startAtChanged = _startAtChanged || startChanged;
+        _endAtChanged = _endAtChanged || endChanged;
+      }
+    }
+
+    setState(() {
+      _startAtErrorText = startError;
+      _endAtErrorText = endError;
+    });
+
+    return startError == null && endError == null;
   }
 
   void _handleStartAtChanged(String value) {
     final parsed = _parseDateTimeInput(value);
-    if (parsed == null) return;
     setState(() {
-      _startAt = parsed;
-      _startAtChanged = true;
-      if (!_hasCustomEndScheduleInput) {
-        _endAt = _defaultEndAt(_startAt);
+      _startAtErrorText = null;
+      _endAtErrorText = null;
+      if (parsed != null) {
+        _startAt = parsed;
+        _startAtChanged = true;
+        if (!_hasCustomEndScheduleInput) {
+          _endAt = _defaultEndAt(_startAt);
+        }
       }
     });
   }
 
   void _handleEndAtChanged(String value) {
     final parsed = _parseDateTimeInput(value);
-    if (parsed == null) return;
     setState(() {
-      _endAt = parsed;
-      _endAtChanged = true;
+      _endAtErrorText = null;
+      if (parsed != null) {
+        _endAt = parsed;
+        _endAtChanged = true;
+      }
     });
   }
 
@@ -621,16 +964,24 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
     switch (_currentStep) {
       case 0:
-        if (_titleCtrl.text.trim().length < 3) {
-          _showValidationError(l10n.createTitleValidation);
-          return false;
-        }
-        if (_descriptionCtrl.text.trim().length < 10) {
-          _showValidationError(l10n.createDescriptionValidation);
-          return false;
-        }
-        if ((_selectedCategorySlug ?? '').trim().isEmpty) {
-          _showValidationError(l10n.createCategoryValidation);
+        final titleError = _titleCtrl.text.trim().length < 3
+            ? l10n.createTitleValidation
+            : null;
+        final descriptionError = _descriptionCtrl.text.trim().length < 10
+            ? l10n.createDescriptionValidation
+            : null;
+        final categoryError = (_selectedCategorySlug ?? '').trim().isEmpty
+            ? l10n.createCategoryValidation
+            : null;
+        setState(() {
+          _titleErrorText = titleError;
+          _descriptionErrorText = descriptionError;
+          _categoryErrorText = categoryError;
+        });
+
+        if (titleError != null ||
+            descriptionError != null ||
+            categoryError != null) {
           return false;
         }
         if (_isCoverUploading) {
@@ -643,59 +994,71 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         }
         return true;
       case 1:
-        if (!_syncScheduleStateFromInputs()) {
-          _showValidationError(l10n.createScheduleInputValidation);
+        if (!_validateScheduleStep(l10n)) {
           return false;
         }
-        if (!widget.isEditMode &&
-            !_startAt.isAfter(DateTime.now().add(const Duration(hours: 1)))) {
-          _showValidationError(l10n.createStartAtTooSoonValidation);
+        final meetingUrlError =
+            (_format == 'ONLINE' || _format == 'HYBRID') &&
+                _meetingUrlCtrl.text.trim().isEmpty
+            ? l10n.createMeetingUrlValidation
+            : null;
+        final addressError =
+            (_format == 'OFFLINE' || _format == 'HYBRID') &&
+                _cityNameCtrl.text.trim().isEmpty &&
+                _addressTextCtrl.text.trim().isEmpty
+            ? l10n.createLocationValidation
+            : null;
+        setState(() {
+          _meetingUrlErrorText = meetingUrlError;
+          _addressErrorText = addressError;
+        });
+
+        if (meetingUrlError != null || addressError != null) {
           return false;
-        }
-        if (!_endAt.isAfter(_startAt)) {
-          _showValidationError(l10n.createEndDateValidation);
-          return false;
-        }
-        if (_format == 'ONLINE' || _format == 'HYBRID') {
-          if (_meetingUrlCtrl.text.trim().isEmpty) {
-            _showValidationError(l10n.createMeetingUrlValidation);
-            return false;
-          }
-        }
-        if (_format == 'OFFLINE' || _format == 'HYBRID') {
-          if (_cityNameCtrl.text.trim().isEmpty &&
-              _addressTextCtrl.text.trim().isEmpty) {
-            _showValidationError(l10n.createLocationValidation);
-            return false;
-          }
         }
         return true;
       case 2:
+        String? visibilityPasswordError;
+        String? maxParticipantsError;
+        String? minParticipantsError;
+        String? priceAmountError;
+
         if (_shouldRequireVisibilityPassword) {
           final password = _visibilityPasswordValue ?? '';
           if (password.length < 4 || password.length > 64) {
-            _showValidationError(l10n.createVisibilityPasswordValidation);
-            return false;
+            visibilityPasswordError = l10n.createVisibilityPasswordValidation;
           }
         }
         if (_capacityType == 'LIMITED') {
-          if (_maxParticipants <= 0) {
-            _showValidationError(l10n.createMaxParticipantsValidation);
-            return false;
+          if (_minParticipants < 1) {
+            minParticipantsError = l10n.createMinParticipantsValidation;
           }
-          if (_minParticipants > _maxParticipants) {
-            _showValidationError(l10n.createMinExceedsMaxValidation);
-            return false;
+          if (_maxParticipants <= 0 ||
+              _maxParticipants > _maxLimitedParticipants) {
+            maxParticipantsError = l10n.createMaxParticipantsValidation;
+          } else if (minParticipantsError == null &&
+              _minParticipants > _maxParticipants) {
+            minParticipantsError = l10n.createMinExceedsMaxValidation;
+            maxParticipantsError = l10n.createMinExceedsMaxValidation;
           }
         }
         if (_priceType != 'FREE') {
           final amount = double.tryParse(_priceAmountCtrl.text.trim());
           if (amount == null || amount <= 0) {
-            _showValidationError(l10n.createPriceValidation);
-            return false;
+            priceAmountError = l10n.createPriceValidation;
           }
         }
-        return true;
+        setState(() {
+          _visibilityPasswordErrorText = visibilityPasswordError;
+          _minParticipantsErrorText = minParticipantsError;
+          _maxParticipantsErrorText = maxParticipantsError;
+          _priceAmountErrorText = priceAmountError;
+        });
+
+        return visibilityPasswordError == null &&
+            minParticipantsError == null &&
+            maxParticipantsError == null &&
+            priceAmountError == null;
       default:
         return true;
     }
@@ -1098,6 +1461,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     if (!mounted || selected == null) return;
     setState(() {
       _selectedCategorySlug = _normalizeCategorySlug(selected);
+      _categoryErrorText = null;
     });
   }
 
@@ -1251,7 +1615,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         setState(() {
           final isoCountryCode = placemark.isoCountryCode?.trim() ?? '';
           if (isoCountryCode.isNotEmpty) {
-            _countryCodeCtrl.text = isoCountryCode;
+            _applyCountryAndCurrency(
+              isoCountryCode,
+              fallbackCurrency: _currencyCtrl.text,
+            );
           }
           if (city.isNotEmpty) {
             _cityNameCtrl.text = city;
@@ -1259,6 +1626,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           if (address.isNotEmpty) {
             _addressTextCtrl.text = address;
           }
+          _addressErrorText = null;
           _isResolvingMapSelection = false;
         });
         return;
@@ -1438,6 +1806,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             controller: _titleCtrl,
             hint: l10n.createTitleHint,
             maxLength: 200,
+            errorText: _titleErrorText,
+            onChanged: (_) {
+              if (_titleErrorText == null) return;
+              setState(() => _titleErrorText = null);
+            },
           ),
         ),
         SizedBox(height: blockSpacing),
@@ -1449,6 +1822,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             maxLines: 5,
             minHeight: descriptionHeight,
             isMultiline: true,
+            errorText: _descriptionErrorText,
+            onChanged: (_) {
+              if (_descriptionErrorText == null) return;
+              setState(() => _descriptionErrorText = null);
+            },
           ),
         ),
         SizedBox(height: blockSpacing),
@@ -1500,6 +1878,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 value: items[_selectedCategorySlug] ?? l10n.createCategoryHint,
                 isPlaceholder: _selectedCategorySlug == null,
                 onTap: () => _openCategoryPicker(l10n, items),
+                errorText: _categoryErrorText,
               );
             },
           ),
@@ -1565,7 +1944,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   'ONLINE': Icons.videocam_outlined,
                   'HYBRID': Icons.layers_outlined,
                 },
-                onChanged: (v) => setState(() => _format = v),
+                onChanged: (v) => setState(() {
+                  _format = v;
+                  _addressErrorText = null;
+                  _meetingUrlErrorText = null;
+                }),
               ),
             ),
           ),
@@ -1589,6 +1972,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   controller: _addressTextCtrl,
                   hint: l10n.createVenueOrAddressHint,
                   icon: Icons.location_on_outlined,
+                  errorText: _addressErrorText,
+                  onChanged: (_) {
+                    if (_addressErrorText == null) return;
+                    setState(() => _addressErrorText = null);
+                  },
                 ),
               ),
             ),
@@ -1641,6 +2029,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               hint: l10n.createMeetingUrlHint,
               icon: Icons.link_rounded,
               keyboardType: TextInputType.url,
+              errorText: _meetingUrlErrorText,
+              onChanged: (_) {
+                if (_meetingUrlErrorText == null) return;
+                setState(() => _meetingUrlErrorText = null);
+              },
             ),
           ),
           const SizedBox(height: 18),
@@ -1653,6 +2046,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           keyboardType: TextInputType.datetime,
           inputFormatters: const [_dateTimeInputFormatter],
           onChanged: _handleStartAtChanged,
+          errorText: _startAtErrorText,
         ),
         const SizedBox(height: 16),
         _Step2PickerField(
@@ -1663,6 +2057,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           keyboardType: TextInputType.datetime,
           inputFormatters: const [_dateTimeInputFormatter],
           onChanged: _handleEndAtChanged,
+          errorText: _endAtErrorText,
         ),
       ],
     );
@@ -1726,6 +2121,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             placeholder: l10n.createVisibilityPasswordPlaceholder,
             obscureText: true,
             onChanged: _handleVisibilityPasswordChanged,
+            errorText: _visibilityPasswordErrorText,
           ),
           if (widget.isEditMode && _startedPrivate) ...[
             const SizedBox(height: 8),
@@ -1790,8 +2186,16 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 _Step3PriceField(
                   label: l10n.createPriceAmountLabel,
                   controller: _priceAmountCtrl,
-                  placeholder: l10n.createPriceAmountPlaceholder,
+                  placeholder: '0.00',
                   enabled: true,
+                  currencyCode:
+                      _normalizeCurrencyCode(_currencyCtrl.text) ?? 'KZT',
+                  suffixText: l10n.createPricePerPersonHint,
+                  errorText: _priceAmountErrorText,
+                  onChanged: (_) {
+                    if (_priceAmountErrorText == null) return;
+                    setState(() => _priceAmountErrorText = null);
+                  },
                 ),
               ],
               if (_isPublished) ...[
@@ -1829,6 +2233,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                           readOnly: isUnlimited,
                           readOnlyValue: '1',
                           onChanged: _handleMinParticipantsChanged,
+                          errorText: _minParticipantsErrorText,
                         ),
                         const SizedBox(height: 12),
                         _Step3LimitField(
@@ -1838,6 +2243,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                           readOnly: isUnlimited,
                           readOnlyValue: l10n.createNoLimitPlaceholder,
                           onChanged: _handleMaxParticipantsChanged,
+                          errorText: _maxParticipantsErrorText,
                         ),
                       ],
                     )
@@ -1853,6 +2259,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                             readOnly: isUnlimited,
                             readOnlyValue: '1',
                             onChanged: _handleMinParticipantsChanged,
+                            errorText: _minParticipantsErrorText,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1866,6 +2273,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                             readOnly: isUnlimited,
                             readOnlyValue: l10n.createNoLimitPlaceholder,
                             onChanged: _handleMaxParticipantsChanged,
+                            errorText: _maxParticipantsErrorText,
                           ),
                         ),
                       ],
@@ -2463,60 +2871,76 @@ class _Step2PillTextField extends StatelessWidget {
     required this.hint,
     required this.icon,
     this.keyboardType,
+    this.onChanged,
+    this.errorText,
   });
 
   final TextEditingController controller;
   final String hint;
   final IconData icon;
   final TextInputType? keyboardType;
+  final ValueChanged<String>? onChanged;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
     const fieldHeight = 68.0;
 
-    return Container(
-      constraints: const BoxConstraints(minHeight: fieldHeight),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2107),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        textAlignVertical: TextAlignVertical.center,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 16,
-          height: 1.2,
-          letterSpacing: -0.2,
-        ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(
-            color: Color(0xFFB8AB9D),
-            fontSize: 16,
-            height: 1.2,
-            letterSpacing: -0.2,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          constraints: const BoxConstraints(minHeight: fieldHeight),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3A2107),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: errorText == null
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : _inlineValidationColor,
+            ),
           ),
-          isDense: true,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.fromLTRB(0, 18, 20, 18),
-          prefixIcon: SizedBox(
-            width: 56,
-            height: fieldHeight,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 18, right: 12),
-                child: Icon(icon, color: AppColors.accent, size: 22),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            onChanged: onChanged,
+            textAlignVertical: TextAlignVertical.center,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              height: 1.2,
+              letterSpacing: -0.2,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(
+                color: Color(0xFFB8AB9D),
+                fontSize: 16,
+                height: 1.2,
+                letterSpacing: -0.2,
+              ),
+              isDense: true,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.fromLTRB(0, 18, 20, 18),
+              prefixIcon: SizedBox(
+                width: 56,
+                height: fieldHeight,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 18, right: 12),
+                    child: Icon(icon, color: AppColors.accent, size: 22),
+                  ),
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 56,
+                minHeight: fieldHeight,
               ),
             ),
           ),
-          prefixIconConstraints: const BoxConstraints(
-            minWidth: 56,
-            minHeight: fieldHeight,
-          ),
         ),
-      ),
+        if (errorText != null) _InlineFieldError(text: errorText!),
+      ],
     );
   }
 }
@@ -2530,6 +2954,7 @@ class _Step2PickerField extends StatelessWidget {
     required this.onChanged,
     this.keyboardType,
     this.inputFormatters,
+    this.errorText,
   });
 
   final String label;
@@ -2539,6 +2964,7 @@ class _Step2PickerField extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -2560,6 +2986,11 @@ class _Step2PickerField extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF3A2107),
             borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: errorText == null
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : _inlineValidationColor,
+            ),
           ),
           child: TextField(
             controller: controller,
@@ -2592,7 +3023,30 @@ class _Step2PickerField extends StatelessWidget {
             ),
           ),
         ),
+        if (errorText != null) _InlineFieldError(text: errorText!),
       ],
+    );
+  }
+}
+
+class _InlineFieldError extends StatelessWidget {
+  const _InlineFieldError({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 6, right: 6),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: _inlineValidationColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          height: 1.3,
+        ),
+      ),
     );
   }
 }
@@ -2731,12 +3185,20 @@ class _Step3PriceField extends StatelessWidget {
     required this.controller,
     required this.placeholder,
     required this.enabled,
+    required this.currencyCode,
+    required this.suffixText,
+    this.onChanged,
+    this.errorText,
   });
 
   final String label;
   final TextEditingController controller;
   final String placeholder;
   final bool enabled;
+  final String currencyCode;
+  final String suffixText;
+  final ValueChanged<String>? onChanged;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -2758,34 +3220,69 @@ class _Step3PriceField extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF3A2108),
             borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: errorText == null
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : _inlineValidationColor,
+            ),
           ),
-          child: TextField(
-            controller: controller,
-            enabled: enabled,
-            textAlignVertical: TextAlignVertical.center,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: TextStyle(
-              color: enabled
-                  ? AppColors.textPrimary
-                  : AppColors.textPrimary.withValues(alpha: 0.72),
-              fontSize: 20,
-              height: 1.2,
-              letterSpacing: -0.6,
-            ),
-            decoration: InputDecoration(
-              hintText: placeholder,
-              hintStyle: const TextStyle(
-                color: Color(0xFF9F8D78),
-                fontSize: 20,
-                height: 1.2,
-                letterSpacing: -0.6,
-              ),
-              isDense: true,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-            ),
+          child: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, _) {
+              final hasValue = value.text.trim().isNotEmpty;
+              return TextField(
+                controller: controller,
+                enabled: enabled,
+                onChanged: onChanged,
+                textAlignVertical: TextAlignVertical.center,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                style: TextStyle(
+                  color: enabled
+                      ? AppColors.textPrimary
+                      : AppColors.textPrimary.withValues(alpha: 0.72),
+                  fontSize: 20,
+                  height: 1.2,
+                  letterSpacing: -0.6,
+                ),
+                decoration: InputDecoration(
+                  prefixText: hasValue ? '$currencyCode ' : null,
+                  prefixStyle: TextStyle(
+                    color: enabled
+                        ? AppColors.accent
+                        : AppColors.accent.withValues(alpha: 0.7),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                  suffixText: suffixText,
+                  suffixStyle: TextStyle(
+                    color: enabled
+                        ? AppColors.textPrimary
+                        : AppColors.textPrimary.withValues(alpha: 0.7),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                  ),
+                  hintText: hasValue
+                      ? placeholder
+                      : '$currencyCode $placeholder',
+                  hintStyle: const TextStyle(
+                    color: Color(0xFF9F8D78),
+                    fontSize: 20,
+                    height: 1.2,
+                    letterSpacing: -0.6,
+                  ),
+                  isDense: true,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+                ),
+              );
+            },
           ),
         ),
+        if (errorText != null) _InlineFieldError(text: errorText!),
       ],
     );
   }
@@ -2798,6 +3295,7 @@ class _Step3TextField extends StatelessWidget {
     required this.placeholder,
     this.onChanged,
     this.obscureText = false,
+    this.errorText,
   });
 
   final String label;
@@ -2805,6 +3303,7 @@ class _Step3TextField extends StatelessWidget {
   final String placeholder;
   final ValueChanged<String>? onChanged;
   final bool obscureText;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -2826,6 +3325,11 @@ class _Step3TextField extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF3A2108),
             borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: errorText == null
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : _inlineValidationColor,
+            ),
           ),
           child: TextField(
             controller: controller,
@@ -2852,6 +3356,7 @@ class _Step3TextField extends StatelessWidget {
             ),
           ),
         ),
+        if (errorText != null) _InlineFieldError(text: errorText!),
       ],
     );
   }
@@ -2931,6 +3436,7 @@ class _Step3LimitField extends StatelessWidget {
     required this.readOnlyValue,
     this.controller,
     this.onChanged,
+    this.errorText,
   });
 
   final String label;
@@ -2939,12 +3445,18 @@ class _Step3LimitField extends StatelessWidget {
   final String readOnlyValue;
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
     final decoration = BoxDecoration(
       color: const Color(0xFF3A2108),
       borderRadius: BorderRadius.circular(999),
+      border: Border.all(
+        color: errorText == null
+            ? Colors.white.withValues(alpha: 0.03)
+            : _inlineValidationColor,
+      ),
     );
 
     return Column(
@@ -2999,6 +3511,7 @@ class _Step3LimitField extends StatelessWidget {
                   ),
                 ),
         ),
+        if (errorText != null) _InlineFieldError(text: errorText!),
       ],
     );
   }
@@ -3103,6 +3616,8 @@ class _Step1TextField extends StatefulWidget {
     this.maxLines = 1,
     this.minHeight,
     this.isMultiline = false,
+    this.onChanged,
+    this.errorText,
   });
 
   final TextEditingController controller;
@@ -3111,6 +3626,8 @@ class _Step1TextField extends StatefulWidget {
   final int maxLines;
   final double? minHeight;
   final bool isMultiline;
+  final ValueChanged<String>? onChanged;
+  final String? errorText;
 
   @override
   State<_Step1TextField> createState() => _Step1TextFieldState();
@@ -3152,63 +3669,75 @@ class _Step1TextFieldState extends State<_Step1TextField> {
     final multilineTop = isCompact ? 18.0 : 20.0;
     final singleLineVerticalPadding = isCompact ? 16.0 : (isWide ? 20.0 : 18.0);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 140),
-      constraints: BoxConstraints(minHeight: fieldHeight),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2107),
-        borderRadius: radius,
-        border: Border.all(
-          color: _focusNode.hasFocus
-              ? AppColors.accent
-              : Colors.white.withValues(alpha: 0.02),
-          width: _focusNode.hasFocus ? 1.5 : 1,
-        ),
-      ),
-      child: TextField(
-        controller: widget.controller,
-        focusNode: _focusNode,
-        maxLength: widget.maxLength,
-        buildCounter:
-            (
-              context, {
-              required int currentLength,
-              required bool isFocused,
-              int? maxLength,
-            }) => null,
-        maxLines: widget.maxLines,
-        minLines: widget.isMultiline ? widget.maxLines : 1,
-        keyboardType: widget.isMultiline
-            ? TextInputType.multiline
-            : TextInputType.text,
-        textAlignVertical: widget.isMultiline
-            ? TextAlignVertical.top
-            : TextAlignVertical.center,
-        style: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: fieldFontSize,
-          fontWeight: FontWeight.w400,
-          letterSpacing: -0.8,
-          height: 1.2,
-        ),
-        decoration: InputDecoration(
-          hintText: widget.hint,
-          hintStyle: TextStyle(
-            color: Colors.white.withValues(alpha: 0.58),
-            fontSize: fieldFontSize,
-            fontWeight: FontWeight.w400,
-            letterSpacing: -0.8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          constraints: BoxConstraints(minHeight: fieldHeight),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3A2107),
+            borderRadius: radius,
+            border: Border.all(
+              color: widget.errorText != null
+                  ? _inlineValidationColor
+                  : (_focusNode.hasFocus
+                        ? AppColors.accent
+                        : Colors.white.withValues(alpha: 0.02)),
+              width: widget.errorText != null
+                  ? 1.3
+                  : (_focusNode.hasFocus ? 1.5 : 1),
+            ),
           ),
-          isDense: true,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.fromLTRB(
-            horizontalPadding,
-            widget.isMultiline ? multilineTop : singleLineVerticalPadding,
-            horizontalPadding,
-            widget.isMultiline ? 20 : singleLineVerticalPadding,
+          child: TextField(
+            controller: widget.controller,
+            focusNode: _focusNode,
+            onChanged: widget.onChanged,
+            maxLength: widget.maxLength,
+            buildCounter:
+                (
+                  context, {
+                  required int currentLength,
+                  required bool isFocused,
+                  int? maxLength,
+                }) => null,
+            maxLines: widget.maxLines,
+            minLines: widget.isMultiline ? widget.maxLines : 1,
+            keyboardType: widget.isMultiline
+                ? TextInputType.multiline
+                : TextInputType.text,
+            textAlignVertical: widget.isMultiline
+                ? TextAlignVertical.top
+                : TextAlignVertical.center,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: fieldFontSize,
+              fontWeight: FontWeight.w400,
+              letterSpacing: -0.8,
+              height: 1.2,
+            ),
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              hintStyle: TextStyle(
+                color: Colors.white.withValues(alpha: 0.58),
+                fontSize: fieldFontSize,
+                fontWeight: FontWeight.w400,
+                letterSpacing: -0.8,
+              ),
+              isDense: true,
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                widget.isMultiline ? multilineTop : singleLineVerticalPadding,
+                horizontalPadding,
+                widget.isMultiline ? 20 : singleLineVerticalPadding,
+              ),
+            ),
           ),
         ),
-      ),
+        if (widget.errorText != null)
+          _InlineFieldError(text: widget.errorText!),
+      ],
     );
   }
 }
@@ -3218,11 +3747,13 @@ class _CategorySelectorField extends StatelessWidget {
     required this.value,
     required this.isPlaceholder,
     required this.onTap,
+    this.errorText,
   });
 
   final String value;
   final bool isPlaceholder;
   final VoidCallback onTap;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -3233,49 +3764,57 @@ class _CategorySelectorField extends StatelessWidget {
     final fontSize = isCompact ? 16.0 : (isWide ? 20.0 : 18.0);
     final horizontalPadding = isCompact ? 18.0 : 22.0;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(32),
-      onTap: onTap,
-      child: Container(
-        constraints: BoxConstraints(minHeight: height),
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: const Color(0xFF3A2107),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(
-            color: isPlaceholder
-                ? Colors.white.withValues(alpha: 0.02)
-                : AppColors.accent.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                value,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isPlaceholder
-                      ? Colors.white.withValues(alpha: 0.58)
-                      : AppColors.textPrimary,
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: -0.8,
-                ),
+          onTap: onTap,
+          child: Container(
+            constraints: BoxConstraints(minHeight: height),
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3A2107),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                color: errorText != null
+                    ? _inlineValidationColor
+                    : (isPlaceholder
+                          ? Colors.white.withValues(alpha: 0.02)
+                          : AppColors.accent.withValues(alpha: 0.3)),
               ),
             ),
-            Icon(
-              Icons.expand_more_rounded,
-              color: Colors.white.withValues(alpha: 0.78),
-              size: 22,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isPlaceholder
+                          ? Colors.white.withValues(alpha: 0.58)
+                          : AppColors.textPrimary,
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: -0.8,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.expand_more_rounded,
+                  color: Colors.white.withValues(alpha: 0.78),
+                  size: 22,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        if (errorText != null) _InlineFieldError(text: errorText!),
+      ],
     );
   }
 }
@@ -3854,7 +4393,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accent,
                       disabledBackgroundColor: AppColors.surfaceLight,
-                      foregroundColor: AppColors.background,
+                      foregroundColor: AppColors.textPrimary,
                       minimumSize: const Size.fromHeight(54),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),

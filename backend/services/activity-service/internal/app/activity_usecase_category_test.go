@@ -15,9 +15,10 @@ import (
 )
 
 type activityRepoStub struct {
-	getActivityByID func(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
-	createActivity  func(ctx context.Context, item *model.Activity) error
-	updateActivity  func(ctx context.Context, item *model.Activity) error
+	getActivityByID              func(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
+	createActivity               func(ctx context.Context, item *model.Activity) error
+	updateActivity               func(ctx context.Context, item *model.Activity) error
+	listParticipantsByActivityID func(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error)
 }
 
 func (s *activityRepoStub) CreateActivity(ctx context.Context, item *model.Activity) error {
@@ -74,6 +75,9 @@ func (s *activityRepoStub) GetParticipantByActivityAndUser(ctx context.Context, 
 }
 
 func (s *activityRepoStub) ListParticipantsByActivityID(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error) {
+	if s.listParticipantsByActivityID != nil {
+		return s.listParticipantsByActivityID(ctx, activityID, limit, offset)
+	}
 	return nil, nil
 }
 
@@ -228,6 +232,49 @@ func TestUpdateActivityRecalculatesRegistrationDeadlineWhenStartChanges(t *testi
 	}
 }
 
+func TestCreateActivityRejectsStartAtBeyondPlanningWindow(t *testing.T) {
+	t.Parallel()
+
+	uc := NewActivityUseCase(&activityRepoStub{})
+	input := validCreateActivityInput()
+	input.StartAt = time.Now().UTC().AddDate(0, 0, 40)
+	input.EndAt = input.StartAt.Add(2 * time.Hour)
+
+	_, err := uc.CreateActivity(context.Background(), input)
+	if !errors.Is(err, model.ErrActivityStartTooFar) {
+		t.Fatalf("CreateActivity() error = %v, want %v", err, model.ErrActivityStartTooFar)
+	}
+}
+
+func TestUpdateActivityRejectsDurationLongerThanOneMonth(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			return validActivity(t, activityID, actorUserID), nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	item := validActivity(t, activityID, actorUserID)
+	tooLongEndAt := item.StartAt.AddDate(0, 1, 1)
+
+	_, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID: actorUserID,
+		ActivityID:  activityID,
+		EndAt:       &tooLongEndAt,
+	})
+	if !errors.Is(err, model.ErrActivityDurationTooLong) {
+		t.Fatalf("UpdateActivity() error = %v, want %v", err, model.ErrActivityDurationTooLong)
+	}
+}
+
 func TestCreateActivityPrivateRequiresPassword(t *testing.T) {
 	t.Parallel()
 
@@ -319,6 +366,107 @@ func TestUpdateActivityClearsPrivatePasswordWhenVisibilityChanges(t *testing.T) 
 	}
 }
 
+func TestUpdateActivityAllowsPriceChangeWhenOnlyHostParticipantExists(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	var updatedItem *model.Activity
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			item := validActivity(t, activityID, actorUserID)
+			item.Status = enum.ActivityStatusEnrollmentOpen
+			return item, nil
+		},
+		listParticipantsByActivityID: func(ctx context.Context, requestedID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error) {
+			if requestedID != activityID {
+				t.Fatalf("ListParticipantsByActivityID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			return []*model.ActivityParticipant{
+				validParticipant(t, activityID, actorUserID, enum.ParticipantStatusApproved),
+			}, nil
+		},
+		updateActivity: func(ctx context.Context, item *model.Activity) error {
+			updatedItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	nextPriceType := enum.ActivityPriceTypePaid
+	nextPriceAmount := 2500.0
+	nextCurrency := "KZT"
+
+	_, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID:    actorUserID,
+		ActivityID:     activityID,
+		PriceType:      &nextPriceType,
+		PriceAmount:    &nextPriceAmount,
+		HasPriceAmount: true,
+		Currency:       &nextCurrency,
+		HasCurrency:    true,
+	})
+	if err != nil {
+		t.Fatalf("UpdateActivity() error = %v", err)
+	}
+	if updatedItem == nil {
+		t.Fatal("UpdateActivity() did not persist activity")
+	}
+	if updatedItem.PriceAmount == nil || *updatedItem.PriceAmount != nextPriceAmount {
+		t.Fatalf("UpdateActivity() priceAmount = %+v, want %v", updatedItem.PriceAmount, nextPriceAmount)
+	}
+}
+
+func TestUpdateActivityRejectsPriceChangeWhenOtherParticipantExists(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	otherUserID := uuid.New()
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			item := validActivity(t, activityID, actorUserID)
+			item.Status = enum.ActivityStatusEnrollmentOpen
+			return item, nil
+		},
+		listParticipantsByActivityID: func(ctx context.Context, requestedID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error) {
+			if requestedID != activityID {
+				t.Fatalf("ListParticipantsByActivityID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			return []*model.ActivityParticipant{
+				validParticipant(t, activityID, actorUserID, enum.ParticipantStatusApproved),
+				validParticipant(t, activityID, otherUserID, enum.ParticipantStatusApproved),
+			}, nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	nextPriceType := enum.ActivityPriceTypePaid
+	nextPriceAmount := 2500.0
+	nextCurrency := "KZT"
+
+	_, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID:    actorUserID,
+		ActivityID:     activityID,
+		PriceType:      &nextPriceType,
+		PriceAmount:    &nextPriceAmount,
+		HasPriceAmount: true,
+		Currency:       &nextCurrency,
+		HasCurrency:    true,
+	})
+	if !errors.Is(err, ErrPriceChangeForbidden) {
+		t.Fatalf("UpdateActivity() error = %v, want %v", err, ErrPriceChangeForbidden)
+	}
+}
+
 func validCreateActivityInput() CreateActivityInput {
 	startAt := time.Now().UTC().Add(2 * time.Hour)
 	endAt := startAt.Add(2 * time.Hour)
@@ -371,5 +519,25 @@ func validActivity(t *testing.T, activityID uuid.UUID, actorUserID uuid.UUID) *m
 	}
 
 	item.ID = activityID
+	return item
+}
+
+func validParticipant(
+	t *testing.T,
+	activityID uuid.UUID,
+	userID uuid.UUID,
+	status enum.ParticipantStatus,
+) *model.ActivityParticipant {
+	t.Helper()
+
+	item, err := model.NewActivityParticipant(model.NewActivityParticipantParams{
+		ActivityID: activityID,
+		UserID:     userID,
+		Status:     status,
+	})
+	if err != nil {
+		t.Fatalf("model.NewActivityParticipant() error = %v", err)
+	}
+
 	return item
 }

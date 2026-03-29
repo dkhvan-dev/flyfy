@@ -44,6 +44,8 @@ func mapError(err error) error {
 		errors.Is(err, model.ErrInvalidTimezone),
 		errors.Is(err, model.ErrInvalidActivityTimeRange),
 		errors.Is(err, model.ErrInvalidRegistrationDeadline),
+		errors.Is(err, model.ErrActivityStartTooFar),
+		errors.Is(err, model.ErrActivityDurationTooLong),
 		errors.Is(err, model.ErrActivityTooSoon),
 		errors.Is(err, model.ErrInvalidCapacityType),
 		errors.Is(err, model.ErrInvalidCapacity),

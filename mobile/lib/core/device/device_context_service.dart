@@ -32,22 +32,30 @@ class DeviceContextService {
     }
   }
 
-  Future<DeviceLocationSuggestion?> detectLocationSuggestion() async {
+  Future<DeviceLocationSuggestion?> detectLocationSuggestion({
+    bool requestPermission = true,
+  }) async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw Exception('location_services_disabled');
     }
 
     var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
+    if (permission == LocationPermission.denied && requestPermission) {
       permission = await Geolocator.requestPermission();
     }
 
     if (permission == LocationPermission.denied) {
+      if (!requestPermission) {
+        return null;
+      }
       throw Exception('location_permission_denied');
     }
 
     if (permission == LocationPermission.deniedForever) {
+      if (!requestPermission) {
+        return null;
+      }
       throw Exception('location_permission_denied_forever');
     }
 
@@ -66,7 +74,8 @@ class DeviceContextService {
     return DeviceLocationSuggestion(
       countryCode: _normalizeCountryCode(first?.isoCountryCode),
       countryName: _normalizeText(first?.country),
-      cityName: _normalizeText(first?.locality) ??
+      cityName:
+          _normalizeText(first?.locality) ??
           _normalizeText(first?.subAdministrativeArea) ??
           _normalizeText(first?.administrativeArea),
       latitude: position.latitude,

@@ -341,6 +341,22 @@
   "createRegistrationDeadlineLabel": "Тіркелу мерзімі",
   "createEndDateValidation": "Аяқталу уақыты басталудан кейін болуы керек",
   "createStartAtTooSoonValidation": "Басталу уақыты кемінде 1 сағаттан кейін болуы керек",
+  "createStartAtMonthLimitValidation": "Басталу күні {date}-тен кеш болмауы керек",
+  "@createStartAtMonthLimitValidation": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "createEndAtMonthLimitValidation": "Аяқталу күні {date}-тен кеш болмауы керек",
+  "@createEndAtMonthLimitValidation": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "createRegistrationDeadlineValidation": "Тіркелу мерзімі басталу уақытынан бұрын болуы керек",
   "createRegistrationAutoHint": "Тіркелу белсенділік басталғанға дейін 1 сағат бұрын автоматты түрде жабылады",
   "createSaveDraft": "Жобаны сақтау",
@@ -381,7 +397,8 @@
   "createParticipantsMinShort": "МИН",
   "createParticipantsMaxShort": "МАКС",
   "createNoLimitPlaceholder": "Шектеу жоқ",
-  "createMaxParticipantsValidation": "Дұрыс максималды санды енгізіңіз",
+  "createMaxParticipantsValidation": "1 мен 100 қатысушы аралығындағы максимумды енгізіңіз",
+  "createMinParticipantsValidation": "Кемінде 1 қатысушыдан тұратын минимумды енгізіңіз",
   "createMinExceedsMaxValidation": "Минимум максимумнан асып кетпеуі керек",
   "createPriceSection": "ҚҰНЫ",
   "createPriceFree": "Тегін",
@@ -425,7 +442,7 @@
   "activityPublishFailed": "Белсенділікті жариялау сәтсіз аяқталды",
   "editFormatLocked": "Форматты жасалғаннан кейін өзгерту мүмкін емес",
   "editLocationLocked": "Жарияланғаннан кейін орналасқан жерді өзгерту мүмкін емес",
-  "editPriceRestrictionHint": "Қатысушылар жазылғаннан кейін бағаны өзгерту мүмкін емес",
+  "editPriceRestrictionHint": "Басқа қатысушылар жазылғаннан кейін бағаны өзгерту мүмкін емес",
   "myActivitiesTitle": "Менің белсенділіктерім",
   "myActivitiesEmpty": "Сізде әлі жасалған белсенділіктер жоқ",
   "myActivitiesEmptyHint": "Бірінші белсенділігіңізді жасаңыз, ол осы жерде пайда болады",

@@ -1858,6 +1858,18 @@ abstract class AppLocalizations {
   /// **'Start time must be at least 1 hour from now'**
   String get createStartAtTooSoonValidation;
 
+  /// No description provided for @createStartAtMonthLimitValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date must be no later than {date}'**
+  String createStartAtMonthLimitValidation(String date);
+
+  /// No description provided for @createEndAtMonthLimitValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'End date must be no later than {date}'**
+  String createEndAtMonthLimitValidation(String date);
+
   /// No description provided for @createRegistrationDeadlineValidation.
   ///
   /// In en, this message translates to:
@@ -2101,8 +2113,14 @@ abstract class AppLocalizations {
   /// No description provided for @createMaxParticipantsValidation.
   ///
   /// In en, this message translates to:
-  /// **'Please enter a valid maximum number'**
+  /// **'Please enter a maximum between 1 and 100 participants'**
   String get createMaxParticipantsValidation;
+
+  /// No description provided for @createMinParticipantsValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a minimum of at least 1 participant'**
+  String get createMinParticipantsValidation;
 
   /// No description provided for @createMinExceedsMaxValidation.
   ///
@@ -2365,7 +2383,7 @@ abstract class AppLocalizations {
   /// No description provided for @editPriceRestrictionHint.
   ///
   /// In en, this message translates to:
-  /// **'Price cannot be changed if participants have already joined'**
+  /// **'Price cannot be changed if other participants have already joined'**
   String get editPriceRestrictionHint;
 
   /// No description provided for @myActivitiesTitle.

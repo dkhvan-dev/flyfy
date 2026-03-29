@@ -728,7 +728,16 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		}
 	}
 
-	if err = u.validateUpdateRules(ctx, item, beforePriceType, beforePriceAmount, beforeCurrency, beforeLocationSnapshot, input.StartAt != nil); err != nil {
+	if err = u.validateUpdateRules(
+		ctx,
+		item,
+		beforePriceType,
+		beforePriceAmount,
+		beforeCurrency,
+		beforeLocationSnapshot,
+		input.StartAt != nil,
+		input.EndAt != nil,
+	); err != nil {
 		return nil, err
 	}
 
@@ -805,6 +814,7 @@ func (u *ActivityUseCase) validateUpdateRules(
 	beforeCurrency *string,
 	beforeLocationSnapshot string,
 	startAtChanged bool,
+	endAtChanged bool,
 ) error {
 	now := time.Now().UTC()
 
@@ -818,7 +828,8 @@ func (u *ActivityUseCase) validateUpdateRules(
 	}
 
 	skipStartTimeCheck := !startAtChanged
-	if err := item.Validate(now, skipStartTimeCheck); err != nil {
+	skipDurationCheck := !startAtChanged && !endAtChanged
+	if err := item.Validate(now, skipStartTimeCheck, skipDurationCheck); err != nil {
 		if item.Status != enum.ActivityStatusDraft && item.Status != enum.ActivityStatusReviewRequired {
 			switch {
 			case errors.Is(err, model.ErrInvalidOfflineLocation),
@@ -832,17 +843,35 @@ func (u *ActivityUseCase) validateUpdateRules(
 	}
 
 	if priceChanged(beforePriceType, beforePriceAmount, beforeCurrency, item) {
-		if err := item.CanChangePrice(); err != nil {
-			return ErrPriceChangeForbidden
-		}
-
-		participants, err := u.repo.ListParticipantsByActivityID(ctx, item.ID, 1, 0)
-		if err == nil && len(participants) > 0 {
+		participants, err := u.repo.ListParticipantsByActivityID(ctx, item.ID, 1000, 0)
+		if err == nil && hasOtherPriceBlockingParticipants(participants, item.HostUserID) {
 			return ErrPriceChangeForbidden
 		}
 	}
 
 	return nil
+}
+
+func hasOtherPriceBlockingParticipants(
+	participants []*model.ActivityParticipant,
+	hostUserID uuid.UUID,
+) bool {
+	for _, participant := range participants {
+		if participant == nil || participant.UserID == hostUserID {
+			continue
+		}
+
+		switch participant.Status {
+		case enum.ParticipantStatusCancelled,
+			enum.ParticipantStatusDeclined,
+			enum.ParticipantStatusExpired:
+			continue
+		default:
+			return true
+		}
+	}
+
+	return false
 }
 
 func (u *ActivityUseCase) ApproveModeration(

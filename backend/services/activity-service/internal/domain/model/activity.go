@@ -26,6 +26,8 @@ var (
 	ErrInvalidActivityTimeRange        = errors.New("invalid activity time range")
 	ErrInvalidRegistrationDeadline     = errors.New("invalid registration deadline")
 	ErrActivityTooSoon                 = errors.New("activity start time must be at least 1 hour from now")
+	ErrActivityStartTooFar             = errors.New("activity start time must be within the allowed planning window")
+	ErrActivityDurationTooLong         = errors.New("activity duration cannot exceed 1 month")
 	ErrInvalidCapacityType             = errors.New("invalid capacity type")
 	ErrInvalidCapacity                 = errors.New("invalid capacity")
 	ErrInvalidPriceType                = errors.New("invalid price type")
@@ -39,6 +41,8 @@ var (
 	ErrActivityCannotBePublished       = errors.New("activity cannot be published")
 	ErrCriticalFieldsLocked            = errors.New("critical activity fields are locked after publication")
 )
+
+const maxLimitedActivityParticipants = 100
 
 type Activity struct {
 	ID               uuid.UUID
@@ -197,10 +201,10 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 }
 
 func (a *Activity) ValidateForCreate(now time.Time) error {
-	return a.Validate(now, false)
+	return a.Validate(now, false, false)
 }
 
-func (a *Activity) Validate(now time.Time, skipStartTimeCheck bool) error {
+func (a *Activity) Validate(now time.Time, skipStartTimeCheck bool, skipDurationCheck bool) error {
 	if a.ID == uuid.Nil {
 		return ErrInvalidActivityID
 	}
@@ -240,8 +244,14 @@ func (a *Activity) Validate(now time.Time, skipStartTimeCheck bool) error {
 	if !skipStartTimeCheck && !a.StartAt.After(now.Add(1*time.Hour)) {
 		return ErrActivityTooSoon
 	}
+	if !skipStartTimeCheck && a.StartAt.After(maxAllowedActivityStartAt(now)) {
+		return ErrActivityStartTooFar
+	}
 	if !a.EndAt.After(a.StartAt) {
 		return ErrInvalidActivityTimeRange
+	}
+	if !skipDurationCheck && a.EndAt.After(maxAllowedActivityEndAt(a.StartAt)) {
+		return ErrActivityDurationTooLong
 	}
 	if a.RegistrationDeadline.After(a.StartAt) {
 		return ErrInvalidRegistrationDeadline
@@ -273,6 +283,81 @@ func (a *Activity) Validate(now time.Time, skipStartTimeCheck bool) error {
 	return nil
 }
 
+func maxAllowedActivityStartAt(now time.Time) time.Time {
+	monthWindowLimit := endOfMonth(now)
+	if isNearMonthEnd(now) {
+		monthWindowLimit = endOfMonth(time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, now.Location()))
+	}
+	monthAheadLimit := endOfDay(addCalendarMonthClamped(now))
+	if monthWindowLimit.Before(monthAheadLimit) {
+		return monthWindowLimit
+	}
+	return monthAheadLimit
+}
+
+func maxAllowedActivityEndAt(startAt time.Time) time.Time {
+	return addCalendarMonthClamped(startAt)
+}
+
+func addCalendarMonthClamped(value time.Time) time.Time {
+	nextMonth := time.Date(
+		value.Year(),
+		value.Month()+1,
+		1,
+		value.Hour(),
+		value.Minute(),
+		value.Second(),
+		value.Nanosecond(),
+		value.Location(),
+	)
+	lastDayOfNextMonth := time.Date(
+		nextMonth.Year(),
+		nextMonth.Month()+1,
+		0,
+		0,
+		0,
+		0,
+		0,
+		value.Location(),
+	).Day()
+	day := value.Day()
+	if day > lastDayOfNextMonth {
+		day = lastDayOfNextMonth
+	}
+	return time.Date(
+		nextMonth.Year(),
+		nextMonth.Month(),
+		day,
+		value.Hour(),
+		value.Minute(),
+		value.Second(),
+		value.Nanosecond(),
+		value.Location(),
+	)
+}
+
+func isNearMonthEnd(value time.Time) bool {
+	lastDay := time.Date(value.Year(), value.Month()+1, 0, 0, 0, 0, 0, value.Location()).Day()
+	return value.Day() >= lastDay-2
+}
+
+func endOfMonth(value time.Time) time.Time {
+	return endOfDay(time.Date(value.Year(), value.Month()+1, 0, 0, 0, 0, 0, value.Location()))
+}
+
+func endOfDay(value time.Time) time.Time {
+	return time.Date(
+		value.Year(),
+		value.Month(),
+		value.Day(),
+		23,
+		59,
+		59,
+		999999999,
+		value.Location(),
+	)
+}
+
 func (a *Activity) validateVisibilityPassword() error {
 	switch a.Visibility {
 	case enum.ActivityVisibilityPrivate:
@@ -295,7 +380,9 @@ func (a *Activity) validateCapacity() error {
 			return ErrInvalidCapacity
 		}
 	case enum.ActivityCapacityTypeLimited:
-		if a.MaxParticipants == nil || *a.MaxParticipants <= 0 {
+		if a.MaxParticipants == nil ||
+			*a.MaxParticipants <= 0 ||
+			*a.MaxParticipants > maxLimitedActivityParticipants {
 			return ErrInvalidCapacity
 		}
 	default:

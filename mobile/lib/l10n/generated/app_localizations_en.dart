@@ -947,6 +947,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start time must be at least 1 hour from now';
 
   @override
+  String createStartAtMonthLimitValidation(String date) {
+    return 'Start date must be no later than $date';
+  }
+
+  @override
+  String createEndAtMonthLimitValidation(String date) {
+    return 'End date must be no later than $date';
+  }
+
+  @override
   String get createRegistrationDeadlineValidation =>
       'Registration deadline must be before the start time';
 
@@ -1075,7 +1085,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createMaxParticipantsValidation =>
-      'Please enter a valid maximum number';
+      'Please enter a maximum between 1 and 100 participants';
+
+  @override
+  String get createMinParticipantsValidation =>
+      'Please enter a minimum of at least 1 participant';
 
   @override
   String get createMinExceedsMaxValidation => 'Minimum cannot exceed maximum';
@@ -1212,7 +1226,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editPriceRestrictionHint =>
-      'Price cannot be changed if participants have already joined';
+      'Price cannot be changed if other participants have already joined';
 
   @override
   String get myActivitiesTitle => 'My Activities';

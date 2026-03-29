@@ -947,6 +947,16 @@ class AppLocalizationsRu extends AppLocalizations {
       'Начало должно быть не менее чем через 1 час';
 
   @override
+  String createStartAtMonthLimitValidation(String date) {
+    return 'Дата начала должна быть не позднее $date';
+  }
+
+  @override
+  String createEndAtMonthLimitValidation(String date) {
+    return 'Дата окончания должна быть не позднее $date';
+  }
+
+  @override
   String get createRegistrationDeadlineValidation =>
       'Крайний срок регистрации должен быть до начала';
 
@@ -1075,7 +1085,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createMaxParticipantsValidation =>
-      'Укажите корректное максимальное число';
+      'Укажите максимум от 1 до 100 участников';
+
+  @override
+  String get createMinParticipantsValidation =>
+      'Укажите минимум не меньше 1 участника';
 
   @override
   String get createMinExceedsMaxValidation =>
@@ -1214,7 +1228,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get editPriceRestrictionHint =>
-      'Цену нельзя изменить, если участники уже записались';
+      'Цену нельзя изменить, если записались другие участники';
 
   @override
   String get myActivitiesTitle => 'Мои активности';

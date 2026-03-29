@@ -953,6 +953,16 @@ class AppLocalizationsKk extends AppLocalizations {
       'Басталу уақыты кемінде 1 сағаттан кейін болуы керек';
 
   @override
+  String createStartAtMonthLimitValidation(String date) {
+    return 'Басталу күні $date-тен кеш болмауы керек';
+  }
+
+  @override
+  String createEndAtMonthLimitValidation(String date) {
+    return 'Аяқталу күні $date-тен кеш болмауы керек';
+  }
+
+  @override
   String get createRegistrationDeadlineValidation =>
       'Тіркелу мерзімі басталу уақытынан бұрын болуы керек';
 
@@ -1080,7 +1090,11 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createMaxParticipantsValidation =>
-      'Дұрыс максималды санды енгізіңіз';
+      '1 мен 100 қатысушы аралығындағы максимумды енгізіңіз';
+
+  @override
+  String get createMinParticipantsValidation =>
+      'Кемінде 1 қатысушыдан тұратын минимумды енгізіңіз';
 
   @override
   String get createMinExceedsMaxValidation =>
@@ -1222,7 +1236,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get editPriceRestrictionHint =>
-      'Қатысушылар жазылғаннан кейін бағаны өзгерту мүмкін емес';
+      'Басқа қатысушылар жазылғаннан кейін бағаны өзгерту мүмкін емес';
 
   @override
   String get myActivitiesTitle => 'Менің белсенділіктерім';

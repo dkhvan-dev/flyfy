@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/device/device_context_service.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
+import '../../features/activities/activity_currency.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/models/activity_category_vm.dart';
@@ -30,10 +32,13 @@ class ActivitiesScreen extends StatefulWidget {
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
+  final DeviceContextService _deviceContextService =
+      const DeviceContextService();
 
   _DiscoverFilters _filters = const _DiscoverFilters();
   String _searchQuery = '';
   String? _loadedHostedUserId;
+  String? _priceFilterCountryCode;
 
   @override
   void initState() {
@@ -43,6 +48,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       final provider = context.read<ActivityProvider>();
       provider.loadActivities();
       provider.loadActivityCategories();
+      _prefillPriceFilterCountryContext();
     });
   }
 
@@ -259,6 +265,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   Future<void> _openPriceFilter(
     BuildContext context,
     List<ActivityListItemVm> items,
+    String? currentCountryCode,
+    String? fallbackCurrencyCode,
   ) async {
     final result = await showModalBottomSheet<_PriceRangeFilter>(
       context: context,
@@ -268,6 +276,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         return _PriceFilterSheet(
           l10n: AppLocalizations.of(sheetContext)!,
           items: items,
+          currentCountryCode: currentCountryCode,
+          fallbackCurrencyCode: fallbackCurrencyCode,
           initialMinPrice: _filters.minPrice,
           initialMaxPrice: _filters.maxPrice,
         );
@@ -284,6 +294,38 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         maxPrice: result.maxPrice,
       );
     });
+  }
+
+  Future<void> _prefillPriceFilterCountryContext() async {
+    final profileCountryCode = normalizeActivityCountryCode(
+      context.read<SessionProvider>().profile?.countryCode,
+    );
+    if (mounted &&
+        profileCountryCode != null &&
+        _priceFilterCountryCode == null) {
+      setState(() {
+        _priceFilterCountryCode = profileCountryCode;
+      });
+    }
+
+    try {
+      final suggestion = await _deviceContextService.detectLocationSuggestion(
+        requestPermission: false,
+      );
+      final detectedCountryCode = normalizeActivityCountryCode(
+        suggestion?.countryCode,
+      );
+      if (!mounted ||
+          detectedCountryCode == null ||
+          detectedCountryCode == _priceFilterCountryCode) {
+        return;
+      }
+      setState(() {
+        _priceFilterCountryCode = detectedCountryCode;
+      });
+    } catch (_) {
+      // Keep profile country when passive geolocation is unavailable.
+    }
   }
 
   Future<void> _openDateFilter(BuildContext context) async {
@@ -344,6 +386,9 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     final isLoggedIn = auth.state == AuthState.authenticated;
     final profile = session.profile;
     final currentUserId = (profile?.userId ?? '').trim();
+    final currentPriceFilterCountryCode =
+        _priceFilterCountryCode ??
+        normalizeActivityCountryCode(profile?.countryCode);
     final location = resolveDrawerLocation(
       profile,
       Localizations.localeOf(context),
@@ -405,6 +450,10 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                 for (final option in categoryOptions)
                   option.slug: option.label.toLowerCase(),
               };
+              final currentPriceFilterCurrency = filterCurrencyLabel(
+                countryCode: currentPriceFilterCountryCode,
+                currency: normalizeActivityCurrencyCode(profile?.currency),
+              );
               final filteredItems = _applyDiscoverFilters(
                 discoverItems,
                 filters: _filters,
@@ -451,6 +500,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                 _DiscoverFilterRow(
                                   l10n: l10n,
                                   filters: _filters,
+                                  priceCurrencyLabel:
+                                      currentPriceFilterCurrency,
                                   selectedCategoryCount:
                                       _filters.categorySlugs.length,
                                   onCategoryTap: () => _openCategoryFilter(
@@ -459,8 +510,14 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     discoverItems,
                                   ),
                                   onDateTap: () => _openDateFilter(context),
-                                  onPriceTap: () =>
-                                      _openPriceFilter(context, discoverItems),
+                                  onPriceTap: () => _openPriceFilter(
+                                    context,
+                                    discoverItems,
+                                    currentPriceFilterCountryCode,
+                                    normalizeActivityCurrencyCode(
+                                      profile?.currency,
+                                    ),
+                                  ),
                                   onVisibilityTap: () =>
                                       _openVisibilityFilter(context),
                                 ),
@@ -873,6 +930,7 @@ class _DiscoverFilterRow extends StatelessWidget {
   const _DiscoverFilterRow({
     required this.l10n,
     required this.filters,
+    required this.priceCurrencyLabel,
     required this.selectedCategoryCount,
     required this.onCategoryTap,
     required this.onDateTap,
@@ -882,6 +940,7 @@ class _DiscoverFilterRow extends StatelessWidget {
 
   final AppLocalizations l10n;
   final _DiscoverFilters filters;
+  final String priceCurrencyLabel;
   final int selectedCategoryCount;
   final VoidCallback onCategoryTap;
   final VoidCallback onDateTap;
@@ -934,16 +993,20 @@ class _DiscoverFilterRow extends StatelessWidget {
       return l10n.activitiesFilterPricing;
     }
 
+    if (filters.minPrice == 0 && filters.maxPrice == 0) {
+      return l10n.createPriceFree;
+    }
+
     final minText = filters.minPrice?.toStringAsFixed(0);
     final maxText = filters.maxPrice?.toStringAsFixed(0);
     if (minText != null && maxText != null) {
-      return '$minText-$maxText';
+      return '$priceCurrencyLabel $minText-$maxText';
     }
     if (minText != null) {
-      return '$minText+';
+      return '$priceCurrencyLabel $minText+';
     }
     if (maxText != null) {
-      return '0-$maxText';
+      return '$priceCurrencyLabel 0-$maxText';
     }
     return l10n.activitiesFilterPricing;
   }
@@ -1252,7 +1315,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                           badgeText,
                           style: TextStyle(
                             color: item.isFree
-                                ? const Color(0xFFFFC56A)
+                                ? AppColors.success
                                 : AppColors.accent,
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -1915,12 +1978,16 @@ class _PriceFilterSheet extends StatefulWidget {
   const _PriceFilterSheet({
     required this.l10n,
     required this.items,
+    required this.currentCountryCode,
+    required this.fallbackCurrencyCode,
     this.initialMinPrice,
     this.initialMaxPrice,
   });
 
   final AppLocalizations l10n;
   final List<ActivityListItemVm> items;
+  final String? currentCountryCode;
+  final String? fallbackCurrencyCode;
   final double? initialMinPrice;
   final double? initialMaxPrice;
 
@@ -1953,11 +2020,19 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
-    final dominantCurrency = _dominantCurrency(widget.items);
+    final currencyCode = _resolvePriceFilterCurrencyCode(
+      currentCountryCode: widget.currentCountryCode,
+      fallbackCurrencyCode: widget.fallbackCurrencyCode,
+      items: widget.items,
+    );
+    final currencyLabel = filterCurrencyLabel(currency: currencyCode);
     final presets = _buildPricePresets(
-      widget.items,
-      dominantCurrency,
-      widget.l10n,
+      currencyLabel: currencyLabel,
+      nominalUnit: pricePresetNominalUnit(
+        countryCode: widget.currentCountryCode,
+        currency: currencyCode,
+      ),
+      l10n: widget.l10n,
     );
 
     return _RangeSheetScaffold(
@@ -1983,7 +2058,7 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
                 child: _RangeTextField(
                   label: widget.l10n.activitiesFilterMinPrice,
                   controller: _minController,
-                  prefix: dominantCurrency,
+                  prefix: currencyLabel,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -1995,7 +2070,7 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
                 child: _RangeTextField(
                   label: widget.l10n.activitiesFilterMaxPrice,
                   controller: _maxController,
-                  prefix: dominantCurrency,
+                  prefix: currencyLabel,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -3199,18 +3274,18 @@ IconData _formatIcon(String format) {
   }
 }
 
-String _dominantCurrency(List<ActivityListItemVm> items) {
+String _dominantCurrencyCode(List<ActivityListItemVm> items) {
   final counts = <String, int>{};
   for (final item in items) {
-    final currency = (item.currency ?? '').trim().toUpperCase();
-    if (currency.isEmpty || item.isFree) {
+    final currency = item.resolvedCurrencyCode;
+    if (currency == null || currency.isEmpty || item.isFree) {
       continue;
     }
     counts[currency] = (counts[currency] ?? 0) + 1;
   }
 
   if (counts.isEmpty) {
-    return '₸';
+    return 'KZT';
   }
 
   var dominantCode = counts.keys.first;
@@ -3222,63 +3297,46 @@ String _dominantCurrency(List<ActivityListItemVm> items) {
     }
   });
 
-  switch (dominantCode) {
-    case 'USD':
-      return r'$';
-    case 'EUR':
-      return '€';
-    case 'RUB':
-      return '₽';
-    case 'KZT':
-      return '₸';
-    default:
-      return dominantCode;
-  }
+  return dominantCode;
 }
 
-List<_PricePreset> _buildPricePresets(
-  List<ActivityListItemVm> items,
-  String currencySymbol,
-  AppLocalizations l10n,
-) {
-  final values =
-      items
-          .where((item) => !item.isFree && (item.priceAmount ?? 0) > 0)
-          .map((item) => item.priceAmount!)
-          .toList()
-        ..sort();
+String _resolvePriceFilterCurrencyCode({
+  required String? currentCountryCode,
+  required String? fallbackCurrencyCode,
+  required List<ActivityListItemVm> items,
+}) {
+  return filterCurrencyCode(
+    countryCode: currentCountryCode,
+    currency:
+        normalizeActivityCurrencyCode(fallbackCurrencyCode) ??
+        _dominantCurrencyCode(items),
+  );
+}
 
-  if (values.isEmpty) {
-    return [
-      _PricePreset(label: l10n.createPriceFree, minPrice: 0, maxPrice: 0),
-      _PricePreset(label: '$currencySymbol 0-100', minPrice: 0, maxPrice: 100),
-      _PricePreset(
-        label: '$currencySymbol 100+',
-        minPrice: 100,
-        maxPrice: null,
-      ),
-    ];
-  }
-
-  final maxValue = values.last;
-  final low = (maxValue * 0.25).clamp(1, maxValue).roundToDouble();
-  final medium = (maxValue * 0.60).clamp(low, maxValue).roundToDouble();
-
+List<_PricePreset> _buildPricePresets({
+  required String currencyLabel,
+  required double nominalUnit,
+  required AppLocalizations l10n,
+}) {
+  final minPaid = nominalUnit;
+  final low = nominalUnit * 10;
+  final medium = nominalUnit * 50;
   return [
     _PricePreset(label: l10n.createPriceFree, minPrice: 0, maxPrice: 0),
     _PricePreset(
-      label: '$currencySymbol 0-${low.toStringAsFixed(0)}',
-      minPrice: 0,
+      label:
+          '$currencyLabel ${minPaid.toStringAsFixed(0)}-${low.toStringAsFixed(0)}',
+      minPrice: minPaid,
       maxPrice: low,
     ),
     _PricePreset(
       label:
-          '$currencySymbol ${low.toStringAsFixed(0)}-${medium.toStringAsFixed(0)}',
+          '$currencyLabel ${low.toStringAsFixed(0)}-${medium.toStringAsFixed(0)}',
       minPrice: low,
       maxPrice: medium,
     ),
     _PricePreset(
-      label: '$currencySymbol ${medium.toStringAsFixed(0)}+',
+      label: '$currencyLabel ${medium.toStringAsFixed(0)}+',
       minPrice: medium,
       maxPrice: null,
     ),

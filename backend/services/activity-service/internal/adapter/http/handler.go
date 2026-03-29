@@ -1171,6 +1171,8 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, model.ErrInvalidActivityTimeRange),
 		errors.Is(err, model.ErrInvalidRegistrationDeadline),
 		errors.Is(err, model.ErrActivityTooSoon),
+		errors.Is(err, model.ErrActivityStartTooFar),
+		errors.Is(err, model.ErrActivityDurationTooLong),
 		errors.Is(err, model.ErrInvalidCapacityType),
 		errors.Is(err, model.ErrInvalidCapacity),
 		errors.Is(err, model.ErrInvalidPriceType),
