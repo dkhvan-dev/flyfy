@@ -15,6 +15,7 @@ import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
+import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/activity_participant_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
@@ -69,6 +70,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final provider = context.read<ActivityProvider>();
     await Future.wait<void>([
       provider.loadActivityDetails(widget.activityId),
+      provider.loadActivityCategories(),
       _loadParticipants(),
     ]);
     await _loadVisibleProfiles(provider.selectedActivity);
@@ -774,6 +776,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final canShowAttendanceQr =
         isOwner &&
         !const {'CANCELLED', 'COMPLETED', 'ARCHIVED'}.contains(status);
+    final categoryLabel = _resolveLocalizedCategoryLabel(
+      activity.categorySlug,
+      provider.categoryItems,
+      Localizations.localeOf(context).languageCode,
+    );
     final hostName = _resolveHostName(
       activity.hostUserId,
       session.profile,
@@ -849,7 +856,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                       _DetailsHero(
                         height: heroHeight,
                         categorySlug: activity.categorySlug,
-                        categoryLabel: _prettyCategory(activity.categorySlug),
+                        categoryLabel: categoryLabel,
                         contextLabel: _resolveHeroContextLabel(
                           activity: activity,
                           l10n: l10n,
@@ -3957,6 +3964,22 @@ String _prettyCategory(String value) {
         (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
       )
       .join(' ');
+}
+
+String _resolveLocalizedCategoryLabel(
+  String rawSlug,
+  List<ActivityCategoryVm> categories,
+  String languageCode,
+) {
+  final normalizedSlug = rawSlug.trim().toLowerCase();
+  if (normalizedSlug.isNotEmpty) {
+    for (final category in categories) {
+      if (category.slug == normalizedSlug) {
+        return category.localizedName(languageCode);
+      }
+    }
+  }
+  return _prettyCategory(rawSlug);
 }
 
 String _prettyToken(String value) {

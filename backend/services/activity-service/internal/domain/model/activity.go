@@ -355,7 +355,10 @@ func (a *Activity) validateLocation() error {
 }
 
 func (a *Activity) CanBePublished(now time.Time) error {
-	if a.Status != enum.ActivityStatusDraft && a.Status != enum.ActivityStatusReviewRequired {
+	if a.Status != enum.ActivityStatusDraft &&
+		a.Status != enum.ActivityStatusReviewRequired &&
+		a.Status != enum.ActivityStatusCancelled &&
+		a.Status != enum.ActivityStatusArchived {
 		return ErrActivityCannotBePublished
 	}
 	return a.ValidateForCreate(now)
@@ -376,6 +379,8 @@ func (a *Activity) Publish(now time.Time, reviewRequired bool) error {
 		a.PublishedAt = &ts
 	}
 
+	a.CancellationReason = nil
+	a.CancelledAt = nil
 	a.Revision++
 	a.UpdatedAt = now.UTC()
 	return nil

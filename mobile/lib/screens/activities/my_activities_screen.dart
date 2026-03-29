@@ -1195,32 +1195,32 @@ class _ActivityCover extends StatelessWidget {
       case 'DRAFT':
         return const _StatusBadgeStyle(
           background: _MyActivitiesPalette.badgeDraft,
-          foreground: Color(0xFFF2F6FF),
+          foreground: AppColors.textPrimary,
         );
       case 'REVIEW_REQUIRED':
         return const _StatusBadgeStyle(
           background: _MyActivitiesPalette.badgeReview,
-          foreground: Color(0xFFE9CE83),
+          foreground: AppColors.textPrimary,
         );
       case 'COMPLETED':
         return const _StatusBadgeStyle(
           background: _MyActivitiesPalette.badgeCompleted,
-          foreground: Color(0xFFDAFFE7),
+          foreground: AppColors.textPrimary,
         );
       case 'CANCELLED':
         return const _StatusBadgeStyle(
           background: _MyActivitiesPalette.badgeCancelled,
-          foreground: Color(0xFFF8D1CB),
+          foreground: AppColors.textPrimary,
         );
       case 'ARCHIVED':
         return const _StatusBadgeStyle(
           background: Color(0xFF3C342E),
-          foreground: Color(0xFFE7D7C7),
+          foreground: AppColors.textPrimary,
         );
       default:
         return const _StatusBadgeStyle(
           background: _MyActivitiesPalette.accent,
-          foreground: Color(0xFF261300),
+          foreground: AppColors.textPrimary,
         );
     }
   }

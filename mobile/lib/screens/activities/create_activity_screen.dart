@@ -112,6 +112,15 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         status == 'STARTED';
   }
 
+  bool get _isCancelledActivity =>
+      widget.activity?.status.toUpperCase() == 'CANCELLED';
+
+  bool get _isArchivedActivity =>
+      widget.activity?.status.toUpperCase() == 'ARCHIVED';
+
+  bool get _shouldRepublishCancelledActivity =>
+      widget.isEditMode && (_isCancelledActivity || _isArchivedActivity);
+
   @override
   void initState() {
     super.initState();
@@ -579,7 +588,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   void _handleStepBackSwipeEnd(DragEndDetails details) {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldGoBack = _isTrackingStepBackSwipe &&
+    final shouldGoBack =
+        _isTrackingStepBackSwipe &&
         _currentStep > 0 &&
         (_stepBackSwipeDistance >= _stepBackSwipeMinDistance ||
             primaryVelocity >= _stepBackSwipeMinVelocity);
@@ -878,7 +888,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
     final provider = context.read<ActivityProvider>();
 
-    if (widget.isEditMode) {
+    if (_shouldRepublishCancelledActivity) {
+      await _submitUpdateAndPublish(provider);
+    } else if (widget.isEditMode) {
       await _submitUpdate(provider);
     } else {
       await _submitCreate(provider);
@@ -911,8 +923,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       longitude: _longitudeValue,
       mapUrl: _mapUrlValue,
       meetingUrl: _meetingUrlValue,
-      visibilityPassword:
-          _visibility == 'PRIVATE' ? _visibilityPasswordValue : null,
+      visibilityPassword: _visibility == 'PRIVATE'
+          ? _visibilityPasswordValue
+          : null,
       coverFileId: _coverFileId,
     );
   }
@@ -945,7 +958,32 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   Future<void> _submitUpdate(ActivityProvider provider) async {
     final activityId = widget.activity!.id;
 
-    final request = UpdateActivityRequest(
+    final request = _buildUpdateRequest();
+
+    final updated = await provider.updateActivity(activityId, request);
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (updated != null) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.editActivitySuccess)));
+      context.read<ActivityProvider>().loadActivities();
+      context.pop();
+    } else {
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: provider.actionErrorMessage ?? l10n.editActivityFailed,
+      );
+    }
+  }
+
+  UpdateActivityRequest _buildUpdateRequest() {
+    return UpdateActivityRequest(
       title: _titleCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
       visibility: _visibility,
@@ -987,25 +1025,45 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       coverFileId: _coverChanged ? _coverFileId : null,
       hasCoverFileId: _coverChanged,
     );
+  }
 
+  Future<void> _submitUpdateAndPublish(ActivityProvider provider) async {
+    final activityId = widget.activity!.id;
+    final request = _buildUpdateRequest();
     final updated = await provider.updateActivity(activityId, request);
 
     if (!mounted) return;
-    setState(() => _isSubmitting = false);
 
-    if (updated != null) {
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.editActivitySuccess)));
-      context.read<ActivityProvider>().loadActivities();
-      context.pop();
-    } else {
+    if (updated == null) {
+      setState(() => _isSubmitting = false);
       final l10n = AppLocalizations.of(context)!;
       await showErrorDialog(
         context,
         title: l10n.error,
         message: provider.actionErrorMessage ?? l10n.editActivityFailed,
+      );
+      return;
+    }
+
+    final published = await provider.publishActivity(activityId);
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (published) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityPublishSuccess)));
+      context.read<ActivityProvider>().loadActivities();
+      context.read<ActivityProvider>().loadMyActivities();
+      context.pushReplacement('/activities/$activityId');
+    } else {
+      final l10n = AppLocalizations.of(context)!;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: provider.actionErrorMessage ?? l10n.activityPublishFailed,
       );
     }
   }
@@ -1287,12 +1345,18 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 if (_currentStep == _totalSteps - 1)
                   _Step3ActionBar(
                     isSubmitting: _isSubmitting,
-                    onPrimaryAction:
-                        widget.isEditMode ? _submit : _submitAndPublish,
-                    primaryLabel: widget.isEditMode
+                    onPrimaryAction: _shouldRepublishCancelledActivity
+                        ? _submit
+                        : widget.isEditMode
+                        ? _submit
+                        : _submitAndPublish,
+                    primaryLabel: _shouldRepublishCancelledActivity
+                        ? l10n.activityPublishButton
+                        : widget.isEditMode
                         ? l10n.editActivitySubmit
                         : l10n.createPublishActivityCta,
-                    showPrimaryIcon: !widget.isEditMode,
+                    showPrimaryIcon:
+                        !widget.isEditMode || _shouldRepublishCancelledActivity,
                   )
                 else if (_currentStep == 1)
                   _Step2NavBar(
@@ -1402,7 +1466,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               if (provider.categoryState == ActivitiesState.error &&
                   items.isEmpty) {
                 return _CategoryCatalogState(
-                  message: provider.categoryErrorMessage ??
+                  message:
+                      provider.categoryErrorMessage ??
                       l10n.createCategoryLoadFailed,
                   trailing: TextButton(
                     onPressed: () => context
@@ -1548,8 +1613,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             locationLocked
                 ? l10n.editLocationLocked
                 : (_isResolvingMapSelection
-                    ? l10n.createMapResolvingHint
-                    : l10n.createMapTapHint),
+                      ? l10n.createMapResolvingHint
+                      : l10n.createMapTapHint),
             style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
           ),
           const SizedBox(height: 18),
@@ -1767,8 +1832,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMinShort,
-                            controller:
-                                isUnlimited ? null : _minParticipantsCtrl,
+                            controller: isUnlimited
+                                ? null
+                                : _minParticipantsCtrl,
                             placeholder: '1',
                             readOnly: isUnlimited,
                             readOnlyValue: '1',
@@ -1779,8 +1845,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMaxShort,
-                            controller:
-                                isUnlimited ? null : _maxParticipantsCtrl,
+                            controller: isUnlimited
+                                ? null
+                                : _maxParticipantsCtrl,
                             placeholder: l10n.createNoLimitPlaceholder,
                             readOnly: isUnlimited,
                             readOnlyValue: l10n.createNoLimitPlaceholder,
@@ -1946,8 +2013,8 @@ class _StepIndicator extends StatelessWidget {
                     color: isDone
                         ? AppColors.success
                         : isActive
-                            ? AppColors.accent
-                            : const Color(0xFF6B4208),
+                        ? AppColors.accent
+                        : const Color(0xFF6B4208),
                   ),
                   child: Center(child: stepChild),
                 ),
@@ -2527,8 +2594,9 @@ class _DateTimeInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final trimmed =
-        digits.length > _maxDigits ? digits.substring(0, _maxDigits) : digits;
+    final trimmed = digits.length > _maxDigits
+        ? digits.substring(0, _maxDigits)
+        : digits;
     final buffer = StringBuffer();
     for (var i = 0; i < trimmed.length; i++) {
       if (i == 2 || i == 4) {
@@ -3087,17 +3155,18 @@ class _Step1TextFieldState extends State<_Step1TextField> {
         controller: widget.controller,
         focusNode: _focusNode,
         maxLength: widget.maxLength,
-        buildCounter: (
-          context, {
-          required int currentLength,
-          required bool isFocused,
-          int? maxLength,
-        }) =>
-            null,
+        buildCounter:
+            (
+              context, {
+              required int currentLength,
+              required bool isFocused,
+              int? maxLength,
+            }) => null,
         maxLines: widget.maxLines,
         minLines: widget.isMultiline ? widget.maxLines : 1,
-        keyboardType:
-            widget.isMultiline ? TextInputType.multiline : TextInputType.text,
+        keyboardType: widget.isMultiline
+            ? TextInputType.multiline
+            : TextInputType.text,
         textAlignVertical: widget.isMultiline
             ? TextAlignVertical.top
             : TextAlignVertical.center,
