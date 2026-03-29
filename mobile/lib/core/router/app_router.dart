@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../navigation/android_back_swipe_scope.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../providers/auth_provider.dart';
@@ -50,7 +51,7 @@ class AppRouter {
           path: '/login',
           builder: (context, state) {
             final from = state.uri.queryParameters['from'];
-            return LoginScreen(from: from);
+            return _withAndroidBackSwipe(LoginScreen(from: from));
           },
         ),
         GoRoute(
@@ -58,12 +59,13 @@ class AppRouter {
           builder: (context, state) {
             final phone = state.uri.queryParameters['phone'] ?? '';
             final from = state.uri.queryParameters['from'];
-            return OtpScreen(phone: phone, from: from);
+            return _withAndroidBackSwipe(OtpScreen(phone: phone, from: from));
           },
         ),
         GoRoute(
           path: '/profile',
-          builder: (context, state) => const ProfileScreen(),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const ProfileScreen()),
         ),
         GoRoute(
           path: '/users/:userId/profile',
@@ -72,19 +74,20 @@ class AppRouter {
             final initialProfile = state.extra is UserProfileVm
                 ? state.extra! as UserProfileVm
                 : null;
-            return ProfileScreen(
-              userId: userId,
-              initialProfile: initialProfile,
+            return _withAndroidBackSwipe(
+              ProfileScreen(userId: userId, initialProfile: initialProfile),
             );
           },
         ),
         GoRoute(
           path: '/activities',
-          builder: (context, state) => const ActivitiesScreen(),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const ActivitiesScreen()),
         ),
         GoRoute(
           path: '/me/activities',
-          builder: (context, state) => const MyActivitiesScreen(),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const MyActivitiesScreen()),
         ),
         GoRoute(
           path: '/activities/create',
@@ -116,10 +119,12 @@ class AppRouter {
           builder: (context, state) {
             final activityId = state.pathParameters['activityId'] ?? '';
             final args = state.extra as ActivityPaymentRouteArgs?;
-            return ActivityPaymentScreen(
-              activityId: activityId,
-              initialActivity: args?.activity,
-              initialHostName: args?.hostName,
+            return _withAndroidBackSwipe(
+              ActivityPaymentScreen(
+                activityId: activityId,
+                initialActivity: args?.activity,
+                initialHostName: args?.hostName,
+              ),
             );
           },
         ),
@@ -134,72 +139,87 @@ class AppRouter {
           path: '/activities/:activityId/attendance-qr',
           builder: (context, state) {
             final activityId = state.pathParameters['activityId'] ?? '';
-            return ActivityAttendanceQrScreen(activityId: activityId);
+            return _withAndroidBackSwipe(
+              ActivityAttendanceQrScreen(activityId: activityId),
+            );
           },
         ),
         GoRoute(
           path: '/activities/:activityId/chat',
-          builder: (context, state) =>
-              const FeatureStubScreen(title: 'Activity Chat'),
+          builder: (context, state) => _withAndroidBackSwipe(
+            const FeatureStubScreen(title: 'Activity Chat'),
+          ),
         ),
         GoRoute(
           path: '/qr',
-          builder: (context, state) => const AttendanceScannerScreen(),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const AttendanceScannerScreen()),
         ),
         GoRoute(
           path: '/menu',
-          builder: (context, state) => const FeatureStubScreen(title: 'Menu'),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const FeatureStubScreen(title: 'Menu')),
         ),
         GoRoute(
           path: '/map',
-          builder: (context, state) => const FeatureStubScreen(title: 'Map'),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const FeatureStubScreen(title: 'Map')),
         ),
         GoRoute(
           path: '/notifications',
-          builder: (context, state) =>
-              const FeatureStubScreen(title: 'Notifications'),
+          builder: (context, state) => _withAndroidBackSwipe(
+            const FeatureStubScreen(title: 'Notifications'),
+          ),
         ),
         GoRoute(
           path: '/services',
           builder: (context, state) =>
-              const FeatureStubScreen(title: 'Services'),
+              _withAndroidBackSwipe(const FeatureStubScreen(title: 'Services')),
         ),
         GoRoute(
           path: '/chats',
-          builder: (context, state) => const FeatureStubScreen(title: 'Chats'),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const FeatureStubScreen(title: 'Chats')),
         ),
         GoRoute(
           path: '/yandex-go',
-          builder: (context, state) =>
-              const FeatureStubScreen(title: 'Yandex Go'),
+          builder: (context, state) => _withAndroidBackSwipe(
+            const FeatureStubScreen(title: 'Yandex Go'),
+          ),
         ),
         GoRoute(
           path: '/glovo',
-          builder: (context, state) => const FeatureStubScreen(title: 'Glovo'),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const FeatureStubScreen(title: 'Glovo')),
         ),
         GoRoute(
           path: '/wolt',
-          builder: (context, state) => const FeatureStubScreen(title: 'Wolt'),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const FeatureStubScreen(title: 'Wolt')),
         ),
         GoRoute(
           path: '/more-services',
-          builder: (context, state) =>
-              const FeatureStubScreen(title: 'More Services'),
+          builder: (context, state) => _withAndroidBackSwipe(
+            const FeatureStubScreen(title: 'More Services'),
+          ),
         ),
         GoRoute(
           path: '/featured-stays',
-          builder: (context, state) =>
-              const FeatureStubScreen(title: 'Featured Stays'),
+          builder: (context, state) => _withAndroidBackSwipe(
+            const FeatureStubScreen(title: 'Featured Stays'),
+          ),
         ),
         GoRoute(
           path: '/car-rentals',
-          builder: (context, state) =>
-              const FeatureStubScreen(title: 'Car Rentals'),
+          builder: (context, state) => _withAndroidBackSwipe(
+            const FeatureStubScreen(title: 'Car Rentals'),
+          ),
         ),
         GoRoute(
           path: '/editorial',
-          builder: (context, state) =>
-              const FeatureStubScreen(title: 'Editorial'),
+          builder: (context, state) => _withAndroidBackSwipe(
+            const FeatureStubScreen(title: 'Editorial'),
+          ),
         ),
       ],
     );
@@ -228,6 +248,10 @@ class AppRouter {
 
     return false;
   }
+}
+
+Widget _withAndroidBackSwipe(Widget child) {
+  return AndroidBackSwipeScope(child: child);
 }
 
 CustomTransitionPage<void> _buildActivityEditorPage({

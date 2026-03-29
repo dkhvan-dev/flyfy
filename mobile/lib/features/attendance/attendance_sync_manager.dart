@@ -29,7 +29,9 @@ class AttendanceSyncManager {
   bool _isSyncing = false;
 
   Future<AttendanceSyncOutcome> syncPendingForUser(
-      String participantUserId) async {
+    String participantUserId, {
+    bool force = false,
+  }) async {
     if (_isSyncing || participantUserId.trim().isEmpty) {
       final allItems = await _queueRepository.readAll();
       return AttendanceSyncOutcome(
@@ -48,7 +50,9 @@ class AttendanceSyncManager {
           .where(
             (item) =>
                 item.participantUserId == participantUserId &&
-                (item.nextRetryAt == null || !item.nextRetryAt!.isAfter(now)),
+                (force ||
+                    item.nextRetryAt == null ||
+                    !item.nextRetryAt!.isAfter(now)),
           )
           .toList(growable: false);
 
@@ -99,13 +103,13 @@ class AttendanceSyncManager {
               .where((item) => item.participantUserId == participantUserId)
               .length,
         );
-      } on DioException {
+      } on DioException catch (error) {
         final updatedQueue = <AttendanceQueueItem>[];
         final resultsByScanId = <String, AttendanceSyncResultVm>{};
+        final errorCode = _retryErrorCode(error);
+        final errorMessage = _retryErrorMessage(error);
 
-        final readyScanIds = {
-          for (final item in readyItems) item.scanId: item,
-        };
+        final readyScanIds = {for (final item in readyItems) item.scanId: item};
 
         for (final item in allItems) {
           if (item.participantUserId != participantUserId ||
@@ -119,16 +123,16 @@ class AttendanceSyncManager {
             item.copyWith(
               retryCount: retryCount,
               nextRetryAt: _nextRetryAt(now, retryCount),
-              lastErrorCode: 'offline',
-              lastErrorMessage: 'offline',
+              lastErrorCode: errorCode,
+              lastErrorMessage: errorMessage,
             ),
           );
           resultsByScanId[item.scanId] = AttendanceSyncResultVm(
             scanId: item.scanId,
             activityId: item.activityId,
             status: 'RETRYABLE',
-            code: 'offline',
-            message: 'offline',
+            code: errorCode,
+            message: errorMessage,
             syncedAt: now,
           );
         }
@@ -150,14 +154,53 @@ class AttendanceSyncManager {
     final seconds = retryCount <= 1
         ? 15
         : retryCount == 2
-            ? 30
-            : retryCount == 3
-                ? 60
-                : retryCount == 4
-                    ? 120
-                    : retryCount == 5
-                        ? 300
-                        : 900;
+        ? 30
+        : retryCount == 3
+        ? 60
+        : retryCount == 4
+        ? 120
+        : retryCount == 5
+        ? 300
+        : 900;
     return now.add(Duration(seconds: seconds));
+  }
+
+  bool _isOfflineError(DioException error) {
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.connectionError:
+        return true;
+      case DioExceptionType.badResponse:
+      case DioExceptionType.cancel:
+      case DioExceptionType.badCertificate:
+      case DioExceptionType.unknown:
+        return false;
+    }
+  }
+
+  String _retryErrorCode(DioException error) {
+    if (_isOfflineError(error)) {
+      return 'offline';
+    }
+
+    final statusCode = error.response?.statusCode;
+    if (statusCode == 401 || statusCode == 403) {
+      return 'auth_required';
+    }
+
+    return 'server_error';
+  }
+
+  String _retryErrorMessage(DioException error) {
+    final statusCode = error.response?.statusCode;
+    if (_isOfflineError(error)) {
+      return 'offline';
+    }
+    if (statusCode == 401 || statusCode == 403) {
+      return 'auth_required';
+    }
+    return 'server_error';
   }
 }

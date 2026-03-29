@@ -30,6 +30,8 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
       AttendanceQueueRepository();
 
   bool _isHandlingScan = false;
+  bool _isManualSyncing = false;
+  bool _isScannerStopped = false;
   int _pendingCount = 0;
   String? _feedbackMessage;
   _ScannerFeedbackTone _feedbackTone = _ScannerFeedbackTone.neutral;
@@ -64,6 +66,90 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
     });
   }
 
+  Future<void> _handleManualSync() async {
+    if (_isManualSyncing) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final participantUserId =
+        context.read<SessionProvider>().profile?.userId ?? '';
+    if (participantUserId.isEmpty) {
+      _setFeedback(
+        l10n.qrScannerSessionUnavailable,
+        _ScannerFeedbackTone.error,
+      );
+      return;
+    }
+
+    final pendingBefore = (await _queueRepository.readAll())
+        .where((item) => item.participantUserId == participantUserId)
+        .length;
+    if (pendingBefore == 0) {
+      if (!mounted) return;
+      setState(() => _pendingCount = 0);
+      _setFeedback(l10n.qrScannerNoPending, _ScannerFeedbackTone.neutral);
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _isManualSyncing = true);
+    }
+
+    try {
+      final outcome = await AttendanceSyncManager.instance.syncPendingForUser(
+        participantUserId,
+        force: true,
+      );
+      if (!mounted) return;
+
+      setState(() => _pendingCount = outcome.remainingPendingCount);
+      final feedbackResult = _resolveManualSyncFeedback(outcome, l10n);
+      _setFeedback(feedbackResult.$1, feedbackResult.$2);
+    } finally {
+      if (mounted) {
+        setState(() => _isManualSyncing = false);
+      }
+    }
+  }
+
+  (String, _ScannerFeedbackTone) _resolveManualSyncFeedback(
+    AttendanceSyncOutcome outcome,
+    AppLocalizations l10n,
+  ) {
+    final results = outcome.resultsByScanId.values.toList(growable: false);
+    if (results.isEmpty) {
+      return (l10n.qrScannerNoPending, _ScannerFeedbackTone.neutral);
+    }
+
+    final rejected = results.where((item) => item.isRejected).toList();
+    if (rejected.isNotEmpty) {
+      return (
+        _messageForResult(rejected.first, l10n),
+        _ScannerFeedbackTone.error,
+      );
+    }
+
+    final retryable = results.where((item) => item.isRetryable).toList();
+    if (retryable.isNotEmpty) {
+      return (l10n.qrScannerQueuedOffline, _ScannerFeedbackTone.warning);
+    }
+
+    final synced = results.where((item) => item.isSynced).toList();
+    if (synced.isNotEmpty) {
+      return (l10n.qrScannerSuccess, _ScannerFeedbackTone.success);
+    }
+
+    final alreadySynced = results
+        .where((item) => item.isAlreadySynced)
+        .toList();
+    if (alreadySynced.isNotEmpty) {
+      return (l10n.qrScannerAlreadyCheckedIn, _ScannerFeedbackTone.success);
+    }
+
+    return (l10n.qrScannerReady, _ScannerFeedbackTone.neutral);
+  }
+
   Future<void> _handleDetect(BarcodeCapture capture) async {
     if (_isHandlingScan) return;
 
@@ -85,7 +171,9 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
         context.read<SessionProvider>().profile?.userId ?? '';
     if (participantUserId.isEmpty) {
       _setFeedback(
-          l10n.qrScannerSessionUnavailable, _ScannerFeedbackTone.error);
+        l10n.qrScannerSessionUnavailable,
+        _ScannerFeedbackTone.error,
+      );
       return;
     }
 
@@ -136,9 +224,10 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
         result.isSynced || result.isAlreadySynced
             ? _ScannerFeedbackTone.success
             : result.isRejected
-                ? _ScannerFeedbackTone.error
-                : _ScannerFeedbackTone.warning,
+            ? _ScannerFeedbackTone.error
+            : _ScannerFeedbackTone.warning,
       );
+      await _stopScanner();
     } finally {
       _isHandlingScan = false;
     }
@@ -166,6 +255,8 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
         return l10n.qrScannerHostNotAllowed;
       case 'activity_unavailable':
         return l10n.qrScannerActivityUnavailable;
+      case 'auth_required':
+        return l10n.qrScannerSessionUnavailable;
       case 'invalid_qr':
       case 'unsupported_qr':
         return l10n.qrScannerInvalidCode;
@@ -181,6 +272,40 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
     setState(() {
       _feedbackMessage = message;
       _feedbackTone = tone;
+    });
+  }
+
+  Future<void> _stopScanner() async {
+    if (_isScannerStopped) {
+      return;
+    }
+
+    try {
+      await _controller.stop();
+    } catch (_) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isScannerStopped = true);
+  }
+
+  Future<void> _restartScanner() async {
+    try {
+      await _controller.start();
+    } catch (_) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isScannerStopped = false;
+      _feedbackMessage = null;
+      _feedbackTone = _ScannerFeedbackTone.neutral;
     });
   }
 
@@ -260,8 +385,9 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                             ),
                             child: Center(
                               child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 24),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                ),
                                 child: Text(
                                   l10n.qrScannerCameraUnavailable,
                                   textAlign: TextAlign.center,
@@ -290,8 +416,9 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.accent
-                                        .withValues(alpha: 0.22),
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.22,
+                                    ),
                                     blurRadius: 28,
                                     spreadRadius: 2,
                                   ),
@@ -345,30 +472,44 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                                 children: [
                                   Expanded(
                                     child: OutlinedButton(
-                                      onPressed: _refreshPendingState,
+                                      onPressed: _isManualSyncing
+                                          ? null
+                                          : _handleManualSync,
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: Colors.white,
                                         side: BorderSide(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.14),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.14,
+                                          ),
                                         ),
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 14,
                                         ),
                                       ),
-                                      child: Text(l10n.qrScannerSyncNow),
+                                      child: _isManualSyncing
+                                          ? SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation(
+                                                      Colors.white.withValues(
+                                                        alpha: 0.92,
+                                                      ),
+                                                    ),
+                                              ),
+                                            )
+                                          : Text(l10n.qrScannerSyncNow),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: FilledButton(
-                                      onPressed: () => _setFeedback(
-                                        l10n.qrScannerReady,
-                                        _ScannerFeedbackTone.neutral,
-                                      ),
+                                      onPressed: _restartScanner,
                                       style: FilledButton.styleFrom(
                                         backgroundColor: AppColors.accent,
-                                        foregroundColor: Colors.black,
+                                        foregroundColor: AppColors.textPrimary,
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 14,
                                         ),

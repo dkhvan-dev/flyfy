@@ -790,6 +790,12 @@ abstract class AppLocalizations {
   /// **'Completed'**
   String get activityStatusCompleted;
 
+  /// No description provided for @activityStatusCompletedEarly.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed early'**
+  String get activityStatusCompletedEarly;
+
   /// No description provided for @activityStatusCancelled.
   ///
   /// In en, this message translates to:
@@ -1054,6 +1060,126 @@ abstract class AppLocalizations {
   /// **'This activity can no longer be cancelled'**
   String get activityCancelNotAllowed;
 
+  /// No description provided for @activityExtend30MinutesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend by 30 min'**
+  String get activityExtend30MinutesButton;
+
+  /// No description provided for @activityExtend60MinutesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend by 1 hour'**
+  String get activityExtend60MinutesButton;
+
+  /// No description provided for @activityExtendSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity end time updated'**
+  String get activityExtendSuccess;
+
+  /// No description provided for @activityExtendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to extend the activity'**
+  String get activityExtendFailed;
+
+  /// No description provided for @activityExtendNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This activity can no longer be extended'**
+  String get activityExtendNotAllowed;
+
+  /// No description provided for @activityCompleteNowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete now'**
+  String get activityCompleteNowButton;
+
+  /// No description provided for @activityCompleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity completed'**
+  String get activityCompleteSuccess;
+
+  /// No description provided for @activityCompleteEarlySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity completed earlier than planned'**
+  String get activityCompleteEarlySuccess;
+
+  /// No description provided for @activityCompleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to complete the activity'**
+  String get activityCompleteFailed;
+
+  /// No description provided for @activityCompleteTooEarly.
+  ///
+  /// In en, this message translates to:
+  /// **'You can complete the activity only during the final 25% of its planned duration'**
+  String get activityCompleteTooEarly;
+
+  /// No description provided for @activityCompleteNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This activity cannot be completed right now'**
+  String get activityCompleteNotAllowed;
+
+  /// No description provided for @activityCompleteAlreadyCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This activity is already completed'**
+  String get activityCompleteAlreadyCompleted;
+
+  /// No description provided for @activityCompleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete this activity early?'**
+  String get activityCompleteConfirmTitle;
+
+  /// No description provided for @activityCompleteConfirmDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The activity will end earlier than planned. Add a reason so participants understand why it finished ahead of schedule.'**
+  String get activityCompleteConfirmDescription;
+
+  /// No description provided for @activityCompleteReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Early completion reason'**
+  String get activityCompleteReasonLabel;
+
+  /// No description provided for @activityCompleteReasonPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: the program finished earlier than expected'**
+  String get activityCompleteReasonPlaceholder;
+
+  /// No description provided for @activityCompleteReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a reason for early completion'**
+  String get activityCompleteReasonRequired;
+
+  /// No description provided for @activityCompleteConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm completion'**
+  String get activityCompleteConfirmButton;
+
+  /// No description provided for @activityCompleteCancelInsteadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This action will cancel the activity'**
+  String get activityCompleteCancelInsteadTitle;
+
+  /// No description provided for @activityCompleteCancelInsteadDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'There is still too much time left before the planned end. If you continue now, participants will see the activity as cancelled, not completed. Add a cancellation reason.'**
+  String get activityCompleteCancelInsteadDescription;
+
   /// No description provided for @activityGoingTitle.
   ///
   /// In en, this message translates to:
@@ -1221,6 +1347,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load participants right now'**
   String get activityParticipantsLoadFailed;
+
+  /// No description provided for @participantStatusRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get participantStatusRequested;
+
+  /// No description provided for @participantStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get participantStatusApproved;
+
+  /// No description provided for @participantStatusWaitlisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Waitlisted'**
+  String get participantStatusWaitlisted;
+
+  /// No description provided for @participantStatusPendingPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting payment'**
+  String get participantStatusPendingPayment;
+
+  /// No description provided for @participantStatusConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get participantStatusConfirmed;
+
+  /// No description provided for @participantStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get participantStatusDeclined;
+
+  /// No description provided for @participantStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get participantStatusCancelled;
+
+  /// No description provided for @participantStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get participantStatusExpired;
+
+  /// No description provided for @participantStatusCheckedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked in'**
+  String get participantStatusCheckedIn;
+
+  /// No description provided for @participantStatusAttended.
+  ///
+  /// In en, this message translates to:
+  /// **'Attended'**
+  String get participantStatusAttended;
+
+  /// No description provided for @participantStatusNoShow.
+  ///
+  /// In en, this message translates to:
+  /// **'No show'**
+  String get participantStatusNoShow;
 
   /// No description provided for @activityPrivateJoinTitle.
   ///
@@ -2875,7 +3067,7 @@ abstract class AppLocalizations {
   /// No description provided for @qrScannerNotRegistered.
   ///
   /// In en, this message translates to:
-  /// **'You are not registered for this activity'**
+  /// **'You are not a participant of this activity'**
   String get qrScannerNotRegistered;
 
   /// No description provided for @qrScannerNotEligible.

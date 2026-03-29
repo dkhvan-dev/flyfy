@@ -35,6 +35,12 @@ class ActivityListItemVm {
     this.longitude,
     this.coverFileId,
     this.coverImageUrl,
+    this.cancellationReason,
+    this.cancelledAt,
+    this.startedAt,
+    this.completedAt,
+    this.completionReason,
+    this.publishedAt,
   });
 
   final String id;
@@ -71,6 +77,12 @@ class ActivityListItemVm {
   final double? longitude;
   final String? coverFileId;
   final String? coverImageUrl;
+  final String? cancellationReason;
+  final DateTime? cancelledAt;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final String? completionReason;
+  final DateTime? publishedAt;
 
   factory ActivityListItemVm.fromJson(Map<String, dynamic> json) {
     return ActivityListItemVm(
@@ -116,6 +128,12 @@ class ActivityListItemVm {
       longitude: (json['longitude'] as num?)?.toDouble(),
       coverFileId: json['coverFileId']?.toString(),
       coverImageUrl: json['coverImageUrl']?.toString(),
+      cancellationReason: json['cancellationReason']?.toString(),
+      cancelledAt: DateTime.tryParse(json['cancelledAt']?.toString() ?? ''),
+      startedAt: DateTime.tryParse(json['startedAt']?.toString() ?? ''),
+      completedAt: DateTime.tryParse(json['completedAt']?.toString() ?? ''),
+      completionReason: json['completionReason']?.toString(),
+      publishedAt: DateTime.tryParse(json['publishedAt']?.toString() ?? ''),
     );
   }
 
@@ -132,6 +150,11 @@ class ActivityListItemVm {
   }
 
   bool get isFree => priceType.toUpperCase() == 'FREE';
+
+  bool get isCompletedEarly =>
+      status.toUpperCase() == 'COMPLETED' &&
+      completedAt != null &&
+      completedAt!.isBefore(endAt);
 
   String? get resolvedCurrencyCode =>
       resolveActivityCurrencyCode(currency: currency, countryCode: countryCode);

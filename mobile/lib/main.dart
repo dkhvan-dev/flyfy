@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -118,16 +121,23 @@ class _AttendanceSyncBridge extends StatefulWidget {
 
 class _AttendanceSyncBridgeState extends State<_AttendanceSyncBridge>
     with WidgetsBindingObserver {
+  final Connectivity _connectivity = Connectivity();
+
   String? _lastSyncedUserId;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
+      _handleConnectivityChanged,
+    );
   }
 
   @override
   void dispose() {
+    _connectivitySubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -155,7 +165,34 @@ class _AttendanceSyncBridgeState extends State<_AttendanceSyncBridge>
     return widget.child;
   }
 
-  void _scheduleSync() {
+  Future<void> _handleConnectivityChanged(
+    List<ConnectivityResult> results,
+  ) async {
+    if (!_hasUsableConnectivity(results)) {
+      return;
+    }
+
+    _scheduleSync(force: true);
+  }
+
+  bool _hasUsableConnectivity(List<ConnectivityResult> results) {
+    for (final result in results) {
+      switch (result) {
+        case ConnectivityResult.mobile:
+        case ConnectivityResult.wifi:
+        case ConnectivityResult.ethernet:
+        case ConnectivityResult.vpn:
+        case ConnectivityResult.bluetooth:
+        case ConnectivityResult.other:
+          return true;
+        case ConnectivityResult.none:
+          continue;
+      }
+    }
+    return false;
+  }
+
+  void _scheduleSync({bool force = false}) {
     final session = context.read<SessionProvider>();
     final userId = session.profile?.userId ?? '';
     if (!session.isAuthenticated || userId.isEmpty) {
@@ -163,7 +200,7 @@ class _AttendanceSyncBridgeState extends State<_AttendanceSyncBridge>
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AttendanceSyncManager.instance.syncPendingForUser(userId);
+      AttendanceSyncManager.instance.syncPendingForUser(userId, force: force);
     });
   }
 }

@@ -351,11 +351,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 const Icon(
                                                   Icons.sms_rounded,
                                                   size: 20,
+                                                  color: AppColors.textPrimary,
                                                 ),
                                                 const SizedBox(width: 8),
                                                 Text(
                                                   l10n.authByPhone,
                                                   style: const TextStyle(
+                                                    color: AppColors.textPrimary,
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                   ),

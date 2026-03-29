@@ -118,6 +118,8 @@ func main() {
 
 	httpErrCh := make(chan error, 1)
 	grpcErrCh := make(chan error, 1)
+	backgroundCtx, stopBackground := context.WithCancel(context.Background())
+	defer stopBackground()
 
 	go func() {
 		log.Info().Str("service", cfg.App.Name).Int("port", cfg.HTTP.Port).Msg("HTTP server started")
@@ -136,6 +138,8 @@ func main() {
 		}
 		grpcErrCh <- nil
 	}()
+
+	go runActivityLifecycleTicker(backgroundCtx, activityUC)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
@@ -157,6 +161,7 @@ func main() {
 	defer cancel()
 
 	log.Info().Str("service", cfg.App.Name).Msg("shutting down")
+	stopBackground()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("http shutdown failed")
@@ -177,6 +182,49 @@ func main() {
 	}
 
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
+}
+
+func runActivityLifecycleTicker(ctx context.Context, activityUC *app.ActivityUseCase) {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	runTick := func() {
+		tickCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		defer cancel()
+
+		startedCount, err := activityUC.AutoStartDueActivities(tickCtx, 100)
+		if err != nil {
+			log.Error().Err(err).Msg("auto-start due activities")
+			return
+		}
+		if startedCount > 0 {
+			log.Info().
+				Int("count", startedCount).
+				Msg("activities auto-started by lifecycle ticker")
+		}
+
+		completedCount, err := activityUC.AutoCompleteDueActivities(tickCtx, 100)
+		if err != nil {
+			log.Error().Err(err).Msg("auto-complete due activities")
+			return
+		}
+		if completedCount > 0 {
+			log.Info().
+				Int("count", completedCount).
+				Msg("activities auto-completed by lifecycle ticker")
+		}
+	}
+
+	runTick()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			runTick()
+		}
+	}
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {

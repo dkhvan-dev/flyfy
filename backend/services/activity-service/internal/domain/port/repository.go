@@ -57,6 +57,8 @@ type ActivityRepository interface {
 	UpdateActivity(ctx context.Context, item *model.Activity) error
 	GetActivityByID(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
 	ListActivities(ctx context.Context, filter ActivityFilter) ([]*model.Activity, error)
+	ListActivitiesDueForStart(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error)
+	ListActivitiesDueForCompletion(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error)
 
 	CreateActivityEvent(ctx context.Context, item *model.ActivityEvent) error
 

@@ -93,6 +93,7 @@ type Activity struct {
 	CancelledAt        *time.Time
 	StartedAt          *time.Time
 	CompletedAt        *time.Time
+	CompletionReason   *string
 	PublishedAt        *time.Time
 
 	Revision  int
@@ -468,6 +469,9 @@ func (a *Activity) Publish(now time.Time, reviewRequired bool) error {
 
 	a.CancellationReason = nil
 	a.CancelledAt = nil
+	a.StartedAt = nil
+	a.CompletedAt = nil
+	a.CompletionReason = nil
 	a.Revision++
 	a.UpdatedAt = now.UTC()
 	return nil

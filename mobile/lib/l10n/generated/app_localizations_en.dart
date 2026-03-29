@@ -375,6 +375,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityStatusCompleted => 'Completed';
 
   @override
+  String get activityStatusCompletedEarly => 'Completed early';
+
+  @override
   String get activityStatusCancelled => 'Cancelled';
 
   @override
@@ -515,6 +518,76 @@ class AppLocalizationsEn extends AppLocalizations {
       'This activity can no longer be cancelled';
 
   @override
+  String get activityExtend30MinutesButton => 'Extend by 30 min';
+
+  @override
+  String get activityExtend60MinutesButton => 'Extend by 1 hour';
+
+  @override
+  String get activityExtendSuccess => 'Activity end time updated';
+
+  @override
+  String get activityExtendFailed => 'Failed to extend the activity';
+
+  @override
+  String get activityExtendNotAllowed =>
+      'This activity can no longer be extended';
+
+  @override
+  String get activityCompleteNowButton => 'Complete now';
+
+  @override
+  String get activityCompleteSuccess => 'Activity completed';
+
+  @override
+  String get activityCompleteEarlySuccess =>
+      'Activity completed earlier than planned';
+
+  @override
+  String get activityCompleteFailed => 'Failed to complete the activity';
+
+  @override
+  String get activityCompleteTooEarly =>
+      'You can complete the activity only during the final 25% of its planned duration';
+
+  @override
+  String get activityCompleteNotAllowed =>
+      'This activity cannot be completed right now';
+
+  @override
+  String get activityCompleteAlreadyCompleted =>
+      'This activity is already completed';
+
+  @override
+  String get activityCompleteConfirmTitle => 'Complete this activity early?';
+
+  @override
+  String get activityCompleteConfirmDescription =>
+      'The activity will end earlier than planned. Add a reason so participants understand why it finished ahead of schedule.';
+
+  @override
+  String get activityCompleteReasonLabel => 'Early completion reason';
+
+  @override
+  String get activityCompleteReasonPlaceholder =>
+      'For example: the program finished earlier than expected';
+
+  @override
+  String get activityCompleteReasonRequired =>
+      'Enter a reason for early completion';
+
+  @override
+  String get activityCompleteConfirmButton => 'Confirm completion';
+
+  @override
+  String get activityCompleteCancelInsteadTitle =>
+      'This action will cancel the activity';
+
+  @override
+  String get activityCompleteCancelInsteadDescription =>
+      'There is still too much time left before the planned end. If you continue now, participants will see the activity as cancelled, not completed. Add a cancellation reason.';
+
+  @override
   String activityGoingTitle(int count) {
     return 'Going ($count)';
   }
@@ -605,6 +678,39 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get activityParticipantsLoadFailed =>
       'Could not load participants right now';
+
+  @override
+  String get participantStatusRequested => 'Requested';
+
+  @override
+  String get participantStatusApproved => 'Approved';
+
+  @override
+  String get participantStatusWaitlisted => 'Waitlisted';
+
+  @override
+  String get participantStatusPendingPayment => 'Awaiting payment';
+
+  @override
+  String get participantStatusConfirmed => 'Confirmed';
+
+  @override
+  String get participantStatusDeclined => 'Declined';
+
+  @override
+  String get participantStatusCancelled => 'Cancelled';
+
+  @override
+  String get participantStatusExpired => 'Expired';
+
+  @override
+  String get participantStatusCheckedIn => 'Checked in';
+
+  @override
+  String get participantStatusAttended => 'Attended';
+
+  @override
+  String get participantStatusNoShow => 'No show';
 
   @override
   String get activityPrivateJoinTitle => 'Private Activity';
@@ -1515,7 +1621,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get qrScannerNotRegistered =>
-      'You are not registered for this activity';
+      'You are not a participant of this activity';
 
   @override
   String get qrScannerNotEligible =>

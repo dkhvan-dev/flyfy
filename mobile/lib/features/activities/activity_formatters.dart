@@ -1,4 +1,5 @@
 import '../../l10n/generated/app_localizations.dart';
+import 'models/activity_list_item_vm.dart';
 
 String formatActivityStatus(String value, AppLocalizations l10n) {
   switch (value.toUpperCase()) {
@@ -25,6 +26,16 @@ String formatActivityStatus(String value, AppLocalizations l10n) {
   }
 }
 
+String formatActivityDisplayStatus(
+  ActivityListItemVm activity,
+  AppLocalizations l10n,
+) {
+  if (activity.isCompletedEarly) {
+    return l10n.activityStatusCompletedEarly;
+  }
+  return formatActivityStatus(activity.status, l10n);
+}
+
 String formatActivityFormat(String value, AppLocalizations l10n) {
   switch (value.toUpperCase()) {
     case 'OFFLINE':
@@ -35,5 +46,41 @@ String formatActivityFormat(String value, AppLocalizations l10n) {
       return l10n.activityFormatHybrid;
     default:
       return value;
+  }
+}
+
+String formatParticipantStatus(String value, AppLocalizations l10n) {
+  switch (value.toUpperCase()) {
+    case 'REQUESTED':
+      return l10n.participantStatusRequested;
+    case 'APPROVED':
+      return l10n.participantStatusApproved;
+    case 'WAITLISTED':
+      return l10n.participantStatusWaitlisted;
+    case 'PENDING_PAYMENT':
+      return l10n.participantStatusPendingPayment;
+    case 'CONFIRMED':
+      return l10n.participantStatusConfirmed;
+    case 'DECLINED':
+      return l10n.participantStatusDeclined;
+    case 'CANCELLED':
+      return l10n.participantStatusCancelled;
+    case 'EXPIRED':
+      return l10n.participantStatusExpired;
+    case 'CHECKED_IN':
+      return l10n.participantStatusCheckedIn;
+    case 'ATTENDED':
+      return l10n.participantStatusAttended;
+    case 'NO_SHOW':
+      return l10n.participantStatusNoShow;
+    default:
+      return value
+          .split('_')
+          .where((part) => part.isNotEmpty)
+          .map(
+            (part) =>
+                '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+          )
+          .join(' ');
   }
 }

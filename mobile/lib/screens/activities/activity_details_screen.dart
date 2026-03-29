@@ -37,9 +37,20 @@ class ActivityDetailsScreen extends StatefulWidget {
   State<ActivityDetailsScreen> createState() => _ActivityDetailsScreenState();
 }
 
-enum _FooterAction { join, leave, publish, cancel }
+enum _FooterAction {
+  join,
+  leave,
+  publish,
+  cancel,
+  extend30,
+  extend60,
+  complete,
+}
 
 class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
+  static const double _backSwipeMinDistance = 56;
+  static const double _backSwipeMinVelocity = 700;
+
   final ActivityApi _activityApi = ActivityApi();
   final ProfileApi _profileApi = ProfileApi();
 
@@ -49,6 +60,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   Map<String, UserProfileVm> _resolvedProfiles = const {};
   _FooterAction? _pendingAction;
   bool _isPaymentSuccessful = false;
+  bool _isTrackingBackSwipe = false;
+  double _backSwipeDistance = 0;
 
   @override
   void initState() {
@@ -100,6 +113,54 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         _participantsError = 'failed';
       });
     }
+  }
+
+  void _resetBackSwipe() {
+    _isTrackingBackSwipe = false;
+    _backSwipeDistance = 0;
+  }
+
+  double _backSwipeEdgeWidth(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return width <= 393 ? 68.0 : 76.0;
+  }
+
+  void _handleBackSwipeStart(DragStartDetails details) {
+    if (!Navigator.of(context).canPop()) {
+      _resetBackSwipe();
+      return;
+    }
+
+    final edgeWidth = _backSwipeEdgeWidth(context);
+    _isTrackingBackSwipe = details.localPosition.dx <= edgeWidth;
+    _backSwipeDistance = 0;
+  }
+
+  void _handleBackSwipeUpdate(DragUpdateDetails details) {
+    if (!_isTrackingBackSwipe) return;
+
+    final delta = details.primaryDelta ?? 0;
+    if (delta < 0 && _backSwipeDistance <= 0) {
+      _resetBackSwipe();
+      return;
+    }
+
+    _backSwipeDistance += delta;
+  }
+
+  void _handleBackSwipeEnd(DragEndDetails details) {
+    final primaryVelocity = details.primaryVelocity ?? 0;
+    final shouldGoBack =
+        _isTrackingBackSwipe &&
+        Navigator.of(context).canPop() &&
+        (_backSwipeDistance >= _backSwipeMinDistance ||
+            primaryVelocity >= _backSwipeMinVelocity);
+
+    _resetBackSwipe();
+    if (!shouldGoBack) return;
+
+    FocusScope.of(context).unfocus();
+    context.pop();
   }
 
   Future<void> _handleJoin() async {
@@ -348,6 +409,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       return;
     }
 
+    await _submitCancel(reason, l10n: l10n);
+  }
+
+  Future<void> _submitCancel(
+    String reason, {
+    required AppLocalizations l10n,
+  }) async {
     final provider = context.read<ActivityProvider>();
     setState(() => _pendingAction = _FooterAction.cancel);
     final updated = await provider.cancelActivity(
@@ -373,6 +441,107 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.activityCancelSuccess)));
+  }
+
+  Future<void> _handleExtend(int minutes) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ActivityProvider>();
+    setState(
+      () => _pendingAction = minutes == 30
+          ? _FooterAction.extend30
+          : _FooterAction.extend60,
+    );
+    final updated = await provider.extendActivity(
+      widget.activityId,
+      minutes: minutes,
+    );
+
+    if (!mounted) return;
+
+    if (updated == null) {
+      setState(() => _pendingAction = null);
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: _mapExtendError(provider.actionErrorMessage, l10n),
+      );
+      return;
+    }
+
+    await _reloadAfterAction(includeJoined: false);
+    if (!mounted) return;
+    setState(() => _pendingAction = null);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.activityExtendSuccess)));
+  }
+
+  Future<void> _handleCompleteNow(ActivityListItemVm activity) async {
+    final l10n = AppLocalizations.of(context)!;
+    final now = DateTime.now().toUtc();
+    final totalDurationMs = activity.endAt
+        .toUtc()
+        .difference(activity.startAt.toUtc())
+        .inMilliseconds;
+
+    if (totalDurationMs <= 0 || now.isBefore(activity.startAt.toUtc())) {
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.activityCompleteTooEarly,
+      );
+      return;
+    }
+
+    final remainingMs = activity.endAt.toUtc().difference(now).inMilliseconds;
+    if (remainingMs > totalDurationMs / 2) {
+      final reason = await _showCancelInsteadSheet(l10n);
+      if (!mounted || reason == null) {
+        return;
+      }
+      await _submitCancel(reason, l10n: l10n);
+      return;
+    }
+
+    if (remainingMs > totalDurationMs / 4) {
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.activityCompleteTooEarly,
+      );
+      return;
+    }
+
+    final reason = await _showCompleteActivitySheet(l10n);
+    if (!mounted || reason == null) {
+      return;
+    }
+
+    final provider = context.read<ActivityProvider>();
+    setState(() => _pendingAction = _FooterAction.complete);
+    final updated = await provider.completeActivity(
+      widget.activityId,
+      reason: reason,
+    );
+
+    if (!mounted) return;
+
+    if (updated == null) {
+      setState(() => _pendingAction = null);
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: _mapCompleteError(provider.actionErrorMessage, l10n),
+      );
+      return;
+    }
+
+    await _reloadAfterAction(includeJoined: false);
+    if (!mounted) return;
+    setState(() => _pendingAction = null);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.activityCompleteEarlySuccess)));
   }
 
   Future<void> _reloadAfterAction({required bool includeJoined}) async {
@@ -404,6 +573,24 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     );
   }
 
+  Future<String?> _showCompleteActivitySheet(AppLocalizations l10n) {
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _CompleteActivitySheet(l10n: l10n),
+    );
+  }
+
+  Future<String?> _showCancelInsteadSheet(AppLocalizations l10n) {
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _CancelInsteadSheet(l10n: l10n),
+    );
+  }
+
   String _mapCancelError(String? actionErrorMessage, AppLocalizations l10n) {
     final raw = (actionErrorMessage ?? '').trim();
     if (raw.isEmpty) {
@@ -419,6 +606,46 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     }
     if (normalized.contains('cancellation reason is required')) {
       return l10n.activityCancelReasonRequired;
+    }
+
+    return raw;
+  }
+
+  String _mapExtendError(String? actionErrorMessage, AppLocalizations l10n) {
+    final raw = (actionErrorMessage ?? '').trim();
+    if (raw.isEmpty) {
+      return l10n.activityExtendFailed;
+    }
+
+    final normalized = raw.toLowerCase();
+    if (normalized.contains('not extendable')) {
+      return l10n.activityExtendNotAllowed;
+    }
+
+    return raw;
+  }
+
+  String _mapCompleteError(String? actionErrorMessage, AppLocalizations l10n) {
+    final raw = (actionErrorMessage ?? '').trim();
+    if (raw.isEmpty) {
+      return l10n.activityCompleteFailed;
+    }
+
+    final normalized = raw.toLowerCase();
+    if (normalized.contains('final 25 percent')) {
+      return l10n.activityCompleteTooEarly;
+    }
+    if (normalized.contains('should be cancelled instead')) {
+      return l10n.activityCompleteCancelInsteadDescription;
+    }
+    if (normalized.contains('completion reason is required')) {
+      return l10n.activityCompleteReasonRequired;
+    }
+    if (normalized.contains('already completed')) {
+      return l10n.activityCompleteAlreadyCompleted;
+    }
+    if (normalized.contains('not completable')) {
+      return l10n.activityCompleteNotAllowed;
     }
 
     return raw;
@@ -440,6 +667,60 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         return false;
       default:
         return true;
+    }
+  }
+
+  bool _canLeaveActivity(
+    ActivityListItemVm activity, {
+    required bool isJoined,
+    required bool isOwner,
+  }) {
+    if (!isJoined || isOwner) {
+      return false;
+    }
+
+    return DateTime.now().toUtc().isBefore(activity.startAt.toUtc());
+  }
+
+  bool _canExtendActivity(
+    ActivityListItemVm activity, {
+    required bool isOwner,
+  }) {
+    if (!isOwner) {
+      return false;
+    }
+
+    switch (activity.status.toUpperCase()) {
+      case 'DRAFT':
+      case 'COMPLETED':
+      case 'CANCELLED':
+      case 'ARCHIVED':
+        return false;
+      default:
+        final now = DateTime.now().toUtc();
+        return !now.isBefore(activity.startAt.toUtc()) &&
+            now.isBefore(activity.endAt.toUtc());
+    }
+  }
+
+  bool _canCompleteActivity(
+    ActivityListItemVm activity, {
+    required bool isOwner,
+  }) {
+    if (!isOwner) {
+      return false;
+    }
+
+    switch (activity.status.toUpperCase()) {
+      case 'DRAFT':
+      case 'COMPLETED':
+      case 'CANCELLED':
+      case 'ARCHIVED':
+        return false;
+      default:
+        final now = DateTime.now().toUtc();
+        return !now.isBefore(activity.startAt.toUtc()) &&
+            now.isBefore(activity.endAt.toUtc());
     }
   }
 
@@ -516,6 +797,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   Future<void> _showParticipantsSheet(
     List<ActivityParticipantVm> participants,
     AppLocalizations l10n,
+    String hostUserId,
   ) async {
     if (participants.isEmpty) {
       return;
@@ -588,6 +870,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final participant = participants[index];
+                        final displayStatus = participant.userId == hostUserId
+                            ? 'CHECKED_IN'
+                            : participant.status;
                         return Row(
                           children: [
                             _ParticipantAvatar(
@@ -627,11 +912,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               ),
                             ),
                             _StatusPill(
-                              label: _prettyToken(participant.status),
-                              backgroundColor: _statusPillColor(
-                                participant.status,
+                              label: formatParticipantStatus(
+                                displayStatus,
+                                l10n,
                               ),
-                              textColor: _statusTextColor(participant.status),
+                              backgroundColor: _statusPillColor(displayStatus),
+                              textColor: _statusTextColor(displayStatus),
                             ),
                           ],
                         );
@@ -724,10 +1010,34 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final status = activity.status.toUpperCase();
     final isDraft = status == 'DRAFT';
     final showPublish = isOwner && isDraft;
+    final canLeaveActivity = _canLeaveActivity(
+      activity,
+      isJoined: isJoined,
+      isOwner: isOwner,
+    );
     final canCancelActivity = _canCancelActivity(activity, isOwner: isOwner);
+    final canExtendActivity = _canExtendActivity(activity, isOwner: isOwner);
+    final canCompleteActivity = _canCompleteActivity(
+      activity,
+      isOwner: isOwner,
+    );
     final canShowAttendanceQr =
         isOwner &&
         !const {'CANCELLED', 'COMPLETED', 'ARCHIVED'}.contains(status);
+    final lifecycleReason = activity.isCompletedEarly
+        ? (activity.completionReason ?? '').trim()
+        : status == 'CANCELLED'
+        ? (activity.cancellationReason ?? '').trim()
+        : '';
+    final lifecycleReasonTitle = activity.isCompletedEarly
+        ? l10n.activityCompleteReasonLabel
+        : l10n.activityCancelReasonLabel;
+    final lifecycleReasonIcon = activity.isCompletedEarly
+        ? Icons.task_alt_rounded
+        : Icons.event_busy_rounded;
+    final lifecycleReasonColor = activity.isCompletedEarly
+        ? _DetailsColors.success
+        : AppColors.accent;
     final categoryLabel = _resolveLocalizedCategoryLabel(
       activity.categorySlug,
       provider.categoryItems,
@@ -754,8 +1064,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         pendingAction: _pendingAction,
         onJoin: _handleJoin,
         onPublish: _handlePublish,
-        onEdit: () =>
-            status == 'CANCELLED' ? _openRepeat(activity) : _openEdit(activity),
+        onEdit: () => const {'CANCELLED', 'COMPLETED'}.contains(status)
+            ? _openRepeat(activity)
+            : _openEdit(activity),
         onPay: isJoined && !isOwner && !activity.isFree
             ? () => _openPayment(activity, hostName: hostName)
             : null,
@@ -796,7 +1107,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                     children: [
                       _DetailsTopBar(
                         title: l10n.activityDetailsTitle,
-                        status: formatActivityStatus(activity.status, l10n),
+                        status: formatActivityDisplayStatus(activity, l10n),
                         statusColor: _activityStatusColor(activity.status),
                         compact: compact,
                         onBack: () => context.pop(),
@@ -825,6 +1136,15 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         description: activity.description,
                         compact: compact,
                       ),
+                      if (lifecycleReason.isNotEmpty) ...[
+                        const SizedBox(height: 18),
+                        _LifecycleReasonCard(
+                          title: lifecycleReasonTitle,
+                          reason: lifecycleReason,
+                          icon: lifecycleReasonIcon,
+                          accentColor: lifecycleReasonColor,
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       _HostCard(
                         hostName: hostName,
@@ -868,6 +1188,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             ? () => _showParticipantsSheet(
                                 activeParticipants,
                                 l10n,
+                                activity.hostUserId,
                               )
                             : null,
                       ),
@@ -878,17 +1199,34 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         isJoined: isJoined,
                         isOwner: isOwner,
                         canShowAttendanceQr: canShowAttendanceQr,
-                        canLeaveActivity: isJoined && !isOwner,
+                        canLeaveActivity: canLeaveActivity,
                         canCancelActivity: canCancelActivity,
+                        canExtendActivity: canExtendActivity,
+                        canCompleteActivity: canCompleteActivity,
                         isLeaving:
                             provider.actionState ==
                                 ActivityActionState.loading &&
                             _pendingAction == _FooterAction.leave,
+                        isExtending30:
+                            provider.actionState ==
+                                ActivityActionState.loading &&
+                            _pendingAction == _FooterAction.extend30,
+                        isExtending60:
+                            provider.actionState ==
+                                ActivityActionState.loading &&
+                            _pendingAction == _FooterAction.extend60,
+                        isCompleting:
+                            provider.actionState ==
+                                ActivityActionState.loading &&
+                            _pendingAction == _FooterAction.complete,
                         isCancelling:
                             provider.actionState ==
                                 ActivityActionState.loading &&
                             _pendingAction == _FooterAction.cancel,
                         onLeaveTap: _handleLeave,
+                        onExtend30Tap: () => _handleExtend(30),
+                        onExtend60Tap: () => _handleExtend(60),
+                        onCompleteTap: () => _handleCompleteNow(activity),
                         onCancelTap: _handleCancel,
                         onShowAttendanceQrTap: () {
                           context.push(
@@ -912,6 +1250,19 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                   ),
                 );
               },
+            ),
+          ),
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: _backSwipeEdgeWidth(context),
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragStart: _handleBackSwipeStart,
+              onHorizontalDragUpdate: _handleBackSwipeUpdate,
+              onHorizontalDragEnd: _handleBackSwipeEnd,
+              onHorizontalDragCancel: _resetBackSwipe,
             ),
           ),
         ],
@@ -1391,16 +1742,87 @@ class _PrivateActivityPasswordDialogState
   }
 }
 
-class _CancelActivitySheet extends StatefulWidget {
+class _CancelActivitySheet extends StatelessWidget {
   const _CancelActivitySheet({required this.l10n});
 
   final AppLocalizations l10n;
 
   @override
-  State<_CancelActivitySheet> createState() => _CancelActivitySheetState();
+  Widget build(BuildContext context) {
+    return _ReasonActionSheet(
+      title: l10n.activityCancelConfirmTitle,
+      description: l10n.activityCancelConfirmDescription,
+      reasonLabel: l10n.activityCancelReasonLabel,
+      reasonPlaceholder: l10n.activityCancelReasonPlaceholder,
+      reasonRequiredText: l10n.activityCancelReasonRequired,
+      confirmLabel: l10n.activityCancelConfirmButton,
+      confirmIcon: Icons.event_busy_rounded,
+    );
+  }
 }
 
-class _CancelActivitySheetState extends State<_CancelActivitySheet> {
+class _CompleteActivitySheet extends StatelessWidget {
+  const _CompleteActivitySheet({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ReasonActionSheet(
+      title: l10n.activityCompleteConfirmTitle,
+      description: l10n.activityCompleteConfirmDescription,
+      reasonLabel: l10n.activityCompleteReasonLabel,
+      reasonPlaceholder: l10n.activityCompleteReasonPlaceholder,
+      reasonRequiredText: l10n.activityCompleteReasonRequired,
+      confirmLabel: l10n.activityCompleteConfirmButton,
+      confirmIcon: Icons.task_alt_rounded,
+    );
+  }
+}
+
+class _CancelInsteadSheet extends StatelessWidget {
+  const _CancelInsteadSheet({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ReasonActionSheet(
+      title: l10n.activityCompleteCancelInsteadTitle,
+      description: l10n.activityCompleteCancelInsteadDescription,
+      reasonLabel: l10n.activityCancelReasonLabel,
+      reasonPlaceholder: l10n.activityCancelReasonPlaceholder,
+      reasonRequiredText: l10n.activityCancelReasonRequired,
+      confirmLabel: l10n.activityCancelConfirmButton,
+      confirmIcon: Icons.warning_amber_rounded,
+    );
+  }
+}
+
+class _ReasonActionSheet extends StatefulWidget {
+  const _ReasonActionSheet({
+    required this.title,
+    required this.description,
+    required this.reasonLabel,
+    required this.reasonPlaceholder,
+    required this.reasonRequiredText,
+    required this.confirmLabel,
+    required this.confirmIcon,
+  });
+
+  final String title;
+  final String description;
+  final String reasonLabel;
+  final String reasonPlaceholder;
+  final String reasonRequiredText;
+  final String confirmLabel;
+  final IconData confirmIcon;
+
+  @override
+  State<_ReasonActionSheet> createState() => _ReasonActionSheetState();
+}
+
+class _ReasonActionSheetState extends State<_ReasonActionSheet> {
   final TextEditingController _reasonController = TextEditingController();
   final FocusNode _reasonFocusNode = FocusNode();
   String? _errorText;
@@ -1415,7 +1837,7 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
   void _submit() {
     final reason = _reasonController.text.trim();
     if (reason.isEmpty) {
-      setState(() => _errorText = widget.l10n.activityCancelReasonRequired);
+      setState(() => _errorText = widget.reasonRequiredText);
       _reasonFocusNode.requestFocus();
       return;
     }
@@ -1424,6 +1846,7 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final mediaQuery = MediaQuery.of(context);
     final compact = mediaQuery.size.width < 390;
 
@@ -1498,8 +1921,8 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
                               color: AppColors.accent.withValues(alpha: 0.26),
                             ),
                           ),
-                          child: const Icon(
-                            Icons.event_busy_rounded,
+                          child: Icon(
+                            widget.confirmIcon,
                             color: AppColors.accent,
                             size: 30,
                           ),
@@ -1508,7 +1931,7 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
                       const SizedBox(height: 20),
                       Center(
                         child: Text(
-                          widget.l10n.activityCancelConfirmTitle,
+                          widget.title,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: _DetailsColors.text,
@@ -1523,7 +1946,7 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 360),
                           child: Text(
-                            widget.l10n.activityCancelConfirmDescription,
+                            widget.description,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: _DetailsColors.muted,
@@ -1535,7 +1958,7 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
                       ),
                       const SizedBox(height: 28),
                       Text(
-                        widget.l10n.activityCancelReasonLabel,
+                        widget.reasonLabel,
                         style: const TextStyle(
                           color: _DetailsColors.text,
                           fontSize: 16,
@@ -1548,7 +1971,9 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
                           color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: _errorText == null
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : const Color(0x88FF8A65),
                           ),
                         ),
                         child: TextField(
@@ -1565,8 +1990,7 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
                             height: 1.4,
                           ),
                           decoration: InputDecoration(
-                            hintText:
-                                widget.l10n.activityCancelReasonPlaceholder,
+                            hintText: widget.reasonPlaceholder,
                             hintStyle: TextStyle(
                               color: _DetailsColors.muted.withValues(
                                 alpha: 0.72,
@@ -1617,14 +2041,14 @@ class _CancelActivitySheetState extends State<_CancelActivitySheet> {
                         builder: (context, constraints) {
                           final stackVertically = constraints.maxWidth < 360;
                           final keepButton = _SheetActionButton(
-                            label: widget.l10n.activityCancelKeepButton,
+                            label: l10n.activityCancelKeepButton,
                             icon: Icons.arrow_back_rounded,
                             isPrimary: false,
                             onTap: () => Navigator.of(context).pop(),
                           );
                           final confirmButton = _SheetActionButton(
-                            label: widget.l10n.activityCancelConfirmButton,
-                            icon: Icons.event_busy_rounded,
+                            label: widget.confirmLabel,
+                            icon: widget.confirmIcon,
                             isPrimary: true,
                             onTap: _submit,
                           );
@@ -2188,6 +2612,83 @@ class _HeadingSection extends StatelessWidget {
   }
 }
 
+class _LifecycleReasonCard extends StatelessWidget {
+  const _LifecycleReasonCard({
+    required this.title,
+    required this.reason,
+    required this.icon,
+    required this.accentColor,
+  });
+
+  final String title;
+  final String reason;
+  final IconData icon;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.05),
+            Colors.white.withValues(alpha: 0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+              border: Border.all(color: accentColor.withValues(alpha: 0.22)),
+            ),
+            child: Icon(icon, color: accentColor, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: accentColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.18,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  reason,
+                  style: const TextStyle(
+                    color: _DetailsColors.text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                    letterSpacing: -0.12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _HostCard extends StatelessWidget {
   const _HostCard({
     required this.hostName,
@@ -2504,9 +3005,17 @@ class _MeetingSection extends StatelessWidget {
     required this.canShowAttendanceQr,
     required this.canLeaveActivity,
     required this.canCancelActivity,
+    required this.canExtendActivity,
+    required this.canCompleteActivity,
     required this.isLeaving,
+    required this.isExtending30,
+    required this.isExtending60,
+    required this.isCompleting,
     required this.isCancelling,
     required this.onLeaveTap,
+    required this.onExtend30Tap,
+    required this.onExtend60Tap,
+    required this.onCompleteTap,
     required this.onCancelTap,
     required this.onShowAttendanceQrTap,
     required this.onActionTap,
@@ -2519,9 +3028,17 @@ class _MeetingSection extends StatelessWidget {
   final bool canShowAttendanceQr;
   final bool canLeaveActivity;
   final bool canCancelActivity;
+  final bool canExtendActivity;
+  final bool canCompleteActivity;
   final bool isLeaving;
+  final bool isExtending30;
+  final bool isExtending60;
+  final bool isCompleting;
   final bool isCancelling;
   final VoidCallback onLeaveTap;
+  final VoidCallback onExtend30Tap;
+  final VoidCallback onExtend60Tap;
+  final VoidCallback onCompleteTap;
   final VoidCallback onCancelTap;
   final VoidCallback onShowAttendanceQrTap;
   final VoidCallback onActionTap;
@@ -2730,6 +3247,27 @@ class _MeetingSection extends StatelessWidget {
             child: _MeetingOwnerQrAction(
               label: l10n.activityAttendanceQrButton,
               onTap: onShowAttendanceQrTap,
+            ),
+          ),
+        ],
+        if (canExtendActivity) ...[
+          const SizedBox(height: 18),
+          _MeetingOwnerExtendRow(
+            extend30Label: l10n.activityExtend30MinutesButton,
+            extend60Label: l10n.activityExtend60MinutesButton,
+            isExtending30: isExtending30,
+            isExtending60: isExtending60,
+            onExtend30Tap: onExtend30Tap,
+            onExtend60Tap: onExtend60Tap,
+          ),
+        ],
+        if (canCompleteActivity) ...[
+          const SizedBox(height: 14),
+          Center(
+            child: _MeetingOwnerCompleteAction(
+              label: l10n.activityCompleteNowButton,
+              isBusy: isCompleting,
+              onTap: onCompleteTap,
             ),
           ),
         ],
@@ -3028,6 +3566,192 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
   }
 }
 
+class _MeetingOwnerExtendRow extends StatelessWidget {
+  const _MeetingOwnerExtendRow({
+    required this.extend30Label,
+    required this.extend60Label,
+    required this.isExtending30,
+    required this.isExtending60,
+    required this.onExtend30Tap,
+    required this.onExtend60Tap,
+  });
+
+  final String extend30Label;
+  final String extend60Label;
+  final bool isExtending30;
+  final bool isExtending60;
+  final VoidCallback onExtend30Tap;
+  final VoidCallback onExtend60Tap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _MeetingOwnerTonalAction(
+            label: extend30Label,
+            icon: Icons.add_alarm_rounded,
+            isBusy: isExtending30,
+            onTap: onExtend30Tap,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _MeetingOwnerTonalAction(
+            label: extend60Label,
+            icon: Icons.schedule_rounded,
+            isBusy: isExtending60,
+            onTap: onExtend60Tap,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MeetingOwnerTonalAction extends StatelessWidget {
+  const _MeetingOwnerTonalAction({
+    required this.label,
+    required this.icon,
+    required this.isBusy,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isBusy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: isBusy ? null : onTap,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isBusy)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.1,
+                    color: AppColors.accent,
+                  ),
+                )
+              else
+                Icon(
+                  icon,
+                  size: 18,
+                  color: AppColors.accent.withValues(alpha: 0.96),
+                ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: _DetailsColors.text.withValues(alpha: 0.96),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MeetingOwnerCompleteAction extends StatelessWidget {
+  const _MeetingOwnerCompleteAction({
+    required this.label,
+    required this.isBusy,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isBusy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: isBusy ? null : onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.accent,
+                AppColors.accent.withValues(alpha: 0.84),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.2),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isBusy)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.1,
+                      color: AppColors.textPrimary,
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.task_alt_rounded,
+                    size: 18,
+                    color: AppColors.textPrimary,
+                  ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MeetingOwnerQrAction extends StatelessWidget {
   const _MeetingOwnerQrAction({required this.label, required this.onTap});
 
@@ -3312,14 +4036,18 @@ class _DetailsActionBar extends StatelessWidget {
             action: null,
           )
         : null;
-    final isCancelledOwnerActivity =
-        isOwner && activity.status.toUpperCase() == 'CANCELLED';
+    final isRepeatableOwnerActivity =
+        isOwner &&
+        const {
+          'CANCELLED',
+          'COMPLETED',
+        }.contains(activity.status.toUpperCase());
     final primaryAction = isOwner
         ? _FooterButtonSpec(
-            label: isCancelledOwnerActivity
+            label: isRepeatableOwnerActivity
                 ? l10n.myActivitiesRecreateButton
                 : l10n.editActivityButton,
-            icon: isCancelledOwnerActivity
+            icon: isRepeatableOwnerActivity
                 ? Icons.refresh_rounded
                 : Icons.edit_outlined,
             onTap: onEdit,
@@ -3854,20 +4582,6 @@ String _resolveLocalizedCategoryLabel(
     }
   }
   return _prettyCategory(rawSlug);
-}
-
-String _prettyToken(String value) {
-  final normalized = value.trim();
-  if (normalized.isEmpty) {
-    return value;
-  }
-  return normalized
-      .split('_')
-      .where((part) => part.isNotEmpty)
-      .map(
-        (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
-      )
-      .join(' ');
 }
 
 LatLng? _resolveMeetingPoint(ActivityListItemVm activity) {

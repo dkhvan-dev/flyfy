@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/navigation/android_back_swipe_scope.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../screens/profile/edit_profile_screen.dart';
@@ -43,7 +44,7 @@ class ProfileCompletionGate {
 
     final updated = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => const EditProfileScreen(),
+        builder: (_) => const AndroidBackSwipeScope(child: EditProfileScreen()),
       ),
     );
 
@@ -53,6 +54,10 @@ class ProfileCompletionGate {
 
     if (updated == true) {
       await context.read<SessionProvider>().reloadProfile();
+    }
+
+    if (!context.mounted) {
+      return ProfileGuardResult.cancelled;
     }
 
     final refreshedProfile = context.read<SessionProvider>().profile;

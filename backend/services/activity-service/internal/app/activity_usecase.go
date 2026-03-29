@@ -245,20 +245,23 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 	hostParticipant, participantErr := model.NewActivityParticipant(model.NewActivityParticipantParams{
 		ActivityID: item.ID,
 		UserID:     input.HostUserID,
-		Status:     enum.ParticipantStatusApproved,
+		Status:     enum.ParticipantStatusCheckedIn,
 	})
 	if participantErr == nil {
 		now := time.Now().UTC()
-		hostParticipant.ApprovedAt = &now
+		approvedAt := now
+		checkedInAt := now
+		hostParticipant.ApprovedAt = &approvedAt
+		hostParticipant.CheckedInAt = &checkedInAt
 
 		if createErr := u.repo.CreateParticipant(ctx, hostParticipant); createErr == nil {
 			participantEvent, pEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
 				ActivityID:    item.ID,
 				ParticipantID: hostParticipant.ID,
 				UserID:        input.HostUserID,
-				EventType:     string(enum.ParticipantStatusApproved),
+				EventType:     string(enum.ParticipantStatusCheckedIn),
 				ActorUserID:   &input.HostUserID,
-				PayloadJSON:   mustJSON(map[string]any{"status": string(enum.ParticipantStatusApproved), "isHost": true}),
+				PayloadJSON:   mustJSON(map[string]any{"status": string(enum.ParticipantStatusCheckedIn), "isHost": true}),
 			})
 			if pEventErr == nil {
 				_ = u.repo.CreateParticipantEvent(ctx, participantEvent)
@@ -282,7 +285,7 @@ func (u *ActivityUseCase) GetActivityByID(ctx context.Context, activityID uuid.U
 		return nil, ErrActivityNotFound
 	}
 
-	return item, nil
+	return u.normalizeLifecycle(ctx, item)
 }
 
 func (u *ActivityUseCase) ListActivities(ctx context.Context, filter port.ActivityFilter) ([]*model.Activity, error) {
@@ -301,7 +304,236 @@ func (u *ActivityUseCase) ListActivities(ctx context.Context, filter port.Activi
 		return nil, fmt.Errorf("list activities: %w", err)
 	}
 
+	return u.normalizeLifecycleList(ctx, items)
+}
+
+func isActivityAutoCompletableStatus(status enum.ActivityStatus) bool {
+	switch status {
+	case enum.ActivityStatusPublished,
+		enum.ActivityStatusEnrollmentOpen,
+		enum.ActivityStatusFull,
+		enum.ActivityStatusStarted:
+		return true
+	default:
+		return false
+	}
+}
+
+func isActivityAutoStartableStatus(status enum.ActivityStatus) bool {
+	switch status {
+	case enum.ActivityStatusPublished,
+		enum.ActivityStatusEnrollmentOpen,
+		enum.ActivityStatusFull:
+		return true
+	default:
+		return false
+	}
+}
+
+func isActivityManuallyCompletableStatus(status enum.ActivityStatus) bool {
+	return isActivityAutoCompletableStatus(status)
+}
+
+func isActivityExtendableStatus(status enum.ActivityStatus) bool {
+	switch status {
+	case enum.ActivityStatusPublished,
+		enum.ActivityStatusEnrollmentOpen,
+		enum.ActivityStatusFull,
+		enum.ActivityStatusStarted:
+		return true
+	default:
+		return false
+	}
+}
+
+func (u *ActivityUseCase) normalizeLifecycle(
+	ctx context.Context,
+	item *model.Activity,
+) (*model.Activity, error) {
+	if item == nil {
+		return item, nil
+	}
+
+	now := time.Now().UTC()
+	if isActivityAutoCompletableStatus(item.Status) && !now.Before(item.EndAt) {
+		return u.completeActivityInternal(
+			ctx,
+			item,
+			nil,
+			item.EndAt,
+			nil,
+			"automatic",
+		)
+	}
+
+	if isActivityAutoStartableStatus(item.Status) && !now.Before(item.StartAt) {
+		return u.startActivityInternal(
+			ctx,
+			item,
+			nil,
+			item.StartAt,
+			"automatic",
+		)
+	}
+
+	return item, nil
+}
+
+func (u *ActivityUseCase) normalizeLifecycleList(
+	ctx context.Context,
+	items []*model.Activity,
+) ([]*model.Activity, error) {
+	for index, item := range items {
+		normalized, err := u.normalizeLifecycle(ctx, item)
+		if err != nil {
+			return nil, err
+		}
+		items[index] = normalized
+	}
 	return items, nil
+}
+
+func (u *ActivityUseCase) AutoCompleteDueActivities(
+	ctx context.Context,
+	limit int,
+) (int, error) {
+	items, err := u.repo.ListActivitiesDueForCompletion(ctx, time.Now().UTC(), limit)
+	if err != nil {
+		return 0, fmt.Errorf("list activities due for completion: %w", err)
+	}
+
+	completedCount := 0
+	for _, item := range items {
+		if item == nil || !isActivityAutoCompletableStatus(item.Status) {
+			continue
+		}
+
+		if _, err = u.completeActivityInternal(
+			ctx,
+			item,
+			nil,
+			item.EndAt,
+			nil,
+			"automatic_scheduler",
+		); err != nil {
+			return completedCount, fmt.Errorf(
+				"complete due activity %s: %w",
+				item.ID,
+				err,
+			)
+		}
+		completedCount++
+	}
+
+	return completedCount, nil
+}
+
+func (u *ActivityUseCase) AutoStartDueActivities(
+	ctx context.Context,
+	limit int,
+) (int, error) {
+	items, err := u.repo.ListActivitiesDueForStart(ctx, time.Now().UTC(), limit)
+	if err != nil {
+		return 0, fmt.Errorf("list activities due for start: %w", err)
+	}
+
+	startedCount := 0
+	for _, item := range items {
+		if item == nil || !isActivityAutoStartableStatus(item.Status) {
+			continue
+		}
+
+		if _, err = u.startActivityInternal(
+			ctx,
+			item,
+			nil,
+			item.StartAt,
+			"automatic_scheduler",
+		); err != nil {
+			return startedCount, fmt.Errorf("start due activity %s: %w", item.ID, err)
+		}
+		startedCount++
+	}
+
+	return startedCount, nil
+}
+
+func (u *ActivityUseCase) startActivityInternal(
+	ctx context.Context,
+	item *model.Activity,
+	actorUserID *uuid.UUID,
+	startedAt time.Time,
+	trigger string,
+) (*model.Activity, error) {
+	startedAt = startedAt.UTC()
+	now := time.Now().UTC()
+
+	item.Status = enum.ActivityStatusStarted
+	item.StartedAt = &startedAt
+	item.Revision++
+	item.UpdatedAt = now
+
+	if err := u.repo.UpdateActivity(ctx, item); err != nil {
+		return nil, fmt.Errorf("start activity: %w", err)
+	}
+
+	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
+		ActivityID:  item.ID,
+		EventType:   enum.ActivityEventTypeStarted,
+		ActorUserID: actorUserID,
+		PayloadJSON: mustJSON(map[string]any{
+			"startedAt": startedAt.Format(time.RFC3339),
+			"trigger":   trigger,
+		}),
+	})
+	if eventErr == nil {
+		_ = u.repo.CreateActivityEvent(ctx, event)
+	}
+
+	return item, nil
+}
+
+func (u *ActivityUseCase) completeActivityInternal(
+	ctx context.Context,
+	item *model.Activity,
+	actorUserID *uuid.UUID,
+	completedAt time.Time,
+	reason *string,
+	trigger string,
+) (*model.Activity, error) {
+	completedAt = completedAt.UTC()
+	now := time.Now().UTC()
+
+	item.Status = enum.ActivityStatusCompleted
+	item.CompletedAt = &completedAt
+	item.CompletionReason = model.NormalizeOptionalString(reason)
+	if item.StartedAt == nil && !completedAt.Before(item.StartAt) {
+		startedAt := item.StartAt.UTC()
+		item.StartedAt = &startedAt
+	}
+	item.Revision++
+	item.UpdatedAt = now
+
+	if err := u.repo.UpdateActivity(ctx, item); err != nil {
+		return nil, fmt.Errorf("complete activity: %w", err)
+	}
+
+	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
+		ActivityID:  item.ID,
+		EventType:   enum.ActivityEventTypeCompleted,
+		ActorUserID: actorUserID,
+		PayloadJSON: mustJSON(map[string]any{
+			"completedAt":    completedAt.Format(time.RFC3339),
+			"completedEarly": completedAt.Before(item.EndAt),
+			"reason":         item.CompletionReason,
+			"trigger":        trigger,
+		}),
+	})
+	if eventErr == nil {
+		_ = u.repo.CreateActivityEvent(ctx, event)
+	}
+
+	return item, nil
 }
 
 func (u *ActivityUseCase) PublishActivity(
@@ -474,34 +706,14 @@ func (u *ActivityUseCase) StartActivity(
 	}
 
 	now := time.Now().UTC()
-	item.Status = enum.ActivityStatusStarted
-	item.StartedAt = &now
-	item.Revision++
-	item.UpdatedAt = now
-
-	if err = u.repo.UpdateActivity(ctx, item); err != nil {
-		return nil, fmt.Errorf("start activity: %w", err)
-	}
-
-	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
-		ActivityID:  item.ID,
-		EventType:   enum.ActivityEventTypeStarted,
-		ActorUserID: &actorUserID,
-		PayloadJSON: mustJSON(map[string]any{
-			"startedAt": now.Format(time.RFC3339),
-		}),
-	})
-	if eventErr == nil {
-		_ = u.repo.CreateActivityEvent(ctx, event)
-	}
-
-	return item, nil
+	return u.startActivityInternal(ctx, item, &actorUserID, now, "manual")
 }
 
 func (u *ActivityUseCase) CompleteActivity(
 	ctx context.Context,
 	activityID uuid.UUID,
 	actorUserID uuid.UUID,
+	reason string,
 ) (*model.Activity, error) {
 	item, err := u.GetActivityByID(ctx, activityID)
 	if err != nil {
@@ -513,33 +725,52 @@ func (u *ActivityUseCase) CompleteActivity(
 	if item.Status == enum.ActivityStatusCompleted {
 		return nil, ErrActivityAlreadyCompleted
 	}
-	if item.Status != enum.ActivityStatusStarted {
+	if !isActivityManuallyCompletableStatus(item.Status) {
 		return nil, ErrActivityNotCompletable
 	}
 
 	now := time.Now().UTC()
-	item.Status = enum.ActivityStatusCompleted
-	item.CompletedAt = &now
-	item.Revision++
-	item.UpdatedAt = now
-
-	if err = u.repo.UpdateActivity(ctx, item); err != nil {
-		return nil, fmt.Errorf("complete activity: %w", err)
+	if now.Before(item.StartAt) {
+		return nil, ErrActivityNotCompletable
 	}
 
-	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
-		ActivityID:  item.ID,
-		EventType:   enum.ActivityEventTypeCompleted,
-		ActorUserID: &actorUserID,
-		PayloadJSON: mustJSON(map[string]any{
-			"completedAt": now.Format(time.RFC3339),
-		}),
-	})
-	if eventErr == nil {
-		_ = u.repo.CreateActivityEvent(ctx, event)
+	if now.Before(item.EndAt) {
+		totalDuration := item.EndAt.Sub(item.StartAt)
+		if totalDuration <= 0 {
+			return nil, ErrActivityNotCompletable
+		}
+
+		remaining := item.EndAt.Sub(now)
+		if remaining > totalDuration/2 {
+			return nil, ErrActivityShouldBeCancelledInstead
+		}
+		if remaining > totalDuration/4 {
+			return nil, ErrActivityTooEarlyToComplete
+		}
+
+		reason = strings.TrimSpace(reason)
+		if reason == "" {
+			return nil, ErrActivityCompletionReasonRequired
+		}
+
+		return u.completeActivityInternal(
+			ctx,
+			item,
+			&actorUserID,
+			now,
+			&reason,
+			"manual_early",
+		)
 	}
 
-	return item, nil
+	return u.completeActivityInternal(
+		ctx,
+		item,
+		&actorUserID,
+		item.EndAt,
+		nil,
+		"manual_after_end",
+	)
 }
 
 func (u *ActivityUseCase) CancelActivity(
@@ -571,6 +802,8 @@ func (u *ActivityUseCase) CancelActivity(
 	item.Status = enum.ActivityStatusCancelled
 	item.CancelledAt = &now
 	item.CancellationReason = model.NormalizeOptionalString(&reason)
+	item.CompletedAt = nil
+	item.CompletionReason = nil
 	item.Revision++
 	item.UpdatedAt = now
 
@@ -585,6 +818,60 @@ func (u *ActivityUseCase) CancelActivity(
 		PayloadJSON: mustJSON(map[string]any{
 			"cancelledAt": now.Format(time.RFC3339),
 			"reason":      reason,
+		}),
+	})
+	if eventErr == nil {
+		_ = u.repo.CreateActivityEvent(ctx, event)
+	}
+
+	return item, nil
+}
+
+func (u *ActivityUseCase) ExtendActivity(
+	ctx context.Context,
+	activityID uuid.UUID,
+	actorUserID uuid.UUID,
+	minutes int,
+) (*model.Activity, error) {
+	item, err := u.GetActivityByID(ctx, activityID)
+	if err != nil {
+		return nil, err
+	}
+	if actorUserID == uuid.Nil || actorUserID != item.HostUserID {
+		return nil, ErrInvalidActorUserID
+	}
+	if minutes != 30 && minutes != 60 {
+		return nil, ErrActivityExtendDurationInvalid
+	}
+	if !isActivityExtendableStatus(item.Status) {
+		return nil, ErrActivityNotExtendable
+	}
+
+	now := time.Now().UTC()
+	if now.Before(item.StartAt) {
+		return nil, ErrActivityNotExtendable
+	}
+	if !now.Before(item.EndAt) {
+		return nil, ErrActivityNotExtendable
+	}
+
+	previousEndAt := item.EndAt
+	item.EndAt = item.EndAt.Add(time.Duration(minutes) * time.Minute).UTC()
+	item.Revision++
+	item.UpdatedAt = now
+
+	if err = u.repo.UpdateActivity(ctx, item); err != nil {
+		return nil, fmt.Errorf("extend activity: %w", err)
+	}
+
+	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
+		ActivityID:  item.ID,
+		EventType:   enum.ActivityEventTypeExtended,
+		ActorUserID: &actorUserID,
+		PayloadJSON: mustJSON(map[string]any{
+			"minutes":       minutes,
+			"previousEndAt": previousEndAt.Format(time.RFC3339),
+			"newEndAt":      item.EndAt.Format(time.RFC3339),
 		}),
 	})
 	if eventErr == nil {
@@ -978,7 +1265,7 @@ func (u *ActivityUseCase) ListHostedActivities(
 		return nil, fmt.Errorf("list hosted activities: %w", err)
 	}
 
-	return items, nil
+	return u.normalizeLifecycleList(ctx, items)
 }
 
 func (u *ActivityUseCase) ListJoinedActivities(
@@ -1005,7 +1292,7 @@ func (u *ActivityUseCase) ListJoinedActivities(
 		return nil, fmt.Errorf("list joined activities: %w", err)
 	}
 
-	return items, nil
+	return u.normalizeLifecycleList(ctx, items)
 }
 
 func (u *ActivityUseCase) validateCoverMediaFile(ctx context.Context, fileID *uuid.UUID) error {

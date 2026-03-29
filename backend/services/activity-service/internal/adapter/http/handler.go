@@ -159,6 +159,11 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 			h.CompleteActivity(w, r, activityID)
 			return
 		}
+	case "extend":
+		if r.Method == http.MethodPost {
+			h.ExtendActivity(w, r, activityID)
+			return
+		}
 	case "cancel":
 		if r.Method == http.MethodPost {
 			h.CancelActivity(w, r, activityID)
@@ -769,9 +774,43 @@ func (h *Handler) CompleteActivity(w http.ResponseWriter, r *http.Request, activ
 		return
 	}
 
-	item, err := h.activityUC.CompleteActivity(r.Context(), activityID, actorUserID)
+	var req dto.CompleteActivityRequest
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	item, err := h.activityUC.CompleteActivity(r.Context(), activityID, actorUserID, req.Reason)
 	if err != nil {
 		h.writeAppError(w, err, "failed to complete activity")
+		return
+	}
+
+	resp, err := h.toActivityResponse(r.Context(), item)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to build activity response")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) ExtendActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	var req dto.ExtendActivityRequest
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	item, err := h.activityUC.ExtendActivity(r.Context(), activityID, actorUserID, req.Minutes)
+	if err != nil {
+		h.writeAppError(w, err, "failed to extend activity")
 		return
 	}
 
@@ -1033,6 +1072,7 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 		CancelledAt:                    formatOptionalTime(item.CancelledAt),
 		StartedAt:                      formatOptionalTime(item.StartedAt),
 		CompletedAt:                    formatOptionalTime(item.CompletedAt),
+		CompletionReason:               item.CompletionReason,
 		PublishedAt:                    formatOptionalTime(item.PublishedAt),
 		Revision:                       item.Revision,
 		CreatedAt:                      item.CreatedAt.UTC().Format(time.RFC3339),
@@ -1139,10 +1179,13 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrInvalidActorUserID),
 		errors.Is(err, app.ErrInvalidParticipantUserID),
 		errors.Is(err, app.ErrActivityCancellationReasonRequired),
+		errors.Is(err, app.ErrActivityCompletionReasonRequired),
 		errors.Is(err, app.ErrActivityNotPublishable),
 		errors.Is(err, app.ErrActivityNotStartable),
 		errors.Is(err, app.ErrActivityNotCompletable),
 		errors.Is(err, app.ErrActivityNotCancellable),
+		errors.Is(err, app.ErrActivityNotExtendable),
+		errors.Is(err, app.ErrActivityExtendDurationInvalid),
 		errors.Is(err, app.ErrActivityJoinClosed),
 		errors.Is(err, app.ErrActivityFull),
 		errors.Is(err, app.ErrAlreadyJoined),
@@ -1202,6 +1245,8 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrActivityAlreadyStarted),
 		errors.Is(err, app.ErrActivityAlreadyCompleted),
 		errors.Is(err, app.ErrActivityAlreadyCancelled),
+		errors.Is(err, app.ErrActivityTooEarlyToComplete),
+		errors.Is(err, app.ErrActivityShouldBeCancelledInstead),
 		errors.Is(err, app.ErrParticipantScheduleConflict),
 		errors.Is(err, app.ErrParticipantAlreadyCancelled),
 		errors.Is(err, app.ErrModerationStateInvalid):

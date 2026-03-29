@@ -43,17 +43,30 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     'ENROLLMENT_OPEN',
   };
 
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   _MyActivitiesTab _activeTab = _MyActivitiesTab.hosted;
   _MyActivitiesFilters _filters = const _MyActivitiesFilters();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<ActivityProvider>();
       provider.loadMyActivities();
       provider.loadJoinedActivities();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController
+      ..removeListener(_handleSearchChanged)
+      ..dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _openCreateActivity() async {
@@ -121,6 +134,17 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     ).showSnackBar(SnackBar(content: Text(l10n.comingSoon)));
   }
 
+  void _handleSearchChanged() {
+    final nextQuery = _searchController.text.trim();
+    if (_searchQuery == nextQuery) {
+      return;
+    }
+
+    setState(() {
+      _searchQuery = nextQuery;
+    });
+  }
+
   Future<void> _refreshActive(ActivityProvider provider) {
     if (_activeTab == _MyActivitiesTab.hosted) {
       return provider.refreshMyActivities();
@@ -158,6 +182,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
   List<ActivityListItemVm> _filterItems(List<ActivityListItemVm> items) {
     final activeFilters = _filtersForTab(_activeTab);
+    final normalizedQuery = _searchQuery.trim().toLowerCase();
 
     return items.where((item) {
       if (activeFilters.statuses.isNotEmpty &&
@@ -189,6 +214,19 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
           999,
         );
         if (item.startAt.isAfter(endBoundary)) {
+          return false;
+        }
+      }
+
+      if (normalizedQuery.isNotEmpty) {
+        final haystack = [
+          item.title,
+          item.description,
+          item.shortLocation,
+          item.tags.join(' '),
+        ].join(' ').toLowerCase();
+
+        if (!haystack.contains(normalizedQuery)) {
           return false;
         }
       }
@@ -344,7 +382,12 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                         _MyActivitiesTopBar(
                           title: l10n.myActivitiesTitle,
                           onBackTap: _goBack,
-                          onSearchTap: _showComingSoon,
+                        ),
+                        SizedBox(height: layout.topSectionSpacing),
+                        _MyActivitiesSearchField(
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          hintText: l10n.activitiesSearchHint,
                         ),
                         SizedBox(height: layout.topSectionSpacing),
                         _MyActivitiesTabSwitcher(
@@ -562,15 +605,10 @@ class _MyActivitiesAdaptiveLayout {
 }
 
 class _MyActivitiesTopBar extends StatelessWidget {
-  const _MyActivitiesTopBar({
-    required this.title,
-    required this.onBackTap,
-    required this.onSearchTap,
-  });
+  const _MyActivitiesTopBar({required this.title, required this.onBackTap});
 
   final String title;
   final VoidCallback onBackTap;
-  final VoidCallback onSearchTap;
 
   @override
   Widget build(BuildContext context) {
@@ -594,8 +632,83 @@ class _MyActivitiesTopBar extends StatelessWidget {
             ),
           ),
         ),
-        _CircleIconButton(icon: Icons.search_rounded, onTap: onSearchTap),
+        SizedBox.square(dimension: layout.isCompact ? 38 : 40),
       ],
+    );
+  }
+}
+
+class _MyActivitiesSearchField extends StatelessWidget {
+  const _MyActivitiesSearchField({
+    required this.controller,
+    required this.focusNode,
+    required this.hintText,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hintText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.035),
+            Colors.white.withValues(alpha: 0.02),
+          ],
+        ),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        cursorColor: AppColors.accent,
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: hintText,
+          hintStyle: const TextStyle(color: Color(0x8CFFF0E0), fontSize: 14),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 14,
+          ),
+          prefixIcon: const Padding(
+            padding: EdgeInsets.only(left: 12, right: 10),
+            child: Icon(
+              Icons.search_rounded,
+              color: Color(0x88FFF0E0),
+              size: 20,
+            ),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 0),
+          suffixIcon: controller.text.isEmpty
+              ? null
+              : IconButton(
+                  onPressed: controller.clear,
+                  splashRadius: 20,
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0x88FFF0E0),
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }
@@ -1187,8 +1300,8 @@ class _ActivityCover extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
-                formatActivityStatus(
-                  item.status,
+                formatActivityDisplayStatus(
+                  item,
                   AppLocalizations.of(context)!,
                 ),
                 style: TextStyle(

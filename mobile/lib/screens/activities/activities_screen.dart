@@ -32,6 +32,7 @@ class ActivitiesScreen extends StatefulWidget {
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   final DeviceContextService _deviceContextService =
       const DeviceContextService();
 
@@ -57,7 +58,16 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     _searchController
       ..removeListener(_handleSearchChanged)
       ..dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _goBack() {
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/');
   }
 
   void _handleSearchChanged() {
@@ -171,10 +181,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
   void _openProfile() {
     context.push('/profile');
-  }
-
-  void _openDrawer() {
-    _scaffoldKey.currentState?.openDrawer();
   }
 
   Future<void> _closeDrawerIfNeeded() async {
@@ -487,13 +493,12 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                               children: [
                                 _DiscoverTopBar(
                                   title: l10n.activitiesDiscoverTitle,
-                                  onMenuTap: _openDrawer,
-                                  onNotificationsTap: () =>
-                                      context.push('/notifications'),
+                                  onBackTap: _goBack,
                                 ),
                                 SizedBox(height: layout.sectionGap),
                                 _DiscoverSearchField(
                                   controller: _searchController,
+                                  focusNode: _searchFocusNode,
                                   hintText: l10n.activitiesSearchHint,
                                 ),
                                 SizedBox(height: layout.filterGap),
@@ -782,39 +787,34 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
 }
 
 class _DiscoverTopBar extends StatelessWidget {
-  const _DiscoverTopBar({
-    required this.title,
-    required this.onMenuTap,
-    required this.onNotificationsTap,
-  });
+  const _DiscoverTopBar({required this.title, required this.onBackTap});
 
   final String title;
-  final VoidCallback onMenuTap;
-  final VoidCallback onNotificationsTap;
+  final VoidCallback onBackTap;
 
   @override
   Widget build(BuildContext context) {
+    final layout = _ActivitiesAdaptiveLayout.of(context);
+
     return Row(
       children: [
-        _CircleHeaderButton(icon: Icons.menu_rounded, onTap: onMenuTap),
-        const SizedBox(width: 12),
+        _CircleHeaderButton(
+          icon: Icons.arrow_back_ios_new_rounded,
+          onTap: onBackTap,
+        ),
         Expanded(
           child: Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFFFFF7EF),
-              fontSize: 18,
+            style: TextStyle(
+              color: const Color(0xFFFFF7EF),
+              fontSize: layout.topBarTitleSize,
               fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
+              letterSpacing: -0.4,
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        _CircleHeaderButton(
-          icon: Icons.notifications_none_rounded,
-          onTap: onNotificationsTap,
-        ),
+        SizedBox.square(dimension: layout.isCompact ? 38 : 40),
       ],
     );
   }
@@ -828,26 +828,25 @@ class _CircleHeaderButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 360;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Ink(
-          width: 40,
-          height: 40,
+          width: compact ? 38 : 40,
+          height: compact ? 38 : 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.04),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
-          child: Icon(icon, color: AppColors.accent, size: 20),
+          child: Icon(
+            icon,
+            color: const Color(0xFFFFF7EF),
+            size: compact ? 18 : 20,
+          ),
         ),
       ),
     );
@@ -857,10 +856,12 @@ class _CircleHeaderButton extends StatelessWidget {
 class _DiscoverSearchField extends StatelessWidget {
   const _DiscoverSearchField({
     required this.controller,
+    required this.focusNode,
     required this.hintText,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final String hintText;
 
   @override
@@ -885,6 +886,7 @@ class _DiscoverSearchField extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         onTapOutside: (_) => FocusScope.of(context).unfocus(),
         style: const TextStyle(
           color: AppColors.textPrimary,
@@ -1193,7 +1195,7 @@ class _DiscoverActivityCard extends StatelessWidget {
     ).add_Hm().format(item.startAt.toLocal());
     final locationText = item.shortLocation.isNotEmpty
         ? item.shortLocation
-        : formatActivityStatus(item.status, l10n);
+        : formatActivityDisplayStatus(item, l10n);
     final metaItems = <_CardMetaData>[
       _CardMetaData(icon: Icons.place_outlined, label: locationText),
       _CardMetaData(
@@ -2848,6 +2850,7 @@ class _ActivitiesAdaptiveLayout {
   double get cardGap => isCompact ? 18 : 22;
   double get cardRadius => isCompact ? 28 : 34;
   double get cardPadding => isCompact ? 16 : 18;
+  double get topBarTitleSize => isCompact ? 18 : 20;
   double get titleSize => isCompact ? 20 : 22;
   double get ctaHeight => isCompact ? 48 : 52;
   double get coverAspectRatio => isCompact ? 1.48 : 1.55;
@@ -2960,6 +2963,7 @@ List<ActivityListItemVm> _mergePublishedActivities({
 
   for (final item in publicItems) {
     if (!_isDiscoverListStatus(item.status) ||
+        !_isDiscoverRegistrationOpen(item) ||
         !_isDiscoverVisibility(item.visibility)) {
       continue;
     }
@@ -2973,6 +2977,7 @@ List<ActivityListItemVm> _mergePublishedActivities({
         continue;
       }
       if (!_isDiscoverListStatus(item.status) ||
+          !_isDiscoverRegistrationOpen(item) ||
           !_isDiscoverVisibility(item.visibility)) {
         continue;
       }
@@ -3036,13 +3041,16 @@ bool _isDiscoverListStatus(String status) {
   switch (status.toUpperCase()) {
     case 'PUBLISHED':
     case 'ENROLLMENT_OPEN':
-    case 'FULL':
-    case 'STARTED':
-    case 'COMPLETED':
       return true;
     default:
       return false;
   }
+}
+
+bool _isDiscoverRegistrationOpen(ActivityListItemVm item) {
+  final now = DateTime.now().toUtc();
+  final closesAt = (item.registrationDeadline ?? item.startAt).toUtc();
+  return now.isBefore(closesAt);
 }
 
 List<_DiscoverCategoryOption> _buildCategoryOptions(

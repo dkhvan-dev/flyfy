@@ -13,6 +13,7 @@ const (
 	ActivityEventTypeStarted              ActivityEventType = "STARTED"
 	ActivityEventTypeCompleted            ActivityEventType = "COMPLETED"
 	ActivityEventTypeCancelled            ActivityEventType = "CANCELLED"
+	ActivityEventTypeExtended             ActivityEventType = "EXTENDED"
 	ActivityEventTypeDuplicated           ActivityEventType = "DUPLICATED"
 	ActivityEventTypeCapacityChanged      ActivityEventType = "CAPACITY_CHANGED"
 	ActivityEventTypePriceChanged         ActivityEventType = "PRICE_CHANGED"
@@ -33,6 +34,7 @@ func (v ActivityEventType) IsValid() bool {
 		ActivityEventTypeStarted,
 		ActivityEventTypeCompleted,
 		ActivityEventTypeCancelled,
+		ActivityEventTypeExtended,
 		ActivityEventTypeDuplicated,
 		ActivityEventTypeCapacityChanged,
 		ActivityEventTypePriceChanged,

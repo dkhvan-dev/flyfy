@@ -185,6 +185,31 @@ class ActivityApi {
     return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<ActivityListItemVm> completeActivity(
+    String activityId, {
+    String? reason,
+  }) async {
+    final trimmedReason = reason?.trim() ?? '';
+    final response = await _apiClient.dio.post(
+      '/me/activities/$activityId/complete',
+      data: {if (trimmedReason.isNotEmpty) 'reason': trimmedReason},
+    );
+
+    return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<ActivityListItemVm> extendActivity(
+    String activityId, {
+    required int minutes,
+  }) async {
+    final response = await _apiClient.dio.post(
+      '/me/activities/$activityId/extend',
+      data: {'minutes': minutes},
+    );
+
+    return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<ActivityListItemVm> updateActivity(
     String activityId,
     UpdateActivityRequest request,

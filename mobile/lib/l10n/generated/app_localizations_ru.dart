@@ -376,6 +376,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityStatusCompleted => 'Завершено';
 
   @override
+  String get activityStatusCompletedEarly => 'Завершена раньше времени';
+
+  @override
   String get activityStatusCancelled => 'Отменено';
 
   @override
@@ -515,6 +518,74 @@ class AppLocalizationsRu extends AppLocalizations {
       'Эту активность больше нельзя отменить';
 
   @override
+  String get activityExtend30MinutesButton => 'Продлить на 30 мин';
+
+  @override
+  String get activityExtend60MinutesButton => 'Продлить на 1 час';
+
+  @override
+  String get activityExtendSuccess => 'Время окончания активности обновлено';
+
+  @override
+  String get activityExtendFailed => 'Не удалось продлить активность';
+
+  @override
+  String get activityExtendNotAllowed => 'Эту активность уже нельзя продлить';
+
+  @override
+  String get activityCompleteNowButton => 'Завершить сейчас';
+
+  @override
+  String get activityCompleteSuccess => 'Активность завершена';
+
+  @override
+  String get activityCompleteEarlySuccess =>
+      'Активность завершена раньше запланированного времени';
+
+  @override
+  String get activityCompleteFailed => 'Не удалось завершить активность';
+
+  @override
+  String get activityCompleteTooEarly =>
+      'Завершить активность можно только в последние 25% запланированного времени';
+
+  @override
+  String get activityCompleteNotAllowed =>
+      'Эту активность сейчас нельзя завершить';
+
+  @override
+  String get activityCompleteAlreadyCompleted => 'Активность уже завершена';
+
+  @override
+  String get activityCompleteConfirmTitle => 'Завершить активность раньше?';
+
+  @override
+  String get activityCompleteConfirmDescription =>
+      'Активность завершится раньше запланированного времени. Укажите причину, чтобы участники понимали, почему событие закончилось досрочно.';
+
+  @override
+  String get activityCompleteReasonLabel => 'Причина досрочного завершения';
+
+  @override
+  String get activityCompleteReasonPlaceholder =>
+      'Например: программа выполнена быстрее, чем планировалось';
+
+  @override
+  String get activityCompleteReasonRequired =>
+      'Укажите причину досрочного завершения';
+
+  @override
+  String get activityCompleteConfirmButton => 'Подтвердить завершение';
+
+  @override
+  String get activityCompleteCancelInsteadTitle =>
+      'Сейчас активность будет отменена';
+
+  @override
+  String get activityCompleteCancelInsteadDescription =>
+      'До планового завершения еще слишком много времени. Если продолжить сейчас, участники увидят, что активность была отменена, а не завершена. Укажите причину отмены.';
+
+  @override
   String activityGoingTitle(int count) {
     return 'Участвуют ($count)';
   }
@@ -605,6 +676,39 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get activityParticipantsLoadFailed =>
       'Не удалось загрузить участников';
+
+  @override
+  String get participantStatusRequested => 'Запрос отправлен';
+
+  @override
+  String get participantStatusApproved => 'Подтвержден';
+
+  @override
+  String get participantStatusWaitlisted => 'В листе ожидания';
+
+  @override
+  String get participantStatusPendingPayment => 'Ожидает оплаты';
+
+  @override
+  String get participantStatusConfirmed => 'Подтверждено';
+
+  @override
+  String get participantStatusDeclined => 'Отклонено';
+
+  @override
+  String get participantStatusCancelled => 'Отменено';
+
+  @override
+  String get participantStatusExpired => 'Истекло';
+
+  @override
+  String get participantStatusCheckedIn => 'Отметился';
+
+  @override
+  String get participantStatusAttended => 'Посетил';
+
+  @override
+  String get participantStatusNoShow => 'Не пришел';
 
   @override
   String get activityPrivateJoinTitle => 'Приватная активность';
@@ -1519,7 +1623,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get qrScannerAlreadyCheckedIn => 'Вы уже отмечены на этой активности';
 
   @override
-  String get qrScannerNotRegistered => 'Вы не записаны на эту активность';
+  String get qrScannerNotRegistered =>
+      'Вы не являетесь участником данной активности';
 
   @override
   String get qrScannerNotEligible => 'Для этой записи отметка пока недоступна';

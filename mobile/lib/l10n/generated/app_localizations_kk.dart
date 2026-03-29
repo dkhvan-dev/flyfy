@@ -380,6 +380,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityStatusCompleted => 'Аяқталды';
 
   @override
+  String get activityStatusCompletedEarly => 'Жоспардан ерте аяқталды';
+
+  @override
   String get activityStatusCancelled => 'Бас тартылды';
 
   @override
@@ -521,6 +524,77 @@ class AppLocalizationsKk extends AppLocalizations {
       'Бұл белсенділікті енді тоқтату мүмкін емес';
 
   @override
+  String get activityExtend30MinutesButton => '30 мин ұзарту';
+
+  @override
+  String get activityExtend60MinutesButton => '1 сағатқа ұзарту';
+
+  @override
+  String get activityExtendSuccess =>
+      'Белсенділіктің аяқталу уақыты жаңартылды';
+
+  @override
+  String get activityExtendFailed => 'Белсенділікті ұзарту мүмкін болмады';
+
+  @override
+  String get activityExtendNotAllowed =>
+      'Бұл белсенділікті енді ұзарту мүмкін емес';
+
+  @override
+  String get activityCompleteNowButton => 'Қазір аяқтау';
+
+  @override
+  String get activityCompleteSuccess => 'Белсенділік аяқталды';
+
+  @override
+  String get activityCompleteEarlySuccess =>
+      'Белсенділік жоспарланған уақыттан ерте аяқталды';
+
+  @override
+  String get activityCompleteFailed => 'Белсенділікті аяқтау мүмкін болмады';
+
+  @override
+  String get activityCompleteTooEarly =>
+      'Белсенділікті тек жоспарланған уақыттың соңғы 25%-ында аяқтауға болады';
+
+  @override
+  String get activityCompleteNotAllowed =>
+      'Бұл белсенділікті қазір аяқтау мүмкін емес';
+
+  @override
+  String get activityCompleteAlreadyCompleted =>
+      'Белсенділік әлдеқашан аяқталған';
+
+  @override
+  String get activityCompleteConfirmTitle =>
+      'Белсенділікті ертерек аяқтайсыз ба?';
+
+  @override
+  String get activityCompleteConfirmDescription =>
+      'Белсенділік жоспарланған уақыттан ерте аяқталады. Қатысушылар неге ерте аяқталғанын түсінуі үшін себебін көрсетіңіз.';
+
+  @override
+  String get activityCompleteReasonLabel => 'Ерте аяқтау себебі';
+
+  @override
+  String get activityCompleteReasonPlaceholder =>
+      'Мысалы: бағдарлама жоспардан ерте аяқталды';
+
+  @override
+  String get activityCompleteReasonRequired => 'Ерте аяқтау себебін көрсетіңіз';
+
+  @override
+  String get activityCompleteConfirmButton => 'Аяқтауды растау';
+
+  @override
+  String get activityCompleteCancelInsteadTitle =>
+      'Қазір белсенділік тоқтатылады';
+
+  @override
+  String get activityCompleteCancelInsteadDescription =>
+      'Жоспарланған аяқталуға дейін әлі көп уақыт бар. Қазір жалғастырсаңыз, қатысушылар белсенділіктің аяқталғанын емес, тоқтатылғанын көреді. Тоқтату себебін көрсетіңіз.';
+
+  @override
   String activityGoingTitle(int count) {
     return 'Қатысушылар ($count)';
   }
@@ -611,6 +685,39 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get activityParticipantsLoadFailed =>
       'Қатысушыларды жүктеу мүмкін болмады';
+
+  @override
+  String get participantStatusRequested => 'Сұрау жіберілді';
+
+  @override
+  String get participantStatusApproved => 'Расталды';
+
+  @override
+  String get participantStatusWaitlisted => 'Күту тізімінде';
+
+  @override
+  String get participantStatusPendingPayment => 'Төлем күтілуде';
+
+  @override
+  String get participantStatusConfirmed => 'Расталған';
+
+  @override
+  String get participantStatusDeclined => 'Қабылданбады';
+
+  @override
+  String get participantStatusCancelled => 'Бас тартылды';
+
+  @override
+  String get participantStatusExpired => 'Мерзімі өтті';
+
+  @override
+  String get participantStatusCheckedIn => 'Келгені белгіленді';
+
+  @override
+  String get participantStatusAttended => 'Қатысты';
+
+  @override
+  String get participantStatusNoShow => 'Келмеді';
 
   @override
   String get activityPrivateJoinTitle => 'Жеке белсенділік';
@@ -1526,7 +1633,8 @@ class AppLocalizationsKk extends AppLocalizations {
       'Сіз бұл белсенділікке әлдеқашан белгілендіңіз';
 
   @override
-  String get qrScannerNotRegistered => 'Сіз бұл белсенділікке жазылмағансыз';
+  String get qrScannerNotRegistered =>
+      'Сіз бұл белсенділіктің қатысушысы емессіз';
 
   @override
   String get qrScannerNotEligible =>

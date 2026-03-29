@@ -519,12 +519,14 @@ class _OtpScreenState extends State<OtpScreen> {
                                             style: const TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
+                                              color: AppColors.textPrimary,
                                             ),
                                           ),
                                           const SizedBox(width: 8),
                                           const Icon(
                                             Icons.arrow_forward,
                                             size: 24,
+                                            color: AppColors.textPrimary,
                                           ),
                                         ],
                                       ),

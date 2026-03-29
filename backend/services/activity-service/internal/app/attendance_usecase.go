@@ -368,6 +368,30 @@ func (u *AttendanceUseCase) syncAttendanceProof(
 			return nil
 		}
 
+		if !canParticipantCheckIn(participant.Status) &&
+			participant.Status != enum.ParticipantStatusCheckedIn &&
+			participant.Status != enum.ParticipantStatusAttended {
+			attempt, attemptErr := buildRejectedAttendanceAttempt(
+				input,
+				actorUserID,
+				decoded,
+				"participant_not_eligible",
+				ErrAttendanceParticipantInvalid.Error(),
+			)
+			if attemptErr == nil {
+				if err = txRepo.CreateAttendanceSyncAttempt(ctx, attempt); err != nil {
+					return fmt.Errorf("create invalid participant attendance attempt: %w", err)
+				}
+			}
+			result = rejectedAttendanceResult(
+				input.ScanID,
+				decoded.ActivityID,
+				"participant_not_eligible",
+				ErrAttendanceParticipantInvalid.Error(),
+			)
+			return nil
+		}
+
 		if participant.Status == enum.ParticipantStatusCheckedIn ||
 			participant.Status == enum.ParticipantStatusAttended ||
 			participant.CheckedInAt != nil {
@@ -403,28 +427,6 @@ func (u *AttendanceUseCase) syncAttendanceProof(
 				CheckedInAt: checkedInAt,
 				SyncedAt:    time.Now().UTC(),
 			}
-			return nil
-		}
-
-		if !canParticipantCheckIn(participant.Status) {
-			attempt, attemptErr := buildRejectedAttendanceAttempt(
-				input,
-				actorUserID,
-				decoded,
-				"participant_not_eligible",
-				ErrAttendanceParticipantInvalid.Error(),
-			)
-			if attemptErr == nil {
-				if err = txRepo.CreateAttendanceSyncAttempt(ctx, attempt); err != nil {
-					return fmt.Errorf("create invalid participant attendance attempt: %w", err)
-				}
-			}
-			result = rejectedAttendanceResult(
-				input.ScanID,
-				decoded.ActivityID,
-				"participant_not_eligible",
-				ErrAttendanceParticipantInvalid.Error(),
-			)
 			return nil
 		}
 

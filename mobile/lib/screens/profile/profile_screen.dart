@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/navigation/android_back_swipe_scope.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -114,7 +115,10 @@ class _OwnProfileBody extends StatelessWidget {
       showMyActivities: true,
       onEditProfile: () async {
         final updated = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+          MaterialPageRoute(
+            builder: (_) =>
+                const AndroidBackSwipeScope(child: EditProfileScreen()),
+          ),
         );
 
         if (updated == true && context.mounted) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -247,6 +248,9 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   int _failedBiometricAttempts = 0;
   String? _unlockError;
 
+  bool get _shouldAutoStartBiometric =>
+      !kIsWeb && defaultTargetPlatform != TargetPlatform.android;
+
   @override
   void initState() {
     super.initState();
@@ -381,7 +385,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
       return;
     }
 
-    if (initial || !_isBiometricInFlight) {
+    if (_shouldAutoStartBiometric && (initial || !_isBiometricInFlight)) {
       await _attemptBiometricUnlock();
     }
   }
@@ -741,7 +745,7 @@ class _AppLockOverlay extends StatelessWidget {
                               backgroundColor: AppColors.accent.withValues(
                                 alpha: 0.95,
                               ),
-                              foregroundColor: AppColors.background,
+                              foregroundColor: AppColors.textPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
@@ -755,7 +759,13 @@ class _AppLockOverlay extends StatelessWidget {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : Text(l10n.appLockUnlockButton),
+                                : Text(
+                                    l10n.appLockUnlockButton,
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ] else ...[
                           if (isBiometricInFlight)
@@ -776,7 +786,13 @@ class _AppLockOverlay extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                               ),
-                              label: Text(l10n.appLockRetryBiometricButton),
+                              label: Text(
+                                l10n.appLockRetryBiometricButton,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           const SizedBox(height: 12),
                           OutlinedButton(
@@ -792,7 +808,13 @@ class _AppLockOverlay extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                             ),
-                            child: Text(l10n.appLockUsePinButton),
+                            child: Text(
+                              l10n.appLockUsePinButton,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ],
                         if ((errorText ?? '').isNotEmpty) ...[

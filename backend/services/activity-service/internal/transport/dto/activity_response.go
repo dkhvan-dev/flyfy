@@ -50,6 +50,7 @@ type ActivityResponse struct {
 	CancelledAt        *string `json:"cancelledAt,omitempty"`
 	StartedAt          *string `json:"startedAt,omitempty"`
 	CompletedAt        *string `json:"completedAt,omitempty"`
+	CompletionReason   *string `json:"completionReason,omitempty"`
 	PublishedAt        *string `json:"publishedAt,omitempty"`
 
 	Revision  int    `json:"revision"`

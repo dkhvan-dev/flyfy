@@ -18,6 +18,7 @@ type activityRepoStub struct {
 	getActivityByID              func(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
 	createActivity               func(ctx context.Context, item *model.Activity) error
 	updateActivity               func(ctx context.Context, item *model.Activity) error
+	createParticipant            func(ctx context.Context, item *model.ActivityParticipant) error
 	listParticipantsByActivityID func(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error)
 }
 
@@ -43,6 +44,22 @@ func (s *activityRepoStub) GetActivityByID(ctx context.Context, activityID uuid.
 }
 
 func (s *activityRepoStub) ListActivities(ctx context.Context, filter port.ActivityFilter) ([]*model.Activity, error) {
+	return nil, nil
+}
+
+func (s *activityRepoStub) ListActivitiesDueForStart(
+	ctx context.Context,
+	before time.Time,
+	limit int,
+) ([]*model.Activity, error) {
+	return nil, nil
+}
+
+func (s *activityRepoStub) ListActivitiesDueForCompletion(
+	ctx context.Context,
+	before time.Time,
+	limit int,
+) ([]*model.Activity, error) {
 	return nil, nil
 }
 
@@ -90,6 +107,9 @@ func (s *activityRepoStub) ListJoinedActivitiesByUserID(ctx context.Context, use
 }
 
 func (s *activityRepoStub) CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error {
+	if s.createParticipant != nil {
+		return s.createParticipant(ctx, item)
+	}
 	return nil
 }
 
@@ -182,6 +202,41 @@ func TestCreateActivityDefaultsRegistrationDeadlineToOneHourBeforeStart(t *testi
 			createdItem.RegistrationDeadline,
 			wantDeadline,
 		)
+	}
+}
+
+func TestCreateActivityCreatesHostParticipantAsCheckedIn(t *testing.T) {
+	t.Parallel()
+
+	var createdParticipant *model.ActivityParticipant
+	repo := &activityRepoStub{
+		createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+			createdParticipant = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	input := validCreateActivityInput()
+
+	_, err := uc.CreateActivity(context.Background(), input)
+	if err != nil {
+		t.Fatalf("CreateActivity() error = %v", err)
+	}
+	if createdParticipant == nil {
+		t.Fatal("CreateActivity() did not create host participant")
+	}
+	if createdParticipant.UserID != input.HostUserID {
+		t.Fatalf("CreateActivity() host participant userID = %s, want %s", createdParticipant.UserID, input.HostUserID)
+	}
+	if createdParticipant.Status != enum.ParticipantStatusCheckedIn {
+		t.Fatalf("CreateActivity() host participant status = %s, want %s", createdParticipant.Status, enum.ParticipantStatusCheckedIn)
+	}
+	if createdParticipant.ApprovedAt == nil {
+		t.Fatal("CreateActivity() host participant approvedAt is nil")
+	}
+	if createdParticipant.CheckedInAt == nil {
+		t.Fatal("CreateActivity() host participant checkedInAt is nil")
 	}
 }
 
@@ -464,6 +519,75 @@ func TestUpdateActivityRejectsPriceChangeWhenOtherParticipantExists(t *testing.T
 	})
 	if !errors.Is(err, ErrPriceChangeForbidden) {
 		t.Fatalf("UpdateActivity() error = %v, want %v", err, ErrPriceChangeForbidden)
+	}
+}
+
+func TestGetActivityByIDAutoStartsActivityWhenStartTimePassed(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	var updatedItem *model.Activity
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			item := validActivity(t, activityID, actorUserID)
+			item.Status = enum.ActivityStatusPublished
+			item.StartAt = time.Now().UTC().Add(-15 * time.Minute)
+			item.EndAt = time.Now().UTC().Add(45 * time.Minute)
+			return item, nil
+		},
+		updateActivity: func(ctx context.Context, item *model.Activity) error {
+			updatedItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	item, err := uc.GetActivityByID(context.Background(), activityID)
+	if err != nil {
+		t.Fatalf("GetActivityByID() error = %v", err)
+	}
+	if item == nil {
+		t.Fatal("GetActivityByID() returned nil activity")
+	}
+	if item.Status != enum.ActivityStatusStarted {
+		t.Fatalf("GetActivityByID() status = %s, want %s", item.Status, enum.ActivityStatusStarted)
+	}
+	if item.StartedAt == nil || !item.StartedAt.Equal(item.StartAt) {
+		t.Fatalf("GetActivityByID() startedAt = %v, want %v", item.StartedAt, item.StartAt)
+	}
+	if updatedItem == nil || updatedItem.Status != enum.ActivityStatusStarted {
+		t.Fatalf("UpdateActivity() item = %+v, want started activity", updatedItem)
+	}
+}
+
+func TestExtendActivityRejectsBeforeStart(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			item := validActivity(t, activityID, actorUserID)
+			item.Status = enum.ActivityStatusPublished
+			item.StartAt = time.Now().UTC().Add(30 * time.Minute)
+			item.EndAt = item.StartAt.Add(90 * time.Minute)
+			return item, nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	_, err := uc.ExtendActivity(context.Background(), activityID, actorUserID, 30)
+	if !errors.Is(err, ErrActivityNotExtendable) {
+		t.Fatalf("ExtendActivity() error = %v, want %v", err, ErrActivityNotExtendable)
 	}
 }
 
