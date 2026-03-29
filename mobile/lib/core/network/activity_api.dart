@@ -185,14 +185,6 @@ class ActivityApi {
     return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<ActivityListItemVm> archiveActivity(String activityId) async {
-    final response = await _apiClient.dio.post(
-      '/me/activities/$activityId/archive',
-    );
-
-    return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
-  }
-
   Future<ActivityListItemVm> updateActivity(
     String activityId,
     UpdateActivityRequest request,

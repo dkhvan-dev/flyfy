@@ -167,18 +167,13 @@
   "activityJoinSuccess": "Вы записались на активность",
   "activityLeaveSuccess": "Вы покинули активность",
   "activityCancelSuccess": "Активность отменена",
-  "activityArchiveButton": "В архив",
-  "activityArchiveSuccess": "Активность отправлена в архив",
   "activityJoinFailed": "Не удалось записаться на активность",
   "activityJoinAlreadyJoined": "Вы уже записаны на эту активность",
   "activityJoinScheduleConflict": "Нельзя записаться: вы уже записаны на другую активность с пересекающимся временем",
   "activityLeaveFailed": "Не удалось покинуть активность",
   "activityCancelFailed": "Не удалось отменить активность",
-  "activityArchiveFailed": "Не удалось отправить активность в архив",
   "activityCancelAlreadyCancelled": "Активность уже отменена",
   "activityCancelNotAllowed": "Эту активность больше нельзя отменить",
-  "activityArchiveAlreadyArchived": "Активность уже находится в архиве",
-  "activityArchiveNotAllowed": "В архив можно отправить только отмененную активность",
   "activityGoingTitle": "Участвуют ({count})",
   "@activityGoingTitle": {
     "placeholders": {

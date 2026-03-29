@@ -492,12 +492,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityCancelSuccess => 'Активность отменена';
 
   @override
-  String get activityArchiveButton => 'В архив';
-
-  @override
-  String get activityArchiveSuccess => 'Активность отправлена в архив';
-
-  @override
   String get activityJoinFailed => 'Не удалось записаться на активность';
 
   @override
@@ -514,22 +508,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityCancelFailed => 'Не удалось отменить активность';
 
   @override
-  String get activityArchiveFailed => 'Не удалось отправить активность в архив';
-
-  @override
   String get activityCancelAlreadyCancelled => 'Активность уже отменена';
 
   @override
   String get activityCancelNotAllowed =>
       'Эту активность больше нельзя отменить';
-
-  @override
-  String get activityArchiveAlreadyArchived =>
-      'Активность уже находится в архиве';
-
-  @override
-  String get activityArchiveNotAllowed =>
-      'В архив можно отправить только отмененную активность';
 
   @override
   String activityGoingTitle(int count) {

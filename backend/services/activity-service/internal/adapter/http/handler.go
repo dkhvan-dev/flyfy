@@ -164,11 +164,6 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 			h.CancelActivity(w, r, activityID)
 			return
 		}
-	case "archive":
-		if r.Method == http.MethodPost {
-			h.ArchiveActivity(w, r, activityID)
-			return
-		}
 	case "join":
 		if r.Method == http.MethodPost {
 			h.JoinActivity(w, r, activityID)
@@ -817,28 +812,6 @@ func (h *Handler) CancelActivity(w http.ResponseWriter, r *http.Request, activit
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func (h *Handler) ArchiveActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
-	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
-	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user")
-		return
-	}
-
-	item, err := h.activityUC.ArchiveActivity(r.Context(), activityID, actorUserID)
-	if err != nil {
-		h.writeAppError(w, err, "failed to archive activity")
-		return
-	}
-
-	resp, err := h.toActivityResponse(r.Context(), item)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to build activity response")
-		return
-	}
-
-	writeJSON(w, http.StatusOK, resp)
-}
-
 func (h *Handler) JoinActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
@@ -1170,7 +1143,6 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrActivityNotStartable),
 		errors.Is(err, app.ErrActivityNotCompletable),
 		errors.Is(err, app.ErrActivityNotCancellable),
-		errors.Is(err, app.ErrActivityNotArchivable),
 		errors.Is(err, app.ErrActivityJoinClosed),
 		errors.Is(err, app.ErrActivityFull),
 		errors.Is(err, app.ErrAlreadyJoined),
@@ -1228,7 +1200,6 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrActivityAlreadyStarted),
 		errors.Is(err, app.ErrActivityAlreadyCompleted),
 		errors.Is(err, app.ErrActivityAlreadyCancelled),
-		errors.Is(err, app.ErrActivityAlreadyArchived),
 		errors.Is(err, app.ErrParticipantScheduleConflict),
 		errors.Is(err, app.ErrParticipantAlreadyCancelled),
 		errors.Is(err, app.ErrModerationStateInvalid):

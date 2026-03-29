@@ -167,18 +167,13 @@
   "activityJoinSuccess": "You joined the activity",
   "activityLeaveSuccess": "You left the activity",
   "activityCancelSuccess": "Activity cancelled",
-  "activityArchiveButton": "Archive",
-  "activityArchiveSuccess": "Activity moved to archive",
   "activityJoinFailed": "Failed to join the activity",
   "activityJoinAlreadyJoined": "You have already joined this activity",
   "activityJoinScheduleConflict": "You cannot join because you already have another activity at an overlapping time",
   "activityLeaveFailed": "Failed to leave the activity",
   "activityCancelFailed": "Failed to cancel the activity",
-  "activityArchiveFailed": "Failed to move the activity to archive",
   "activityCancelAlreadyCancelled": "This activity is already cancelled",
   "activityCancelNotAllowed": "This activity can no longer be cancelled",
-  "activityArchiveAlreadyArchived": "This activity is already archived",
-  "activityArchiveNotAllowed": "Only cancelled activities can be archived",
   "activityGoingTitle": "Going ({count})",
   "@activityGoingTitle": {
     "placeholders": {

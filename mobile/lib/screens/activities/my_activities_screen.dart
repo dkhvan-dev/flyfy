@@ -30,14 +30,12 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     'REVIEW_REQUIRED',
     'COMPLETED',
     'CANCELLED',
-    'ARCHIVED',
   ];
 
   static const List<String> _attendedFilterOrder = <String>[
     'PUBLISHED',
     'COMPLETED',
     'CANCELLED',
-    'ARCHIVED',
   ];
 
   static const Set<String> _publishedStatuses = <String>{
@@ -234,8 +232,6 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
         return l10n.activityStatusCompleted;
       case 'CANCELLED':
         return l10n.activityStatusCancelled;
-      case 'ARCHIVED':
-        return l10n.activityStatusArchived;
       default:
         return key;
     }

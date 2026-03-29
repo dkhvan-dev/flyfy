@@ -23,7 +23,6 @@ func mapError(err error) error {
 		errors.Is(err, app.ErrActivityNotStartable),
 		errors.Is(err, app.ErrActivityNotCompletable),
 		errors.Is(err, app.ErrActivityNotCancellable),
-		errors.Is(err, app.ErrActivityNotArchivable),
 		errors.Is(err, app.ErrActivityJoinClosed),
 		errors.Is(err, app.ErrActivityFull),
 		errors.Is(err, app.ErrAlreadyJoined),
@@ -68,7 +67,6 @@ func mapError(err error) error {
 		errors.Is(err, app.ErrActivityAlreadyStarted),
 		errors.Is(err, app.ErrActivityAlreadyCompleted),
 		errors.Is(err, app.ErrActivityAlreadyCancelled),
-		errors.Is(err, app.ErrActivityAlreadyArchived),
 		errors.Is(err, app.ErrParticipantScheduleConflict),
 		errors.Is(err, app.ErrParticipantAlreadyCancelled),
 		errors.Is(err, app.ErrModerationStateInvalid):

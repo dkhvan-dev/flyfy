@@ -115,11 +115,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   bool get _isCancelledActivity =>
       widget.activity?.status.toUpperCase() == 'CANCELLED';
 
-  bool get _isArchivedActivity =>
-      widget.activity?.status.toUpperCase() == 'ARCHIVED';
-
   bool get _shouldRepublishCancelledActivity =>
-      widget.isEditMode && (_isCancelledActivity || _isArchivedActivity);
+      widget.isEditMode && _isCancelledActivity;
 
   @override
   void initState() {

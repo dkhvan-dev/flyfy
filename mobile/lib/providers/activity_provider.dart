@@ -401,27 +401,4 @@ class ActivityProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  Future<ActivityListItemVm?> archiveActivity(String activityId) async {
-    _actionState = ActivityActionState.loading;
-    _actionErrorMessage = null;
-    notifyListeners();
-
-    try {
-      final updated = await _activityApi.archiveActivity(activityId);
-      _replaceActivityInCaches(updated);
-      _actionState = ActivityActionState.success;
-      return updated;
-    } on DioException catch (e) {
-      _actionErrorMessage = DioErrorMapper.toMessage(e);
-      _actionState = ActivityActionState.error;
-      return null;
-    } catch (_) {
-      _actionErrorMessage = 'Failed to archive activity';
-      _actionState = ActivityActionState.error;
-      return null;
-    } finally {
-      notifyListeners();
-    }
-  }
 }

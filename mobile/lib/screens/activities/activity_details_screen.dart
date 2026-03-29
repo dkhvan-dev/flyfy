@@ -37,7 +37,7 @@ class ActivityDetailsScreen extends StatefulWidget {
   State<ActivityDetailsScreen> createState() => _ActivityDetailsScreenState();
 }
 
-enum _FooterAction { join, leave, publish, cancel, archive }
+enum _FooterAction { join, leave, publish, cancel }
 
 class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   final ActivityApi _activityApi = ActivityApi();
@@ -375,33 +375,6 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     ).showSnackBar(SnackBar(content: Text(l10n.activityCancelSuccess)));
   }
 
-  Future<void> _handleArchive() async {
-    final l10n = AppLocalizations.of(context)!;
-    final provider = context.read<ActivityProvider>();
-
-    setState(() => _pendingAction = _FooterAction.archive);
-    final updated = await provider.archiveActivity(widget.activityId);
-
-    if (!mounted) return;
-
-    if (updated == null) {
-      setState(() => _pendingAction = null);
-      await showErrorDialog(
-        context,
-        title: l10n.error,
-        message: _mapArchiveError(provider.actionErrorMessage, l10n),
-      );
-      return;
-    }
-
-    await _reloadAfterAction(includeJoined: false);
-    if (!mounted) return;
-    setState(() => _pendingAction = null);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.activityArchiveSuccess)));
-  }
-
   Future<void> _reloadAfterAction({required bool includeJoined}) async {
     final provider = context.read<ActivityProvider>();
     final authProvider = context.read<AuthProvider>();
@@ -451,23 +424,6 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     return raw;
   }
 
-  String _mapArchiveError(String? actionErrorMessage, AppLocalizations l10n) {
-    final raw = (actionErrorMessage ?? '').trim();
-    if (raw.isEmpty) {
-      return l10n.activityArchiveFailed;
-    }
-
-    final normalized = raw.toLowerCase();
-    if (normalized.contains('already archived')) {
-      return l10n.activityArchiveAlreadyArchived;
-    }
-    if (normalized.contains('not archivable')) {
-      return l10n.activityArchiveNotAllowed;
-    }
-
-    return raw;
-  }
-
   bool _canCancelActivity(
     ActivityListItemVm activity, {
     required bool isOwner,
@@ -485,13 +441,6 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       default:
         return true;
     }
-  }
-
-  bool _canArchiveActivity(
-    ActivityListItemVm activity, {
-    required bool isOwner,
-  }) {
-    return isOwner && activity.status.toUpperCase() == 'CANCELLED';
   }
 
   Future<void> _loadVisibleProfiles(ActivityListItemVm? activity) async {
@@ -772,7 +721,6 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final isDraft = status == 'DRAFT';
     final showPublish = isOwner && isDraft;
     final canCancelActivity = _canCancelActivity(activity, isOwner: isOwner);
-    final canArchiveActivity = _canArchiveActivity(activity, isOwner: isOwner);
     final canShowAttendanceQr =
         isOwner &&
         !const {'CANCELLED', 'COMPLETED', 'ARCHIVED'}.contains(status);
@@ -927,7 +875,6 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         canShowAttendanceQr: canShowAttendanceQr,
                         canLeaveActivity: isJoined && !isOwner,
                         canCancelActivity: canCancelActivity,
-                        canArchiveActivity: canArchiveActivity,
                         isLeaving:
                             provider.actionState ==
                                 ActivityActionState.loading &&
@@ -936,13 +883,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             provider.actionState ==
                                 ActivityActionState.loading &&
                             _pendingAction == _FooterAction.cancel,
-                        isArchiving:
-                            provider.actionState ==
-                                ActivityActionState.loading &&
-                            _pendingAction == _FooterAction.archive,
                         onLeaveTap: _handleLeave,
                         onCancelTap: _handleCancel,
-                        onArchiveTap: _handleArchive,
                         onShowAttendanceQrTap: () {
                           context.push(
                             '/activities/${activity.id}/attendance-qr',
@@ -2557,13 +2499,10 @@ class _MeetingSection extends StatelessWidget {
     required this.canShowAttendanceQr,
     required this.canLeaveActivity,
     required this.canCancelActivity,
-    required this.canArchiveActivity,
     required this.isLeaving,
     required this.isCancelling,
-    required this.isArchiving,
     required this.onLeaveTap,
     required this.onCancelTap,
-    required this.onArchiveTap,
     required this.onShowAttendanceQrTap,
     required this.onActionTap,
   });
@@ -2575,13 +2514,10 @@ class _MeetingSection extends StatelessWidget {
   final bool canShowAttendanceQr;
   final bool canLeaveActivity;
   final bool canCancelActivity;
-  final bool canArchiveActivity;
   final bool isLeaving;
   final bool isCancelling;
-  final bool isArchiving;
   final VoidCallback onLeaveTap;
   final VoidCallback onCancelTap;
-  final VoidCallback onArchiveTap;
   final VoidCallback onShowAttendanceQrTap;
   final VoidCallback onActionTap;
 
@@ -2799,16 +2735,6 @@ class _MeetingSection extends StatelessWidget {
               label: l10n.activityCancelButton,
               isBusy: isCancelling,
               onTap: onCancelTap,
-            ),
-          ),
-        ],
-        if (canArchiveActivity) ...[
-          const SizedBox(height: 18),
-          Center(
-            child: _MeetingOwnerArchiveAction(
-              label: l10n.activityArchiveButton,
-              isBusy: isArchiving,
-              onTap: onArchiveTap,
             ),
           ),
         ],
@@ -3083,69 +3009,6 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
                   label,
                   style: TextStyle(
                     color: AppColors.accent.withValues(alpha: 0.96),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.18,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MeetingOwnerArchiveAction extends StatelessWidget {
-  const _MeetingOwnerArchiveAction({
-    required this.label,
-    required this.isBusy,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isBusy;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: isBusy ? null : onTap,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isBusy)
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.1,
-                      color: AppColors.accent,
-                    ),
-                  )
-                else
-                  Icon(
-                    Icons.archive_outlined,
-                    size: 18,
-                    color: Colors.white.withValues(alpha: 0.92),
-                  ),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.94),
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.18,

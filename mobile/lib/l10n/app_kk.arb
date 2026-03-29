@@ -167,18 +167,13 @@
   "activityJoinSuccess": "Сіз белсенділікке жазылдыңыз",
   "activityLeaveSuccess": "Сіз белсенділіктен шықтыңыз",
   "activityCancelSuccess": "Белсенділік тоқтатылды",
-  "activityArchiveButton": "Мұрағатқа жіберу",
-  "activityArchiveSuccess": "Белсенділік мұрағатқа жіберілді",
   "activityJoinFailed": "Белсенділікке жазылу мүмкін болмады",
   "activityJoinAlreadyJoined": "Сіз бұл белсенділікке әлдеқашан жазылғансыз",
   "activityJoinScheduleConflict": "Жазылу мүмкін емес: уақыты қабаттасатын басқа белсенділікке жазылып қойғансыз",
   "activityLeaveFailed": "Белсенділіктен шығу мүмкін болмады",
   "activityCancelFailed": "Белсенділікті тоқтату мүмкін болмады",
-  "activityArchiveFailed": "Белсенділікті мұрағатқа жіберу мүмкін болмады",
   "activityCancelAlreadyCancelled": "Белсенділік әлдеқашан тоқтатылған",
   "activityCancelNotAllowed": "Бұл белсенділікті енді тоқтату мүмкін емес",
-  "activityArchiveAlreadyArchived": "Белсенділік әлдеқашан мұрағатта",
-  "activityArchiveNotAllowed": "Мұрағатқа тек тоқтатылған белсенділікті жіберуге болады",
   "activityGoingTitle": "Қатысушылар ({count})",
   "@activityGoingTitle": {
     "placeholders": {
