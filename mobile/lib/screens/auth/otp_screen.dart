@@ -29,6 +29,7 @@ class _OtpScreenState extends State<OtpScreen> {
   final FocusNode _focusNode = FocusNode();
   Timer? _countdownTimer;
   int _remainingSeconds = _countdownDurationSeconds;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -79,13 +80,23 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   void _submit() async {
+    if (_isSubmitting) return;
     final ctx = context;
     final l10n = AppLocalizations.of(ctx)!;
     final code = _codeController.text.trim();
     if (code.length != 6) return;
 
     final auth = ctx.read<AuthProvider>();
-    final success = await auth.verifyOtp(widget.phone, code);
+    if (auth.isVerifyingOtp) return;
+
+    _dismissKeyboard();
+    _isSubmitting = true;
+    bool success = false;
+    try {
+      success = await auth.verifyOtp(widget.phone, code);
+    } finally {
+      _isSubmitting = false;
+    }
 
     if (!ctx.mounted) return;
 
@@ -111,6 +122,23 @@ class _OtpScreenState extends State<OtpScreen> {
         message: auth.errorMessage ?? l10n.otpInvalid,
       );
     }
+  }
+
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  void _handleCodeChanged(String value) {
+    if (value.trim().length != 6 || _isSubmitting) {
+      return;
+    }
+
+    _dismissKeyboard();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_codeController.text.trim().length != 6) return;
+      _submit();
+    });
   }
 
   @override
@@ -374,6 +402,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                                 .digitsOnly,
                                             LengthLimitingTextInputFormatter(6),
                                           ],
+                                          onChanged: _handleCodeChanged,
                                           decoration: const InputDecoration(
                                             border: InputBorder.none,
                                             focusedBorder: InputBorder.none,

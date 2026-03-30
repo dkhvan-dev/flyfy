@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/generated/app_localizations.dart';
@@ -247,6 +248,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   bool _setupPromptActive = false;
   int _failedBiometricAttempts = 0;
   String? _unlockError;
+  bool _unlockSubmitQueued = false;
 
   bool get _shouldAutoStartBiometric =>
       !kIsWeb && defaultTargetPlatform != TargetPlatform.android;
@@ -255,12 +257,14 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _unlockPinController.addListener(_handleUnlockPinControllerChanged);
     unawaited(_loadStateAndMaybeLock(initial: true));
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _unlockPinController.removeListener(_handleUnlockPinControllerChanged);
     _unlockPinController.dispose();
     _unlockPinFocusNode.dispose();
     super.dispose();
@@ -457,8 +461,11 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   }
 
   Future<void> _unlockWithPin() async {
+    if (_isUnlocking) return;
+    _unlockSubmitQueued = false;
     final l10n = AppLocalizations.of(context)!;
     final pin = _unlockPinController.text.trim();
+    _dismissKeyboard();
     if (pin.length != 4) {
       setState(() {
         _unlockError = l10n.appLockPinInvalid;
@@ -479,6 +486,44 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     }
 
     await _completeUnlock();
+  }
+
+  void _handleUnlockPinControllerChanged() {
+    if (!_showPinUnlock || !_isLocked) {
+      _unlockSubmitQueued = false;
+      return;
+    }
+
+    final value = _unlockPinController.text.trim();
+    if (_unlockError != null) {
+      setState(() {
+        _unlockError = null;
+      });
+    }
+
+    if (value.trim().length != 4 || _isUnlocking) {
+      _unlockSubmitQueued = false;
+      return;
+    }
+
+    if (_unlockSubmitQueued) {
+      return;
+    }
+
+    _unlockSubmitQueued = true;
+    Future<void>.delayed(const Duration(milliseconds: 60), () {
+      if (!mounted) return;
+      if (!_showPinUnlock || !_isLocked) {
+        _unlockSubmitQueued = false;
+        return;
+      }
+      if (_unlockPinController.text.trim().length != 4) {
+        _unlockSubmitQueued = false;
+        return;
+      }
+      _dismissKeyboard();
+      unawaited(_unlockWithPin());
+    });
   }
 
   Future<void> _completeUnlock() async {
@@ -537,6 +582,10 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
       if (!mounted) return;
       _unlockPinFocusNode.requestFocus();
     });
+  }
+
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 }
 
@@ -698,6 +747,10 @@ class _AppLockOverlay extends StatelessWidget {
                             maxLength: 4,
                             textAlign: TextAlign.center,
                             textInputAction: TextInputAction.done,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(4),
+                            ],
                             onSubmitted: (_) => onUnlockPressed(),
                             style: const TextStyle(
                               fontSize: 28,
@@ -854,6 +907,7 @@ class _PinSetupDialogState extends State<_PinSetupDialog> {
 
   String? _firstPin;
   String? _errorText;
+  bool _submitQueued = false;
 
   bool get _isConfirmStep => _firstPin != null;
 
@@ -990,13 +1044,11 @@ class _PinSetupDialogState extends State<_PinSetupDialog> {
                         maxLength: 4,
                         textAlign: TextAlign.center,
                         textInputAction: TextInputAction.done,
-                        onChanged: (_) {
-                          if (_errorText != null) {
-                            setState(() {
-                              _errorText = null;
-                            });
-                          }
-                        },
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        onChanged: _handlePinChanged,
                         onSubmitted: (_) => _submit(),
                         style: const TextStyle(
                           fontSize: 28,
@@ -1073,8 +1125,10 @@ class _PinSetupDialogState extends State<_PinSetupDialog> {
   }
 
   void _submit() {
+    _submitQueued = false;
     final l10n = AppLocalizations.of(context)!;
     final pin = _pinController.text.trim();
+    _dismissKeyboard();
     if (pin.length != 4) {
       setState(() {
         _errorText = l10n.appLockPinInvalid;
@@ -1102,5 +1156,37 @@ class _PinSetupDialogState extends State<_PinSetupDialog> {
     }
 
     Navigator.of(context).pop(pin);
+  }
+
+  void _handlePinChanged(String value) {
+    if (_errorText != null) {
+      setState(() {
+        _errorText = null;
+      });
+    }
+
+    if (value.trim().length != 4) {
+      _submitQueued = false;
+      return;
+    }
+
+    if (_submitQueued) {
+      return;
+    }
+
+    _submitQueued = true;
+    _dismissKeyboard();
+    Future<void>.delayed(const Duration(milliseconds: 60), () {
+      if (!mounted) return;
+      if (_pinController.text.trim().length != 4) {
+        _submitQueued = false;
+        return;
+      }
+      _submit();
+    });
+  }
+
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 }
