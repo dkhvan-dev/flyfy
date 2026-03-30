@@ -17,6 +17,7 @@ import '../../screens/activities/create_activity_screen.dart';
 import '../../screens/activities/my_activities_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
 import '../../screens/common/feature_stub_screen.dart';
+import '../../screens/map/map_screen.dart';
 
 class AppRouter {
   static GoRouter router(AuthProvider authProvider) {
@@ -162,8 +163,7 @@ class AppRouter {
         ),
         GoRoute(
           path: '/map',
-          builder: (context, state) =>
-              _withAndroidBackSwipe(const FeatureStubScreen(title: 'Map')),
+          builder: (context, state) => _withAndroidBackSwipe(const MapScreen()),
         ),
         GoRoute(
           path: '/notifications',

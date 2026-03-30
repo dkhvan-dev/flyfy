@@ -868,6 +868,42 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeNavMy => 'Менің';
 
   @override
+  String get mapNearbyPlacesLabel => 'Жақын жерлер';
+
+  @override
+  String get mapSearchingNearbyPlaces =>
+      'Жақын маңдағы орындар мен мекемелерді іздеп жатырмыз';
+
+  @override
+  String get mapPlacesLoadFailed => 'Жақын жерлерді жүктеу сәтсіз аяқталды';
+
+  @override
+  String get mapNoPlacesTitle => 'Жақын маңда орындар табылмады';
+
+  @override
+  String get mapNoPlacesSubtitle =>
+      'Басқа жақын мекемелер мен қызықты нүктелерді көру үшін картаны жылжытыңыз немесе геолокацияны жаңартыңыз.';
+
+  @override
+  String get mapTapPlaceHint =>
+      'Орынды қарап, сілтемесін көшіру үшін маркерді немесе карточканы басыңыз.';
+
+  @override
+  String get mapCopyPlaceLink => 'Сілтемені көшіру';
+
+  @override
+  String get mapPlaceLinkCopied => 'Орынға сілтеме көшірілді';
+
+  @override
+  String get mapUsingFallbackLocation =>
+      'Карта резервтік локация бойынша көрсетіліп тұр';
+
+  @override
+  String mapPlacesCount(int count) {
+    return 'Табылған орындар: $count';
+  }
+
+  @override
   String get activitiesEntryTitle => 'Белсенділіктер';
 
   @override

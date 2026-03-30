@@ -307,6 +307,23 @@
   "homeNavMap": "Карта",
   "homeNavChats": "Чаттар",
   "homeNavMy": "Менің",
+  "mapNearbyPlacesLabel": "Жақын жерлер",
+  "mapSearchingNearbyPlaces": "Жақын маңдағы орындар мен мекемелерді іздеп жатырмыз",
+  "mapPlacesLoadFailed": "Жақын жерлерді жүктеу сәтсіз аяқталды",
+  "mapNoPlacesTitle": "Жақын маңда орындар табылмады",
+  "mapNoPlacesSubtitle": "Басқа жақын мекемелер мен қызықты нүктелерді көру үшін картаны жылжытыңыз немесе геолокацияны жаңартыңыз.",
+  "mapTapPlaceHint": "Орынды қарап, сілтемесін көшіру үшін маркерді немесе карточканы басыңыз.",
+  "mapCopyPlaceLink": "Сілтемені көшіру",
+  "mapPlaceLinkCopied": "Орынға сілтеме көшірілді",
+  "mapUsingFallbackLocation": "Карта резервтік локация бойынша көрсетіліп тұр",
+  "mapPlacesCount": "Табылған орындар: {count}",
+  "@mapPlacesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "activitiesEntryTitle": "Белсенділіктер",
   "activitiesEntrySubtitle": "Қосылуға болатын офлайн және онлайн іс-шараларды табыңыз",
   "comingSoon": "Жақында пайда болады",

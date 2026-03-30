@@ -858,6 +858,41 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeNavMy => 'Мои';
 
   @override
+  String get mapNearbyPlacesLabel => 'Места рядом';
+
+  @override
+  String get mapSearchingNearbyPlaces => 'Ищем заведения и места поблизости';
+
+  @override
+  String get mapPlacesLoadFailed => 'Не удалось загрузить места поблизости';
+
+  @override
+  String get mapNoPlacesTitle => 'Места рядом не найдены';
+
+  @override
+  String get mapNoPlacesSubtitle =>
+      'Переместите карту или обновите геолокацию, чтобы посмотреть другие ближайшие заведения и точки интереса.';
+
+  @override
+  String get mapTapPlaceHint =>
+      'Нажмите на маркер или карточку места, чтобы посмотреть его и скопировать ссылку.';
+
+  @override
+  String get mapCopyPlaceLink => 'Скопировать ссылку';
+
+  @override
+  String get mapPlaceLinkCopied => 'Ссылка на место скопирована';
+
+  @override
+  String get mapUsingFallbackLocation =>
+      'Показываем карту по резервной локации';
+
+  @override
+  String mapPlacesCount(int count) {
+    return 'Найдено мест: $count';
+  }
+
+  @override
   String get activitiesEntryTitle => 'Активности';
 
   @override

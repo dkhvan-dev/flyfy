@@ -861,6 +861,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeNavMy => 'My';
 
   @override
+  String get mapNearbyPlacesLabel => 'Nearby places';
+
+  @override
+  String get mapSearchingNearbyPlaces => 'Looking for nearby venues and places';
+
+  @override
+  String get mapPlacesLoadFailed => 'Failed to load nearby places';
+
+  @override
+  String get mapNoPlacesTitle => 'No nearby places found';
+
+  @override
+  String get mapNoPlacesSubtitle =>
+      'Move the map or refresh your location to explore other nearby venues and points of interest.';
+
+  @override
+  String get mapTapPlaceHint =>
+      'Tap a marker or place card to preview it and copy its link.';
+
+  @override
+  String get mapCopyPlaceLink => 'Copy link';
+
+  @override
+  String get mapPlaceLinkCopied => 'Place link copied';
+
+  @override
+  String get mapUsingFallbackLocation =>
+      'Showing the map from a fallback location';
+
+  @override
+  String mapPlacesCount(int count) {
+    return 'Places found: $count';
+  }
+
+  @override
   String get activitiesEntryTitle => 'Activities';
 
   @override

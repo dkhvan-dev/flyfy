@@ -307,6 +307,23 @@
   "homeNavMap": "Карта",
   "homeNavChats": "Чаты",
   "homeNavMy": "Мои",
+  "mapNearbyPlacesLabel": "Места рядом",
+  "mapSearchingNearbyPlaces": "Ищем заведения и места поблизости",
+  "mapPlacesLoadFailed": "Не удалось загрузить места поблизости",
+  "mapNoPlacesTitle": "Места рядом не найдены",
+  "mapNoPlacesSubtitle": "Переместите карту или обновите геолокацию, чтобы посмотреть другие ближайшие заведения и точки интереса.",
+  "mapTapPlaceHint": "Нажмите на маркер или карточку места, чтобы посмотреть его и скопировать ссылку.",
+  "mapCopyPlaceLink": "Скопировать ссылку",
+  "mapPlaceLinkCopied": "Ссылка на место скопирована",
+  "mapUsingFallbackLocation": "Показываем карту по резервной локации",
+  "mapPlacesCount": "Найдено мест: {count}",
+  "@mapPlacesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "activitiesEntryTitle": "Активности",
   "activitiesEntrySubtitle": "Найдите офлайн и онлайн события, к которым можно присоединиться",
   "comingSoon": "Скоро появится",

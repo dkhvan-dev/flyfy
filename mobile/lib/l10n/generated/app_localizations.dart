@@ -1690,6 +1690,66 @@ abstract class AppLocalizations {
   /// **'My'**
   String get homeNavMy;
 
+  /// No description provided for @mapNearbyPlacesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby places'**
+  String get mapNearbyPlacesLabel;
+
+  /// No description provided for @mapSearchingNearbyPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for nearby venues and places'**
+  String get mapSearchingNearbyPlaces;
+
+  /// No description provided for @mapPlacesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load nearby places'**
+  String get mapPlacesLoadFailed;
+
+  /// No description provided for @mapNoPlacesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No nearby places found'**
+  String get mapNoPlacesTitle;
+
+  /// No description provided for @mapNoPlacesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the map or refresh your location to explore other nearby venues and points of interest.'**
+  String get mapNoPlacesSubtitle;
+
+  /// No description provided for @mapTapPlaceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a marker or place card to preview it and copy its link.'**
+  String get mapTapPlaceHint;
+
+  /// No description provided for @mapCopyPlaceLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get mapCopyPlaceLink;
+
+  /// No description provided for @mapPlaceLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Place link copied'**
+  String get mapPlaceLinkCopied;
+
+  /// No description provided for @mapUsingFallbackLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the map from a fallback location'**
+  String get mapUsingFallbackLocation;
+
+  /// No description provided for @mapPlacesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Places found: {count}'**
+  String mapPlacesCount(int count);
+
   /// No description provided for @activitiesEntryTitle.
   ///
   /// In en, this message translates to:

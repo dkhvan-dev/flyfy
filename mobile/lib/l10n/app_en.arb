@@ -307,6 +307,23 @@
   "homeNavMap": "Map",
   "homeNavChats": "Chats",
   "homeNavMy": "My",
+  "mapNearbyPlacesLabel": "Nearby places",
+  "mapSearchingNearbyPlaces": "Looking for nearby venues and places",
+  "mapPlacesLoadFailed": "Failed to load nearby places",
+  "mapNoPlacesTitle": "No nearby places found",
+  "mapNoPlacesSubtitle": "Move the map or refresh your location to explore other nearby venues and points of interest.",
+  "mapTapPlaceHint": "Tap a marker or place card to preview it and copy its link.",
+  "mapCopyPlaceLink": "Copy link",
+  "mapPlaceLinkCopied": "Place link copied",
+  "mapUsingFallbackLocation": "Showing the map from a fallback location",
+  "mapPlacesCount": "Places found: {count}",
+  "@mapPlacesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "activitiesEntryTitle": "Activities",
   "activitiesEntrySubtitle": "Find offline and online events you can join",
   "comingSoon": "Coming soon",
