@@ -435,255 +435,357 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         onChatsTap: () => context.push('/chats'),
       ),
       body: _DiscoverScreenBackdrop(
-        child: SafeArea(
-          child: Consumer<ActivityProvider>(
-            builder: (context, provider, _) {
-              final discoverItems = _mergePublishedActivities(
-                publicItems: provider.items,
-                hostedItems: provider.myItems,
-                currentUserId: currentUserId,
-              );
-              final languageCode = Localizations.localeOf(
-                context,
-              ).languageCode.toLowerCase();
-              final categoryOptions = _buildCategoryOptions(
-                provider.categoryItems,
-                discoverItems,
-                languageCode,
-                l10n,
-              );
-              final categoryLabelsBySlug = {
-                for (final option in categoryOptions)
-                  option.slug: option.label.toLowerCase(),
-              };
-              final currentPriceFilterCurrency = filterCurrencyLabel(
-                countryCode: currentPriceFilterCountryCode,
-                currency: normalizeActivityCurrencyCode(profile?.currency),
-              );
-              final filteredItems = _applyDiscoverFilters(
-                discoverItems,
-                filters: _filters,
-                searchQuery: _searchQuery,
-                categoryLabelsBySlug: categoryLabelsBySlug,
-              );
+        child: _ActivitiesResponsiveTextScope(
+          child: SafeArea(
+            child: Consumer<ActivityProvider>(
+              builder: (context, provider, _) {
+                final discoverItems = _mergePublishedActivities(
+                  publicItems: provider.items,
+                  hostedItems: provider.myItems,
+                  currentUserId: currentUserId,
+                );
+                final languageCode = Localizations.localeOf(
+                  context,
+                ).languageCode.toLowerCase();
+                final categoryOptions = _buildCategoryOptions(
+                  provider.categoryItems,
+                  discoverItems,
+                  languageCode,
+                  l10n,
+                );
+                final categoryLabelsBySlug = {
+                  for (final option in categoryOptions)
+                    option.slug: option.label.toLowerCase(),
+                };
+                final currentPriceFilterCurrency = filterCurrencyLabel(
+                  countryCode: currentPriceFilterCountryCode,
+                  currency: normalizeActivityCurrencyCode(profile?.currency),
+                );
+                final filteredItems = _applyDiscoverFilters(
+                  discoverItems,
+                  filters: _filters,
+                  searchQuery: _searchQuery,
+                  categoryLabelsBySlug: categoryLabelsBySlug,
+                );
 
-              return Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 460),
-                  child: RefreshIndicator(
-                    color: AppColors.accent,
-                    backgroundColor: const Color(0xFF201208),
-                    onRefresh: () => _refreshActivities(currentUserId),
-                    child: CustomScrollView(
-                      physics: const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
-                      ),
-                      slivers: [
-                        SliverPadding(
-                          padding: EdgeInsets.fromLTRB(
-                            layout.horizontalPadding,
-                            layout.topPadding,
-                            layout.horizontalPadding,
-                            0,
-                          ),
-                          sliver: SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _DiscoverTopBar(
-                                  title: l10n.activitiesDiscoverTitle,
-                                  onBackTap: _goBack,
-                                ),
-                                SizedBox(height: layout.sectionGap),
-                                _DiscoverSearchField(
-                                  controller: _searchController,
-                                  focusNode: _searchFocusNode,
-                                  hintText: l10n.activitiesSearchHint,
-                                ),
-                                SizedBox(height: layout.filterGap),
-                                _DiscoverFilterRow(
-                                  l10n: l10n,
-                                  filters: _filters,
-                                  priceCurrencyLabel:
-                                      currentPriceFilterCurrency,
-                                  selectedCategoryCount:
-                                      _filters.categorySlugs.length,
-                                  onCategoryTap: () => _openCategoryFilter(
-                                    context,
-                                    categoryOptions,
-                                    discoverItems,
-                                  ),
-                                  onDateTap: () => _openDateFilter(context),
-                                  onPriceTap: () => _openPriceFilter(
-                                    context,
-                                    discoverItems,
-                                    currentPriceFilterCountryCode,
-                                    normalizeActivityCurrencyCode(
-                                      profile?.currency,
-                                    ),
-                                  ),
-                                  onVisibilityTap: () =>
-                                      _openVisibilityFilter(context),
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  height: 1,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.transparent,
-                                        AppColors.accent.withValues(
-                                          alpha: 0.16,
-                                        ),
-                                        AppColors.accent.withValues(
-                                          alpha: 0.12,
-                                        ),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (_searchQuery.isNotEmpty ||
-                                    _filters.hasAnyValue) ...[
-                                  const SizedBox(height: 14),
-                                  _FiltersSummaryBar(
-                                    l10n: l10n,
-                                    count: filteredItems.length,
-                                    onClear: () {
-                                      _searchController.clear();
-                                      setState(() {
-                                        _filters = const _DiscoverFilters();
-                                      });
-                                    },
-                                  ),
-                                ],
-                                if (provider.state == ActivitiesState.loading &&
-                                    discoverItems.isNotEmpty) ...[
-                                  const SizedBox(height: 18),
-                                  const LinearProgressIndicator(
-                                    minHeight: 2,
-                                    color: AppColors.accent,
-                                    backgroundColor: Colors.transparent,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
+                return Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: RefreshIndicator(
+                      color: AppColors.accent,
+                      backgroundColor: const Color(0xFF201208),
+                      onRefresh: () => _refreshActivities(currentUserId),
+                      child: CustomScrollView(
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
                         ),
-                        if (provider.state == ActivitiesState.loading &&
-                            discoverItems.isEmpty)
-                          const SliverFillRemaining(
-                            hasScrollBody: false,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.accent,
-                              ),
-                            ),
-                          )
-                        else if (provider.state == ActivitiesState.error &&
-                            discoverItems.isEmpty)
-                          SliverFillRemaining(
-                            hasScrollBody: false,
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                layout.horizontalPadding,
-                                12,
-                                layout.horizontalPadding,
-                                0,
-                              ),
-                              child: ErrorView(
-                                message:
-                                    provider.errorMessage ??
-                                    l10n.activitiesLoadFailed,
-                                onRetry: () async {
-                                  await provider.loadActivities();
-                                  if (currentUserId.isNotEmpty) {
-                                    await provider.loadMyActivities();
-                                  }
-                                },
-                              ),
-                            ),
-                          )
-                        else if (discoverItems.isEmpty)
-                          SliverFillRemaining(
-                            hasScrollBody: false,
-                            child: _ActivitiesEmptyView(
-                              icon: Icons.explore_rounded,
-                              title: l10n.noActivitiesYet,
-                              subtitle: l10n.activitiesWillAppearHere,
-                            ),
-                          )
-                        else if (filteredItems.isEmpty)
-                          SliverFillRemaining(
-                            hasScrollBody: false,
-                            child: _ActivitiesEmptyView(
-                              icon: Icons.filter_alt_off_rounded,
-                              title: l10n.activitiesFilteredEmptyTitle,
-                              subtitle: l10n.activitiesFilteredEmptySubtitle,
-                              actionLabel: l10n.myActivitiesFilterClear,
-                              onActionTap: () {
-                                _searchController.clear();
-                                setState(() {
-                                  _filters = const _DiscoverFilters();
-                                });
-                              },
-                            ),
-                          )
-                        else
+                        slivers: [
                           SliverPadding(
                             padding: EdgeInsets.fromLTRB(
                               layout.horizontalPadding,
-                              18,
+                              layout.topPadding,
                               layout.horizontalPadding,
-                              140 + safeBottomInset,
+                              0,
                             ),
-                            sliver: SliverList.separated(
-                              itemCount: filteredItems.length,
-                              separatorBuilder: (_, __) =>
-                                  SizedBox(height: layout.cardGap),
-                              itemBuilder: (context, index) {
-                                final item = filteredItems[index];
-                                final categorySlug = _normalizeSlug(
-                                  item.categorySlug,
-                                );
-                                final categoryLabel =
-                                    categoryOptions
-                                        .cast<_DiscoverCategoryOption?>()
-                                        .firstWhere(
-                                          (option) =>
-                                              option?.slug == categorySlug,
-                                          orElse: () => null,
-                                        )
-                                        ?.label ??
-                                    ActivityCategoryVm.humanizeSlug(
-                                      item.categorySlug,
-                                    );
-
-                                return _DiscoverActivityCard(
-                                  item: item,
-                                  layout: layout,
-                                  categoryLabel: categoryLabel,
-                                  isOwner:
-                                      currentUserId.isNotEmpty &&
-                                      currentUserId == item.hostUserId,
-                                  onOpenDetails: () =>
-                                      _openActivityDetails(context, item.id),
-                                );
-                              },
+                            sliver: SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _DiscoverTopBar(
+                                    title: l10n.activitiesDiscoverTitle,
+                                    onBackTap: _goBack,
+                                  ),
+                                  SizedBox(height: layout.sectionGap),
+                                  _DiscoverSearchField(
+                                    controller: _searchController,
+                                    focusNode: _searchFocusNode,
+                                    hintText: l10n.activitiesSearchHint,
+                                  ),
+                                  SizedBox(height: layout.filterGap),
+                                  _DiscoverFilterRow(
+                                    l10n: l10n,
+                                    filters: _filters,
+                                    priceCurrencyLabel:
+                                        currentPriceFilterCurrency,
+                                    selectedCategoryCount:
+                                        _filters.categorySlugs.length,
+                                    onCategoryTap: () => _openCategoryFilter(
+                                      context,
+                                      categoryOptions,
+                                      discoverItems,
+                                    ),
+                                    onDateTap: () => _openDateFilter(context),
+                                    onPriceTap: () => _openPriceFilter(
+                                      context,
+                                      discoverItems,
+                                      currentPriceFilterCountryCode,
+                                      normalizeActivityCurrencyCode(
+                                        profile?.currency,
+                                      ),
+                                    ),
+                                    onVisibilityTap: () =>
+                                        _openVisibilityFilter(context),
+                                  ),
+                                  SizedBox(
+                                    height: _activitiesScaled(
+                                      context,
+                                      16,
+                                      min: 12,
+                                      max: 18,
+                                    ),
+                                  ),
+                                  Container(
+                                    height: 1,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.transparent,
+                                          AppColors.accent.withValues(
+                                            alpha: 0.16,
+                                          ),
+                                          AppColors.accent.withValues(
+                                            alpha: 0.12,
+                                          ),
+                                          Colors.transparent,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  if (_searchQuery.isNotEmpty ||
+                                      _filters.hasAnyValue) ...[
+                                    SizedBox(
+                                      height: _activitiesScaled(
+                                        context,
+                                        14,
+                                        min: 10,
+                                        max: 16,
+                                      ),
+                                    ),
+                                    _FiltersSummaryBar(
+                                      l10n: l10n,
+                                      count: filteredItems.length,
+                                      onClear: () {
+                                        _searchController.clear();
+                                        setState(() {
+                                          _filters = const _DiscoverFilters();
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                  if (provider.state ==
+                                          ActivitiesState.loading &&
+                                      discoverItems.isNotEmpty) ...[
+                                    SizedBox(
+                                      height: _activitiesScaled(
+                                        context,
+                                        18,
+                                        min: 14,
+                                        max: 20,
+                                      ),
+                                    ),
+                                    const LinearProgressIndicator(
+                                      minHeight: 2,
+                                      color: AppColors.accent,
+                                      backgroundColor: Colors.transparent,
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           ),
-                      ],
+                          if (provider.state == ActivitiesState.loading &&
+                              discoverItems.isEmpty)
+                            const SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                            )
+                          else if (provider.state == ActivitiesState.error &&
+                              discoverItems.isEmpty)
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  layout.horizontalPadding,
+                                  12,
+                                  layout.horizontalPadding,
+                                  0,
+                                ),
+                                child: ErrorView(
+                                  message:
+                                      provider.errorMessage ??
+                                      l10n.activitiesLoadFailed,
+                                  onRetry: () async {
+                                    await provider.loadActivities();
+                                    if (currentUserId.isNotEmpty) {
+                                      await provider.loadMyActivities();
+                                    }
+                                  },
+                                ),
+                              ),
+                            )
+                          else if (discoverItems.isEmpty)
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: _ActivitiesEmptyView(
+                                icon: Icons.explore_rounded,
+                                title: l10n.noActivitiesYet,
+                                subtitle: l10n.activitiesWillAppearHere,
+                              ),
+                            )
+                          else if (filteredItems.isEmpty)
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: _ActivitiesEmptyView(
+                                icon: Icons.filter_alt_off_rounded,
+                                title: l10n.activitiesFilteredEmptyTitle,
+                                subtitle: l10n.activitiesFilteredEmptySubtitle,
+                                actionLabel: l10n.myActivitiesFilterClear,
+                                onActionTap: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _filters = const _DiscoverFilters();
+                                  });
+                                },
+                              ),
+                            )
+                          else
+                            SliverPadding(
+                              padding: EdgeInsets.fromLTRB(
+                                layout.horizontalPadding,
+                                _activitiesScaled(
+                                  context,
+                                  18,
+                                  min: 14,
+                                  max: 20,
+                                ),
+                                layout.horizontalPadding,
+                                140 + safeBottomInset,
+                              ),
+                              sliver: SliverList.separated(
+                                itemCount: filteredItems.length,
+                                separatorBuilder: (_, __) =>
+                                    SizedBox(height: layout.cardGap),
+                                itemBuilder: (context, index) {
+                                  final item = filteredItems[index];
+                                  final categorySlug = _normalizeSlug(
+                                    item.categorySlug,
+                                  );
+                                  final categoryLabel =
+                                      categoryOptions
+                                          .cast<_DiscoverCategoryOption?>()
+                                          .firstWhere(
+                                            (option) =>
+                                                option?.slug == categorySlug,
+                                            orElse: () => null,
+                                          )
+                                          ?.label ??
+                                      ActivityCategoryVm.humanizeSlug(
+                                        item.categorySlug,
+                                      );
+
+                                  return _DiscoverActivityCard(
+                                    item: item,
+                                    layout: layout,
+                                    categoryLabel: categoryLabel,
+                                    isOwner:
+                                        currentUserId.isNotEmpty &&
+                                        currentUserId == item.hostUserId,
+                                    onOpenDetails: () =>
+                                        _openActivityDetails(context, item.id),
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class _ActivitiesResponsiveTextScope extends StatelessWidget {
+  const _ActivitiesResponsiveTextScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final shortSide = mediaQuery.size.shortestSide;
+    final baseScale = mediaQuery.textScaler.scale(1);
+
+    double widthScale;
+    if (shortSide <= 320) {
+      widthScale = 0.9;
+    } else if (shortSide <= 360) {
+      widthScale = 0.95;
+    } else if (shortSide <= 390) {
+      widthScale = 0.98;
+    } else if (shortSide >= 430) {
+      widthScale = 1.04;
+    } else {
+      widthScale = 1;
+    }
+
+    final effectiveScale = (baseScale * widthScale).clamp(0.9, 1.16);
+
+    return MediaQuery(
+      data: mediaQuery.copyWith(textScaler: TextScaler.linear(effectiveScale)),
+      child: child,
+    );
+  }
+}
+
+double _activitiesUiScale(BuildContext context) {
+  final mediaQuery = MediaQuery.of(context);
+  final shortSide = mediaQuery.size.shortestSide;
+  final height = mediaQuery.size.height;
+
+  double scale;
+  if (shortSide <= 320) {
+    scale = 0.88;
+  } else if (shortSide <= 360) {
+    scale = 0.94;
+  } else if (shortSide <= 390) {
+    scale = 0.98;
+  } else if (shortSide >= 430) {
+    scale = 1.04;
+  } else {
+    scale = 1;
+  }
+
+  if (height < 700) {
+    scale *= 0.96;
+  } else if (height > 920) {
+    scale *= 1.02;
+  }
+
+  return scale.clamp(0.86, 1.08);
+}
+
+double _activitiesScaled(
+  BuildContext context,
+  double value, {
+  double? min,
+  double? max,
+}) {
+  final scaled = value * _activitiesUiScale(context);
+  if (min == null && max == null) {
+    return scaled;
+  }
+  return scaled.clamp(min ?? scaled, max ?? scaled);
 }
 
 class _DiscoverScreenBackdrop extends StatelessWidget {
@@ -693,6 +795,16 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topGlowHeight = _activitiesScaled(context, 344, min: 260, max: 360);
+    final topGlowInset = _activitiesScaled(context, 44, min: 24, max: 52);
+    final sideGlowSize = _activitiesScaled(context, 256, min: 180, max: 272);
+    final bottomGlowHeight = _activitiesScaled(
+      context,
+      284,
+      min: 220,
+      max: 300,
+    );
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -705,13 +817,13 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
             ),
           ),
         ),
-        const Positioned(
-          top: -144,
-          left: -44,
-          right: -44,
+        Positioned(
+          top: -_activitiesScaled(context, 144, min: 100, max: 150),
+          left: -topGlowInset,
+          right: -topGlowInset,
           child: IgnorePointer(
             child: SizedBox(
-              height: 344,
+              height: topGlowHeight,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
@@ -724,13 +836,13 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
             ),
           ),
         ),
-        const Positioned(
-          top: 92,
-          right: -92,
+        Positioned(
+          top: _activitiesScaled(context, 92, min: 64, max: 100),
+          right: -_activitiesScaled(context, 92, min: 60, max: 98),
           child: IgnorePointer(
             child: SizedBox(
-              width: 256,
-              height: 256,
+              width: sideGlowSize,
+              height: sideGlowSize,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
@@ -743,13 +855,13 @@ class _DiscoverScreenBackdrop extends StatelessWidget {
             ),
           ),
         ),
-        const Positioned(
-          left: -68,
-          right: -68,
-          bottom: -124,
+        Positioned(
+          left: -_activitiesScaled(context, 68, min: 42, max: 76),
+          right: -_activitiesScaled(context, 68, min: 42, max: 76),
+          bottom: -_activitiesScaled(context, 124, min: 92, max: 132),
           child: IgnorePointer(
             child: SizedBox(
-              height: 284,
+              height: bottomGlowHeight,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
@@ -795,6 +907,7 @@ class _DiscoverTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = _ActivitiesAdaptiveLayout.of(context);
+    final trailingSlot = _activitiesScaled(context, 40, min: 36, max: 42);
 
     return Row(
       children: [
@@ -814,7 +927,7 @@ class _DiscoverTopBar extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox.square(dimension: layout.isCompact ? 38 : 40),
+        SizedBox.square(dimension: trailingSlot),
       ],
     );
   }
@@ -829,6 +942,18 @@ class _CircleHeaderButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
+    final buttonSize = _activitiesScaled(
+      context,
+      compact ? 38 : 40,
+      min: 36,
+      max: 42,
+    );
+    final iconSize = _activitiesScaled(
+      context,
+      compact ? 18 : 20,
+      min: 16,
+      max: 20,
+    );
 
     return Material(
       color: Colors.transparent,
@@ -836,17 +961,13 @@ class _CircleHeaderButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Ink(
-          width: compact ? 38 : 40,
-          height: compact ? 38 : 40,
+          width: buttonSize,
+          height: buttonSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
-          child: Icon(
-            icon,
-            color: const Color(0xFFFFF7EF),
-            size: compact ? 18 : 20,
-          ),
+          child: Icon(icon, color: const Color(0xFFFFF7EF), size: iconSize),
         ),
       ),
     );
@@ -866,6 +987,11 @@ class _DiscoverSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final horizontalPadding = _activitiesScaled(context, 18, min: 14, max: 20);
+    final verticalPadding = _activitiesScaled(context, 14, min: 12, max: 16);
+    final searchFontSize = _activitiesScaled(context, 14, min: 13, max: 15);
+    final iconSize = _activitiesScaled(context, 20, min: 18, max: 20);
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
@@ -888,27 +1014,33 @@ class _DiscoverSearchField extends StatelessWidget {
         controller: controller,
         focusNode: focusNode,
         onTapOutside: (_) => FocusScope.of(context).unfocus(),
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 14,
+          fontSize: searchFontSize,
           fontWeight: FontWeight.w500,
         ),
         cursorColor: AppColors.accent,
         decoration: InputDecoration(
           isDense: true,
           hintText: hintText,
-          hintStyle: const TextStyle(color: Color(0x8CFFF0E0), fontSize: 14),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 14,
+          hintStyle: TextStyle(
+            color: const Color(0x8CFFF0E0),
+            fontSize: searchFontSize,
           ),
-          prefixIcon: const Padding(
-            padding: EdgeInsets.only(left: 12, right: 10),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: verticalPadding,
+          ),
+          prefixIcon: Padding(
+            padding: EdgeInsets.only(
+              left: _activitiesScaled(context, 12, min: 10, max: 13),
+              right: _activitiesScaled(context, 10, min: 8, max: 10),
+            ),
             child: Icon(
               Icons.search_rounded,
               color: Color(0x88FFF0E0),
-              size: 20,
+              size: iconSize,
             ),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 0),
@@ -1064,6 +1196,16 @@ class _DiscoverFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chipPaddingHorizontal = _activitiesScaled(
+      context,
+      14,
+      min: 12,
+      max: 16,
+    );
+    final chipPaddingVertical = _activitiesScaled(context, 9, min: 8, max: 10);
+    final iconSize = _activitiesScaled(context, 16, min: 14, max: 16);
+    final fontSize = _activitiesScaled(context, 14, min: 13, max: 14);
+    final arrowSize = _activitiesScaled(context, 18, min: 16, max: 18);
     final foreground = active
         ? const Color(0xFF241204)
         : const Color(0xFFF3DFCA);
@@ -1074,7 +1216,10 @@ class _DiscoverFilterChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          padding: EdgeInsets.symmetric(
+            horizontal: chipPaddingHorizontal,
+            vertical: chipPaddingVertical,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             gradient: active
@@ -1103,20 +1248,20 @@ class _DiscoverFilterChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: foreground),
-              const SizedBox(width: 8),
+              Icon(icon, size: iconSize, color: foreground),
+              SizedBox(width: _activitiesScaled(context, 8, min: 6, max: 8)),
               Text(
                 label,
                 style: TextStyle(
                   color: foreground,
-                  fontSize: 14,
+                  fontSize: fontSize,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: _activitiesScaled(context, 4, min: 3, max: 4)),
               Icon(
                 Icons.keyboard_arrow_down_rounded,
-                size: 18,
+                size: arrowSize,
                 color: foreground,
               ),
             ],
@@ -1140,29 +1285,47 @@ class _FiltersSummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.02;
+
+    final summaryText = Text(
+      l10n.activitiesResultsCount(count),
+      style: TextStyle(
+        color: const Color(0xCCFFF0E0),
+        fontSize: _activitiesScaled(context, 13, min: 12, max: 13),
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
+    final clearButton = TextButton(
+      onPressed: onClear,
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.accent,
+        padding: EdgeInsets.symmetric(
+          horizontal: _activitiesScaled(context, 12, min: 10, max: 12),
+          vertical: _activitiesScaled(context, 8, min: 7, max: 9),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      ),
+      child: Text(l10n.myActivitiesFilterClear),
+    );
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          summaryText,
+          SizedBox(height: _activitiesScaled(context, 8, min: 6, max: 10)),
+          Align(alignment: Alignment.centerLeft, child: clearButton),
+        ],
+      );
+    }
+
     return Row(
       children: [
-        Expanded(
-          child: Text(
-            l10n.activitiesResultsCount(count),
-            style: const TextStyle(
-              color: Color(0xCCFFF0E0),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: onClear,
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.accent,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          child: Text(l10n.myActivitiesFilterClear),
-        ),
+        Expanded(child: summaryText),
+        clearButton,
       ],
     );
   }
@@ -1187,6 +1350,9 @@ class _DiscoverActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toString();
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final compactMeta =
+        MediaQuery.sizeOf(context).width < 360 || textScale > 1.04;
     final artSpec = _cardArtForItem(item);
     final badgeText = item.isFree ? l10n.createPriceFree : item.priceLabel;
     final visibilityBadge = _visibilityBadge(item.visibility, l10n);
@@ -1210,6 +1376,15 @@ class _DiscoverActivityCard extends StatelessWidget {
             : l10n.activityPeopleMax(item.maxParticipants!),
       ),
     ];
+    final badgeVertical = _activitiesScaled(context, 7, min: 6, max: 8);
+    final badgeHorizontal = _activitiesScaled(context, 12, min: 10, max: 12);
+    final badgeIcon = _activitiesScaled(context, 14, min: 12, max: 14);
+    final badgeFont = _activitiesScaled(context, 12, min: 11, max: 12);
+    final priceFont = _activitiesScaled(context, 13, min: 12, max: 13);
+    final avatarSize = _activitiesScaled(context, 38, min: 34, max: 40);
+    final avatarIcon = _activitiesScaled(context, 18, min: 16, max: 18);
+    final categoryFont = _activitiesScaled(context, 11, min: 10, max: 11);
+    final locationFont = _activitiesScaled(context, 13, min: 12, max: 13);
 
     return Material(
       color: Colors.transparent,
@@ -1267,12 +1442,12 @@ class _DiscoverActivityCard extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      top: 14,
-                      left: 14,
+                      top: _activitiesScaled(context, 14, min: 10, max: 14),
+                      left: _activitiesScaled(context, 14, min: 10, max: 14),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 7,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: badgeHorizontal,
+                          vertical: badgeVertical,
                         ),
                         decoration: BoxDecoration(
                           color: visibilityBadge.background,
@@ -1284,15 +1459,22 @@ class _DiscoverActivityCard extends StatelessWidget {
                           children: [
                             Icon(
                               visibilityBadge.icon,
-                              size: 14,
+                              size: badgeIcon,
                               color: visibilityBadge.foreground,
                             ),
-                            const SizedBox(width: 6),
+                            SizedBox(
+                              width: _activitiesScaled(
+                                context,
+                                6,
+                                min: 4,
+                                max: 6,
+                              ),
+                            ),
                             Text(
                               visibilityBadge.label,
                               style: TextStyle(
                                 color: visibilityBadge.foreground,
-                                fontSize: 12,
+                                fontSize: badgeFont,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.1,
                               ),
@@ -1302,12 +1484,12 @@ class _DiscoverActivityCard extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      top: 14,
-                      right: 14,
+                      top: _activitiesScaled(context, 14, min: 10, max: 14),
+                      right: _activitiesScaled(context, 14, min: 10, max: 14),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 7,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: badgeHorizontal,
+                          vertical: badgeVertical,
                         ),
                         decoration: BoxDecoration(
                           color: const Color(0xCC46362A),
@@ -1319,7 +1501,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                             color: item.isFree
                                 ? AppColors.success
                                 : AppColors.accent,
-                            fontSize: 13,
+                            fontSize: priceFont,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.1,
                           ),
@@ -1342,8 +1524,8 @@ class _DiscoverActivityCard extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          width: 38,
-                          height: 38,
+                          width: avatarSize,
+                          height: avatarSize,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(colors: artSpec.colors),
@@ -1354,10 +1536,17 @@ class _DiscoverActivityCard extends StatelessWidget {
                           child: Icon(
                             artSpec.icon,
                             color: Colors.white.withValues(alpha: 0.92),
-                            size: 18,
+                            size: avatarIcon,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(
+                          width: _activitiesScaled(
+                            context,
+                            10,
+                            min: 8,
+                            max: 10,
+                          ),
+                        ),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1366,21 +1555,28 @@ class _DiscoverActivityCard extends StatelessWidget {
                                 categoryLabel.toUpperCase(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Color(0xFFFFB64D),
-                                  fontSize: 11,
+                                  fontSize: categoryFont,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.4,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(
+                                height: _activitiesScaled(
+                                  context,
+                                  2,
+                                  min: 1,
+                                  max: 3,
+                                ),
+                              ),
                               Text(
                                 locationText,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Color(0xFFEEDFD2),
-                                  fontSize: 13,
+                                  fontSize: locationFont,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -1389,7 +1585,9 @@ class _DiscoverActivityCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: _activitiesScaled(context, 14, min: 10, max: 14),
+                    ),
                     Text(
                       item.title,
                       maxLines: 2,
@@ -1402,15 +1600,30 @@ class _DiscoverActivityCard extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: _activitiesScaled(context, 16, min: 12, max: 18),
+                    ),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final gap = 10.0;
-                        final itemWidth = (constraints.maxWidth - gap) / 2;
+                        final gap = _activitiesScaled(
+                          context,
+                          10,
+                          min: 8,
+                          max: 10,
+                        );
+                        final columns = compactMeta ? 1 : 2;
+                        final itemWidth =
+                            (constraints.maxWidth - gap * (columns - 1)) /
+                            columns;
 
                         return Wrap(
                           spacing: gap,
-                          runSpacing: 12,
+                          runSpacing: _activitiesScaled(
+                            context,
+                            12,
+                            min: 10,
+                            max: 12,
+                          ),
                           children: [
                             for (final meta in metaItems)
                               SizedBox(
@@ -1421,7 +1634,9 @@ class _DiscoverActivityCard extends StatelessWidget {
                         );
                       },
                     ),
-                    const SizedBox(height: 18),
+                    SizedBox(
+                      height: _activitiesScaled(context, 18, min: 14, max: 18),
+                    ),
                     SizedBox(
                       width: double.infinity,
                       child: _PrimaryPillButton(
@@ -1472,18 +1687,22 @@ class _CardMetaItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = _activitiesScaled(context, 16, min: 14, max: 16);
+    final gap = _activitiesScaled(context, 8, min: 6, max: 8);
+    final fontSize = _activitiesScaled(context, 13, min: 12, max: 13);
+
     return Row(
       children: [
-        Icon(data.icon, size: 16, color: const Color(0xB0FFF0E0)),
-        const SizedBox(width: 8),
+        Icon(data.icon, size: iconSize, color: const Color(0xB0FFF0E0)),
+        SizedBox(width: gap),
         Expanded(
           child: Text(
             data.label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: Color(0xA8FFF0E0),
-              fontSize: 13,
+              fontSize: fontSize,
               height: 1.25,
             ),
           ),
@@ -1522,6 +1741,13 @@ class _DecorativeActivityCoverFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final largeOrb = _activitiesScaled(context, 150, min: 112, max: 162);
+    final smallOrb = _activitiesScaled(context, 170, min: 124, max: 182);
+    final iconSize = _activitiesScaled(context, 66, min: 50, max: 70);
+    final arrowSize = _activitiesScaled(context, 34, min: 26, max: 36);
+    final horizontalInset = _activitiesScaled(context, 26, min: 18, max: 28);
+    final bottomInset = _activitiesScaled(context, 14, min: 10, max: 16);
+
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1534,11 +1760,11 @@ class _DecorativeActivityCoverFallback extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Positioned(
-            left: -32,
-            top: -34,
+            left: -_activitiesScaled(context, 32, min: 20, max: 34),
+            top: -_activitiesScaled(context, 34, min: 22, max: 36),
             child: Container(
-              width: 150,
-              height: 150,
+              width: largeOrb,
+              height: largeOrb,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: 0.12),
@@ -1546,11 +1772,11 @@ class _DecorativeActivityCoverFallback extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: -44,
-            bottom: -48,
+            right: -_activitiesScaled(context, 44, min: 28, max: 46),
+            bottom: -_activitiesScaled(context, 48, min: 30, max: 50),
             child: Container(
-              width: 170,
-              height: 170,
+              width: smallOrb,
+              height: smallOrb,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.black.withValues(alpha: 0.14),
@@ -1558,23 +1784,23 @@ class _DecorativeActivityCoverFallback extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: 26,
-            right: 26,
-            bottom: 14,
+            left: horizontalInset,
+            right: horizontalInset,
+            bottom: bottomInset,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Icon(
                   spec.icon,
-                  size: 66,
+                  size: iconSize,
                   color: Colors.white.withValues(alpha: 0.22),
                 ),
                 Transform.rotate(
                   angle: -0.18,
                   child: Icon(
                     Icons.arrow_outward_rounded,
-                    size: 34,
+                    size: arrowSize,
                     color: Colors.white.withValues(alpha: 0.18),
                   ),
                 ),
@@ -1604,15 +1830,22 @@ class _ActivitiesEmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconWrap = _activitiesScaled(context, 98, min: 82, max: 102);
+    final iconSize = _activitiesScaled(context, 40, min: 34, max: 40);
+    final titleSize = _activitiesScaled(context, 22, min: 19, max: 23);
+    final bodySize = _activitiesScaled(context, 15, min: 14, max: 16);
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
+        padding: EdgeInsets.symmetric(
+          horizontal: _activitiesScaled(context, 28, min: 18, max: 30),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 98,
-              height: 98,
+              width: iconWrap,
+              height: iconWrap,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.accent.withValues(alpha: 0.10),
@@ -1620,30 +1853,32 @@ class _ActivitiesEmptyView extends StatelessWidget {
                   color: AppColors.accent.withValues(alpha: 0.22),
                 ),
               ),
-              child: Icon(icon, size: 40, color: AppColors.accent),
+              child: Icon(icon, size: iconSize, color: AppColors.accent),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: _activitiesScaled(context, 24, min: 18, max: 26)),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 22,
+                fontSize: titleSize,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: _activitiesScaled(context, 10, min: 8, max: 12)),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xB3FFF0E0),
-                fontSize: 15,
+                fontSize: bodySize,
                 height: 1.45,
               ),
             ),
             if (actionLabel != null && onActionTap != null) ...[
-              const SizedBox(height: 22),
+              SizedBox(
+                height: _activitiesScaled(context, 22, min: 16, max: 24),
+              ),
               _PrimaryPillButton(
                 label: actionLabel!,
                 onTap: onActionTap!,
@@ -1688,178 +1923,319 @@ class _CategoryFilterSheetState extends State<_CategoryFilterSheet> {
   Widget build(BuildContext context) {
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
     final count = widget.previewCountBuilder(_selectedSlugs);
+    final titleSize = _activitiesScaled(context, 30, min: 24, max: 30);
+    final footerGap = _activitiesScaled(context, 14, min: 10, max: 16);
+    final compactActions =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.02;
 
-    return FractionallySizedBox(
-      heightFactor: 0.95,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 18),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF271609).withValues(alpha: 0.98),
-                  const Color(0xFF1B0E05).withValues(alpha: 0.985),
+    return _ActivitiesResponsiveTextScope(
+      child: FractionallySizedBox(
+        heightFactor: 0.95,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: _activitiesScaled(context, 18, min: 12, max: 18),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF271609).withValues(alpha: 0.98),
+                    const Color(0xFF1B0E05).withValues(alpha: 0.985),
+                  ],
+                ),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(
+                    _activitiesScaled(context, 36, min: 28, max: 36),
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.36),
+                    blurRadius: 40,
+                    offset: const Offset(0, -12),
+                  ),
                 ],
               ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(36),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.36),
-                  blurRadius: 40,
-                  offset: const Offset(0, -12),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 84,
-                    height: 10,
-                    margin: const EdgeInsets.only(top: 14),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 20, 18, 0),
-                  child: Text(
-                    widget.l10n.activitiesFiltersCategoriesTitle,
-                    style: const TextStyle(
-                      color: Color(0xFFFFFAF5),
-                      fontSize: 30,
-                      height: 1.05,
-                      letterSpacing: -0.8,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(18, 22, 18, 0),
-                    child: Column(
-                      children: [
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: widget.options.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 18,
-                                crossAxisSpacing: 18,
-                                childAspectRatio: 0.94,
-                              ),
-                          itemBuilder: (context, index) {
-                            final option = widget.options[index];
-                            final selected = _selectedSlugs.contains(
-                              option.slug,
-                            );
-
-                            return _CategoryOptionCard(
-                              option: option,
-                              selected: selected,
-                              subtitle: widget.l10n.activitiesResultsCount(
-                                option.count,
-                              ),
-                              onTap: () {
-                                setState(() {
-                                  if (selected) {
-                                    _selectedSlugs.remove(option.slug);
-                                  } else {
-                                    _selectedSlugs.add(option.slug);
-                                  }
-                                });
-                              },
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(2, 18, 2, 2),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: _activitiesScaled(context, 84, min: 62, max: 84),
+                      height: _activitiesScaled(context, 10, min: 6, max: 10),
+                      margin: EdgeInsets.only(
+                        top: _activitiesScaled(context, 14, min: 10, max: 14),
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.l10n.activitiesFiltersSelectedCategories,
-                            style: const TextStyle(
-                              color: Color(0x80FFF7EF),
-                              fontSize: 15,
-                            ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      _activitiesScaled(context, 18, min: 16, max: 20),
+                      _activitiesScaled(context, 20, min: 16, max: 20),
+                      _activitiesScaled(context, 18, min: 16, max: 20),
+                      0,
+                    ),
+                    child: Text(
+                      widget.l10n.activitiesFiltersCategoriesTitle,
+                      style: TextStyle(
+                        color: const Color(0xFFFFFAF5),
+                        fontSize: titleSize,
+                        height: 1.05,
+                        letterSpacing: -0.8,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        _activitiesScaled(context, 18, min: 16, max: 20),
+                        _activitiesScaled(context, 22, min: 16, max: 22),
+                        _activitiesScaled(context, 18, min: 16, max: 20),
+                        0,
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final textScale = MediaQuery.textScalerOf(
+                            context,
+                          ).scale(1);
+                          final useSingleColumn =
+                              constraints.maxWidth < 360 || textScale > 1.05;
+                          final spacing = _activitiesScaled(
+                            context,
+                            18,
+                            min: 12,
+                            max: 18,
+                          );
+                          final gridDelegate =
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: useSingleColumn ? 1 : 2,
+                                mainAxisSpacing: spacing,
+                                crossAxisSpacing: spacing,
+                                mainAxisExtent: _activitiesScaled(
+                                  context,
+                                  useSingleColumn ? 152 : 178,
+                                  min: useSingleColumn ? 136 : 158,
+                                  max: useSingleColumn ? 168 : 188,
+                                ),
+                              );
+
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: widget.options.length,
+                            gridDelegate: gridDelegate,
+                            itemBuilder: (context, index) {
+                              final option = widget.options[index];
+                              final selected = _selectedSlugs.contains(
+                                option.slug,
+                              );
+
+                              return _CategoryOptionCard(
+                                option: option,
+                                selected: selected,
+                                subtitle: widget.l10n.activitiesResultsCount(
+                                  option.count,
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    if (selected) {
+                                      _selectedSlugs.remove(option.slug);
+                                    } else {
+                                      _selectedSlugs.add(option.slug);
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      _activitiesScaled(context, 18, min: 16, max: 20),
+                      _activitiesScaled(context, 10, min: 8, max: 12),
+                      _activitiesScaled(context, 18, min: 16, max: 20),
+                      8,
+                    ),
+                    child: Container(
+                      padding: EdgeInsets.fromLTRB(
+                        2,
+                        _activitiesScaled(context, 18, min: 14, max: 18),
+                        2,
+                        2,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.08),
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Text(
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final useColumn =
+                              compactActions || constraints.maxWidth < 340;
+                          final label = Text(
+                            widget.l10n.activitiesFiltersSelectedCategories,
+                            style: TextStyle(
+                              color: const Color(0x80FFF7EF),
+                              fontSize: _activitiesScaled(
+                                context,
+                                15,
+                                min: 13,
+                                max: 15,
+                              ),
+                            ),
+                          );
+                          final value = Text(
                             _selectedSummary(widget.options),
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
+                            textAlign: useColumn
+                                ? TextAlign.left
+                                : TextAlign.right,
+                            style: TextStyle(
                               color: AppColors.accent,
-                              fontSize: 16,
+                              fontSize: _activitiesScaled(
+                                context,
+                                16,
+                                min: 14,
+                                max: 16,
+                              ),
                               height: 1.2,
                               fontWeight: FontWeight.w800,
                             ),
-                          ),
-                        ),
-                      ],
+                          );
+
+                          if (useColumn) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                label,
+                                SizedBox(height: footerGap),
+                                value,
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: label),
+                              SizedBox(width: footerGap),
+                              Expanded(child: value),
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(18, 6, 18, 18 + safeBottomInset),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () =>
-                              Navigator.of(context).pop(<String>{}),
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xB3FFF7EF),
-                            minimumSize: const Size(0, 64),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      _activitiesScaled(context, 18, min: 16, max: 20),
+                      6,
+                      _activitiesScaled(context, 18, min: 16, max: 20),
+                      18 + safeBottomInset,
+                    ),
+                    child: compactActions
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(<String>{}),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xB3FFF7EF),
+                                  minimumSize: Size(
+                                    0,
+                                    _activitiesScaled(
+                                      context,
+                                      56,
+                                      min: 50,
+                                      max: 64,
+                                    ),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                child: Text(
+                                  widget.l10n.myActivitiesFilterClear,
+                                ),
+                              ),
+                              SizedBox(height: footerGap),
+                              _PrimaryPillButton(
+                                label: widget.l10n.activitiesShowResults(count),
+                                onTap: () =>
+                                    Navigator.of(context).pop(_selectedSlugs),
+                                minHeight: _activitiesScaled(
+                                  context,
+                                  72,
+                                  min: 58,
+                                  max: 72,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(<String>{}),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xB3FFF7EF),
+                                    minimumSize: Size(
+                                      0,
+                                      _activitiesScaled(
+                                        context,
+                                        64,
+                                        min: 54,
+                                        max: 64,
+                                      ),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    widget.l10n.myActivitiesFilterClear,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: footerGap),
+                              Expanded(
+                                flex: 2,
+                                child: _PrimaryPillButton(
+                                  label: widget.l10n.activitiesShowResults(
+                                    count,
+                                  ),
+                                  onTap: () =>
+                                      Navigator.of(context).pop(_selectedSlugs),
+                                  minHeight: _activitiesScaled(
+                                    context,
+                                    72,
+                                    min: 58,
+                                    max: 72,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          child: Text(widget.l10n.myActivitiesFilterClear),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 2,
-                        child: _PrimaryPillButton(
-                          label: widget.l10n.activitiesShowResults(count),
-                          onTap: () =>
-                              Navigator.of(context).pop(_selectedSlugs),
-                          minHeight: 72,
-                        ),
-                      ),
-                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1895,13 +2271,19 @@ class _CategoryOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconWrap = _activitiesScaled(context, 40, min: 34, max: 40);
+    final titleSize = _activitiesScaled(context, 16, min: 14, max: 16);
+    final subtitleSize = _activitiesScaled(context, 13, min: 12, max: 13);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
         child: Ink(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(
+            _activitiesScaled(context, 18, min: 14, max: 18),
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
@@ -1928,8 +2310,8 @@ class _CategoryOptionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: iconWrap,
+                height: iconWrap,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   color: selected
@@ -1948,14 +2330,14 @@ class _CategoryOptionCard extends StatelessWidget {
                 option.label,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Color(0xFFFFFAF5),
-                  fontSize: 16,
+                  fontSize: titleSize,
                   height: 1.1,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: _activitiesScaled(context, 6, min: 4, max: 6)),
               Text(
                 subtitle,
                 maxLines: 2,
@@ -1964,7 +2346,7 @@ class _CategoryOptionCard extends StatelessWidget {
                   color: selected
                       ? const Color(0xFFFFC56A)
                       : const Color(0x8FFFF7EF),
-                  fontSize: 13,
+                  fontSize: subtitleSize,
                   height: 1.2,
                 ),
               ),
@@ -2054,34 +2436,71 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _RangeTextField(
-                  label: widget.l10n.activitiesFilterMinPrice,
-                  controller: _minController,
-                  prefix: currencyLabel,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final useColumn =
+                  constraints.maxWidth < 360 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.02;
+              if (useColumn) {
+                return Column(
+                  children: [
+                    _RangeTextField(
+                      label: widget.l10n.activitiesFilterMinPrice,
+                      controller: _minController,
+                      prefix: currencyLabel,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: const [_DecimalTextInputFormatter()],
+                    ),
+                    SizedBox(
+                      height: _activitiesScaled(context, 14, min: 12, max: 16),
+                    ),
+                    _RangeTextField(
+                      label: widget.l10n.activitiesFilterMaxPrice,
+                      controller: _maxController,
+                      prefix: currencyLabel,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: const [_DecimalTextInputFormatter()],
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: _RangeTextField(
+                      label: widget.l10n.activitiesFilterMinPrice,
+                      controller: _minController,
+                      prefix: currencyLabel,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: const [_DecimalTextInputFormatter()],
+                    ),
                   ),
-                  inputFormatters: const [_DecimalTextInputFormatter()],
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _RangeTextField(
-                  label: widget.l10n.activitiesFilterMaxPrice,
-                  controller: _maxController,
-                  prefix: currencyLabel,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                  SizedBox(
+                    width: _activitiesScaled(context, 14, min: 10, max: 14),
                   ),
-                  inputFormatters: const [_DecimalTextInputFormatter()],
-                ),
-              ),
-            ],
+                  Expanded(
+                    child: _RangeTextField(
+                      label: widget.l10n.activitiesFilterMaxPrice,
+                      controller: _maxController,
+                      prefix: currencyLabel,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: const [_DecimalTextInputFormatter()],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: _activitiesScaled(context, 22, min: 16, max: 24)),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -2167,34 +2586,71 @@ class _DateFilterSheetState extends State<_DateFilterSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _RangeTextField(
-                  label: widget.l10n.myActivitiesFilterStartDate,
-                  controller: _startController,
-                  prefix: '',
-                  hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: const [_DateTextInputFormatter()],
-                  errorText: _startError,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _RangeTextField(
-                  label: widget.l10n.myActivitiesFilterEndDate,
-                  controller: _endController,
-                  prefix: '',
-                  hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: const [_DateTextInputFormatter()],
-                  errorText: _endError,
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final useColumn =
+                  constraints.maxWidth < 360 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.02;
+              if (useColumn) {
+                return Column(
+                  children: [
+                    _RangeTextField(
+                      label: widget.l10n.myActivitiesFilterStartDate,
+                      controller: _startController,
+                      prefix: '',
+                      hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: const [_DateTextInputFormatter()],
+                      errorText: _startError,
+                    ),
+                    SizedBox(
+                      height: _activitiesScaled(context, 14, min: 12, max: 16),
+                    ),
+                    _RangeTextField(
+                      label: widget.l10n.myActivitiesFilterEndDate,
+                      controller: _endController,
+                      prefix: '',
+                      hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: const [_DateTextInputFormatter()],
+                      errorText: _endError,
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: _RangeTextField(
+                      label: widget.l10n.myActivitiesFilterStartDate,
+                      controller: _startController,
+                      prefix: '',
+                      hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: const [_DateTextInputFormatter()],
+                      errorText: _startError,
+                    ),
+                  ),
+                  SizedBox(
+                    width: _activitiesScaled(context, 14, min: 10, max: 14),
+                  ),
+                  Expanded(
+                    child: _RangeTextField(
+                      label: widget.l10n.myActivitiesFilterEndDate,
+                      controller: _endController,
+                      prefix: '',
+                      hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: const [_DateTextInputFormatter()],
+                      errorText: _endError,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: _activitiesScaled(context, 22, min: 16, max: 24)),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -2357,13 +2813,19 @@ class _VisibilityOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconWrap = _activitiesScaled(context, 42, min: 36, max: 42);
+    final titleSize = _activitiesScaled(context, 16, min: 14, max: 16);
+    final bodySize = _activitiesScaled(context, 13, min: 12, max: 13);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(22),
         child: Ink(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(
+            _activitiesScaled(context, 18, min: 14, max: 18),
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             gradient: selected
@@ -2394,8 +2856,8 @@ class _VisibilityOptionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: iconWrap,
+                height: iconWrap,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: selected
@@ -2407,18 +2869,20 @@ class _VisibilityOptionCard extends StatelessWidget {
                   color: selected ? Colors.white : AppColors.accent,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(
+                height: _activitiesScaled(context, 16, min: 12, max: 16),
+              ),
               Text(
                 label,
                 style: TextStyle(
                   color: selected
                       ? const Color(0xFFFFF9F0)
                       : const Color(0xE6F0E2D2),
-                  fontSize: 16,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: _activitiesScaled(context, 8, min: 6, max: 8)),
               Text(
                 description,
                 maxLines: 4,
@@ -2427,7 +2891,7 @@ class _VisibilityOptionCard extends StatelessWidget {
                   color: selected
                       ? Colors.white.withValues(alpha: 0.82)
                       : const Color(0xB3FFF0E0),
-                  fontSize: 13,
+                  fontSize: bodySize,
                   height: 1.35,
                 ),
               ),
@@ -2461,104 +2925,185 @@ class _RangeSheetScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxHeight = MediaQuery.sizeOf(context).height * maxHeightFactor;
+    final titleSize = _activitiesScaled(context, 24, min: 20, max: 24);
+    final horizontalPadding = _activitiesScaled(context, 24, min: 16, max: 24);
+    final verticalGap = _activitiesScaled(context, 14, min: 10, max: 16);
+    final compactActions =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.02;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(color: Colors.transparent),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF2B1808).withValues(alpha: 0.99),
-                  const Color(0xFF201208),
-                ],
+    return _ActivitiesResponsiveTextScope(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(color: Colors.transparent),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF2B1808).withValues(alpha: 0.99),
+                    const Color(0xFF201208),
+                  ],
+                ),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(
+                    _activitiesScaled(context, 28, min: 24, max: 30),
+                  ),
+                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
               ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 52,
-                      height: 6,
-                      margin: const EdgeInsets.only(top: 10, bottom: 8),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: _activitiesScaled(context, 52, min: 42, max: 52),
+                        height: _activitiesScaled(context, 6, min: 5, max: 6),
+                        margin: EdgeInsets.only(
+                          top: _activitiesScaled(context, 10, min: 8, max: 10),
+                          bottom: _activitiesScaled(context, 8, min: 6, max: 8),
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          color: AppColors.accent.withValues(alpha: 0.35),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        _activitiesScaled(context, 12, min: 10, max: 12),
+                        horizontalPadding,
+                        0,
+                      ),
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: const Color(0xFFFFF8F1),
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          _activitiesScaled(context, 26, min: 18, max: 26),
+                          horizontalPadding,
+                          0,
+                        ),
+                        child: child,
+                      ),
+                    ),
+                    Container(
+                      margin: EdgeInsets.only(
+                        top: _activitiesScaled(context, 20, min: 14, max: 20),
+                      ),
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        _activitiesScaled(context, 16, min: 12, max: 16),
+                        horizontalPadding,
+                        footerPadding,
+                      ),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        color: AppColors.accent.withValues(alpha: 0.35),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: Color(0xFFFFF8F1),
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(24, 26, 24, 0),
-                      child: child,
-                    ),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.only(top: 20),
-                    padding: EdgeInsets.fromLTRB(24, 16, 24, footerPadding),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(
-                          color: AppColors.accent.withValues(alpha: 0.09),
+                        border: Border(
+                          top: BorderSide(
+                            color: AppColors.accent.withValues(alpha: 0.09),
+                          ),
                         ),
+                        color: Colors.black.withValues(alpha: 0.06),
                       ),
-                      color: Colors.black.withValues(alpha: 0.06),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: onClear,
-                            style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xBDFFF0E0),
-                              minimumSize: const Size(0, 56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
+                      child: compactActions
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                TextButton(
+                                  onPressed: onClear,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xBDFFF0E0),
+                                    minimumSize: Size(
+                                      0,
+                                      _activitiesScaled(
+                                        context,
+                                        56,
+                                        min: 50,
+                                        max: 58,
+                                      ),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                  ),
+                                  child: Text(l10n.myActivitiesFilterClear),
+                                ),
+                                SizedBox(height: verticalGap),
+                                _PrimaryPillButton(
+                                  label: l10n.myActivitiesFilterApply,
+                                  onTap: onApply,
+                                  minHeight: _activitiesScaled(
+                                    context,
+                                    62,
+                                    min: 54,
+                                    max: 64,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: onClear,
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: const Color(0xBDFFF0E0),
+                                      minimumSize: Size(
+                                        0,
+                                        _activitiesScaled(
+                                          context,
+                                          56,
+                                          min: 50,
+                                          max: 58,
+                                        ),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                    ),
+                                    child: Text(l10n.myActivitiesFilterClear),
+                                  ),
+                                ),
+                                SizedBox(width: verticalGap),
+                                Expanded(
+                                  flex: 2,
+                                  child: _PrimaryPillButton(
+                                    label: l10n.myActivitiesFilterApply,
+                                    onTap: onApply,
+                                    minHeight: _activitiesScaled(
+                                      context,
+                                      62,
+                                      min: 54,
+                                      max: 64,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            child: Text(l10n.myActivitiesFilterClear),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          flex: 2,
-                          child: _PrimaryPillButton(
-                            label: l10n.myActivitiesFilterApply,
-                            onTap: onApply,
-                            minHeight: 62,
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -2590,52 +3135,59 @@ class _RangeTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showPrefix = prefix.isNotEmpty;
+    final labelSize = _activitiesScaled(context, 14, min: 13, max: 14);
+    final fieldFontSize = _activitiesScaled(context, 18, min: 16, max: 18);
+    final verticalPadding = _activitiesScaled(context, 18, min: 14, max: 18);
+    final horizontalPadding = _activitiesScaled(context, 16, min: 14, max: 16);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Color(0xA1FFF0E0), fontSize: 14),
+          style: TextStyle(color: const Color(0xA1FFF0E0), fontSize: labelSize),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: _activitiesScaled(context, 10, min: 8, max: 10)),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
           cursorColor: AppColors.accent,
-          style: const TextStyle(
+          style: TextStyle(
             color: Color(0xC2FFF0E0),
-            fontSize: 18,
+            fontSize: fieldFontSize,
             fontWeight: FontWeight.w600,
-            fontFeatures: [FontFeature.tabularFigures()],
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: const TextStyle(
+            hintStyle: TextStyle(
               color: Color(0x75FFF0E0),
-              fontSize: 18,
-              fontFeatures: [FontFeature.tabularFigures()],
+              fontSize: fieldFontSize,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
             errorText: errorText,
             errorMaxLines: 2,
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.015),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 18,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
             ),
             prefixIcon: showPrefix
                 ? Padding(
-                    padding: const EdgeInsets.only(left: 14, right: 2),
+                    padding: EdgeInsets.only(
+                      left: _activitiesScaled(context, 14, min: 12, max: 14),
+                      right: _activitiesScaled(context, 2, min: 2, max: 4),
+                    ),
                     child: Center(
                       widthFactor: 1,
                       child: Text(
                         prefix,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.accent,
-                          fontSize: 18,
+                          fontSize: fieldFontSize,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -2682,13 +3234,20 @@ class _PresetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final horizontal = _activitiesScaled(context, 18, min: 14, max: 18);
+    final vertical = _activitiesScaled(context, 11, min: 9, max: 11);
+    final fontSize = _activitiesScaled(context, 14, min: 13, max: 14);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontal,
+            vertical: vertical,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             color: Colors.white.withValues(alpha: 0.02),
@@ -2696,9 +3255,9 @@ class _PresetChip extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: Color(0xE6F0E2D2),
-              fontSize: 14,
+              fontSize: fontSize,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -2723,26 +3282,39 @@ class _PrimaryPillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontSize = _activitiesScaled(context, 17, min: 15, max: 17);
+    final iconSize = _activitiesScaled(context, 18, min: 16, max: 18);
+
     return FilledButton(
       onPressed: onTap,
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.textPrimary,
         minimumSize: Size(0, minHeight),
-        padding: const EdgeInsets.symmetric(horizontal: 22),
+        padding: EdgeInsets.symmetric(
+          horizontal: _activitiesScaled(context, 22, min: 16, max: 22),
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(minHeight >= 70 ? 22 : 999),
         ),
-        textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+        textStyle: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w800),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           Flexible(
-            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(
+              label,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          if (icon != null) ...[const SizedBox(width: 8), Icon(icon, size: 18)],
+          if (icon != null) ...[
+            SizedBox(width: _activitiesScaled(context, 8, min: 6, max: 8)),
+            Icon(icon, size: iconSize),
+          ],
         ],
       ),
     );
@@ -2843,17 +3415,41 @@ class _ActivitiesAdaptiveLayout {
   }
 
   bool get isCompact => width < 360;
-  double get horizontalPadding => isCompact ? 14 : 18;
-  double get topPadding => isCompact ? 14 : 16;
-  double get sectionGap => isCompact ? 14 : 16;
-  double get filterGap => isCompact ? 14 : 16;
-  double get cardGap => isCompact ? 18 : 22;
-  double get cardRadius => isCompact ? 28 : 34;
-  double get cardPadding => isCompact ? 16 : 18;
-  double get topBarTitleSize => isCompact ? 18 : 20;
-  double get titleSize => isCompact ? 20 : 22;
-  double get ctaHeight => isCompact ? 48 : 52;
-  double get coverAspectRatio => isCompact ? 1.48 : 1.55;
+  double get uiScale {
+    if (width <= 320) {
+      return 0.88;
+    }
+    if (width <= 360) {
+      return 0.94;
+    }
+    if (width <= 390) {
+      return 0.98;
+    }
+    if (width >= 430) {
+      return 1.04;
+    }
+    return 1;
+  }
+
+  double scaled(double value, {double? min, double? max}) {
+    final scaledValue = value * uiScale;
+    if (min == null && max == null) {
+      return scaledValue;
+    }
+    return scaledValue.clamp(min ?? scaledValue, max ?? scaledValue);
+  }
+
+  double get horizontalPadding => scaled(isCompact ? 14 : 18, min: 14, max: 18);
+  double get topPadding => scaled(isCompact ? 14 : 16, min: 12, max: 16);
+  double get sectionGap => scaled(isCompact ? 14 : 16, min: 12, max: 16);
+  double get filterGap => scaled(isCompact ? 14 : 16, min: 12, max: 16);
+  double get cardGap => scaled(isCompact ? 18 : 22, min: 16, max: 22);
+  double get cardRadius => scaled(isCompact ? 28 : 34, min: 24, max: 34);
+  double get cardPadding => scaled(isCompact ? 16 : 18, min: 14, max: 18);
+  double get topBarTitleSize => scaled(isCompact ? 18 : 20, min: 17, max: 20);
+  double get titleSize => scaled(isCompact ? 20 : 22, min: 18, max: 22);
+  double get ctaHeight => scaled(isCompact ? 48 : 52, min: 46, max: 54);
+  double get coverAspectRatio => isCompact ? 1.46 : 1.55;
 }
 
 class _PriceRangeFilter {
