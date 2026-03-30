@@ -10,6 +10,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
 import '../ui/app_colors.dart';
+import '../../screens/auth/auth_responsive.dart';
 import 'app_lock_service.dart';
 import 'biometric_auth_service.dart';
 
@@ -618,274 +619,554 @@ class _AppLockOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return ColoredBox(
-      color: Colors.black.withValues(alpha: 0.56),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          _appLockModalTopColor,
-                          _appLockModalBottomColor,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: AppColors.accent.withValues(alpha: 0.24),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withValues(alpha: 0.18),
-                          blurRadius: 22,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+    return AuthResponsiveTextScope(
+      child: ColoredBox(
+        color: Colors.black.withValues(alpha: 0.56),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+                final textScale = MediaQuery.textScalerOf(context).scale(1);
+                final compactHeight =
+                    constraints.maxHeight < 720 || textScale > 1.02;
+                final horizontalPadding = authScaled(
+                  context,
+                  compactHeight ? 18 : 24,
+                  min: 14,
+                  max: 24,
+                );
+                final cardPadding = authScaled(
+                  context,
+                  compactHeight ? 20 : 24,
+                  min: 16,
+                  max: 24,
+                );
+                final iconSize = authScaled(context, 72, min: 58, max: 72);
+                final borderRadius = authScaled(context, 30, min: 24, max: 30);
+
+                return AnimatedPadding(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  padding: EdgeInsets.only(bottom: bottomInset),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              showPinUnlock ? 'PIN' : l10n.loginWithBiometrics,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.accent,
-                                letterSpacing: 0.4,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.all(horizontalPadding),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: Container(
+                              padding: EdgeInsets.fromLTRB(
+                                cardPadding,
+                                authScaled(context, 28, min: 20, max: 28),
+                                cardPadding,
+                                cardPadding,
                               ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [Color(0xFFFDF9F4), Color(0xFFF2E7DA)],
-                            ),
-                            border: Border.all(
-                              color: AppColors.accent,
-                              width: 3,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.accent.withValues(alpha: 0.18),
-                                blurRadius: 22,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          alignment: Alignment.center,
-                          child: Icon(
-                            showPinUnlock
-                                ? Icons.pin_outlined
-                                : Icons.face_retouching_natural_rounded,
-                            color: AppColors.background,
-                            size: 34,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          l10n.appLockUnlockTitle,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          isLoadingState
-                              ? l10n.appLockLoading
-                              : showPinUnlock
-                              ? l10n.appLockPinUnlockDescription
-                              : l10n.appLockBiometricUnlockDescription,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            height: 1.45,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        if (isLoadingState) ...[
-                          const Center(child: CircularProgressIndicator()),
-                        ] else if (showPinUnlock) ...[
-                          TextField(
-                            controller: pinController,
-                            focusNode: pinFocusNode,
-                            autofocus: true,
-                            keyboardType: TextInputType.number,
-                            obscureText: true,
-                            obscuringCharacter: '•',
-                            maxLength: 4,
-                            textAlign: TextAlign.center,
-                            textInputAction: TextInputAction.done,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(4),
-                            ],
-                            onSubmitted: (_) => onUnlockPressed(),
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 10,
-                              color: AppColors.textPrimary,
-                            ),
-                            decoration: InputDecoration(
-                              counterText: '',
-                              hintText: '••••',
-                              hintStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                letterSpacing: 10,
-                              ),
-                              filled: true,
-                              fillColor: _appLockModalFieldColor,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    _appLockModalTopColor,
+                                    _appLockModalBottomColor,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  borderRadius,
+                                ),
+                                border: Border.all(
                                   color: AppColors.accent.withValues(
-                                    alpha: 0.20,
+                                    alpha: 0.24,
                                   ),
                                 ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(
-                                  color: AppColors.accent.withValues(
-                                    alpha: 0.20,
-                                  ),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: const BorderSide(
-                                  color: AppColors.accent,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          FilledButton(
-                            onPressed: isUnlocking ? null : onUnlockPressed,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.accent.withValues(
-                                alpha: 0.95,
-                              ),
-                              foregroundColor: AppColors.textPrimary,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                            child: isUnlocking
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.18,
                                     ),
-                                  )
-                                : Text(
-                                    l10n.appLockUnlockButton,
-                                    style: const TextStyle(
+                                    blurRadius: authScaled(
+                                      context,
+                                      22,
+                                      min: 16,
+                                      max: 22,
+                                    ),
+                                    offset: Offset(
+                                      0,
+                                      authScaled(context, 10, min: 6, max: 10),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: authScaled(
+                                          context,
+                                          10,
+                                          min: 8,
+                                          max: 10,
+                                        ),
+                                        vertical: authScaled(
+                                          context,
+                                          6,
+                                          min: 4,
+                                          max: 6,
+                                        ),
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accent.withValues(
+                                          alpha: 0.18,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        showPinUnlock
+                                            ? 'PIN'
+                                            : l10n.loginWithBiometrics,
+                                        style: TextStyle(
+                                          fontSize: authScaled(
+                                            context,
+                                            12,
+                                            min: 11,
+                                            max: 12,
+                                          ),
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.accent,
+                                          letterSpacing: 0.4,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: authScaled(
+                                      context,
+                                      18,
+                                      min: 14,
+                                      max: 18,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: iconSize,
+                                    height: iconSize,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Color(0xFFFDF9F4),
+                                          Color(0xFFF2E7DA),
+                                        ],
+                                      ),
+                                      border: Border.all(
+                                        color: AppColors.accent,
+                                        width: authScaled(
+                                          context,
+                                          3,
+                                          min: 2,
+                                          max: 3,
+                                        ),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.accent.withValues(
+                                            alpha: 0.18,
+                                          ),
+                                          blurRadius: authScaled(
+                                            context,
+                                            22,
+                                            min: 16,
+                                            max: 22,
+                                          ),
+                                          offset: Offset(
+                                            0,
+                                            authScaled(
+                                              context,
+                                              10,
+                                              min: 6,
+                                              max: 10,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      showPinUnlock
+                                          ? Icons.pin_outlined
+                                          : Icons
+                                                .face_retouching_natural_rounded,
+                                      color: AppColors.background,
+                                      size: authScaled(
+                                        context,
+                                        34,
+                                        min: 28,
+                                        max: 34,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: authScaled(
+                                      context,
+                                      20,
+                                      min: 16,
+                                      max: 20,
+                                    ),
+                                  ),
+                                  Text(
+                                    l10n.appLockUnlockTitle,
+                                    style: TextStyle(
+                                      fontSize: authScaled(
+                                        context,
+                                        24,
+                                        min: 20,
+                                        max: 24,
+                                      ),
+                                      fontWeight: FontWeight.w800,
                                       color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
+                                  SizedBox(
+                                    height: authScaled(
+                                      context,
+                                      8,
+                                      min: 6,
+                                      max: 8,
+                                    ),
+                                  ),
+                                  Text(
+                                    isLoadingState
+                                        ? l10n.appLockLoading
+                                        : showPinUnlock
+                                        ? l10n.appLockPinUnlockDescription
+                                        : l10n.appLockBiometricUnlockDescription,
+                                    style: TextStyle(
+                                      fontSize: authScaled(
+                                        context,
+                                        15,
+                                        min: 14,
+                                        max: 15,
+                                      ),
+                                      height: 1.45,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: authScaled(
+                                      context,
+                                      24,
+                                      min: 18,
+                                      max: 24,
+                                    ),
+                                  ),
+                                  if (isLoadingState) ...[
+                                    const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ] else if (showPinUnlock) ...[
+                                    TextField(
+                                      controller: pinController,
+                                      focusNode: pinFocusNode,
+                                      autofocus: true,
+                                      keyboardType: TextInputType.number,
+                                      obscureText: true,
+                                      obscuringCharacter: '•',
+                                      maxLength: 4,
+                                      textAlign: TextAlign.center,
+                                      textInputAction: TextInputAction.done,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                        LengthLimitingTextInputFormatter(4),
+                                      ],
+                                      onSubmitted: (_) => onUnlockPressed(),
+                                      style: TextStyle(
+                                        fontSize: authScaled(
+                                          context,
+                                          28,
+                                          min: 24,
+                                          max: 28,
+                                        ),
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: authScaled(
+                                          context,
+                                          10,
+                                          min: 8,
+                                          max: 10,
+                                        ),
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      decoration: InputDecoration(
+                                        counterText: '',
+                                        hintText: '••••',
+                                        hintStyle: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.2,
+                                          ),
+                                          letterSpacing: authScaled(
+                                            context,
+                                            10,
+                                            min: 8,
+                                            max: 10,
+                                          ),
+                                        ),
+                                        filled: true,
+                                        fillColor: _appLockModalFieldColor,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            authScaled(
+                                              context,
+                                              20,
+                                              min: 16,
+                                              max: 20,
+                                            ),
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: AppColors.accent.withValues(
+                                              alpha: 0.20,
+                                            ),
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            authScaled(
+                                              context,
+                                              20,
+                                              min: 16,
+                                              max: 20,
+                                            ),
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: AppColors.accent.withValues(
+                                              alpha: 0.20,
+                                            ),
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            authScaled(
+                                              context,
+                                              20,
+                                              min: 16,
+                                              max: 20,
+                                            ),
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: AppColors.accent,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: authScaled(
+                                        context,
+                                        16,
+                                        min: 12,
+                                        max: 16,
+                                      ),
+                                    ),
+                                    FilledButton(
+                                      onPressed: isUnlocking
+                                          ? null
+                                          : onUnlockPressed,
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.accent
+                                            .withValues(alpha: 0.95),
+                                        foregroundColor: AppColors.textPrimary,
+                                        minimumSize: Size(
+                                          0,
+                                          authScaled(
+                                            context,
+                                            52,
+                                            min: 48,
+                                            max: 52,
+                                          ),
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: authScaled(
+                                            context,
+                                            14,
+                                            min: 12,
+                                            max: 14,
+                                          ),
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            authScaled(
+                                              context,
+                                              20,
+                                              min: 16,
+                                              max: 20,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      child: isUnlocking
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(
+                                              l10n.appLockUnlockButton,
+                                              style: const TextStyle(
+                                                color: AppColors.textPrimary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                    ),
+                                  ] else ...[
+                                    if (isBiometricInFlight)
+                                      const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    if (!isBiometricInFlight)
+                                      FilledButton.icon(
+                                        onPressed: onRetryBiometric,
+                                        icon: const Icon(Icons.face_rounded),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: AppColors.accent
+                                              .withValues(alpha: 0.95),
+                                          foregroundColor: AppColors.background,
+                                          minimumSize: Size(
+                                            0,
+                                            authScaled(
+                                              context,
+                                              54,
+                                              min: 50,
+                                              max: 54,
+                                            ),
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: authScaled(
+                                              context,
+                                              16,
+                                              min: 14,
+                                              max: 16,
+                                            ),
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              authScaled(
+                                                context,
+                                                20,
+                                                min: 16,
+                                                max: 20,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        label: Text(
+                                          l10n.appLockRetryBiometricButton,
+                                          style: const TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    SizedBox(
+                                      height: authScaled(
+                                        context,
+                                        12,
+                                        min: 10,
+                                        max: 12,
+                                      ),
+                                    ),
+                                    OutlinedButton(
+                                      onPressed: onUsePin,
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.accent,
+                                        side: BorderSide(
+                                          color: AppColors.accent.withValues(
+                                            alpha: 0.24,
+                                          ),
+                                        ),
+                                        backgroundColor:
+                                            _appLockModalFieldColor,
+                                        minimumSize: Size(
+                                          0,
+                                          authScaled(
+                                            context,
+                                            54,
+                                            min: 50,
+                                            max: 54,
+                                          ),
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: authScaled(
+                                            context,
+                                            16,
+                                            min: 14,
+                                            max: 16,
+                                          ),
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            authScaled(
+                                              context,
+                                              20,
+                                              min: 16,
+                                              max: 20,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        l10n.appLockUsePinButton,
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  if ((errorText ?? '').isNotEmpty) ...[
+                                    SizedBox(
+                                      height: authScaled(
+                                        context,
+                                        14,
+                                        min: 10,
+                                        max: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      errorText!,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Color(0xFFFF8B8B),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ),
-                        ] else ...[
-                          if (isBiometricInFlight)
-                            const Center(child: CircularProgressIndicator()),
-                          if (!isBiometricInFlight)
-                            FilledButton.icon(
-                              onPressed: onRetryBiometric,
-                              icon: const Icon(Icons.face_rounded),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.accent.withValues(
-                                  alpha: 0.95,
-                                ),
-                                foregroundColor: AppColors.background,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              label: Text(
-                                l10n.appLockRetryBiometricButton,
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 12),
-                          OutlinedButton(
-                            onPressed: onUsePin,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.accent,
-                              side: BorderSide(
-                                color: AppColors.accent.withValues(alpha: 0.24),
-                              ),
-                              backgroundColor: _appLockModalFieldColor,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                            child: Text(
-                              l10n.appLockUsePinButton,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                        if ((errorText ?? '').isNotEmpty) ...[
-                          const SizedBox(height: 14),
-                          Text(
-                            errorText!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFFFF8B8B),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ),
@@ -934,189 +1215,424 @@ class _PinSetupDialogState extends State<_PinSetupDialog> {
       canPop: false,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [_appLockModalTopColor, _appLockModalBottomColor],
+        body: AuthResponsiveTextScope(
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+                final textScale = MediaQuery.textScalerOf(context).scale(1);
+                final compactHeight =
+                    constraints.maxHeight < 720 || textScale > 1.02;
+                final horizontalPadding = authScaled(
+                  context,
+                  compactHeight ? 18 : 24,
+                  min: 14,
+                  max: 24,
+                );
+                final cardPadding = authScaled(
+                  context,
+                  compactHeight ? 20 : 24,
+                  min: 16,
+                  max: 24,
+                );
+                final iconSize = authScaled(context, 72, min: 58, max: 72);
+                final borderRadius = authScaled(context, 30, min: 24, max: 30);
+
+                return AnimatedPadding(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  padding: EdgeInsets.only(bottom: bottomInset),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
                     ),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.24),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.all(horizontalPadding),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: Container(
+                              padding: EdgeInsets.fromLTRB(
+                                cardPadding,
+                                authScaled(context, 28, min: 20, max: 28),
+                                cardPadding,
+                                cardPadding,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    _appLockModalTopColor,
+                                    _appLockModalBottomColor,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  borderRadius,
+                                ),
+                                border: Border.all(
+                                  color: AppColors.accent.withValues(
+                                    alpha: 0.24,
+                                  ),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.18,
+                                    ),
+                                    blurRadius: authScaled(
+                                      context,
+                                      22,
+                                      min: 16,
+                                      max: 22,
+                                    ),
+                                    offset: Offset(
+                                      0,
+                                      authScaled(context, 10, min: 6, max: 10),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: authScaled(
+                                          context,
+                                          10,
+                                          min: 8,
+                                          max: 10,
+                                        ),
+                                        vertical: authScaled(
+                                          context,
+                                          6,
+                                          min: 4,
+                                          max: 6,
+                                        ),
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accent.withValues(
+                                          alpha: 0.18,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'PIN',
+                                        style: TextStyle(
+                                          fontSize: authScaled(
+                                            context,
+                                            12,
+                                            min: 11,
+                                            max: 12,
+                                          ),
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.accent,
+                                          letterSpacing: 0.4,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: authScaled(
+                                      context,
+                                      18,
+                                      min: 14,
+                                      max: 18,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: iconSize,
+                                    height: iconSize,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Color(0xFFFDF9F4),
+                                          Color(0xFFF2E7DA),
+                                        ],
+                                      ),
+                                      border: Border.all(
+                                        color: AppColors.accent,
+                                        width: authScaled(
+                                          context,
+                                          3,
+                                          min: 2,
+                                          max: 3,
+                                        ),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.accent.withValues(
+                                            alpha: 0.18,
+                                          ),
+                                          blurRadius: authScaled(
+                                            context,
+                                            22,
+                                            min: 16,
+                                            max: 22,
+                                          ),
+                                          offset: Offset(
+                                            0,
+                                            authScaled(
+                                              context,
+                                              10,
+                                              min: 6,
+                                              max: 10,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      Icons.pin_outlined,
+                                      size: authScaled(
+                                        context,
+                                        34,
+                                        min: 28,
+                                        max: 34,
+                                      ),
+                                      color: AppColors.background,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: authScaled(
+                                      context,
+                                      20,
+                                      min: 16,
+                                      max: 20,
+                                    ),
+                                  ),
+                                  Text(
+                                    l10n.appLockSetupTitle,
+                                    style: TextStyle(
+                                      fontSize: authScaled(
+                                        context,
+                                        24,
+                                        min: 20,
+                                        max: 24,
+                                      ),
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: authScaled(
+                                      context,
+                                      8,
+                                      min: 6,
+                                      max: 8,
+                                    ),
+                                  ),
+                                  Text(
+                                    _isConfirmStep
+                                        ? l10n.appLockSetupConfirmDescription
+                                        : l10n.appLockSetupDescription,
+                                    style: TextStyle(
+                                      fontSize: authScaled(
+                                        context,
+                                        15,
+                                        min: 14,
+                                        max: 15,
+                                      ),
+                                      height: 1.45,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: authScaled(
+                                      context,
+                                      24,
+                                      min: 18,
+                                      max: 24,
+                                    ),
+                                  ),
+                                  TextField(
+                                    controller: _pinController,
+                                    focusNode: _pinFocusNode,
+                                    autofocus: true,
+                                    keyboardType: TextInputType.number,
+                                    obscureText: true,
+                                    obscuringCharacter: '•',
+                                    maxLength: 4,
+                                    textAlign: TextAlign.center,
+                                    textInputAction: TextInputAction.done,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      LengthLimitingTextInputFormatter(4),
+                                    ],
+                                    onChanged: _handlePinChanged,
+                                    onSubmitted: (_) => _submit(),
+                                    style: TextStyle(
+                                      fontSize: authScaled(
+                                        context,
+                                        28,
+                                        min: 24,
+                                        max: 28,
+                                      ),
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: authScaled(
+                                        context,
+                                        10,
+                                        min: 8,
+                                        max: 10,
+                                      ),
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      hintText: '••••',
+                                      hintStyle: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        letterSpacing: authScaled(
+                                          context,
+                                          10,
+                                          min: 8,
+                                          max: 10,
+                                        ),
+                                      ),
+                                      filled: true,
+                                      fillColor: _appLockModalFieldColor,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          authScaled(
+                                            context,
+                                            20,
+                                            min: 16,
+                                            max: 20,
+                                          ),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.accent.withValues(
+                                            alpha: 0.20,
+                                          ),
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          authScaled(
+                                            context,
+                                            20,
+                                            min: 16,
+                                            max: 20,
+                                          ),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.accent.withValues(
+                                            alpha: 0.20,
+                                          ),
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          authScaled(
+                                            context,
+                                            20,
+                                            min: 16,
+                                            max: 20,
+                                          ),
+                                        ),
+                                        borderSide: const BorderSide(
+                                          color: AppColors.accent,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  if ((_errorText ?? '').isNotEmpty) ...[
+                                    SizedBox(
+                                      height: authScaled(
+                                        context,
+                                        12,
+                                        min: 10,
+                                        max: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      _errorText!,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Color(0xFFFF8B8B),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                  SizedBox(
+                                    height: authScaled(
+                                      context,
+                                      18,
+                                      min: 14,
+                                      max: 18,
+                                    ),
+                                  ),
+                                  FilledButton(
+                                    onPressed: _submit,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: AppColors.accent
+                                          .withValues(alpha: 0.95),
+                                      minimumSize: Size(
+                                        0,
+                                        authScaled(
+                                          context,
+                                          52,
+                                          min: 48,
+                                          max: 52,
+                                        ),
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: authScaled(
+                                          context,
+                                          14,
+                                          min: 12,
+                                          max: 14,
+                                        ),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          authScaled(
+                                            context,
+                                            20,
+                                            min: 16,
+                                            max: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _isConfirmStep
+                                          ? l10n.appLockSetupConfirmButton
+                                          : l10n.appLockSetupCreateButton,
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.18),
-                        blurRadius: 22,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: const Text(
-                            'PIN',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.accent,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0xFFFDF9F4), Color(0xFFF2E7DA)],
-                          ),
-                          border: Border.all(color: AppColors.accent, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.accent.withValues(alpha: 0.18),
-                              blurRadius: 22,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.pin_outlined,
-                          size: 34,
-                          color: AppColors.background,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        l10n.appLockSetupTitle,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _isConfirmStep
-                            ? l10n.appLockSetupConfirmDescription
-                            : l10n.appLockSetupDescription,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          height: 1.45,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      TextField(
-                        controller: _pinController,
-                        focusNode: _pinFocusNode,
-                        autofocus: true,
-                        keyboardType: TextInputType.number,
-                        obscureText: true,
-                        obscuringCharacter: '•',
-                        maxLength: 4,
-                        textAlign: TextAlign.center,
-                        textInputAction: TextInputAction.done,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(4),
-                        ],
-                        onChanged: _handlePinChanged,
-                        onSubmitted: (_) => _submit(),
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 10,
-                          color: AppColors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          counterText: '',
-                          hintText: '••••',
-                          hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            letterSpacing: 10,
-                          ),
-                          filled: true,
-                          fillColor: _appLockModalFieldColor,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                              color: AppColors.accent.withValues(alpha: 0.20),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                              color: AppColors.accent.withValues(alpha: 0.20),
-                            ),
-                          ),
-                          focusedBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                            borderSide: BorderSide(color: AppColors.accent),
-                          ),
-                        ),
-                      ),
-                      if ((_errorText ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          _errorText!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Color(0xFFFF8B8B),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 18),
-                      FilledButton(
-                        onPressed: _submit,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent.withValues(
-                            alpha: 0.95,
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: Text(
-                          _isConfirmStep
-                              ? l10n.appLockSetupConfirmButton
-                              : l10n.appLockSetupCreateButton,
-                          style: const TextStyle(color: AppColors.textPrimary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ),
