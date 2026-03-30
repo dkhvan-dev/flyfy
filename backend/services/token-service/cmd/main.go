@@ -23,6 +23,7 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/adapter/repository"
 	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/config"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
 	pb "github.com/dkhvan-dev/flyfy/proto/gen/go/token"
 	"google.golang.org/grpc/reflection"
 )
@@ -82,7 +83,14 @@ func main() {
 	logger.Info().Msg("Redis connected")
 
 	// --- Adapters (secondary ports) ---
-	keyStore := repository.NewInMemoryKeyStore() // TODO: replace with Vault-backed store
+	var keyStore port.KeyStore
+	if cfg.JWT.PrivateKeyPath != "" {
+		keyStore = repository.NewFileKeyStore(cfg.JWT.PrivateKeyPath)
+		logger.Info().Str("path", cfg.JWT.PrivateKeyPath).Msg("using persistent file key store")
+	} else {
+		keyStore = repository.NewInMemoryKeyStore()
+		logger.Warn().Msg("using in-memory key store; JWT sessions will be invalidated on service restart")
+	}
 	revStore := repository.NewRedisRevocationStore(rdb)
 	svcStore := repository.NewPgServiceAccountStore(pgPool)
 	passwordVerifier := crypto.NewBcryptVerifier(0) // 0 = use DefaultCost (12)

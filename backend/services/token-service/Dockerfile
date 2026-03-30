@@ -27,7 +27,9 @@ FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates tzdata \
     && addgroup -g 1001 appgroup \
-    && adduser -u 1001 -G appgroup -D appuser
+    && adduser -u 1001 -G appgroup -D appuser \
+    && mkdir -p /var/lib/flyfy/token-service \
+    && chown -R appuser:appgroup /var/lib/flyfy
 
 WORKDIR /app
 

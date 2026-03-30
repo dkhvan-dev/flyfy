@@ -247,6 +247,7 @@ services:
       JWT_ACCESS_TTL: 30m
       JWT_REFRESH_TTL: 720h
       JWT_SERVICE_TTL: 1h
+      JWT_PRIVATE_KEY_PATH: /var/lib/flyfy/token-service/signing-keys.json
 
       PG_HOST: token-postgres
       PG_PORT: 5432
@@ -256,6 +257,8 @@ services:
       PG_SSLMODE: disable
 
       REDIS_ADDR: redis:6379
+    volumes:
+      - token_service_keys:/var/lib/flyfy/token-service
     depends_on:
       token-postgres:
         condition: service_healthy
@@ -587,3 +590,4 @@ volumes:
   user_postgres_data:
   guide_postgres_data:
   activity_postgres_data:
+  token_service_keys:
