@@ -1027,7 +1027,7 @@ abstract class AppLocalizations {
   /// No description provided for @appLockBiometricUnlockDescription.
   ///
   /// In en, this message translates to:
-  /// **'Confirm access with Face ID or biometrics. After 3 failed attempts, PIN unlock will be shown.'**
+  /// **'Confirm access with Face ID, your fingerprint, or another available biometric. After 3 failed attempts, PIN unlock will be shown.'**
   String get appLockBiometricUnlockDescription;
 
   /// No description provided for @appLockUsePinButton.
@@ -1045,7 +1045,7 @@ abstract class AppLocalizations {
   /// No description provided for @appLockRetryBiometricButton.
   ///
   /// In en, this message translates to:
-  /// **'Scan face'**
+  /// **'Use biometrics'**
   String get appLockRetryBiometricButton;
 
   /// No description provided for @appLockBiometricEnableTitle.

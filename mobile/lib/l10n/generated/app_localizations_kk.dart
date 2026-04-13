@@ -526,7 +526,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get appLockBiometricUnlockDescription =>
-      'Face ID немесе биометрия арқылы кіруді растаңыз. 3 сәтсіз әрекеттен кейін PIN-код сұралады.';
+      'Face ID, саусақ ізі немесе басқа қолжетімді биометрия арқылы кіруді растаңыз. 3 сәтсіз әрекеттен кейін PIN-код сұралады.';
 
   @override
   String get appLockUsePinButton => 'PIN-код енгізу';
@@ -535,7 +535,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get appLockUnlockButton => 'Құлыпты ашу';
 
   @override
-  String get appLockRetryBiometricButton => 'Бетті сканерлеу';
+  String get appLockRetryBiometricButton => 'Биометрия арқылы кіру';
 
   @override
   String get appLockBiometricEnableTitle =>

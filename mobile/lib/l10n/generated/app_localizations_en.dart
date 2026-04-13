@@ -524,7 +524,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appLockBiometricUnlockDescription =>
-      'Confirm access with Face ID or biometrics. After 3 failed attempts, PIN unlock will be shown.';
+      'Confirm access with Face ID, your fingerprint, or another available biometric. After 3 failed attempts, PIN unlock will be shown.';
 
   @override
   String get appLockUsePinButton => 'Use PIN';
@@ -533,7 +533,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appLockUnlockButton => 'Unlock';
 
   @override
-  String get appLockRetryBiometricButton => 'Scan face';
+  String get appLockRetryBiometricButton => 'Use biometrics';
 
   @override
   String get appLockBiometricEnableTitle => 'Enable biometric sign in?';

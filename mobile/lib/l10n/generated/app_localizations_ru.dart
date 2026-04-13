@@ -526,7 +526,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get appLockBiometricUnlockDescription =>
-      'Подтвердите вход с помощью Face ID или биометрии. После 3 неудачных попыток будет доступен PIN-код.';
+      'Подтвердите вход с помощью Face ID, отпечатка пальца или другой доступной биометрии. После 3 неудачных попыток будет доступен PIN-код.';
 
   @override
   String get appLockUsePinButton => 'Ввести PIN-код';
@@ -535,7 +535,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get appLockUnlockButton => 'Разблокировать';
 
   @override
-  String get appLockRetryBiometricButton => 'Сканировать лицо';
+  String get appLockRetryBiometricButton => 'Войти по биометрии';
 
   @override
   String get appLockBiometricEnableTitle => 'Включить вход по биометрии?';

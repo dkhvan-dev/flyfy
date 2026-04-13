@@ -18,6 +18,18 @@ const Color _appLockModalTopColor = Color(0xFF2E251B);
 const Color _appLockModalBottomColor = Color(0xFF38250E);
 const Color _appLockModalFieldColor = Color(0xFF332315);
 
+IconData _appLockBiometricIcon(AppBiometricKind kind) {
+  switch (kind) {
+    case AppBiometricKind.face:
+      return Icons.face_retouching_natural_rounded;
+    case AppBiometricKind.fingerprint:
+      return Icons.fingerprint_rounded;
+    case AppBiometricKind.biometrics:
+    case AppBiometricKind.none:
+      return Icons.verified_user_rounded;
+  }
+}
+
 Future<bool> ensureAppLockSetup(BuildContext context) async {
   final appLockService = AppLockService();
   final biometricAuthService = BiometricAuthService();
@@ -76,6 +88,10 @@ Future<bool> _showBiometricEnablePrompt(
   BiometricAuthService biometricAuthService,
 ) async {
   final l10n = AppLocalizations.of(context)!;
+  final biometricKind = await biometricAuthService.preferredBiometricKind();
+  if (!context.mounted) {
+    return false;
+  }
 
   final enable = await showDialog<bool>(
     context: context,
@@ -149,10 +165,10 @@ Future<bool> _showBiometricEnablePrompt(
                   ],
                 ),
                 alignment: Alignment.center,
-                child: const Icon(
-                  Icons.face_retouching_natural_rounded,
+                child: Icon(
+                  _appLockBiometricIcon(biometricKind),
                   size: 34,
-                  color: AppColors.background,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 20),
@@ -218,9 +234,10 @@ Future<bool> _showBiometricEnablePrompt(
     return false;
   }
 
-  return biometricAuthService.authenticate(
+  await biometricAuthService.authenticate(
     reason: l10n.appLockBiometricEnableDescription,
   );
+  return true;
 }
 
 class AppLockGate extends StatefulWidget {
@@ -241,6 +258,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   bool _pinConfigured = false;
   bool _biometricEnabled = false;
   bool _biometricAvailable = false;
+  AppBiometricKind _biometricKind = AppBiometricKind.none;
   bool _isLocked = false;
   bool _showPinUnlock = false;
   bool _isBiometricInFlight = false;
@@ -335,6 +353,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
             isLoadingState: _isLoadingState,
             isUnlocking: _isUnlocking,
             isBiometricInFlight: _isBiometricInFlight,
+            biometricKind: _biometricKind,
             showPinUnlock: _showPinUnlock,
             errorText: _unlockError,
             pinController: _unlockPinController,
@@ -351,7 +370,8 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     final authProvider = context.read<AuthProvider>();
     final pinConfigured = await _appLockService.hasPin();
     final biometricEnabled = await _appLockService.isBiometricEnabled();
-    final biometricAvailable = await _biometricAuthService.isAvailable();
+    final biometricKind = await _biometricAuthService.preferredBiometricKind();
+    final biometricAvailable = biometricKind != AppBiometricKind.none;
     final hasStoredSession = await authProvider.hasStoredSessionForUnlock();
 
     if (!mounted) return;
@@ -360,6 +380,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
       _pinConfigured = pinConfigured;
       _biometricEnabled = biometricEnabled;
       _biometricAvailable = biometricAvailable;
+      _biometricKind = biometricKind;
       _isLoadingState = false;
     });
 
@@ -399,13 +420,15 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     final configured = await ensureAppLockSetup(context);
     if (!mounted) return configured;
 
-    final biometricAvailable = await _biometricAuthService.isAvailable();
+    final biometricKind = await _biometricAuthService.preferredBiometricKind();
+    final biometricAvailable = biometricKind != AppBiometricKind.none;
     final biometricEnabled = await _appLockService.isBiometricEnabled();
 
     setState(() {
       _pinConfigured = configured;
       _biometricEnabled = biometricEnabled;
       _biometricAvailable = biometricAvailable;
+      _biometricKind = biometricKind;
     });
 
     return configured;
@@ -422,7 +445,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
       _unlockError = null;
     });
 
-    final success = await _biometricAuthService.authenticate(
+    final outcome = await _biometricAuthService.authenticateWithOutcome(
       reason: l10n.appLockBiometricUnlockDescription,
     );
 
@@ -432,8 +455,21 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
       _isBiometricInFlight = false;
     });
 
-    if (success) {
+    if (outcome.result == AppBiometricAttemptResult.success) {
       await _completeUnlock();
+      return;
+    }
+
+    if (outcome.result == AppBiometricAttemptResult.canceled) {
+      return;
+    }
+
+    if (outcome.result == AppBiometricAttemptResult.fallbackToPin) {
+      setState(() {
+        _showPinUnlock = true;
+        _unlockError = l10n.appLockBiometricFallback;
+      });
+      _focusPinField();
       return;
     }
 
@@ -595,6 +631,7 @@ class _AppLockOverlay extends StatelessWidget {
     required this.isLoadingState,
     required this.isUnlocking,
     required this.isBiometricInFlight,
+    required this.biometricKind,
     required this.showPinUnlock,
     required this.errorText,
     required this.pinController,
@@ -607,6 +644,7 @@ class _AppLockOverlay extends StatelessWidget {
   final bool isLoadingState;
   final bool isUnlocking;
   final bool isBiometricInFlight;
+  final AppBiometricKind biometricKind;
   final bool showPinUnlock;
   final String? errorText;
   final TextEditingController pinController;
@@ -812,8 +850,9 @@ class _AppLockOverlay extends StatelessWidget {
                                     child: Icon(
                                       showPinUnlock
                                           ? Icons.pin_outlined
-                                          : Icons
-                                                .face_retouching_natural_rounded,
+                                          : _appLockBiometricIcon(
+                                              biometricKind,
+                                            ),
                                       color: AppColors.background,
                                       size: authScaled(
                                         context,
@@ -1042,11 +1081,13 @@ class _AppLockOverlay extends StatelessWidget {
                                     if (!isBiometricInFlight)
                                       FilledButton.icon(
                                         onPressed: onRetryBiometric,
-                                        icon: const Icon(Icons.face_rounded),
+                                        icon: Icon(
+                                          _appLockBiometricIcon(biometricKind),
+                                        ),
                                         style: FilledButton.styleFrom(
                                           backgroundColor: AppColors.accent
                                               .withValues(alpha: 0.95),
-                                          foregroundColor: AppColors.background,
+                                          foregroundColor: AppColors.textPrimary,
                                           minimumSize: Size(
                                             0,
                                             authScaled(
