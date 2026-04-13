@@ -120,6 +120,9 @@ func (h *Handler) handleFileActions(w http.ResponseWriter, r *http.Request) {
 	case r.Method == http.MethodGet && len(parts) == 1:
 		h.GetFile(w, r, fileID)
 		return
+	case r.Method == http.MethodGet && len(parts) == 2 && parts[1] == "content":
+		h.GetPublicContent(w, r, fileID)
+		return
 	case r.Method == http.MethodDelete && len(parts) == 1:
 		h.DeleteFile(w, r, fileID)
 		return
@@ -231,6 +234,28 @@ func (h *Handler) CreateDownloadURL(w http.ResponseWriter, r *http.Request, file
 		URL:       url,
 		ExpiresAt: expiresAt.UTC().Format(time.RFC3339),
 	})
+}
+
+func (h *Handler) GetPublicContent(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
+	body, contentType, err := h.useCase.OpenPublicContent(r.Context(), fileID)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrFileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, app.ErrFileNotReady), errors.Is(err, app.ErrFileNotPublic):
+			writeError(w, http.StatusForbidden, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to load file content")
+		}
+		return
+	}
+	defer body.Close()
+
+	if strings.TrimSpace(contentType) != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	w.Header().Set("Cache-Control", "public, max-age=300")
+	_, _ = io.Copy(w, body)
 }
 
 func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {

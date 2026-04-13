@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
+	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/grpc"
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
 	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
 )
@@ -21,16 +22,27 @@ const (
 )
 
 type Client struct {
-	conn    *grpc.ClientConn
-	service userv1.UserServiceClient
+	conn          *grpc.ClientConn
+	service       userv1.UserServiceClient
+	internalToken string
+	serviceName   string
 }
 
-func New(target string, opts ...grpc.DialOption) (*Client, error) {
+func New(target string, internalToken string, serviceName string, opts ...grpc.DialOption) (*Client, error) {
+	internalToken = strings.TrimSpace(internalToken)
+	serviceName = strings.TrimSpace(serviceName)
+
 	if len(opts) == 0 {
 		opts = []grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		}
 	}
+	opts = append(
+		opts,
+		grpc.WithChainUnaryInterceptor(
+			grpcadapter.InternalTokenInterceptor(internalToken, serviceName),
+		),
+	)
 
 	conn, err := grpc.NewClient(strings.TrimSpace(target), opts...)
 	if err != nil {
@@ -38,8 +50,10 @@ func New(target string, opts ...grpc.DialOption) (*Client, error) {
 	}
 
 	return &Client{
-		conn:    conn,
-		service: userv1.NewUserServiceClient(conn),
+		conn:          conn,
+		service:       userv1.NewUserServiceClient(conn),
+		internalToken: internalToken,
+		serviceName:   serviceName,
 	}, nil
 }
 
@@ -50,6 +64,7 @@ func (c *Client) Close() error {
 func (c *Client) ValidateUserExists(ctx context.Context, userID uuid.UUID) error {
 	callCtx, cancel := context.WithTimeout(ctx, defaultGetUserTimeout)
 	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
 
 	resp, err := c.service.GetUserById(callCtx, &userv1.GetUserByIdRequest{
 		UserId: userID.String(),
@@ -75,6 +90,46 @@ func (c *Client) ValidateUserExists(ctx context.Context, userID uuid.UUID) error
 	return nil
 }
 
+func (c *Client) ResolveUserIDBySubject(ctx context.Context, subject string) (uuid.UUID, error) {
+	subject = strings.TrimSpace(subject)
+	if subject == "" {
+		return uuid.Nil, app.ErrUserNotFound
+	}
+
+	callCtx, cancel := context.WithTimeout(ctx, defaultGetUserTimeout)
+	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", subject)
+
+	resp, err := c.service.GetUserBySubject(callCtx, &userv1.GetUserBySubjectRequest{
+		SubjectId: subject,
+	})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return uuid.Nil, app.ErrUserNotFound
+			case codes.InvalidArgument:
+				return uuid.Nil, app.ErrInvalidGuideUserID
+			default:
+				return uuid.Nil, err
+			}
+		}
+		return uuid.Nil, err
+	}
+
+	aggregate := resp.GetAggregate()
+	if aggregate == nil || aggregate.GetUser() == nil || strings.TrimSpace(aggregate.GetUser().GetId()) == "" {
+		return uuid.Nil, app.ErrUserNotFound
+	}
+
+	userID, err := uuid.Parse(strings.TrimSpace(aggregate.GetUser().GetId()))
+	if err != nil {
+		return uuid.Nil, app.ErrInvalidGuideUserID
+	}
+
+	return userID, nil
+}
+
 func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]app.PublicUserProfile, error) {
 	if len(userIDs) == 0 {
 		return map[uuid.UUID]app.PublicUserProfile{}, nil
@@ -82,6 +137,7 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 
 	callCtx, cancel := context.WithTimeout(ctx, defaultListPublicUsersTimeout)
 	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
 
 	rawIDs := make([]string, 0, len(userIDs))
 	for _, id := range userIDs {
@@ -133,4 +189,37 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 	}
 
 	return result, nil
+}
+
+func (c *Client) GrantGuideRole(ctx context.Context, userID uuid.UUID, grantedBy *uuid.UUID) error {
+	callCtx, cancel := context.WithTimeout(ctx, defaultGetUserTimeout)
+	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
+
+	req := &userv1.GrantUserRoleRequest{
+		UserId: userID.String(),
+		Role:   "GUIDE",
+	}
+	if grantedBy != nil && *grantedBy != uuid.Nil {
+		req.GrantedBy = grantedBy.String()
+	}
+
+	_, err := c.service.GrantUserRole(callCtx, req)
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return app.ErrUserNotFound
+			case codes.AlreadyExists:
+				return nil
+			case codes.InvalidArgument:
+				return app.ErrInvalidGuideUserID
+			default:
+				return err
+			}
+		}
+		return err
+	}
+
+	return nil
 }

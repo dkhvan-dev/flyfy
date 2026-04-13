@@ -44,7 +44,11 @@ func main() {
 	}
 	defer pool.Close()
 
-	fileManagerClient, err := filemanageradapter.New(cfg.FileManager.Target)
+	fileManagerClient, err := filemanageradapter.New(
+		cfg.FileManager.Target,
+		cfg.Security.InternalServiceToken,
+		"user-service",
+	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize file-manager grpc client")
 	}

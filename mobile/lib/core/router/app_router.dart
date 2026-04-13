@@ -9,6 +9,10 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/otp_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/profile/profile_screen.dart';
+import '../../screens/profile/profile_notifications_screen.dart';
+import '../../screens/profile/profile_security_screen.dart';
+import '../../screens/profile/profile_settings_screen.dart';
+import '../../screens/profile/guide_verification_screen.dart';
 import '../../screens/activities/activities_screen.dart';
 import '../../screens/activities/activity_details_screen.dart';
 import '../../screens/activities/activity_attendance_qr_screen.dart';
@@ -67,6 +71,26 @@ class AppRouter {
           path: '/profile',
           builder: (context, state) =>
               _withAndroidBackSwipe(const ProfileScreen()),
+        ),
+        GoRoute(
+          path: '/profile/settings',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const ProfileSettingsScreen()),
+        ),
+        GoRoute(
+          path: '/profile/notifications',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const ProfileNotificationsScreen()),
+        ),
+        GoRoute(
+          path: '/profile/security',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const ProfileSecurityScreen()),
+        ),
+        GoRoute(
+          path: '/profile/guide-verification',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const GuideVerificationScreen()),
         ),
         GoRoute(
           path: '/users/:userId/profile',

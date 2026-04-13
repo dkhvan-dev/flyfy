@@ -204,6 +204,35 @@ func (u *UserUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, input
 	if err != nil {
 		return nil, fmt.Errorf("get profile by user id: %w", err)
 	}
+	if profile == nil {
+		return nil, ErrProfileNotFound
+	}
+
+	if avatarFileID := input.AvatarFileID; avatarFileID != nil {
+		avatarChanged := profile.AvatarFileID == nil || *profile.AvatarFileID != *avatarFileID
+		if avatarChanged {
+			if err = u.fileManager.ValidateAvatarFile(ctx, *avatarFileID); err != nil {
+				return nil, fmt.Errorf("validate avatar file: %w", err)
+			}
+			if err = u.fileManager.BindAvatarToUser(ctx, *avatarFileID, userID, &userID); err != nil {
+				return nil, fmt.Errorf("bind avatar file: %w", err)
+			}
+		}
+	}
+
+	nextDisplayName := profile.DisplayName
+	if input.DisplayName != nil {
+		nextDisplayName = normalizeOptionalString(input.DisplayName)
+	}
+	if nextDisplayName != nil {
+		taken, err := u.repo.IsDisplayNameTaken(ctx, *nextDisplayName, userID)
+		if err != nil {
+			return nil, fmt.Errorf("check display name uniqueness: %w", err)
+		}
+		if taken {
+			return nil, ErrDisplayNameAlreadyTaken
+		}
+	}
 
 	profile.FirstName = normalizeOptionalString(input.FirstName)
 	profile.LastName = normalizeOptionalString(input.LastName)

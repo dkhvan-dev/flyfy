@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"time"
@@ -366,6 +367,43 @@ func (u *FileUseCase) CreateDownloadURL(ctx context.Context, fileID uuid.UUID) (
 	}
 
 	return url, time.Now().UTC().Add(expiresIn), nil
+}
+
+func (u *FileUseCase) OpenPublicContent(ctx context.Context, fileID uuid.UUID) (io.ReadCloser, string, error) {
+	if fileID == uuid.Nil {
+		return nil, "", ErrInvalidFileID
+	}
+
+	file, err := u.repo.GetByID(ctx, fileID)
+	if err != nil {
+		return nil, "", fmt.Errorf("get file by id: %w", err)
+	}
+	if file == nil || file.IsDeleted {
+		return nil, "", ErrFileNotFound
+	}
+	if file.Status != enum.FileStatusReady {
+		return nil, "", ErrFileNotReady
+	}
+	if file.Visibility != enum.FileVisibilityPublic {
+		return nil, "", ErrFileNotPublic
+	}
+
+	body, contentType, err := u.storage.GetObject(ctx, file.Bucket, file.ObjectKey)
+	if err != nil {
+		return nil, "", fmt.Errorf("get object content: %w", err)
+	}
+
+	if strings.TrimSpace(contentType) == "" {
+		contentType = normalizeContentType(valueOrEmpty(file.DetectedContentType))
+	}
+	if strings.TrimSpace(contentType) == "" {
+		contentType = normalizeContentType(file.ContentType)
+	}
+	if strings.TrimSpace(contentType) == "" {
+		contentType = "application/octet-stream"
+	}
+
+	return body, contentType, nil
 }
 
 func (u *FileUseCase) SoftDelete(ctx context.Context, fileID uuid.UUID) error {

@@ -16,4 +16,6 @@ var (
 	ErrAvatarFileNotFound   = errors.New("avatar file not found")
 	ErrAvatarFileNotReady   = errors.New("avatar file is not ready")
 	ErrAvatarFileNotAllowed = errors.New("avatar file is not allowed")
+
+	ErrDisplayNameAlreadyTaken = errors.New("display name is already taken")
 )

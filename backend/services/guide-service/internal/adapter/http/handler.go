@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
@@ -28,9 +29,11 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/guides/me/init", h.InitMyGuideProfile)
 	mux.HandleFunc("GET /v1/guides/me", h.GetMyGuideProfile)
 	mux.HandleFunc("PUT /v1/guides/me/profile", h.UpdateMyGuideProfile)
+	mux.HandleFunc("POST /v1/guides/me/application", h.SubmitMyGuideApplication)
 	mux.HandleFunc("POST /v1/guides/me/verification-requests", h.CreateMyVerificationRequest)
 	mux.HandleFunc("POST /v1/guides/me/verification-requests/", h.AttachMyGuideDocument)
 	mux.HandleFunc("GET /v1/guides/public", h.ListPublicGuides)
+	mux.HandleFunc("GET /v1/guides/by-user/", h.GetGuideByUserID)
 	mux.HandleFunc("GET /v1/guides/", h.GetGuideByID)
 	mux.HandleFunc("POST /v1/admin/guides/verification-requests/", h.handleAdminVerificationActions)
 	mux.HandleFunc("POST /v1/admin/guides/", h.handleAdminGuideActions)
@@ -44,9 +47,9 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) InitMyGuideProfile(w http.ResponseWriter, r *http.Request) {
-	userID, err := currentUserID(r)
+	userID, err := h.resolveCurrentUserID(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user id")
+		h.handleCurrentUserError(w, err)
 		return
 	}
 
@@ -77,9 +80,9 @@ func (h *Handler) InitMyGuideProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetMyGuideProfile(w http.ResponseWriter, r *http.Request) {
-	userID, err := currentUserID(r)
+	userID, err := h.resolveCurrentUserID(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user id")
+		h.handleCurrentUserError(w, err)
 		return
 	}
 
@@ -196,10 +199,101 @@ func (h *Handler) CreateMyVerificationRequest(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusCreated, toVerificationRequestResponse(item))
 }
 
-func (h *Handler) AttachMyGuideDocument(w http.ResponseWriter, r *http.Request) {
-	userID, err := currentUserID(r)
+func (h *Handler) SubmitMyGuideApplication(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.resolveCurrentUserID(r)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "missing authenticated user id")
+		h.handleCurrentUserError(w, err)
+		return
+	}
+
+	var req dto.SubmitGuideApplicationRequest
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	baseCityID, err := parseOptionalUUID(req.BaseCityID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid baseCityId")
+		return
+	}
+
+	identityDocumentFileID, err := uuid.Parse(strings.TrimSpace(req.IdentityDocumentFileID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid identityDocumentFileId")
+		return
+	}
+
+	professionalDocumentFileID, err := uuid.Parse(strings.TrimSpace(req.ProfessionalDocumentFileID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid professionalDocumentFileId")
+		return
+	}
+
+	firstAidCertificateFileID, err := parseOptionalUUID(req.FirstAidCertificateFileID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid firstAidCertificateFileId")
+		return
+	}
+
+	languageCertificateFileID, err := parseOptionalUUID(req.LanguageCertificateFileID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid languageCertificateFileId")
+		return
+	}
+
+	aggregate, err := h.useCase.SubmitGuideApplication(r.Context(), app.SubmitGuideApplicationInput{
+		UserID:                     userID,
+		Type:                       req.Type,
+		Headline:                   req.Headline,
+		About:                      req.About,
+		ExperienceYears:            req.ExperienceYears,
+		BaseCityID:                 baseCityID,
+		IsPrivateGuideAvailable:    req.IsPrivateGuideAvailable,
+		IsActivityHostAvailable:    req.IsActivityHostAvailable,
+		IsTourGuideAvailable:       req.IsTourGuideAvailable,
+		Comment:                    req.Comment,
+		IdentityDocumentFileID:     identityDocumentFileID,
+		IdentityDocumentType:       req.IdentityDocumentType,
+		ProfessionalDocumentFileID: professionalDocumentFileID,
+		ProfessionalDocumentType:   req.ProfessionalDocumentType,
+		FirstAidCertificateFileID:  firstAidCertificateFileID,
+		LanguageCertificateFileID:  languageCertificateFileID,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidGuideUserID),
+			errors.Is(err, model.ErrInvalidGuideType),
+			errors.Is(err, model.ErrInvalidExperienceYears),
+			errors.Is(err, model.ErrInvalidGuideDocumentType),
+			errors.Is(err, app.ErrGuideDocumentFileNotFound),
+			errors.Is(err, app.ErrGuideDocumentFileNotReady),
+			errors.Is(err, app.ErrGuideDocumentFileNotAllowed),
+			errors.Is(err, app.ErrGuideDocumentsRequired):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrGuideApplicationPending),
+			errors.Is(err, app.ErrGuideProfileAlreadyActive):
+			writeError(w, http.StatusConflict, err.Error())
+		case errors.Is(err, app.ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			log.Error().
+				Err(err).
+				Str("request_id", RequestIDFromContext(r.Context())).
+				Str("user_id", userID.String()).
+				Msg("failed to submit guide application")
+			writeError(w, http.StatusInternalServerError, "failed to submit guide application")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, toGuideAggregateResponse(aggregate))
+}
+
+func (h *Handler) AttachMyGuideDocument(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.resolveCurrentUserID(r)
+	if err != nil {
+		h.handleCurrentUserError(w, err)
 		return
 	}
 
@@ -333,26 +427,70 @@ func (h *Handler) GetGuideByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toGuideAggregateResponse(aggregate))
 }
 
+func (h *Handler) GetGuideByUserID(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/v1/guides/by-user/")
+	path = strings.Trim(path, "/")
+	if path == "" {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	userID, err := uuid.Parse(path)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	aggregate, err := h.useCase.GetGuideAggregateByUserID(r.Context(), userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidGuideUserID):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrGuideProfileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to get guide profile")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toGuideAggregateResponse(aggregate))
+}
+
 func (h *Handler) getCurrentGuideAggregate(r *http.Request) (*app.GuideAggregate, error) {
-	userID, err := currentUserID(r)
+	userID, err := h.resolveCurrentUserID(r)
 	if err != nil {
 		return nil, err
 	}
 	return h.useCase.GetGuideAggregateByUserID(r.Context(), userID)
 }
 
-func currentUserID(r *http.Request) (uuid.UUID, error) {
-	raw := strings.TrimSpace(UserIDFromContext(r.Context()))
-	if raw == "" {
-		return uuid.Nil, errors.New("missing user id")
+func (h *Handler) resolveCurrentUserID(r *http.Request) (uuid.UUID, error) {
+	subject := strings.TrimSpace(SubjectFromContext(r.Context()))
+	if subject == "" {
+		return uuid.Nil, errors.New("missing authenticated subject")
 	}
-	return uuid.Parse(raw)
+
+	return h.useCase.ResolveUserIDBySubject(r.Context(), subject)
+}
+
+func (h *Handler) handleCurrentUserError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, app.ErrUserNotFound):
+		writeError(w, http.StatusNotFound, err.Error())
+	case errors.Is(err, app.ErrInvalidGuideUserID):
+		writeError(w, http.StatusBadRequest, err.Error())
+	default:
+		writeError(w, http.StatusUnauthorized, "missing authenticated user id")
+	}
 }
 
 func handleGuideAggregateError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, app.ErrInvalidGuideUserID):
 		writeError(w, http.StatusBadRequest, err.Error())
+	case errors.Is(err, app.ErrUserNotFound):
+		writeError(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, app.ErrGuideProfileNotFound):
 		writeError(w, http.StatusNotFound, err.Error())
 	default:

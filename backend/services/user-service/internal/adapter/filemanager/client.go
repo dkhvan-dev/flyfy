@@ -21,11 +21,13 @@ const (
 )
 
 type Client struct {
-	conn    *grpc.ClientConn
-	service filev1.FileServiceClient
+	conn          *grpc.ClientConn
+	service       filev1.FileServiceClient
+	internalToken string
+	serviceName   string
 }
 
-func New(target string, opts ...grpc.DialOption) (*Client, error) {
+func New(target string, internalToken string, serviceName string, opts ...grpc.DialOption) (*Client, error) {
 	if len(opts) == 0 {
 		opts = []grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -38,8 +40,10 @@ func New(target string, opts ...grpc.DialOption) (*Client, error) {
 	}
 
 	return &Client{
-		conn:    conn,
-		service: filev1.NewFileServiceClient(conn),
+		conn:          conn,
+		service:       filev1.NewFileServiceClient(conn),
+		internalToken: strings.TrimSpace(internalToken),
+		serviceName:   strings.TrimSpace(serviceName),
 	}, nil
 }
 
@@ -50,6 +54,7 @@ func (c *Client) Close() error {
 func (c *Client) ValidateAvatarFile(ctx context.Context, fileID uuid.UUID) error {
 	callCtx, cancel := context.WithTimeout(ctx, defaultGetFileTimeout)
 	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
 
 	resp, err := c.service.GetFile(callCtx, &filev1.GetFileRequest{
 		FileId: fileID.String(),
@@ -84,6 +89,7 @@ func (c *Client) ValidateAvatarFile(ctx context.Context, fileID uuid.UUID) error
 func (c *Client) BindAvatarToUser(ctx context.Context, fileID uuid.UUID, userID uuid.UUID, createdByUserID *uuid.UUID) error {
 	callCtx, cancel := context.WithTimeout(ctx, defaultBindFileTimeout)
 	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
 
 	req := &filev1.BindFileRequest{
 		FileId:    fileID.String(),

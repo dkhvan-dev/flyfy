@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/activity_api.dart';
+import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
@@ -880,6 +881,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             children: [
                               _ParticipantAvatar(
                                 seed: participant.userId,
+                                imageUrl: _resolveUserAvatarUrl(
+                                  participant.userId,
+                                  resolvedProfiles: _resolvedProfiles,
+                                  currentProfile: context
+                                      .read<SessionProvider>()
+                                      .profile,
+                                ),
                                 radius: 24,
                                 borderColor: _DetailsColors.sheet,
                               ),
@@ -1062,6 +1070,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       resolvedProfiles: _resolvedProfiles,
       l10n: l10n,
     );
+    final hostAvatarUrl = _resolveUserAvatarUrl(
+      activity.hostUserId,
+      resolvedProfiles: _resolvedProfiles,
+      currentProfile: session.profile,
+    );
+    final hostAvatarFallback = _displayInitials(hostName);
 
     return _DetailsResponsiveTextScope(
       child: Scaffold(
@@ -1162,6 +1176,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         const SizedBox(height: 24),
                         _HostCard(
                           hostName: hostName,
+                          avatarUrl: hostAvatarUrl,
+                          avatarFallbackText: hostAvatarFallback,
                           subtitle: _resolveHostSubtitle(
                             activity: activity,
                             l10n: l10n,
@@ -1197,6 +1213,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                         _ParticipantsSection(
                           l10n: l10n,
                           participants: activeParticipants,
+                          resolvedProfiles: _resolvedProfiles,
+                          currentProfile: session.profile,
                           compact: compact,
                           isLoading: _participantsLoading,
                           loadFailed: _participantsError != null,
@@ -2823,12 +2841,16 @@ class _LifecycleReasonCard extends StatelessWidget {
 class _HostCard extends StatelessWidget {
   const _HostCard({
     required this.hostName,
+    required this.avatarUrl,
+    required this.avatarFallbackText,
     required this.subtitle,
     required this.buttonLabel,
     required this.onPressed,
   });
 
   final String hostName;
+  final String? avatarUrl;
+  final String avatarFallbackText;
   final String subtitle;
   final String buttonLabel;
   final VoidCallback onPressed;
@@ -2861,10 +2883,34 @@ class _HostCard extends StatelessWidget {
                   width: 3,
                 ),
               ),
-              child: Icon(
-                Icons.person_rounded,
-                color: Colors.white,
-                size: avatarIcon,
+              child: ClipOval(
+                child: avatarUrl == null
+                    ? Center(
+                        child: Text(
+                          avatarFallbackText,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: avatarIcon * 0.72,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                      )
+                    : Image.network(
+                        avatarUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                            avatarFallbackText,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: avatarIcon * 0.72,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                        ),
+                      ),
               ),
             ),
             Positioned(
@@ -4058,6 +4104,8 @@ class _ParticipantsSection extends StatelessWidget {
   const _ParticipantsSection({
     required this.l10n,
     required this.participants,
+    required this.resolvedProfiles,
+    required this.currentProfile,
     required this.compact,
     required this.isLoading,
     required this.loadFailed,
@@ -4066,6 +4114,8 @@ class _ParticipantsSection extends StatelessWidget {
 
   final AppLocalizations l10n;
   final List<ActivityParticipantVm> participants;
+  final Map<String, UserProfileVm> resolvedProfiles;
+  final UserProfileVm? currentProfile;
   final bool compact;
   final bool isLoading;
   final bool loadFailed;
@@ -4160,6 +4210,11 @@ class _ParticipantsSection extends StatelessWidget {
                           left: i * overlap,
                           child: _ParticipantAvatar(
                             seed: participants[i].userId,
+                            imageUrl: _resolveUserAvatarUrl(
+                              participants[i].userId,
+                              resolvedProfiles: resolvedProfiles,
+                              currentProfile: currentProfile,
+                            ),
                             radius: 21,
                             borderColor: _DetailsColors.base,
                           ),
@@ -4226,11 +4281,13 @@ class _ParticipantsSection extends StatelessWidget {
 class _ParticipantAvatar extends StatelessWidget {
   const _ParticipantAvatar({
     required this.seed,
+    this.imageUrl,
     required this.radius,
     required this.borderColor,
   });
 
   final String seed;
+  final String? imageUrl;
   final double radius;
   final Color borderColor;
 
@@ -4252,16 +4309,34 @@ class _ParticipantAvatar extends StatelessWidget {
           colors: colors,
         ),
       ),
-      child: Center(
-        child: Text(
-          initials,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: radius * 0.62,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.4,
-          ),
-        ),
+      child: ClipOval(
+        child: imageUrl == null
+            ? Center(
+                child: Text(
+                  initials,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: radius * 0.62,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+              )
+            : Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Center(
+                  child: Text(
+                    initials,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: radius * 0.62,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -4951,6 +5026,47 @@ String _resolveUserName(
     return profile.preferredName;
   }
   return l10n.activityParticipantFallbackName;
+}
+
+String? _resolveUserAvatarUrl(
+  String userId, {
+  Map<String, UserProfileVm> resolvedProfiles = const {},
+  UserProfileVm? currentProfile,
+}) {
+  UserProfileVm? profile;
+  if (currentProfile != null && currentProfile.userId == userId) {
+    profile = currentProfile;
+  } else {
+    profile = resolvedProfiles[userId];
+  }
+
+  final avatarFileId = (profile?.avatarFileId ?? '').trim();
+  return resolvePublicFileContentUrl(avatarFileId);
+}
+
+String _displayInitials(String value, {String fallback = 'F'}) {
+  final parts = value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList(growable: false);
+  if (parts.isEmpty) {
+    return fallback;
+  }
+  if (parts.length >= 2) {
+    return (parts.first[0] + parts.last[0]).toUpperCase();
+  }
+  final normalized = parts.first.replaceAll(
+    RegExp(r'[^A-Za-zА-Яа-яӘәҒғҚқҢңӨөҰұҮүҺһІі0-9]'),
+    '',
+  );
+  if (normalized.length >= 2) {
+    return normalized.substring(0, 2).toUpperCase();
+  }
+  if (normalized.isNotEmpty) {
+    return normalized[0].toUpperCase();
+  }
+  return fallback;
 }
 
 Color _activityStatusColor(String status) {

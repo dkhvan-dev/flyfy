@@ -34,6 +34,24 @@ type AttachGuideDocumentRequest struct {
 	DocumentType string `json:"documentType"`
 }
 
+type SubmitGuideApplicationRequest struct {
+	Type                       string  `json:"type"`
+	Headline                   *string `json:"headline,omitempty"`
+	About                      *string `json:"about,omitempty"`
+	ExperienceYears            *int    `json:"experienceYears,omitempty"`
+	BaseCityID                 *string `json:"baseCityId,omitempty"`
+	IsPrivateGuideAvailable    *bool   `json:"isPrivateGuideAvailable,omitempty"`
+	IsActivityHostAvailable    *bool   `json:"isActivityHostAvailable,omitempty"`
+	IsTourGuideAvailable       *bool   `json:"isTourGuideAvailable,omitempty"`
+	Comment                    *string `json:"comment,omitempty"`
+	IdentityDocumentFileID     string  `json:"identityDocumentFileId"`
+	IdentityDocumentType       string  `json:"identityDocumentType"`
+	ProfessionalDocumentFileID string  `json:"professionalDocumentFileId"`
+	ProfessionalDocumentType   string  `json:"professionalDocumentType"`
+	FirstAidCertificateFileID  *string `json:"firstAidCertificateFileId,omitempty"`
+	LanguageCertificateFileID  *string `json:"languageCertificateFileId,omitempty"`
+}
+
 type GuideAggregateResponse struct {
 	Profile             GuideProfileResponse              `json:"profile"`
 	VerificationRequest *GuideVerificationRequestResponse `json:"verificationRequest,omitempty"`

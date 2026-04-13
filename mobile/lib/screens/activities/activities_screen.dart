@@ -13,6 +13,7 @@ import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -35,11 +36,14 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   final DeviceContextService _deviceContextService =
       const DeviceContextService();
+  final GuideApi _guideApi = GuideApi();
 
   _DiscoverFilters _filters = const _DiscoverFilters();
   String _searchQuery = '';
   String? _loadedHostedUserId;
   String? _priceFilterCountryCode;
+  String? _guideBadgeUserId;
+  bool _showGuideBadge = false;
 
   @override
   void initState() {
@@ -227,6 +231,41 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     });
   }
 
+  void _ensureGuideBadgeState(String? currentUserId) {
+    final normalizedUserId = (currentUserId ?? '').trim();
+    if (normalizedUserId.isEmpty) {
+      _guideBadgeUserId = null;
+      _showGuideBadge = false;
+      return;
+    }
+
+    if (_guideBadgeUserId == normalizedUserId) {
+      return;
+    }
+
+    _guideBadgeUserId = normalizedUserId;
+    _showGuideBadge = false;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final guide = await _guideApi.getMyGuideProfileOrNull();
+        if (!mounted || _guideBadgeUserId != normalizedUserId) {
+          return;
+        }
+        setState(() {
+          _showGuideBadge = guide?.isVerified == true;
+        });
+      } catch (_) {
+        if (!mounted || _guideBadgeUserId != normalizedUserId) {
+          return;
+        }
+        setState(() {
+          _showGuideBadge = false;
+        });
+      }
+    });
+  }
+
   Future<void> _openCategoryFilter(
     BuildContext context,
     List<_DiscoverCategoryOption> categoryOptions,
@@ -401,6 +440,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     );
 
     _ensureHostedActivitiesLoaded(currentUserId);
+    _ensureGuideBadgeState(currentUserId);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -411,6 +451,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       drawer: AppSideDrawer(
         l10n: l10n,
         isLoggedIn: isLoggedIn,
+        showGuideBadge: _showGuideBadge,
         profile: profile,
         location: location,
         languageLabel: resolveDrawerLanguageLabel(

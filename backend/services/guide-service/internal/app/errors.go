@@ -9,6 +9,9 @@ var (
 	ErrInvalidGuideProfileID     = errors.New("invalid guide profile id")
 	ErrInvalidGuideUserID        = errors.New("invalid guide user id")
 	ErrGuideProfileAlreadyExists = errors.New("guide profile already exists")
+	ErrGuideProfileAlreadyActive = errors.New("guide profile is already active")
+	ErrGuideApplicationPending   = errors.New("guide application is already under review")
+	ErrGuideDocumentsRequired    = errors.New("guide application requires identity and professional documents")
 
 	ErrUserNotFound                = errors.New("user not found")
 	ErrGuideDocumentFileNotFound   = errors.New("guide document file not found")

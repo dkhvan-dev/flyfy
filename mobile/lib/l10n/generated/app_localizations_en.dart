@@ -155,6 +155,315 @@ class AppLocalizationsEn extends AppLocalizations {
   String get becomeGuideButton => 'Become a guide';
 
   @override
+  String get guideVerificationTitle => 'Guide application';
+
+  @override
+  String guideVerificationStepCounter(Object current, Object total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get guideVerificationStepIdentity => 'Identity';
+
+  @override
+  String get guideVerificationStepDocument => 'Document';
+
+  @override
+  String get guideVerificationStepLicense => 'Credentials';
+
+  @override
+  String get guideVerificationStepSubmit => 'Submit';
+
+  @override
+  String get guideVerificationHeroTitle => 'Verify your guide status';
+
+  @override
+  String get guideVerificationHeroSubtitle =>
+      'Complete the form and upload your documents so we can review your profile and unlock professional guide features.';
+
+  @override
+  String get guideVerificationIdentitySection => 'Basic information';
+
+  @override
+  String get guideVerificationFullNameLabel => 'Full name';
+
+  @override
+  String get guideVerificationFullNameHint => 'Exactly as shown on your ID';
+
+  @override
+  String get guideVerificationBirthDateLabel => 'Date of birth';
+
+  @override
+  String get guideVerificationBirthDateHint => 'DD.MM.YYYY';
+
+  @override
+  String get guideVerificationNationalityLabel => 'Nationality';
+
+  @override
+  String get guideVerificationSelectCountry => 'Select country';
+
+  @override
+  String get guideVerificationIdentityNotice =>
+      'We use these details only to verify your identity and guide status.';
+
+  @override
+  String get guideVerificationContinueToDocuments => 'Continue to documents';
+
+  @override
+  String get guideVerificationDocumentTypeLabel => 'Document type';
+
+  @override
+  String get guideVerificationPassport => 'Passport';
+
+  @override
+  String get guideVerificationNationalId => 'National ID';
+
+  @override
+  String get guideVerificationUploadPhotoTitle => 'Upload an identity document';
+
+  @override
+  String get guideVerificationUploadPhotoSubtitle =>
+      'Provide a clear photo or scan of the front side of your document.';
+
+  @override
+  String get guideVerificationNoGlare => 'No glare';
+
+  @override
+  String get guideVerificationNoGlareHint =>
+      'Take the photo in even light so every detail remains readable.';
+
+  @override
+  String get guideVerificationFullFrame => 'Full frame';
+
+  @override
+  String get guideVerificationFullFrameHint =>
+      'All edges of the document should be visible in the image.';
+
+  @override
+  String get guideVerificationTapToCapturePassport =>
+      'Tap to choose a document file';
+
+  @override
+  String get guideVerificationFileFormatsShort => 'JPG, PNG, PDF up to 10 MB';
+
+  @override
+  String get guideVerificationChooseFile => 'Choose file';
+
+  @override
+  String get guideVerificationDocumentConfirm =>
+      'I confirm that this document is valid, not expired, and the photo provided is clearly legible for automated verification systems.';
+
+  @override
+  String get guideVerificationVerifyContinue => 'Continue verification';
+
+  @override
+  String get guideVerificationCredentialsTitle => 'Credentials and license';
+
+  @override
+  String get guideVerificationCredentialsSubtitle =>
+      'Tell us which document confirms your experience and right to work as a guide.';
+
+  @override
+  String get guideVerificationLicenseLabel => 'Verification document type';
+
+  @override
+  String get guideVerificationSelectLicenseType => 'Select document type';
+
+  @override
+  String get guideVerificationOfficialTourGuideLicense =>
+      'Official tour guide license';
+
+  @override
+  String get guideVerificationCityGuidePermit => 'City guide permit';
+
+  @override
+  String get guideVerificationMuseumAccreditation =>
+      'Museum or venue accreditation';
+
+  @override
+  String get guideVerificationUploadLicenseTitle =>
+      'Upload the supporting document';
+
+  @override
+  String get guideVerificationUploadLicenseSubtitle =>
+      'A certificate, license, or other professional document works here.';
+
+  @override
+  String get guideVerificationAdditionalCertifications => 'Additional skills';
+
+  @override
+  String get guideVerificationUploadFirstAidTitle =>
+      'Upload a first aid certificate';
+
+  @override
+  String get guideVerificationUploadFirstAidSubtitle =>
+      'Optional: add a valid certificate to strengthen your application.';
+
+  @override
+  String get guideVerificationUploadLanguageTitle =>
+      'Upload a language certificate';
+
+  @override
+  String get guideVerificationUploadLanguageSubtitle =>
+      'Optional: add a certificate that confirms your language proficiency.';
+
+  @override
+  String get guideVerificationFirstAid => 'First aid';
+
+  @override
+  String get guideVerificationFirstAidHint =>
+      'You have current first aid training or a valid certificate.';
+
+  @override
+  String get guideVerificationLanguageProficiency => 'Foreign languages';
+
+  @override
+  String get guideVerificationLanguageProficiencyHint =>
+      'You can host activities and tours in more than one language.';
+
+  @override
+  String get guideVerificationTimelineTitle => 'Review timeline';
+
+  @override
+  String get guideVerificationTimelineText =>
+      'We usually review applications within 1 to 3 business days. If we need more information, you will see it in your profile.';
+
+  @override
+  String get guideVerificationReviewHeroTitle =>
+      'Review your details before sending';
+
+  @override
+  String get guideVerificationReviewHeroSubtitle =>
+      'Make sure everything is correct. Once submitted, the application goes to review.';
+
+  @override
+  String get guideVerificationReviewTitle => 'Application summary';
+
+  @override
+  String get guideVerificationEditInfo => 'Edit';
+
+  @override
+  String get guideVerificationIdentityDocumentCard => 'Identity document';
+
+  @override
+  String get guideVerificationProfessionalLicenseCard =>
+      'Professional document';
+
+  @override
+  String get guideVerificationFirstAidCertificateCard =>
+      'First aid certificate';
+
+  @override
+  String get guideVerificationLanguageCertificateCard => 'Language certificate';
+
+  @override
+  String get guideVerificationVerifiedUpload => 'File uploaded';
+
+  @override
+  String get guideVerificationTermsTitle => 'Confirmation';
+
+  @override
+  String get guideVerificationTermsHeading =>
+      'I confirm that the information is accurate';
+
+  @override
+  String get guideVerificationTermsBody =>
+      'I understand that FlyFy may reject the application if any information is inaccurate or the uploaded documents are not suitable.';
+
+  @override
+  String get guideVerificationAgreement =>
+      'I agree to document review and data processing for guide status verification.';
+
+  @override
+  String get guideVerificationSubmit => 'Submit application';
+
+  @override
+  String get guideVerificationReviewNote =>
+      'After submission, you can track the application status in your profile.';
+
+  @override
+  String get guideVerificationPendingTitle =>
+      'Your application is already under review';
+
+  @override
+  String get guideVerificationPendingSubtitle =>
+      'We received your documents and are reviewing them now. You will see an update in your profile as soon as the status changes.';
+
+  @override
+  String get guideVerificationActiveTitle => 'Guide status is already verified';
+
+  @override
+  String get guideVerificationActiveSubtitle =>
+      'Your profile is already active as a guide profile. No need to submit anything else.';
+
+  @override
+  String get guideVerificationRejectedTitle => 'Your application needs updates';
+
+  @override
+  String get guideVerificationRejectedSubtitle =>
+      'The previous application was rejected. You can update the information and submit your documents again.';
+
+  @override
+  String get guideVerificationDraftSubtitle =>
+      'You already have a saved draft application. Continue with the current data and send it for review when ready.';
+
+  @override
+  String get guideVerificationViewApplicationButton => 'View application';
+
+  @override
+  String get guideVerificationContinueButton => 'Continue';
+
+  @override
+  String get guideVerificationBackToProfile => 'Back to profile';
+
+  @override
+  String get guideVerificationFullNameRequired => 'Enter your full name';
+
+  @override
+  String get guideVerificationFullNameInvalid =>
+      'Enter both first and last name';
+
+  @override
+  String get guideVerificationBirthDateRequired => 'Enter your date of birth';
+
+  @override
+  String get guideVerificationBirthDateInvalid =>
+      'Enter a valid date in DD.MM.YYYY format';
+
+  @override
+  String get guideVerificationNationalityRequired => 'Select your nationality';
+
+  @override
+  String get guideVerificationIdentityFileRequired =>
+      'Upload your identity document';
+
+  @override
+  String get guideVerificationProfessionalFileRequired =>
+      'Upload your professional document';
+
+  @override
+  String get guideVerificationConfirmationRequired =>
+      'Confirm that the document is valid and the photo is clearly legible';
+
+  @override
+  String get guideVerificationAgreementRequired =>
+      'You need to agree to the document review';
+
+  @override
+  String get guideVerificationUploadFailed => 'Failed to upload file';
+
+  @override
+  String get guideVerificationUnsupportedFormat =>
+      'Only JPG, PNG, WEBP, and PDF are supported';
+
+  @override
+  String get guideVerificationSubmitFailed => 'Failed to submit application';
+
+  @override
+  String get guideVerificationDocumentsRequired =>
+      'Both an identity document and a professional document are required';
+
+  @override
   String get logoutButton => 'Log out';
 
   @override
@@ -267,6 +576,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSaveFailed => 'Failed to save profile';
 
   @override
+  String get profileDisplayNameTaken => 'This display name is already taken';
+
+  @override
   String get firstNameLabel => 'First name';
 
   @override
@@ -290,6 +602,332 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileRequiredDescription =>
       'To continue, enter your first and last name in your profile. This helps reduce fake accounts and increases trust between users.';
+
+  @override
+  String get myProfileTitle => 'My Profile';
+
+  @override
+  String get profileLinkCopied => 'Profile link copied';
+
+  @override
+  String get profileVerifiedExplorer => 'VERIFIED GUIDE';
+
+  @override
+  String get profileGuideTitle => 'FlyFy Guide';
+
+  @override
+  String get profileEmptyBioPlaceholder =>
+      'There is no public description yet. Once the profile is filled in, a short bio will appear here.';
+
+  @override
+  String get profileBecomeGuideTitle => 'Become a guide';
+
+  @override
+  String get profileBecomeGuideSubtitle =>
+      'Soon you will be able to apply and unlock a professional guide profile here.';
+
+  @override
+  String get profileActivitiesStat => 'Activities';
+
+  @override
+  String get profileHostedCompletedStat => 'Completed as host';
+
+  @override
+  String get profileJoinedCompletedStat => 'Completed as participant';
+
+  @override
+  String get profileReviewsStat => 'Reviews';
+
+  @override
+  String get profileBlogsStat => 'Blogs';
+
+  @override
+  String get profileFollowersStat => 'Followers';
+
+  @override
+  String get profileJourneyTitle => 'My journey';
+
+  @override
+  String get profileSavedItemsTitle => 'Saved items';
+
+  @override
+  String get profileSavedItemsSubtitle =>
+      'Saved activities, places, and collections will appear here later.';
+
+  @override
+  String get profileBookingsTitle => 'My bookings';
+
+  @override
+  String get profileBookingsSubtitle =>
+      'Orders and confirmed bookings will appear here soon.';
+
+  @override
+  String get profileMyActivitiesSubtitle =>
+      'Manage your activities and track your participation.';
+
+  @override
+  String get profilePreferencesTitle => 'Preferences';
+
+  @override
+  String get profileNotificationsRowTitle => 'Notifications';
+
+  @override
+  String get profileNotificationsRowSubtitle =>
+      'Push, email, and SMS updates for your activity flow.';
+
+  @override
+  String get profileSecurityRowTitle => 'Security & data';
+
+  @override
+  String get profileSecurityRowSubtitle =>
+      'PIN, biometrics, and the protected local session.';
+
+  @override
+  String get profileHostedActivitiesTitle => 'Hosted activities';
+
+  @override
+  String get profileHostedActivitiesUnavailable =>
+      'Public hosted activities will appear here once the backend exposes the author\'s public showcase.';
+
+  @override
+  String get profileBlogsTitle => 'Recent Blogs';
+
+  @override
+  String get profileBlogsUnavailable =>
+      'Public notes and travel stories are not available in the app yet.';
+
+  @override
+  String get profileUnavailableTitle => 'Coming soon';
+
+  @override
+  String get profileFollowAction => 'Follow';
+
+  @override
+  String get profileMessageAction => 'Message';
+
+  @override
+  String get profileSettingsPageTitle => 'Settings';
+
+  @override
+  String get profileSaveChangesButton => 'Save changes';
+
+  @override
+  String get profileDeactivateAccountLabel => 'Deactivate account';
+
+  @override
+  String get profileSettingsAvatarDisabledHint =>
+      'Profile photo editing will be available in a future update.';
+
+  @override
+  String get profileSettingsAvatarUploadHint =>
+      'Tap the avatar or edit icon to choose a profile photo.';
+
+  @override
+  String get profileSettingsAvatarUploading =>
+      'Uploading your new profile photo...';
+
+  @override
+  String get profileSettingsAvatarUploadFailed =>
+      'Failed to upload profile photo';
+
+  @override
+  String get profileSettingsAvatarUnsupportedFormat =>
+      'Profile photo must be JPG, PNG, or WEBP';
+
+  @override
+  String get profileSettingsDescriptionSection => 'Description';
+
+  @override
+  String get profileSettingsDetailsSection => 'Profile details';
+
+  @override
+  String get profileSettingsServiceCitiesSection => 'Service cities';
+
+  @override
+  String get profileSettingsServiceCitiesUnavailable =>
+      'Public service cities are not supported by the backend yet, so this block stays inactive for now.';
+
+  @override
+  String get profileSettingsAddNew => 'Add new';
+
+  @override
+  String get profileSettingsSecuritySection => 'Security';
+
+  @override
+  String get profileSettingsSecurityPinTitle => 'PIN & biometrics';
+
+  @override
+  String get profileSettingsSecurityPinSubtitle =>
+      'Open the security screen to manage your local sign-in protection.';
+
+  @override
+  String get profileAccountSectionTitle => 'Account';
+
+  @override
+  String get profileSettingsEditSubtitle =>
+      'Update your name, photo, bio, and core profile details.';
+
+  @override
+  String get profileOverviewSectionTitle => 'Profile overview';
+
+  @override
+  String get profileMoreSectionTitle => 'More';
+
+  @override
+  String get profileGuideWorkspaceTitle => 'Guide workspace';
+
+  @override
+  String get profileGuideWorkspaceSubtitle =>
+      'Professional guide tools are not available in the mobile app yet.';
+
+  @override
+  String get profileSupportTitle => 'Help & support';
+
+  @override
+  String get profileSupportSubtitle =>
+      'Help center and support requests will be added later.';
+
+  @override
+  String get profileNotificationsPageTitle => 'Notifications';
+
+  @override
+  String get profileNotificationsHeroTitle => 'Stay in sync';
+
+  @override
+  String get profileNotificationsHeroSubtitle =>
+      'Choose how FlyFy keeps you updated about activity changes, participation, and new opportunities.';
+
+  @override
+  String get profileNotificationsActivitySection =>
+      'Activities & participation';
+
+  @override
+  String get profileNotificationsDiscoverySection => 'Discovery & offers';
+
+  @override
+  String get profileNotificationsPushTitle => 'Push notifications';
+
+  @override
+  String get profileNotificationsPushSubtitle =>
+      'Instant updates for activities, status changes, and new messages.';
+
+  @override
+  String get profileNotificationsEmailTitle => 'Email notifications';
+
+  @override
+  String get profileNotificationsEmailSubtitle =>
+      'Confirmations, reminders, and useful updates sent to your inbox.';
+
+  @override
+  String get profileNotificationsSmsTitle => 'SMS notifications';
+
+  @override
+  String get profileNotificationsSmsSubtitle =>
+      'Short critical updates and confirmations by text message.';
+
+  @override
+  String get profileNotificationsMarketingTitle => 'Collections & offers';
+
+  @override
+  String get profileNotificationsMarketingSubtitle =>
+      'Travel inspiration, place collections, and special FlyFy offers.';
+
+  @override
+  String get profileNotificationsDarkModeTitle => 'Dark mode';
+
+  @override
+  String get profileNotificationsDarkModeSubtitle =>
+      'This setting will arrive later. For now the app uses the current product palette.';
+
+  @override
+  String get profileNotificationsSaveFailed =>
+      'Failed to update notification settings';
+
+  @override
+  String get profileSecurityPageTitle => 'Security & data';
+
+  @override
+  String get profileSecurityHeroTitle => 'Protect access';
+
+  @override
+  String get profileSecurityHeroSubtitle =>
+      'This section combines local unlock methods and upcoming account protection tools.';
+
+  @override
+  String get profileSecurityLocalAccessSection => 'Local access';
+
+  @override
+  String get profileSecurityAccountSection => 'Account protection';
+
+  @override
+  String get profileSecurityDataSection => 'Data & privacy';
+
+  @override
+  String get profileSecurityPinTitle => 'App PIN';
+
+  @override
+  String get profileSecurityPinEnabledSubtitle =>
+      'A PIN is configured and is used for quick app unlock.';
+
+  @override
+  String get profileSecurityPinMissingSubtitle =>
+      'No PIN is configured yet. The app will ask to create one after the next authentication.';
+
+  @override
+  String get profileSecurityBiometricTitle => 'Biometric unlock';
+
+  @override
+  String get profileSecurityBiometricSubtitle =>
+      'Allow app unlock with Face ID, fingerprint, or other supported biometrics.';
+
+  @override
+  String get profileSecurityBiometricNeedsPin =>
+      'An app PIN must be configured first.';
+
+  @override
+  String get profileSecurityBiometricUnavailable =>
+      'Biometrics are not available or not configured on this device.';
+
+  @override
+  String get profileSecurityProtectedSessionTitle => 'Protected session';
+
+  @override
+  String get profileSecurityProtectedSessionSubtitle =>
+      'A local session is stored. After restart, the app can be unlocked quickly.';
+
+  @override
+  String get profileSecurityNoStoredSessionSubtitle =>
+      'No active stored session was found. Protection will turn on automatically after the next sign in.';
+
+  @override
+  String get profileSecurityTwoFactorTitle => 'Additional verification';
+
+  @override
+  String get profileSecurityTwoFactorSubtitle =>
+      'Extra sign-in checks and sensitive action confirmation will be added later.';
+
+  @override
+  String get profileSecurityDataExportTitle => 'Data export';
+
+  @override
+  String get profileSecurityDataExportSubtitle =>
+      'Exporting your data is not implemented on the backend yet.';
+
+  @override
+  String get profileSecurityDeleteTitle => 'Delete account';
+
+  @override
+  String get profileSecurityDeleteSubtitle =>
+      'Managed account deletion will be added after the backend flow is ready.';
+
+  @override
+  String get profileStatusEnabled => 'Enabled';
+
+  @override
+  String get profileStatusDisabled => 'Disabled';
+
+  @override
+  String get profileDisabledSoon => 'Soon';
 
   @override
   String get laterButton => 'Later';

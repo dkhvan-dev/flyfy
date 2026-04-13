@@ -4,6 +4,8 @@ import "errors"
 
 var (
 	ErrFileNotFound        = errors.New("file not found")
+	ErrFileNotReady        = errors.New("file is not ready")
+	ErrFileNotPublic       = errors.New("file is not public")
 	ErrUploadTooLarge      = errors.New("upload size exceeds configured limit")
 	ErrInvalidOwnerID      = errors.New("invalid owner id")
 	ErrInvalidFileID       = errors.New("invalid file id")

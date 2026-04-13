@@ -50,4 +50,33 @@ class ProfileApi {
     final data = await _apiClient.updateMeProfile(request.toJson());
     return UserProfileVm.fromJson(data);
   }
+
+  Future<UserSettingsVm> updateMeSettings({
+    bool? notificationsPushEnabled,
+    bool? notificationsEmailEnabled,
+    bool? notificationsSmsEnabled,
+    bool? marketingEnabled,
+    bool? darkModeEnabled,
+  }) async {
+    final body = <String, dynamic>{};
+
+    if (notificationsPushEnabled != null) {
+      body['notificationsPushEnabled'] = notificationsPushEnabled;
+    }
+    if (notificationsEmailEnabled != null) {
+      body['notificationsEmailEnabled'] = notificationsEmailEnabled;
+    }
+    if (notificationsSmsEnabled != null) {
+      body['notificationsSmsEnabled'] = notificationsSmsEnabled;
+    }
+    if (marketingEnabled != null) {
+      body['marketingEnabled'] = marketingEnabled;
+    }
+    if (darkModeEnabled != null) {
+      body['darkModeEnabled'] = darkModeEnabled;
+    }
+
+    final data = await _apiClient.updateMeSettings(body);
+    return UserSettingsVm.fromJson(data);
+  }
 }

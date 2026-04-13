@@ -2,7 +2,16 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+import '../config/app_config.dart';
 import 'api_client.dart';
+
+String? resolvePublicFileContentUrl(String fileId) {
+  final trimmed = fileId.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  return '${AppConfig.apiBaseUrl}/public/files/$trimmed/content';
+}
 
 class FileApi {
   FileApi({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
@@ -14,14 +23,58 @@ class FileApi {
     required String contentType,
     required int sizeBytes,
   }) async {
+    return _createUploadRequest(
+      originalName: originalName,
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      purpose: 'ACTIVITY_MEDIA',
+      visibility: 'PROTECTED',
+    );
+  }
+
+  Future<FileUploadRequestVm> createAvatarUpload({
+    required String originalName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    return _createUploadRequest(
+      originalName: originalName,
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      purpose: 'AVATAR',
+      visibility: 'PUBLIC',
+    );
+  }
+
+  Future<FileUploadRequestVm> createGuideVerificationUpload({
+    required String originalName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    return _createUploadRequest(
+      originalName: originalName,
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      purpose: 'GUIDE_VERIFICATION_DOC',
+      visibility: 'PROTECTED',
+    );
+  }
+
+  Future<FileUploadRequestVm> _createUploadRequest({
+    required String originalName,
+    required String contentType,
+    required int sizeBytes,
+    required String purpose,
+    required String visibility,
+  }) async {
     final response = await _apiClient.dio.post(
       '/files/upload-requests',
       data: {
         'originalName': originalName,
         'contentType': contentType,
         'sizeBytes': sizeBytes,
-        'purpose': 'ACTIVITY_MEDIA',
-        'visibility': 'PROTECTED',
+        'purpose': purpose,
+        'visibility': visibility,
       },
     );
 
@@ -50,6 +103,21 @@ class FileApi {
 
   Future<void> completeUpload(String fileId) async {
     await _apiClient.dio.post('/files/$fileId/complete');
+  }
+
+  Future<String?> createDownloadUrl(String fileId) async {
+    final trimmed = fileId.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final response = await _apiClient.createFileDownloadUrl(trimmed);
+    final url = response['url']?.toString().trim() ?? '';
+    return url.isEmpty ? null : url;
+  }
+
+  String? publicContentUrl(String fileId) {
+    return resolvePublicFileContentUrl(fileId);
   }
 }
 

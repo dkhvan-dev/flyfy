@@ -3,6 +3,8 @@ package noop
 import (
 	"context"
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,6 +54,10 @@ func (c *Client) CreatePresignedDownload(ctx context.Context, bucket, objectKey 
 	}
 
 	return fmt.Sprintf("noop://download/%s/%s?expiresIn=%s", bucket, objectKey, ttl.String()), nil
+}
+
+func (c *Client) GetObject(ctx context.Context, bucket, objectKey string) (io.ReadCloser, string, error) {
+	return io.NopCloser(strings.NewReader("")), "application/octet-stream", nil
 }
 
 func (c *Client) DeleteObject(ctx context.Context, bucket, objectKey string) error {

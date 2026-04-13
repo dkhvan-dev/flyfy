@@ -156,6 +156,316 @@ class AppLocalizationsRu extends AppLocalizations {
   String get becomeGuideButton => 'Стать гидом';
 
   @override
+  String get guideVerificationTitle => 'Заявка на статус гида';
+
+  @override
+  String guideVerificationStepCounter(Object current, Object total) {
+    return 'Шаг $current из $total';
+  }
+
+  @override
+  String get guideVerificationStepIdentity => 'Личность';
+
+  @override
+  String get guideVerificationStepDocument => 'Документ';
+
+  @override
+  String get guideVerificationStepLicense => 'Квалификация';
+
+  @override
+  String get guideVerificationStepSubmit => 'Отправка';
+
+  @override
+  String get guideVerificationHeroTitle => 'Подтвердите статус гида';
+
+  @override
+  String get guideVerificationHeroSubtitle =>
+      'Заполните анкету и загрузите документы, чтобы мы могли проверить ваш профиль и открыть профессиональные возможности.';
+
+  @override
+  String get guideVerificationIdentitySection => 'Основная информация';
+
+  @override
+  String get guideVerificationFullNameLabel => 'Полное имя';
+
+  @override
+  String get guideVerificationFullNameHint => 'Как в удостоверении личности';
+
+  @override
+  String get guideVerificationBirthDateLabel => 'Дата рождения';
+
+  @override
+  String get guideVerificationBirthDateHint => 'ДД.ММ.ГГГГ';
+
+  @override
+  String get guideVerificationNationalityLabel => 'Гражданство';
+
+  @override
+  String get guideVerificationSelectCountry => 'Выберите страну';
+
+  @override
+  String get guideVerificationIdentityNotice =>
+      'Мы используем эти данные только для проверки личности и статуса гида.';
+
+  @override
+  String get guideVerificationContinueToDocuments => 'Перейти к документам';
+
+  @override
+  String get guideVerificationDocumentTypeLabel => 'Тип документа';
+
+  @override
+  String get guideVerificationPassport => 'Паспорт';
+
+  @override
+  String get guideVerificationNationalId => 'Удостоверение личности';
+
+  @override
+  String get guideVerificationUploadPhotoTitle => 'Загрузите фото документа';
+
+  @override
+  String get guideVerificationUploadPhotoSubtitle =>
+      'Нужна четкая фотография или скан лицевой стороны документа.';
+
+  @override
+  String get guideVerificationNoGlare => 'Без бликов';
+
+  @override
+  String get guideVerificationNoGlareHint =>
+      'Сделайте фото при ровном освещении, чтобы текст был читаемым.';
+
+  @override
+  String get guideVerificationFullFrame => 'Полностью в кадре';
+
+  @override
+  String get guideVerificationFullFrameHint =>
+      'Все края документа должны быть видны на изображении.';
+
+  @override
+  String get guideVerificationTapToCapturePassport =>
+      'Нажмите, чтобы выбрать файл документа';
+
+  @override
+  String get guideVerificationFileFormatsShort =>
+      'Поддерживаются JPG, PNG, PDF до 10 МБ';
+
+  @override
+  String get guideVerificationChooseFile => 'Выбрать файл';
+
+  @override
+  String get guideVerificationDocumentConfirm =>
+      'Я подтверждаю, что этот документ действителен, не просрочен, а предоставленное фото четкое и хорошо читается автоматическими системами проверки.';
+
+  @override
+  String get guideVerificationVerifyContinue => 'Продолжить проверку';
+
+  @override
+  String get guideVerificationCredentialsTitle => 'Квалификация и лицензии';
+
+  @override
+  String get guideVerificationCredentialsSubtitle =>
+      'Расскажите, какой документ подтверждает ваш опыт и право работать гидом.';
+
+  @override
+  String get guideVerificationLicenseLabel => 'Тип подтверждающего документа';
+
+  @override
+  String get guideVerificationSelectLicenseType => 'Выберите тип документа';
+
+  @override
+  String get guideVerificationOfficialTourGuideLicense =>
+      'Лицензия официального гида';
+
+  @override
+  String get guideVerificationCityGuidePermit => 'Разрешение городского гида';
+
+  @override
+  String get guideVerificationMuseumAccreditation =>
+      'Аккредитация музея или площадки';
+
+  @override
+  String get guideVerificationUploadLicenseTitle =>
+      'Загрузите подтверждающий документ';
+
+  @override
+  String get guideVerificationUploadLicenseSubtitle =>
+      'Подойдет сертификат, лицензия или другой профессиональный документ.';
+
+  @override
+  String get guideVerificationAdditionalCertifications =>
+      'Дополнительные навыки';
+
+  @override
+  String get guideVerificationUploadFirstAidTitle =>
+      'Загрузите сертификат первой помощи';
+
+  @override
+  String get guideVerificationUploadFirstAidSubtitle =>
+      'Необязательно: добавьте сертификат, если хотите усилить заявку.';
+
+  @override
+  String get guideVerificationUploadLanguageTitle =>
+      'Загрузите языковой сертификат';
+
+  @override
+  String get guideVerificationUploadLanguageSubtitle =>
+      'Необязательно: добавьте сертификат, подтверждающий знание языков.';
+
+  @override
+  String get guideVerificationFirstAid => 'Первая помощь';
+
+  @override
+  String get guideVerificationFirstAidHint =>
+      'Есть действующее обучение или сертификат по первой помощи.';
+
+  @override
+  String get guideVerificationLanguageProficiency => 'Иностранные языки';
+
+  @override
+  String get guideVerificationLanguageProficiencyHint =>
+      'Можете проводить активности и экскурсии более чем на одном языке.';
+
+  @override
+  String get guideVerificationTimelineTitle => 'Срок проверки';
+
+  @override
+  String get guideVerificationTimelineText =>
+      'Обычно мы рассматриваем заявку в течение 1–3 рабочих дней. Если потребуется дополнительная информация, мы сообщим в профиле.';
+
+  @override
+  String get guideVerificationReviewHeroTitle =>
+      'Проверьте данные перед отправкой';
+
+  @override
+  String get guideVerificationReviewHeroSubtitle =>
+      'Убедитесь, что все поля заполнены верно. После отправки заявка уйдет на проверку.';
+
+  @override
+  String get guideVerificationReviewTitle => 'Сводка заявки';
+
+  @override
+  String get guideVerificationEditInfo => 'Редактировать';
+
+  @override
+  String get guideVerificationIdentityDocumentCard => 'Документ личности';
+
+  @override
+  String get guideVerificationProfessionalLicenseCard =>
+      'Профессиональный документ';
+
+  @override
+  String get guideVerificationFirstAidCertificateCard =>
+      'Сертификат первой помощи';
+
+  @override
+  String get guideVerificationLanguageCertificateCard => 'Языковой сертификат';
+
+  @override
+  String get guideVerificationVerifiedUpload => 'Файл загружен';
+
+  @override
+  String get guideVerificationTermsTitle => 'Подтверждение';
+
+  @override
+  String get guideVerificationTermsHeading =>
+      'Я подтверждаю достоверность данных';
+
+  @override
+  String get guideVerificationTermsBody =>
+      'Я понимаю, что FlyFy может отклонить заявку при обнаружении недостоверной информации или неподходящих документов.';
+
+  @override
+  String get guideVerificationAgreement =>
+      'Соглашаюсь на проверку документов и обработку данных для подтверждения статуса гида.';
+
+  @override
+  String get guideVerificationSubmit => 'Отправить заявку';
+
+  @override
+  String get guideVerificationReviewNote =>
+      'После отправки вы сможете отслеживать статус заявки в профиле.';
+
+  @override
+  String get guideVerificationPendingTitle => 'Заявка уже на проверке';
+
+  @override
+  String get guideVerificationPendingSubtitle =>
+      'Мы получили ваши документы и сейчас проверяем их. Как только статус изменится, вы увидите обновление в профиле.';
+
+  @override
+  String get guideVerificationActiveTitle => 'Статус гида уже подтвержден';
+
+  @override
+  String get guideVerificationActiveSubtitle =>
+      'Ваш профиль уже активен как профиль гида. Ничего дополнительно отправлять не нужно.';
+
+  @override
+  String get guideVerificationRejectedTitle => 'Заявка требует доработки';
+
+  @override
+  String get guideVerificationRejectedSubtitle =>
+      'Предыдущая заявка была отклонена. Вы можете обновить данные и отправить документы повторно.';
+
+  @override
+  String get guideVerificationDraftSubtitle =>
+      'У вас уже есть черновик заявки. Можно продолжить с текущими данными и отправить ее на проверку.';
+
+  @override
+  String get guideVerificationViewApplicationButton => 'Посмотреть заявку';
+
+  @override
+  String get guideVerificationContinueButton => 'Продолжить';
+
+  @override
+  String get guideVerificationBackToProfile => 'Вернуться в профиль';
+
+  @override
+  String get guideVerificationFullNameRequired => 'Укажите полное имя';
+
+  @override
+  String get guideVerificationFullNameInvalid =>
+      'Введите имя и фамилию полностью';
+
+  @override
+  String get guideVerificationBirthDateRequired => 'Укажите дату рождения';
+
+  @override
+  String get guideVerificationBirthDateInvalid =>
+      'Введите корректную дату в формате ДД.ММ.ГГГГ';
+
+  @override
+  String get guideVerificationNationalityRequired => 'Выберите гражданство';
+
+  @override
+  String get guideVerificationIdentityFileRequired =>
+      'Загрузите документ личности';
+
+  @override
+  String get guideVerificationProfessionalFileRequired =>
+      'Загрузите подтверждающий документ';
+
+  @override
+  String get guideVerificationConfirmationRequired =>
+      'Подтвердите, что документ действителен и фото читаемо';
+
+  @override
+  String get guideVerificationAgreementRequired =>
+      'Нужно согласие на проверку документов';
+
+  @override
+  String get guideVerificationUploadFailed => 'Не удалось загрузить файл';
+
+  @override
+  String get guideVerificationUnsupportedFormat =>
+      'Поддерживаются только JPG, PNG, WEBP и PDF';
+
+  @override
+  String get guideVerificationSubmitFailed => 'Не удалось отправить заявку';
+
+  @override
+  String get guideVerificationDocumentsRequired =>
+      'Для отправки заявки нужны документ личности и профессиональный документ';
+
+  @override
   String get logoutButton => 'Выйти';
 
   @override
@@ -268,6 +578,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileSaveFailed => 'Не удалось сохранить профиль';
 
   @override
+  String get profileDisplayNameTaken => 'Это отображаемое имя уже занято';
+
+  @override
   String get firstNameLabel => 'Имя';
 
   @override
@@ -291,6 +604,331 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get profileRequiredDescription =>
       'Чтобы продолжить, укажите имя и фамилию в профиле. Это помогает снизить количество фейковых аккаунтов и повышает доверие между пользователями.';
+
+  @override
+  String get myProfileTitle => 'Мой профиль';
+
+  @override
+  String get profileLinkCopied => 'Ссылка на профиль скопирована';
+
+  @override
+  String get profileVerifiedExplorer => 'ПОДТВЕРЖДЕННЫЙ ГИД';
+
+  @override
+  String get profileGuideTitle => 'Гид FlyFy';
+
+  @override
+  String get profileEmptyBioPlaceholder =>
+      'Пока здесь нет описания. Когда профиль будет заполнен, здесь появится краткая информация о пользователе.';
+
+  @override
+  String get profileBecomeGuideTitle => 'Станьте гидом';
+
+  @override
+  String get profileBecomeGuideSubtitle =>
+      'Скоро здесь можно будет подать заявку и открыть доступ к профессиональному профилю гида.';
+
+  @override
+  String get profileActivitiesStat => 'Активности';
+
+  @override
+  String get profileHostedCompletedStat => 'Завершено как автор';
+
+  @override
+  String get profileJoinedCompletedStat => 'Завершено как участник';
+
+  @override
+  String get profileReviewsStat => 'Отзывы';
+
+  @override
+  String get profileBlogsStat => 'Блоги';
+
+  @override
+  String get profileFollowersStat => 'Фолловеры';
+
+  @override
+  String get profileJourneyTitle => 'Мой путь';
+
+  @override
+  String get profileSavedItemsTitle => 'Сохраненное';
+
+  @override
+  String get profileSavedItemsSubtitle =>
+      'Собранные активности, места и подборки появятся здесь позже.';
+
+  @override
+  String get profileBookingsTitle => 'Мои бронирования';
+
+  @override
+  String get profileBookingsSubtitle =>
+      'Список заказов и подтвержденных бронирований скоро появится здесь.';
+
+  @override
+  String get profileMyActivitiesSubtitle =>
+      'Управляйте своими активностями и отслеживайте участия.';
+
+  @override
+  String get profilePreferencesTitle => 'Предпочтения';
+
+  @override
+  String get profileNotificationsRowTitle => 'Уведомления';
+
+  @override
+  String get profileNotificationsRowSubtitle =>
+      'Push, email и SMS-уведомления по вашим активностям.';
+
+  @override
+  String get profileSecurityRowTitle => 'Безопасность и данные';
+
+  @override
+  String get profileSecurityRowSubtitle =>
+      'PIN-код, биометрия и защищенная локальная сессия.';
+
+  @override
+  String get profileHostedActivitiesTitle => 'Активности пользователя';
+
+  @override
+  String get profileHostedActivitiesUnavailable =>
+      'Список опубликованных активностей появится здесь, когда backend отдаст публичную витрину автора.';
+
+  @override
+  String get profileBlogsTitle => 'Последние Блоги';
+
+  @override
+  String get profileBlogsUnavailable =>
+      'Публичные заметки и истории путешествий пока недоступны в приложении.';
+
+  @override
+  String get profileUnavailableTitle => 'Скоро появится';
+
+  @override
+  String get profileFollowAction => 'Подписаться';
+
+  @override
+  String get profileMessageAction => 'Написать';
+
+  @override
+  String get profileSettingsPageTitle => 'Настройки';
+
+  @override
+  String get profileSaveChangesButton => 'Сохранить изменения';
+
+  @override
+  String get profileDeactivateAccountLabel => 'Деактивировать аккаунт';
+
+  @override
+  String get profileSettingsAvatarDisabledHint =>
+      'Изменение фото профиля появится в одном из следующих обновлений.';
+
+  @override
+  String get profileSettingsAvatarUploadHint =>
+      'Нажмите на аватар или иконку редактирования, чтобы выбрать фото профиля.';
+
+  @override
+  String get profileSettingsAvatarUploading =>
+      'Загружаем новое фото профиля...';
+
+  @override
+  String get profileSettingsAvatarUploadFailed =>
+      'Не удалось загрузить фото профиля';
+
+  @override
+  String get profileSettingsAvatarUnsupportedFormat =>
+      'Фото профиля должно быть в формате JPG, PNG или WEBP';
+
+  @override
+  String get profileSettingsDescriptionSection => 'Описание';
+
+  @override
+  String get profileSettingsDetailsSection => 'Данные профиля';
+
+  @override
+  String get profileSettingsServiceCitiesSection => 'Города сервиса';
+
+  @override
+  String get profileSettingsServiceCitiesUnavailable =>
+      'Публичные города сервиса пока не поддерживаются на backend, поэтому этот блок остается неактивным.';
+
+  @override
+  String get profileSettingsAddNew => 'Добавить';
+
+  @override
+  String get profileSettingsSecuritySection => 'Безопасность';
+
+  @override
+  String get profileSettingsSecurityPinTitle => 'PIN-код и биометрия';
+
+  @override
+  String get profileSettingsSecurityPinSubtitle =>
+      'Откройте экран безопасности, чтобы управлять локальной защитой входа.';
+
+  @override
+  String get profileAccountSectionTitle => 'Аккаунт';
+
+  @override
+  String get profileSettingsEditSubtitle =>
+      'Измените имя, фото, описание и базовые данные профиля.';
+
+  @override
+  String get profileOverviewSectionTitle => 'Параметры профиля';
+
+  @override
+  String get profileMoreSectionTitle => 'Дополнительно';
+
+  @override
+  String get profileGuideWorkspaceTitle => 'Кабинет гида';
+
+  @override
+  String get profileGuideWorkspaceSubtitle =>
+      'Инструменты для работы гида пока недоступны в мобильной версии.';
+
+  @override
+  String get profileSupportTitle => 'Помощь и поддержка';
+
+  @override
+  String get profileSupportSubtitle =>
+      'Справочный центр и обращения в поддержку появятся позже.';
+
+  @override
+  String get profileNotificationsPageTitle => 'Уведомления';
+
+  @override
+  String get profileNotificationsHeroTitle => 'Будьте в курсе';
+
+  @override
+  String get profileNotificationsHeroSubtitle =>
+      'Управляйте тем, как FlyFy сообщает вам об изменениях в активностях, участии и новых возможностях.';
+
+  @override
+  String get profileNotificationsActivitySection => 'Активности и участие';
+
+  @override
+  String get profileNotificationsDiscoverySection => 'Подборки и предложения';
+
+  @override
+  String get profileNotificationsPushTitle => 'Push-уведомления';
+
+  @override
+  String get profileNotificationsPushSubtitle =>
+      'Мгновенные обновления по активностям, изменениям статуса и новым сообщениям.';
+
+  @override
+  String get profileNotificationsEmailTitle => 'Email-уведомления';
+
+  @override
+  String get profileNotificationsEmailSubtitle =>
+      'Подтверждения, напоминания и полезные письма на вашу почту.';
+
+  @override
+  String get profileNotificationsSmsTitle => 'SMS-уведомления';
+
+  @override
+  String get profileNotificationsSmsSubtitle =>
+      'Короткие сообщения для критичных обновлений и подтверждений.';
+
+  @override
+  String get profileNotificationsMarketingTitle => 'Подборки и спецпредложения';
+
+  @override
+  String get profileNotificationsMarketingSubtitle =>
+      'Новые идеи для поездок, подборки мест и специальные предложения FlyFy.';
+
+  @override
+  String get profileNotificationsDarkModeTitle => 'Темная тема';
+
+  @override
+  String get profileNotificationsDarkModeSubtitle =>
+      'Настройка появится позже. Пока приложение использует текущую палитру интерфейса.';
+
+  @override
+  String get profileNotificationsSaveFailed =>
+      'Не удалось обновить настройки уведомлений';
+
+  @override
+  String get profileSecurityPageTitle => 'Безопасность и данные';
+
+  @override
+  String get profileSecurityHeroTitle => 'Защитите доступ';
+
+  @override
+  String get profileSecurityHeroSubtitle =>
+      'Здесь собраны локальные способы входа и будущие инструменты защиты аккаунта.';
+
+  @override
+  String get profileSecurityLocalAccessSection => 'Локальный доступ';
+
+  @override
+  String get profileSecurityAccountSection => 'Защита аккаунта';
+
+  @override
+  String get profileSecurityDataSection => 'Данные и конфиденциальность';
+
+  @override
+  String get profileSecurityPinTitle => 'PIN-код приложения';
+
+  @override
+  String get profileSecurityPinEnabledSubtitle =>
+      'PIN-код настроен и используется для быстрой разблокировки приложения.';
+
+  @override
+  String get profileSecurityPinMissingSubtitle =>
+      'PIN-код еще не настроен. После следующей авторизации приложение предложит его создать.';
+
+  @override
+  String get profileSecurityBiometricTitle => 'Вход по биометрии';
+
+  @override
+  String get profileSecurityBiometricSubtitle =>
+      'Разрешите разблокировку приложения через Face ID, отпечаток пальца или доступную биометрию.';
+
+  @override
+  String get profileSecurityBiometricNeedsPin =>
+      'Сначала должен быть настроен PIN-код приложения.';
+
+  @override
+  String get profileSecurityBiometricUnavailable =>
+      'На этом устройстве биометрия недоступна или не настроена.';
+
+  @override
+  String get profileSecurityProtectedSessionTitle => 'Защищенная сессия';
+
+  @override
+  String get profileSecurityProtectedSessionSubtitle =>
+      'Локальная сессия сохранена. После перезапуска приложения можно быстро разблокироваться.';
+
+  @override
+  String get profileSecurityNoStoredSessionSubtitle =>
+      'Активная сохраненная сессия не найдена. После нового входа защита включится автоматически.';
+
+  @override
+  String get profileSecurityTwoFactorTitle => 'Дополнительная верификация';
+
+  @override
+  String get profileSecurityTwoFactorSubtitle =>
+      'Отдельные сценарии подтверждения входа и чувствительных действий появятся позже.';
+
+  @override
+  String get profileSecurityDataExportTitle => 'Экспорт данных';
+
+  @override
+  String get profileSecurityDataExportSubtitle =>
+      'Выгрузка ваших данных пока не реализована на backend.';
+
+  @override
+  String get profileSecurityDeleteTitle => 'Удаление аккаунта';
+
+  @override
+  String get profileSecurityDeleteSubtitle =>
+      'Управляемое удаление аккаунта появится после завершения backend-процесса.';
+
+  @override
+  String get profileStatusEnabled => 'Активно';
+
+  @override
+  String get profileStatusDisabled => 'Неактивно';
+
+  @override
+  String get profileDisabledSoon => 'Скоро';
 
   @override
   String get laterButton => 'Позже';

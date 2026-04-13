@@ -23,6 +23,7 @@ type UserRepository interface {
 	GetUserBySubject(ctx context.Context, subject string) (*model.User, error)
 
 	GetProfileByUserID(ctx context.Context, userID uuid.UUID) (*model.UserProfile, error)
+	IsDisplayNameTaken(ctx context.Context, displayName string, excludeUserID uuid.UUID) (bool, error)
 	GetSettingsByUserID(ctx context.Context, userID uuid.UUID) (*model.UserSettings, error)
 	GetReputationByUserID(ctx context.Context, userID uuid.UUID) (*model.UserReputation, error)
 	ListRolesByUserID(ctx context.Context, userID uuid.UUID) ([]*model.UserSystemRole, error)

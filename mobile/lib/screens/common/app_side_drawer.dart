@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -264,6 +265,7 @@ class AppSideDrawer extends StatelessWidget {
     super.key,
     required this.l10n,
     required this.isLoggedIn,
+    required this.showGuideBadge,
     required this.profile,
     required this.location,
     required this.languageLabel,
@@ -279,6 +281,7 @@ class AppSideDrawer extends StatelessWidget {
 
   final AppLocalizations l10n;
   final bool isLoggedIn;
+  final bool showGuideBadge;
   final UserProfileVm? profile;
   final String location;
   final String languageLabel;
@@ -299,10 +302,9 @@ class AppSideDrawer extends StatelessWidget {
         : 'FlyFy';
     final profileSubtitle = isLoggedIn ? location : l10n.homeSubtitle;
     final avatarText = profile?.initials ?? 'F';
-    final badgeIcon = isLoggedIn && (profile?.isProfileCompleted ?? false)
-        ? Icons.verified_rounded
-        : Icons.auto_awesome_rounded;
-
+    final avatarUrl = resolvePublicFileContentUrl(
+      (profile?.avatarFileId ?? '').trim(),
+    );
     return Drawer(
       width: layout.drawerWidth,
       backgroundColor: Colors.transparent,
@@ -443,48 +445,80 @@ class AppSideDrawer extends StatelessWidget {
                                               ],
                                             ),
                                             child: Center(
-                                              child: Text(
-                                                avatarText,
-                                                style: TextStyle(
-                                                  color: AppColors.background,
-                                                  fontSize:
-                                                      layout.avatarTextSize,
-                                                  fontWeight: FontWeight.w800,
+                                              child: ClipOval(
+                                                child: SizedBox.expand(
+                                                  child: avatarUrl == null
+                                                      ? Center(
+                                                          child: Text(
+                                                            avatarText,
+                                                            style: TextStyle(
+                                                              color: AppColors
+                                                                  .background,
+                                                              fontSize: layout
+                                                                  .avatarTextSize,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w800,
+                                                            ),
+                                                          ),
+                                                        )
+                                                      : Image.network(
+                                                          avatarUrl,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (_, __, ___) => Center(
+                                                            child: Text(
+                                                              avatarText,
+                                                              style: TextStyle(
+                                                                color: AppColors
+                                                                    .background,
+                                                                fontSize: layout
+                                                                    .avatarTextSize,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w800,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                          Positioned(
-                                            right: -2,
-                                            bottom: 8,
-                                            child: Container(
-                                              width: layout.avatarBadgeSize,
-                                              height: layout.avatarBadgeSize,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                gradient: const LinearGradient(
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                  colors: [
-                                                    Color(0xFFFFB347),
-                                                    Color(0xFFF98C06),
-                                                  ],
-                                                ),
-                                                border: Border.all(
-                                                  color: const Color(
-                                                    0xFF2B170C,
+                                          if (showGuideBadge)
+                                            Positioned(
+                                              right: -2,
+                                              bottom: 8,
+                                              child: Container(
+                                                width: layout.avatarBadgeSize,
+                                                height: layout.avatarBadgeSize,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  gradient:
+                                                      const LinearGradient(
+                                                        begin:
+                                                            Alignment.topCenter,
+                                                        end: Alignment
+                                                            .bottomCenter,
+                                                        colors: [
+                                                          Color(0xFFFFB347),
+                                                          Color(0xFFF98C06),
+                                                        ],
+                                                      ),
+                                                  border: Border.all(
+                                                    color: const Color(
+                                                      0xFF2B170C,
+                                                    ),
+                                                    width: 3,
                                                   ),
-                                                  width: 3,
+                                                ),
+                                                child: Icon(
+                                                  Icons.verified_rounded,
+                                                  size: layout
+                                                      .avatarBadgeIconSize,
+                                                  color: Colors.white,
                                                 ),
                                               ),
-                                              child: Icon(
-                                                badgeIcon,
-                                                size:
-                                                    layout.avatarBadgeIconSize,
-                                                color: Colors.white,
-                                              ),
                                             ),
-                                          ),
                                         ],
                                       ),
                                       SizedBox(width: layout.profileGap),

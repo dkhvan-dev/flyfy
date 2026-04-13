@@ -198,7 +198,8 @@ func (h *Handler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
 			errors.Is(err, model.ErrInvalidCurrency),
 			errors.Is(err, app.ErrAvatarFileNotFound),
 			errors.Is(err, app.ErrAvatarFileNotReady),
-			errors.Is(err, app.ErrAvatarFileNotAllowed):
+			errors.Is(err, app.ErrAvatarFileNotAllowed),
+			errors.Is(err, app.ErrDisplayNameAlreadyTaken):
 			writeError(w, http.StatusBadRequest, err.Error())
 		case errors.Is(err, app.ErrProfileNotFound):
 			writeError(w, http.StatusNotFound, err.Error())
@@ -208,7 +209,7 @@ func (h *Handler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toUserProfileResponse(updatedAggregate.Profile))
+	writeJSON(w, http.StatusOK, toInitMeResponse(updatedAggregate))
 }
 
 func toInitMeResponse(aggregate *app.UserAggregate) dto.InitMeResponse {

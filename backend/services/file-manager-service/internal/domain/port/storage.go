@@ -2,6 +2,7 @@ package port
 
 import (
 	"context"
+	"io"
 	"time"
 )
 
@@ -39,5 +40,6 @@ type StorageProvider interface {
 	PutObject(ctx context.Context, req PutObjectRequest) error
 	StatObject(ctx context.Context, bucket, objectKey string) (*ObjectMeta, error)
 	CreatePresignedDownload(ctx context.Context, bucket, objectKey string, ttl time.Duration) (string, error)
+	GetObject(ctx context.Context, bucket, objectKey string) (io.ReadCloser, string, error)
 	DeleteObject(ctx context.Context, bucket, objectKey string) error
 }

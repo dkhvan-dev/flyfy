@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
@@ -25,8 +27,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GuideApi _guideApi = GuideApi();
   String? _requestedHostedActivitiesForUserId;
   String? _requestedJoinedActivitiesForUserId;
+  String? _guideBadgeUserId;
+  bool _showGuideBadge = false;
 
   static const Map<String, Map<String, String>> _localizedCountryNames = {
     'KZ': {'en': 'Kazakhstan', 'ru': 'Казахстан', 'kk': 'Қазақстан'},
@@ -465,6 +470,41 @@ class _HomeScreenState extends State<HomeScreen> {
     await localeProvider.setLocale(selectedCode);
   }
 
+  void _ensureGuideBadgeState(String? currentUserId) {
+    final normalizedUserId = (currentUserId ?? '').trim();
+    if (normalizedUserId.isEmpty) {
+      _guideBadgeUserId = null;
+      _showGuideBadge = false;
+      return;
+    }
+
+    if (_guideBadgeUserId == normalizedUserId) {
+      return;
+    }
+
+    _guideBadgeUserId = normalizedUserId;
+    _showGuideBadge = false;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final guide = await _guideApi.getMyGuideProfileOrNull();
+        if (!mounted || _guideBadgeUserId != normalizedUserId) {
+          return;
+        }
+        setState(() {
+          _showGuideBadge = guide?.isVerified == true;
+        });
+      } catch (_) {
+        if (!mounted || _guideBadgeUserId != normalizedUserId) {
+          return;
+        }
+        setState(() {
+          _showGuideBadge = false;
+        });
+      }
+    });
+  }
+
   String _resolveLocation(UserProfileVm? profile, Locale locale) {
     final languageCode = locale.languageCode;
     final timezone = (profile?.timezone ?? '').trim();
@@ -553,6 +593,8 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
 
+    _ensureGuideBadgeState(currentUserId);
+
     final quickActions = [
       _QuickActionData(
         title: 'Yandex Go',
@@ -585,6 +627,7 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: _HomeSideDrawer(
         l10n: l10n,
         isLoggedIn: isLoggedIn,
+        showGuideBadge: _showGuideBadge,
         profile: profile,
         location: location,
         languageLabel: _resolveLanguageLabel(
@@ -1232,8 +1275,9 @@ class _TopDestinationsRow extends StatelessWidget {
               _DestinationCard(
                 data: destinations[index],
                 onTap: onTap,
-                width:
-                    destinations[index].compact ? compactWidth : regularWidth,
+                width: destinations[index].compact
+                    ? compactWidth
+                    : regularWidth,
                 height: cardHeight,
               ),
               if (index != destinations.length - 1) const SizedBox(width: 14),
@@ -1533,12 +1577,15 @@ class _RecommendedActivitiesSection extends StatelessWidget {
       hostedItems: provider.myItems,
       currentUserId: currentUserId,
     );
-    final isLoadingPublic = provider.state == ActivitiesState.loading ||
+    final isLoadingPublic =
+        provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
-    final isLoadingHosted = currentUserId.isNotEmpty &&
+    final isLoadingHosted =
+        currentUserId.isNotEmpty &&
         (provider.myState == ActivitiesState.loading ||
             provider.myState == ActivitiesState.initial);
-    final hasLoadError = provider.state == ActivitiesState.error ||
+    final hasLoadError =
+        provider.state == ActivitiesState.error ||
         (currentUserId.isNotEmpty && provider.myState == ActivitiesState.error);
 
     if (recommendedItems.isEmpty && (isLoadingPublic || isLoadingHosted)) {
@@ -2006,8 +2053,9 @@ _HomeCardArtSpec _homeCategoryVisual(String slug) {
 }
 
 _HomeCardArtSpec _homeCardArtForItem(ActivityListItemVm item) {
-  final fromCategory =
-      _homeCategoryVisual(item.categorySlug.trim().toLowerCase());
+  final fromCategory = _homeCategoryVisual(
+    item.categorySlug.trim().toLowerCase(),
+  );
   if (item.format.toUpperCase() == 'ONLINE') {
     return const _HomeCardArtSpec(
       icon: Icons.videocam_rounded,
@@ -2125,6 +2173,7 @@ class _HomeSideDrawer extends StatelessWidget {
   const _HomeSideDrawer({
     required this.l10n,
     required this.isLoggedIn,
+    required this.showGuideBadge,
     required this.profile,
     required this.location,
     required this.languageLabel,
@@ -2139,6 +2188,7 @@ class _HomeSideDrawer extends StatelessWidget {
 
   final AppLocalizations l10n;
   final bool isLoggedIn;
+  final bool showGuideBadge;
   final UserProfileVm? profile;
   final String location;
   final String languageLabel;
@@ -2153,14 +2203,14 @@ class _HomeSideDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = _HomeDrawerLayout.of(context);
-    final profileTitle =
-        isLoggedIn ? profile?.preferredName ?? 'FlyFy' : 'FlyFy';
+    final profileTitle = isLoggedIn
+        ? profile?.preferredName ?? 'FlyFy'
+        : 'FlyFy';
     final profileSubtitle = isLoggedIn ? location : l10n.homeSubtitle;
     final avatarText = profile?.initials ?? 'F';
-    final badgeIcon = isLoggedIn && (profile?.isProfileCompleted ?? false)
-        ? Icons.verified_rounded
-        : Icons.auto_awesome_rounded;
-
+    final avatarUrl = resolvePublicFileContentUrl(
+      (profile?.avatarFileId ?? '').trim(),
+    );
     return Drawer(
       width: layout.drawerWidth,
       backgroundColor: Colors.transparent,
@@ -2301,48 +2351,80 @@ class _HomeSideDrawer extends StatelessWidget {
                                               ],
                                             ),
                                             child: Center(
-                                              child: Text(
-                                                avatarText,
-                                                style: TextStyle(
-                                                  color: AppColors.background,
-                                                  fontSize:
-                                                      layout.avatarTextSize,
-                                                  fontWeight: FontWeight.w800,
+                                              child: ClipOval(
+                                                child: SizedBox.expand(
+                                                  child: avatarUrl == null
+                                                      ? Center(
+                                                          child: Text(
+                                                            avatarText,
+                                                            style: TextStyle(
+                                                              color: AppColors
+                                                                  .background,
+                                                              fontSize: layout
+                                                                  .avatarTextSize,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w800,
+                                                            ),
+                                                          ),
+                                                        )
+                                                      : Image.network(
+                                                          avatarUrl,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (_, __, ___) => Center(
+                                                            child: Text(
+                                                              avatarText,
+                                                              style: TextStyle(
+                                                                color: AppColors
+                                                                    .background,
+                                                                fontSize: layout
+                                                                    .avatarTextSize,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w800,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                          Positioned(
-                                            right: -2,
-                                            bottom: 8,
-                                            child: Container(
-                                              width: layout.avatarBadgeSize,
-                                              height: layout.avatarBadgeSize,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                gradient: const LinearGradient(
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                  colors: [
-                                                    Color(0xFFFFB347),
-                                                    Color(0xFFF98C06),
-                                                  ],
-                                                ),
-                                                border: Border.all(
-                                                  color: const Color(
-                                                    0xFF2B170C,
+                                          if (showGuideBadge)
+                                            Positioned(
+                                              right: -2,
+                                              bottom: 8,
+                                              child: Container(
+                                                width: layout.avatarBadgeSize,
+                                                height: layout.avatarBadgeSize,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  gradient:
+                                                      const LinearGradient(
+                                                        begin:
+                                                            Alignment.topCenter,
+                                                        end: Alignment
+                                                            .bottomCenter,
+                                                        colors: [
+                                                          Color(0xFFFFB347),
+                                                          Color(0xFFF98C06),
+                                                        ],
+                                                      ),
+                                                  border: Border.all(
+                                                    color: const Color(
+                                                      0xFF2B170C,
+                                                    ),
+                                                    width: 3,
                                                   ),
-                                                  width: 3,
+                                                ),
+                                                child: Icon(
+                                                  Icons.verified_rounded,
+                                                  size: layout
+                                                      .avatarBadgeIconSize,
+                                                  color: Colors.white,
                                                 ),
                                               ),
-                                              child: Icon(
-                                                badgeIcon,
-                                                size:
-                                                    layout.avatarBadgeIconSize,
-                                                color: Colors.white,
-                                              ),
                                             ),
-                                          ),
                                         ],
                                       ),
                                       SizedBox(width: layout.profileGap),
@@ -2354,9 +2436,9 @@ class _HomeSideDrawer extends StatelessWidget {
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                horizontal: 10,
-                                                vertical: 6,
-                                              ),
+                                                    horizontal: 10,
+                                                    vertical: 6,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: AppColors.accent
                                                     .withValues(alpha: 0.18),
@@ -2527,8 +2609,9 @@ class _HomeSideDrawer extends StatelessWidget {
                                         ? Icons.logout_rounded
                                         : Icons.login_rounded,
                                     isAccent: !isLoggedIn,
-                                    onTap:
-                                        isLoggedIn ? onLogoutTap : onLoginTap,
+                                    onTap: isLoggedIn
+                                        ? onLogoutTap
+                                        : onLoginTap,
                                   ),
                                 ],
                               ),
@@ -2797,26 +2880,26 @@ class _DrawerMenuItem extends StatelessWidget {
                       ],
                     )
                   : matchesPreferencePalette
-                      ? LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withValues(alpha: 0.03),
-                            AppColors.accent.withValues(alpha: 0.07),
-                          ],
-                        )
-                      : null,
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.03),
+                        AppColors.accent.withValues(alpha: 0.07),
+                      ],
+                    )
+                  : null,
               color: isActive
                   ? null
                   : matchesPreferencePalette
-                      ? null
-                      : Colors.white.withValues(alpha: 0.02),
+                  ? null
+                  : Colors.white.withValues(alpha: 0.02),
               border: Border.all(
                 color: isActive
                     ? AppColors.accent.withValues(alpha: 0.20)
                     : matchesPreferencePalette
-                        ? AppColors.accent.withValues(alpha: 0.20)
-                        : Colors.transparent,
+                    ? AppColors.accent.withValues(alpha: 0.20)
+                    : Colors.transparent,
               ),
             ),
             child: Row(
@@ -2836,16 +2919,16 @@ class _DrawerMenuItem extends StatelessWidget {
                     color: isActive
                         ? null
                         : matchesPreferencePalette
-                            ? AppColors.accent.withValues(alpha: 0.12)
-                            : Colors.white.withValues(alpha: 0.04),
+                        ? AppColors.accent.withValues(alpha: 0.12)
+                        : Colors.white.withValues(alpha: 0.04),
                   ),
                   child: Icon(
                     icon,
                     color: isActive
                         ? Colors.white
                         : matchesPreferencePalette
-                            ? AppColors.accent
-                            : foregroundColor,
+                        ? AppColors.accent
+                        : foregroundColor,
                     size: layout.iconBoxSize * 0.48,
                   ),
                 ),
@@ -2861,8 +2944,8 @@ class _DrawerMenuItem extends StatelessWidget {
                       fontWeight: isActive
                           ? FontWeight.w700
                           : matchesPreferencePalette
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       height: 1.2,
                     ),
                   ),

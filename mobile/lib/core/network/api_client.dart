@@ -7,19 +7,18 @@ import '../storage/secure_storage.dart';
 
 class ApiClient {
   ApiClient({String? baseUrl, SecureStorage? secureStorage, Dio? dio})
-    : _secureStorage = secureStorage ?? SecureStorage(),
-      _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
-              connectTimeout: const Duration(seconds: 10),
-              receiveTimeout: const Duration(seconds: 10),
-              sendTimeout: const Duration(seconds: 10),
-              contentType: 'application/json',
-              responseType: ResponseType.json,
-            ),
-          ) {
+      : _secureStorage = secureStorage ?? SecureStorage(),
+        _dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
+                connectTimeout: const Duration(seconds: 10),
+                receiveTimeout: const Duration(seconds: 10),
+                sendTimeout: const Duration(seconds: 10),
+                contentType: 'application/json',
+                responseType: ResponseType.json,
+              ),
+            ) {
     _configureInterceptors();
   }
 
@@ -48,7 +47,15 @@ class ApiClient {
           final requiresAuth = _requiresAuth(options);
 
           if (requiresAuth) {
-            final accessToken = await _secureStorage.getAccessToken();
+            var accessToken = await _secureStorage.getAccessToken();
+            if (accessToken == null || accessToken.isEmpty) {
+              try {
+                accessToken = await _restoreAccessTokenIfPossible();
+              } catch (_) {
+                accessToken = null;
+              }
+            }
+
             if (accessToken != null && accessToken.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $accessToken';
             }
@@ -60,8 +67,7 @@ class ApiClient {
           final request = error.requestOptions;
           final statusCode = error.response?.statusCode;
 
-          final shouldTryRefresh =
-              statusCode == 401 &&
+          final shouldTryRefresh = statusCode == 401 &&
               _requiresAuth(request) &&
               request.extra['retried'] != true;
 
@@ -116,6 +122,27 @@ class ApiClient {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     );
+  }
+
+  Future<String?> _restoreAccessTokenIfPossible() async {
+    final refreshToken = await _secureStorage.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      return null;
+    }
+
+    try {
+      await (_refreshFuture ??= _refreshAccessToken());
+      _refreshFuture = null;
+      final accessToken = await _secureStorage.getAccessToken();
+      if (accessToken == null || accessToken.isEmpty) {
+        return null;
+      }
+      return accessToken;
+    } catch (_) {
+      _refreshFuture = null;
+      await _secureStorage.deleteTokens();
+      return null;
+    }
   }
 
   Future<Map<String, dynamic>> initMe({
@@ -192,6 +219,35 @@ class ApiClient {
     Map<String, dynamic> body,
   ) async {
     final response = await _dio.put('/users/me/profile', data: body);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateMeSettings(
+    Map<String, dynamic> body,
+  ) async {
+    final response = await _dio.put('/users/me/settings', data: body);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createFileDownloadUrl(String fileId) async {
+    final response = await _dio.post('/files/$fileId/download-url');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getMyGuideProfile() async {
+    final response = await _dio.get('/guides/me');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getGuideProfileByUserId(String userId) async {
+    final response = await _dio.get('/guides/by-user/$userId');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> submitMyGuideApplication(
+    Map<String, dynamic> body,
+  ) async {
+    final response = await _dio.post('/guides/me/application', data: body);
     return response.data as Map<String, dynamic>;
   }
 }

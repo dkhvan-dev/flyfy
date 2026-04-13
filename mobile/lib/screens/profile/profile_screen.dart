@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/navigation/android_back_swipe_scope.dart';
+import '../../core/network/activity_api.dart';
+import '../../core/network/file_api.dart';
+import '../../core/ui/app_colors.dart';
+import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/data/profile_api.dart';
+import '../../features/profile/models/guide_profile_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
-import '../../providers/locale_provider.dart';
 import '../../providers/session_provider.dart';
 import 'edit_profile_screen.dart';
+import 'profile_style.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.userId, this.initialProfile});
@@ -22,8 +28,15 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ProfileApi _profileApi = ProfileApi();
+  final GuideApi _guideApi = GuideApi();
+  final FileApi _fileApi = FileApi();
+  final ActivityApi _activityApi = ActivityApi();
 
   Future<UserProfileVm>? _foreignProfileFuture;
+  Future<_ProfileExtras>? _extrasFuture;
+  Future<ActivityCompletionStatsVm>? _activityStatsFuture;
+  String _extrasKey = '';
+  String _activityStatsKey = '';
 
   @override
   void initState() {
@@ -56,6 +69,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _foreignProfileFuture = _profileApi.getUserById(userId);
   }
 
+  Future<_ProfileExtras> _loadExtras(UserProfileVm profile) async {
+    Future<GuideProfileVm?> loadGuide() async {
+      try {
+        return await _guideApi.getGuideProfileByUserIdOrNull(profile.userId);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    Future<String?> loadAvatar() async {
+      final avatarFileId = (profile.avatarFileId ?? '').trim();
+      if (avatarFileId.isEmpty) {
+        return null;
+      }
+      return _fileApi.publicContentUrl(avatarFileId);
+    }
+
+    final results = await Future.wait<Object?>([loadGuide(), loadAvatar()]);
+
+    return _ProfileExtras(
+      guide: results[0] as GuideProfileVm?,
+      avatarUrl: results[1] as String?,
+    );
+  }
+
+  Future<_ProfileExtras> _extrasFutureFor(UserProfileVm profile) {
+    final key =
+        '${profile.userId.trim()}|${(profile.avatarFileId ?? '').trim()}|${profile.roles.join(",")}';
+    if (_extrasFuture == null || _extrasKey != key) {
+      _extrasKey = key;
+      _extrasFuture = _loadExtras(profile);
+    }
+    return _extrasFuture!;
+  }
+
+  Future<ActivityCompletionStatsVm>? _activityStatsFutureFor(
+    UserProfileVm profile, {
+    required bool isOwnProfile,
+  }) {
+    if (!isOwnProfile) {
+      return null;
+    }
+
+    final key = profile.userId.trim();
+    if (_activityStatsFuture == null || _activityStatsKey != key) {
+      _activityStatsKey = key;
+      _activityStatsFuture = _activityApi.getMyCompletionStats(
+        actorUserId: key,
+      );
+    }
+    return _activityStatsFuture!;
+  }
+
+  Future<void> _openEditProfile() async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const AndroidBackSwipeScope(child: EditProfileScreen()),
+      ),
+    );
+
+    if (updated == true && mounted) {
+      _extrasKey = '';
+      _extrasFuture = null;
+      _activityStatsKey = '';
+      _activityStatsFuture = null;
+      await context.read<SessionProvider>().reloadProfile();
+    }
+  }
+
+  void _openSettings() {
+    context.push('/profile/settings');
+  }
+
+  Future<void> _copyProfileLink(UserProfileVm profile) async {
+    final l10n = AppLocalizations.of(context)!;
+    final path = '/users/${profile.userId}/profile';
+    await Clipboard.setData(ClipboardData(text: path));
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.profileLinkCopied)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -66,222 +162,1210 @@ class _ProfileScreenState extends State<ProfileScreen> {
         requestedUserId.isEmpty || requestedUserId == currentUserId;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.profileTitle)),
-      body: isOwnProfile
-          ? _OwnProfileBody(session: session)
-          : FutureBuilder<UserProfileVm>(
-              future: _foreignProfileFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+      backgroundColor: Colors.transparent,
+      body: ProfileResponsiveScope(
+        child: ProfileGlassBackground(
+          child: SafeArea(
+            child: isOwnProfile
+                ? _buildResolvedProfile(
+                    context,
+                    session.profile,
+                    isOwnProfile: true,
+                  )
+                : FutureBuilder<UserProfileVm>(
+                    future: _foreignProfileFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                final profile = snapshot.data;
-                if (profile == null) {
-                  return Center(child: Text(l10n.profileNotAvailable));
-                }
+                      if (snapshot.hasError || snapshot.data == null) {
+                        return Center(
+                          child: Text(
+                            l10n.profileNotAvailable,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        );
+                      }
 
-                return _ProfileContent(
-                  profile: profile,
-                  showAccountContacts: false,
-                  showPreferences: false,
-                  showMyActivities: false,
-                  onEditProfile: null,
-                );
-              },
-            ),
+                      return _buildResolvedProfile(
+                        context,
+                        snapshot.data,
+                        isOwnProfile: false,
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ),
     );
   }
-}
 
-class _OwnProfileBody extends StatelessWidget {
-  const _OwnProfileBody({required this.session});
-
-  final SessionProvider session;
-
-  @override
-  Widget build(BuildContext context) {
-    final profile = session.profile;
+  Widget _buildResolvedProfile(
+    BuildContext context,
+    UserProfileVm? profile, {
+    required bool isOwnProfile,
+  }) {
     final l10n = AppLocalizations.of(context)!;
-
     if (profile == null) {
-      return Center(child: Text(l10n.profileNotAvailable));
+      return Center(
+        child: Text(
+          l10n.profileNotAvailable,
+          style: const TextStyle(color: AppColors.textPrimary),
+        ),
+      );
     }
 
-    return _ProfileContent(
-      profile: profile,
-      showAccountContacts: true,
-      showPreferences: true,
-      showMyActivities: true,
-      onEditProfile: () async {
-        final updated = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(
-            builder: (_) =>
-                const AndroidBackSwipeScope(child: EditProfileScreen()),
+    return FutureBuilder<_ProfileExtras>(
+      future: _extrasFutureFor(profile),
+      builder: (context, snapshot) {
+        final extras = snapshot.data ?? const _ProfileExtras();
+        return _ProfileBody(
+          profile: profile,
+          guide: extras.guide,
+          avatarUrl: extras.avatarUrl,
+          activityStatsFuture: _activityStatsFutureFor(
+            profile,
+            isOwnProfile: isOwnProfile,
           ),
+          isOwnProfile: isOwnProfile,
+          onSettingsTap: isOwnProfile ? _openSettings : null,
+          onEditProfile: isOwnProfile ? _openEditProfile : null,
+          onCopyProfileLink: () => _copyProfileLink(profile),
         );
-
-        if (updated == true && context.mounted) {
-          await context.read<SessionProvider>().reloadProfile();
-        }
       },
     );
   }
 }
 
-class _ProfileContent extends StatelessWidget {
-  const _ProfileContent({
+class _ProfileBody extends StatelessWidget {
+  const _ProfileBody({
     required this.profile,
-    required this.showAccountContacts,
-    required this.showPreferences,
-    required this.showMyActivities,
+    required this.guide,
+    required this.avatarUrl,
+    required this.activityStatsFuture,
+    required this.isOwnProfile,
+    required this.onSettingsTap,
+    required this.onCopyProfileLink,
     required this.onEditProfile,
   });
 
   final UserProfileVm profile;
-  final bool showAccountContacts;
-  final bool showPreferences;
-  final bool showMyActivities;
+  final GuideProfileVm? guide;
+  final String? avatarUrl;
+  final Future<ActivityCompletionStatsVm>? activityStatsFuture;
+  final bool isOwnProfile;
+  final VoidCallback? onSettingsTap;
+  final VoidCallback onCopyProfileLink;
   final Future<void> Function()? onEditProfile;
 
   @override
   Widget build(BuildContext context) {
+    final isGuideProfile = guide?.isVerified == true;
     final l10n = AppLocalizations.of(context)!;
-    final canEdit = onEditProfile != null;
-    final bio = (profile.bio ?? '').trim();
+    final padding = profileScaled(context, 20, min: 14, max: 20);
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        padding,
+        profileScaled(context, 14, min: 10, max: 18),
+        padding,
+        profileScaled(context, 28, min: 20, max: 34),
+      ),
       children: [
-        if (canEdit && !profile.isProfileCompleted) ...[
-          Card(
-            color: const Color(0xFF2A1F0A),
-            child: ListTile(
-              leading: const Icon(
-                Icons.warning_amber_rounded,
-                color: Colors.amber,
-              ),
-              title: Text(l10n.profileIncompleteTitle),
-              subtitle: Text(l10n.profileIncompleteDescription),
-              trailing: TextButton(
-                onPressed: onEditProfile,
-                child: Text(l10n.fillNowButton),
-              ),
+        _ProfileTopBar(
+          isOwnProfile: isOwnProfile,
+          title: isOwnProfile ? l10n.myProfileTitle : profile.preferredName,
+          onLeadingTap: isOwnProfile ? onSettingsTap : () => context.pop(),
+          onShareTap: onCopyProfileLink,
+        ),
+        SizedBox(height: profileScaled(context, 26, min: 18, max: 30)),
+        if (isOwnProfile && !profile.isProfileCompleted)
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: profileScaled(context, 18, min: 14, max: 18),
+            ),
+            child: _ProfileBanner(
+              title: l10n.profileIncompleteTitle,
+              subtitle: l10n.profileIncompleteDescription,
+              onTap: onEditProfile,
             ),
           ),
-          const SizedBox(height: 16),
-        ],
-        Center(child: CircleAvatar(radius: 42, child: Text(profile.initials))),
-        const SizedBox(height: 16),
-        Center(
-          child: Text(
-            profile.preferredName,
-            style: Theme.of(context).textTheme.headlineSmall,
-            textAlign: TextAlign.center,
-          ),
+        _ProfileHero(
+          profile: profile,
+          guide: guide,
+          avatarUrl: avatarUrl,
+          isOwnProfile: isOwnProfile,
+          isGuideProfile: isGuideProfile,
         ),
-        if (bio.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(bio, style: Theme.of(context).textTheme.bodyMedium),
-            ),
+        SizedBox(height: profileScaled(context, 20, min: 16, max: 24)),
+        if (!isGuideProfile && isOwnProfile)
+          _BecomeGuideCard(
+            guide: guide,
+            onTap: () => context.push('/profile/guide-verification'),
           ),
-        ],
-        const SizedBox(height: 20),
-        if (showAccountContacts) ...[
-          ListTile(
-            title: Text(l10n.profilePhone),
-            subtitle: Text(profile.primaryPhone ?? l10n.notSpecified),
-          ),
-          ListTile(
-            title: Text(l10n.profileEmail),
-            subtitle: Text(profile.primaryEmail ?? l10n.notSpecified),
-          ),
-        ],
-        ListTile(
-          title: Text(l10n.profileVisibility),
-          subtitle: Text(
-            profile.isPublic ? l10n.profilePublic : l10n.profilePrivate,
-          ),
+        if (!isGuideProfile && isOwnProfile)
+          SizedBox(height: profileScaled(context, 22, min: 16, max: 24)),
+        _ProfileStatsGrid(
+          profile: profile,
+          guide: guide,
+          isGuideProfile: isGuideProfile,
+          isOwnProfile: isOwnProfile,
+          activityStatsFuture: activityStatsFuture,
         ),
-        ListTile(
-          title: Text(l10n.profileLocale),
-          subtitle: Text(profile.locale),
-        ),
-        ListTile(
-          title: Text(l10n.profileTimezone),
-          subtitle: Text(profile.timezone),
-        ),
-        if ((profile.countryCode ?? '').trim().isNotEmpty)
-          ListTile(
-            title: Text(l10n.profileCountry),
-            subtitle: Text(profile.countryCode!),
-          ),
-        if ((profile.currency ?? '').trim().isNotEmpty)
-          ListTile(
-            title: Text(l10n.profileCurrency),
-            subtitle: Text(profile.currency!),
-          ),
-        if (showPreferences) ...[
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              title: Text(l10n.appLanguageTitle),
-              subtitle: Text(
-                _languageLabel(
-                  context.watch<LocaleProvider>().locale.languageCode,
-                ),
-              ),
-              trailing: DropdownButton<String>(
-                value: context.watch<LocaleProvider>().locale.languageCode,
-                underline: const SizedBox.shrink(),
-                items: const [
-                  DropdownMenuItem(value: 'ru', child: Text('Русский')),
-                  DropdownMenuItem(value: 'en', child: Text('English')),
-                  DropdownMenuItem(value: 'kk', child: Text('Қазақша')),
-                ],
-                onChanged: (value) async {
-                  if (value == null) return;
-                  await context.read<LocaleProvider>().setLocale(value);
-                },
-              ),
-            ),
-          ),
+        if (!isOwnProfile) ...[
+          SizedBox(height: profileScaled(context, 22, min: 18, max: 24)),
+          const _ForeignProfileActions(),
         ],
-        if (showMyActivities) ...[
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.event_note_outlined),
-              title: Text(l10n.myActivitiesTitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/me/activities'),
-            ),
-          ),
-        ],
-        if (canEdit) ...[
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: onEditProfile,
-            icon: const Icon(Icons.edit_outlined),
-            label: Text(l10n.editProfileButton),
-          ),
+        SizedBox(height: profileScaled(context, 32, min: 24, max: 36)),
+        if (isOwnProfile) ...[
+          const _OwnProfileSections(),
+        ] else ...[
+          _ForeignProfileSections(isGuideProfile: isGuideProfile),
         ],
       ],
     );
   }
+}
 
-  String _languageLabel(String code) {
-    switch (code) {
-      case 'en':
-        return 'English';
-      case 'kk':
-        return 'Қазақша';
-      case 'ru':
-      default:
-        return 'Русский';
-    }
+class _ProfileTopBar extends StatelessWidget {
+  const _ProfileTopBar({
+    required this.isOwnProfile,
+    required this.title,
+    required this.onLeadingTap,
+    required this.onShareTap,
+  });
+
+  final bool isOwnProfile;
+  final String title;
+  final VoidCallback? onLeadingTap;
+  final VoidCallback onShareTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        ProfileTopIconButton(
+          icon: isOwnProfile ? Icons.settings_outlined : Icons.arrow_back,
+          onTap: onLeadingTap,
+        ),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: profileScaled(context, 12, min: 8, max: 12),
+            ),
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: profileScaled(context, 18, min: 16, max: 20),
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ),
+        ),
+        ProfileTopIconButton(icon: Icons.ios_share_outlined, onTap: onShareTap),
+      ],
+    );
   }
+}
+
+class _ProfileHero extends StatelessWidget {
+  const _ProfileHero({
+    required this.profile,
+    required this.guide,
+    required this.avatarUrl,
+    required this.isOwnProfile,
+    required this.isGuideProfile,
+  });
+
+  final UserProfileVm profile;
+  final GuideProfileVm? guide;
+  final String? avatarUrl;
+  final bool isOwnProfile;
+  final bool isGuideProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bio = _resolveAboutText(l10n);
+    final badges = _topBadges(l10n);
+
+    return Column(
+      children: [
+        _ProfileAvatar(
+          initials: profile.initials,
+          avatarUrl: avatarUrl,
+          verified: guide?.isVerified == true,
+        ),
+        SizedBox(height: profileScaled(context, 22, min: 16, max: 24)),
+        Text(
+          profile.preferredName,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: profileScaled(context, 30, min: 24, max: 34),
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1,
+            height: 1.04,
+          ),
+        ),
+        if (isGuideProfile) ...[
+          SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
+          Text(
+            guide?.isVerified == true
+                ? l10n.profileVerifiedExplorer
+                : l10n.profileGuideTitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.accent,
+              fontSize: profileScaled(context, 13, min: 12, max: 13),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+        if (!profile.isPublic) ...[
+          SizedBox(height: profileScaled(context, 10, min: 8, max: 10)),
+          _ProfilePill(
+            text: l10n.profilePrivate,
+            icon: Icons.lock_outline_rounded,
+            highlighted: false,
+          ),
+        ],
+        if (badges.isNotEmpty) ...[
+          SizedBox(height: profileScaled(context, 18, min: 14, max: 20)),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: profileScaled(context, 10, min: 8, max: 10),
+            runSpacing: profileScaled(context, 10, min: 8, max: 10),
+            children: badges
+                .take(6)
+                .map((item) => _ProfilePill(text: item))
+                .toList(growable: false),
+          ),
+        ],
+        SizedBox(height: profileScaled(context, 22, min: 18, max: 24)),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
+          decoration: profileCardDecoration(
+            context,
+            highlighted: isGuideProfile,
+            radius: profileScaled(context, 26, min: 22, max: 28),
+          ),
+          child: Text(
+            bio,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: profileScaled(context, 15, min: 14, max: 16),
+              height: 1.55,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _resolveAboutText(AppLocalizations l10n) {
+    final guideAbout = (guide?.about ?? '').trim();
+    if (guideAbout.isNotEmpty) {
+      return guideAbout;
+    }
+
+    final guideHeadline = (guide?.headline ?? '').trim();
+    if (guideHeadline.isNotEmpty) {
+      return guideHeadline;
+    }
+
+    final bio = (profile.bio ?? '').trim();
+    if (bio.isNotEmpty) {
+      return bio;
+    }
+
+    return l10n.profileEmptyBioPlaceholder;
+  }
+
+  List<String> _topBadges(AppLocalizations l10n) {
+    final values = <String>[];
+
+    if (guide != null) {
+      for (final item in guide!.serviceBadges) {
+        final normalized = _humanizeToken(item);
+        if (normalized.isNotEmpty) {
+          values.add(normalized);
+        }
+      }
+    }
+
+    if (values.isEmpty) {
+      final country = (profile.countryCode ?? '').trim();
+      final currency = (profile.currency ?? '').trim();
+      if (country.isNotEmpty) {
+        values.add(country);
+      }
+      if (currency.isNotEmpty) {
+        values.add(currency);
+      }
+      values.add(profile.isPublic ? l10n.profilePublic : l10n.profilePrivate);
+    }
+
+    return values.toSet().toList(growable: false);
+  }
+
+  String _humanizeToken(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) {
+      return '';
+    }
+    final normalized = value.replaceAll(RegExp(r'[_-]+'), ' ');
+    final words = normalized.split(RegExp(r'\s+'));
+    return words
+        .where((word) => word.isNotEmpty)
+        .map((word) {
+          final lower = word.toLowerCase();
+          return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+        })
+        .join(' ');
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({
+    required this.initials,
+    required this.avatarUrl,
+    required this.verified,
+  });
+
+  final String initials;
+  final String? avatarUrl;
+  final bool verified;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = profileScaled(context, 150, min: 120, max: 160);
+    final badgeSize = profileScaled(context, 34, min: 28, max: 36);
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            padding: EdgeInsets.all(profileScaled(context, 5, min: 4, max: 6)),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFE5C48D), Color(0xFF8B5506)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: profileScaled(context, 22, min: 16, max: 24),
+                  offset: Offset(
+                    0,
+                    profileScaled(context, 10, min: 6, max: 10),
+                  ),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFFEEF3F6), Color(0xFFB9CAD5)],
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    width: profileScaled(context, 4, min: 3, max: 4),
+                  ),
+                ),
+                child: avatarUrl == null
+                    ? Center(
+                        child: Text(
+                          initials,
+                          style: TextStyle(
+                            color: const Color(0xFF516572),
+                            fontSize: profileScaled(
+                              context,
+                              44,
+                              min: 34,
+                              max: 48,
+                            ),
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1,
+                          ),
+                        ),
+                      )
+                    : Image.network(
+                        avatarUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                            initials,
+                            style: TextStyle(
+                              color: const Color(0xFF516572),
+                              fontSize: profileScaled(
+                                context,
+                                44,
+                                min: 34,
+                                max: 48,
+                              ),
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -1,
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+          ),
+          if (verified)
+            Positioned(
+              right: profileScaled(context, -2, min: -2, max: 2),
+              bottom: profileScaled(context, 14, min: 10, max: 16),
+              child: Container(
+                width: badgeSize,
+                height: badgeSize,
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: profileBgTop,
+                    width: profileScaled(context, 3, min: 2, max: 3),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.3),
+                      blurRadius: profileScaled(context, 14, min: 10, max: 16),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.verified_rounded,
+                  color: Colors.white,
+                  size: profileScaled(context, 16, min: 14, max: 18),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfilePill extends StatelessWidget {
+  const _ProfilePill({required this.text, this.icon, this.highlighted = true});
+
+  final String text;
+  final IconData? icon;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: profileScaled(context, 14, min: 12, max: 16),
+        vertical: profileScaled(context, 8, min: 7, max: 10),
+      ),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? AppColors.accent.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: highlighted
+              ? AppColors.accent.withValues(alpha: 0.24)
+              : Colors.white.withValues(alpha: 0.06),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: profileScaled(context, 14, min: 12, max: 14),
+              color: highlighted ? AppColors.accent : profileTextSoft,
+            ),
+            SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              color: highlighted ? AppColors.accent : profileTextSoft,
+              fontSize: profileScaled(context, 12, min: 11, max: 12),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileBanner extends StatelessWidget {
+  const _ProfileBanner({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final Future<void> Function()? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
+      decoration: profileCardDecoration(
+        context,
+        highlighted: true,
+        radius: profileScaled(context, 22, min: 18, max: 22),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.accent,
+            size: profileScaled(context, 24, min: 20, max: 24),
+          ),
+          SizedBox(width: profileScaled(context, 12, min: 10, max: 14)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: profileScaled(context, 16, min: 14, max: 16),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: profileScaled(context, 6, min: 4, max: 6)),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: profileTextSoft,
+                    fontSize: profileScaled(context, 13, min: 12, max: 13),
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (onTap != null)
+            TextButton(
+              onPressed: onTap,
+              child: Text(
+                AppLocalizations.of(context)!.editProfileButton,
+                style: const TextStyle(color: AppColors.accent),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BecomeGuideCard extends StatelessWidget {
+  const _BecomeGuideCard({required this.guide, required this.onTap});
+
+  final GuideProfileVm? guide;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isPending = guide?.isPendingReview == true;
+    final isRejected = guide?.isRejected == true;
+    final isDraft = guide?.isDraft == true;
+
+    final title = isPending
+        ? l10n.guideVerificationPendingTitle
+        : isRejected
+        ? l10n.guideVerificationRejectedTitle
+        : l10n.profileBecomeGuideTitle;
+    final subtitle = isPending
+        ? l10n.guideVerificationPendingSubtitle
+        : isRejected
+        ? l10n.guideVerificationRejectedSubtitle
+        : isDraft
+        ? l10n.guideVerificationDraftSubtitle
+        : l10n.profileBecomeGuideSubtitle;
+    final buttonLabel = isPending
+        ? l10n.guideVerificationViewApplicationButton
+        : isRejected || isDraft
+        ? l10n.guideVerificationContinueButton
+        : l10n.becomeGuideButton;
+
+    return Container(
+      padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
+      decoration: profileCardDecoration(
+        context,
+        highlighted: true,
+        radius: profileScaled(context, 30, min: 24, max: 34),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: profileScaled(context, 44, min: 40, max: 48),
+                height: profileScaled(context, 44, min: 40, max: 48),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isPending
+                      ? Icons.hourglass_bottom_rounded
+                      : Icons.explore_outlined,
+                  color: AppColors.accent,
+                ),
+              ),
+              SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: profileScaled(context, 15, min: 14, max: 16),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: profileScaled(context, 4, min: 4, max: 6)),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: profileTextMuted,
+                        fontSize: profileScaled(context, 12, min: 11, max: 13),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: profileScaled(context, 14, min: 12, max: 16)),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onTap,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(buttonLabel),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileStatsGrid extends StatelessWidget {
+  const _ProfileStatsGrid({
+    required this.profile,
+    required this.guide,
+    required this.isGuideProfile,
+    required this.isOwnProfile,
+    required this.activityStatsFuture,
+  });
+
+  final UserProfileVm profile;
+  final GuideProfileVm? guide;
+  final bool isGuideProfile;
+  final bool isOwnProfile;
+  final Future<ActivityCompletionStatsVm>? activityStatsFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final reputation = profile.reputation;
+
+    if (!isOwnProfile || activityStatsFuture == null) {
+      final cards = <_StatConfig>[
+        _StatConfig(
+          label: l10n.profileActivitiesStat,
+          value: '${reputation?.completedActivities ?? 0}',
+          highlighted: false,
+        ),
+        if (isGuideProfile)
+          _StatConfig(
+            label: l10n.profileReviewsStat,
+            value: guide == null ? '—' : '${guide!.reviewsCount}',
+            highlighted: false,
+            disabled: guide == null,
+          )
+        else
+          _StatConfig(label: l10n.profileBlogsStat, value: '0'),
+        _StatConfig(
+          label: isGuideProfile
+              ? l10n.profileBlogsStat
+              : l10n.profileFollowersStat,
+          value: isGuideProfile ? '0' : '${reputation?.reportsCount ?? 0}',
+          disabled: !isGuideProfile && reputation == null,
+        ),
+      ];
+
+      return _StatsGridLayout(cards: cards);
+    }
+
+    return FutureBuilder<ActivityCompletionStatsVm>(
+      future: activityStatsFuture,
+      builder: (context, snapshot) {
+        final stats = snapshot.data;
+        final totalCompleted =
+            (stats?.hostedCompleted ?? 0) + (stats?.joinedCompleted ?? 0);
+        final cards = <_StatConfig>[
+          _StatConfig(
+            label: l10n.profileActivitiesStat,
+            value: '$totalCompleted',
+            highlighted: true,
+          ),
+          if (isGuideProfile)
+            _StatConfig(
+              label: l10n.profileReviewsStat,
+              value: guide == null ? '—' : '${guide!.reviewsCount}',
+              highlighted: guide != null,
+              disabled: guide == null,
+            )
+          else
+            _StatConfig(label: l10n.profileBlogsStat, value: '0'),
+          _StatConfig(
+            label: isGuideProfile
+                ? l10n.profileBlogsStat
+                : l10n.profileFollowersStat,
+            value: isGuideProfile ? '0' : '${reputation?.reportsCount ?? 0}',
+            disabled: !isGuideProfile && reputation == null,
+          ),
+        ];
+
+        return _StatsGridLayout(cards: cards);
+      },
+    );
+  }
+}
+
+class _StatsGridLayout extends StatelessWidget {
+  const _StatsGridLayout({required this.cards});
+
+  final List<_StatConfig> cards;
+
+  @override
+  Widget build(BuildContext context) {
+    final crossAxisCount = cards.length >= 4 ? 2 : 3;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: cards.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: profileScaled(context, 14, min: 10, max: 14),
+        crossAxisSpacing: profileScaled(context, 14, min: 10, max: 14),
+        mainAxisExtent: profileScaled(context, 122, min: 104, max: 132),
+      ),
+      itemBuilder: (context, index) => _ProfileStatCard(config: cards[index]),
+    );
+  }
+}
+
+class _StatConfig {
+  const _StatConfig({
+    required this.label,
+    required this.value,
+    this.highlighted = false,
+    this.disabled = false,
+  });
+
+  final String label;
+  final String value;
+  final bool highlighted;
+  final bool disabled;
+}
+
+class _ProfileStatCard extends StatelessWidget {
+  const _ProfileStatCard({required this.config});
+
+  final _StatConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: profileScaled(context, 8, min: 6, max: 10),
+        vertical: profileScaled(context, 14, min: 10, max: 16),
+      ),
+      decoration: profileCardDecoration(
+        context,
+        highlighted: config.highlighted,
+        disabled: config.disabled,
+        radius: profileScaled(context, 20, min: 18, max: 22),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            config.value,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: config.disabled ? profileDisabled : AppColors.accent,
+              fontSize: profileScaled(context, 24, min: 20, max: 28),
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.8,
+            ),
+          ),
+          SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+          Text(
+            config.label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: config.disabled ? profileDisabled : profileTextSoft,
+              fontSize: profileScaled(context, 11, min: 10, max: 11),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ForeignProfileActions extends StatelessWidget {
+  const _ForeignProfileActions();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton(
+            onPressed: null,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.textPrimary,
+              minimumSize: Size(
+                double.infinity,
+                profileScaled(context, 52, min: 48, max: 54),
+              ),
+              disabledBackgroundColor: profileSurfaceMuted,
+              disabledForegroundColor: profileTextSoft,
+            ),
+            child: Text(l10n.profileFollowAction),
+          ),
+        ),
+        SizedBox(width: profileScaled(context, 14, min: 10, max: 16)),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: null,
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+              foregroundColor: profileTextSoft,
+              backgroundColor: profileSurfaceMuted.withValues(alpha: 0.62),
+              minimumSize: Size(
+                double.infinity,
+                profileScaled(context, 52, min: 48, max: 54),
+              ),
+              disabledForegroundColor: profileTextSoft,
+            ),
+            child: Text(l10n.profileMessageAction),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OwnProfileSections extends StatelessWidget {
+  const _OwnProfileSections();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProfileSectionHeading(title: l10n.profileJourneyTitle),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        _ProfileMenuTile(
+          icon: Icons.bookmark_border_rounded,
+          title: l10n.profileSavedItemsTitle,
+          subtitle: l10n.profileSavedItemsSubtitle,
+          disabled: true,
+        ),
+        _ProfileMenuTile(
+          icon: Icons.calendar_month_outlined,
+          title: l10n.profileBookingsTitle,
+          subtitle: l10n.profileBookingsSubtitle,
+          disabled: true,
+        ),
+        _ProfileMenuTile(
+          icon: Icons.event_note_outlined,
+          title: l10n.myActivitiesTitle,
+          subtitle: l10n.profileMyActivitiesSubtitle,
+          onTap: () => context.push('/me/activities'),
+        ),
+        SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
+        ProfileSectionHeading(title: l10n.profilePreferencesTitle),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        _ProfileMenuTile(
+          icon: Icons.notifications_none_rounded,
+          title: l10n.profileNotificationsRowTitle,
+          subtitle: l10n.profileNotificationsRowSubtitle,
+          onTap: () => context.push('/profile/notifications'),
+        ),
+        _ProfileMenuTile(
+          icon: Icons.lock_outline_rounded,
+          title: l10n.profileSecurityRowTitle,
+          subtitle: l10n.profileSecurityRowSubtitle,
+          onTap: () => context.push('/profile/security'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ForeignProfileSections extends StatelessWidget {
+  const _ForeignProfileSections({required this.isGuideProfile});
+
+  final bool isGuideProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProfileSectionHeading(
+          title: l10n.profileHostedActivitiesTitle,
+          kicker: isGuideProfile ? l10n.profileGuideTitle : null,
+        ),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        _PlaceholderShowcaseCard(
+          title: l10n.profileUnavailableTitle,
+          subtitle: l10n.profileHostedActivitiesUnavailable,
+        ),
+        SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
+        ProfileSectionHeading(title: l10n.profileBlogsTitle),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        _PlaceholderShowcaseCard(
+          title: l10n.profileUnavailableTitle,
+          subtitle: l10n.profileBlogsUnavailable,
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileMenuTile extends StatelessWidget {
+  const _ProfileMenuTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+    this.disabled = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  final bool disabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveDisabled = disabled || onTap == null;
+    return Opacity(
+      opacity: effectiveDisabled ? 0.68 : 1,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: profileScaled(context, 14, min: 10, max: 14),
+        ),
+        child: InkWell(
+          onTap: effectiveDisabled ? null : onTap,
+          borderRadius: BorderRadius.circular(
+            profileScaled(context, 22, min: 18, max: 22),
+          ),
+          child: Ink(
+            padding: EdgeInsets.symmetric(
+              horizontal: profileScaled(context, 8, min: 4, max: 8),
+              vertical: profileScaled(context, 4, min: 2, max: 4),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: profileScaled(context, 44, min: 40, max: 48),
+                  height: profileScaled(context, 44, min: 40, max: 48),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(
+                      alpha: effectiveDisabled ? 0.06 : 0.12,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: effectiveDisabled
+                        ? profileDisabled
+                        : AppColors.accent,
+                  ),
+                ),
+                SizedBox(width: profileScaled(context, 14, min: 12, max: 14)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: effectiveDisabled
+                              ? profileDisabled
+                              : AppColors.textPrimary,
+                          fontSize: profileScaled(
+                            context,
+                            17,
+                            min: 15,
+                            max: 18,
+                          ),
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      SizedBox(
+                        height: profileScaled(context, 4, min: 3, max: 4),
+                      ),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: effectiveDisabled
+                              ? profileDisabled
+                              : profileTextMuted,
+                          fontSize: profileScaled(
+                            context,
+                            13,
+                            min: 12,
+                            max: 13,
+                          ),
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: effectiveDisabled ? profileDisabled : profileTextMuted,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlaceholderShowcaseCard extends StatelessWidget {
+  const _PlaceholderShowcaseCard({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
+      decoration: profileCardDecoration(
+        context,
+        disabled: true,
+        radius: profileScaled(context, 22, min: 18, max: 22),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: profileScaled(context, 46, min: 40, max: 48),
+            height: profileScaled(context, 46, min: 40, max: 48),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(
+                profileScaled(context, 14, min: 12, max: 14),
+              ),
+            ),
+            child: Icon(
+              Icons.hourglass_disabled_outlined,
+              color: profileDisabled,
+              size: profileScaled(context, 22, min: 18, max: 22),
+            ),
+          ),
+          SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: profileTextSoft,
+                    fontSize: profileScaled(context, 16, min: 14, max: 16),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: profileScaled(context, 6, min: 4, max: 6)),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: profileDisabled,
+                    fontSize: profileScaled(context, 13, min: 12, max: 13),
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileExtras {
+  const _ProfileExtras({this.guide, this.avatarUrl});
+
+  final GuideProfileVm? guide;
+  final String? avatarUrl;
 }

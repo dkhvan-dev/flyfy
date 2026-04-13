@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -169,6 +170,23 @@ func (c *Client) CreatePresignedDownload(ctx context.Context, bucket, objectKey 
 	}
 
 	return presigned.URL, nil
+}
+
+func (c *Client) GetObject(ctx context.Context, bucket, objectKey string) (io.ReadCloser, string, error) {
+	out, err := c.s3Client.GetObject(ctx, &awss3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(objectKey),
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("get object: %w", err)
+	}
+
+	contentType := ""
+	if out.ContentType != nil {
+		contentType = strings.TrimSpace(*out.ContentType)
+	}
+
+	return out.Body, contentType, nil
 }
 
 func (c *Client) DeleteObject(ctx context.Context, bucket, objectKey string) error {

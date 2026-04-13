@@ -382,6 +382,540 @@ abstract class AppLocalizations {
   /// **'Become a guide'**
   String get becomeGuideButton;
 
+  /// No description provided for @guideVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide application'**
+  String get guideVerificationTitle;
+
+  /// No description provided for @guideVerificationStepCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String guideVerificationStepCounter(Object current, Object total);
+
+  /// No description provided for @guideVerificationStepIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get guideVerificationStepIdentity;
+
+  /// No description provided for @guideVerificationStepDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get guideVerificationStepDocument;
+
+  /// No description provided for @guideVerificationStepLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'Credentials'**
+  String get guideVerificationStepLicense;
+
+  /// No description provided for @guideVerificationStepSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get guideVerificationStepSubmit;
+
+  /// No description provided for @guideVerificationHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your guide status'**
+  String get guideVerificationHeroTitle;
+
+  /// No description provided for @guideVerificationHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the form and upload your documents so we can review your profile and unlock professional guide features.'**
+  String get guideVerificationHeroSubtitle;
+
+  /// No description provided for @guideVerificationIdentitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic information'**
+  String get guideVerificationIdentitySection;
+
+  /// No description provided for @guideVerificationFullNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get guideVerificationFullNameLabel;
+
+  /// No description provided for @guideVerificationFullNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Exactly as shown on your ID'**
+  String get guideVerificationFullNameHint;
+
+  /// No description provided for @guideVerificationBirthDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of birth'**
+  String get guideVerificationBirthDateLabel;
+
+  /// No description provided for @guideVerificationBirthDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'DD.MM.YYYY'**
+  String get guideVerificationBirthDateHint;
+
+  /// No description provided for @guideVerificationNationalityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nationality'**
+  String get guideVerificationNationalityLabel;
+
+  /// No description provided for @guideVerificationSelectCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Select country'**
+  String get guideVerificationSelectCountry;
+
+  /// No description provided for @guideVerificationIdentityNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'We use these details only to verify your identity and guide status.'**
+  String get guideVerificationIdentityNotice;
+
+  /// No description provided for @guideVerificationContinueToDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to documents'**
+  String get guideVerificationContinueToDocuments;
+
+  /// No description provided for @guideVerificationDocumentTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Document type'**
+  String get guideVerificationDocumentTypeLabel;
+
+  /// No description provided for @guideVerificationPassport.
+  ///
+  /// In en, this message translates to:
+  /// **'Passport'**
+  String get guideVerificationPassport;
+
+  /// No description provided for @guideVerificationNationalId.
+  ///
+  /// In en, this message translates to:
+  /// **'National ID'**
+  String get guideVerificationNationalId;
+
+  /// No description provided for @guideVerificationUploadPhotoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload an identity document'**
+  String get guideVerificationUploadPhotoTitle;
+
+  /// No description provided for @guideVerificationUploadPhotoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide a clear photo or scan of the front side of your document.'**
+  String get guideVerificationUploadPhotoSubtitle;
+
+  /// No description provided for @guideVerificationNoGlare.
+  ///
+  /// In en, this message translates to:
+  /// **'No glare'**
+  String get guideVerificationNoGlare;
+
+  /// No description provided for @guideVerificationNoGlareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Take the photo in even light so every detail remains readable.'**
+  String get guideVerificationNoGlareHint;
+
+  /// No description provided for @guideVerificationFullFrame.
+  ///
+  /// In en, this message translates to:
+  /// **'Full frame'**
+  String get guideVerificationFullFrame;
+
+  /// No description provided for @guideVerificationFullFrameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'All edges of the document should be visible in the image.'**
+  String get guideVerificationFullFrameHint;
+
+  /// No description provided for @guideVerificationTapToCapturePassport.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to choose a document file'**
+  String get guideVerificationTapToCapturePassport;
+
+  /// No description provided for @guideVerificationFileFormatsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'JPG, PNG, PDF up to 10 MB'**
+  String get guideVerificationFileFormatsShort;
+
+  /// No description provided for @guideVerificationChooseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get guideVerificationChooseFile;
+
+  /// No description provided for @guideVerificationDocumentConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'I confirm that this document is valid, not expired, and the photo provided is clearly legible for automated verification systems.'**
+  String get guideVerificationDocumentConfirm;
+
+  /// No description provided for @guideVerificationVerifyContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue verification'**
+  String get guideVerificationVerifyContinue;
+
+  /// No description provided for @guideVerificationCredentialsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Credentials and license'**
+  String get guideVerificationCredentialsTitle;
+
+  /// No description provided for @guideVerificationCredentialsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us which document confirms your experience and right to work as a guide.'**
+  String get guideVerificationCredentialsSubtitle;
+
+  /// No description provided for @guideVerificationLicenseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification document type'**
+  String get guideVerificationLicenseLabel;
+
+  /// No description provided for @guideVerificationSelectLicenseType.
+  ///
+  /// In en, this message translates to:
+  /// **'Select document type'**
+  String get guideVerificationSelectLicenseType;
+
+  /// No description provided for @guideVerificationOfficialTourGuideLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'Official tour guide license'**
+  String get guideVerificationOfficialTourGuideLicense;
+
+  /// No description provided for @guideVerificationCityGuidePermit.
+  ///
+  /// In en, this message translates to:
+  /// **'City guide permit'**
+  String get guideVerificationCityGuidePermit;
+
+  /// No description provided for @guideVerificationMuseumAccreditation.
+  ///
+  /// In en, this message translates to:
+  /// **'Museum or venue accreditation'**
+  String get guideVerificationMuseumAccreditation;
+
+  /// No description provided for @guideVerificationUploadLicenseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload the supporting document'**
+  String get guideVerificationUploadLicenseTitle;
+
+  /// No description provided for @guideVerificationUploadLicenseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A certificate, license, or other professional document works here.'**
+  String get guideVerificationUploadLicenseSubtitle;
+
+  /// No description provided for @guideVerificationAdditionalCertifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional skills'**
+  String get guideVerificationAdditionalCertifications;
+
+  /// No description provided for @guideVerificationUploadFirstAidTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a first aid certificate'**
+  String get guideVerificationUploadFirstAidTitle;
+
+  /// No description provided for @guideVerificationUploadFirstAidSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: add a valid certificate to strengthen your application.'**
+  String get guideVerificationUploadFirstAidSubtitle;
+
+  /// No description provided for @guideVerificationUploadLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a language certificate'**
+  String get guideVerificationUploadLanguageTitle;
+
+  /// No description provided for @guideVerificationUploadLanguageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: add a certificate that confirms your language proficiency.'**
+  String get guideVerificationUploadLanguageSubtitle;
+
+  /// No description provided for @guideVerificationFirstAid.
+  ///
+  /// In en, this message translates to:
+  /// **'First aid'**
+  String get guideVerificationFirstAid;
+
+  /// No description provided for @guideVerificationFirstAidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You have current first aid training or a valid certificate.'**
+  String get guideVerificationFirstAidHint;
+
+  /// No description provided for @guideVerificationLanguageProficiency.
+  ///
+  /// In en, this message translates to:
+  /// **'Foreign languages'**
+  String get guideVerificationLanguageProficiency;
+
+  /// No description provided for @guideVerificationLanguageProficiencyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can host activities and tours in more than one language.'**
+  String get guideVerificationLanguageProficiencyHint;
+
+  /// No description provided for @guideVerificationTimelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review timeline'**
+  String get guideVerificationTimelineTitle;
+
+  /// No description provided for @guideVerificationTimelineText.
+  ///
+  /// In en, this message translates to:
+  /// **'We usually review applications within 1 to 3 business days. If we need more information, you will see it in your profile.'**
+  String get guideVerificationTimelineText;
+
+  /// No description provided for @guideVerificationReviewHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review your details before sending'**
+  String get guideVerificationReviewHeroTitle;
+
+  /// No description provided for @guideVerificationReviewHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure everything is correct. Once submitted, the application goes to review.'**
+  String get guideVerificationReviewHeroSubtitle;
+
+  /// No description provided for @guideVerificationReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Application summary'**
+  String get guideVerificationReviewTitle;
+
+  /// No description provided for @guideVerificationEditInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get guideVerificationEditInfo;
+
+  /// No description provided for @guideVerificationIdentityDocumentCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity document'**
+  String get guideVerificationIdentityDocumentCard;
+
+  /// No description provided for @guideVerificationProfessionalLicenseCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional document'**
+  String get guideVerificationProfessionalLicenseCard;
+
+  /// No description provided for @guideVerificationFirstAidCertificateCard.
+  ///
+  /// In en, this message translates to:
+  /// **'First aid certificate'**
+  String get guideVerificationFirstAidCertificateCard;
+
+  /// No description provided for @guideVerificationLanguageCertificateCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Language certificate'**
+  String get guideVerificationLanguageCertificateCard;
+
+  /// No description provided for @guideVerificationVerifiedUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'File uploaded'**
+  String get guideVerificationVerifiedUpload;
+
+  /// No description provided for @guideVerificationTermsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation'**
+  String get guideVerificationTermsTitle;
+
+  /// No description provided for @guideVerificationTermsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'I confirm that the information is accurate'**
+  String get guideVerificationTermsHeading;
+
+  /// No description provided for @guideVerificationTermsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'I understand that FlyFy may reject the application if any information is inaccurate or the uploaded documents are not suitable.'**
+  String get guideVerificationTermsBody;
+
+  /// No description provided for @guideVerificationAgreement.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to document review and data processing for guide status verification.'**
+  String get guideVerificationAgreement;
+
+  /// No description provided for @guideVerificationSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit application'**
+  String get guideVerificationSubmit;
+
+  /// No description provided for @guideVerificationReviewNote.
+  ///
+  /// In en, this message translates to:
+  /// **'After submission, you can track the application status in your profile.'**
+  String get guideVerificationReviewNote;
+
+  /// No description provided for @guideVerificationPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your application is already under review'**
+  String get guideVerificationPendingTitle;
+
+  /// No description provided for @guideVerificationPendingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We received your documents and are reviewing them now. You will see an update in your profile as soon as the status changes.'**
+  String get guideVerificationPendingSubtitle;
+
+  /// No description provided for @guideVerificationActiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide status is already verified'**
+  String get guideVerificationActiveTitle;
+
+  /// No description provided for @guideVerificationActiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is already active as a guide profile. No need to submit anything else.'**
+  String get guideVerificationActiveSubtitle;
+
+  /// No description provided for @guideVerificationRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your application needs updates'**
+  String get guideVerificationRejectedTitle;
+
+  /// No description provided for @guideVerificationRejectedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The previous application was rejected. You can update the information and submit your documents again.'**
+  String get guideVerificationRejectedSubtitle;
+
+  /// No description provided for @guideVerificationDraftSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a saved draft application. Continue with the current data and send it for review when ready.'**
+  String get guideVerificationDraftSubtitle;
+
+  /// No description provided for @guideVerificationViewApplicationButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View application'**
+  String get guideVerificationViewApplicationButton;
+
+  /// No description provided for @guideVerificationContinueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get guideVerificationContinueButton;
+
+  /// No description provided for @guideVerificationBackToProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to profile'**
+  String get guideVerificationBackToProfile;
+
+  /// No description provided for @guideVerificationFullNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your full name'**
+  String get guideVerificationFullNameRequired;
+
+  /// No description provided for @guideVerificationFullNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter both first and last name'**
+  String get guideVerificationFullNameInvalid;
+
+  /// No description provided for @guideVerificationBirthDateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your date of birth'**
+  String get guideVerificationBirthDateRequired;
+
+  /// No description provided for @guideVerificationBirthDateInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid date in DD.MM.YYYY format'**
+  String get guideVerificationBirthDateInvalid;
+
+  /// No description provided for @guideVerificationNationalityRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your nationality'**
+  String get guideVerificationNationalityRequired;
+
+  /// No description provided for @guideVerificationIdentityFileRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your identity document'**
+  String get guideVerificationIdentityFileRequired;
+
+  /// No description provided for @guideVerificationProfessionalFileRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your professional document'**
+  String get guideVerificationProfessionalFileRequired;
+
+  /// No description provided for @guideVerificationConfirmationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm that the document is valid and the photo is clearly legible'**
+  String get guideVerificationConfirmationRequired;
+
+  /// No description provided for @guideVerificationAgreementRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to agree to the document review'**
+  String get guideVerificationAgreementRequired;
+
+  /// No description provided for @guideVerificationUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload file'**
+  String get guideVerificationUploadFailed;
+
+  /// No description provided for @guideVerificationUnsupportedFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Only JPG, PNG, WEBP, and PDF are supported'**
+  String get guideVerificationUnsupportedFormat;
+
+  /// No description provided for @guideVerificationSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit application'**
+  String get guideVerificationSubmitFailed;
+
+  /// No description provided for @guideVerificationDocumentsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Both an identity document and a professional document are required'**
+  String get guideVerificationDocumentsRequired;
+
   /// No description provided for @logoutButton.
   ///
   /// In en, this message translates to:
@@ -586,6 +1120,12 @@ abstract class AppLocalizations {
   /// **'Failed to save profile'**
   String get profileSaveFailed;
 
+  /// No description provided for @profileDisplayNameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This display name is already taken'**
+  String get profileDisplayNameTaken;
+
   /// No description provided for @firstNameLabel.
   ///
   /// In en, this message translates to:
@@ -633,6 +1173,582 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'To continue, enter your first and last name in your profile. This helps reduce fake accounts and increases trust between users.'**
   String get profileRequiredDescription;
+
+  /// No description provided for @myProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Profile'**
+  String get myProfileTitle;
+
+  /// No description provided for @profileLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile link copied'**
+  String get profileLinkCopied;
+
+  /// No description provided for @profileVerifiedExplorer.
+  ///
+  /// In en, this message translates to:
+  /// **'VERIFIED GUIDE'**
+  String get profileVerifiedExplorer;
+
+  /// No description provided for @profileGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FlyFy Guide'**
+  String get profileGuideTitle;
+
+  /// No description provided for @profileEmptyBioPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no public description yet. Once the profile is filled in, a short bio will appear here.'**
+  String get profileEmptyBioPlaceholder;
+
+  /// No description provided for @profileBecomeGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Become a guide'**
+  String get profileBecomeGuideTitle;
+
+  /// No description provided for @profileBecomeGuideSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Soon you will be able to apply and unlock a professional guide profile here.'**
+  String get profileBecomeGuideSubtitle;
+
+  /// No description provided for @profileActivitiesStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get profileActivitiesStat;
+
+  /// No description provided for @profileHostedCompletedStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed as host'**
+  String get profileHostedCompletedStat;
+
+  /// No description provided for @profileJoinedCompletedStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed as participant'**
+  String get profileJoinedCompletedStat;
+
+  /// No description provided for @profileReviewsStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get profileReviewsStat;
+
+  /// No description provided for @profileBlogsStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Blogs'**
+  String get profileBlogsStat;
+
+  /// No description provided for @profileFollowersStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers'**
+  String get profileFollowersStat;
+
+  /// No description provided for @profileJourneyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My journey'**
+  String get profileJourneyTitle;
+
+  /// No description provided for @profileSavedItemsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved items'**
+  String get profileSavedItemsTitle;
+
+  /// No description provided for @profileSavedItemsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved activities, places, and collections will appear here later.'**
+  String get profileSavedItemsSubtitle;
+
+  /// No description provided for @profileBookingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My bookings'**
+  String get profileBookingsTitle;
+
+  /// No description provided for @profileBookingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders and confirmed bookings will appear here soon.'**
+  String get profileBookingsSubtitle;
+
+  /// No description provided for @profileMyActivitiesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your activities and track your participation.'**
+  String get profileMyActivitiesSubtitle;
+
+  /// No description provided for @profilePreferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get profilePreferencesTitle;
+
+  /// No description provided for @profileNotificationsRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get profileNotificationsRowTitle;
+
+  /// No description provided for @profileNotificationsRowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Push, email, and SMS updates for your activity flow.'**
+  String get profileNotificationsRowSubtitle;
+
+  /// No description provided for @profileSecurityRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Security & data'**
+  String get profileSecurityRowTitle;
+
+  /// No description provided for @profileSecurityRowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN, biometrics, and the protected local session.'**
+  String get profileSecurityRowSubtitle;
+
+  /// No description provided for @profileHostedActivitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hosted activities'**
+  String get profileHostedActivitiesTitle;
+
+  /// No description provided for @profileHostedActivitiesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Public hosted activities will appear here once the backend exposes the author\'s public showcase.'**
+  String get profileHostedActivitiesUnavailable;
+
+  /// No description provided for @profileBlogsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Blogs'**
+  String get profileBlogsTitle;
+
+  /// No description provided for @profileBlogsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Public notes and travel stories are not available in the app yet.'**
+  String get profileBlogsUnavailable;
+
+  /// No description provided for @profileUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get profileUnavailableTitle;
+
+  /// No description provided for @profileFollowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow'**
+  String get profileFollowAction;
+
+  /// No description provided for @profileMessageAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get profileMessageAction;
+
+  /// No description provided for @profileSettingsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get profileSettingsPageTitle;
+
+  /// No description provided for @profileSaveChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get profileSaveChangesButton;
+
+  /// No description provided for @profileDeactivateAccountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate account'**
+  String get profileDeactivateAccountLabel;
+
+  /// No description provided for @profileSettingsAvatarDisabledHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photo editing will be available in a future update.'**
+  String get profileSettingsAvatarDisabledHint;
+
+  /// No description provided for @profileSettingsAvatarUploadHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the avatar or edit icon to choose a profile photo.'**
+  String get profileSettingsAvatarUploadHint;
+
+  /// No description provided for @profileSettingsAvatarUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading your new profile photo...'**
+  String get profileSettingsAvatarUploading;
+
+  /// No description provided for @profileSettingsAvatarUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload profile photo'**
+  String get profileSettingsAvatarUploadFailed;
+
+  /// No description provided for @profileSettingsAvatarUnsupportedFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photo must be JPG, PNG, or WEBP'**
+  String get profileSettingsAvatarUnsupportedFormat;
+
+  /// No description provided for @profileSettingsDescriptionSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get profileSettingsDescriptionSection;
+
+  /// No description provided for @profileSettingsDetailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile details'**
+  String get profileSettingsDetailsSection;
+
+  /// No description provided for @profileSettingsServiceCitiesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Service cities'**
+  String get profileSettingsServiceCitiesSection;
+
+  /// No description provided for @profileSettingsServiceCitiesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Public service cities are not supported by the backend yet, so this block stays inactive for now.'**
+  String get profileSettingsServiceCitiesUnavailable;
+
+  /// No description provided for @profileSettingsAddNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new'**
+  String get profileSettingsAddNew;
+
+  /// No description provided for @profileSettingsSecuritySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get profileSettingsSecuritySection;
+
+  /// No description provided for @profileSettingsSecurityPinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN & biometrics'**
+  String get profileSettingsSecurityPinTitle;
+
+  /// No description provided for @profileSettingsSecurityPinSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the security screen to manage your local sign-in protection.'**
+  String get profileSettingsSecurityPinSubtitle;
+
+  /// No description provided for @profileAccountSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get profileAccountSectionTitle;
+
+  /// No description provided for @profileSettingsEditSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your name, photo, bio, and core profile details.'**
+  String get profileSettingsEditSubtitle;
+
+  /// No description provided for @profileOverviewSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile overview'**
+  String get profileOverviewSectionTitle;
+
+  /// No description provided for @profileMoreSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get profileMoreSectionTitle;
+
+  /// No description provided for @profileGuideWorkspaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide workspace'**
+  String get profileGuideWorkspaceTitle;
+
+  /// No description provided for @profileGuideWorkspaceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional guide tools are not available in the mobile app yet.'**
+  String get profileGuideWorkspaceSubtitle;
+
+  /// No description provided for @profileSupportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & support'**
+  String get profileSupportTitle;
+
+  /// No description provided for @profileSupportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help center and support requests will be added later.'**
+  String get profileSupportSubtitle;
+
+  /// No description provided for @profileNotificationsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get profileNotificationsPageTitle;
+
+  /// No description provided for @profileNotificationsHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay in sync'**
+  String get profileNotificationsHeroTitle;
+
+  /// No description provided for @profileNotificationsHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how FlyFy keeps you updated about activity changes, participation, and new opportunities.'**
+  String get profileNotificationsHeroSubtitle;
+
+  /// No description provided for @profileNotificationsActivitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities & participation'**
+  String get profileNotificationsActivitySection;
+
+  /// No description provided for @profileNotificationsDiscoverySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery & offers'**
+  String get profileNotificationsDiscoverySection;
+
+  /// No description provided for @profileNotificationsPushTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications'**
+  String get profileNotificationsPushTitle;
+
+  /// No description provided for @profileNotificationsPushSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Instant updates for activities, status changes, and new messages.'**
+  String get profileNotificationsPushSubtitle;
+
+  /// No description provided for @profileNotificationsEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email notifications'**
+  String get profileNotificationsEmailTitle;
+
+  /// No description provided for @profileNotificationsEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmations, reminders, and useful updates sent to your inbox.'**
+  String get profileNotificationsEmailSubtitle;
+
+  /// No description provided for @profileNotificationsSmsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS notifications'**
+  String get profileNotificationsSmsTitle;
+
+  /// No description provided for @profileNotificationsSmsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Short critical updates and confirmations by text message.'**
+  String get profileNotificationsSmsSubtitle;
+
+  /// No description provided for @profileNotificationsMarketingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections & offers'**
+  String get profileNotificationsMarketingTitle;
+
+  /// No description provided for @profileNotificationsMarketingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel inspiration, place collections, and special FlyFy offers.'**
+  String get profileNotificationsMarketingSubtitle;
+
+  /// No description provided for @profileNotificationsDarkModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark mode'**
+  String get profileNotificationsDarkModeTitle;
+
+  /// No description provided for @profileNotificationsDarkModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This setting will arrive later. For now the app uses the current product palette.'**
+  String get profileNotificationsDarkModeSubtitle;
+
+  /// No description provided for @profileNotificationsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update notification settings'**
+  String get profileNotificationsSaveFailed;
+
+  /// No description provided for @profileSecurityPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Security & data'**
+  String get profileSecurityPageTitle;
+
+  /// No description provided for @profileSecurityHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect access'**
+  String get profileSecurityHeroTitle;
+
+  /// No description provided for @profileSecurityHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This section combines local unlock methods and upcoming account protection tools.'**
+  String get profileSecurityHeroSubtitle;
+
+  /// No description provided for @profileSecurityLocalAccessSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Local access'**
+  String get profileSecurityLocalAccessSection;
+
+  /// No description provided for @profileSecurityAccountSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Account protection'**
+  String get profileSecurityAccountSection;
+
+  /// No description provided for @profileSecurityDataSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Data & privacy'**
+  String get profileSecurityDataSection;
+
+  /// No description provided for @profileSecurityPinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App PIN'**
+  String get profileSecurityPinTitle;
+
+  /// No description provided for @profileSecurityPinEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A PIN is configured and is used for quick app unlock.'**
+  String get profileSecurityPinEnabledSubtitle;
+
+  /// No description provided for @profileSecurityPinMissingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No PIN is configured yet. The app will ask to create one after the next authentication.'**
+  String get profileSecurityPinMissingSubtitle;
+
+  /// No description provided for @profileSecurityBiometricTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric unlock'**
+  String get profileSecurityBiometricTitle;
+
+  /// No description provided for @profileSecurityBiometricSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow app unlock with Face ID, fingerprint, or other supported biometrics.'**
+  String get profileSecurityBiometricSubtitle;
+
+  /// No description provided for @profileSecurityBiometricNeedsPin.
+  ///
+  /// In en, this message translates to:
+  /// **'An app PIN must be configured first.'**
+  String get profileSecurityBiometricNeedsPin;
+
+  /// No description provided for @profileSecurityBiometricUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometrics are not available or not configured on this device.'**
+  String get profileSecurityBiometricUnavailable;
+
+  /// No description provided for @profileSecurityProtectedSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected session'**
+  String get profileSecurityProtectedSessionTitle;
+
+  /// No description provided for @profileSecurityProtectedSessionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A local session is stored. After restart, the app can be unlocked quickly.'**
+  String get profileSecurityProtectedSessionSubtitle;
+
+  /// No description provided for @profileSecurityNoStoredSessionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No active stored session was found. Protection will turn on automatically after the next sign in.'**
+  String get profileSecurityNoStoredSessionSubtitle;
+
+  /// No description provided for @profileSecurityTwoFactorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional verification'**
+  String get profileSecurityTwoFactorTitle;
+
+  /// No description provided for @profileSecurityTwoFactorSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra sign-in checks and sensitive action confirmation will be added later.'**
+  String get profileSecurityTwoFactorSubtitle;
+
+  /// No description provided for @profileSecurityDataExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data export'**
+  String get profileSecurityDataExportTitle;
+
+  /// No description provided for @profileSecurityDataExportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting your data is not implemented on the backend yet.'**
+  String get profileSecurityDataExportSubtitle;
+
+  /// No description provided for @profileSecurityDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get profileSecurityDeleteTitle;
+
+  /// No description provided for @profileSecurityDeleteSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Managed account deletion will be added after the backend flow is ready.'**
+  String get profileSecurityDeleteSubtitle;
+
+  /// No description provided for @profileStatusEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get profileStatusEnabled;
+
+  /// No description provided for @profileStatusDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get profileStatusDisabled;
+
+  /// No description provided for @profileDisabledSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Soon'**
+  String get profileDisabledSoon;
 
   /// No description provided for @laterButton.
   ///

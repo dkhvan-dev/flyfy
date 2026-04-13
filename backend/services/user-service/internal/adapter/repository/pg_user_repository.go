@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/app"
@@ -227,6 +228,33 @@ func (r *PGUserRepository) GetUserBySubject(ctx context.Context, subject string)
 	return &item, nil
 }
 
+func (r *PGUserRepository) IsDisplayNameTaken(
+	ctx context.Context,
+	displayName string,
+	excludeUserID uuid.UUID,
+) (bool, error) {
+	displayName = strings.TrimSpace(displayName)
+	if displayName == "" {
+		return false, nil
+	}
+
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM user_profiles
+			WHERE LOWER(BTRIM(display_name)) = LOWER(BTRIM($1))
+			  AND user_id <> $2
+		)
+	`
+
+	var exists bool
+	if err := r.pool.QueryRow(ctx, query, displayName, excludeUserID).Scan(&exists); err != nil {
+		return false, fmt.Errorf("check display name existence: %w", err)
+	}
+
+	return exists, nil
+}
+
 func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.UUID) (*model.UserProfile, error) {
 	const query = `
 		SELECT
@@ -415,6 +443,10 @@ func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.Use
 		profile.IsProfileCompleted,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "uq_user_profiles_display_name_ci" {
+			return app.ErrDisplayNameAlreadyTaken
+		}
 		return fmt.Errorf("update profile: %w", err)
 	}
 
