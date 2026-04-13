@@ -3314,7 +3314,6 @@ bool _isHomePublishedActivity(String status) {
     case 'ENROLLMENT_OPEN':
     case 'FULL':
     case 'STARTED':
-    case 'COMPLETED':
       return true;
     default:
       return false;
