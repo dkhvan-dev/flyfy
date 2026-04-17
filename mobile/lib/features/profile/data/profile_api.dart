@@ -51,6 +51,14 @@ class ProfileApi {
     return UserProfileVm.fromJson(data);
   }
 
+  Future<void> followUser(String userId) async {
+    await _apiClient.followUser(userId);
+  }
+
+  Future<void> unfollowUser(String userId) async {
+    await _apiClient.unfollowUser(userId);
+  }
+
   Future<UserSettingsVm> updateMeSettings({
     bool? notificationsPushEnabled,
     bool? notificationsEmailEnabled,

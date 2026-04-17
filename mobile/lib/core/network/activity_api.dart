@@ -78,6 +78,7 @@ class ActivityApi {
   Future<List<ActivityListItemVm>> getActivities({
     int limit = 20,
     int offset = 0,
+    String? hostUserId,
     String? status,
     String? categorySlug,
     String? cityName,
@@ -88,6 +89,7 @@ class ActivityApi {
       queryParameters: {
         'limit': limit,
         'offset': offset,
+        if ((hostUserId ?? '').trim().isNotEmpty) 'hostUserId': hostUserId,
         if ((status ?? '').trim().isNotEmpty) 'status': status,
         if ((categorySlug ?? '').trim().isNotEmpty)
           'categorySlug': categorySlug,
@@ -228,6 +230,38 @@ class ActivityApi {
     );
 
     return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Count completed hosted activities for any user via the public endpoint.
+  Future<int> countCompletedActivitiesForUser(String userId) async {
+    var offset = 0;
+    var total = 0;
+    var hasMore = true;
+
+    while (hasMore) {
+      final response = await _apiClient.dio.get(
+        '/activities',
+        queryParameters: {
+          'hostUserId': userId,
+          'status': 'COMPLETED',
+          'limit': 100,
+          'offset': offset,
+        },
+        options: Options(extra: const {'requiresAuth': false}),
+      );
+
+      final data = response.data;
+      final items =
+          (data is Map<String, dynamic>
+              ? data['items'] as List<dynamic>?
+              : null) ??
+          const [];
+      total += items.length;
+      hasMore = data is Map<String, dynamic> && data['hasMore'] == true;
+      offset += items.length;
+    }
+
+    return total;
   }
 
   Future<ActivityCompletionStatsVm> getMyCompletionStats({

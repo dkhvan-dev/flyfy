@@ -225,6 +225,8 @@
   "profileBlogsUnavailable": "Public notes and travel stories are not available in the app yet.",
   "profileUnavailableTitle": "Coming soon",
   "profileFollowAction": "Follow",
+  "profileFollowingAction": "Following",
+  "profileFollowUpdateFailed": "Failed to update follow status",
   "profileMessageAction": "Message",
   "profileSettingsPageTitle": "Settings",
   "profileSaveChangesButton": "Save changes",

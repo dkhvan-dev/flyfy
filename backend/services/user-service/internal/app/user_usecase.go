@@ -20,6 +20,12 @@ type UserAggregate struct {
 	Settings   *model.UserSettings
 	Reputation *model.UserReputation
 	Roles      []*model.UserSystemRole
+	Followers  UserFollowSummary
+}
+
+type UserFollowSummary struct {
+	FollowersCount int
+	IsFollowedByMe bool
 }
 
 type UserUseCase struct {
@@ -117,6 +123,37 @@ func (u *UserUseCase) GetOrCreateBySubject(ctx context.Context, input InitUserIn
 }
 
 func (u *UserUseCase) GetAggregateByUserID(ctx context.Context, userID uuid.UUID) (*UserAggregate, error) {
+	return u.getAggregateByUserIDForViewer(ctx, userID, nil)
+}
+
+func (u *UserUseCase) GetAggregateByUserIDForSubject(
+	ctx context.Context,
+	userID uuid.UUID,
+	viewerSubjectID string,
+) (*UserAggregate, error) {
+	viewerSubjectID = strings.TrimSpace(viewerSubjectID)
+	if viewerSubjectID == "" {
+		return u.getAggregateByUserIDForViewer(ctx, userID, nil)
+	}
+
+	viewer, err := u.repo.GetUserBySubject(ctx, viewerSubjectID)
+	if err != nil {
+		return nil, fmt.Errorf("get viewer by subject: %w", err)
+	}
+
+	var viewerUserID *uuid.UUID
+	if viewer != nil && !viewer.IsDeleted {
+		viewerUserID = &viewer.ID
+	}
+
+	return u.getAggregateByUserIDForViewer(ctx, userID, viewerUserID)
+}
+
+func (u *UserUseCase) getAggregateByUserIDForViewer(
+	ctx context.Context,
+	userID uuid.UUID,
+	viewerUserID *uuid.UUID,
+) (*UserAggregate, error) {
 	if userID == uuid.Nil {
 		return nil, ErrInvalidUserID
 	}
@@ -158,16 +195,34 @@ func (u *UserUseCase) GetAggregateByUserID(ctx context.Context, userID uuid.UUID
 		return nil, fmt.Errorf("list roles by user id: %w", err)
 	}
 
+	followersCount, err := u.repo.CountFollowersByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("count followers by user id: %w", err)
+	}
+
+	isFollowedByMe := false
+	if viewerUserID != nil && *viewerUserID != uuid.Nil && *viewerUserID != userID {
+		isFollowedByMe, err = u.repo.IsFollowing(ctx, *viewerUserID, userID)
+		if err != nil {
+			return nil, fmt.Errorf("check follow relation: %w", err)
+		}
+	}
+
 	return &UserAggregate{
 		User:       user,
 		Profile:    profile,
 		Settings:   settings,
 		Reputation: reputation,
 		Roles:      roles,
+		Followers: UserFollowSummary{
+			FollowersCount: followersCount,
+			IsFollowedByMe: isFollowedByMe,
+		},
 	}, nil
 }
 
 func (u *UserUseCase) GetAggregateBySubject(ctx context.Context, subjectID string) (*UserAggregate, error) {
+	subjectID = strings.TrimSpace(subjectID)
 	if subjectID == "" {
 		return nil, ErrInvalidSubjectID
 	}
@@ -180,7 +235,53 @@ func (u *UserUseCase) GetAggregateBySubject(ctx context.Context, subjectID strin
 		return nil, ErrUserNotFound
 	}
 
-	return u.GetAggregateByUserID(ctx, user.ID)
+	return u.getAggregateByUserIDForViewer(ctx, user.ID, &user.ID)
+}
+
+func (u *UserUseCase) FollowUser(
+	ctx context.Context,
+	followerUserID uuid.UUID,
+	followedUserID uuid.UUID,
+) error {
+	if followerUserID == uuid.Nil || followedUserID == uuid.Nil {
+		return ErrInvalidUserID
+	}
+	if followerUserID == followedUserID {
+		return ErrCannotFollowSelf
+	}
+
+	followedUser, err := u.repo.GetUserByID(ctx, followedUserID)
+	if err != nil {
+		return fmt.Errorf("get followed user by id: %w", err)
+	}
+	if followedUser == nil || followedUser.IsDeleted {
+		return ErrUserNotFound
+	}
+
+	if err = u.repo.FollowUser(ctx, followerUserID, followedUserID); err != nil {
+		return fmt.Errorf("follow user: %w", err)
+	}
+
+	return nil
+}
+
+func (u *UserUseCase) UnfollowUser(
+	ctx context.Context,
+	followerUserID uuid.UUID,
+	followedUserID uuid.UUID,
+) error {
+	if followerUserID == uuid.Nil || followedUserID == uuid.Nil {
+		return ErrInvalidUserID
+	}
+	if followerUserID == followedUserID {
+		return ErrCannotFollowSelf
+	}
+
+	if err := u.repo.UnfollowUser(ctx, followerUserID, followedUserID); err != nil {
+		return fmt.Errorf("unfollow user: %w", err)
+	}
+
+	return nil
 }
 
 type UpdateProfileInput struct {

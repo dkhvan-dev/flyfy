@@ -1354,6 +1354,18 @@ abstract class AppLocalizations {
   /// **'Follow'**
   String get profileFollowAction;
 
+  /// No description provided for @profileFollowingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get profileFollowingAction;
+
+  /// No description provided for @profileFollowUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update follow status'**
+  String get profileFollowUpdateFailed;
+
   /// No description provided for @profileMessageAction.
   ///
   /// In en, this message translates to:

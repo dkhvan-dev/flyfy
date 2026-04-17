@@ -706,6 +706,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileFollowAction => 'Жазылу';
 
   @override
+  String get profileFollowingAction => 'Жазылған';
+
+  @override
+  String get profileFollowUpdateFailed => 'Жазылу күйін жаңарту мүмкін болмады';
+
+  @override
   String get profileMessageAction => 'Жазу';
 
   @override

@@ -17,5 +17,7 @@ var (
 	ErrAvatarFileNotReady   = errors.New("avatar file is not ready")
 	ErrAvatarFileNotAllowed = errors.New("avatar file is not allowed")
 
-	ErrDisplayNameAlreadyTaken = errors.New("display name is already taken")
+	ErrDisplayNameAlreadyTaken  = errors.New("display name is already taken")
+	ErrCannotFollowSelf         = errors.New("you cannot follow yourself")
+	ErrFollowFeatureUnavailable = errors.New("follow feature is temporarily unavailable")
 )

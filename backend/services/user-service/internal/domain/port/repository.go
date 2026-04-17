@@ -27,9 +27,13 @@ type UserRepository interface {
 	GetSettingsByUserID(ctx context.Context, userID uuid.UUID) (*model.UserSettings, error)
 	GetReputationByUserID(ctx context.Context, userID uuid.UUID) (*model.UserReputation, error)
 	ListRolesByUserID(ctx context.Context, userID uuid.UUID) ([]*model.UserSystemRole, error)
+	CountFollowersByUserID(ctx context.Context, userID uuid.UUID) (int, error)
+	IsFollowing(ctx context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) (bool, error)
 
 	UpdateProfile(ctx context.Context, profile *model.UserProfile) error
 	UpdateSettings(ctx context.Context, settings *model.UserSettings) error
+	FollowUser(ctx context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) error
+	UnfollowUser(ctx context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) error
 
 	GrantRole(ctx context.Context, role *model.UserSystemRole) error
 	HasRole(ctx context.Context, userID uuid.UUID, role enum.SystemRole) (bool, error)

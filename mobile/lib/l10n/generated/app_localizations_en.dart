@@ -703,6 +703,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileFollowAction => 'Follow';
 
   @override
+  String get profileFollowingAction => 'Following';
+
+  @override
+  String get profileFollowUpdateFailed => 'Failed to update follow status';
+
+  @override
   String get profileMessageAction => 'Message';
 
   @override

@@ -225,6 +225,8 @@
   "profileBlogsUnavailable": "Публичные заметки и истории путешествий пока недоступны в приложении.",
   "profileUnavailableTitle": "Скоро появится",
   "profileFollowAction": "Подписаться",
+  "profileFollowingAction": "Вы подписаны",
+  "profileFollowUpdateFailed": "Не удалось обновить подписку",
   "profileMessageAction": "Написать",
   "profileSettingsPageTitle": "Настройки",
   "profileSaveChangesButton": "Сохранить изменения",

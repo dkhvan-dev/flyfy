@@ -37,6 +37,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<ActivityCompletionStatsVm>? _activityStatsFuture;
   String _extrasKey = '';
   String _activityStatsKey = '';
+  String _followOverrideUserId = '';
+  int? _followersCountOverride;
+  bool? _isFollowedByMeOverride;
+  bool _isFollowActionLoading = false;
 
   @override
   void initState() {
@@ -54,19 +58,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _configureForeignProfileFuture() {
+    _followOverrideUserId = '';
+    _followersCountOverride = null;
+    _isFollowedByMeOverride = null;
+    _isFollowActionLoading = false;
+
     final userId = widget.userId?.trim() ?? '';
     if (userId.isEmpty) {
       _foreignProfileFuture = null;
       return;
     }
 
-    final initialProfile = widget.initialProfile;
-    if (initialProfile != null && initialProfile.userId == userId) {
-      _foreignProfileFuture = Future<UserProfileVm>.value(initialProfile);
+    // Always fetch fresh data from API to get up-to-date followers/reputation.
+    _foreignProfileFuture = _profileApi.getUserById(userId);
+  }
+
+  UserProfileVm _profileWithFollowOverrides(UserProfileVm profile) {
+    if (_followOverrideUserId != profile.userId.trim()) {
+      return profile;
+    }
+
+    return profile.copyWith(
+      followersCount: _followersCountOverride,
+      isFollowedByMe: _isFollowedByMeOverride,
+    );
+  }
+
+  Future<void> _toggleFollow(UserProfileVm profile) async {
+    final l10n = AppLocalizations.of(context)!;
+    final userId = profile.userId.trim();
+    if (userId.isEmpty || _isFollowActionLoading) {
       return;
     }
 
-    _foreignProfileFuture = _profileApi.getUserById(userId);
+    final currentProfile = _profileWithFollowOverrides(profile);
+    final willFollow = !currentProfile.isFollowedByMe;
+    final nextFollowersCount =
+        currentProfile.followersCount + (willFollow ? 1 : -1);
+
+    setState(() {
+      _followOverrideUserId = userId;
+      _isFollowedByMeOverride = willFollow;
+      _followersCountOverride = nextFollowersCount < 0 ? 0 : nextFollowersCount;
+      _isFollowActionLoading = true;
+    });
+
+    try {
+      if (willFollow) {
+        await _profileApi.followUser(userId);
+      } else {
+        await _profileApi.unfollowUser(userId);
+      }
+
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _followOverrideUserId = userId;
+        _isFollowedByMeOverride = currentProfile.isFollowedByMe;
+        _followersCountOverride = currentProfile.followersCount;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.profileFollowUpdateFailed)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFollowActionLoading = false;
+        });
+      }
+    }
   }
 
   Future<_ProfileExtras> _loadExtras(UserProfileVm profile) async {
@@ -104,20 +164,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _extrasFuture!;
   }
 
-  Future<ActivityCompletionStatsVm>? _activityStatsFutureFor(
+  Future<ActivityCompletionStatsVm> _activityStatsFutureFor(
     UserProfileVm profile, {
     required bool isOwnProfile,
   }) {
-    if (!isOwnProfile) {
-      return null;
-    }
-
-    final key = profile.userId.trim();
+    final key = '${profile.userId.trim()}|$isOwnProfile';
     if (_activityStatsFuture == null || _activityStatsKey != key) {
       _activityStatsKey = key;
-      _activityStatsFuture = _activityApi.getMyCompletionStats(
-        actorUserId: key,
-      );
+      if (isOwnProfile) {
+        _activityStatsFuture = _activityApi.getMyCompletionStats(
+          actorUserId: profile.userId.trim(),
+        );
+      } else {
+        _activityStatsFuture = _activityApi
+            .countCompletedActivitiesForUser(profile.userId.trim())
+            .then(
+              (count) => ActivityCompletionStatsVm(
+                hostedCompleted: count,
+                joinedCompleted: 0,
+              ),
+            );
+      }
     }
     return _activityStatsFuture!;
   }
@@ -218,22 +285,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
+    final effectiveProfile = _profileWithFollowOverrides(profile);
+
     return FutureBuilder<_ProfileExtras>(
-      future: _extrasFutureFor(profile),
+      future: _extrasFutureFor(effectiveProfile),
       builder: (context, snapshot) {
         final extras = snapshot.data ?? const _ProfileExtras();
         return _ProfileBody(
-          profile: profile,
+          profile: effectiveProfile,
           guide: extras.guide,
           avatarUrl: extras.avatarUrl,
           activityStatsFuture: _activityStatsFutureFor(
-            profile,
+            effectiveProfile,
             isOwnProfile: isOwnProfile,
           ),
           isOwnProfile: isOwnProfile,
+          isFollowActionLoading: _isFollowActionLoading,
+          onToggleFollow: isOwnProfile
+              ? null
+              : () => _toggleFollow(effectiveProfile),
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
-          onCopyProfileLink: () => _copyProfileLink(profile),
+          onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
         );
       },
     );
@@ -247,6 +320,8 @@ class _ProfileBody extends StatelessWidget {
     required this.avatarUrl,
     required this.activityStatsFuture,
     required this.isOwnProfile,
+    required this.isFollowActionLoading,
+    required this.onToggleFollow,
     required this.onSettingsTap,
     required this.onCopyProfileLink,
     required this.onEditProfile,
@@ -255,8 +330,10 @@ class _ProfileBody extends StatelessWidget {
   final UserProfileVm profile;
   final GuideProfileVm? guide;
   final String? avatarUrl;
-  final Future<ActivityCompletionStatsVm>? activityStatsFuture;
+  final Future<ActivityCompletionStatsVm> activityStatsFuture;
   final bool isOwnProfile;
+  final bool isFollowActionLoading;
+  final Future<void> Function()? onToggleFollow;
   final VoidCallback? onSettingsTap;
   final VoidCallback onCopyProfileLink;
   final Future<void> Function()? onEditProfile;
@@ -320,7 +397,11 @@ class _ProfileBody extends StatelessWidget {
         ),
         if (!isOwnProfile) ...[
           SizedBox(height: profileScaled(context, 22, min: 18, max: 24)),
-          const _ForeignProfileActions(),
+          _ForeignProfileActions(
+            isFollowedByMe: profile.isFollowedByMe,
+            isBusy: isFollowActionLoading,
+            onToggleFollow: onToggleFollow,
+          ),
         ],
         SizedBox(height: profileScaled(context, 32, min: 24, max: 36)),
         if (isOwnProfile) ...[
@@ -903,40 +984,11 @@ class _ProfileStatsGrid extends StatelessWidget {
   final GuideProfileVm? guide;
   final bool isGuideProfile;
   final bool isOwnProfile;
-  final Future<ActivityCompletionStatsVm>? activityStatsFuture;
+  final Future<ActivityCompletionStatsVm> activityStatsFuture;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final reputation = profile.reputation;
-
-    if (!isOwnProfile || activityStatsFuture == null) {
-      final cards = <_StatConfig>[
-        _StatConfig(
-          label: l10n.profileActivitiesStat,
-          value: '${reputation?.completedActivities ?? 0}',
-          highlighted: false,
-        ),
-        if (isGuideProfile)
-          _StatConfig(
-            label: l10n.profileReviewsStat,
-            value: guide == null ? '—' : '${guide!.reviewsCount}',
-            highlighted: false,
-            disabled: guide == null,
-          )
-        else
-          _StatConfig(label: l10n.profileBlogsStat, value: '0'),
-        _StatConfig(
-          label: isGuideProfile
-              ? l10n.profileBlogsStat
-              : l10n.profileFollowersStat,
-          value: isGuideProfile ? '0' : '${reputation?.reportsCount ?? 0}',
-          disabled: !isGuideProfile && reputation == null,
-        ),
-      ];
-
-      return _StatsGridLayout(cards: cards);
-    }
 
     return FutureBuilder<ActivityCompletionStatsVm>(
       future: activityStatsFuture,
@@ -963,8 +1015,7 @@ class _ProfileStatsGrid extends StatelessWidget {
             label: isGuideProfile
                 ? l10n.profileBlogsStat
                 : l10n.profileFollowersStat,
-            value: isGuideProfile ? '0' : '${reputation?.reportsCount ?? 0}',
-            disabled: !isGuideProfile && reputation == null,
+            value: isGuideProfile ? '0' : '${profile.followersCount}',
           ),
         ];
 
@@ -1065,7 +1116,15 @@ class _ProfileStatCard extends StatelessWidget {
 }
 
 class _ForeignProfileActions extends StatelessWidget {
-  const _ForeignProfileActions();
+  const _ForeignProfileActions({
+    required this.isFollowedByMe,
+    required this.isBusy,
+    required this.onToggleFollow,
+  });
+
+  final bool isFollowedByMe;
+  final bool isBusy;
+  final Future<void> Function()? onToggleFollow;
 
   @override
   Widget build(BuildContext context) {
@@ -1073,20 +1132,55 @@ class _ForeignProfileActions extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: FilledButton(
-            onPressed: null,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.textPrimary,
-              minimumSize: Size(
-                double.infinity,
-                profileScaled(context, 52, min: 48, max: 54),
-              ),
-              disabledBackgroundColor: profileSurfaceMuted,
-              disabledForegroundColor: profileTextSoft,
-            ),
-            child: Text(l10n.profileFollowAction),
-          ),
+          child: isFollowedByMe
+              ? OutlinedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () async {
+                          await onToggleFollow?.call();
+                        },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: AppColors.accent.withValues(alpha: 0.45),
+                    ),
+                    foregroundColor: AppColors.accent,
+                    backgroundColor: AppColors.accent.withValues(alpha: 0.08),
+                    minimumSize: Size(
+                      double.infinity,
+                      profileScaled(context, 52, min: 48, max: 54),
+                    ),
+                    disabledForegroundColor: AppColors.accent.withValues(
+                      alpha: 0.6,
+                    ),
+                  ),
+                  child: Text(
+                    isBusy
+                        ? l10n.profileFollowingAction
+                        : l10n.profileFollowingAction,
+                  ),
+                )
+              : FilledButton(
+                  onPressed: isBusy
+                      ? null
+                      : () async {
+                          await onToggleFollow?.call();
+                        },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.textPrimary,
+                    minimumSize: Size(
+                      double.infinity,
+                      profileScaled(context, 52, min: 48, max: 54),
+                    ),
+                    disabledBackgroundColor: profileSurfaceMuted,
+                    disabledForegroundColor: profileTextSoft,
+                  ),
+                  child: Text(
+                    isBusy
+                        ? l10n.profileFollowingAction
+                        : l10n.profileFollowAction,
+                  ),
+                ),
         ),
         SizedBox(width: profileScaled(context, 14, min: 10, max: 16)),
         Expanded(

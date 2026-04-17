@@ -7,6 +7,8 @@ class UserProfileVm {
     required this.isPublic,
     required this.isProfileCompleted,
     required this.roles,
+    required this.followersCount,
+    required this.isFollowedByMe,
     this.primaryPhone,
     this.primaryEmail,
     this.firstName,
@@ -28,6 +30,8 @@ class UserProfileVm {
   final bool isPublic;
   final bool isProfileCompleted;
   final List<String> roles;
+  final int followersCount;
+  final bool isFollowedByMe;
 
   final String? primaryPhone;
   final String? primaryEmail;
@@ -48,6 +52,7 @@ class UserProfileVm {
     final settings = json['settings'] as Map<String, dynamic>?;
     final reputation = json['reputation'] as Map<String, dynamic>?;
     final rawRoles = json['roles'];
+    final followers = json['followers'] as Map<String, dynamic>? ?? const {};
 
     return UserProfileVm(
       userId: user['id']?.toString() ?? '',
@@ -69,9 +74,38 @@ class UserProfileVm {
       roles: rawRoles is List
           ? rawRoles.map((item) => item.toString()).toList(growable: false)
           : const [],
+      followersCount: int.tryParse(followers['count']?.toString() ?? '') ?? 0,
+      isFollowedByMe: followers['isFollowedByMe'] == true,
       settings: settings == null ? null : UserSettingsVm.fromJson(settings),
-      reputation:
-          reputation == null ? null : UserReputationVm.fromJson(reputation),
+      reputation: reputation == null
+          ? null
+          : UserReputationVm.fromJson(reputation),
+    );
+  }
+
+  UserProfileVm copyWith({int? followersCount, bool? isFollowedByMe}) {
+    return UserProfileVm(
+      userId: userId,
+      status: status,
+      locale: locale,
+      timezone: timezone,
+      isPublic: isPublic,
+      isProfileCompleted: isProfileCompleted,
+      roles: roles,
+      followersCount: followersCount ?? this.followersCount,
+      isFollowedByMe: isFollowedByMe ?? this.isFollowedByMe,
+      primaryPhone: primaryPhone,
+      primaryEmail: primaryEmail,
+      firstName: firstName,
+      lastName: lastName,
+      displayName: displayName,
+      bio: bio,
+      birthDate: birthDate,
+      avatarFileId: avatarFileId,
+      countryCode: countryCode,
+      currency: currency,
+      settings: settings,
+      reputation: reputation,
     );
   }
 

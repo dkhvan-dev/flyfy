@@ -31,6 +31,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/users/me", h.GetMe)
 	mux.HandleFunc("PUT /v1/users/me/profile", h.UpdateMyProfile)
 	mux.HandleFunc("GET /v1/users/", h.GetUserByID)
+	mux.HandleFunc("POST /v1/users/", h.handleUserActions)
+	mux.HandleFunc("DELETE /v1/users/", h.handleUserActions)
 	mux.HandleFunc("PUT /v1/users/me/settings", h.UpdateMySettings)
 	mux.HandleFunc("POST /v1/admin/users/", h.handleAdminActions)
 	mux.HandleFunc("GET /v1/public/users", h.ListPublicProfiles)
@@ -117,7 +119,11 @@ func (h *Handler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	aggregate, err := h.useCase.GetAggregateByUserID(r.Context(), userID)
+	aggregate, err := h.useCase.GetAggregateByUserIDForSubject(
+		r.Context(),
+		userID,
+		strings.TrimSpace(SubjectFromContext(r.Context())),
+	)
 	if err != nil {
 		switch {
 		case errors.Is(err, app.ErrInvalidUserID):
@@ -224,6 +230,10 @@ func toInitMeResponse(aggregate *app.UserAggregate) dto.InitMeResponse {
 		Settings:   toUserSettingsResponse(aggregate.Settings),
 		Reputation: toUserReputationResponse(aggregate.Reputation),
 		Roles:      roles,
+		Followers: dto.UserFollowResponse{
+			Count:          aggregate.Followers.FollowersCount,
+			IsFollowedByMe: aggregate.Followers.IsFollowedByMe,
+		},
 	}
 }
 
@@ -366,6 +376,94 @@ func userIDFromContext(ctx context.Context) *string {
 		return nil
 	}
 	return &userID
+}
+
+func (h *Handler) handleUserActions(w http.ResponseWriter, r *http.Request) {
+	subject := strings.TrimSpace(SubjectFromContext(r.Context()))
+	if subject == "" {
+		writeError(w, http.StatusUnauthorized, "missing authenticated subject")
+		return
+	}
+
+	currentUser, err := h.useCase.GetAggregateBySubject(r.Context(), subject)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to resolve current user")
+		}
+		return
+	}
+
+	path := strings.TrimPrefix(r.URL.Path, "/v1/users/")
+	path = strings.Trim(path, "/")
+	parts := strings.Split(path, "/")
+	if len(parts) != 2 || parts[1] != "follow" {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	targetUserID, err := uuid.Parse(parts[0])
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	switch r.Method {
+	case http.MethodPost:
+		h.FollowUser(w, r, currentUser.User.ID, targetUserID)
+	case http.MethodDelete:
+		h.UnfollowUser(w, r, currentUser.User.ID, targetUserID)
+	default:
+		writeError(w, http.StatusNotFound, "not found")
+	}
+}
+
+func (h *Handler) FollowUser(
+	w http.ResponseWriter,
+	r *http.Request,
+	followerUserID uuid.UUID,
+	followedUserID uuid.UUID,
+) {
+	if err := h.useCase.FollowUser(r.Context(), followerUserID, followedUserID); err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidUserID),
+			errors.Is(err, app.ErrCannotFollowSelf):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrFollowFeatureUnavailable):
+			writeError(w, http.StatusServiceUnavailable, err.Error())
+		case errors.Is(err, app.ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to follow user")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) UnfollowUser(
+	w http.ResponseWriter,
+	r *http.Request,
+	followerUserID uuid.UUID,
+	followedUserID uuid.UUID,
+) {
+	if err := h.useCase.UnfollowUser(r.Context(), followerUserID, followedUserID); err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidUserID),
+			errors.Is(err, app.ErrCannotFollowSelf):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrFollowFeatureUnavailable):
+			writeError(w, http.StatusServiceUnavailable, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to unfollow user")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) UpdateMySettings(w http.ResponseWriter, r *http.Request) {

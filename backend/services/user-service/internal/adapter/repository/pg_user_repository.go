@@ -403,6 +403,48 @@ func (r *PGUserRepository) ListRolesByUserID(ctx context.Context, userID uuid.UU
 	return result, rows.Err()
 }
 
+func (r *PGUserRepository) CountFollowersByUserID(ctx context.Context, userID uuid.UUID) (int, error) {
+	const query = `
+		SELECT COUNT(*)
+		FROM user_follows
+		WHERE followed_user_id = $1
+	`
+
+	var count int
+	if err := r.pool.QueryRow(ctx, query, userID).Scan(&count); err != nil {
+		if isUndefinedRelation(err, "user_follows") {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("count followers by user id: %w", err)
+	}
+
+	return count, nil
+}
+
+func (r *PGUserRepository) IsFollowing(
+	ctx context.Context,
+	followerUserID uuid.UUID,
+	followedUserID uuid.UUID,
+) (bool, error) {
+	const query = `
+		SELECT EXISTS(
+			SELECT 1
+			FROM user_follows
+			WHERE follower_user_id = $1 AND followed_user_id = $2
+		)
+	`
+
+	var exists bool
+	if err := r.pool.QueryRow(ctx, query, followerUserID, followedUserID).Scan(&exists); err != nil {
+		if isUndefinedRelation(err, "user_follows") {
+			return false, nil
+		}
+		return false, fmt.Errorf("check follow exists: %w", err)
+	}
+
+	return exists, nil
+}
+
 func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.UserProfile) error {
 	const query = `
 		UPDATE user_profiles
@@ -448,6 +490,47 @@ func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.Use
 			return app.ErrDisplayNameAlreadyTaken
 		}
 		return fmt.Errorf("update profile: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PGUserRepository) FollowUser(
+	ctx context.Context,
+	followerUserID uuid.UUID,
+	followedUserID uuid.UUID,
+) error {
+	const query = `
+		INSERT INTO user_follows (follower_user_id, followed_user_id, created_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (follower_user_id, followed_user_id) DO NOTHING
+	`
+
+	if _, err := r.pool.Exec(ctx, query, followerUserID, followedUserID); err != nil {
+		if isUndefinedRelation(err, "user_follows") {
+			return app.ErrFollowFeatureUnavailable
+		}
+		return fmt.Errorf("insert user follow: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PGUserRepository) UnfollowUser(
+	ctx context.Context,
+	followerUserID uuid.UUID,
+	followedUserID uuid.UUID,
+) error {
+	const query = `
+		DELETE FROM user_follows
+		WHERE follower_user_id = $1 AND followed_user_id = $2
+	`
+
+	if _, err := r.pool.Exec(ctx, query, followerUserID, followedUserID); err != nil {
+		if isUndefinedRelation(err, "user_follows") {
+			return app.ErrFollowFeatureUnavailable
+		}
+		return fmt.Errorf("delete user follow: %w", err)
 	}
 
 	return nil

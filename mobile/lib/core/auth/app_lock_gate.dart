@@ -268,6 +268,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   int _failedBiometricAttempts = 0;
   String? _unlockError;
   bool _unlockSubmitQueued = false;
+  bool _autoBiometricQueued = false;
 
   bool get _shouldAutoStartBiometric =>
       !kIsWeb && defaultTargetPlatform != TargetPlatform.android;
@@ -412,8 +413,31 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     }
 
     if (_shouldAutoStartBiometric && (initial || !_isBiometricInFlight)) {
-      await _attemptBiometricUnlock();
+      _scheduleAutoBiometricUnlock();
     }
+  }
+
+  void _scheduleAutoBiometricUnlock() {
+    if (_autoBiometricQueued ||
+        !_isLocked ||
+        _showPinUnlock ||
+        _isBiometricInFlight) {
+      return;
+    }
+
+    _autoBiometricQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await Future<void>.delayed(const Duration(milliseconds: 350));
+      }
+
+      _autoBiometricQueued = false;
+      if (!mounted || !_isLocked || _showPinUnlock || _isBiometricInFlight) {
+        return;
+      }
+
+      await _attemptBiometricUnlock();
+    });
   }
 
   Future<bool> _runMandatoryPinSetup() async {
@@ -1087,7 +1111,8 @@ class _AppLockOverlay extends StatelessWidget {
                                         style: FilledButton.styleFrom(
                                           backgroundColor: AppColors.accent
                                               .withValues(alpha: 0.95),
-                                          foregroundColor: AppColors.textPrimary,
+                                          foregroundColor:
+                                              AppColors.textPrimary,
                                           minimumSize: Size(
                                             0,
                                             authScaled(

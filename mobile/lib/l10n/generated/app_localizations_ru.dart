@@ -705,6 +705,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileFollowAction => 'Подписаться';
 
   @override
+  String get profileFollowingAction => 'Вы подписаны';
+
+  @override
+  String get profileFollowUpdateFailed => 'Не удалось обновить подписку';
+
+  @override
   String get profileMessageAction => 'Написать';
 
   @override
