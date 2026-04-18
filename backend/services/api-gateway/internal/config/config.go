@@ -61,6 +61,7 @@ type DownstreamsConfig struct {
 	GuideService       string `env:"GUIDE_SERVICE_HTTP_URL, default=http://guide-service:8085"`
 	FileManagerService string `env:"FILE_MANAGER_HTTP_URL, default=http://file-manager-service:8083"`
 	ActivityService    string `env:"ACTIVITY_SERVICE_HTTP_URL, default=http://activity-service:8086"`
+	StoriesService     string `env:"STORIES_SERVICE_HTTP_URL, default=http://stories-service:8087"`
 }
 
 type TokenServiceConfig struct {

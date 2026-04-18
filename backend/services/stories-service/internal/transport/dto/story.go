@@ -1,0 +1,91 @@
+package dto
+
+type CreateStoryRequest struct {
+	Title            string   `json:"title"`
+	Content          string   `json:"content"`
+	Category         string   `json:"category"`
+	Status           string   `json:"status"`
+	CoverFileID      *string  `json:"coverFileId"`
+	PlaceName        *string  `json:"placeName"`
+	PlaceCountryCode *string  `json:"placeCountryCode"`
+	Tags             []string `json:"tags"`
+}
+
+type UpdateStoryRequest = CreateStoryRequest
+
+type CreateCommentRequest struct {
+	Body string `json:"body"`
+}
+
+type UpdateCommentRequest = CreateCommentRequest
+
+type AuthorResponse struct {
+	UserID       string  `json:"userId"`
+	DisplayName  *string `json:"displayName,omitempty"`
+	AvatarFileID *string `json:"avatarFileId,omitempty"`
+	CountryCode  *string `json:"countryCode,omitempty"`
+	Locale       string  `json:"locale"`
+	Timezone     string  `json:"timezone"`
+	IsPublic     bool    `json:"isPublic"`
+}
+
+type StoryStatsResponse struct {
+	Views    int `json:"views"`
+	Likes    int `json:"likes"`
+	Comments int `json:"comments"`
+	Shares   int `json:"shares"`
+}
+
+type StoryResponse struct {
+	ID               string             `json:"id"`
+	Slug             string             `json:"slug"`
+	Title            string             `json:"title"`
+	Excerpt          string             `json:"excerpt"`
+	Content          *string            `json:"content,omitempty"`
+	Category         string             `json:"category"`
+	Status           string             `json:"status"`
+	CoverFileID      *string            `json:"coverFileId,omitempty"`
+	PlaceName        *string            `json:"placeName,omitempty"`
+	PlaceCountryCode *string            `json:"placeCountryCode,omitempty"`
+	Tags             []string           `json:"tags,omitempty"`
+	Stats            StoryStatsResponse `json:"stats"`
+	Author           AuthorResponse     `json:"author"`
+	LikedByViewer    bool               `json:"likedByViewer"`
+	ShareURL         string             `json:"shareUrl"`
+	PublishedAt      *string            `json:"publishedAt,omitempty"`
+	CreatedAt        string             `json:"createdAt"`
+	UpdatedAt        string             `json:"updatedAt"`
+}
+
+type StoryCommentResponse struct {
+	ID        string         `json:"id"`
+	StoryID   string         `json:"storyId"`
+	Body      string         `json:"body"`
+	Editable  bool           `json:"editable"`
+	Author    AuthorResponse `json:"author"`
+	CreatedAt string         `json:"createdAt"`
+	UpdatedAt string         `json:"updatedAt"`
+}
+
+type StoryListResponse struct {
+	Items []*StoryResponse `json:"items"`
+}
+
+type StoryDetailResponse struct {
+	Story    *StoryResponse          `json:"story"`
+	Related  []*StoryResponse        `json:"related"`
+	Comments []*StoryCommentResponse `json:"comments"`
+}
+
+type ViewResponse struct {
+	Views int `json:"views"`
+}
+
+type LikeResponse struct {
+	Likes int `json:"likes"`
+}
+
+type ShareResponse struct {
+	ShareURL string `json:"shareUrl"`
+	Shares   int    `json:"shares"`
+}

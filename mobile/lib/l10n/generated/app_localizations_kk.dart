@@ -703,7 +703,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileUnavailableTitle => 'Жақында';
 
   @override
-  String get profileFollowAction => 'Жазылу';
+  String get profileFollowAction => 'Қадағалау';
 
   @override
   String get profileFollowingAction => 'Жазылған';

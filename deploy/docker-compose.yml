@@ -191,6 +191,51 @@ services:
       - flyfy-network
 
   # ============================================
+  # Stories PostgreSQL
+  # ============================================
+  stories-postgres:
+    image: postgres:17-alpine
+    container_name: stories-postgres
+    environment:
+      POSTGRES_DB: stories_service_db
+      POSTGRES_USER: stories_service
+      POSTGRES_PASSWORD: stories_secret_dev
+    ports:
+      - "5439:5432"
+    volumes:
+      - stories_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/007_stories_service.sh:/docker-entrypoint-initdb.d/007_stories_service.sh
+      - ../backend/services/stories-service/migrations:/migrations/stories-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stories_service -d stories_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  stories-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: stories-postgres-migrator
+    environment:
+      PGHOST: stories-postgres
+      PGPORT: 5432
+      POSTGRES_DB: stories_service_db
+      POSTGRES_USER: stories_service
+      POSTGRES_PASSWORD: stories_secret_dev
+    volumes:
+      - ./init-scripts/007_stories_service_migrate.sh:/usr/local/bin/007_stories_service_migrate.sh:ro
+      - ../backend/services/stories-service/migrations:/migrations/stories-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/007_stories_service_migrate.sh"]
+    depends_on:
+      stories-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Redis
   # ============================================
   redis:
@@ -538,6 +583,56 @@ services:
       - flyfy-network
 
   # ============================================
+  # Stories Service
+  # ============================================
+  stories-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/stories-service/Dockerfile
+    container_name: stories-service
+    depends_on:
+      stories-postgres:
+        condition: service_healthy
+      stories-postgres-migrator:
+        condition: service_completed_successfully
+      user-service:
+        condition: service_started
+    ports:
+      - "8087:8087"
+    environment:
+      APP_ENV: development
+      HTTP_PORT: 8087
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 15s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      POSTGRES_HOST: stories-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: stories_service
+      POSTGRES_PASSWORD: stories_secret_dev
+      POSTGRES_DB: stories_service_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 10
+      POSTGRES_MIN_OPEN_CONNS: 2
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+      POSTGRES_MAX_CONN_IDLE_TIME: 30m
+
+      LOG_LEVEL: info
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      REQUIRE_AUTHENTICATED_WRITES: "true"
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+
+      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+      STORIES_BASE_URL: https://flyfy.app/stories
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
   # API Gateway
   # ============================================
   api-gateway:
@@ -555,6 +650,8 @@ services:
       user-service:
         condition: service_started
       guide-service:
+        condition: service_started
+      stories-service:
         condition: service_started
     ports:
       - "8080:8080"
@@ -580,6 +677,7 @@ services:
       GUIDE_SERVICE_HTTP_URL: http://guide-service:8085
       FILE_MANAGER_HTTP_URL: http://file-manager-service:8083
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
+      STORIES_SERVICE_HTTP_URL: http://stories-service:8087
 
       TOKEN_SERVICE_GRPC_TARGET: dns:///token-service:50051
       TOKEN_SERVICE_ID: api-gateway
@@ -612,4 +710,5 @@ volumes:
   user_postgres_data:
   guide_postgres_data:
   activity_postgres_data:
+  stories_postgres_data:
   token_service_keys:

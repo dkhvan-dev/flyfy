@@ -30,6 +30,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	authLimit := 300
 	filesLimit := 180
 	activityLimit := 180
+	storiesLimit := 180
 
 	return []RoutePolicy{
 		{
@@ -117,6 +118,22 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "activity",
 			RateLimitPerMinute: &activityLimit,
 			RewritePrefix:      "/v1/activities",
+		},
+		{
+			Name:               "public-stories",
+			Prefix:             apiPrefix + "/public/stories/",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "stories",
+			RateLimitPerMinute: &storiesLimit,
+			RewritePrefix:      "/v1/public/stories/",
+		},
+		{
+			Name:               "stories",
+			Prefix:             apiPrefix + "/stories",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "stories",
+			RateLimitPerMinute: &storiesLimit,
+			RewritePrefix:      "/v1/stories",
 		},
 	}
 }
