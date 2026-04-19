@@ -2348,4 +2348,244 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get qrScannerNoPending => 'Күтіп тұрған белгілеулер жоқ';
+
+  @override
+  String get retry => 'Қайталау';
+
+  @override
+  String get backButtonLabel => 'Артқа';
+
+  @override
+  String get storiesDiscoverTitle => 'Хикаялар';
+
+  @override
+  String get storiesNavLabel => 'Хикаялар';
+
+  @override
+  String get storiesActivitiesNavLabel => 'Белсенділіктер';
+
+  @override
+  String get storySearchHint => 'Хикаяларды, авторларды немесе орындарды іздеу';
+
+  @override
+  String get storyFilterCategory => 'Санат';
+
+  @override
+  String get storyFilterCountry => 'Ел';
+
+  @override
+  String get storyFilterAll => 'Барлығы';
+
+  @override
+  String get storySortLabel => 'Сұрыптау';
+
+  @override
+  String get storySortDate => 'Күні';
+
+  @override
+  String get storySortViews => 'Қаралымдар';
+
+  @override
+  String get storySortComments => 'Пікірлер';
+
+  @override
+  String get storyCreateCta => 'Хикаямен бөлісу';
+
+  @override
+  String get storyCreateFirst => 'Алғашқы хикаяны жасау';
+
+  @override
+  String get storyEmptyTitle => 'Әзірге хикая жоқ';
+
+  @override
+  String get storyEmptySubtitle =>
+      'Travel-note, жергілікті гид немесе визуалды эссе жариялаған алғашқы адам болыңыз.';
+
+  @override
+  String get storyLoadFailed => 'Хикаяларды жүктеу мүмкін болмады';
+
+  @override
+  String get storyViewsSuffix => 'қаралым';
+
+  @override
+  String get storyCategoryJournal => 'Журнал';
+
+  @override
+  String get storyCategoryGuide => 'Гид';
+
+  @override
+  String get storyCategoryPhotoEssay => 'Фотоэссе';
+
+  @override
+  String get storyCategoryCulinary => 'Гастрономия';
+
+  @override
+  String get storyDetailsTitle => 'Хикая туралы';
+
+  @override
+  String get storyLinkCopied => 'Хикая сілтемесі көшірілді';
+
+  @override
+  String get storyAuthorLabel => 'Автор';
+
+  @override
+  String get storyFollowAction => 'Жазылу';
+
+  @override
+  String get storyFollowingAction => 'Жазылған';
+
+  @override
+  String get storyStatViews => 'Қаралым';
+
+  @override
+  String get storyStatLikes => 'Лайк';
+
+  @override
+  String get storyStatComments => 'Пікір';
+
+  @override
+  String get storyStatShares => 'Бөлісу';
+
+  @override
+  String get storyTagsLabel => 'Тегтер';
+
+  @override
+  String get storyCommentHint => 'Пікір қалдырыңыз';
+
+  @override
+  String get storyCommentsTitle => 'Пікірлер';
+
+  @override
+  String get storyCommentsEmpty =>
+      'Әзірге пікір жоқ. Алғашқы болып пікір жазыңыз.';
+
+  @override
+  String get storyDeleteCommentTitle => 'Пікірді өшіру керек пе?';
+
+  @override
+  String get storyDeleteCommentMessage => 'Пікір қайтарымсыз өшіріледі.';
+
+  @override
+  String get storyDeleteCommentAction => 'Өшіру';
+
+  @override
+  String get storyRelatedEyebrow => 'Әрі қарай зерттеңіз';
+
+  @override
+  String get storyRelatedTitle => 'Ұқсас хикаялар';
+
+  @override
+  String get storyRelatedEmpty => 'Әзірге ұқсас хикая жоқ';
+
+  @override
+  String get storyViewAll => 'Барлығын көру';
+
+  @override
+  String get storyEditAction => 'Өңдеу';
+
+  @override
+  String get storyDeleteTitle => 'Хикаяны өшіру керек пе?';
+
+  @override
+  String get storyDeleteMessage => 'Хикая ашық лентадан алынып тасталады.';
+
+  @override
+  String get storyDeleteAction => 'Өшіру';
+
+  @override
+  String get storyCreateTitle => 'Жаңа хикая';
+
+  @override
+  String get storyContinueAction => 'Жалғастыру';
+
+  @override
+  String get storyUpdateAction => 'Хикаяны жаңарту';
+
+  @override
+  String get storyPublishAction => 'Хикаяны жариялау';
+
+  @override
+  String get storySaveDraftAction => 'Қаралымға сақтау';
+
+  @override
+  String get storySaveFailed => 'Хикаяны сақтау мүмкін болмады';
+
+  @override
+  String get storyCoverUploadTitle => 'Мұқаба жүктеңіз';
+
+  @override
+  String get storyCoverUploadSubtitle =>
+      'Сапалы көлденең форматтағы сурет қолданған дұрыс';
+
+  @override
+  String get storyCoverRequired => 'Мұқаба қосыңыз';
+
+  @override
+  String get storyCoverUnsupported => 'Бұл сурет форматына қолдау жоқ';
+
+  @override
+  String get storyCoverTooLarge =>
+      'Мұқаба файлы тым үлкен. 20 МБ-тан аспайтын сурет таңдаңыз.';
+
+  @override
+  String get storyCoverUploadFailed => 'Мұқабаны жүктеу мүмкін болмады';
+
+  @override
+  String get storyTitleLabel => 'Хикая атауы';
+
+  @override
+  String get storyTitleHint => 'Мысалы: Пирстегі кешкі йога';
+
+  @override
+  String get storyTitleRequired => 'Хикая атауын енгізіңіз';
+
+  @override
+  String storyTitleTooLong(Object count) {
+    return 'Атау $count таңбадан аспауы керек';
+  }
+
+  @override
+  String get storyPlacePrompt => 'Бұл хикая қай жерде өтті?';
+
+  @override
+  String get storyPlaceHint => 'Қала немесе елді енгізіңіз';
+
+  @override
+  String get storyTagsFieldLabel => 'Тегтер';
+
+  @override
+  String get storyTagHint => 'Тег қосу';
+
+  @override
+  String get storyTagsLimit => 'Ең көбі 8 тег қосуға болады';
+
+  @override
+  String get storyCategoryLabel => 'Санатты таңдаңыз';
+
+  @override
+  String get storyCategoryRequired => 'Хикая санатын таңдаңыз';
+
+  @override
+  String get storyContentHint => 'Әңгімеңізді осы жерден бастаңыз...';
+
+  @override
+  String get storyContentRequired => 'Хикая мәтінін жазыңыз';
+
+  @override
+  String storyContentTooLong(Object count) {
+    return 'Хикая мәтіні $count таңбадан аспауы керек';
+  }
+
+  @override
+  String get storyCharacterCountLabel => 'Таңба саны';
+
+  @override
+  String get storyAiHintUnavailable => 'AI мәтін кеңестері әзірге қолжетімсіз';
+
+  @override
+  String get storyWritersNoteTitle => 'Авторға кеңес';
+
+  @override
+  String get storyWritersNoteBody =>
+      'Әңгімеңізді сезімдік детальдан бастаңыз. «Мен Токиоға келдім» деудің орнына, Сибуяның дымқыл асфальтында шағылысқан неон жарығын суреттеңіз.';
 }

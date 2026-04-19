@@ -2334,4 +2334,245 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get qrScannerNoPending => 'No pending check-ins';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get backButtonLabel => 'Back';
+
+  @override
+  String get storiesDiscoverTitle => 'Discover Stories';
+
+  @override
+  String get storiesNavLabel => 'Stories';
+
+  @override
+  String get storiesActivitiesNavLabel => 'Activities';
+
+  @override
+  String get storySearchHint => 'Search stories, authors, or places';
+
+  @override
+  String get storyFilterCategory => 'Category';
+
+  @override
+  String get storyFilterCountry => 'Country';
+
+  @override
+  String get storyFilterAll => 'All';
+
+  @override
+  String get storySortLabel => 'Sort by';
+
+  @override
+  String get storySortDate => 'Date';
+
+  @override
+  String get storySortViews => 'Views';
+
+  @override
+  String get storySortComments => 'Comments';
+
+  @override
+  String get storyCreateCta => 'Share Your Story';
+
+  @override
+  String get storyCreateFirst => 'Create the first story';
+
+  @override
+  String get storyEmptyTitle => 'No stories yet';
+
+  @override
+  String get storyEmptySubtitle =>
+      'Be the first to publish a travel note, local guide, or visual essay.';
+
+  @override
+  String get storyLoadFailed => 'Failed to load stories';
+
+  @override
+  String get storyViewsSuffix => 'views';
+
+  @override
+  String get storyCategoryJournal => 'Journal';
+
+  @override
+  String get storyCategoryGuide => 'Guide';
+
+  @override
+  String get storyCategoryPhotoEssay => 'Photo Essay';
+
+  @override
+  String get storyCategoryCulinary => 'Culinary';
+
+  @override
+  String get storyDetailsTitle => 'Story Details';
+
+  @override
+  String get storyLinkCopied => 'Story link copied';
+
+  @override
+  String get storyAuthorLabel => 'Author';
+
+  @override
+  String get storyFollowAction => 'Follow';
+
+  @override
+  String get storyFollowingAction => 'Following';
+
+  @override
+  String get storyStatViews => 'Views';
+
+  @override
+  String get storyStatLikes => 'Likes';
+
+  @override
+  String get storyStatComments => 'Comments';
+
+  @override
+  String get storyStatShares => 'Shares';
+
+  @override
+  String get storyTagsLabel => 'Tags';
+
+  @override
+  String get storyCommentHint => 'Leave a thoughtful comment';
+
+  @override
+  String get storyCommentsTitle => 'Comments';
+
+  @override
+  String get storyCommentsEmpty => 'No comments yet. Start the conversation.';
+
+  @override
+  String get storyDeleteCommentTitle => 'Delete comment?';
+
+  @override
+  String get storyDeleteCommentMessage =>
+      'This comment will be permanently removed.';
+
+  @override
+  String get storyDeleteCommentAction => 'Delete';
+
+  @override
+  String get storyRelatedEyebrow => 'Keep Exploring';
+
+  @override
+  String get storyRelatedTitle => 'Related Stories';
+
+  @override
+  String get storyRelatedEmpty => 'No related stories yet';
+
+  @override
+  String get storyViewAll => 'View all';
+
+  @override
+  String get storyEditAction => 'Edit Story';
+
+  @override
+  String get storyDeleteTitle => 'Delete story?';
+
+  @override
+  String get storyDeleteMessage =>
+      'The story will be removed from public feed.';
+
+  @override
+  String get storyDeleteAction => 'Delete';
+
+  @override
+  String get storyCreateTitle => 'New Story';
+
+  @override
+  String get storyContinueAction => 'Continue';
+
+  @override
+  String get storyUpdateAction => 'Update Story';
+
+  @override
+  String get storyPublishAction => 'Publish Story';
+
+  @override
+  String get storySaveDraftAction => 'Save Draft';
+
+  @override
+  String get storySaveFailed => 'Failed to save story';
+
+  @override
+  String get storyCoverUploadTitle => 'Upload Cover Image';
+
+  @override
+  String get storyCoverUploadSubtitle =>
+      'High-resolution cinematic landscape preferred';
+
+  @override
+  String get storyCoverRequired => 'Add a cover image';
+
+  @override
+  String get storyCoverUnsupported => 'This image format is not supported';
+
+  @override
+  String get storyCoverTooLarge =>
+      'Cover image is too large. Use a file up to 20 MB.';
+
+  @override
+  String get storyCoverUploadFailed => 'Failed to upload cover image';
+
+  @override
+  String get storyTitleLabel => 'Story Title';
+
+  @override
+  String get storyTitleHint => 'e.g. Sunset Yoga by the Pier';
+
+  @override
+  String get storyTitleRequired => 'Enter a story title';
+
+  @override
+  String storyTitleTooLong(Object count) {
+    return 'The title must not exceed $count characters';
+  }
+
+  @override
+  String get storyPlacePrompt => 'Where did this story take place?';
+
+  @override
+  String get storyPlaceHint => 'Search city or country';
+
+  @override
+  String get storyTagsFieldLabel => 'Tags';
+
+  @override
+  String get storyTagHint => 'Add a tag';
+
+  @override
+  String get storyTagsLimit => 'You can add up to 8 tags';
+
+  @override
+  String get storyCategoryLabel => 'Select Category';
+
+  @override
+  String get storyCategoryRequired => 'Select a story category';
+
+  @override
+  String get storyContentHint => 'Start your narrative here...';
+
+  @override
+  String get storyContentRequired => 'Write the story body';
+
+  @override
+  String storyContentTooLong(Object count) {
+    return 'The story body must not exceed $count characters';
+  }
+
+  @override
+  String get storyCharacterCountLabel => 'Character Count';
+
+  @override
+  String get storyAiHintUnavailable => 'AI writing hints are not available yet';
+
+  @override
+  String get storyWritersNoteTitle => 'Writer\'s Note';
+
+  @override
+  String get storyWritersNoteBody =>
+      'Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya.';
 }

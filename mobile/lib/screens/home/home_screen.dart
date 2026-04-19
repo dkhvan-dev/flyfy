@@ -156,6 +156,10 @@ class _HomeScreenState extends State<HomeScreen> {
     context.push('/activities');
   }
 
+  void _openStories() {
+    context.push('/stories');
+  }
+
   void _openNotifications() {
     context.push('/notifications');
   }
@@ -748,8 +752,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       _SectionHeader(
                                         title: l10n.homeRecommendedBlogs,
                                         actionLabel: l10n.homeSeeAll,
-                                        onActionTap: () =>
-                                            _openStubRoute('/editorial'),
+                                        onActionTap: _openStories,
                                       ),
                                       const SizedBox(height: 14),
                                       _StoryCard(
@@ -758,8 +761,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         description: l10n.homeStoryDescription,
                                         buttonLabel: l10n.homeReadStory,
                                         imageUrl: _storyImageUrl,
-                                        onTap: () =>
-                                            _openStubRoute('/editorial'),
+                                        onTap: _openStories,
                                       ),
                                       const SizedBox(height: 14),
                                       _FeatureEntriesGrid(

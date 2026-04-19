@@ -4311,6 +4311,468 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No pending check-ins'**
   String get qrScannerNoPending;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @backButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backButtonLabel;
+
+  /// No description provided for @storiesDiscoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover Stories'**
+  String get storiesDiscoverTitle;
+
+  /// No description provided for @storiesNavLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stories'**
+  String get storiesNavLabel;
+
+  /// No description provided for @storiesActivitiesNavLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get storiesActivitiesNavLabel;
+
+  /// No description provided for @storySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search stories, authors, or places'**
+  String get storySearchHint;
+
+  /// No description provided for @storyFilterCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get storyFilterCategory;
+
+  /// No description provided for @storyFilterCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get storyFilterCountry;
+
+  /// No description provided for @storyFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get storyFilterAll;
+
+  /// No description provided for @storySortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get storySortLabel;
+
+  /// No description provided for @storySortDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get storySortDate;
+
+  /// No description provided for @storySortViews.
+  ///
+  /// In en, this message translates to:
+  /// **'Views'**
+  String get storySortViews;
+
+  /// No description provided for @storySortComments.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get storySortComments;
+
+  /// No description provided for @storyCreateCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Your Story'**
+  String get storyCreateCta;
+
+  /// No description provided for @storyCreateFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the first story'**
+  String get storyCreateFirst;
+
+  /// No description provided for @storyEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No stories yet'**
+  String get storyEmptyTitle;
+
+  /// No description provided for @storyEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first to publish a travel note, local guide, or visual essay.'**
+  String get storyEmptySubtitle;
+
+  /// No description provided for @storyLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load stories'**
+  String get storyLoadFailed;
+
+  /// No description provided for @storyViewsSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'views'**
+  String get storyViewsSuffix;
+
+  /// No description provided for @storyCategoryJournal.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal'**
+  String get storyCategoryJournal;
+
+  /// No description provided for @storyCategoryGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide'**
+  String get storyCategoryGuide;
+
+  /// No description provided for @storyCategoryPhotoEssay.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo Essay'**
+  String get storyCategoryPhotoEssay;
+
+  /// No description provided for @storyCategoryCulinary.
+  ///
+  /// In en, this message translates to:
+  /// **'Culinary'**
+  String get storyCategoryCulinary;
+
+  /// No description provided for @storyDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Story Details'**
+  String get storyDetailsTitle;
+
+  /// No description provided for @storyLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Story link copied'**
+  String get storyLinkCopied;
+
+  /// No description provided for @storyAuthorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Author'**
+  String get storyAuthorLabel;
+
+  /// No description provided for @storyFollowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow'**
+  String get storyFollowAction;
+
+  /// No description provided for @storyFollowingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get storyFollowingAction;
+
+  /// No description provided for @storyStatViews.
+  ///
+  /// In en, this message translates to:
+  /// **'Views'**
+  String get storyStatViews;
+
+  /// No description provided for @storyStatLikes.
+  ///
+  /// In en, this message translates to:
+  /// **'Likes'**
+  String get storyStatLikes;
+
+  /// No description provided for @storyStatComments.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get storyStatComments;
+
+  /// No description provided for @storyStatShares.
+  ///
+  /// In en, this message translates to:
+  /// **'Shares'**
+  String get storyStatShares;
+
+  /// No description provided for @storyTagsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get storyTagsLabel;
+
+  /// No description provided for @storyCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a thoughtful comment'**
+  String get storyCommentHint;
+
+  /// No description provided for @storyCommentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get storyCommentsTitle;
+
+  /// No description provided for @storyCommentsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet. Start the conversation.'**
+  String get storyCommentsEmpty;
+
+  /// No description provided for @storyDeleteCommentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete comment?'**
+  String get storyDeleteCommentTitle;
+
+  /// No description provided for @storyDeleteCommentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This comment will be permanently removed.'**
+  String get storyDeleteCommentMessage;
+
+  /// No description provided for @storyDeleteCommentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get storyDeleteCommentAction;
+
+  /// No description provided for @storyRelatedEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Exploring'**
+  String get storyRelatedEyebrow;
+
+  /// No description provided for @storyRelatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Related Stories'**
+  String get storyRelatedTitle;
+
+  /// No description provided for @storyRelatedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No related stories yet'**
+  String get storyRelatedEmpty;
+
+  /// No description provided for @storyViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get storyViewAll;
+
+  /// No description provided for @storyEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Story'**
+  String get storyEditAction;
+
+  /// No description provided for @storyDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete story?'**
+  String get storyDeleteTitle;
+
+  /// No description provided for @storyDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The story will be removed from public feed.'**
+  String get storyDeleteMessage;
+
+  /// No description provided for @storyDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get storyDeleteAction;
+
+  /// No description provided for @storyCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Story'**
+  String get storyCreateTitle;
+
+  /// No description provided for @storyContinueAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get storyContinueAction;
+
+  /// No description provided for @storyUpdateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Story'**
+  String get storyUpdateAction;
+
+  /// No description provided for @storyPublishAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish Story'**
+  String get storyPublishAction;
+
+  /// No description provided for @storySaveDraftAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Draft'**
+  String get storySaveDraftAction;
+
+  /// No description provided for @storySaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save story'**
+  String get storySaveFailed;
+
+  /// No description provided for @storyCoverUploadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Cover Image'**
+  String get storyCoverUploadTitle;
+
+  /// No description provided for @storyCoverUploadSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'High-resolution cinematic landscape preferred'**
+  String get storyCoverUploadSubtitle;
+
+  /// No description provided for @storyCoverRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cover image'**
+  String get storyCoverRequired;
+
+  /// No description provided for @storyCoverUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This image format is not supported'**
+  String get storyCoverUnsupported;
+
+  /// No description provided for @storyCoverTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover image is too large. Use a file up to 20 MB.'**
+  String get storyCoverTooLarge;
+
+  /// No description provided for @storyCoverUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload cover image'**
+  String get storyCoverUploadFailed;
+
+  /// No description provided for @storyTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Story Title'**
+  String get storyTitleLabel;
+
+  /// No description provided for @storyTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Sunset Yoga by the Pier'**
+  String get storyTitleHint;
+
+  /// No description provided for @storyTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a story title'**
+  String get storyTitleRequired;
+
+  /// No description provided for @storyTitleTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'The title must not exceed {count} characters'**
+  String storyTitleTooLong(Object count);
+
+  /// No description provided for @storyPlacePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Where did this story take place?'**
+  String get storyPlacePrompt;
+
+  /// No description provided for @storyPlaceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search city or country'**
+  String get storyPlaceHint;
+
+  /// No description provided for @storyTagsFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get storyTagsFieldLabel;
+
+  /// No description provided for @storyTagHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a tag'**
+  String get storyTagHint;
+
+  /// No description provided for @storyTagsLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to 8 tags'**
+  String get storyTagsLimit;
+
+  /// No description provided for @storyCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Category'**
+  String get storyCategoryLabel;
+
+  /// No description provided for @storyCategoryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a story category'**
+  String get storyCategoryRequired;
+
+  /// No description provided for @storyContentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start your narrative here...'**
+  String get storyContentHint;
+
+  /// No description provided for @storyContentRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the story body'**
+  String get storyContentRequired;
+
+  /// No description provided for @storyContentTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'The story body must not exceed {count} characters'**
+  String storyContentTooLong(Object count);
+
+  /// No description provided for @storyCharacterCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Character Count'**
+  String get storyCharacterCountLabel;
+
+  /// No description provided for @storyAiHintUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'AI writing hints are not available yet'**
+  String get storyAiHintUnavailable;
+
+  /// No description provided for @storyWritersNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Writer\'s Note'**
+  String get storyWritersNoteTitle;
+
+  /// No description provided for @storyWritersNoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya.'**
+  String get storyWritersNoteBody;
 }
 
 class _AppLocalizationsDelegate

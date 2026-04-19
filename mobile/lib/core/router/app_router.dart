@@ -4,10 +4,14 @@ import 'package:go_router/go_router.dart';
 import '../navigation/android_back_swipe_scope.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
+import '../../features/stories/models/story_vm.dart';
 import '../../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/otp_screen.dart';
 import '../../screens/home/home_screen.dart';
+import '../../screens/stories/create_story_screen.dart';
+import '../../screens/stories/story_details_screen.dart';
+import '../../screens/stories/stories_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/profile/profile_notifications_screen.dart';
 import '../../screens/profile/profile_security_screen.dart';
@@ -65,6 +69,46 @@ class AppRouter {
             final phone = state.uri.queryParameters['phone'] ?? '';
             final from = state.uri.queryParameters['from'];
             return _withAndroidBackSwipe(OtpScreen(phone: phone, from: from));
+          },
+        ),
+        GoRoute(
+          path: '/stories',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const StoriesScreen()),
+        ),
+        GoRoute(
+          path: '/stories/create',
+          builder: (context, state) {
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
+            return _withAndroidBackSwipe(
+              CreateStoryScreen(initialStory: initialStory),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/stories/:storyId/edit',
+          builder: (context, state) {
+            final storyId = state.pathParameters['storyId'] ?? '';
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
+            return _withAndroidBackSwipe(
+              CreateStoryScreen(storyId: storyId, initialStory: initialStory),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/stories/:slug',
+          builder: (context, state) {
+            final slug = state.pathParameters['slug'] ?? '';
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
+            return _withAndroidBackSwipe(
+              StoryDetailsScreen(slug: slug, initialStory: initialStory),
+            );
           },
         ),
         GoRoute(
@@ -241,9 +285,8 @@ class AppRouter {
         ),
         GoRoute(
           path: '/editorial',
-          builder: (context, state) => _withAndroidBackSwipe(
-            const FeatureStubScreen(title: 'Editorial'),
-          ),
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const StoriesScreen()),
         ),
       ],
     );
@@ -255,6 +298,7 @@ class AppRouter {
     }
 
     if (location == '/activities' ||
+        location == '/stories' ||
         location == '/menu' ||
         location == '/map' ||
         location == '/notifications' ||
@@ -267,6 +311,10 @@ class AppRouter {
         location == '/featured-stays' ||
         location == '/car-rentals' ||
         location == '/editorial') {
+      return true;
+    }
+
+    if (location.startsWith('/stories/')) {
       return true;
     }
 

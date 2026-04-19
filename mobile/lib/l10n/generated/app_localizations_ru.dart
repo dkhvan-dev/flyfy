@@ -2337,4 +2337,247 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get qrScannerNoPending => 'Нет ожидающих отметок';
+
+  @override
+  String get retry => 'Повторить';
+
+  @override
+  String get backButtonLabel => 'Назад';
+
+  @override
+  String get storiesDiscoverTitle => 'Истории';
+
+  @override
+  String get storiesNavLabel => 'Истории';
+
+  @override
+  String get storiesActivitiesNavLabel => 'Активности';
+
+  @override
+  String get storySearchHint => 'Поиск историй, авторов или мест';
+
+  @override
+  String get storyFilterCategory => 'Категория';
+
+  @override
+  String get storyFilterCountry => 'Страна';
+
+  @override
+  String get storyFilterAll => 'Все';
+
+  @override
+  String get storySortLabel => 'Сортировать';
+
+  @override
+  String get storySortDate => 'Дата';
+
+  @override
+  String get storySortViews => 'Просмотры';
+
+  @override
+  String get storySortComments => 'Комментарии';
+
+  @override
+  String get storyCreateCta => 'Поделиться историей';
+
+  @override
+  String get storyCreateFirst => 'Создать первую историю';
+
+  @override
+  String get storyEmptyTitle => 'Историй пока нет';
+
+  @override
+  String get storyEmptySubtitle =>
+      'Станьте первым, кто опубликует travel-note, локальный гид или визуальное эссе.';
+
+  @override
+  String get storyLoadFailed => 'Не удалось загрузить истории';
+
+  @override
+  String get storyViewsSuffix => 'просмотров';
+
+  @override
+  String get storyCategoryJournal => 'Журнал';
+
+  @override
+  String get storyCategoryGuide => 'Гид';
+
+  @override
+  String get storyCategoryPhotoEssay => 'Фотоэссе';
+
+  @override
+  String get storyCategoryCulinary => 'Гастрономия';
+
+  @override
+  String get storyDetailsTitle => 'Детали истории';
+
+  @override
+  String get storyLinkCopied => 'Ссылка на историю скопирована';
+
+  @override
+  String get storyAuthorLabel => 'Автор';
+
+  @override
+  String get storyFollowAction => 'Подписаться';
+
+  @override
+  String get storyFollowingAction => 'Подписаны';
+
+  @override
+  String get storyStatViews => 'Просмотры';
+
+  @override
+  String get storyStatLikes => 'Лайки';
+
+  @override
+  String get storyStatComments => 'Комменты';
+
+  @override
+  String get storyStatShares => 'Шеры';
+
+  @override
+  String get storyTagsLabel => 'Теги';
+
+  @override
+  String get storyCommentHint => 'Оставьте комментарий';
+
+  @override
+  String get storyCommentsTitle => 'Комментарии';
+
+  @override
+  String get storyCommentsEmpty =>
+      'Комментариев пока нет. Начните обсуждение первым.';
+
+  @override
+  String get storyDeleteCommentTitle => 'Удалить комментарий?';
+
+  @override
+  String get storyDeleteCommentMessage =>
+      'Комментарий будет удален без возможности восстановления.';
+
+  @override
+  String get storyDeleteCommentAction => 'Удалить';
+
+  @override
+  String get storyRelatedEyebrow => 'Исследуйте дальше';
+
+  @override
+  String get storyRelatedTitle => 'Похожие истории';
+
+  @override
+  String get storyRelatedEmpty => 'Похожих историй пока нет';
+
+  @override
+  String get storyViewAll => 'Смотреть все';
+
+  @override
+  String get storyEditAction => 'Редактировать';
+
+  @override
+  String get storyDeleteTitle => 'Удалить историю?';
+
+  @override
+  String get storyDeleteMessage => 'История будет убрана из публичной ленты.';
+
+  @override
+  String get storyDeleteAction => 'Удалить';
+
+  @override
+  String get storyCreateTitle => 'Новая история';
+
+  @override
+  String get storyContinueAction => 'Продолжить';
+
+  @override
+  String get storyUpdateAction => 'Обновить историю';
+
+  @override
+  String get storyPublishAction => 'Опубликовать историю';
+
+  @override
+  String get storySaveDraftAction => 'Сохранить черновик';
+
+  @override
+  String get storySaveFailed => 'Не удалось сохранить историю';
+
+  @override
+  String get storyCoverUploadTitle => 'Загрузите обложку';
+
+  @override
+  String get storyCoverUploadSubtitle =>
+      'Желательно использовать качественное горизонтальное изображение';
+
+  @override
+  String get storyCoverRequired => 'Добавьте обложку';
+
+  @override
+  String get storyCoverUnsupported =>
+      'Этот формат изображения не поддерживается';
+
+  @override
+  String get storyCoverTooLarge =>
+      'Файл обложки слишком большой. Используйте изображение до 20 МБ.';
+
+  @override
+  String get storyCoverUploadFailed => 'Не удалось загрузить обложку';
+
+  @override
+  String get storyTitleLabel => 'Заголовок истории';
+
+  @override
+  String get storyTitleHint => 'Например: Закатная йога у пирса';
+
+  @override
+  String get storyTitleRequired => 'Введите заголовок истории';
+
+  @override
+  String storyTitleTooLong(Object count) {
+    return 'Заголовок не должен превышать $count символов';
+  }
+
+  @override
+  String get storyPlacePrompt => 'Где произошла эта история?';
+
+  @override
+  String get storyPlaceHint => 'Введите город или страну';
+
+  @override
+  String get storyTagsFieldLabel => 'Теги';
+
+  @override
+  String get storyTagHint => 'Добавить тег';
+
+  @override
+  String get storyTagsLimit => 'Можно добавить не более 8 тегов';
+
+  @override
+  String get storyCategoryLabel => 'Выберите категорию';
+
+  @override
+  String get storyCategoryRequired => 'Выберите категорию истории';
+
+  @override
+  String get storyContentHint => 'Начните свой рассказ здесь...';
+
+  @override
+  String get storyContentRequired => 'Напишите текст истории';
+
+  @override
+  String storyContentTooLong(Object count) {
+    return 'Текст истории не должен превышать $count символов';
+  }
+
+  @override
+  String get storyCharacterCountLabel => 'Количество символов';
+
+  @override
+  String get storyAiHintUnavailable =>
+      'AI-подсказки для текста пока недоступны';
+
+  @override
+  String get storyWritersNoteTitle => 'Совет автору';
+
+  @override
+  String get storyWritersNoteBody =>
+      'Попробуйте начать с чувственной детали. Вместо «Я приехал в Токио» опишите неоновое свечение, отражающееся в мокром асфальте Сибуи.';
 }
