@@ -236,6 +236,72 @@ services:
       - flyfy-network
 
   # ============================================
+  # Chat Service PostgreSQL
+  # ============================================
+  chat-postgres:
+    image: postgres:17-alpine
+    container_name: chat-postgres
+    environment:
+      POSTGRES_DB: chat_service_db
+      POSTGRES_USER: chat_service
+      POSTGRES_PASSWORD: chat_secret_dev
+    ports:
+      - "5440:5432"
+    volumes:
+      - chat_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/008_chat_service.sh:/docker-entrypoint-initdb.d/008_chat_service.sh
+      - ../backend/services/chat-service/migrations:/migrations/chat-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat_service -d chat_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  chat-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: chat-postgres-migrator
+    environment:
+      PGHOST: chat-postgres
+      PGPORT: 5432
+      POSTGRES_DB: chat_service_db
+      POSTGRES_USER: chat_service
+      POSTGRES_PASSWORD: chat_secret_dev
+    volumes:
+      - ./init-scripts/008_chat_service_migrate.sh:/usr/local/bin/008_chat_service_migrate.sh:ro
+      - ../backend/services/chat-service/migrations:/migrations/chat-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/008_chat_service_migrate.sh"]
+    depends_on:
+      chat-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # NATS
+  # ============================================
+  nats:
+    image: nats:2-alpine
+    container_name: flyfy-nats
+    command: --jetstream --store_dir /data
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Redis
   # ============================================
   redis:
@@ -633,6 +699,66 @@ services:
       - flyfy-network
 
   # ============================================
+  # Chat Service
+  # ============================================
+  chat-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/chat-service/Dockerfile
+    container_name: chat-service
+    depends_on:
+      chat-postgres:
+        condition: service_healthy
+      chat-postgres-migrator:
+        condition: service_completed_successfully
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    ports:
+      - "8088:8088"
+      - "9097:9097"
+    environment:
+      APP_NAME: chat-service
+      APP_ENV: development
+
+      HTTP_PORT: 8088
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 120s
+      HTTP_IDLE_TIMEOUT: 120s
+      GRPC_PORT: 9097
+
+      DB_HOST: chat-postgres
+      DB_PORT: 5432
+      DB_NAME: chat_service_db
+      DB_USER: chat_service
+      DB_PASSWORD: chat_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 50
+      DB_MIN_CONNS: 5
+
+      LOG_LEVEL: debug
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      REQUIRE_AUTHENTICATED_WRITES: "true"
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+
+      NATS_URL: nats://nats:4222
+
+      REDIS_ADDR: redis:6379
+      REDIS_DB: 2
+
+      USER_SERVICE_GRPC_ADDR: dns:///user-service:9094
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
   # API Gateway
   # ============================================
   api-gateway:
@@ -652,6 +778,8 @@ services:
       guide-service:
         condition: service_started
       stories-service:
+        condition: service_started
+      chat-service:
         condition: service_started
     ports:
       - "8080:8080"
@@ -678,6 +806,7 @@ services:
       FILE_MANAGER_HTTP_URL: http://file-manager-service:8083
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
       STORIES_SERVICE_HTTP_URL: http://stories-service:8087
+      CHAT_SERVICE_HTTP_URL: http://chat-service:8088
 
       TOKEN_SERVICE_GRPC_TARGET: dns:///token-service:50051
       TOKEN_SERVICE_ID: api-gateway
@@ -711,4 +840,6 @@ volumes:
   guide_postgres_data:
   activity_postgres_data:
   stories_postgres_data:
+  chat_postgres_data:
+  nats_data:
   token_service_keys:

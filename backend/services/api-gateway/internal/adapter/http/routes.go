@@ -31,6 +31,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	filesLimit := 180
 	activityLimit := 180
 	storiesLimit := 180
+	chatLimit := 300
 
 	return []RoutePolicy{
 		{
@@ -134,6 +135,21 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "stories",
 			RateLimitPerMinute: &storiesLimit,
 			RewritePrefix:      "/v1/stories",
+		},
+		{
+			Name:               "chat-conversations",
+			Prefix:             apiPrefix + "/chat/conversations",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "chat",
+			RateLimitPerMinute: &chatLimit,
+			RewritePrefix:      "/v1/conversations",
+		},
+		{
+			Name:          "chat-ws",
+			Prefix:        apiPrefix + "/chat/ws",
+			AuthMode:      RouteAuthAuthenticated,
+			Upstream:      "chat",
+			RewritePrefix: "/v1/ws",
 		},
 	}
 }

@@ -62,6 +62,7 @@ type DownstreamsConfig struct {
 	FileManagerService string `env:"FILE_MANAGER_HTTP_URL, default=http://file-manager-service:8083"`
 	ActivityService    string `env:"ACTIVITY_SERVICE_HTTP_URL, default=http://activity-service:8086"`
 	StoriesService     string `env:"STORIES_SERVICE_HTTP_URL, default=http://stories-service:8087"`
+	ChatService        string `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
 }
 
 type TokenServiceConfig struct {
