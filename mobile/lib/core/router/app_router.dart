@@ -24,6 +24,8 @@ import '../../screens/activities/activity_payment_screen.dart';
 import '../../screens/activities/create_activity_screen.dart';
 import '../../screens/activities/my_activities_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
+import '../../screens/chat/conversations_screen.dart';
+import '../../screens/chat/chat_screen.dart';
 import '../../screens/common/feature_stub_screen.dart';
 import '../../screens/map/map_screen.dart';
 
@@ -215,9 +217,12 @@ class AppRouter {
         ),
         GoRoute(
           path: '/activities/:activityId/chat',
-          builder: (context, state) => _withAndroidBackSwipe(
-            const FeatureStubScreen(title: 'Activity Chat'),
-          ),
+          builder: (context, state) {
+            final activityId = state.pathParameters['activityId'] ?? '';
+            return _withAndroidBackSwipe(
+              ChatScreen(conversationId: activityId),
+            );
+          },
         ),
         GoRoute(
           path: '/qr',
@@ -247,7 +252,17 @@ class AppRouter {
         GoRoute(
           path: '/chats',
           builder: (context, state) =>
-              _withAndroidBackSwipe(const FeatureStubScreen(title: 'Chats')),
+              _withAndroidBackSwipe(const ConversationsScreen()),
+        ),
+        GoRoute(
+          path: '/chats/:conversationId',
+          builder: (context, state) {
+            final conversationId =
+                state.pathParameters['conversationId'] ?? '';
+            return _withAndroidBackSwipe(
+              ChatScreen(conversationId: conversationId),
+            );
+          },
         ),
         GoRoute(
           path: '/yandex-go',

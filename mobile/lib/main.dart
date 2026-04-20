@@ -14,6 +14,7 @@ import 'providers/locale_provider.dart';
 import 'core/router/app_router.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'providers/activity_provider.dart';
+import 'providers/chat_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +62,7 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider<SessionProvider>.value(value: _sessionProvider),
         ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, _) {
