@@ -157,6 +157,23 @@ class _ChatTopBar extends StatelessWidget {
             _DirectTopBarContent(conversation: conversation),
           ] else ...[
             _GroupTopBarContent(conversation: conversation),
+            const SizedBox(width: 14),
+            // Participants button
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0x2EFF9D00),
+                ),
+                color: const Color(0x0DFF9900),
+              ),
+              child: const Center(
+                child: Icon(Icons.group_outlined,
+                    size: 22, color: Color(0xFFff9800)),
+              ),
+            ),
           ],
         ],
       ),
@@ -311,8 +328,8 @@ class _PinnedMessageBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-      padding: const EdgeInsets.fromLTRB(30, 28, 30, 24),
+      margin: const EdgeInsets.fromLTRB(0, 18, 0, 26),
+      padding: const EdgeInsets.fromLTRB(30, 34, 30, 28),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(42),
         gradient: const LinearGradient(
@@ -378,6 +395,8 @@ class _MessageList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final items = _buildItems();
+
     return CustomScrollView(
       controller: scrollController,
       reverse: true,
@@ -388,23 +407,166 @@ class _MessageList extends StatelessWidget {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(14, 18, 14, 18),
           sliver: SliverList.separated(
-            itemCount: messages.length +
-                (conversation.pinnedMessage != null ? 1 : 0),
-            separatorBuilder: (_, __) => const SizedBox(height: 28),
-            itemBuilder: (context, index) {
-              // Pinned message at the very bottom (appears at top since reversed)
-              if (conversation.pinnedMessage != null &&
-                  index == messages.length) {
-                return _PinnedMessageBanner(
-                    pinned: conversation.pinnedMessage!);
-              }
-              final msg = messages[index];
-              return _MessageBubble(
-                message: msg,
-                isGroup: conversation.isGroup,
-                isMine: msg.senderUserId == currentUserId,
-              );
-            },
+            itemCount: items.length,
+            separatorBuilder: (_, __) => SizedBox(
+              height: conversation.isGroup ? 34 : 42,
+            ),
+            itemBuilder: (context, index) => items[index],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildItems() {
+    final items = <Widget>[];
+
+    String? lastDateLabel;
+    for (var i = 0; i < messages.length; i++) {
+      final msg = messages[i];
+      final dateLabel = _dateLabelFor(msg.sentAt);
+
+      // Insert day separator when date changes (reverse order)
+      final nextMsg = i + 1 < messages.length ? messages[i + 1] : null;
+      final nextLabel =
+          nextMsg != null ? _dateLabelFor(nextMsg.sentAt) : null;
+      if (dateLabel != lastDateLabel && dateLabel != nextLabel) {
+        lastDateLabel = dateLabel;
+      }
+
+      items.add(
+        _MessageBubble(
+          message: msg,
+          isGroup: conversation.isGroup,
+          isMine: msg.senderUserId == currentUserId,
+        ),
+      );
+
+      // Add day separator after messages of a different day (in reversed view it appears above)
+      if (nextMsg != null && dateLabel != _dateLabelFor(nextMsg.sentAt)) {
+        items.add(
+          _DaySeparator(
+            label: dateLabel,
+            isGroup: conversation.isGroup,
+          ),
+        );
+      }
+    }
+
+    // Add separator at the very top for the oldest visible messages
+    if (messages.isNotEmpty) {
+      final oldest = messages.last;
+      items.add(
+        _DaySeparator(
+          label: _dateLabelFor(oldest.sentAt),
+          isGroup: conversation.isGroup,
+        ),
+      );
+    }
+
+    // Pinned message at the very end (top of screen in reversed view)
+    if (conversation.pinnedMessage != null) {
+      items.add(
+        _PinnedMessageBanner(pinned: conversation.pinnedMessage!),
+      );
+    }
+
+    return items;
+  }
+
+  String _dateLabelFor(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final date = DateTime(dt.year, dt.month, dt.day);
+    final diff = today.difference(date).inDays;
+
+    if (diff == 0) return 'TODAY';
+    if (diff == 1) return 'YESTERDAY';
+    return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
+  }
+}
+
+// ── Day separator ────────────────────────────────────────────────
+
+class _DaySeparator extends StatelessWidget {
+  const _DaySeparator({required this.label, required this.isGroup});
+
+  final String label;
+  final bool isGroup;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isGroup) {
+      // Group style: pill badge (matches group_chat.html)
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            color: const Color(0x734C2F15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.02),
+                offset: const Offset(0, 1),
+                blurRadius: 0,
+                spreadRadius: -1,
+              ),
+            ],
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.08 * 15,
+              color: Color(0xFFb9a48d),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Direct style: line divider (matches personal_chat.html)
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.white.withValues(alpha: 0.08),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.14 * 12,
+              color: Colors.white.withValues(alpha: 0.22),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.white.withValues(alpha: 0.08),
+                  Colors.transparent,
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -514,20 +676,39 @@ class _MessageBubble extends StatelessWidget {
               // Bubble
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(isGroup ? 26 : 24),
+                padding: isGroup
+                    ? const EdgeInsets.fromLTRB(28, 28, 28, 24)
+                    : const EdgeInsets.fromLTRB(30, 26, 30, 26),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(28),
-                  color: const Color(0xAD462E1B),
+                  gradient: isGroup
+                      ? const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0xA34D2D13),
+                            Color(0xD13C210D),
+                          ],
+                        )
+                      : null,
+                  color: isGroup ? null : const Color(0xAD462E1B),
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.05),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.03),
+                      offset: const Offset(0, 1),
+                      blurRadius: 0,
+                    ),
+                  ],
                 ),
                 child: Text(
                   message.content,
                   style: TextStyle(
-                    fontSize: isGroup ? 20 : 17,
-                    height: 1.50,
-                    letterSpacing: -0.02 * 18,
+                    fontSize: isGroup ? 22 : 17,
+                    height: isGroup ? 1.46 : 1.55,
+                    letterSpacing: isGroup ? -0.035 * 22 : -0.02 * 17,
                     color: Colors.white.withValues(alpha: 0.98),
                   ),
                 ),

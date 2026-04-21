@@ -153,11 +153,11 @@ class ChatProvider extends ChangeNotifier {
 
   void _handleEvent(ChatEvent event) {
     switch (event.type) {
-      case 'message.sent':
+      case 'message_sent':
         _onMessageSent(event);
-      case 'message.edited':
+      case 'message_edited':
         _onMessageEdited(event);
-      case 'message.deleted':
+      case 'message_deleted':
         _onMessageDeleted(event);
       default:
         break;
