@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/model"
@@ -19,6 +20,7 @@ type ActivityUseCase struct {
 	repo        port.ActivityRepository
 	policy      *PolicyService
 	fileManager port.ActivityMediaFileManager
+	chatGateway port.ActivityChatGateway
 }
 
 func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.ActivityMediaFileManager) *ActivityUseCase {
@@ -32,6 +34,61 @@ func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.Activi
 		policy:      NewPolicyService(repo),
 		fileManager: mediaFiles,
 	}
+}
+
+func (u *ActivityUseCase) SetChatGateway(chatGateway port.ActivityChatGateway) {
+	u.chatGateway = chatGateway
+}
+
+func (u *ActivityUseCase) syncActivityChat(ctx context.Context, item *model.Activity) {
+	if u.chatGateway == nil || item == nil || item.ID == uuid.Nil {
+		return
+	}
+
+	activityID := item.ID
+	title := item.Title
+	until := activityChatMessagingAvailableUntil(item)
+
+	go func() {
+		chatCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+
+		coverFileID := ""
+		media, err := u.repo.ListMediaByActivityID(chatCtx, activityID)
+		if err != nil {
+			log.Warn().
+				Err(err).
+				Str("activity_id", activityID.String()).
+				Msg("failed to resolve activity cover for chat sync")
+		} else {
+			coverFileID = activityCoverFileID(media)
+		}
+
+		if err := u.chatGateway.SyncActivityConversation(chatCtx, port.SyncActivityConversationInput{
+			ActivityID:              activityID,
+			ActivityTitle:           title,
+			ActivityAvatarFileID:    coverFileID,
+			MessagingAvailableUntil: &until,
+		}); err != nil {
+			log.Warn().
+				Err(err).
+				Str("activity_id", activityID.String()).
+				Msg("failed to sync activity chat")
+		}
+	}()
+}
+
+func activityChatMessagingAvailableUntil(item *model.Activity) time.Time {
+	if item == nil {
+		return time.Now().UTC()
+	}
+	closedAt := item.EndAt
+	if item.CancelledAt != nil {
+		closedAt = item.CancelledAt.UTC()
+	} else if item.CompletedAt != nil {
+		closedAt = item.CompletedAt.UTC()
+	}
+	return closedAt.UTC().Add(time.Hour)
 }
 
 func (u *ActivityUseCase) ListActivityCategories() []model.ActivityCategory {
@@ -490,6 +547,8 @@ func (u *ActivityUseCase) startActivityInternal(
 		_ = u.repo.CreateActivityEvent(ctx, event)
 	}
 
+	u.syncActivityChat(ctx, item)
+
 	return item, nil
 }
 
@@ -532,6 +591,8 @@ func (u *ActivityUseCase) completeActivityInternal(
 	if eventErr == nil {
 		_ = u.repo.CreateActivityEvent(ctx, event)
 	}
+
+	u.syncActivityChat(ctx, item)
 
 	return item, nil
 }
@@ -578,6 +639,8 @@ func (u *ActivityUseCase) PublishActivity(
 	if eventErr == nil {
 		_ = u.repo.CreateActivityEvent(ctx, event)
 	}
+
+	u.syncActivityChat(ctx, item)
 
 	return item, nil
 }
@@ -824,6 +887,8 @@ func (u *ActivityUseCase) CancelActivity(
 		_ = u.repo.CreateActivityEvent(ctx, event)
 	}
 
+	u.syncActivityChat(ctx, item)
+
 	return item, nil
 }
 
@@ -877,6 +942,8 @@ func (u *ActivityUseCase) ExtendActivity(
 	if eventErr == nil {
 		_ = u.repo.CreateActivityEvent(ctx, event)
 	}
+
+	u.syncActivityChat(ctx, item)
 
 	return item, nil
 }
@@ -1089,6 +1156,8 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 			_ = u.repo.CreateActivityEvent(ctx, locEvent)
 		}
 	}
+
+	u.syncActivityChat(ctx, item)
 
 	return item, nil
 }

@@ -4773,6 +4773,372 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya.'**
   String get storyWritersNoteBody;
+
+  /// No description provided for @chatListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats'**
+  String get chatListTitle;
+
+  /// No description provided for @chatListLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load chats'**
+  String get chatListLoadFailed;
+
+  /// No description provided for @chatListEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get chatListEmpty;
+
+  /// No description provided for @chatFallbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chatFallbackTitle;
+
+  /// No description provided for @chatGroupFallbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Chat'**
+  String get chatGroupFallbackTitle;
+
+  /// No description provided for @chatActivityFallbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity chat'**
+  String get chatActivityFallbackTitle;
+
+  /// No description provided for @chatActiveNow.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE NOW'**
+  String get chatActiveNow;
+
+  /// No description provided for @chatParticipantsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No participants} =1{1 participant} other{{count} participants}}'**
+  String chatParticipantsCount(num count);
+
+  /// No description provided for @chatPinnedMessageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PINNED MESSAGE'**
+  String get chatPinnedMessageLabel;
+
+  /// No description provided for @chatDateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get chatDateToday;
+
+  /// No description provided for @chatDateYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get chatDateYesterday;
+
+  /// No description provided for @chatMessageDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Message deleted'**
+  String get chatMessageDeleted;
+
+  /// No description provided for @chatEditedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'edited'**
+  String get chatEditedLabel;
+
+  /// No description provided for @chatUserFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get chatUserFallbackName;
+
+  /// No description provided for @chatSystemUserJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} joined'**
+  String chatSystemUserJoined(Object name);
+
+  /// No description provided for @chatSystemUserLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} left'**
+  String chatSystemUserLeft(Object name);
+
+  /// No description provided for @chatSystemUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'System update'**
+  String get chatSystemUpdate;
+
+  /// No description provided for @chatAttachmentPhotoVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo / Video'**
+  String get chatAttachmentPhotoVideo;
+
+  /// No description provided for @chatAttachmentFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get chatAttachmentFile;
+
+  /// No description provided for @chatAttachmentLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get chatAttachmentLocation;
+
+  /// No description provided for @chatAttachmentUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading attachment...'**
+  String get chatAttachmentUploading;
+
+  /// No description provided for @chatAttachmentDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading...'**
+  String get chatAttachmentDownloading;
+
+  /// No description provided for @chatAttachmentDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded. Tap again to open.'**
+  String get chatAttachmentDownloaded;
+
+  /// No description provided for @chatAttachmentDownloadedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get chatAttachmentDownloadedStatus;
+
+  /// No description provided for @chatAttachmentNotDownloadedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to download'**
+  String get chatAttachmentNotDownloadedStatus;
+
+  /// No description provided for @chatAttachmentDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to download the file. Please try again.'**
+  String get chatAttachmentDownloadFailed;
+
+  /// No description provided for @chatAttachmentOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this file on the device.'**
+  String get chatAttachmentOpenFailed;
+
+  /// No description provided for @chatAttachmentUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload the attachment. Please try again.'**
+  String get chatAttachmentUploadFailed;
+
+  /// No description provided for @chatAttachmentUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This file type is not supported for chat attachments.'**
+  String get chatAttachmentUnsupported;
+
+  /// No description provided for @chatAttachmentTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The attachment is too large. Use a file up to 25 MB.'**
+  String get chatAttachmentTooLarge;
+
+  /// No description provided for @chatComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a message...'**
+  String get chatComposerHint;
+
+  /// No description provided for @chatComposerClosedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat is closed'**
+  String get chatComposerClosedHint;
+
+  /// No description provided for @chatActivityChatClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'This activity chat is now read-only.'**
+  String get chatActivityChatClosed;
+
+  /// No description provided for @chatActivityChatClosedHistoryNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'The activity has ended. Messages can no longer be sent in this chat.'**
+  String get chatActivityChatClosedHistoryNotice;
+
+  /// No description provided for @chatVoiceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice message'**
+  String get chatVoiceMessage;
+
+  /// No description provided for @chatVoiceRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording voice message'**
+  String get chatVoiceRecording;
+
+  /// No description provided for @chatVoiceRecordPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is required to record voice messages.'**
+  String get chatVoiceRecordPermissionDenied;
+
+  /// No description provided for @chatVoiceRecordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to record the voice message. Please try again.'**
+  String get chatVoiceRecordFailed;
+
+  /// No description provided for @chatVoicePlaybackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not play this voice message.'**
+  String get chatVoicePlaybackFailed;
+
+  /// No description provided for @chatVoiceTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice message is too short.'**
+  String get chatVoiceTooShort;
+
+  /// No description provided for @chatLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load chat'**
+  String get chatLoadFailed;
+
+  /// No description provided for @chatParticipantsHostSection.
+  ///
+  /// In en, this message translates to:
+  /// **'HOST & ORGANIZER'**
+  String get chatParticipantsHostSection;
+
+  /// No description provided for @chatParticipantsJoinedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'JOINED PARTICIPANTS'**
+  String get chatParticipantsJoinedSection;
+
+  /// No description provided for @chatParticipantHostStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'host & organizer'**
+  String get chatParticipantHostStatus;
+
+  /// No description provided for @chatParticipantYouStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'you'**
+  String get chatParticipantYouStatus;
+
+  /// No description provided for @chatParticipantJoinedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'joined participant'**
+  String get chatParticipantJoinedStatus;
+
+  /// No description provided for @chatParticipantsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No other participants yet'**
+  String get chatParticipantsEmpty;
+
+  /// No description provided for @chatSharedMediaTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get chatSharedMediaTab;
+
+  /// No description provided for @chatSharedLinksTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Links'**
+  String get chatSharedLinksTab;
+
+  /// No description provided for @chatSharedFilesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get chatSharedFilesTab;
+
+  /// No description provided for @chatSharedNoMediaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No media yet'**
+  String get chatSharedNoMediaTitle;
+
+  /// No description provided for @chatSharedNoMediaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos and videos from this chat will appear here.'**
+  String get chatSharedNoMediaSubtitle;
+
+  /// No description provided for @chatSharedNoLinksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No links yet'**
+  String get chatSharedNoLinksTitle;
+
+  /// No description provided for @chatSharedNoLinksSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages with links will be collected here.'**
+  String get chatSharedNoLinksSubtitle;
+
+  /// No description provided for @chatSharedNoFilesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No files yet'**
+  String get chatSharedNoFilesTitle;
+
+  /// No description provided for @chatSharedNoFilesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents and archives from this chat will appear here.'**
+  String get chatSharedNoFilesSubtitle;
+
+  /// No description provided for @chatSharedFileFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'File {id}'**
+  String chatSharedFileFallback(Object id);
+
+  /// No description provided for @chatSharedUnknownFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown file'**
+  String get chatSharedUnknownFile;
+
+  /// No description provided for @chatSharedLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load content'**
+  String get chatSharedLoadFailed;
+
+  /// No description provided for @chatSharedLoadFailedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Please check the connection and retry.'**
+  String get chatSharedLoadFailedSubtitle;
+
+  /// No description provided for @chatSharedPartialLoadWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Some older shared items could not be loaded.'**
+  String get chatSharedPartialLoadWarning;
 }
 
 class _AppLocalizationsDelegate

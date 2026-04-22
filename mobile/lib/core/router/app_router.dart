@@ -220,7 +220,7 @@ class AppRouter {
           builder: (context, state) {
             final activityId = state.pathParameters['activityId'] ?? '';
             return _withAndroidBackSwipe(
-              ChatScreen(conversationId: activityId),
+              ChatScreen(activityId: activityId),
             );
           },
         ),

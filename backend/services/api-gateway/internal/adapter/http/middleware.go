@@ -260,38 +260,28 @@ func authMiddleware(cfg *config.Config, verifier app.TokenVerifier, next http.Ha
 			return
 		}
 
-		authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
-		hasToken := strings.HasPrefix(strings.ToLower(authHeader), "bearer ")
+		token := bearerTokenFromRequest(r)
 
 		if policy.AuthMode == RouteAuthPublic {
-			if hasToken {
-				token := strings.TrimSpace(authHeader[len("Bearer "):])
-				if token != "" {
-					claims, err := verifier.VerifyAccessToken(r.Context(), token)
-					if err == nil {
-						ctx := context.WithValue(r.Context(), contextKeyClaims, claims)
-						next.ServeHTTP(w, r.WithContext(ctx))
-						return
-					}
-					log.Warn().
-						Err(err).
-						Str("route", RouteNameOrDefault(r.Context())).
-						Str("method", r.Method).
-						Str("path", r.URL.Path).
-						Str("request_id", RequestIDFromContext(r.Context())).
-						Msg("optional token verification failed on public route")
+			if token != "" {
+				claims, err := verifier.VerifyAccessToken(r.Context(), token)
+				if err == nil {
+					ctx := context.WithValue(r.Context(), contextKeyClaims, claims)
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
 				}
+				log.Warn().
+					Err(err).
+					Str("route", RouteNameOrDefault(r.Context())).
+					Str("method", r.Method).
+					Str("path", r.URL.Path).
+					Str("request_id", RequestIDFromContext(r.Context())).
+					Msg("optional token verification failed on public route")
 			}
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		if !hasToken {
-			writeError(w, http.StatusUnauthorized, "missing bearer token")
-			return
-		}
-
-		token := strings.TrimSpace(authHeader[len("Bearer "):])
 		if token == "" {
 			writeError(w, http.StatusUnauthorized, "missing bearer token")
 			return
@@ -314,6 +304,22 @@ func authMiddleware(cfg *config.Config, verifier app.TokenVerifier, next http.Ha
 		ctx = context.WithValue(ctx, contextKeySubject, claims.Subject)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func bearerTokenFromRequest(r *http.Request) string {
+	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+	if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+		return strings.TrimSpace(authHeader[len("bearer "):])
+	}
+
+	for _, protocol := range strings.Split(r.Header.Get("Sec-WebSocket-Protocol"), ",") {
+		protocol = strings.TrimSpace(protocol)
+		if strings.HasPrefix(strings.ToLower(protocol), "bearer-") {
+			return strings.TrimSpace(protocol[len("bearer-"):])
+		}
+	}
+
+	return ""
 }
 
 func hasAnyRequiredRole(actual []string, required []string) bool {

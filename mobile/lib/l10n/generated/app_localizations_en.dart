@@ -2575,4 +2575,215 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storyWritersNoteBody =>
       'Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya.';
+
+  @override
+  String get chatListTitle => 'Chats';
+
+  @override
+  String get chatListLoadFailed => 'Failed to load chats';
+
+  @override
+  String get chatListEmpty => 'No conversations yet';
+
+  @override
+  String get chatFallbackTitle => 'Chat';
+
+  @override
+  String get chatGroupFallbackTitle => 'Group Chat';
+
+  @override
+  String get chatActivityFallbackTitle => 'Activity chat';
+
+  @override
+  String get chatActiveNow => 'ACTIVE NOW';
+
+  @override
+  String chatParticipantsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count participants',
+      one: '1 participant',
+      zero: 'No participants',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatPinnedMessageLabel => 'PINNED MESSAGE';
+
+  @override
+  String get chatDateToday => 'Today';
+
+  @override
+  String get chatDateYesterday => 'Yesterday';
+
+  @override
+  String get chatMessageDeleted => 'Message deleted';
+
+  @override
+  String get chatEditedLabel => 'edited';
+
+  @override
+  String get chatUserFallbackName => 'User';
+
+  @override
+  String chatSystemUserJoined(Object name) {
+    return '$name joined';
+  }
+
+  @override
+  String chatSystemUserLeft(Object name) {
+    return '$name left';
+  }
+
+  @override
+  String get chatSystemUpdate => 'System update';
+
+  @override
+  String get chatAttachmentPhotoVideo => 'Photo / Video';
+
+  @override
+  String get chatAttachmentFile => 'File';
+
+  @override
+  String get chatAttachmentLocation => 'Location';
+
+  @override
+  String get chatAttachmentUploading => 'Uploading attachment...';
+
+  @override
+  String get chatAttachmentDownloading => 'Downloading...';
+
+  @override
+  String get chatAttachmentDownloaded => 'Downloaded. Tap again to open.';
+
+  @override
+  String get chatAttachmentDownloadedStatus => 'Downloaded';
+
+  @override
+  String get chatAttachmentNotDownloadedStatus => 'Tap to download';
+
+  @override
+  String get chatAttachmentDownloadFailed =>
+      'Failed to download the file. Please try again.';
+
+  @override
+  String get chatAttachmentOpenFailed =>
+      'Could not open this file on the device.';
+
+  @override
+  String get chatAttachmentUploadFailed =>
+      'Failed to upload the attachment. Please try again.';
+
+  @override
+  String get chatAttachmentUnsupported =>
+      'This file type is not supported for chat attachments.';
+
+  @override
+  String get chatAttachmentTooLarge =>
+      'The attachment is too large. Use a file up to 25 MB.';
+
+  @override
+  String get chatComposerHint => 'Type a message...';
+
+  @override
+  String get chatComposerClosedHint => 'Chat is closed';
+
+  @override
+  String get chatActivityChatClosed => 'This activity chat is now read-only.';
+
+  @override
+  String get chatActivityChatClosedHistoryNotice =>
+      'The activity has ended. Messages can no longer be sent in this chat.';
+
+  @override
+  String get chatVoiceMessage => 'Voice message';
+
+  @override
+  String get chatVoiceRecording => 'Recording voice message';
+
+  @override
+  String get chatVoiceRecordPermissionDenied =>
+      'Microphone access is required to record voice messages.';
+
+  @override
+  String get chatVoiceRecordFailed =>
+      'Failed to record the voice message. Please try again.';
+
+  @override
+  String get chatVoicePlaybackFailed => 'Could not play this voice message.';
+
+  @override
+  String get chatVoiceTooShort => 'Voice message is too short.';
+
+  @override
+  String get chatLoadFailed => 'Failed to load chat';
+
+  @override
+  String get chatParticipantsHostSection => 'HOST & ORGANIZER';
+
+  @override
+  String get chatParticipantsJoinedSection => 'JOINED PARTICIPANTS';
+
+  @override
+  String get chatParticipantHostStatus => 'host & organizer';
+
+  @override
+  String get chatParticipantYouStatus => 'you';
+
+  @override
+  String get chatParticipantJoinedStatus => 'joined participant';
+
+  @override
+  String get chatParticipantsEmpty => 'No other participants yet';
+
+  @override
+  String get chatSharedMediaTab => 'Media';
+
+  @override
+  String get chatSharedLinksTab => 'Links';
+
+  @override
+  String get chatSharedFilesTab => 'Files';
+
+  @override
+  String get chatSharedNoMediaTitle => 'No media yet';
+
+  @override
+  String get chatSharedNoMediaSubtitle =>
+      'Photos and videos from this chat will appear here.';
+
+  @override
+  String get chatSharedNoLinksTitle => 'No links yet';
+
+  @override
+  String get chatSharedNoLinksSubtitle =>
+      'Messages with links will be collected here.';
+
+  @override
+  String get chatSharedNoFilesTitle => 'No files yet';
+
+  @override
+  String get chatSharedNoFilesSubtitle =>
+      'Documents and archives from this chat will appear here.';
+
+  @override
+  String chatSharedFileFallback(Object id) {
+    return 'File $id';
+  }
+
+  @override
+  String get chatSharedUnknownFile => 'Unknown file';
+
+  @override
+  String get chatSharedLoadFailed => 'Could not load content';
+
+  @override
+  String get chatSharedLoadFailedSubtitle =>
+      'Please check the connection and retry.';
+
+  @override
+  String get chatSharedPartialLoadWarning =>
+      'Some older shared items could not be loaded.';
 }

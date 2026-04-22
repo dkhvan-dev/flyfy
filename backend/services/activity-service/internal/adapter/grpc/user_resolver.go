@@ -49,6 +49,31 @@ func (r *UserResolver) ResolveRolesBySubject(ctx context.Context, subject string
 	return aggregateRoles(resp.GetAggregate()), nil
 }
 
+func (r *UserResolver) DisplayNameForUserID(ctx context.Context, userID uuid.UUID) (string, error) {
+	resp, err := r.client.GetUserById(ctx, &userv1.GetUserByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	aggregate := resp.GetAggregate()
+	if aggregate == nil || aggregate.GetProfile() == nil {
+		return "", errors.New("empty user profile")
+	}
+
+	profile := aggregate.GetProfile()
+	if displayName := strings.TrimSpace(profile.GetDisplayName()); displayName != "" {
+		return displayName, nil
+	}
+
+	fullName := strings.TrimSpace(strings.Join([]string{
+		strings.TrimSpace(profile.GetFirstName()),
+		strings.TrimSpace(profile.GetLastName()),
+	}, " "))
+	return fullName, nil
+}
+
 func aggregateRoles(aggregate *userv1.UserAggregate) []string {
 	if aggregate == nil {
 		return nil

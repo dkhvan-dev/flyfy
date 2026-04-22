@@ -9,15 +9,16 @@ import (
 )
 
 type Config struct {
-	App         AppConfig
-	HTTP        HTTPConfig
-	GRPC        GRPCConfig
-	DB          DBConfig
-	Log         LogConfig
-	Security    SecurityConfig
-	NATS        NATSConfig
-	Redis       RedisConfig
-	UserService UserServiceConfig
+	App             AppConfig
+	HTTP            HTTPConfig
+	GRPC            GRPCConfig
+	DB              DBConfig
+	Log             LogConfig
+	Security        SecurityConfig
+	NATS            NATSConfig
+	Redis           RedisConfig
+	UserService     UserServiceConfig
+	ActivityService ActivityServiceConfig
 }
 
 type AppConfig struct {
@@ -104,6 +105,10 @@ type RedisConfig struct {
 
 type UserServiceConfig struct {
 	GRPCAddress string `env:"USER_SERVICE_GRPC_ADDR, default=user-service:9094"`
+}
+
+type ActivityServiceConfig struct {
+	GRPCAddress string `env:"ACTIVITY_SERVICE_GRPC_ADDR, default=activity-service:9096"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

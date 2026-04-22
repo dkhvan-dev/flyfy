@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,12 +18,29 @@ const maxFilesPerMessage = 10
 const editWindowHours = 24
 
 type MessageUseCase struct {
-	repo      port.ChatRepository
-	publisher port.EventPublisher
+	repo             port.ChatRepository
+	publisher        port.EventPublisher
+	profileResolver  port.UserProfileResolver
+	activityResolver port.ActivityLifecycleResolver
 }
 
-func NewMessageUseCase(repo port.ChatRepository, publisher port.EventPublisher) *MessageUseCase {
-	return &MessageUseCase{repo: repo, publisher: publisher}
+func NewMessageUseCase(
+	repo port.ChatRepository,
+	publisher port.EventPublisher,
+	profileResolver port.UserProfileResolver,
+	activityResolver ...port.ActivityLifecycleResolver,
+) *MessageUseCase {
+	var resolver port.ActivityLifecycleResolver
+	if len(activityResolver) > 0 {
+		resolver = activityResolver[0]
+	}
+
+	return &MessageUseCase{
+		repo:             repo,
+		publisher:        publisher,
+		profileResolver:  profileResolver,
+		activityResolver: resolver,
+	}
 }
 
 type SendMessageInput struct {
@@ -36,11 +54,35 @@ type SendMessageInput struct {
 }
 
 func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput) (*model.Message, error) {
+	messageType := strings.TrimSpace(input.Type)
+	if messageType == "" {
+		messageType = "text"
+	}
+	if messageType != "text" && messageType != "file" {
+		return nil, ErrInvalidMessageType
+	}
 	if len(input.Content) > maxMessageSize {
 		return nil, ErrMessageTooLong
 	}
 	if len(input.FileIDs) > maxFilesPerMessage {
 		return nil, ErrTooManyFiles
+	}
+
+	conv, err := u.repo.GetConversationByID(ctx, input.ConversationID)
+	if err != nil {
+		return nil, err
+	}
+	if conv == nil {
+		return nil, ErrConversationNotFound
+	}
+	conv, err = refreshActivityMessagingWindow(ctx, u.repo, u.activityResolver, conv, true)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	if conv.IsMessagingClosed(now) {
+		return nil, ErrConversationMessagingClosed
 	}
 
 	participant, err := u.repo.GetParticipant(ctx, input.ConversationID, input.SenderUserID)
@@ -51,12 +93,11 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		return nil, ErrNotParticipant
 	}
 
-	now := time.Now().UTC()
 	msg := &model.Message{
 		ID:               uuid.New(),
 		ConversationID:   input.ConversationID,
 		SenderUserID:     input.SenderUserID,
-		Type:             input.Type,
+		Type:             messageType,
 		Content:          input.Content,
 		ReplyToMessageID: input.ReplyToMessageID,
 		SentAt:           now,
@@ -86,17 +127,19 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 
 	msg.FileIDs = input.FileIDs
 	msg.SenderDisplayName = input.SenderDisplayName
+	enrichMessages(ctx, u.profileResolver, []*model.Message{msg})
 
 	go func() {
 		evt := event.New("message.sent", input.ConversationID, event.MessageSentPayload{
-			MessageID:         msg.ID,
-			SenderUserID:      msg.SenderUserID,
-			SenderDisplayName: input.SenderDisplayName,
-			Type:              msg.Type,
-			Content:           msg.Content,
-			FileIDs:           input.FileIDs,
-			ReplyToMessageID:  input.ReplyToMessageID,
-			SentAt:            msg.SentAt,
+			MessageID:          msg.ID,
+			SenderUserID:       msg.SenderUserID,
+			SenderDisplayName:  msg.SenderDisplayName,
+			SenderAvatarFileID: msg.SenderAvatarFileID,
+			Type:               msg.Type,
+			Content:            msg.Content,
+			FileIDs:            input.FileIDs,
+			ReplyToMessageID:   input.ReplyToMessageID,
+			SentAt:             msg.SentAt,
 		})
 		if pubErr := u.publisher.Publish(context.Background(), "chat.message.sent", evt); pubErr != nil {
 			log.Error().Err(pubErr).Msg("failed to publish message.sent event")
@@ -223,11 +266,20 @@ func (u *MessageUseCase) ListMessages(ctx context.Context, conversationID, actor
 	for _, msg := range msgs {
 		msg.FileIDs, _ = u.repo.GetMessageFileIDs(ctx, msg.ID)
 	}
+	enrichMessages(ctx, u.profileResolver, msgs)
 
 	return msgs, nil
 }
 
 func (u *MessageUseCase) MarkRead(ctx context.Context, conversationID, actorUserID, lastReadMsgID uuid.UUID) error {
+	msg, err := u.repo.GetMessageByID(ctx, lastReadMsgID)
+	if err != nil {
+		return err
+	}
+	if msg == nil || msg.ConversationID != conversationID {
+		return ErrMessageNotFound
+	}
+
 	participant, err := u.repo.GetParticipant(ctx, conversationID, actorUserID)
 	if err != nil {
 		return err

@@ -30,6 +30,9 @@ class ChatProvider extends ChangeNotifier {
   bool _messagesLoading = false;
   String? _messagesError;
   bool _sendingMessage = false;
+  bool _loadingMoreMessages = false;
+  bool _hasMoreMessages = true;
+  final Map<String, String> _lastMarkedReadMessageIds = {};
 
   ConversationDetail? get activeConversation => _activeConversation;
   List<MessageVm> get messages => _messages;
@@ -76,12 +79,41 @@ class ChatProvider extends ChangeNotifier {
     _messagesLoading = true;
     _messagesError = null;
     _messages = [];
+    _hasMoreMessages = true;
     _activeConversation = null;
     notifyListeners();
 
     try {
       _activeConversation = await _chatApi.getConversation(conversationId);
-      _messages = await _chatApi.listMessages(conversationId);
+      _messages = _uniqueMessages(await _chatApi.listMessages(conversationId));
+      _hasMoreMessages = _messages.length >= 30;
+      _lastMarkedReadMessageIds.remove(conversationId);
+      _messagesError = null;
+    } catch (e) {
+      _messagesError = e.toString();
+    } finally {
+      _messagesLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> openConversationByActivity(String activityId) async {
+    _messagesLoading = true;
+    _messagesError = null;
+    _messages = [];
+    _hasMoreMessages = true;
+    _activeConversation = null;
+    notifyListeners();
+
+    try {
+      _activeConversation = await _chatApi.getConversationByActivity(
+        activityId,
+      );
+      _messages = _uniqueMessages(
+        await _chatApi.listMessages(_activeConversation!.id),
+      );
+      _hasMoreMessages = _messages.length >= 30;
+      _lastMarkedReadMessageIds.remove(_activeConversation!.id);
       _messagesError = null;
     } catch (e) {
       _messagesError = e.toString();
@@ -92,25 +124,49 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> loadMoreMessages() async {
-    if (_activeConversation == null || _messages.isEmpty) return;
+    if (_activeConversation == null ||
+        _messages.isEmpty ||
+        _loadingMoreMessages ||
+        !_hasMoreMessages) {
+      return;
+    }
 
-    final cursor = _messages.last.sentAt.toIso8601String();
+    _loadingMoreMessages = true;
+    final cursor = _messages.last.id;
     try {
       final older = await _chatApi.listMessages(
         _activeConversation!.id,
         cursor: cursor,
       );
       if (older.isNotEmpty) {
-        _messages = [..._messages, ...older];
+        _messages = _uniqueMessages([..._messages, ...older]);
         notifyListeners();
       }
+      _hasMoreMessages = older.length >= 30;
     } catch (e) {
       debugPrint('loadMoreMessages error: $e');
+    } finally {
+      _loadingMoreMessages = false;
     }
   }
 
-  Future<void> sendMessage(String content) async {
-    if (_activeConversation == null || content.trim().isEmpty) return;
+  Future<bool> sendMessage(
+    String content, {
+    String type = 'text',
+    List<String>? fileIds,
+  }) async {
+    final normalizedFileIds = fileIds
+            ?.map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toList(growable: false) ??
+        const <String>[];
+    if (_activeConversation == null ||
+        (content.trim().isEmpty && normalizedFileIds.isEmpty)) {
+      return false;
+    }
+    if (!_activeConversation!.canSendNow) {
+      return false;
+    }
 
     _sendingMessage = true;
     notifyListeners();
@@ -119,10 +175,14 @@ class ChatProvider extends ChangeNotifier {
       final msg = await _chatApi.sendMessage(
         _activeConversation!.id,
         content: content.trim(),
+        type: normalizedFileIds.isEmpty ? type : 'file',
+        fileIds: normalizedFileIds,
       );
-      _messages = [msg, ..._messages];
+      _messages = _uniqueMessages([msg, ..._messages]);
+      return true;
     } catch (e) {
       debugPrint('sendMessage error: $e');
+      return false;
     } finally {
       _sendingMessage = false;
       notifyListeners();
@@ -131,9 +191,24 @@ class ChatProvider extends ChangeNotifier {
 
   Future<void> markAsRead() async {
     if (_activeConversation == null || _messages.isEmpty) return;
+
+    final conversationId = _activeConversation!.id;
+    final latestMessageId = _messages.first.id;
+    if (_lastMarkedReadMessageIds[conversationId] == latestMessageId) {
+      return;
+    }
+
+    _lastMarkedReadMessageIds[conversationId] = latestMessageId;
+    _activeConversation = _activeConversation!.copyWith(unreadCount: 0);
+    _conversations = _conversations
+        .map((c) => c.id == conversationId ? c.copyWith(unreadCount: 0) : c)
+        .toList();
+    notifyListeners();
+
     try {
-      await _chatApi.markRead(_activeConversation!.id, _messages.first.id);
+      await _chatApi.markRead(conversationId, latestMessageId);
     } catch (e) {
+      _lastMarkedReadMessageIds.remove(conversationId);
       debugPrint('markAsRead error: $e');
     }
   }
@@ -159,6 +234,8 @@ class ChatProvider extends ChangeNotifier {
         _onMessageEdited(event);
       case 'message_deleted':
         _onMessageDeleted(event);
+      case 'read_updated':
+        _onReadUpdated(event);
       default:
         break;
     }
@@ -171,13 +248,12 @@ class ChatProvider extends ChangeNotifier {
     if (_activeConversation?.id == event.conversationId) {
       final exists = _messages.any((m) => m.id == msg.id);
       if (!exists) {
-        _messages = [msg, ..._messages];
+        _messages = _uniqueMessages([msg, ..._messages]);
       }
     }
 
     // Update conversation list preview
-    final idx =
-        _conversations.indexWhere((c) => c.id == event.conversationId);
+    final idx = _conversations.indexWhere((c) => c.id == event.conversationId);
     if (idx >= 0) {
       loadConversations();
     }
@@ -193,12 +269,14 @@ class ChatProvider extends ChangeNotifier {
           id: m.id,
           senderUserId: m.senderUserId,
           senderDisplayName: m.senderDisplayName,
+          senderAvatarFileId: m.senderAvatarFileId,
           type: m.type,
           content: newContent,
           fileIds: m.fileIds,
           replyToMessageId: m.replyToMessageId,
           editedAt: DateTime.tryParse(
-              event.payload['editedAt'] as String? ?? ''),
+            event.payload['editedAt'] as String? ?? '',
+          ),
           deletedAt: m.deletedAt,
           sentAt: m.sentAt,
         );
@@ -210,6 +288,59 @@ class ChatProvider extends ChangeNotifier {
   void _onMessageDeleted(ChatEvent event) {
     final messageId = event.payload['messageId'] as String;
     _messages = _messages.where((m) => m.id != messageId).toList();
+  }
+
+  void _onReadUpdated(ChatEvent event) {
+    final userId = event.payload['userId'] as String?;
+    final lastReadMessageId = (event.payload['lastReadMsgId'] ??
+        event.payload['lastReadMessageId']) as String?;
+    if (userId == null || lastReadMessageId == null) {
+      return;
+    }
+
+    if (_activeConversation?.id == event.conversationId) {
+      _activeConversation = _activeConversation!.copyWith(
+        participants: _activeConversation!.participants
+            .map(
+              (p) => p.userId == userId
+                  ? p.copyWith(lastReadMessageId: lastReadMessageId)
+                  : p,
+            )
+            .toList(),
+      );
+    }
+
+    _conversations = _conversations
+        .map(
+          (c) => c.id == event.conversationId
+              ? c.copyWith(
+                  participants: c.participants
+                      .map(
+                        (p) => p.userId == userId
+                            ? p.copyWith(lastReadMessageId: lastReadMessageId)
+                            : p,
+                      )
+                      .toList(),
+                )
+              : c,
+        )
+        .toList();
+  }
+
+  List<MessageVm> _uniqueMessages(List<MessageVm> items) {
+    final seen = <String>{};
+    final result = <MessageVm>[];
+    for (final item in items) {
+      if (seen.add(item.id)) {
+        result.add(item);
+      }
+    }
+    result.sort((a, b) {
+      final bySentAt = b.sentAt.compareTo(a.sentAt);
+      if (bySentAt != 0) return bySentAt;
+      return b.id.compareTo(a.id);
+    });
+    return result;
   }
 
   @override

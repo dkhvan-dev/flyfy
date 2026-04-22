@@ -2,10 +2,21 @@ package port
 
 import (
 	"context"
-	"time"
-	"github.com/google/uuid"
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/model"
+	"github.com/google/uuid"
+	"time"
 )
+
+type ActivityLifecycle struct {
+	ActivityID  uuid.UUID
+	EndAt       time.Time
+	CancelledAt *time.Time
+	CompletedAt *time.Time
+}
+
+type ActivityLifecycleResolver interface {
+	GetActivityLifecycle(ctx context.Context, activityID uuid.UUID) (*ActivityLifecycle, error)
+}
 
 type ConversationFilter struct {
 	UserID *uuid.UUID
@@ -25,6 +36,9 @@ type ChatTxRepository interface {
 	CreateConversation(ctx context.Context, conv *model.Conversation) error
 	UpdateConversation(ctx context.Context, conv *model.Conversation) error
 	GetConversationByIDForUpdate(ctx context.Context, conversationID uuid.UUID) (*model.Conversation, error)
+	GetConversationByActivityIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Conversation, error)
+	GetParticipantForUpdate(ctx context.Context, conversationID, userID uuid.UUID) (*model.Participant, error)
+	CountActiveParticipants(ctx context.Context, conversationID uuid.UUID) (int, error)
 	CreateParticipant(ctx context.Context, p *model.Participant) error
 	UpdateParticipant(ctx context.Context, p *model.Participant) error
 	CreateMessage(ctx context.Context, msg *model.Message) error

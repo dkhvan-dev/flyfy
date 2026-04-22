@@ -62,7 +62,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			AuthMode:           RouteAuthPublic,
 			Upstream:           "file-manager",
 			RateLimitPerMinute: &filesLimit,
-			RewritePrefix:      "/v1/files/",
+			RewritePrefix:      "/v1/public/files/",
 		},
 		{
 			Name:          "guides",

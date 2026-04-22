@@ -23,12 +23,15 @@ class ChatEvent {
   });
 
   factory ChatEvent.fromJson(Map<String, dynamic> json) {
+    final eventJson = (json['data'] as Map<String, dynamic>?) ?? json;
+    final rawType = eventJson['type']?.toString() ?? json['type'] as String;
+
     return ChatEvent(
-      eventId: json['eventId'] as String,
-      type: json['type'] as String,
-      conversationId: json['conversationId'] as String,
-      payload: json['payload'] as Map<String, dynamic>,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      eventId: eventJson['eventId'] as String,
+      type: rawType.replaceAll('.', '_'),
+      conversationId: eventJson['conversationId'] as String,
+      payload: eventJson['payload'] as Map<String, dynamic>,
+      timestamp: DateTime.parse(eventJson['timestamp'] as String),
     );
   }
 }
@@ -52,12 +55,15 @@ class ChatWsService {
     final accessToken = await storage.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) return;
 
-    final baseUrl = AppConfig.apiBaseUrl;
-    final wsUrl = baseUrl
-        .replaceFirst('https://', 'wss://')
-        .replaceFirst('http://', 'ws://');
-
-    final uri = Uri.parse('$wsUrl/chat/ws');
+    final apiUri = Uri.parse(AppConfig.apiBaseUrl);
+    final path = '${apiUri.path.replaceFirst(RegExp(r'/$'), '')}/chat/ws';
+    final uri = Uri(
+      scheme: apiUri.scheme == 'https' ? 'wss' : 'ws',
+      userInfo: apiUri.userInfo,
+      host: apiUri.host,
+      port: apiUri.hasPort ? apiUri.port : null,
+      path: path,
+    );
 
     try {
       _channel = WebSocketChannel.connect(
@@ -69,11 +75,7 @@ class ChatWsService {
       _connected = true;
       _connectionController.add(true);
 
-      _channel!.stream.listen(
-        _onMessage,
-        onError: _onError,
-        onDone: _onDone,
-      );
+      _channel!.stream.listen(_onMessage, onError: _onError, onDone: _onDone);
     } catch (e) {
       debugPrint('ChatWS connect error: $e');
       _scheduleReconnect();
@@ -110,10 +112,7 @@ class ChatWsService {
   }
 
   void sendTyping(String conversationId) {
-    _send({
-      'type': 'typing',
-      'conversationId': conversationId,
-    });
+    _send({'type': 'typing', 'conversationId': conversationId});
   }
 
   void _send(Map<String, dynamic> data) {

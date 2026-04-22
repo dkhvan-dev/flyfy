@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/chat"
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/filemanager"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/grpc"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/http"
@@ -72,13 +73,19 @@ func main() {
 	defer fileManagerClient.Close()
 
 	activityUC := app.NewActivityUseCase(repo, fileManagerClient)
+	chatClient := chatadapter.New(
+		cfg.ChatService.HTTPURL,
+		cfg.Security.InternalServiceToken,
+		cfg.ChatService.RequestTimeout,
+	)
+	activityUC.SetChatGateway(chatClient)
 	attendanceUC := app.NewAttendanceUseCase(
 		repo,
 		cfg.Attendance.QRSigningSecret,
 		cfg.Attendance.QRTTL,
 		cfg.Attendance.OfflineWindow,
 	)
-	joinUC := app.NewJoinUseCase(repo)
+	joinUC := app.NewJoinUseCase(repo, chatClient, actorResolver)
 	searchUC := app.NewSearchUseCase(repo)
 	moderationUC := app.NewModerationUseCase(activityUC)
 

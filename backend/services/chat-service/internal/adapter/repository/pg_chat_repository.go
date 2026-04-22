@@ -42,13 +42,14 @@ func (r *PGChatRepository) WithTx(ctx context.Context, fn func(repo port.ChatTxR
 	return nil
 }
 
-const conversationColumns = `id, type, title, avatar_file_id, activity_id, pinned_message_id, created_at, last_activity_at`
+const conversationColumns = `id, type, title, avatar_file_id, activity_id, pinned_message_id, messaging_available_until, created_at, last_activity_at`
+const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
 
 func scanConversation(row pgx.Row) (*model.Conversation, error) {
 	var c model.Conversation
 	err := row.Scan(
 		&c.ID, &c.Type, &c.Title, &c.AvatarFileID, &c.ActivityID,
-		&c.PinnedMessageID, &c.CreatedAt, &c.LastActivityAt,
+		&c.PinnedMessageID, &c.MessagingAvailableUntil, &c.CreatedAt, &c.LastActivityAt,
 	)
 	if err == pgx.ErrNoRows {
 		return nil, nil
@@ -85,7 +86,7 @@ func (r *PGChatRepository) FindDirectConversation(ctx context.Context, userID1, 
 
 func (r *PGChatRepository) ListConversationsByUserID(ctx context.Context, filter port.ConversationFilter) ([]*model.Conversation, error) {
 	query := `
-		SELECT ` + conversationColumns + `
+		SELECT ` + conversationSelectColumns + `
 		FROM conversations c
 		INNER JOIN conversation_participants cp ON cp.conversation_id = c.id
 		WHERE cp.user_id = $1 AND cp.left_at IS NULL
@@ -119,7 +120,7 @@ func (r *PGChatRepository) ListConversationsByUserID(ctx context.Context, filter
 		var c model.Conversation
 		if err := rows.Scan(
 			&c.ID, &c.Type, &c.Title, &c.AvatarFileID, &c.ActivityID,
-			&c.PinnedMessageID, &c.CreatedAt, &c.LastActivityAt,
+			&c.PinnedMessageID, &c.MessagingAvailableUntil, &c.CreatedAt, &c.LastActivityAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan conversation row: %w", err)
 		}
@@ -158,18 +159,22 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 
 	if filter.Cursor != nil {
 		if filter.Direction == "newer" {
-			query += fmt.Sprintf(` AND id > $%d`, argIdx)
+			query += fmt.Sprintf(` AND (sent_at, id) > (
+				SELECT sent_at, id FROM messages WHERE conversation_id = $1 AND id = $%d
+			)`, argIdx)
 		} else {
-			query += fmt.Sprintf(` AND id < $%d`, argIdx)
+			query += fmt.Sprintf(` AND (sent_at, id) < (
+				SELECT sent_at, id FROM messages WHERE conversation_id = $1 AND id = $%d
+			)`, argIdx)
 		}
 		args = append(args, *filter.Cursor)
 		argIdx++
 	}
 
 	if filter.Direction == "newer" {
-		query += ` ORDER BY id ASC`
+		query += ` ORDER BY sent_at ASC, id ASC`
 	} else {
-		query += ` ORDER BY id DESC`
+		query += ` ORDER BY sent_at DESC, id DESC`
 	}
 
 	query += fmt.Sprintf(` LIMIT $%d`, argIdx)
@@ -280,13 +285,21 @@ func (r *PGChatRepository) GetUnreadCount(ctx context.Context, conversationID, u
 	err := r.pool.QueryRow(ctx, `
 		SELECT COUNT(*)
 		FROM messages m
+		JOIN conversation_participants cp
+		  ON cp.conversation_id = m.conversation_id
+		 AND cp.user_id = $2
+		 AND cp.left_at IS NULL
+		LEFT JOIN messages last_read
+		  ON last_read.id = cp.last_read_msg_id
+		 AND last_read.conversation_id = m.conversation_id
 		WHERE m.conversation_id = $1
 		  AND m.sender_user_id != $2
+		  AND m.type != 'system'
 		  AND m.deleted_at IS NULL
-		  AND m.id > COALESCE(
-		    (SELECT last_read_msg_id FROM conversation_participants
-		     WHERE conversation_id = $1 AND user_id = $2 AND left_at IS NULL),
-		    '00000000-0000-0000-0000-000000000000'::uuid
+		  AND (
+		    cp.last_read_msg_id IS NULL
+		    OR last_read.id IS NULL
+		    OR (m.sent_at, m.id) > (last_read.sent_at, last_read.id)
 		  )
 	`, conversationID, userID).Scan(&count)
 	return count, err
@@ -294,19 +307,19 @@ func (r *PGChatRepository) GetUnreadCount(ctx context.Context, conversationID, u
 
 func (tx *pgChatTxRepository) CreateConversation(ctx context.Context, conv *model.Conversation) error {
 	_, err := tx.tx.Exec(ctx, `
-		INSERT INTO conversations (id, type, title, avatar_file_id, activity_id, pinned_message_id, created_at, last_activity_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO conversations (id, type, title, avatar_file_id, activity_id, pinned_message_id, messaging_available_until, created_at, last_activity_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`, conv.ID, conv.Type, conv.Title, conv.AvatarFileID, conv.ActivityID,
-		conv.PinnedMessageID, conv.CreatedAt, conv.LastActivityAt)
+		conv.PinnedMessageID, conv.MessagingAvailableUntil, conv.CreatedAt, conv.LastActivityAt)
 	return err
 }
 
 func (tx *pgChatTxRepository) UpdateConversation(ctx context.Context, conv *model.Conversation) error {
 	_, err := tx.tx.Exec(ctx, `
 		UPDATE conversations
-		SET title = $2, avatar_file_id = $3, pinned_message_id = $4, last_activity_at = $5
+		SET title = $2, avatar_file_id = $3, pinned_message_id = $4, messaging_available_until = $5, last_activity_at = $6
 		WHERE id = $1
-	`, conv.ID, conv.Title, conv.AvatarFileID, conv.PinnedMessageID, conv.LastActivityAt)
+	`, conv.ID, conv.Title, conv.AvatarFileID, conv.PinnedMessageID, conv.MessagingAvailableUntil, conv.LastActivityAt)
 	return err
 }
 
@@ -314,6 +327,41 @@ func (tx *pgChatTxRepository) GetConversationByIDForUpdate(ctx context.Context, 
 	row := tx.tx.QueryRow(ctx,
 		`SELECT `+conversationColumns+` FROM conversations WHERE id = $1 FOR UPDATE`, conversationID)
 	return scanConversation(row)
+}
+
+func (tx *pgChatTxRepository) GetConversationByActivityIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Conversation, error) {
+	row := tx.tx.QueryRow(ctx,
+		`SELECT `+conversationColumns+` FROM conversations WHERE activity_id = $1 FOR UPDATE`, activityID)
+	return scanConversation(row)
+}
+
+func (tx *pgChatTxRepository) GetParticipantForUpdate(ctx context.Context, conversationID, userID uuid.UUID) (*model.Participant, error) {
+	var p model.Participant
+	err := tx.tx.QueryRow(ctx, `
+		SELECT id, conversation_id, user_id, role, last_read_msg_id, muted_until, joined_at, left_at
+		FROM conversation_participants
+		WHERE conversation_id = $1 AND user_id = $2
+		ORDER BY joined_at DESC LIMIT 1
+		FOR UPDATE
+	`, conversationID, userID).Scan(
+		&p.ID, &p.ConversationID, &p.UserID, &p.Role, &p.LastReadMsgID,
+		&p.MutedUntil, &p.JoinedAt, &p.LeftAt,
+	)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get participant for update: %w", err)
+	}
+	return &p, nil
+}
+
+func (tx *pgChatTxRepository) CountActiveParticipants(ctx context.Context, conversationID uuid.UUID) (int, error) {
+	var count int
+	err := tx.tx.QueryRow(ctx,
+		`SELECT COUNT(*) FROM conversation_participants WHERE conversation_id = $1 AND left_at IS NULL`,
+		conversationID).Scan(&count)
+	return count, err
 }
 
 func (tx *pgChatTxRepository) CreateParticipant(ctx context.Context, p *model.Participant) error {

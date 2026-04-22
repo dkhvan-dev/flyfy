@@ -72,6 +72,8 @@
 		<string>We use your photos so you can upload an activity cover image.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>We use your camera so you can scan activity attendance QR codes.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>We use your microphone so you can record voice messages in chat.</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>We use Face ID to quickly and securely unlock your protected session.</string>
 

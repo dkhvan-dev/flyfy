@@ -1,6 +1,7 @@
 package http
 
 import (
+	"crypto/subtle"
 	"net/http"
 	"strings"
 
@@ -41,6 +42,20 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		internalPath := strings.HasPrefix(r.URL.Path, "/v1/internal/")
+
+		if internalPath {
+			token := strings.TrimSpace(r.Header.Get("X-Internal-Service-Token"))
+			if token == "" {
+				writeError(w, http.StatusUnauthorized, "missing internal service token")
+				return
+			}
+			if subtle.ConstantTimeCompare([]byte(token), []byte(cfg.Security.InternalServiceToken)) != 1 {
+				writeError(w, http.StatusUnauthorized, "invalid internal service token")
+				return
+			}
+			ctx = withInternalCall(ctx)
+		}
 
 		userID := strings.TrimSpace(r.Header.Get(userIDHeader))
 		if userID != "" {
@@ -58,7 +73,7 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 		}
 
 		if cfg.Security.RequireAuthenticatedWrites && isWriteMethod(r.Method) {
-			if subject == "" {
+			if subject == "" && !InternalCallFromContext(ctx) {
 				writeError(w, http.StatusUnauthorized, "missing authenticated subject")
 				return
 			}

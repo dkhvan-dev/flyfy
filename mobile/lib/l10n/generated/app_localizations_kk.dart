@@ -2588,4 +2588,217 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get storyWritersNoteBody =>
       'Әңгімеңізді сезімдік детальдан бастаңыз. «Мен Токиоға келдім» деудің орнына, Сибуяның дымқыл асфальтында шағылысқан неон жарығын суреттеңіз.';
+
+  @override
+  String get chatListTitle => 'Чаттар';
+
+  @override
+  String get chatListLoadFailed => 'Чаттарды жүктеу мүмкін болмады';
+
+  @override
+  String get chatListEmpty => 'Әзірге диалог жоқ';
+
+  @override
+  String get chatFallbackTitle => 'Чат';
+
+  @override
+  String get chatGroupFallbackTitle => 'Топтық чат';
+
+  @override
+  String get chatActivityFallbackTitle => 'Іс-шара чаты';
+
+  @override
+  String get chatActiveNow => 'ҚАЗІР ЖЕЛІДЕ';
+
+  @override
+  String chatParticipantsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count қатысушы',
+      zero: 'Қатысушылар жоқ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatPinnedMessageLabel => 'БЕКІТІЛГЕН ХАБАР';
+
+  @override
+  String get chatDateToday => 'Бүгін';
+
+  @override
+  String get chatDateYesterday => 'Кеше';
+
+  @override
+  String get chatMessageDeleted => 'Хабар өшірілді';
+
+  @override
+  String get chatEditedLabel => 'өзгертілді';
+
+  @override
+  String get chatUserFallbackName => 'Пайдаланушы';
+
+  @override
+  String chatSystemUserJoined(Object name) {
+    return '$name қосылды';
+  }
+
+  @override
+  String chatSystemUserLeft(Object name) {
+    return '$name шықты';
+  }
+
+  @override
+  String get chatSystemUpdate => 'Жүйелік оқиға';
+
+  @override
+  String get chatAttachmentPhotoVideo => 'Фото / видео';
+
+  @override
+  String get chatAttachmentFile => 'Файл';
+
+  @override
+  String get chatAttachmentLocation => 'Локация';
+
+  @override
+  String get chatAttachmentUploading => 'Тіркеме жүктелуде...';
+
+  @override
+  String get chatAttachmentDownloading => 'Жүктеп алынуда...';
+
+  @override
+  String get chatAttachmentDownloaded =>
+      'Файл жүктелді. Ашу үшін қайта басыңыз.';
+
+  @override
+  String get chatAttachmentDownloadedStatus => 'Жүктелді';
+
+  @override
+  String get chatAttachmentNotDownloadedStatus => 'Жүктеу үшін басыңыз';
+
+  @override
+  String get chatAttachmentDownloadFailed =>
+      'Файлды жүктеу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get chatAttachmentOpenFailed =>
+      'Бұл файлды құрылғыда ашу мүмкін болмады.';
+
+  @override
+  String get chatAttachmentUploadFailed =>
+      'Тіркемені жүктеу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get chatAttachmentUnsupported =>
+      'Бұл файл түрі чат тіркемелері үшін қолдау таппайды.';
+
+  @override
+  String get chatAttachmentTooLarge =>
+      'Тіркеме тым үлкен. 25 МБ-қа дейінгі файлды пайдаланыңыз.';
+
+  @override
+  String get chatComposerHint => 'Хабар жазыңыз...';
+
+  @override
+  String get chatComposerClosedHint => 'Чат жабылды';
+
+  @override
+  String get chatActivityChatClosed =>
+      'Бұл белсенділік чаты енді тек оқуға қолжетімді.';
+
+  @override
+  String get chatActivityChatClosedHistoryNotice =>
+      'Белсенділік аяқталды. Бұл чатқа енді хабар жіберу мүмкін емес.';
+
+  @override
+  String get chatVoiceMessage => 'Дауыстық хабар';
+
+  @override
+  String get chatVoiceRecording => 'Дауыстық хабар жазылуда';
+
+  @override
+  String get chatVoiceRecordPermissionDenied =>
+      'Дауыстық хабар жазу үшін микрофонға рұқсат қажет.';
+
+  @override
+  String get chatVoiceRecordFailed =>
+      'Дауыстық хабарды жазу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get chatVoicePlaybackFailed =>
+      'Бұл дауыстық хабарды ойнату мүмкін болмады.';
+
+  @override
+  String get chatVoiceTooShort => 'Дауыстық хабар тым қысқа.';
+
+  @override
+  String get chatLoadFailed => 'Чатты жүктеу мүмкін болмады';
+
+  @override
+  String get chatParticipantsHostSection => 'ҰЙЫМДАСТЫРУШЫ';
+
+  @override
+  String get chatParticipantsJoinedSection => 'ҚАТЫСУШЫЛАР';
+
+  @override
+  String get chatParticipantHostStatus => 'ұйымдастырушы';
+
+  @override
+  String get chatParticipantYouStatus => 'сіз';
+
+  @override
+  String get chatParticipantJoinedStatus => 'қатысушы';
+
+  @override
+  String get chatParticipantsEmpty => 'Басқа қатысушылар әзірге жоқ';
+
+  @override
+  String get chatSharedMediaTab => 'Медиа';
+
+  @override
+  String get chatSharedLinksTab => 'Сілтемелер';
+
+  @override
+  String get chatSharedFilesTab => 'Файлдар';
+
+  @override
+  String get chatSharedNoMediaTitle => 'Медиа әзірге жоқ';
+
+  @override
+  String get chatSharedNoMediaSubtitle =>
+      'Осы чаттағы фото мен видеолар осында шығады.';
+
+  @override
+  String get chatSharedNoLinksTitle => 'Сілтемелер әзірге жоқ';
+
+  @override
+  String get chatSharedNoLinksSubtitle =>
+      'Сілтемесі бар хабарлар осында жиналады.';
+
+  @override
+  String get chatSharedNoFilesTitle => 'Файлдар әзірге жоқ';
+
+  @override
+  String get chatSharedNoFilesSubtitle =>
+      'Осы чаттағы құжаттар мен архивтер осында шығады.';
+
+  @override
+  String chatSharedFileFallback(Object id) {
+    return 'Файл $id';
+  }
+
+  @override
+  String get chatSharedUnknownFile => 'Белгісіз файл';
+
+  @override
+  String get chatSharedLoadFailed => 'Контентті жүктеу мүмкін болмады';
+
+  @override
+  String get chatSharedLoadFailedSubtitle =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get chatSharedPartialLoadWarning =>
+      'Кейбір ескі ортақ элементтерді жүктеу мүмкін болмады.';
 }

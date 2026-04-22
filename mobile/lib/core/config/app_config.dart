@@ -13,21 +13,21 @@ final class AppConfig {
     }
 
     if (kIsWeb) {
-      return "https://verse-norman-invite-environmental.trycloudflare.com/api/v1";
+      return "https://moved-markets-honey-auckland.trycloudflare.com/api/v1";
       // return 'http://localhost:8080/api/v1';
     }
 
     if (Platform.isIOS || Platform.isMacOS) {
-      return "https://verse-norman-invite-environmental.trycloudflare.com/api/v1";
+      return "https://moved-markets-honey-auckland.trycloudflare.com/api/v1";
       // return 'http://localhost:8080/api/v1';
     }
 
     if (Platform.isAndroid) {
-      return "https://verse-norman-invite-environmental.trycloudflare.com/api/v1";
+      return "https://moved-markets-honey-auckland.trycloudflare.com/api/v1";
       // return 'http://10.0.2.2:8080/api/v1';
     }
 
-      return "https://verse-norman-invite-environmental.trycloudflare.com/api/v1";
+      return "https://moved-markets-honey-auckland.trycloudflare.com/api/v1";
     // return 'http://localhost:8080/api/v1';
   }
 

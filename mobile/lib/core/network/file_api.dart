@@ -74,6 +74,20 @@ class FileApi {
     );
   }
 
+  Future<FileUploadRequestVm> createChatAttachmentUpload({
+    required String originalName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    return _createUploadRequest(
+      originalName: originalName,
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      purpose: 'CHAT_ATTACHMENT',
+      visibility: 'PROTECTED',
+    );
+  }
+
   Future<FileUploadRequestVm> _createUploadRequest({
     required String originalName,
     required String contentType,
@@ -130,9 +144,42 @@ class FileApi {
     return url.isEmpty ? null : url;
   }
 
+  Future<FileContentVm> downloadContent(String fileId) async {
+    final trimmed = fileId.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError.value(fileId, 'fileId', 'File id is required');
+    }
+
+    final response = await _apiClient.dio.get<List<int>>(
+      '/files/$trimmed/content',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return FileContentVm(
+      bytes: Uint8List.fromList(response.data ?? const <int>[]),
+      contentType: response.headers.value('content-type') ?? '',
+    );
+  }
+
+  Future<FileMetadataVm> getFileMetadata(String fileId) async {
+    final trimmed = fileId.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError.value(fileId, 'fileId', 'File id is required');
+    }
+
+    final response = await _apiClient.dio.get('/files/$trimmed');
+    return FileMetadataVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
   String? publicContentUrl(String fileId) {
     return resolvePublicFileContentUrl(fileId);
   }
+}
+
+class FileContentVm {
+  const FileContentVm({required this.bytes, required this.contentType});
+
+  final Uint8List bytes;
+  final String contentType;
 }
 
 class FileUploadRequestVm {
@@ -165,6 +212,66 @@ class FileUploadRequestVm {
       headers: rawHeaders.map(
         (key, value) => MapEntry(key, value?.toString() ?? ''),
       ),
+    );
+  }
+}
+
+class FileMetadataVm {
+  const FileMetadataVm({
+    required this.id,
+    required this.originalName,
+    required this.contentType,
+    this.detectedContentType,
+    this.extension,
+    required this.sizeBytes,
+  });
+
+  final String id;
+  final String originalName;
+  final String contentType;
+  final String? detectedContentType;
+  final String? extension;
+  final int sizeBytes;
+
+  String get effectiveContentType {
+    final detected = detectedContentType?.trim() ?? '';
+    if (detected.isNotEmpty) return detected.toLowerCase();
+    return contentType.trim().toLowerCase();
+  }
+
+  bool get isImage => effectiveContentType.startsWith('image/');
+  bool get isVideo => effectiveContentType.startsWith('video/');
+  bool get isAudio => effectiveContentType.startsWith('audio/');
+  bool get isMedia => isImage || isVideo;
+
+  String get extensionLabel {
+    final rawExtension = extension?.trim();
+    if (rawExtension != null && rawExtension.isNotEmpty) {
+      return rawExtension.replaceFirst('.', '').toUpperCase();
+    }
+
+    final dot = originalName.lastIndexOf('.');
+    if (dot >= 0 && dot < originalName.length - 1) {
+      return originalName.substring(dot + 1).toUpperCase();
+    }
+
+    final contentTypeParts = effectiveContentType.split('/');
+    final subtype = contentTypeParts.isEmpty ? '' : contentTypeParts.last;
+    if (subtype.isNotEmpty && subtype != 'octet-stream') {
+      return subtype.toUpperCase();
+    }
+
+    return 'FILE';
+  }
+
+  factory FileMetadataVm.fromJson(Map<String, dynamic> json) {
+    return FileMetadataVm(
+      id: json['id']?.toString() ?? '',
+      originalName: json['originalName']?.toString() ?? '',
+      contentType: json['contentType']?.toString() ?? '',
+      detectedContentType: json['detectedContentType']?.toString(),
+      extension: json['extension']?.toString(),
+      sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
     );
   }
 }

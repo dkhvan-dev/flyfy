@@ -12,6 +12,7 @@ const (
 	contextKeyUserID    contextKey = "user_id"
 	contextKeySubject   contextKey = "subject"
 	contextKeyRoles     contextKey = "roles"
+	contextKeyInternal  contextKey = "internal_call"
 )
 
 func RequestIDFromContext(ctx context.Context) string {
@@ -34,6 +35,11 @@ func RolesFromContext(ctx context.Context) []string {
 	return v
 }
 
+func InternalCallFromContext(ctx context.Context) bool {
+	v, _ := ctx.Value(contextKeyInternal).(bool)
+	return v
+}
+
 func withRequestID(ctx context.Context, requestID string) context.Context {
 	return context.WithValue(ctx, contextKeyRequestID, requestID)
 }
@@ -48,4 +54,8 @@ func withSubject(ctx context.Context, subject string) context.Context {
 
 func withRoles(ctx context.Context, roles []string) context.Context {
 	return context.WithValue(ctx, contextKeyRoles, roles)
+}
+
+func withInternalCall(ctx context.Context) context.Context {
+	return context.WithValue(ctx, contextKeyInternal, true)
 }

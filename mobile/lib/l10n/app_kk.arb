@@ -898,5 +898,86 @@
   "storyCharacterCountLabel": "Таңба саны",
   "storyAiHintUnavailable": "AI мәтін кеңестері әзірге қолжетімсіз",
   "storyWritersNoteTitle": "Авторға кеңес",
-  "storyWritersNoteBody": "Әңгімеңізді сезімдік детальдан бастаңыз. «Мен Токиоға келдім» деудің орнына, Сибуяның дымқыл асфальтында шағылысқан неон жарығын суреттеңіз."
+  "storyWritersNoteBody": "Әңгімеңізді сезімдік детальдан бастаңыз. «Мен Токиоға келдім» деудің орнына, Сибуяның дымқыл асфальтында шағылысқан неон жарығын суреттеңіз.",
+  "chatListTitle": "Чаттар",
+  "chatListLoadFailed": "Чаттарды жүктеу мүмкін болмады",
+  "chatListEmpty": "Әзірге диалог жоқ",
+  "chatFallbackTitle": "Чат",
+  "chatGroupFallbackTitle": "Топтық чат",
+  "chatActivityFallbackTitle": "Іс-шара чаты",
+  "chatActiveNow": "ҚАЗІР ЖЕЛІДЕ",
+  "chatParticipantsCount": "{count, plural, =0{Қатысушылар жоқ} other{{count} қатысушы}}",
+  "@chatParticipantsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatPinnedMessageLabel": "БЕКІТІЛГЕН ХАБАР",
+  "chatDateToday": "Бүгін",
+  "chatDateYesterday": "Кеше",
+  "chatMessageDeleted": "Хабар өшірілді",
+  "chatEditedLabel": "өзгертілді",
+  "chatUserFallbackName": "Пайдаланушы",
+  "chatSystemUserJoined": "{name} қосылды",
+  "@chatSystemUserJoined": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "chatSystemUserLeft": "{name} шықты",
+  "@chatSystemUserLeft": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "chatSystemUpdate": "Жүйелік оқиға",
+  "chatAttachmentPhotoVideo": "Фото / видео",
+  "chatAttachmentFile": "Файл",
+  "chatAttachmentLocation": "Локация",
+  "chatAttachmentUploading": "Тіркеме жүктелуде...",
+  "chatAttachmentDownloading": "Жүктеп алынуда...",
+  "chatAttachmentDownloaded": "Файл жүктелді. Ашу үшін қайта басыңыз.",
+  "chatAttachmentDownloadedStatus": "Жүктелді",
+  "chatAttachmentNotDownloadedStatus": "Жүктеу үшін басыңыз",
+  "chatAttachmentDownloadFailed": "Файлды жүктеу мүмкін болмады. Қайта көріңіз.",
+  "chatAttachmentOpenFailed": "Бұл файлды құрылғыда ашу мүмкін болмады.",
+  "chatAttachmentUploadFailed": "Тіркемені жүктеу мүмкін болмады. Қайта көріңіз.",
+  "chatAttachmentUnsupported": "Бұл файл түрі чат тіркемелері үшін қолдау таппайды.",
+  "chatAttachmentTooLarge": "Тіркеме тым үлкен. 25 МБ-қа дейінгі файлды пайдаланыңыз.",
+  "chatComposerHint": "Хабар жазыңыз...",
+  "chatComposerClosedHint": "Чат жабылды",
+  "chatActivityChatClosed": "Бұл белсенділік чаты енді тек оқуға қолжетімді.",
+  "chatActivityChatClosedHistoryNotice": "Белсенділік аяқталды. Бұл чатқа енді хабар жіберу мүмкін емес.",
+  "chatVoiceMessage": "Дауыстық хабар",
+  "chatVoiceRecording": "Дауыстық хабар жазылуда",
+  "chatVoiceRecordPermissionDenied": "Дауыстық хабар жазу үшін микрофонға рұқсат қажет.",
+  "chatVoiceRecordFailed": "Дауыстық хабарды жазу мүмкін болмады. Қайта көріңіз.",
+  "chatVoicePlaybackFailed": "Бұл дауыстық хабарды ойнату мүмкін болмады.",
+  "chatVoiceTooShort": "Дауыстық хабар тым қысқа.",
+  "chatLoadFailed": "Чатты жүктеу мүмкін болмады",
+  "chatParticipantsHostSection": "ҰЙЫМДАСТЫРУШЫ",
+  "chatParticipantsJoinedSection": "ҚАТЫСУШЫЛАР",
+  "chatParticipantHostStatus": "ұйымдастырушы",
+  "chatParticipantYouStatus": "сіз",
+  "chatParticipantJoinedStatus": "қатысушы",
+  "chatParticipantsEmpty": "Басқа қатысушылар әзірге жоқ",
+  "chatSharedMediaTab": "Медиа",
+  "chatSharedLinksTab": "Сілтемелер",
+  "chatSharedFilesTab": "Файлдар",
+  "chatSharedNoMediaTitle": "Медиа әзірге жоқ",
+  "chatSharedNoMediaSubtitle": "Осы чаттағы фото мен видеолар осында шығады.",
+  "chatSharedNoLinksTitle": "Сілтемелер әзірге жоқ",
+  "chatSharedNoLinksSubtitle": "Сілтемесі бар хабарлар осында жиналады.",
+  "chatSharedNoFilesTitle": "Файлдар әзірге жоқ",
+  "chatSharedNoFilesSubtitle": "Осы чаттағы құжаттар мен архивтер осында шығады.",
+  "chatSharedFileFallback": "Файл {id}",
+  "@chatSharedFileFallback": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "chatSharedUnknownFile": "Белгісіз файл",
+  "chatSharedLoadFailed": "Контентті жүктеу мүмкін болмады",
+  "chatSharedLoadFailedSubtitle": "Байланысты тексеріп, қайта көріңіз.",
+  "chatSharedPartialLoadWarning": "Кейбір ескі ортақ элементтерді жүктеу мүмкін болмады."
 }

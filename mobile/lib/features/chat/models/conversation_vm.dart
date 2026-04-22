@@ -3,10 +3,14 @@ class ConversationVm {
   final String type;
   final String? title;
   final String? avatarFileId;
+  final String? activityId;
+  final List<ParticipantInfo> participants;
   final LastMessagePreview? lastMessage;
   final int unreadCount;
   final int participantCount;
   final String? mutedUntil;
+  final DateTime? messagingAvailableUntil;
+  final bool canSendMessages;
   final DateTime lastActivityAt;
 
   const ConversationVm({
@@ -14,15 +18,69 @@ class ConversationVm {
     required this.type,
     this.title,
     this.avatarFileId,
+    this.activityId,
+    this.participants = const [],
     this.lastMessage,
     this.unreadCount = 0,
     this.participantCount = 0,
     this.mutedUntil,
+    this.messagingAvailableUntil,
+    this.canSendMessages = true,
     required this.lastActivityAt,
   });
 
   bool get isGroup => type == 'group';
   bool get isDirect => type == 'direct';
+  bool get isActivity => activityId != null && activityId!.trim().isNotEmpty;
+  bool get canSendNow =>
+      canSendMessages &&
+      (messagingAvailableUntil == null ||
+          DateTime.now().toUtc().isBefore(messagingAvailableUntil!.toUtc()));
+
+  ParticipantInfo? directPeer(String currentUserId) {
+    final current = currentUserId.trim();
+    if (participants.isEmpty) return null;
+    return participants.where((p) => p.userId.trim() != current).firstOrNull ??
+        participants.first;
+  }
+
+  String displayTitle(String currentUserId) {
+    if (isDirect) {
+      final peerName = directPeer(currentUserId)?.displayName.trim() ?? '';
+      if (peerName.isNotEmpty) return peerName;
+    }
+    final value = title?.trim() ?? '';
+    return value.isEmpty ? 'Chat' : value;
+  }
+
+  String? displayAvatarFileId(String currentUserId) {
+    if (isDirect) {
+      return directPeer(currentUserId)?.avatarFileId;
+    }
+    return avatarFileId;
+  }
+
+  ConversationVm copyWith({
+    int? unreadCount,
+    LastMessagePreview? lastMessage,
+    List<ParticipantInfo>? participants,
+  }) {
+    return ConversationVm(
+      id: id,
+      type: type,
+      title: title,
+      avatarFileId: avatarFileId,
+      activityId: activityId,
+      participants: participants ?? this.participants,
+      lastMessage: lastMessage ?? this.lastMessage,
+      unreadCount: unreadCount ?? this.unreadCount,
+      participantCount: participantCount,
+      mutedUntil: mutedUntil,
+      messagingAvailableUntil: messagingAvailableUntil,
+      canSendMessages: canSendMessages,
+      lastActivityAt: lastActivityAt,
+    );
+  }
 
   factory ConversationVm.fromJson(Map<String, dynamic> json) {
     return ConversationVm(
@@ -30,13 +88,23 @@ class ConversationVm {
       type: json['type'] as String,
       title: json['title'] as String?,
       avatarFileId: json['avatarFileId'] as String?,
+      activityId: json['activityId'] as String?,
+      participants: (json['participants'] as List<dynamic>?)
+              ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       lastMessage: json['lastMessage'] != null
           ? LastMessagePreview.fromJson(
-              json['lastMessage'] as Map<String, dynamic>)
+              json['lastMessage'] as Map<String, dynamic>,
+            )
           : null,
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
       participantCount: (json['participantCount'] as num?)?.toInt() ?? 0,
       mutedUntil: json['mutedUntil'] as String?,
+      messagingAvailableUntil: _parseDateTimeOrNull(
+        json['messagingAvailableUntil'],
+      ),
+      canSendMessages: json['canSendMessages'] != false,
       lastActivityAt: DateTime.parse(json['lastActivityAt'] as String),
     );
   }
@@ -79,6 +147,8 @@ class ConversationDetail {
   final PinnedMessageInfo? pinnedMessage;
   final int unreadCount;
   final String? mutedUntil;
+  final DateTime? messagingAvailableUntil;
+  final bool canSendMessages;
   final DateTime lastActivityAt;
 
   const ConversationDetail({
@@ -92,11 +162,55 @@ class ConversationDetail {
     this.pinnedMessage,
     this.unreadCount = 0,
     this.mutedUntil,
+    this.messagingAvailableUntil,
+    this.canSendMessages = true,
     required this.lastActivityAt,
   });
 
   bool get isGroup => type == 'group';
   bool get isDirect => type == 'direct';
+  bool get isActivity => activityId != null && activityId!.trim().isNotEmpty;
+  bool get canSendNow =>
+      canSendMessages &&
+      (messagingAvailableUntil == null ||
+          DateTime.now().toUtc().isBefore(messagingAvailableUntil!.toUtc()));
+
+  ParticipantInfo? directPeer(String currentUserId) {
+    final current = currentUserId.trim();
+    if (participants.isEmpty) return null;
+    return participants.where((p) => p.userId.trim() != current).firstOrNull ??
+        participants.first;
+  }
+
+  String displayTitle(String currentUserId) {
+    if (isDirect) {
+      final peerName = directPeer(currentUserId)?.displayName.trim() ?? '';
+      if (peerName.isNotEmpty) return peerName;
+    }
+    final value = title?.trim() ?? '';
+    return value.isEmpty ? 'Chat' : value;
+  }
+
+  ConversationDetail copyWith({
+    List<ParticipantInfo>? participants,
+    int? unreadCount,
+  }) {
+    return ConversationDetail(
+      id: id,
+      type: type,
+      title: title,
+      avatarFileId: avatarFileId,
+      createdAt: createdAt,
+      activityId: activityId,
+      participants: participants ?? this.participants,
+      pinnedMessage: pinnedMessage,
+      unreadCount: unreadCount ?? this.unreadCount,
+      mutedUntil: mutedUntil,
+      messagingAvailableUntil: messagingAvailableUntil,
+      canSendMessages: canSendMessages,
+      lastActivityAt: lastActivityAt,
+    );
+  }
 
   factory ConversationDetail.fromJson(Map<String, dynamic> json) {
     return ConversationDetail(
@@ -107,19 +221,29 @@ class ConversationDetail {
       createdAt: DateTime.parse(json['createdAt'] as String),
       activityId: json['activityId'] as String?,
       participants: (json['participants'] as List<dynamic>?)
-              ?.map((e) =>
-                  ParticipantInfo.fromJson(e as Map<String, dynamic>))
+              ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
       pinnedMessage: json['pinnedMessage'] != null
           ? PinnedMessageInfo.fromJson(
-              json['pinnedMessage'] as Map<String, dynamic>)
+              json['pinnedMessage'] as Map<String, dynamic>,
+            )
           : null,
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
       mutedUntil: json['mutedUntil'] as String?,
+      messagingAvailableUntil: _parseDateTimeOrNull(
+        json['messagingAvailableUntil'],
+      ),
+      canSendMessages: json['canSendMessages'] != false,
       lastActivityAt: DateTime.parse(json['lastActivityAt'] as String),
     );
   }
+}
+
+DateTime? _parseDateTimeOrNull(Object? value) {
+  final raw = value?.toString().trim() ?? '';
+  if (raw.isEmpty) return null;
+  return DateTime.tryParse(raw);
 }
 
 class ParticipantInfo {
@@ -128,6 +252,7 @@ class ParticipantInfo {
   final String? avatarFileId;
   final String role;
   final DateTime joinedAt;
+  final String? lastReadMessageId;
 
   const ParticipantInfo({
     required this.userId,
@@ -135,6 +260,7 @@ class ParticipantInfo {
     this.avatarFileId,
     required this.role,
     required this.joinedAt,
+    this.lastReadMessageId,
   });
 
   factory ParticipantInfo.fromJson(Map<String, dynamic> json) {
@@ -144,6 +270,18 @@ class ParticipantInfo {
       avatarFileId: json['avatarFileId'] as String?,
       role: json['role'] as String,
       joinedAt: DateTime.parse(json['joinedAt'] as String),
+      lastReadMessageId: json['lastReadMessageId'] as String?,
+    );
+  }
+
+  ParticipantInfo copyWith({String? lastReadMessageId}) {
+    return ParticipantInfo(
+      userId: userId,
+      displayName: displayName,
+      avatarFileId: avatarFileId,
+      role: role,
+      joinedAt: joinedAt,
+      lastReadMessageId: lastReadMessageId ?? this.lastReadMessageId,
     );
   }
 }

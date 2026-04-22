@@ -898,5 +898,86 @@
   "storyCharacterCountLabel": "Character Count",
   "storyAiHintUnavailable": "AI writing hints are not available yet",
   "storyWritersNoteTitle": "Writer's Note",
-  "storyWritersNoteBody": "Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya."
+  "storyWritersNoteBody": "Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya.",
+  "chatListTitle": "Chats",
+  "chatListLoadFailed": "Failed to load chats",
+  "chatListEmpty": "No conversations yet",
+  "chatFallbackTitle": "Chat",
+  "chatGroupFallbackTitle": "Group Chat",
+  "chatActivityFallbackTitle": "Activity chat",
+  "chatActiveNow": "ACTIVE NOW",
+  "chatParticipantsCount": "{count, plural, =0{No participants} =1{1 participant} other{{count} participants}}",
+  "@chatParticipantsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatPinnedMessageLabel": "PINNED MESSAGE",
+  "chatDateToday": "Today",
+  "chatDateYesterday": "Yesterday",
+  "chatMessageDeleted": "Message deleted",
+  "chatEditedLabel": "edited",
+  "chatUserFallbackName": "User",
+  "chatSystemUserJoined": "{name} joined",
+  "@chatSystemUserJoined": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "chatSystemUserLeft": "{name} left",
+  "@chatSystemUserLeft": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "chatSystemUpdate": "System update",
+  "chatAttachmentPhotoVideo": "Photo / Video",
+  "chatAttachmentFile": "File",
+  "chatAttachmentLocation": "Location",
+  "chatAttachmentUploading": "Uploading attachment...",
+  "chatAttachmentDownloading": "Downloading...",
+  "chatAttachmentDownloaded": "Downloaded. Tap again to open.",
+  "chatAttachmentDownloadedStatus": "Downloaded",
+  "chatAttachmentNotDownloadedStatus": "Tap to download",
+  "chatAttachmentDownloadFailed": "Failed to download the file. Please try again.",
+  "chatAttachmentOpenFailed": "Could not open this file on the device.",
+  "chatAttachmentUploadFailed": "Failed to upload the attachment. Please try again.",
+  "chatAttachmentUnsupported": "This file type is not supported for chat attachments.",
+  "chatAttachmentTooLarge": "The attachment is too large. Use a file up to 25 MB.",
+  "chatComposerHint": "Type a message...",
+  "chatComposerClosedHint": "Chat is closed",
+  "chatActivityChatClosed": "This activity chat is now read-only.",
+  "chatActivityChatClosedHistoryNotice": "The activity has ended. Messages can no longer be sent in this chat.",
+  "chatVoiceMessage": "Voice message",
+  "chatVoiceRecording": "Recording voice message",
+  "chatVoiceRecordPermissionDenied": "Microphone access is required to record voice messages.",
+  "chatVoiceRecordFailed": "Failed to record the voice message. Please try again.",
+  "chatVoicePlaybackFailed": "Could not play this voice message.",
+  "chatVoiceTooShort": "Voice message is too short.",
+  "chatLoadFailed": "Failed to load chat",
+  "chatParticipantsHostSection": "HOST & ORGANIZER",
+  "chatParticipantsJoinedSection": "JOINED PARTICIPANTS",
+  "chatParticipantHostStatus": "host & organizer",
+  "chatParticipantYouStatus": "you",
+  "chatParticipantJoinedStatus": "joined participant",
+  "chatParticipantsEmpty": "No other participants yet",
+  "chatSharedMediaTab": "Media",
+  "chatSharedLinksTab": "Links",
+  "chatSharedFilesTab": "Files",
+  "chatSharedNoMediaTitle": "No media yet",
+  "chatSharedNoMediaSubtitle": "Photos and videos from this chat will appear here.",
+  "chatSharedNoLinksTitle": "No links yet",
+  "chatSharedNoLinksSubtitle": "Messages with links will be collected here.",
+  "chatSharedNoFilesTitle": "No files yet",
+  "chatSharedNoFilesSubtitle": "Documents and archives from this chat will appear here.",
+  "chatSharedFileFallback": "File {id}",
+  "@chatSharedFileFallback": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "chatSharedUnknownFile": "Unknown file",
+  "chatSharedLoadFailed": "Could not load content",
+  "chatSharedLoadFailedSubtitle": "Please check the connection and retry.",
+  "chatSharedPartialLoadWarning": "Some older shared items could not be loaded."
 }

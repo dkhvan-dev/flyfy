@@ -369,7 +369,15 @@ func (u *FileUseCase) CreateDownloadURL(ctx context.Context, fileID uuid.UUID) (
 	return url, time.Now().UTC().Add(expiresIn), nil
 }
 
+func (u *FileUseCase) OpenContent(ctx context.Context, fileID uuid.UUID) (io.ReadCloser, string, error) {
+	return u.openContent(ctx, fileID, false)
+}
+
 func (u *FileUseCase) OpenPublicContent(ctx context.Context, fileID uuid.UUID) (io.ReadCloser, string, error) {
+	return u.openContent(ctx, fileID, true)
+}
+
+func (u *FileUseCase) openContent(ctx context.Context, fileID uuid.UUID, requirePublic bool) (io.ReadCloser, string, error) {
 	if fileID == uuid.Nil {
 		return nil, "", ErrInvalidFileID
 	}
@@ -384,7 +392,7 @@ func (u *FileUseCase) OpenPublicContent(ctx context.Context, fileID uuid.UUID) (
 	if file.Status != enum.FileStatusReady {
 		return nil, "", ErrFileNotReady
 	}
-	if file.Visibility != enum.FileVisibilityPublic {
+	if requirePublic && file.Visibility != enum.FileVisibilityPublic {
 		return nil, "", ErrFileNotPublic
 	}
 

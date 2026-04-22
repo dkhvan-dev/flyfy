@@ -18,6 +18,7 @@ type Config struct {
 	Attendance  AttendanceConfig
 	UserService UserServiceConfig
 	FileManager FileManagerConfig
+	ChatService ChatServiceConfig
 }
 
 type AppConfig struct {
@@ -95,6 +96,11 @@ type UserServiceConfig struct {
 
 type FileManagerConfig struct {
 	Target string `env:"FILE_MANAGER_GRPC_TARGET, default=dns:///file-manager-service:9093"`
+}
+
+type ChatServiceConfig struct {
+	HTTPURL        string        `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
+	RequestTimeout time.Duration `env:"CHAT_SERVICE_REQUEST_TIMEOUT, default=5s"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

@@ -13,6 +13,7 @@ import (
 
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/ws"
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/app"
+	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/model"
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/transport/dto"
 )
 
@@ -42,6 +43,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /v1/conversations", h.ListConversations)
 	mux.HandleFunc("POST /v1/conversations", h.CreateConversation)
+	mux.HandleFunc("POST /v1/internal/activity-conversations/participants", h.EnsureActivityParticipant)
+	mux.HandleFunc("POST /v1/internal/activity-conversations/sync", h.SyncActivityConversation)
 	mux.HandleFunc("GET /v1/conversations/", h.handleConversationRoutes)
 	mux.HandleFunc("POST /v1/conversations/", h.handleConversationRoutes)
 	mux.HandleFunc("PATCH /v1/conversations/", h.handleConversationRoutes)
@@ -102,13 +105,23 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 			Type:             c.Type,
 			Title:            c.Title,
 			AvatarFileID:     c.AvatarFileID,
+			Participants:     participantInfosFromModel(c.Participants),
 			UnreadCount:      c.UnreadCount,
 			ParticipantCount: c.ParticipantCount,
+			CanSendMessages:  !c.IsMessagingClosed(time.Now().UTC()),
 			LastActivityAt:   c.LastActivityAt.Format(time.RFC3339),
+		}
+		if c.ActivityID != nil {
+			s := c.ActivityID.String()
+			item.ActivityID = &s
 		}
 		if c.MutedUntil != nil {
 			s := c.MutedUntil.Format(time.RFC3339)
 			item.MutedUntil = &s
+		}
+		if c.MessagingAvailableUntil != nil {
+			s := c.MessagingAvailableUntil.Format(time.RFC3339)
+			item.MessagingAvailableUntil = &s
 		}
 		if c.LastMessage != nil {
 			preview := c.LastMessage.Content
@@ -148,32 +161,135 @@ func (h *Handler) CreateConversation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(req.Type) != "direct" {
-		writeError(w, http.StatusBadRequest, "only direct conversations can be created via this endpoint")
+	switch strings.TrimSpace(req.Type) {
+	case "direct":
+		if len(req.ParticipantUserIDs) != 1 {
+			writeError(w, http.StatusBadRequest, "exactly one participant is required for direct chats")
+			return
+		}
+
+		participantID, err := uuid.Parse(strings.TrimSpace(req.ParticipantUserIDs[0]))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid participant user id")
+			return
+		}
+
+		conv, err := h.conversationUC.CreateDirectConversation(r.Context(), app.CreateDirectConversationInput{
+			ActorUserID:       actorUserID,
+			ParticipantUserID: participantID,
+		})
+		if err != nil {
+			h.writeAppError(w, err, "create conversation failed")
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, map[string]string{"id": conv.ID.String()})
+
+	case "activity":
+		activityID, err := uuid.Parse(strings.TrimSpace(req.ActivityID))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid activity id")
+			return
+		}
+
+		conv, err := h.conversationUC.CreateActivityConversation(r.Context(), app.CreateActivityConversationInput{
+			ActivityID: activityID,
+			Title:      strings.TrimSpace(req.Title),
+			HostUserID: actorUserID,
+		})
+		if err != nil {
+			h.writeAppError(w, err, "create activity conversation failed")
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, map[string]string{"id": conv.ID.String()})
+
+	default:
+		writeError(w, http.StatusBadRequest, "unsupported conversation type")
+	}
+}
+
+func (h *Handler) EnsureActivityParticipant(w http.ResponseWriter, r *http.Request) {
+	if !InternalCallFromContext(r.Context()) {
+		writeError(w, http.StatusUnauthorized, "missing internal service token")
 		return
 	}
 
-	if len(req.ParticipantUserIDs) != 1 {
-		writeError(w, http.StatusBadRequest, "exactly one participant is required for direct chats")
+	var req dto.EnsureActivityParticipantRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	participantID, err := uuid.Parse(strings.TrimSpace(req.ParticipantUserIDs[0]))
+	activityID, err := uuid.Parse(strings.TrimSpace(req.ActivityID))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid participant user id")
+		writeError(w, http.StatusBadRequest, "invalid activity id")
 		return
 	}
 
-	conv, err := h.conversationUC.CreateDirectConversation(r.Context(), app.CreateDirectConversationInput{
-		ActorUserID:       actorUserID,
-		ParticipantUserID: participantID,
+	hostUserID, err := uuid.Parse(strings.TrimSpace(req.HostUserID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid host user id")
+		return
+	}
+
+	userID, err := uuid.Parse(strings.TrimSpace(req.UserID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	conv, err := h.conversationUC.EnsureActivityParticipant(r.Context(), app.EnsureActivityParticipantInput{
+		ActivityID:              activityID,
+		ActivityTitle:           req.ActivityTitle,
+		ActivityAvatarFileID:    req.ActivityAvatarFileID,
+		MessagingAvailableUntil: parseOptionalTime(req.MessagingAvailableUntil),
+		HostUserID:              hostUserID,
+		UserID:                  userID,
+		DisplayName:             req.DisplayName,
 	})
 	if err != nil {
-		h.writeAppError(w, err, "create conversation failed")
+		h.writeAppError(w, err, "ensure activity participant failed")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]string{"id": conv.ID.String()})
+	writeJSON(w, http.StatusOK, map[string]string{"id": conv.ID.String()})
+}
+
+func (h *Handler) SyncActivityConversation(w http.ResponseWriter, r *http.Request) {
+	if !InternalCallFromContext(r.Context()) {
+		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		return
+	}
+
+	var req dto.SyncActivityConversationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	activityID, err := uuid.Parse(strings.TrimSpace(req.ActivityID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid activity id")
+		return
+	}
+
+	conv, err := h.conversationUC.SyncActivityConversation(r.Context(), app.SyncActivityConversationInput{
+		ActivityID:              activityID,
+		ActivityTitle:           req.ActivityTitle,
+		ActivityAvatarFileID:    req.ActivityAvatarFileID,
+		MessagingAvailableUntil: parseOptionalTime(req.MessagingAvailableUntil),
+	})
+	if err != nil {
+		h.writeAppError(w, err, "sync activity conversation failed")
+		return
+	}
+	if conv == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"id": conv.ID.String()})
 }
 
 func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Request) {
@@ -185,6 +301,22 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 	}
 
 	parts := strings.Split(path, "/")
+
+	// GET /v1/conversations/by-activity/{activityId}
+	if parts[0] == "by-activity" && r.Method == http.MethodGet {
+		if len(parts) < 2 {
+			writeError(w, http.StatusBadRequest, "missing activity id")
+			return
+		}
+		activityID, err := uuid.Parse(parts[1])
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid activity id")
+			return
+		}
+		h.GetConversationByActivity(w, r, activityID)
+		return
+	}
+
 	convID, err := uuid.Parse(parts[0])
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid conversation id")
@@ -281,13 +413,14 @@ func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request, convID
 	}
 
 	detail := dto.ConversationDetail{
-		ID:             conv.ID.String(),
-		Type:           conv.Type,
-		Title:          conv.Title,
-		AvatarFileID:   conv.AvatarFileID,
-		CreatedAt:      conv.CreatedAt.Format(time.RFC3339),
-		UnreadCount:    conv.UnreadCount,
-		LastActivityAt: conv.LastActivityAt.Format(time.RFC3339),
+		ID:              conv.ID.String(),
+		Type:            conv.Type,
+		Title:           conv.Title,
+		AvatarFileID:    conv.AvatarFileID,
+		CreatedAt:       conv.CreatedAt.Format(time.RFC3339),
+		UnreadCount:     conv.UnreadCount,
+		CanSendMessages: !conv.IsMessagingClosed(time.Now().UTC()),
+		LastActivityAt:  conv.LastActivityAt.Format(time.RFC3339),
 	}
 	if conv.ActivityID != nil {
 		s := conv.ActivityID.String()
@@ -297,17 +430,63 @@ func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request, convID
 		s := conv.MutedUntil.Format(time.RFC3339)
 		detail.MutedUntil = &s
 	}
-
-	detail.Participants = make([]dto.ParticipantInfo, 0, len(conv.Participants))
-	for _, p := range conv.Participants {
-		detail.Participants = append(detail.Participants, dto.ParticipantInfo{
-			UserID:       p.UserID.String(),
-			DisplayName:  p.DisplayName,
-			AvatarFileID: p.AvatarFileID,
-			Role:         p.Role,
-			JoinedAt:     p.JoinedAt.Format(time.RFC3339),
-		})
+	if conv.MessagingAvailableUntil != nil {
+		s := conv.MessagingAvailableUntil.Format(time.RFC3339)
+		detail.MessagingAvailableUntil = &s
 	}
+
+	detail.Participants = participantInfosFromModel(conv.Participants)
+
+	if conv.PinnedMessage != nil {
+		detail.PinnedMessage = &dto.PinnedMessageInfo{
+			ID:                conv.PinnedMessage.ID.String(),
+			SenderUserID:      conv.PinnedMessage.SenderUserID.String(),
+			SenderDisplayName: conv.PinnedMessage.SenderDisplayName,
+			Content:           conv.PinnedMessage.Content,
+			SentAt:            conv.PinnedMessage.SentAt.Format(time.RFC3339),
+		}
+	}
+
+	writeJSON(w, http.StatusOK, detail)
+}
+
+func (h *Handler) GetConversationByActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	conv, err := h.conversationUC.GetConversationByActivityID(r.Context(), activityID, actorUserID)
+	if err != nil {
+		h.writeAppError(w, err, "get conversation by activity failed")
+		return
+	}
+
+	detail := dto.ConversationDetail{
+		ID:              conv.ID.String(),
+		Type:            conv.Type,
+		Title:           conv.Title,
+		AvatarFileID:    conv.AvatarFileID,
+		CreatedAt:       conv.CreatedAt.Format(time.RFC3339),
+		UnreadCount:     conv.UnreadCount,
+		CanSendMessages: !conv.IsMessagingClosed(time.Now().UTC()),
+		LastActivityAt:  conv.LastActivityAt.Format(time.RFC3339),
+	}
+	if conv.ActivityID != nil {
+		s := conv.ActivityID.String()
+		detail.ActivityID = &s
+	}
+	if conv.MutedUntil != nil {
+		s := conv.MutedUntil.Format(time.RFC3339)
+		detail.MutedUntil = &s
+	}
+	if conv.MessagingAvailableUntil != nil {
+		s := conv.MessagingAvailableUntil.Format(time.RFC3339)
+		detail.MessagingAvailableUntil = &s
+	}
+
+	detail.Participants = participantInfosFromModel(conv.Participants)
 
 	if conv.PinnedMessage != nil {
 		detail.PinnedMessage = &dto.PinnedMessageInfo{
@@ -357,12 +536,14 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 	}
 
 	writeJSON(w, http.StatusCreated, dto.MessageResponse{
-		ID:           msg.ID.String(),
-		SenderUserID: msg.SenderUserID.String(),
-		Type:         msg.Type,
-		Content:      msg.Content,
-		FileIDs:      msg.FileIDs,
-		SentAt:       msg.SentAt.Format(time.RFC3339),
+		ID:                 msg.ID.String(),
+		SenderUserID:       msg.SenderUserID.String(),
+		SenderDisplayName:  msg.SenderDisplayName,
+		SenderAvatarFileID: msg.SenderAvatarFileID,
+		Type:               msg.Type,
+		Content:            msg.Content,
+		FileIDs:            msg.FileIDs,
+		SentAt:             msg.SentAt.Format(time.RFC3339),
 	})
 }
 
@@ -386,9 +567,11 @@ func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request, convID uu
 	var cursor *uuid.UUID
 	if c := strings.TrimSpace(r.URL.Query().Get("cursor")); c != "" {
 		parsed, err := uuid.Parse(c)
-		if err == nil {
-			cursor = &parsed
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid message cursor")
+			return
 		}
+		cursor = &parsed
 	}
 
 	msgs, err := h.messageUC.ListMessages(r.Context(), convID, actorUserID, limit, cursor, direction)
@@ -400,13 +583,14 @@ func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request, convID uu
 	items := make([]dto.MessageResponse, 0, len(msgs))
 	for _, m := range msgs {
 		item := dto.MessageResponse{
-			ID:                m.ID.String(),
-			SenderUserID:      m.SenderUserID.String(),
-			SenderDisplayName: m.SenderDisplayName,
-			Type:              m.Type,
-			Content:           m.Content,
-			FileIDs:           m.FileIDs,
-			SentAt:            m.SentAt.Format(time.RFC3339),
+			ID:                 m.ID.String(),
+			SenderUserID:       m.SenderUserID.String(),
+			SenderDisplayName:  m.SenderDisplayName,
+			SenderAvatarFileID: m.SenderAvatarFileID,
+			Type:               m.Type,
+			Content:            m.Content,
+			FileIDs:            m.FileIDs,
+			SentAt:             m.SentAt.Format(time.RFC3339),
 		}
 		if m.ReplyToMessageID != nil {
 			s := m.ReplyToMessageID.String()
@@ -605,12 +789,37 @@ func (h *Handler) UnpinMessage(w http.ResponseWriter, r *http.Request, convID uu
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func participantInfosFromModel(participants []*model.Participant) []dto.ParticipantInfo {
+	items := make([]dto.ParticipantInfo, 0, len(participants))
+	for _, p := range participants {
+		if p == nil {
+			continue
+		}
+
+		item := dto.ParticipantInfo{
+			UserID:       p.UserID.String(),
+			DisplayName:  p.DisplayName,
+			AvatarFileID: p.AvatarFileID,
+			Role:         p.Role,
+			JoinedAt:     p.JoinedAt.Format(time.RFC3339),
+		}
+		if p.LastReadMsgID != nil {
+			s := p.LastReadMsgID.String()
+			item.LastReadMessageID = &s
+		}
+		items = append(items, item)
+	}
+	return items
+}
+
 func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback string) {
 	switch {
 	case errors.Is(err, app.ErrInvalidConversationID),
+		errors.Is(err, app.ErrInvalidActivityID),
 		errors.Is(err, app.ErrInvalidMessageID),
 		errors.Is(err, app.ErrInvalidUserID),
 		errors.Is(err, app.ErrMessageTooLong),
+		errors.Is(err, app.ErrInvalidMessageType),
 		errors.Is(err, app.ErrTooManyFiles),
 		errors.Is(err, app.ErrDirectChatCannotLeave),
 		errors.Is(err, app.ErrCannotPinInDirectChat),
@@ -626,7 +835,8 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 	case errors.Is(err, app.ErrAccessDenied),
 		errors.Is(err, app.ErrNotParticipant),
 		errors.Is(err, app.ErrNotAdmin),
-		errors.Is(err, app.ErrNotMessageAuthor):
+		errors.Is(err, app.ErrNotMessageAuthor),
+		errors.Is(err, app.ErrConversationMessagingClosed):
 		writeError(w, http.StatusForbidden, err.Error())
 
 	case errors.Is(err, app.ErrConversationFull):
@@ -646,4 +856,17 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func parseOptionalTime(value string) *time.Time {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return nil
+	}
+	parsed = parsed.UTC()
+	return &parsed
 }

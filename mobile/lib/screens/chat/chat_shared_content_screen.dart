@@ -1,0 +1,1679 @@
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
+
+import '../../core/files/chat_file_cache.dart';
+import '../../core/network/chat_api.dart';
+import '../../core/network/file_api.dart';
+import '../../core/ui/app_colors.dart';
+import '../../features/chat/models/conversation_vm.dart';
+import '../../features/chat/models/message_vm.dart';
+import '../../l10n/generated/app_localizations.dart';
+import 'chat_image_viewer_screen.dart';
+
+enum _SharedTab { media, links, files }
+
+class ChatSharedContentScreen extends StatefulWidget {
+  const ChatSharedContentScreen({
+    super.key,
+    required this.conversation,
+    required this.currentUserId,
+    required this.initialMessages,
+  });
+
+  final ConversationDetail conversation;
+  final String currentUserId;
+  final List<MessageVm> initialMessages;
+
+  @override
+  State<ChatSharedContentScreen> createState() =>
+      _ChatSharedContentScreenState();
+}
+
+class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
+  final _chatApi = ChatApi();
+  final _fileApi = FileApi();
+  final _fileCache = ChatFileCache();
+
+  _SharedTab _selectedTab = _SharedTab.media;
+  List<MessageVm> _messages = const [];
+  Map<String, FileMetadataVm?> _fileMetaById = const {};
+  Map<String, Uint8List> _fileImageBytesById = const {};
+  Map<String, bool> _fileDownloadedById = const {};
+  final Set<String> _busyFileIds = {};
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _messages = _uniqueMessages(widget.initialMessages);
+    unawaited(_loadSharedContent());
+  }
+
+  Future<void> _loadSharedContent() async {
+    if (_loading) return;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      var collected = _uniqueMessages(_messages);
+      var cursor = collected.isNotEmpty ? collected.last.id : null;
+
+      while (mounted) {
+        final page = await _chatApi.listMessages(
+          widget.conversation.id,
+          limit: 100,
+          cursor: cursor,
+        );
+        if (page.isEmpty) {
+          break;
+        }
+
+        collected = _uniqueMessages([...collected, ...page]);
+        if (mounted) {
+          setState(() => _messages = collected);
+        }
+        await _loadFileMetadata(collected);
+
+        if (page.length < 100) {
+          break;
+        }
+        cursor = page.last.id;
+      }
+
+      await _loadFileMetadata(collected);
+      if (!mounted) return;
+      setState(() {
+        _messages = collected;
+        _loading = false;
+      });
+    } catch (e) {
+      await _loadFileMetadata(_messages);
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _loadFileMetadata(List<MessageVm> messages) async {
+    final fileIds = messages
+        .where((message) => !message.isDeleted && !message.isSystem)
+        .expand((message) => message.fileIds)
+        .map((fileId) => fileId.trim())
+        .where((fileId) => fileId.isNotEmpty)
+        .toSet()
+        .where((fileId) => !_fileMetaById.containsKey(fileId))
+        .toList(growable: false);
+
+    if (fileIds.isEmpty) return;
+
+    final fetched = await Future.wait(fileIds.map(_fetchFile));
+    if (!mounted) return;
+
+    final nextMeta = Map<String, FileMetadataVm?>.of(_fileMetaById);
+    final nextImageBytes = Map<String, Uint8List>.of(_fileImageBytesById);
+    final nextDownloaded = Map<String, bool>.of(_fileDownloadedById);
+    for (final item in fetched) {
+      nextMeta[item.fileId] = item.metadata;
+      nextDownloaded[item.fileId] = item.downloaded;
+      if (item.imageBytes != null) {
+        nextImageBytes[item.fileId] = item.imageBytes!;
+      }
+    }
+
+    setState(() {
+      _fileMetaById = nextMeta;
+      _fileImageBytesById = nextImageBytes;
+      _fileDownloadedById = nextDownloaded;
+    });
+  }
+
+  Future<_FetchedFile> _fetchFile(String fileId) async {
+    FileMetadataVm? metadata;
+    try {
+      metadata = await _fileApi.getFileMetadata(fileId);
+    } catch (_) {
+      return _FetchedFile(fileId: fileId);
+    }
+
+    Uint8List? imageBytes;
+    final downloaded = await _fileCache.downloadedFile(
+      fileId,
+      metadata: metadata,
+    );
+
+    if (metadata.isImage && downloaded != null) {
+      try {
+        imageBytes = await downloaded.file.readAsBytes();
+      } catch (_) {
+        imageBytes = null;
+      }
+    } else if (metadata.isImage) {
+      try {
+        final content = await _fileApi.downloadContent(fileId);
+        imageBytes = content.bytes.isEmpty ? null : content.bytes;
+      } catch (_) {
+        imageBytes = null;
+      }
+    }
+
+    return _FetchedFile(
+      fileId: fileId,
+      metadata: metadata,
+      imageBytes: imageBytes,
+      downloaded: downloaded != null,
+    );
+  }
+
+  Future<void> _handleSharedFileTap(_SharedFileRef item) async {
+    if (_busyFileIds.contains(item.fileId)) return;
+
+    if (item.downloaded) {
+      await _openDownloadedFile(item);
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _busyFileIds.add(item.fileId));
+
+    try {
+      if (item.imageBytes != null) {
+        await _fileCache.saveBytes(
+          item.fileId,
+          bytes: item.imageBytes!,
+          metadata: item.metadata,
+        );
+      } else {
+        await _fileCache.download(item.fileId, metadata: item.metadata);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _fileDownloadedById = {
+          ..._fileDownloadedById,
+          item.fileId: true,
+        };
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.chatAttachmentDownloaded),
+          backgroundColor: const Color(0xFF3a2415),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      await _showSharedFileError(l10n.chatAttachmentDownloadFailed);
+    } finally {
+      if (mounted) {
+        setState(() => _busyFileIds.remove(item.fileId));
+      }
+    }
+  }
+
+  Future<void> _openDownloadedFile(_SharedFileRef item) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      final downloaded = await _fileCache.downloadedFile(
+        item.fileId,
+        metadata: item.metadata,
+      );
+      if (!mounted) return;
+
+      if (downloaded == null) {
+        setState(() {
+          _fileDownloadedById = {
+            ..._fileDownloadedById,
+            item.fileId: false,
+          };
+        });
+        return;
+      }
+
+      if (item.metadata?.isImage ?? false) {
+        final bytes = await downloaded.file.readAsBytes();
+        if (!mounted) return;
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => ChatImageViewerScreen(imageBytes: bytes),
+          ),
+        );
+        return;
+      }
+
+      final result = await _fileCache.open(downloaded);
+      if (!mounted || result.type == ResultType.done) return;
+
+      await _showSharedFileError(l10n.chatAttachmentOpenFailed);
+    } catch (_) {
+      if (!mounted) return;
+      await _showSharedFileError(l10n.chatAttachmentOpenFailed);
+    }
+  }
+
+  Future<void> _showSharedFileError(String message) {
+    final l10n = AppLocalizations.of(context)!;
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1d120b),
+        title: Text(
+          l10n.error,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: Color(0xFFf5ede6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.ok),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final media = _sharedFiles
+        .where((item) => item.metadata?.isMedia ?? false)
+        .toList(growable: false);
+    final files = _sharedFiles.where((item) {
+      final metadataKnown = _fileMetaById.containsKey(item.fileId);
+      return metadataKnown && !(item.metadata?.isMedia ?? false);
+    }).toList(growable: false);
+    final links = _sharedLinks(l10n);
+    final contentWidth = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = contentWidth < 360 ? 14.0 : 16.0;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF140a05),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -1),
+            radius: 0.92,
+            colors: [Color(0x14FF9800), Color(0x00140A05)],
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = constraints.maxWidth.clamp(320.0, 430.0);
+
+            return Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _SharedHeader(
+                        title: _sharedTitle(l10n),
+                        participantCount:
+                            widget.conversation.participants.length,
+                        horizontalPadding: horizontalPadding,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          22,
+                          horizontalPadding,
+                          0,
+                        ),
+                        child: _SharedTabs(
+                          selected: _selectedTab,
+                          onChanged: (tab) {
+                            setState(() => _selectedTab = tab);
+                          },
+                        ),
+                      ),
+                    ),
+                    if (_error != null &&
+                        (media.isNotEmpty ||
+                            links.isNotEmpty ||
+                            files.isNotEmpty))
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            18,
+                            horizontalPadding,
+                            0,
+                          ),
+                          child: const _PartialLoadWarning(),
+                        ),
+                      ),
+                    ..._buildSelectedSlivers(
+                      media: media,
+                      links: links,
+                      files: files,
+                      horizontalPadding: horizontalPadding,
+                      l10n: l10n,
+                    ),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: MediaQuery.paddingOf(context).bottom + 28,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildSelectedSlivers({
+    required List<_SharedFileRef> media,
+    required List<_SharedLinkRef> links,
+    required List<_SharedFileRef> files,
+    required double horizontalPadding,
+    required AppLocalizations l10n,
+  }) {
+    switch (_selectedTab) {
+      case _SharedTab.media:
+        return _buildMediaSlivers(media, horizontalPadding, l10n);
+      case _SharedTab.links:
+        return _buildLinksSlivers(links, horizontalPadding, l10n);
+      case _SharedTab.files:
+        return _buildFilesSlivers(files, horizontalPadding, l10n);
+    }
+  }
+
+  List<Widget> _buildMediaSlivers(
+    List<_SharedFileRef> media,
+    double horizontalPadding,
+    AppLocalizations l10n,
+  ) {
+    if (media.isEmpty) {
+      return [
+        SliverToBoxAdapter(
+          child: _EmptyOrLoadingState(
+            loading: _loading,
+            error: _error,
+            title: l10n.chatSharedNoMediaTitle,
+            subtitle: l10n.chatSharedNoMediaSubtitle,
+            onRetry: _loadSharedContent,
+          ),
+        ),
+      ];
+    }
+
+    return [
+      SliverPadding(
+        padding: EdgeInsets.fromLTRB(
+          horizontalPadding,
+          34,
+          horizontalPadding,
+          0,
+        ),
+        sliver: SliverList.list(
+          children: _groupByDate(
+            media,
+            (item) => item.message.sentAt,
+            l10n,
+          )
+              .map(
+                (group) => _MediaGroup(
+                  group: group,
+                  busyFileIds: _busyFileIds,
+                  onFileTap: _handleSharedFileTap,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildLinksSlivers(
+    List<_SharedLinkRef> links,
+    double horizontalPadding,
+    AppLocalizations l10n,
+  ) {
+    if (links.isEmpty) {
+      return [
+        SliverToBoxAdapter(
+          child: _EmptyOrLoadingState(
+            loading: _loading,
+            error: _error,
+            title: l10n.chatSharedNoLinksTitle,
+            subtitle: l10n.chatSharedNoLinksSubtitle,
+            onRetry: _loadSharedContent,
+          ),
+        ),
+      ];
+    }
+
+    return [
+      SliverPadding(
+        padding: EdgeInsets.fromLTRB(
+          horizontalPadding,
+          34,
+          horizontalPadding,
+          0,
+        ),
+        sliver: SliverList.list(
+          children: _groupByDate(
+            links,
+            (item) => item.message.sentAt,
+            l10n,
+          ).map((group) => _LinksGroup(group: group)).toList(growable: false),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildFilesSlivers(
+    List<_SharedFileRef> files,
+    double horizontalPadding,
+    AppLocalizations l10n,
+  ) {
+    if (files.isEmpty) {
+      return [
+        SliverToBoxAdapter(
+          child: _EmptyOrLoadingState(
+            loading: _loading,
+            error: _error,
+            title: l10n.chatSharedNoFilesTitle,
+            subtitle: l10n.chatSharedNoFilesSubtitle,
+            onRetry: _loadSharedContent,
+          ),
+        ),
+      ];
+    }
+
+    return [
+      SliverPadding(
+        padding: EdgeInsets.fromLTRB(
+          horizontalPadding,
+          28,
+          horizontalPadding,
+          0,
+        ),
+        sliver: SliverList.list(
+          children: _groupByDate(
+            files,
+            (item) => item.message.sentAt,
+            l10n,
+          )
+              .map(
+                (group) => _FilesGroup(
+                  group: group,
+                  busyFileIds: _busyFileIds,
+                  onFileTap: _handleSharedFileTap,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      ),
+    ];
+  }
+
+  List<_SharedFileRef> get _sharedFiles {
+    final items = <_SharedFileRef>[];
+    for (final message in _messages) {
+      if (message.isDeleted || message.isSystem) continue;
+      for (final rawFileId in message.fileIds) {
+        final fileId = rawFileId.trim();
+        if (fileId.isEmpty) continue;
+        items.add(
+          _SharedFileRef(
+            message: message,
+            fileId: fileId,
+            metadata: _fileMetaById[fileId],
+            imageBytes: _fileImageBytesById[fileId],
+            downloaded: _fileDownloadedById[fileId] ?? false,
+          ),
+        );
+      }
+    }
+    return items;
+  }
+
+  List<_SharedLinkRef> _sharedLinks(AppLocalizations l10n) {
+    final items = <_SharedLinkRef>[];
+    for (final message in _messages) {
+      if (message.isDeleted || message.isSystem) continue;
+      final content = message.content.replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (content.isEmpty) continue;
+
+      for (final match in _urlRegex.allMatches(content)) {
+        final rawUrl = match.group(0) ?? '';
+        final url = _cleanUrl(rawUrl);
+        if (url.isEmpty) continue;
+
+        final participant = _participantFor(message.senderUserId);
+        items.add(
+          _SharedLinkRef(
+            message: message,
+            url: url,
+            snippet: _snippetAroundUrl(
+              content: content,
+              matchStart: match.start,
+              matchEnd: match.start + url.length,
+            ),
+            senderName: _senderName(message, participant, l10n),
+            senderAvatarFileId:
+                participant?.avatarFileId ?? message.senderAvatarFileId,
+          ),
+        );
+      }
+    }
+    return items;
+  }
+
+  ParticipantInfo? _participantFor(String userId) {
+    for (final participant in widget.conversation.participants) {
+      if (participant.userId == userId) return participant;
+    }
+    return null;
+  }
+
+  String _senderName(
+    MessageVm message,
+    ParticipantInfo? participant,
+    AppLocalizations l10n,
+  ) {
+    final participantName = participant?.displayName.trim();
+    if (participantName != null && participantName.isNotEmpty) {
+      return participantName;
+    }
+
+    final messageName = message.senderDisplayName.trim();
+    if (messageName.isNotEmpty) return messageName;
+    return l10n.chatUserFallbackName;
+  }
+
+  String _sharedTitle(AppLocalizations l10n) {
+    if (widget.conversation.isDirect) {
+      final peerName = widget.conversation
+              .directPeer(widget.currentUserId)
+              ?.displayName
+              .trim() ??
+          '';
+      if (peerName.isNotEmpty) return peerName;
+    }
+
+    final title = widget.conversation.title?.trim() ?? '';
+    return title.isEmpty ? l10n.chatFallbackTitle : title;
+  }
+
+  List<MessageVm> _uniqueMessages(List<MessageVm> items) {
+    final seen = <String>{};
+    final result = <MessageVm>[];
+    for (final item in items) {
+      if (seen.add(item.id)) {
+        result.add(item);
+      }
+    }
+    result.sort((a, b) {
+      final byDate = b.sentAt.compareTo(a.sentAt);
+      if (byDate != 0) return byDate;
+      return b.id.compareTo(a.id);
+    });
+    return result;
+  }
+}
+
+class _SharedHeader extends StatelessWidget {
+  const _SharedHeader({
+    required this.title,
+    required this.participantCount,
+    required this.horizontalPadding,
+  });
+
+  final String title;
+  final int participantCount;
+  final double horizontalPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        topPadding + 18,
+        horizontalPadding,
+        18,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0x661D1109),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+        ),
+      ),
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          Align(
+            alignment: Alignment.topLeft,
+            child: _SharedBackButton(onTap: () => Navigator.of(context).pop()),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title.trim().isEmpty ? l10n.chatFallbackTitle : title.trim(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: MediaQuery.sizeOf(context).width < 360 ? 22 : 24,
+                    height: 1.12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.9,
+                    color: const Color(0xFFf7f4f1),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.accent,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.08),
+                            blurRadius: 0,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.chatParticipantsCount(participantCount),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        height: 1,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFFf1a234),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SharedBackButton extends StatelessWidget {
+  const _SharedBackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: const SizedBox(
+        width: 40,
+        height: 40,
+        child: Icon(
+          Icons.arrow_back_ios_new_rounded,
+          size: 24,
+          color: Color(0xFFf7f4f1),
+        ),
+      ),
+    );
+  }
+}
+
+class _SharedTabs extends StatelessWidget {
+  const _SharedTabs({required this.selected, required this.onChanged});
+
+  final _SharedTab selected;
+  final ValueChanged<_SharedTab> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 360;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      padding: EdgeInsets.all(compact ? 8 : 10),
+      decoration: BoxDecoration(
+        color: const Color(0xB83A2616),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.02)),
+      ),
+      child: Row(
+        children: [
+          _SharedTabButton(
+            label: l10n.chatSharedMediaTab,
+            active: selected == _SharedTab.media,
+            compact: compact,
+            onTap: () => onChanged(_SharedTab.media),
+          ),
+          SizedBox(width: compact ? 6 : 8),
+          _SharedTabButton(
+            label: l10n.chatSharedLinksTab,
+            active: selected == _SharedTab.links,
+            compact: compact,
+            onTap: () => onChanged(_SharedTab.links),
+          ),
+          SizedBox(width: compact ? 6 : 8),
+          _SharedTabButton(
+            label: l10n.chatSharedFilesTab,
+            active: selected == _SharedTab.files,
+            compact: compact,
+            onTap: () => onChanged(_SharedTab.files),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SharedTabButton extends StatelessWidget {
+  const _SharedTabButton({
+    required this.label,
+    required this.active,
+    required this.compact,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: compact ? 58 : 66,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? AppColors.accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.22),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: compact ? 14 : 16,
+              height: 1,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.6,
+              color: active ? const Color(0xFFfff7ef) : const Color(0xFFd8c2b3),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MediaGroup extends StatelessWidget {
+  const _MediaGroup({
+    required this.group,
+    required this.busyFileIds,
+    required this.onFileTap,
+  });
+
+  final _DateGroup<_SharedFileRef> group;
+  final Set<String> busyFileIds;
+  final ValueChanged<_SharedFileRef> onFileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final gap = width < 360 ? 10.0 : 14.0;
+    final radius = width < 360 ? 22.0 : 28.0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 38),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(group.label),
+          const SizedBox(height: 18),
+          GridView.builder(
+            itemCount: group.items.length,
+            shrinkWrap: true,
+            padding: EdgeInsets.zero,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: gap,
+              mainAxisSpacing: gap,
+            ),
+            itemBuilder: (context, index) {
+              final item = group.items[index];
+              return _MediaTile(
+                item: item,
+                radius: radius,
+                busy: busyFileIds.contains(item.fileId),
+                onTap: () => onFileTap(item),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MediaTile extends StatelessWidget {
+  const _MediaTile({
+    required this.item,
+    required this.radius,
+    required this.busy,
+    required this.onTap,
+  });
+
+  final _SharedFileRef item;
+  final double radius;
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isVideo = item.metadata?.isVideo ?? false;
+    final isImage = item.metadata?.isImage ?? false;
+
+    final tile = ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: _fallbackGradient(item.fileId),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (isImage && item.imageBytes != null)
+              Image.memory(
+                item.imageBytes!,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+              ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.03),
+                    Colors.black.withValues(alpha: isVideo ? 0.18 : 0.08),
+                  ],
+                ),
+              ),
+            ),
+            if (isVideo) const _PlayBadge(),
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: _SharedDownloadBadge(
+                downloaded: item.downloaded,
+                busy: busy,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: tile,
+    );
+  }
+}
+
+class _PlayBadge extends StatelessWidget {
+  const _PlayBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xEAFFFAF2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.play_arrow_rounded,
+          size: 34,
+          color: Color(0xFFc7851d),
+        ),
+      ),
+    );
+  }
+}
+
+class _LinksGroup extends StatelessWidget {
+  const _LinksGroup({required this.group});
+
+  final _DateGroup<_SharedLinkRef> group;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 34),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(group.label),
+          const SizedBox(height: 28),
+          ...group.items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 34),
+              child: _LinkItem(item: item),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkItem extends StatelessWidget {
+  const _LinkItem({required this.item});
+
+  final _SharedLinkRef item;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 360;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: compact ? 82 : 100,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: _SharedAvatar(
+              size: 64,
+              name: item.senderName,
+              avatarFileId: item.senderAvatarFileId,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.senderName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: compact ? 23 : 26,
+                  height: 1.08,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.0,
+                  color: const Color(0xFFf2efeb),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                item.snippet,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.34,
+                  letterSpacing: 0.1,
+                  color: Color(0xFF776b62),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item.url,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.2,
+                  letterSpacing: 0.4,
+                  color: AppColors.accent,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilesGroup extends StatelessWidget {
+  const _FilesGroup({
+    required this.group,
+    required this.busyFileIds,
+    required this.onFileTap,
+  });
+
+  final _DateGroup<_SharedFileRef> group;
+  final Set<String> busyFileIds;
+  final ValueChanged<_SharedFileRef> onFileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 30),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: _SectionTitle(group.label),
+          ),
+          const SizedBox(height: 16),
+          ...group.items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 18),
+              child: _FileCard(
+                item: item,
+                busy: busyFileIds.contains(item.fileId),
+                onTap: () => onFileTap(item),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FileCard extends StatelessWidget {
+  const _FileCard({
+    required this.item,
+    required this.busy,
+    required this.onTap,
+  });
+
+  final _SharedFileRef item;
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 380;
+    final l10n = AppLocalizations.of(context)!;
+    final metadata = item.metadata;
+    final name = (metadata?.originalName.trim().isNotEmpty ?? false)
+        ? metadata!.originalName.trim()
+        : l10n.chatSharedFileFallback(_shortId(item.fileId));
+    final label = metadata == null
+        ? l10n.chatSharedUnknownFile
+        : '${_formatSize(metadata.sizeBytes)} | ${metadata.extensionLabel}';
+    final icon = _fileIcon(metadata);
+    final iconColor = _fileIconColor(metadata);
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        constraints: BoxConstraints(minHeight: compact ? 136 : 148),
+        padding: EdgeInsets.fromLTRB(16, 18, compact ? 14 : 18, 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2a190e),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.025)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: compact ? 72 : 78,
+              height: compact ? 72 : 78,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3a2415),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Icon(icon, size: 38, color: iconColor),
+            ),
+            SizedBox(width: compact ? 14 : 16),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compact ? 21 : 23,
+                      height: 1.18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.7,
+                      color: const Color(0xFFf2e7dd),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '${_downloadStatusLabel(context, item.downloaded, busy)} | $label',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compact ? 16 : 17,
+                      height: 1.2,
+                      color: const Color(0xFFa99586),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            _SharedDownloadBadge(
+              downloaded: item.downloaded,
+              busy: busy,
+              size: compact ? 42 : 46,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SharedDownloadBadge extends StatelessWidget {
+  const _SharedDownloadBadge({
+    required this.downloaded,
+    required this.busy,
+    this.size = 34,
+  });
+
+  final bool downloaded;
+  final bool busy;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: downloaded ? AppColors.accent : const Color(0xE62D1A0D),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Center(
+        child: busy
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(
+                downloaded
+                    ? Icons.open_in_full_rounded
+                    : Icons.download_rounded,
+                size: size * 0.52,
+                color: Colors.white,
+              ),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: MediaQuery.sizeOf(context).width < 360 ? 15 : 16,
+        height: 1.1,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 2.6,
+        color: const Color(0xFFf1a234),
+      ),
+    );
+  }
+}
+
+class _SharedAvatar extends StatelessWidget {
+  const _SharedAvatar({
+    required this.size,
+    required this.name,
+    this.avatarFileId,
+  });
+
+  final double size;
+  final String name;
+  final String? avatarFileId;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = resolvePublicFileContentUrl(avatarFileId?.trim() ?? '');
+    final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: url == null
+            ? const LinearGradient(
+                begin: Alignment(-0.3, -0.5),
+                end: Alignment(0.8, 1),
+                colors: [Color(0xFFf5b05a), Color(0xFF8f4a16)],
+              )
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: url == null
+          ? Center(
+              child: Text(
+                initial,
+                style: TextStyle(
+                  fontSize: size * 0.38,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            )
+          : Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Center(
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    fontSize: size * 0.38,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+class _EmptyOrLoadingState extends StatelessWidget {
+  const _EmptyOrLoadingState({
+    required this.loading,
+    required this.error,
+    required this.title,
+    required this.subtitle,
+    required this.onRetry,
+  });
+
+  final bool loading;
+  final String? error;
+  final String title;
+  final String subtitle;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 96, 24, 0),
+      child: Column(
+        children: [
+          if (loading) ...[
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.6,
+                color: AppColors.accent,
+              ),
+            ),
+            const SizedBox(height: 18),
+          ] else
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.accent.withValues(alpha: 0.12),
+              ),
+              child: Icon(
+                error == null ? Icons.inventory_2_outlined : Icons.wifi_off,
+                color: AppColors.accent,
+                size: 28,
+              ),
+            ),
+          const SizedBox(height: 18),
+          Text(
+            error == null ? title : l10n.chatSharedLoadFailed,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 22,
+              height: 1.15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.6,
+              color: Color(0xFFf5ede6),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error == null ? subtitle : l10n.chatSharedLoadFailedSubtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.35,
+              color: Color(0xFFa99586),
+            ),
+          ),
+          if (error != null) ...[
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: onRetry,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 13,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  l10n.retryButton,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PartialLoadWarning extends StatelessWidget {
+  const _PartialLoadWarning();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.16)),
+      ),
+      child: Text(
+        l10n.chatSharedPartialLoadWarning,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 13,
+          height: 1.25,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFFf1a234),
+        ),
+      ),
+    );
+  }
+}
+
+class _FetchedFile {
+  const _FetchedFile({
+    required this.fileId,
+    this.metadata,
+    this.imageBytes,
+    this.downloaded = false,
+  });
+
+  final String fileId;
+  final FileMetadataVm? metadata;
+  final Uint8List? imageBytes;
+  final bool downloaded;
+}
+
+class _SharedFileRef {
+  const _SharedFileRef({
+    required this.message,
+    required this.fileId,
+    required this.metadata,
+    required this.imageBytes,
+    required this.downloaded,
+  });
+
+  final MessageVm message;
+  final String fileId;
+  final FileMetadataVm? metadata;
+  final Uint8List? imageBytes;
+  final bool downloaded;
+}
+
+class _SharedLinkRef {
+  const _SharedLinkRef({
+    required this.message,
+    required this.url,
+    required this.snippet,
+    required this.senderName,
+    required this.senderAvatarFileId,
+  });
+
+  final MessageVm message;
+  final String url;
+  final String snippet;
+  final String senderName;
+  final String? senderAvatarFileId;
+}
+
+class _DateGroup<T> {
+  const _DateGroup({required this.label, required this.items});
+
+  final String label;
+  final List<T> items;
+}
+
+final _urlRegex = RegExp(
+  r'((?:https?:\/\/|www\.)[^\s<>()]+)',
+  caseSensitive: false,
+);
+
+List<_DateGroup<T>> _groupByDate<T>(
+  List<T> items,
+  DateTime Function(T item) dateOf,
+  AppLocalizations l10n,
+) {
+  final sorted = [...items]..sort((a, b) => dateOf(b).compareTo(dateOf(a)));
+  final groups = <String, List<T>>{};
+
+  for (final item in sorted) {
+    final label = _dateLabel(dateOf(item), l10n);
+    groups.putIfAbsent(label, () => <T>[]).add(item);
+  }
+
+  return groups.entries
+      .map((entry) => _DateGroup(label: entry.key, items: entry.value))
+      .toList(growable: false);
+}
+
+String _dateLabel(DateTime value, AppLocalizations l10n) {
+  final local = value.toLocal();
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final date = DateTime(local.year, local.month, local.day);
+  final diff = today.difference(date).inDays;
+
+  if (diff == 0) return l10n.chatDateToday;
+  if (diff == 1) return l10n.chatDateYesterday;
+  if (local.year == now.year) {
+    return DateFormat.MMMd(l10n.localeName).format(local);
+  }
+  return DateFormat.yMMMd(l10n.localeName).format(local);
+}
+
+String _cleanUrl(String rawUrl) {
+  return rawUrl.trim().replaceFirst(RegExp(r'[),.;!?]+$'), '');
+}
+
+String _snippetAroundUrl({
+  required String content,
+  required int matchStart,
+  required int matchEnd,
+}) {
+  const beforeChars = 42;
+  const afterChars = 62;
+  final start = math.max(0, matchStart - beforeChars);
+  final end = math.min(content.length, matchEnd + afterChars);
+  final prefix = start > 0 ? '...' : '';
+  final suffix = end < content.length ? '...' : '';
+  return '$prefix${content.substring(start, end).trim()}$suffix';
+}
+
+LinearGradient _fallbackGradient(String seed) {
+  final palettes = const [
+    [Color(0xFF5aa8df), Color(0xFF0c3f67), Color(0xFF071d31)],
+    [Color(0xFF1877bc), Color(0xFF0e4f88), Color(0xFF083256)],
+    [Color(0xFF5a1b05), Color(0xFF8a3009), Color(0xFF2d1308)],
+    [Color(0xFF66431e), Color(0xFF33200f), Color(0xFF160b05)],
+  ];
+  final index =
+      seed.codeUnits.fold<int>(0, (sum, code) => sum + code) % palettes.length;
+  final colors = palettes[index];
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: colors,
+  );
+}
+
+IconData _fileIcon(FileMetadataVm? metadata) {
+  final extension = metadata?.extensionLabel.toLowerCase() ?? '';
+  if (extension == 'pdf') return Icons.picture_as_pdf_rounded;
+  if (extension == 'zip' || extension == 'rar' || extension == '7z') {
+    return Icons.archive_rounded;
+  }
+  if (extension == 'xls' || extension == 'xlsx' || extension == 'csv') {
+    return Icons.table_chart_rounded;
+  }
+  if (metadata?.isAudio ?? false) return Icons.mic_rounded;
+  if (metadata?.isImage ?? false) return Icons.image_rounded;
+  if (metadata?.isVideo ?? false) return Icons.movie_rounded;
+  return Icons.description_rounded;
+}
+
+Color _fileIconColor(FileMetadataVm? metadata) {
+  final extension = metadata?.extensionLabel.toLowerCase() ?? '';
+  if (extension == 'zip' || extension == 'rar' || extension == '7z') {
+    return const Color(0xFF9fd0ff);
+  }
+  if (extension == 'xls' || extension == 'xlsx' || extension == 'csv') {
+    return const Color(0xFFf0b983);
+  }
+  return AppColors.accent;
+}
+
+String _formatSize(int bytes) {
+  if (bytes <= 0) return '0 KB';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  var value = bytes.toDouble();
+  var unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  final fractionDigits = value >= 10 || unitIndex == 0 ? 0 : 1;
+  return '${value.toStringAsFixed(fractionDigits)} ${units[unitIndex]}';
+}
+
+String _downloadStatusLabel(BuildContext context, bool downloaded, bool busy) {
+  final l10n = AppLocalizations.of(context)!;
+  if (busy) return l10n.chatAttachmentDownloading;
+  return downloaded
+      ? l10n.chatAttachmentDownloadedStatus
+      : l10n.chatAttachmentNotDownloadedStatus;
+}
+
+String _shortId(String id) {
+  final value = id.trim();
+  if (value.length <= 8) return value;
+  return value.substring(0, 8);
+}

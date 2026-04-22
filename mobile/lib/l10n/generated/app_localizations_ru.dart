@@ -2580,4 +2580,220 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get storyWritersNoteBody =>
       'Попробуйте начать с чувственной детали. Вместо «Я приехал в Токио» опишите неоновое свечение, отражающееся в мокром асфальте Сибуи.';
+
+  @override
+  String get chatListTitle => 'Чаты';
+
+  @override
+  String get chatListLoadFailed => 'Не удалось загрузить чаты';
+
+  @override
+  String get chatListEmpty => 'Диалогов пока нет';
+
+  @override
+  String get chatFallbackTitle => 'Чат';
+
+  @override
+  String get chatGroupFallbackTitle => 'Групповой чат';
+
+  @override
+  String get chatActivityFallbackTitle => 'Чат активности';
+
+  @override
+  String get chatActiveNow => 'СЕЙЧАС В СЕТИ';
+
+  @override
+  String chatParticipantsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count участника',
+      many: '$count участников',
+      few: '$count участника',
+      one: '$count участник',
+      zero: 'Нет участников',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatPinnedMessageLabel => 'ЗАКРЕПЛЕННОЕ СООБЩЕНИЕ';
+
+  @override
+  String get chatDateToday => 'Сегодня';
+
+  @override
+  String get chatDateYesterday => 'Вчера';
+
+  @override
+  String get chatMessageDeleted => 'Сообщение удалено';
+
+  @override
+  String get chatEditedLabel => 'изменено';
+
+  @override
+  String get chatUserFallbackName => 'Пользователь';
+
+  @override
+  String chatSystemUserJoined(Object name) {
+    return '$name присоединился';
+  }
+
+  @override
+  String chatSystemUserLeft(Object name) {
+    return '$name вышел';
+  }
+
+  @override
+  String get chatSystemUpdate => 'Системное событие';
+
+  @override
+  String get chatAttachmentPhotoVideo => 'Фото / видео';
+
+  @override
+  String get chatAttachmentFile => 'Файл';
+
+  @override
+  String get chatAttachmentLocation => 'Локация';
+
+  @override
+  String get chatAttachmentUploading => 'Загрузка вложения...';
+
+  @override
+  String get chatAttachmentDownloading => 'Скачивание...';
+
+  @override
+  String get chatAttachmentDownloaded =>
+      'Файл скачан. Нажмите еще раз, чтобы открыть.';
+
+  @override
+  String get chatAttachmentDownloadedStatus => 'Скачано';
+
+  @override
+  String get chatAttachmentNotDownloadedStatus => 'Нажмите, чтобы скачать';
+
+  @override
+  String get chatAttachmentDownloadFailed =>
+      'Не удалось скачать файл. Попробуйте еще раз.';
+
+  @override
+  String get chatAttachmentOpenFailed =>
+      'Не удалось открыть этот файл на устройстве.';
+
+  @override
+  String get chatAttachmentUploadFailed =>
+      'Не удалось загрузить вложение. Попробуйте еще раз.';
+
+  @override
+  String get chatAttachmentUnsupported =>
+      'Этот тип файла не поддерживается для вложений в чате.';
+
+  @override
+  String get chatAttachmentTooLarge =>
+      'Вложение слишком большое. Используйте файл до 25 МБ.';
+
+  @override
+  String get chatComposerHint => 'Напишите сообщение...';
+
+  @override
+  String get chatComposerClosedHint => 'Чат закрыт';
+
+  @override
+  String get chatActivityChatClosed =>
+      'Чат активности теперь доступен только для чтения.';
+
+  @override
+  String get chatActivityChatClosedHistoryNotice =>
+      'Активность завершена. Сообщения в этот чат больше нельзя отправлять.';
+
+  @override
+  String get chatVoiceMessage => 'Голосовое сообщение';
+
+  @override
+  String get chatVoiceRecording => 'Запись голосового сообщения';
+
+  @override
+  String get chatVoiceRecordPermissionDenied =>
+      'Для записи голосовых сообщений нужен доступ к микрофону.';
+
+  @override
+  String get chatVoiceRecordFailed =>
+      'Не удалось записать голосовое сообщение. Попробуйте еще раз.';
+
+  @override
+  String get chatVoicePlaybackFailed =>
+      'Не удалось воспроизвести это голосовое сообщение.';
+
+  @override
+  String get chatVoiceTooShort => 'Голосовое сообщение слишком короткое.';
+
+  @override
+  String get chatLoadFailed => 'Не удалось загрузить чат';
+
+  @override
+  String get chatParticipantsHostSection => 'ОРГАНИЗАТОР';
+
+  @override
+  String get chatParticipantsJoinedSection => 'УЧАСТНИКИ';
+
+  @override
+  String get chatParticipantHostStatus => 'организатор';
+
+  @override
+  String get chatParticipantYouStatus => 'вы';
+
+  @override
+  String get chatParticipantJoinedStatus => 'участник';
+
+  @override
+  String get chatParticipantsEmpty => 'Других участников пока нет';
+
+  @override
+  String get chatSharedMediaTab => 'Медиа';
+
+  @override
+  String get chatSharedLinksTab => 'Ссылки';
+
+  @override
+  String get chatSharedFilesTab => 'Файлы';
+
+  @override
+  String get chatSharedNoMediaTitle => 'Медиа пока нет';
+
+  @override
+  String get chatSharedNoMediaSubtitle =>
+      'Фото и видео из этого чата появятся здесь.';
+
+  @override
+  String get chatSharedNoLinksTitle => 'Ссылок пока нет';
+
+  @override
+  String get chatSharedNoLinksSubtitle =>
+      'Сообщения со ссылками будут собраны здесь.';
+
+  @override
+  String get chatSharedNoFilesTitle => 'Файлов пока нет';
+
+  @override
+  String get chatSharedNoFilesSubtitle =>
+      'Документы и архивы из этого чата появятся здесь.';
+
+  @override
+  String chatSharedFileFallback(Object id) {
+    return 'Файл $id';
+  }
+
+  @override
+  String get chatSharedUnknownFile => 'Неизвестный файл';
+
+  @override
+  String get chatSharedLoadFailed => 'Не удалось загрузить контент';
+
+  @override
+  String get chatSharedLoadFailedSubtitle =>
+      'Проверьте подключение и попробуйте снова.';
+
+  @override
+  String get chatSharedPartialLoadWarning =>
+      'Часть старых вложений не удалось загрузить.';
 }

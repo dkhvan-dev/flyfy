@@ -38,6 +38,30 @@ class ChatApi {
         response.data as Map<String, dynamic>);
   }
 
+  Future<ConversationDetail> getConversationByActivity(
+      String activityId) async {
+    final response = await _apiClient.dio
+        .get('/chat/conversations/by-activity/$activityId');
+    return ConversationDetail.fromJson(
+        response.data as Map<String, dynamic>);
+  }
+
+  Future<String> createActivityConversation({
+    required String activityId,
+    required String title,
+  }) async {
+    final response = await _apiClient.dio.post(
+      '/chat/conversations',
+      data: {
+        'type': 'activity',
+        'activityId': activityId,
+        'title': title,
+      },
+    );
+    final data = response.data as Map<String, dynamic>;
+    return data['id'] as String;
+  }
+
   Future<ConversationDetail> createDirectConversation(
       String participantUserId) async {
     final response = await _apiClient.dio.post(

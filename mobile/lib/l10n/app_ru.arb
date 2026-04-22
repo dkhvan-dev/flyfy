@@ -898,5 +898,86 @@
   "storyCharacterCountLabel": "Количество символов",
   "storyAiHintUnavailable": "AI-подсказки для текста пока недоступны",
   "storyWritersNoteTitle": "Совет автору",
-  "storyWritersNoteBody": "Попробуйте начать с чувственной детали. Вместо «Я приехал в Токио» опишите неоновое свечение, отражающееся в мокром асфальте Сибуи."
+  "storyWritersNoteBody": "Попробуйте начать с чувственной детали. Вместо «Я приехал в Токио» опишите неоновое свечение, отражающееся в мокром асфальте Сибуи.",
+  "chatListTitle": "Чаты",
+  "chatListLoadFailed": "Не удалось загрузить чаты",
+  "chatListEmpty": "Диалогов пока нет",
+  "chatFallbackTitle": "Чат",
+  "chatGroupFallbackTitle": "Групповой чат",
+  "chatActivityFallbackTitle": "Чат активности",
+  "chatActiveNow": "СЕЙЧАС В СЕТИ",
+  "chatParticipantsCount": "{count, plural, =0{Нет участников} one{{count} участник} few{{count} участника} many{{count} участников} other{{count} участника}}",
+  "@chatParticipantsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatPinnedMessageLabel": "ЗАКРЕПЛЕННОЕ СООБЩЕНИЕ",
+  "chatDateToday": "Сегодня",
+  "chatDateYesterday": "Вчера",
+  "chatMessageDeleted": "Сообщение удалено",
+  "chatEditedLabel": "изменено",
+  "chatUserFallbackName": "Пользователь",
+  "chatSystemUserJoined": "{name} присоединился",
+  "@chatSystemUserJoined": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "chatSystemUserLeft": "{name} вышел",
+  "@chatSystemUserLeft": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "chatSystemUpdate": "Системное событие",
+  "chatAttachmentPhotoVideo": "Фото / видео",
+  "chatAttachmentFile": "Файл",
+  "chatAttachmentLocation": "Локация",
+  "chatAttachmentUploading": "Загрузка вложения...",
+  "chatAttachmentDownloading": "Скачивание...",
+  "chatAttachmentDownloaded": "Файл скачан. Нажмите еще раз, чтобы открыть.",
+  "chatAttachmentDownloadedStatus": "Скачано",
+  "chatAttachmentNotDownloadedStatus": "Нажмите, чтобы скачать",
+  "chatAttachmentDownloadFailed": "Не удалось скачать файл. Попробуйте еще раз.",
+  "chatAttachmentOpenFailed": "Не удалось открыть этот файл на устройстве.",
+  "chatAttachmentUploadFailed": "Не удалось загрузить вложение. Попробуйте еще раз.",
+  "chatAttachmentUnsupported": "Этот тип файла не поддерживается для вложений в чате.",
+  "chatAttachmentTooLarge": "Вложение слишком большое. Используйте файл до 25 МБ.",
+  "chatComposerHint": "Напишите сообщение...",
+  "chatComposerClosedHint": "Чат закрыт",
+  "chatActivityChatClosed": "Чат активности теперь доступен только для чтения.",
+  "chatActivityChatClosedHistoryNotice": "Активность завершена. Сообщения в этот чат больше нельзя отправлять.",
+  "chatVoiceMessage": "Голосовое сообщение",
+  "chatVoiceRecording": "Запись голосового сообщения",
+  "chatVoiceRecordPermissionDenied": "Для записи голосовых сообщений нужен доступ к микрофону.",
+  "chatVoiceRecordFailed": "Не удалось записать голосовое сообщение. Попробуйте еще раз.",
+  "chatVoicePlaybackFailed": "Не удалось воспроизвести это голосовое сообщение.",
+  "chatVoiceTooShort": "Голосовое сообщение слишком короткое.",
+  "chatLoadFailed": "Не удалось загрузить чат",
+  "chatParticipantsHostSection": "ОРГАНИЗАТОР",
+  "chatParticipantsJoinedSection": "УЧАСТНИКИ",
+  "chatParticipantHostStatus": "организатор",
+  "chatParticipantYouStatus": "вы",
+  "chatParticipantJoinedStatus": "участник",
+  "chatParticipantsEmpty": "Других участников пока нет",
+  "chatSharedMediaTab": "Медиа",
+  "chatSharedLinksTab": "Ссылки",
+  "chatSharedFilesTab": "Файлы",
+  "chatSharedNoMediaTitle": "Медиа пока нет",
+  "chatSharedNoMediaSubtitle": "Фото и видео из этого чата появятся здесь.",
+  "chatSharedNoLinksTitle": "Ссылок пока нет",
+  "chatSharedNoLinksSubtitle": "Сообщения со ссылками будут собраны здесь.",
+  "chatSharedNoFilesTitle": "Файлов пока нет",
+  "chatSharedNoFilesSubtitle": "Документы и архивы из этого чата появятся здесь.",
+  "chatSharedFileFallback": "Файл {id}",
+  "@chatSharedFileFallback": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "chatSharedUnknownFile": "Неизвестный файл",
+  "chatSharedLoadFailed": "Не удалось загрузить контент",
+  "chatSharedLoadFailedSubtitle": "Проверьте подключение и попробуйте снова.",
+  "chatSharedPartialLoadWarning": "Часть старых вложений не удалось загрузить."
 }

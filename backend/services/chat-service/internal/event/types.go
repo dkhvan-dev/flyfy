@@ -1,8 +1,8 @@
 package event
 
 import (
-	"time"
 	"github.com/google/uuid"
+	"time"
 )
 
 type Event struct {
@@ -24,14 +24,15 @@ func New(eventType string, conversationID uuid.UUID, payload any) Event {
 }
 
 type MessageSentPayload struct {
-	MessageID         uuid.UUID  `json:"messageId"`
-	SenderUserID      uuid.UUID  `json:"senderUserId"`
-	SenderDisplayName string     `json:"senderDisplayName"`
-	Type              string     `json:"type"`
-	Content           string     `json:"content"`
-	FileIDs           []string   `json:"fileIds,omitempty"`
-	ReplyToMessageID  *uuid.UUID `json:"replyToMessageId,omitempty"`
-	SentAt            time.Time  `json:"sentAt"`
+	MessageID          uuid.UUID  `json:"messageId"`
+	SenderUserID       uuid.UUID  `json:"senderUserId"`
+	SenderDisplayName  string     `json:"senderDisplayName"`
+	SenderAvatarFileID *string    `json:"senderAvatarFileId,omitempty"`
+	Type               string     `json:"type"`
+	Content            string     `json:"content"`
+	FileIDs            []string   `json:"fileIds,omitempty"`
+	ReplyToMessageID   *uuid.UUID `json:"replyToMessageId,omitempty"`
+	SentAt             time.Time  `json:"sentAt"`
 }
 
 type MessageEditedPayload struct {

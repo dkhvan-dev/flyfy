@@ -16,6 +16,7 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/ws"
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/config"
+	activityv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/activity/v1"
 	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -69,10 +70,27 @@ func main() {
 	userClient := userv1.NewUserServiceClient(userConn)
 	actorResolver := grpcadapter.NewUserResolver(userClient)
 
+	// Activity service gRPC client
+	activityConn, err := grpc.NewClient(
+		cfg.ActivityService.GRPCAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(grpcadapter.InternalTokenInterceptor(
+			cfg.Security.InternalServiceToken,
+			cfg.App.Name,
+		)),
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to dial activity-service grpc")
+	}
+	defer activityConn.Close()
+
+	activityClient := activityv1.NewActivityServiceClient(activityConn)
+	activityResolver := grpcadapter.NewActivityLifecycleResolver(activityClient)
+
 	// Repository & use cases
 	repo := repository.NewPGChatRepository(pool)
-	conversationUC := app.NewConversationUseCase(repo, publisher)
-	messageUC := app.NewMessageUseCase(repo, publisher)
+	conversationUC := app.NewConversationUseCase(repo, publisher, actorResolver, activityResolver)
+	messageUC := app.NewMessageUseCase(repo, publisher, actorResolver, activityResolver)
 
 	// WebSocket hub
 	hub := ws.NewHub()

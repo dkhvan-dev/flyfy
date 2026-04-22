@@ -55,10 +55,23 @@ func DefaultUploadPolicies(globalMaxSize int64) UploadPolicies {
 		enum.FilePurposeChatAttachment: {
 			MaxSizeBytes: 25 * 1024 * 1024,
 			AllowedExtensions: setOf(
-				"jpg", "jpeg", "png", "webp", "pdf",
+				"jpg", "jpeg", "png", "webp", "heic", "heif",
+				"mp4", "mov", "webm", "m4v",
+				"m4a", "aac", "mp3", "wav", "ogg", "opus",
+				"pdf", "zip", "txt", "csv",
+				"xls", "xlsx", "doc", "docx",
 			),
 			AllowedContentTypes: setOf(
-				"image/jpeg", "image/png", "image/webp", "application/pdf",
+				"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif",
+				"video/mp4", "video/quicktime", "video/webm", "video/x-m4v",
+				"audio/mp4", "audio/m4a", "audio/aac", "audio/mpeg", "audio/wav",
+				"audio/wave", "audio/x-wav", "audio/ogg", "audio/opus",
+				"application/pdf", "application/zip", "application/x-zip-compressed",
+				"text/plain", "text/csv", "application/csv",
+				"application/vnd.ms-excel",
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				"application/msword",
+				"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 			),
 		},
 		enum.FilePurposeGenericDocument: {

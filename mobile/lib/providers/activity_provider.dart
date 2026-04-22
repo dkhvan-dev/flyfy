@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/network/activity_api.dart';
+import '../core/network/chat_api.dart';
 import '../core/network/dio_error_mapper.dart';
 import '../features/activities/models/activity_category_vm.dart';
 import '../features/activities/models/activity_list_item_vm.dart';
@@ -13,10 +14,12 @@ enum ActivitiesState { initial, loading, success, error }
 enum ActivityActionState { idle, loading, success, error }
 
 class ActivityProvider extends ChangeNotifier {
-  ActivityProvider({ActivityApi? activityApi})
-    : _activityApi = activityApi ?? ActivityApi();
+  ActivityProvider({ActivityApi? activityApi, ChatApi? chatApi})
+    : _activityApi = activityApi ?? ActivityApi(),
+      _chatApi = chatApi ?? ChatApi();
 
   final ActivityApi _activityApi;
+  final ChatApi _chatApi;
 
   ActivitiesState _state = ActivitiesState.initial;
   ActivityActionState _actionState = ActivityActionState.idle;
@@ -285,6 +288,17 @@ class ActivityProvider extends ChangeNotifier {
 
     try {
       final created = await _activityApi.createActivity(request);
+
+      // Create group chat for the activity (fire-and-forget)
+      try {
+        await _chatApi.createActivityConversation(
+          activityId: created.id,
+          title: request.title,
+        );
+      } catch (e) {
+        debugPrint('Failed to create activity chat: $e');
+      }
+
       _actionState = ActivityActionState.success;
       notifyListeners();
       return created;

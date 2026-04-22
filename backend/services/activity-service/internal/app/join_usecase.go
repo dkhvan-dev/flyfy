@@ -3,9 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/model"
@@ -13,11 +15,25 @@ import (
 )
 
 type JoinUseCase struct {
-	repo port.ActivityRepository
+	repo                port.ActivityRepository
+	chatGateway         port.ActivityChatGateway
+	userProfileResolver port.UserProfileResolver
 }
 
-func NewJoinUseCase(repo port.ActivityRepository) *JoinUseCase {
-	return &JoinUseCase{repo: repo}
+func NewJoinUseCase(
+	repo port.ActivityRepository,
+	chatGateway port.ActivityChatGateway,
+	userProfileResolver ...port.UserProfileResolver,
+) *JoinUseCase {
+	var resolver port.UserProfileResolver
+	if len(userProfileResolver) > 0 {
+		resolver = userProfileResolver[0]
+	}
+	return &JoinUseCase{
+		repo:                repo,
+		chatGateway:         chatGateway,
+		userProfileResolver: resolver,
+	}
 }
 
 type JoinActivityInput struct {
@@ -41,6 +57,7 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 	}
 
 	var created *model.ActivityParticipant
+	var chatInput *port.EnsureActivityParticipantInput
 
 	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		activity, err := txRepo.GetActivityByIDForUpdate(ctx, input.ActivityID)
@@ -169,13 +186,83 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 		}
 
 		created = participant
+		if participant.Status.IsActive() {
+			messagingAvailableUntil := activityChatMessagingAvailableUntil(activity)
+			chatInput = &port.EnsureActivityParticipantInput{
+				ActivityID:              activity.ID,
+				ActivityTitle:           activity.Title,
+				MessagingAvailableUntil: &messagingAvailableUntil,
+				HostUserID:              activity.HostUserID,
+				UserID:                  participant.UserID,
+			}
+		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	if u.chatGateway != nil && chatInput != nil {
+		chatCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+
+		if strings.TrimSpace(chatInput.ActivityAvatarFileID) == "" {
+			media, mediaErr := u.repo.ListMediaByActivityID(chatCtx, chatInput.ActivityID)
+			if mediaErr != nil {
+				log.Warn().
+					Err(mediaErr).
+					Str("activity_id", chatInput.ActivityID.String()).
+					Msg("failed to resolve activity cover for chat")
+			} else {
+				chatInput.ActivityAvatarFileID = activityCoverFileID(media)
+			}
+		}
+
+		if strings.TrimSpace(chatInput.DisplayName) == "" && u.userProfileResolver != nil {
+			displayName, displayNameErr := u.userProfileResolver.DisplayNameForUserID(chatCtx, chatInput.UserID)
+			if displayNameErr != nil {
+				log.Warn().
+					Err(displayNameErr).
+					Str("user_id", chatInput.UserID.String()).
+					Msg("failed to resolve activity participant display name for chat")
+			} else {
+				chatInput.DisplayName = strings.TrimSpace(displayName)
+			}
+		}
+
+		if chatErr := u.chatGateway.EnsureActivityParticipant(chatCtx, *chatInput); chatErr != nil {
+			log.Error().
+				Err(chatErr).
+				Str("activity_id", chatInput.ActivityID.String()).
+				Str("user_id", chatInput.UserID.String()).
+				Msg("failed to add activity participant to chat")
+		}
+	}
+
 	return created, nil
+}
+
+func activityCoverFileID(media []*model.ActivityMedia) string {
+	if len(media) == 0 {
+		return ""
+	}
+
+	fallback := media[0]
+	for _, item := range media {
+		if item == nil {
+			continue
+		}
+		if item.IsCover {
+			return item.FileID.String()
+		}
+		if fallback == nil {
+			fallback = item
+		}
+	}
+	if fallback == nil {
+		return ""
+	}
+	return fallback.FileID.String()
 }
 
 func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInput) (*model.ActivityParticipant, error) {

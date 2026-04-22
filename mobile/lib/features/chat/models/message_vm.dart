@@ -2,6 +2,7 @@ class MessageVm {
   final String id;
   final String senderUserId;
   final String senderDisplayName;
+  final String? senderAvatarFileId;
   final String type;
   final String content;
   final List<String> fileIds;
@@ -14,6 +15,7 @@ class MessageVm {
     required this.id,
     required this.senderUserId,
     required this.senderDisplayName,
+    this.senderAvatarFileId,
     required this.type,
     required this.content,
     this.fileIds = const [],
@@ -26,15 +28,18 @@ class MessageVm {
   bool get isDeleted => deletedAt != null;
   bool get isEdited => editedAt != null;
   bool get hasFiles => fileIds.isNotEmpty;
+  bool get isSystem => type == 'system';
 
   factory MessageVm.fromJson(Map<String, dynamic> json) {
     return MessageVm(
-      id: json['id'] as String,
+      id: (json['id'] ?? json['messageId']) as String,
       senderUserId: json['senderUserId'] as String,
       senderDisplayName: json['senderDisplayName'] as String,
+      senderAvatarFileId: json['senderAvatarFileId'] as String?,
       type: json['type'] as String,
       content: json['content'] as String,
-      fileIds: (json['fileIds'] as List<dynamic>?)
+      fileIds:
+          (json['fileIds'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],

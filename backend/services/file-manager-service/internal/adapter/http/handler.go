@@ -30,6 +30,7 @@ func NewHandler(useCase *app.FileUseCase, bindingUseCase *app.FileBindingUseCase
 
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/files/upload-requests", h.CreateUploadRequest)
+	mux.HandleFunc("GET /v1/public/files/", h.handlePublicFileActions)
 	mux.HandleFunc("POST /v1/files/", h.handleFileActions)
 	mux.HandleFunc("GET /v1/files/", h.handleFileActions)
 	mux.HandleFunc("PUT /v1/files/", h.handleFileActions)
@@ -121,7 +122,7 @@ func (h *Handler) handleFileActions(w http.ResponseWriter, r *http.Request) {
 		h.GetFile(w, r, fileID)
 		return
 	case r.Method == http.MethodGet && len(parts) == 2 && parts[1] == "content":
-		h.GetPublicContent(w, r, fileID)
+		h.GetContent(w, r, fileID)
 		return
 	case r.Method == http.MethodDelete && len(parts) == 1:
 		h.DeleteFile(w, r, fileID)
@@ -145,6 +146,29 @@ func (h *Handler) handleFileActions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
+}
+
+func (h *Handler) handlePublicFileActions(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/v1/public/files/")
+	path = strings.Trim(path, "/")
+	if path == "" {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	parts := strings.Split(path, "/")
+	fileID, err := uuid.Parse(parts[0])
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid file id")
+		return
+	}
+
+	if r.Method == http.MethodGet && len(parts) == 2 && parts[1] == "content" {
+		h.GetPublicContent(w, r, fileID)
+		return
+	}
+
+	writeError(w, http.StatusNotFound, "not found")
 }
 
 func (h *Handler) CompleteUpload(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
@@ -236,6 +260,37 @@ func (h *Handler) CreateDownloadURL(w http.ResponseWriter, r *http.Request, file
 	})
 }
 
+func (h *Handler) GetContent(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
+	authenticated := UserIDFromContext(r.Context()) != ""
+	cacheControl := "public, max-age=300"
+
+	var (
+		body        io.ReadCloser
+		contentType string
+		err         error
+	)
+	if authenticated {
+		body, contentType, err = h.useCase.OpenContent(r.Context(), fileID)
+		cacheControl = "private, max-age=300"
+	} else {
+		body, contentType, err = h.useCase.OpenPublicContent(r.Context(), fileID)
+	}
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrFileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, app.ErrFileNotReady), errors.Is(err, app.ErrFileNotPublic):
+			writeError(w, http.StatusForbidden, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to load file content")
+		}
+		return
+	}
+	defer body.Close()
+
+	writeFileContent(w, body, contentType, cacheControl)
+}
+
 func (h *Handler) GetPublicContent(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
 	body, contentType, err := h.useCase.OpenPublicContent(r.Context(), fileID)
 	if err != nil {
@@ -251,10 +306,14 @@ func (h *Handler) GetPublicContent(w http.ResponseWriter, r *http.Request, fileI
 	}
 	defer body.Close()
 
+	writeFileContent(w, body, contentType, "public, max-age=300")
+}
+
+func writeFileContent(w http.ResponseWriter, body io.Reader, contentType string, cacheControl string) {
 	if strings.TrimSpace(contentType) != "" {
 		w.Header().Set("Content-Type", contentType)
 	}
-	w.Header().Set("Cache-Control", "public, max-age=300")
+	w.Header().Set("Cache-Control", cacheControl)
 	_, _ = io.Copy(w, body)
 }
 
