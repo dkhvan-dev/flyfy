@@ -153,11 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final message = e is DioException
           ? DioErrorMapper.toMessage(e)
           : l10n.profileMessageOpenFailed;
-      await showErrorDialog(
-        context,
-        title: l10n.error,
-        message: message,
-      );
+      await showErrorDialog(context, title: l10n.error, message: message);
     } finally {
       if (mounted) {
         setState(() => _isMessageActionLoading = false);
@@ -255,6 +251,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ).showSnackBar(SnackBar(content: Text(l10n.profileLinkCopied)));
   }
 
+  void _openFollowers(UserProfileVm profile) {
+    final userId = profile.userId.trim();
+    if (userId.isEmpty) return;
+    context.push('/users/${Uri.encodeComponent(userId)}/followers');
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -327,6 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       future: _extrasFutureFor(effectiveProfile),
       builder: (context, snapshot) {
         final extras = snapshot.data ?? const _ProfileExtras();
+        final isGuideProfile = extras.guide?.isVerified == true;
         return _ProfileBody(
           profile: effectiveProfile,
           guide: extras.guide,
@@ -338,13 +341,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           isOwnProfile: isOwnProfile,
           isFollowActionLoading: _isFollowActionLoading,
           isMessageActionLoading: _isMessageActionLoading,
-          onToggleFollow:
-              isOwnProfile ? null : () => _toggleFollow(effectiveProfile),
-          onMessageTap:
-              isOwnProfile ? null : () => _openDirectChat(effectiveProfile),
+          onToggleFollow: isOwnProfile
+              ? null
+              : () => _toggleFollow(effectiveProfile),
+          onMessageTap: isOwnProfile
+              ? null
+              : () => _openDirectChat(effectiveProfile),
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
+          onFollowersTap: isGuideProfile
+              ? null
+              : () => _openFollowers(effectiveProfile),
         );
       },
     );
@@ -365,6 +373,7 @@ class _ProfileBody extends StatelessWidget {
     required this.onSettingsTap,
     required this.onCopyProfileLink,
     required this.onEditProfile,
+    required this.onFollowersTap,
   });
 
   final UserProfileVm profile;
@@ -379,6 +388,7 @@ class _ProfileBody extends StatelessWidget {
   final VoidCallback? onSettingsTap;
   final VoidCallback onCopyProfileLink;
   final Future<void> Function()? onEditProfile;
+  final VoidCallback? onFollowersTap;
 
   @override
   Widget build(BuildContext context) {
@@ -436,6 +446,7 @@ class _ProfileBody extends StatelessWidget {
           isGuideProfile: isGuideProfile,
           isOwnProfile: isOwnProfile,
           activityStatsFuture: activityStatsFuture,
+          onFollowersTap: onFollowersTap,
         ),
         if (!isOwnProfile) ...[
           SizedBox(height: profileScaled(context, 22, min: 18, max: 24)),
@@ -654,10 +665,13 @@ class _ProfileHero extends StatelessWidget {
     }
     final normalized = value.replaceAll(RegExp(r'[_-]+'), ' ');
     final words = normalized.split(RegExp(r'\s+'));
-    return words.where((word) => word.isNotEmpty).map((word) {
-      final lower = word.toLowerCase();
-      return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
-    }).join(' ');
+    return words
+        .where((word) => word.isNotEmpty)
+        .map((word) {
+          final lower = word.toLowerCase();
+          return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+        })
+        .join(' ');
   }
 }
 
@@ -926,20 +940,20 @@ class _BecomeGuideCard extends StatelessWidget {
     final title = isPending
         ? l10n.guideVerificationPendingTitle
         : isRejected
-            ? l10n.guideVerificationRejectedTitle
-            : l10n.profileBecomeGuideTitle;
+        ? l10n.guideVerificationRejectedTitle
+        : l10n.profileBecomeGuideTitle;
     final subtitle = isPending
         ? l10n.guideVerificationPendingSubtitle
         : isRejected
-            ? l10n.guideVerificationRejectedSubtitle
-            : isDraft
-                ? l10n.guideVerificationDraftSubtitle
-                : l10n.profileBecomeGuideSubtitle;
+        ? l10n.guideVerificationRejectedSubtitle
+        : isDraft
+        ? l10n.guideVerificationDraftSubtitle
+        : l10n.profileBecomeGuideSubtitle;
     final buttonLabel = isPending
         ? l10n.guideVerificationViewApplicationButton
         : isRejected || isDraft
-            ? l10n.guideVerificationContinueButton
-            : l10n.becomeGuideButton;
+        ? l10n.guideVerificationContinueButton
+        : l10n.becomeGuideButton;
 
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
@@ -1019,6 +1033,7 @@ class _ProfileStatsGrid extends StatelessWidget {
     required this.isGuideProfile,
     required this.isOwnProfile,
     required this.activityStatsFuture,
+    this.onFollowersTap,
   });
 
   final UserProfileVm profile;
@@ -1026,6 +1041,7 @@ class _ProfileStatsGrid extends StatelessWidget {
   final bool isGuideProfile;
   final bool isOwnProfile;
   final Future<ActivityCompletionStatsVm> activityStatsFuture;
+  final VoidCallback? onFollowersTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1057,6 +1073,7 @@ class _ProfileStatsGrid extends StatelessWidget {
                 ? l10n.profileBlogsStat
                 : l10n.profileFollowersStat,
             value: isGuideProfile ? '0' : '${profile.followersCount}',
+            onTap: isGuideProfile ? null : onFollowersTap,
           ),
         ];
 
@@ -1096,12 +1113,14 @@ class _StatConfig {
     required this.value,
     this.highlighted = false,
     this.disabled = false,
+    this.onTap,
   });
 
   final String label;
   final String value;
   final bool highlighted;
   final bool disabled;
+  final VoidCallback? onTap;
 }
 
 class _ProfileStatCard extends StatelessWidget {
@@ -1111,7 +1130,7 @@ class _ProfileStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final child = Container(
       padding: EdgeInsets.symmetric(
         horizontal: profileScaled(context, 8, min: 6, max: 10),
         vertical: profileScaled(context, 14, min: 10, max: 16),
@@ -1151,6 +1170,21 @@ class _ProfileStatCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+
+    if (config.onTap == null || config.disabled) {
+      return child;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: config.onTap,
+        borderRadius: BorderRadius.circular(
+          profileScaled(context, 20, min: 18, max: 22),
+        ),
+        child: child,
       ),
     );
   }
@@ -1391,8 +1425,9 @@ class _ProfileMenuTile extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color:
-                        effectiveDisabled ? profileDisabled : AppColors.accent,
+                    color: effectiveDisabled
+                        ? profileDisabled
+                        : AppColors.accent,
                   ),
                 ),
                 SizedBox(width: profileScaled(context, 14, min: 12, max: 14)),

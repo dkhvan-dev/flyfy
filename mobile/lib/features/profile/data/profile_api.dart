@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_client.dart';
+import '../models/profile_follower_vm.dart';
 import '../models/update_profile_request.dart';
 import '../models/user_profile_vm.dart';
 
@@ -33,8 +34,9 @@ class ProfileApi {
       final statusCode = e.response?.statusCode;
       final data = e.response?.data;
 
-      final errorMessage =
-          data is Map<String, dynamic> ? data['error']?.toString() : null;
+      final errorMessage = data is Map<String, dynamic>
+          ? data['error']?.toString()
+          : null;
 
       final isUserNotFound =
           statusCode == 404 && errorMessage == 'user not found';
@@ -60,6 +62,21 @@ class ProfileApi {
 
   Future<void> unfollowUser(String userId) async {
     await _apiClient.unfollowUser(userId);
+  }
+
+  Future<ProfileFollowersPageVm> getFollowers(
+    String userId, {
+    int limit = 20,
+    int offset = 0,
+    String? query,
+  }) async {
+    final data = await _apiClient.getUserFollowers(
+      userId,
+      limit: limit,
+      offset: offset,
+      query: query,
+    );
+    return ProfileFollowersPageVm.fromJson(data);
   }
 
   Future<UserSettingsVm> updateMeSettings({

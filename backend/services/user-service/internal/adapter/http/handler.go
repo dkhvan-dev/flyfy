@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -150,7 +151,22 @@ func (h *Handler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := uuid.Parse(path)
+	parts := strings.Split(path, "/")
+	if len(parts) == 2 && parts[1] == "followers" {
+		userID, err := uuid.Parse(parts[0])
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid user id")
+			return
+		}
+		h.ListFollowers(w, r, userID)
+		return
+	}
+	if len(parts) != 1 {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	userID, err := uuid.Parse(parts[0])
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid user id")
 		return
@@ -174,6 +190,68 @@ func (h *Handler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, toInitMeResponse(aggregate))
+}
+
+func (h *Handler) ListFollowers(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	limit := 20
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			offset = parsed
+		}
+	}
+
+	page, err := h.useCase.ListFollowers(
+		r.Context(),
+		userID,
+		limit,
+		offset,
+		r.URL.Query().Get("q"),
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidUserID):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to list followers")
+		}
+		return
+	}
+
+	resp := make([]dto.FollowersListItemResponse, 0, len(page.Items))
+	for _, item := range page.Items {
+		var avatarFileID *string
+		if item.AvatarFileID != nil {
+			v := item.AvatarFileID.String()
+			avatarFileID = &v
+		}
+		var lastSeenAt *string
+		if item.LastSeenAt != nil {
+			v := item.LastSeenAt.UTC().Format(time.RFC3339)
+			lastSeenAt = &v
+		}
+
+		resp = append(resp, dto.FollowersListItemResponse{
+			UserID:       item.UserID.String(),
+			DisplayName:  item.DisplayName,
+			AvatarFileID: avatarFileID,
+			IsOnline:     item.IsOnline,
+			LastSeenAt:   lastSeenAt,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, dto.FollowersListResponse{
+		Items:      resp,
+		NextOffset: page.NextOffset,
+	})
 }
 
 func (h *Handler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {

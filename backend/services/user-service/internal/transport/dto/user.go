@@ -108,3 +108,16 @@ type PublicProfileResponse struct {
 	IsOnline     bool    `json:"isOnline"`
 	LastSeenAt   *string `json:"lastSeenAt,omitempty"`
 }
+
+type FollowersListItemResponse struct {
+	UserID       string  `json:"userId"`
+	DisplayName  *string `json:"displayName,omitempty"`
+	AvatarFileID *string `json:"avatarFileId,omitempty"`
+	IsOnline     bool    `json:"isOnline"`
+	LastSeenAt   *string `json:"lastSeenAt,omitempty"`
+}
+
+type FollowersListResponse struct {
+	Items      []FollowersListItemResponse `json:"items"`
+	NextOffset *int                        `json:"nextOffset,omitempty"`
+}

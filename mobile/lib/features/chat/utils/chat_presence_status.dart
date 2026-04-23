@@ -5,11 +5,22 @@ String chatPresenceStatusLabel(
   AppLocalizations l10n,
   ParticipantInfo? participant,
 ) {
-  if (participant?.isOnline ?? false) {
+  return chatPresenceStatusLabelForValues(
+    l10n,
+    isOnline: participant?.isOnline ?? false,
+    lastSeenAt: participant?.lastSeenAt,
+  );
+}
+
+String chatPresenceStatusLabelForValues(
+  AppLocalizations l10n, {
+  required bool isOnline,
+  DateTime? lastSeenAt,
+}) {
+  if (isOnline) {
     return l10n.chatPresenceOnline;
   }
 
-  final lastSeenAt = participant?.lastSeenAt;
   if (lastSeenAt == null) {
     return l10n.chatPresenceOffline;
   }

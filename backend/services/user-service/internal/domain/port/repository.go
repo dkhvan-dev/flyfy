@@ -41,6 +41,13 @@ type UserRepository interface {
 
 	ListPublicProfiles(ctx context.Context, limit int, offset int) ([]*model.UserProfile, error)
 	GetPublicProfilesByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]*model.UserProfile, error)
+	ListFollowersByUserID(
+		ctx context.Context,
+		userID uuid.UUID,
+		searchQuery string,
+		limit int,
+		offset int,
+	) ([]*model.UserProfile, error)
 
 	PatchUserIdentityBySubject(
 		ctx context.Context,

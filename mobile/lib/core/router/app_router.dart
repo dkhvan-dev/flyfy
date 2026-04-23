@@ -17,6 +17,7 @@ import '../../screens/profile/profile_notifications_screen.dart';
 import '../../screens/profile/profile_security_screen.dart';
 import '../../screens/profile/profile_settings_screen.dart';
 import '../../screens/profile/guide_verification_screen.dart';
+import '../../screens/profile/profile_followers_screen.dart';
 import '../../screens/activities/activities_screen.dart';
 import '../../screens/activities/activity_details_screen.dart';
 import '../../screens/activities/activity_attendance_qr_screen.dart';
@@ -151,6 +152,15 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/users/:userId/followers',
+          builder: (context, state) {
+            final userId = state.pathParameters['userId'] ?? '';
+            return _withAndroidBackSwipe(
+              ProfileFollowersScreen(userId: userId),
+            );
+          },
+        ),
+        GoRoute(
           path: '/activities',
           builder: (context, state) =>
               _withAndroidBackSwipe(const ActivitiesScreen()),
@@ -219,9 +229,7 @@ class AppRouter {
           path: '/activities/:activityId/chat',
           builder: (context, state) {
             final activityId = state.pathParameters['activityId'] ?? '';
-            return _withAndroidBackSwipe(
-              ChatScreen(activityId: activityId),
-            );
+            return _withAndroidBackSwipe(ChatScreen(activityId: activityId));
           },
         ),
         GoRoute(
@@ -257,8 +265,7 @@ class AppRouter {
         GoRoute(
           path: '/chats/:conversationId',
           builder: (context, state) {
-            final conversationId =
-                state.pathParameters['conversationId'] ?? '';
+            final conversationId = state.pathParameters['conversationId'] ?? '';
             return _withAndroidBackSwipe(
               ChatScreen(conversationId: conversationId),
             );

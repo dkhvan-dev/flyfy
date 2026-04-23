@@ -645,6 +645,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileFollowersStat => 'Followers';
 
   @override
+  String get profileFollowersTitle => 'Followers';
+
+  @override
+  String get profileFollowersSearchHint => 'Search followers';
+
+  @override
+  String get profileFollowersEmptyTitle => 'No followers yet';
+
+  @override
+  String get profileFollowersEmptySubtitle =>
+      'When users follow this profile, they will appear here.';
+
+  @override
+  String get profileFollowersSearchEmptyTitle => 'Nothing found';
+
+  @override
+  String get profileFollowersSearchEmptySubtitle =>
+      'Try a different query or clear the search.';
+
+  @override
+  String get profileFollowersLoadFailed => 'Failed to load followers';
+
+  @override
   String get profileJourneyTitle => 'My journey';
 
   @override

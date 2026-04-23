@@ -493,6 +493,63 @@ func (u *UserUseCase) GetPublicProfilesByUserIDs(
 	return items, nil
 }
 
+type FollowersPage struct {
+	Items      []*model.UserProfile
+	NextOffset *int
+}
+
+func (u *UserUseCase) ListFollowers(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	offset int,
+	searchQuery string,
+) (*FollowersPage, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	user, err := u.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get user by id: %w", err)
+	}
+	if user == nil || user.IsDeleted {
+		return nil, ErrUserNotFound
+	}
+
+	items, err := u.repo.ListFollowersByUserID(
+		ctx,
+		userID,
+		searchQuery,
+		limit+1,
+		offset,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list followers by user id: %w", err)
+	}
+
+	var nextOffset *int
+	if len(items) > limit {
+		next := offset + limit
+		nextOffset = &next
+		items = items[:limit]
+	}
+
+	return &FollowersPage{
+		Items:      items,
+		NextOffset: nextOffset,
+	}, nil
+}
+
 type InitIdentityHints struct {
 	PrimaryPhone *string
 	PrimaryEmail *string

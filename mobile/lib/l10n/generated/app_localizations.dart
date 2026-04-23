@@ -1252,6 +1252,48 @@ abstract class AppLocalizations {
   /// **'Followers'**
   String get profileFollowersStat;
 
+  /// No description provided for @profileFollowersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers'**
+  String get profileFollowersTitle;
+
+  /// No description provided for @profileFollowersSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search followers'**
+  String get profileFollowersSearchHint;
+
+  /// No description provided for @profileFollowersEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No followers yet'**
+  String get profileFollowersEmptyTitle;
+
+  /// No description provided for @profileFollowersEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When users follow this profile, they will appear here.'**
+  String get profileFollowersEmptySubtitle;
+
+  /// No description provided for @profileFollowersSearchEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found'**
+  String get profileFollowersSearchEmptyTitle;
+
+  /// No description provided for @profileFollowersSearchEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different query or clear the search.'**
+  String get profileFollowersSearchEmptySubtitle;
+
+  /// No description provided for @profileFollowersLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load followers'**
+  String get profileFollowersLoadFailed;
+
   /// No description provided for @profileJourneyTitle.
   ///
   /// In en, this message translates to:

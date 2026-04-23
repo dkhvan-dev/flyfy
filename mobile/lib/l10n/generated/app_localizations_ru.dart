@@ -647,6 +647,29 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileFollowersStat => 'Фолловеры';
 
   @override
+  String get profileFollowersTitle => 'Фолловеры';
+
+  @override
+  String get profileFollowersSearchHint => 'Поиск фолловеров';
+
+  @override
+  String get profileFollowersEmptyTitle => 'Пока нет фолловеров';
+
+  @override
+  String get profileFollowersEmptySubtitle =>
+      'Когда на этот профиль подпишутся пользователи, они появятся здесь.';
+
+  @override
+  String get profileFollowersSearchEmptyTitle => 'Ничего не найдено';
+
+  @override
+  String get profileFollowersSearchEmptySubtitle =>
+      'Попробуйте изменить запрос или очистить поиск.';
+
+  @override
+  String get profileFollowersLoadFailed => 'Не удалось загрузить фолловеров';
+
+  @override
   String get profileJourneyTitle => 'Мой путь';
 
   @override

@@ -648,6 +648,30 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileFollowersStat => 'Фолловеры';
 
   @override
+  String get profileFollowersTitle => 'Фолловерлер';
+
+  @override
+  String get profileFollowersSearchHint => 'Фолловерлерді іздеу';
+
+  @override
+  String get profileFollowersEmptyTitle => 'Әзірге фолловерлер жоқ';
+
+  @override
+  String get profileFollowersEmptySubtitle =>
+      'Бұл профильге пайдаланушылар жазылған кезде, олар осында көрсетіледі.';
+
+  @override
+  String get profileFollowersSearchEmptyTitle => 'Ештеңе табылмады';
+
+  @override
+  String get profileFollowersSearchEmptySubtitle =>
+      'Сұрауды өзгертіп көріңіз немесе іздеуді тазалаңыз.';
+
+  @override
+  String get profileFollowersLoadFailed =>
+      'Фолловерлерді жүктеу мүмкін болмады';
+
+  @override
   String get profileJourneyTitle => 'Менің жолым';
 
   @override

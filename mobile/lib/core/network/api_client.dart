@@ -7,18 +7,19 @@ import '../storage/secure_storage.dart';
 
 class ApiClient {
   ApiClient({String? baseUrl, SecureStorage? secureStorage, Dio? dio})
-      : _secureStorage = secureStorage ?? SecureStorage(),
-        _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
-                sendTimeout: const Duration(seconds: 10),
-                contentType: 'application/json',
-                responseType: ResponseType.json,
-              ),
-            ) {
+    : _secureStorage = secureStorage ?? SecureStorage(),
+      _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+              sendTimeout: const Duration(seconds: 10),
+              contentType: 'application/json',
+              responseType: ResponseType.json,
+            ),
+          ) {
     _configureInterceptors();
   }
 
@@ -67,7 +68,8 @@ class ApiClient {
           final request = error.requestOptions;
           final statusCode = error.response?.statusCode;
 
-          final shouldTryRefresh = statusCode == 401 &&
+          final shouldTryRefresh =
+              statusCode == 401 &&
               _requiresAuth(request) &&
               request.extra['retried'] != true;
 
@@ -182,6 +184,23 @@ class ApiClient {
 
   Future<void> unfollowUser(String userId) async {
     await _dio.delete('/users/$userId/follow');
+  }
+
+  Future<Map<String, dynamic>> getUserFollowers(
+    String userId, {
+    int limit = 20,
+    int offset = 0,
+    String? query,
+  }) async {
+    final response = await _dio.get(
+      '/users/$userId/followers',
+      queryParameters: <String, dynamic>{
+        'limit': limit,
+        'offset': offset,
+        if ((query ?? '').trim().isNotEmpty) 'q': query!.trim(),
+      },
+    );
+    return response.data as Map<String, dynamic>;
   }
 
   Future<void> sendCode(String phone) async {

@@ -773,6 +773,84 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 	return result, rows.Err()
 }
 
+func (r *PGUserRepository) ListFollowersByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+	searchQuery string,
+	limit int,
+	offset int,
+) ([]*model.UserProfile, error) {
+	const query = `
+		SELECT
+			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
+			p.is_public, p.is_profile_completed,
+			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
+			u.last_seen_at,
+			p.created_at, p.updated_at
+		FROM user_follows f
+		JOIN user_profiles p ON p.user_id = f.follower_user_id
+		JOIN users u ON u.id = p.user_id
+		WHERE f.followed_user_id = $1
+		  AND u.is_deleted = FALSE
+		  AND (
+			$2 = ''
+			OR COALESCE(p.display_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.first_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.last_name, '') ILIKE '%' || $2 || '%'
+			OR TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%' || $2 || '%'
+		  )
+		ORDER BY f.created_at DESC, p.created_at DESC
+		LIMIT $3 OFFSET $4
+	`
+
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		userID,
+		strings.TrimSpace(searchQuery),
+		limit,
+		offset,
+	)
+	if err != nil {
+		if isUndefinedRelation(err, "user_follows") {
+			return []*model.UserProfile{}, nil
+		}
+		return nil, fmt.Errorf("query followers by user id: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*model.UserProfile
+	for rows.Next() {
+		var item model.UserProfile
+		if err = rows.Scan(
+			&item.UserID,
+			&item.FirstName,
+			&item.LastName,
+			&item.DisplayName,
+			&item.Bio,
+			&item.BirthDate,
+			&item.AvatarFileID,
+			&item.CityID,
+			&item.CountryCode,
+			&item.Locale,
+			&item.Timezone,
+			&item.Currency,
+			&item.IsPublic,
+			&item.IsProfileCompleted,
+			&item.IsOnline,
+			&item.LastSeenAt,
+			&item.CreatedAt,
+			&item.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan follower profile: %w", err)
+		}
+		result = append(result, &item)
+	}
+
+	return result, rows.Err()
+}
+
 func (r *PGUserRepository) PatchUserIdentityBySubject(
 	ctx context.Context,
 	subjectID string,
