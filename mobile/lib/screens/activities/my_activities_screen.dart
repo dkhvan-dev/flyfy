@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:superapp/core/ui/app_colors.dart';
 
+import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
@@ -12,7 +13,6 @@ import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
-import 'widgets/activities_bottom_bar.dart';
 
 enum _MyActivitiesTab { hosted, attended }
 
@@ -328,8 +328,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
     return Scaffold(
       backgroundColor: _MyActivitiesPalette.background,
-      bottomNavigationBar: ActivitiesBottomBar(
-        backgroundStyle: ActivitiesBottomBarBackgroundStyle.home,
+      bottomNavigationBar: CreateActionBottomNavigationBar(
+        backgroundStyle: AppBottomNavCreateBackgroundStyle.flat,
         onHomeTap: _goHome,
         onQrTap: _openQrStub,
         onCreateTap: _openCreateActivity,

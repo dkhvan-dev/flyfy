@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/device/device_context_service.dart';
+import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
 import '../../features/activities/activity_currency.dart';
@@ -21,7 +22,6 @@ import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
 import '../common/app_side_drawer.dart';
-import 'widgets/activities_bottom_bar.dart';
 
 class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
@@ -468,7 +468,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         ),
         onLogoutTap: () => _runDrawerAction(_confirmLogout),
       ),
-      bottomNavigationBar: ActivitiesBottomBar(
+      bottomNavigationBar: CreateActionBottomNavigationBar(
         onHomeTap: () => context.go('/'),
         onQrTap: () => context.push('/qr'),
         onCreateTap: () => _onCreateTap(context),

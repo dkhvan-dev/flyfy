@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/file_api.dart';
+import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/models/activity_category_vm.dart';
@@ -645,7 +646,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onLoginTap: () => _runDrawerAction(() => context.push('/login')),
         onLogoutTap: () => _runDrawerAction(_confirmLogout),
       ),
-      bottomNavigationBar: _HomeBottomNav(
+      bottomNavigationBar: CommonBottomNavigationBar(
+        activeItem: AppBottomNavItem.home,
         onHomeTap: () => context.go('/'),
         onQrTap: () => context.push('/qr'),
         onMapTap: () => context.push('/map'),
@@ -3108,119 +3110,6 @@ class _LanguageOptionTile extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeBottomNav extends StatelessWidget {
-  const _HomeBottomNav({
-    required this.onHomeTap,
-    required this.onQrTap,
-    required this.onMapTap,
-    required this.onServicesTap,
-    required this.onChatsTap,
-  });
-
-  final VoidCallback onHomeTap;
-  final VoidCallback onQrTap;
-  final VoidCallback onMapTap;
-  final VoidCallback onServicesTap;
-  final VoidCallback onChatsTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 92,
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-        decoration: BoxDecoration(
-          color: const Color(0xF52A1A0C),
-          border: Border(
-            top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-          ),
-        ),
-        child: Row(
-          children: [
-            _NavItem(
-              label: l10n.homeNavHome,
-              icon: Icons.home_rounded,
-              isActive: true,
-              onTap: onHomeTap,
-            ),
-            _NavItem(
-              label: l10n.homeNavQr,
-              icon: Icons.qr_code_2_rounded,
-              onTap: onQrTap,
-            ),
-            _NavItem(
-              label: l10n.homeNavMap,
-              icon: Icons.map_outlined,
-              onTap: onMapTap,
-            ),
-            _NavItem(
-              label: l10n.servicesSectionTitle,
-              icon: Icons.grid_view_rounded,
-              onTap: onServicesTap,
-            ),
-            _NavItem(
-              label: l10n.homeNavChats,
-              icon: Icons.chat_bubble_outline_rounded,
-              onTap: onChatsTap,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.isActive = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isActive ? AppColors.accent : const Color(0xFFC7B19B);
-
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: color, size: 22),
-                const SizedBox(height: 5),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
