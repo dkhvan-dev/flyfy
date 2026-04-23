@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -5,8 +6,11 @@ import 'package:provider/provider.dart';
 
 import '../../core/navigation/android_back_swipe_scope.dart';
 import '../../core/network/activity_api.dart';
+import '../../core/network/chat_api.dart';
+import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/guide_profile_vm.dart';
@@ -31,6 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final GuideApi _guideApi = GuideApi();
   final FileApi _fileApi = FileApi();
   final ActivityApi _activityApi = ActivityApi();
+  final ChatApi _chatApi = ChatApi();
 
   Future<UserProfileVm>? _foreignProfileFuture;
   Future<_ProfileExtras>? _extrasFuture;
@@ -41,6 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int? _followersCountOverride;
   bool? _isFollowedByMeOverride;
   bool _isFollowActionLoading = false;
+  bool _isMessageActionLoading = false;
 
   @override
   void initState() {
@@ -62,6 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _followersCountOverride = null;
     _isFollowedByMeOverride = null;
     _isFollowActionLoading = false;
+    _isMessageActionLoading = false;
 
     final userId = widget.userId?.trim() ?? '';
     if (userId.isEmpty) {
@@ -109,7 +116,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } else {
         await _profileApi.unfollowUser(userId);
       }
-
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -125,6 +131,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() {
           _isFollowActionLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _openDirectChat(UserProfileVm profile) async {
+    final l10n = AppLocalizations.of(context)!;
+    final userId = profile.userId.trim();
+    if (userId.isEmpty || _isMessageActionLoading) {
+      return;
+    }
+
+    setState(() => _isMessageActionLoading = true);
+
+    try {
+      final conversationId = await _chatApi.createDirectConversation(userId);
+      if (!mounted) return;
+      context.push('/chats/$conversationId');
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.profileMessageOpenFailed;
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: message,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isMessageActionLoading = false);
       }
     }
   }
@@ -301,9 +337,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           isOwnProfile: isOwnProfile,
           isFollowActionLoading: _isFollowActionLoading,
-          onToggleFollow: isOwnProfile
-              ? null
-              : () => _toggleFollow(effectiveProfile),
+          isMessageActionLoading: _isMessageActionLoading,
+          onToggleFollow:
+              isOwnProfile ? null : () => _toggleFollow(effectiveProfile),
+          onMessageTap:
+              isOwnProfile ? null : () => _openDirectChat(effectiveProfile),
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
@@ -321,7 +359,9 @@ class _ProfileBody extends StatelessWidget {
     required this.activityStatsFuture,
     required this.isOwnProfile,
     required this.isFollowActionLoading,
+    required this.isMessageActionLoading,
     required this.onToggleFollow,
+    required this.onMessageTap,
     required this.onSettingsTap,
     required this.onCopyProfileLink,
     required this.onEditProfile,
@@ -333,7 +373,9 @@ class _ProfileBody extends StatelessWidget {
   final Future<ActivityCompletionStatsVm> activityStatsFuture;
   final bool isOwnProfile;
   final bool isFollowActionLoading;
+  final bool isMessageActionLoading;
   final Future<void> Function()? onToggleFollow;
+  final Future<void> Function()? onMessageTap;
   final VoidCallback? onSettingsTap;
   final VoidCallback onCopyProfileLink;
   final Future<void> Function()? onEditProfile;
@@ -400,7 +442,9 @@ class _ProfileBody extends StatelessWidget {
           _ForeignProfileActions(
             isFollowedByMe: profile.isFollowedByMe,
             isBusy: isFollowActionLoading,
+            isMessageBusy: isMessageActionLoading,
             onToggleFollow: onToggleFollow,
+            onMessageTap: onMessageTap,
           ),
         ],
         SizedBox(height: profileScaled(context, 32, min: 24, max: 36)),
@@ -610,13 +654,10 @@ class _ProfileHero extends StatelessWidget {
     }
     final normalized = value.replaceAll(RegExp(r'[_-]+'), ' ');
     final words = normalized.split(RegExp(r'\s+'));
-    return words
-        .where((word) => word.isNotEmpty)
-        .map((word) {
-          final lower = word.toLowerCase();
-          return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
-        })
-        .join(' ');
+    return words.where((word) => word.isNotEmpty).map((word) {
+      final lower = word.toLowerCase();
+      return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+    }).join(' ');
   }
 }
 
@@ -885,20 +926,20 @@ class _BecomeGuideCard extends StatelessWidget {
     final title = isPending
         ? l10n.guideVerificationPendingTitle
         : isRejected
-        ? l10n.guideVerificationRejectedTitle
-        : l10n.profileBecomeGuideTitle;
+            ? l10n.guideVerificationRejectedTitle
+            : l10n.profileBecomeGuideTitle;
     final subtitle = isPending
         ? l10n.guideVerificationPendingSubtitle
         : isRejected
-        ? l10n.guideVerificationRejectedSubtitle
-        : isDraft
-        ? l10n.guideVerificationDraftSubtitle
-        : l10n.profileBecomeGuideSubtitle;
+            ? l10n.guideVerificationRejectedSubtitle
+            : isDraft
+                ? l10n.guideVerificationDraftSubtitle
+                : l10n.profileBecomeGuideSubtitle;
     final buttonLabel = isPending
         ? l10n.guideVerificationViewApplicationButton
         : isRejected || isDraft
-        ? l10n.guideVerificationContinueButton
-        : l10n.becomeGuideButton;
+            ? l10n.guideVerificationContinueButton
+            : l10n.becomeGuideButton;
 
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
@@ -1119,12 +1160,16 @@ class _ForeignProfileActions extends StatelessWidget {
   const _ForeignProfileActions({
     required this.isFollowedByMe,
     required this.isBusy,
+    required this.isMessageBusy,
     required this.onToggleFollow,
+    required this.onMessageTap,
   });
 
   final bool isFollowedByMe;
   final bool isBusy;
+  final bool isMessageBusy;
   final Future<void> Function()? onToggleFollow;
+  final Future<void> Function()? onMessageTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1185,7 +1230,11 @@ class _ForeignProfileActions extends StatelessWidget {
         SizedBox(width: profileScaled(context, 14, min: 10, max: 16)),
         Expanded(
           child: OutlinedButton(
-            onPressed: null,
+            onPressed: isMessageBusy
+                ? null
+                : () async {
+                    await onMessageTap?.call();
+                  },
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               foregroundColor: profileTextSoft,
@@ -1196,7 +1245,16 @@ class _ForeignProfileActions extends StatelessWidget {
               ),
               disabledForegroundColor: profileTextSoft,
             ),
-            child: Text(l10n.profileMessageAction),
+            child: isMessageBusy
+                ? SizedBox(
+                    width: profileScaled(context, 18, min: 16, max: 18),
+                    height: profileScaled(context, 18, min: 16, max: 18),
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: AppColors.accent,
+                    ),
+                  )
+                : Text(l10n.profileMessageAction),
           ),
         ),
       ],
@@ -1333,9 +1391,8 @@ class _ProfileMenuTile extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color: effectiveDisabled
-                        ? profileDisabled
-                        : AppColors.accent,
+                    color:
+                        effectiveDisabled ? profileDisabled : AppColors.accent,
                   ),
                 ),
                 SizedBox(width: profileScaled(context, 14, min: 12, max: 14)),

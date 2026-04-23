@@ -714,6 +714,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileMessageAction => 'Написать';
 
   @override
+  String get profileMessageOpenFailed =>
+      'Не удалось открыть чат. Попробуйте еще раз.';
+
+  @override
   String get profileSettingsPageTitle => 'Настройки';
 
   @override
@@ -2603,6 +2607,54 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatActiveNow => 'СЕЙЧАС В СЕТИ';
 
   @override
+  String get chatPresenceOnline => 'в сети';
+
+  @override
+  String get chatPresenceOffline => 'не в сети';
+
+  @override
+  String get chatPresenceLastSeenJustNow => 'был(а) в сети только что';
+
+  @override
+  String chatPresenceLastSeenMinutes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'был(а) в сети $count минуты назад',
+      many: 'был(а) в сети $count минут назад',
+      few: 'был(а) в сети $count минуты назад',
+      one: 'был(а) в сети $count минуту назад',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatPresenceLastSeenHours(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'был(а) в сети $count часа назад',
+      many: 'был(а) в сети $count часов назад',
+      few: 'был(а) в сети $count часа назад',
+      one: 'был(а) в сети $count час назад',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatPresenceLastSeenDays(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'был(а) в сети $count дня назад',
+      many: 'был(а) в сети $count дней назад',
+      few: 'был(а) в сети $count дня назад',
+      one: 'был(а) в сети $count день назад',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String chatParticipantsCount(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2629,10 +2681,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatMessageDeleted => 'Сообщение удалено';
 
   @override
+  String get chatDeleteAction => 'Удалить';
+
+  @override
+  String get chatDeleteFailed =>
+      'Не удалось удалить сообщение. Попробуйте еще раз.';
+
+  @override
   String get chatEditedLabel => 'изменено';
 
   @override
   String get chatUserFallbackName => 'Пользователь';
+
+  @override
+  String get chatReplyPreviewFallback => 'Сообщение';
 
   @override
   String chatSystemUserJoined(Object name) {
@@ -2693,7 +2755,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Вложение слишком большое. Используйте файл до 25 МБ.';
 
   @override
-  String get chatComposerHint => 'Напишите сообщение...';
+  String get chatComposerHint => 'Сообщение...';
 
   @override
   String get chatComposerClosedHint => 'Чат закрыт';

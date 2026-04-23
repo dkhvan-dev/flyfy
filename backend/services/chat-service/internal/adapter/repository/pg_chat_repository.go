@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -202,7 +203,7 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 
 func (r *PGChatRepository) GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error) {
 	row := r.pool.QueryRow(ctx,
-		`SELECT `+messageColumns+` FROM messages WHERE conversation_id = $1 ORDER BY sent_at DESC LIMIT 1`,
+		`SELECT `+messageColumns+` FROM messages WHERE conversation_id = $1 ORDER BY sent_at DESC, id DESC LIMIT 1`,
 		conversationID)
 	return scanMessage(row)
 }
@@ -394,6 +395,78 @@ func (tx *pgChatTxRepository) UpdateMessage(ctx context.Context, msg *model.Mess
 	_, err := tx.tx.Exec(ctx, `
 		UPDATE messages SET content = $2, edited_at = $3, deleted_at = $4 WHERE id = $1
 	`, msg.ID, msg.Content, msg.EditedAt, msg.DeletedAt)
+	return err
+}
+
+func (tx *pgChatTxRepository) DeleteMessage(ctx context.Context, messageID uuid.UUID) error {
+	_, err := tx.tx.Exec(ctx, `DELETE FROM messages WHERE id = $1`, messageID)
+	return err
+}
+
+func (tx *pgChatTxRepository) GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error) {
+	row := tx.tx.QueryRow(ctx,
+		`SELECT `+messageColumns+` FROM messages WHERE conversation_id = $1 ORDER BY sent_at DESC, id DESC LIMIT 1`,
+		conversationID)
+	return scanMessage(row)
+}
+
+func (tx *pgChatTxRepository) GetPreviousMessage(
+	ctx context.Context,
+	conversationID uuid.UUID,
+	sentAt time.Time,
+	messageID uuid.UUID,
+) (*model.Message, error) {
+	row := tx.tx.QueryRow(ctx, `
+		SELECT `+messageColumns+`
+		FROM messages
+		WHERE conversation_id = $1
+		  AND (sent_at, id) < ($2, $3)
+		ORDER BY sent_at DESC, id DESC
+		LIMIT 1
+	`, conversationID, sentAt, messageID)
+	return scanMessage(row)
+}
+
+func (tx *pgChatTxRepository) HasReadByOtherParticipant(
+	ctx context.Context,
+	conversationID uuid.UUID,
+	messageID uuid.UUID,
+	actorUserID uuid.UUID,
+) (bool, error) {
+	var hasRead bool
+	err := tx.tx.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM conversation_participants cp
+			JOIN messages target
+			  ON target.id = $2
+			 AND target.conversation_id = cp.conversation_id
+			LEFT JOIN messages last_read
+			  ON last_read.id = cp.last_read_msg_id
+			 AND last_read.conversation_id = cp.conversation_id
+			WHERE cp.conversation_id = $1
+			  AND cp.left_at IS NULL
+			  AND cp.user_id <> $3
+			  AND cp.last_read_msg_id IS NOT NULL
+			  AND last_read.id IS NOT NULL
+			  AND (last_read.sent_at, last_read.id) >= (target.sent_at, target.id)
+		)
+	`, conversationID, messageID, actorUserID).Scan(&hasRead)
+	return hasRead, err
+}
+
+func (tx *pgChatTxRepository) ReplaceLastReadMessageID(
+	ctx context.Context,
+	conversationID uuid.UUID,
+	fromMessageID uuid.UUID,
+	toMessageID *uuid.UUID,
+) error {
+	_, err := tx.tx.Exec(ctx, `
+		UPDATE conversation_participants
+		SET last_read_msg_id = $3
+		WHERE conversation_id = $1
+		  AND last_read_msg_id = $2
+	`, conversationID, fromMessageID, toMessageID)
 	return err
 }
 

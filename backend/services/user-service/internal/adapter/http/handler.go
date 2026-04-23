@@ -29,6 +29,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", h.Health)
 	mux.HandleFunc("POST /v1/users/me/init", h.InitMe)
 	mux.HandleFunc("GET /v1/users/me", h.GetMe)
+	mux.HandleFunc("POST /v1/users/me/presence", h.UpdateMyPresence)
 	mux.HandleFunc("PUT /v1/users/me/profile", h.UpdateMyProfile)
 	mux.HandleFunc("GET /v1/users/", h.GetUserByID)
 	mux.HandleFunc("POST /v1/users/", h.handleUserActions)
@@ -103,6 +104,42 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, toInitMeResponse(aggregate))
+}
+
+func (h *Handler) UpdateMyPresence(w http.ResponseWriter, r *http.Request) {
+	subject := strings.TrimSpace(SubjectFromContext(r.Context()))
+	if subject == "" {
+		writeError(w, http.StatusUnauthorized, "missing authenticated subject")
+		return
+	}
+
+	aggregate, err := h.useCase.GetAggregateBySubject(r.Context(), subject)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidSubjectID):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to resolve current user")
+		}
+		return
+	}
+
+	user, err := h.useCase.UpdateLastSeen(r.Context(), aggregate.User.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidUserID):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to update presence")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toUserResponse(user))
 }
 
 func (h *Handler) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -244,6 +281,12 @@ func toUserResponse(user *model.User) dto.UserResponse {
 		deletedAt = &v
 	}
 
+	var lastSeenAt *string
+	if user.LastSeenAt != nil {
+		v := user.LastSeenAt.UTC().Format(time.RFC3339)
+		lastSeenAt = &v
+	}
+
 	return dto.UserResponse{
 		ID:            user.ID.String(),
 		AuthSubjectID: user.AuthSubjectID,
@@ -252,6 +295,7 @@ func toUserResponse(user *model.User) dto.UserResponse {
 		PrimaryEmail:  user.PrimaryEmail,
 		IsDeleted:     user.IsDeleted,
 		DeletedAt:     deletedAt,
+		LastSeenAt:    lastSeenAt,
 		CreatedAt:     user.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:     user.UpdatedAt.UTC().Format(time.RFC3339),
 	}
@@ -586,6 +630,11 @@ func (h *Handler) ListPublicProfiles(w http.ResponseWriter, r *http.Request) {
 			v := item.AvatarFileID.String()
 			avatarFileID = &v
 		}
+		var lastSeenAt *string
+		if item.LastSeenAt != nil {
+			v := item.LastSeenAt.UTC().Format(time.RFC3339)
+			lastSeenAt = &v
+		}
 
 		resp = append(resp, dto.PublicProfileResponse{
 			UserID:       item.UserID.String(),
@@ -596,6 +645,8 @@ func (h *Handler) ListPublicProfiles(w http.ResponseWriter, r *http.Request) {
 			Locale:       item.Locale,
 			Timezone:     item.Timezone,
 			IsPublic:     item.IsPublic,
+			IsOnline:     item.IsOnline,
+			LastSeenAt:   lastSeenAt,
 		})
 	}
 

@@ -115,6 +115,7 @@ class LastMessagePreview {
   final String senderUserId;
   final String senderDisplayName;
   final String contentPreview;
+  final DateTime? deletedAt;
   final DateTime sentAt;
 
   const LastMessagePreview({
@@ -122,8 +123,11 @@ class LastMessagePreview {
     required this.senderUserId,
     required this.senderDisplayName,
     required this.contentPreview,
+    this.deletedAt,
     required this.sentAt,
   });
+
+  bool get isDeleted => deletedAt != null;
 
   factory LastMessagePreview.fromJson(Map<String, dynamic> json) {
     return LastMessagePreview(
@@ -131,6 +135,7 @@ class LastMessagePreview {
       senderUserId: json['senderUserId'] as String,
       senderDisplayName: json['senderDisplayName'] as String,
       contentPreview: json['contentPreview'] as String,
+      deletedAt: _parseDateTimeOrNull(json['deletedAt']),
       sentAt: DateTime.parse(json['sentAt'] as String),
     );
   }
@@ -253,6 +258,8 @@ class ParticipantInfo {
   final String role;
   final DateTime joinedAt;
   final String? lastReadMessageId;
+  final bool isOnline;
+  final DateTime? lastSeenAt;
 
   const ParticipantInfo({
     required this.userId,
@@ -261,6 +268,8 @@ class ParticipantInfo {
     required this.role,
     required this.joinedAt,
     this.lastReadMessageId,
+    this.isOnline = false,
+    this.lastSeenAt,
   });
 
   factory ParticipantInfo.fromJson(Map<String, dynamic> json) {
@@ -271,6 +280,8 @@ class ParticipantInfo {
       role: json['role'] as String,
       joinedAt: DateTime.parse(json['joinedAt'] as String),
       lastReadMessageId: json['lastReadMessageId'] as String?,
+      isOnline: json['isOnline'] == true,
+      lastSeenAt: _parseDateTimeOrNull(json['lastSeenAt']),
     );
   }
 
@@ -282,6 +293,8 @@ class ParticipantInfo {
       role: role,
       joinedAt: joinedAt,
       lastReadMessageId: lastReadMessageId ?? this.lastReadMessageId,
+      isOnline: isOnline,
+      lastSeenAt: lastSeenAt,
     );
   }
 }

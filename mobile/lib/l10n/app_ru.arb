@@ -228,6 +228,7 @@
   "profileFollowingAction": "Вы подписаны",
   "profileFollowUpdateFailed": "Не удалось обновить подписку",
   "profileMessageAction": "Написать",
+  "profileMessageOpenFailed": "Не удалось открыть чат. Попробуйте еще раз.",
   "profileSettingsPageTitle": "Настройки",
   "profileSaveChangesButton": "Сохранить изменения",
   "profileDeactivateAccountLabel": "Деактивировать аккаунт",
@@ -906,6 +907,27 @@
   "chatGroupFallbackTitle": "Групповой чат",
   "chatActivityFallbackTitle": "Чат активности",
   "chatActiveNow": "СЕЙЧАС В СЕТИ",
+  "chatPresenceOnline": "в сети",
+  "chatPresenceOffline": "не в сети",
+  "chatPresenceLastSeenJustNow": "был(а) в сети только что",
+  "chatPresenceLastSeenMinutes": "{count, plural, one{был(а) в сети {count} минуту назад} few{был(а) в сети {count} минуты назад} many{был(а) в сети {count} минут назад} other{был(а) в сети {count} минуты назад}}",
+  "@chatPresenceLastSeenMinutes": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatPresenceLastSeenHours": "{count, plural, one{был(а) в сети {count} час назад} few{был(а) в сети {count} часа назад} many{был(а) в сети {count} часов назад} other{был(а) в сети {count} часа назад}}",
+  "@chatPresenceLastSeenHours": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatPresenceLastSeenDays": "{count, plural, one{был(а) в сети {count} день назад} few{был(а) в сети {count} дня назад} many{был(а) в сети {count} дней назад} other{был(а) в сети {count} дня назад}}",
+  "@chatPresenceLastSeenDays": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "chatParticipantsCount": "{count, plural, =0{Нет участников} one{{count} участник} few{{count} участника} many{{count} участников} other{{count} участника}}",
   "@chatParticipantsCount": {
     "placeholders": {
@@ -916,8 +938,11 @@
   "chatDateToday": "Сегодня",
   "chatDateYesterday": "Вчера",
   "chatMessageDeleted": "Сообщение удалено",
+  "chatDeleteAction": "Удалить",
+  "chatDeleteFailed": "Не удалось удалить сообщение. Попробуйте еще раз.",
   "chatEditedLabel": "изменено",
   "chatUserFallbackName": "Пользователь",
+  "chatReplyPreviewFallback": "Сообщение",
   "chatSystemUserJoined": "{name} присоединился",
   "@chatSystemUserJoined": {
     "placeholders": {
@@ -944,7 +969,7 @@
   "chatAttachmentUploadFailed": "Не удалось загрузить вложение. Попробуйте еще раз.",
   "chatAttachmentUnsupported": "Этот тип файла не поддерживается для вложений в чате.",
   "chatAttachmentTooLarge": "Вложение слишком большое. Используйте файл до 25 МБ.",
-  "chatComposerHint": "Напишите сообщение...",
+  "chatComposerHint": "Сообщение...",
   "chatComposerClosedHint": "Чат закрыт",
   "chatActivityChatClosed": "Чат активности теперь доступен только для чтения.",
   "chatActivityChatClosedHistoryNotice": "Активность завершена. Сообщения в этот чат больше нельзя отправлять.",

@@ -40,8 +40,8 @@ func (r *PGUserRepository) CreateUserAggregate(
 
 	const userQuery = `
 		INSERT INTO users (
-			id, auth_subject_id, status, primary_phone, primary_email, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+			id, auth_subject_id, status, primary_phone, primary_email, last_seen_at, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 	`
 	if _, err = tx.Exec(
 		ctx,
@@ -51,6 +51,7 @@ func (r *PGUserRepository) CreateUserAggregate(
 		string(user.Status),
 		user.PrimaryPhone,
 		user.PrimaryEmail,
+		user.LastSeenAt,
 	); err != nil {
 		return fmt.Errorf("insert user: %w", err)
 	}
@@ -154,7 +155,7 @@ func (r *PGUserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (*
 	const query = `
 		SELECT
 			id, auth_subject_id, status, primary_phone, primary_email,
-			is_deleted, deleted_at, created_at, updated_at
+			is_deleted, deleted_at, last_seen_at, created_at, updated_at
 		FROM users
 		WHERE id = $1
 		LIMIT 1
@@ -175,6 +176,7 @@ func (r *PGUserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (*
 		&item.PrimaryEmail,
 		&item.IsDeleted,
 		&item.DeletedAt,
+		&item.LastSeenAt,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	)
@@ -193,7 +195,7 @@ func (r *PGUserRepository) GetUserBySubject(ctx context.Context, subject string)
 	const query = `
 		SELECT
 			id, auth_subject_id, status, primary_phone, primary_email,
-			is_deleted, deleted_at, created_at, updated_at
+			is_deleted, deleted_at, last_seen_at, created_at, updated_at
 		FROM users
 		WHERE auth_subject_id = $1
 		LIMIT 1
@@ -214,6 +216,7 @@ func (r *PGUserRepository) GetUserBySubject(ctx context.Context, subject string)
 		&item.PrimaryEmail,
 		&item.IsDeleted,
 		&item.DeletedAt,
+		&item.LastSeenAt,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	)
@@ -258,11 +261,15 @@ func (r *PGUserRepository) IsDisplayNameTaken(
 func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.UUID) (*model.UserProfile, error) {
 	const query = `
 		SELECT
-			user_id, first_name, last_name, display_name, bio, birth_date,
-			avatar_file_id, city_id, country_code, locale, timezone, currency,
-			is_public, is_profile_completed, created_at, updated_at
-		FROM user_profiles
-		WHERE user_id = $1
+			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
+			p.is_public, p.is_profile_completed,
+			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
+			u.last_seen_at,
+			p.created_at, p.updated_at
+		FROM user_profiles p
+		JOIN users u ON u.id = p.user_id
+		WHERE p.user_id = $1
 	`
 
 	var profile model.UserProfile
@@ -281,6 +288,8 @@ func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.U
 		&profile.Currency,
 		&profile.IsPublic,
 		&profile.IsProfileCompleted,
+		&profile.IsOnline,
+		&profile.LastSeenAt,
 		&profile.CreatedAt,
 		&profile.UpdatedAt,
 	)
@@ -292,6 +301,44 @@ func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.U
 	}
 
 	return &profile, nil
+}
+
+func (r *PGUserRepository) UpdateLastSeen(ctx context.Context, userID uuid.UUID) (*model.User, error) {
+	const query = `
+		UPDATE users
+		SET last_seen_at = NOW(), updated_at = NOW()
+		WHERE id = $1 AND is_deleted = FALSE
+		RETURNING
+			id, auth_subject_id, status, primary_phone, primary_email,
+			is_deleted, deleted_at, last_seen_at, created_at, updated_at
+	`
+
+	var (
+		item      model.User
+		statusRaw string
+	)
+
+	err := r.pool.QueryRow(ctx, query, userID).Scan(
+		&item.ID,
+		&item.AuthSubjectID,
+		&statusRaw,
+		&item.PrimaryPhone,
+		&item.PrimaryEmail,
+		&item.IsDeleted,
+		&item.DeletedAt,
+		&item.LastSeenAt,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("update last seen: %w", err)
+	}
+
+	item.Status = enum.UserStatus(statusRaw)
+	return &item, nil
 }
 
 func (r *PGUserRepository) GetSettingsByUserID(ctx context.Context, userID uuid.UUID) (*model.UserSettings, error) {
@@ -620,12 +667,16 @@ func (r *PGUserRepository) HasRole(ctx context.Context, userID uuid.UUID, role e
 func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, offset int) ([]*model.UserProfile, error) {
 	const query = `
 		SELECT
-			user_id, first_name, last_name, display_name, bio, birth_date,
-			avatar_file_id, city_id, country_code, locale, timezone, currency,
-			is_public, is_profile_completed, created_at, updated_at
-		FROM user_profiles
-		WHERE is_public = TRUE
-		ORDER BY created_at DESC
+			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
+			p.is_public, p.is_profile_completed,
+			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
+			u.last_seen_at,
+			p.created_at, p.updated_at
+		FROM user_profiles p
+		JOIN users u ON u.id = p.user_id
+		WHERE p.is_public = TRUE
+		ORDER BY p.created_at DESC
 		LIMIT $1 OFFSET $2
 	`
 
@@ -653,6 +704,8 @@ func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, of
 			&profile.Currency,
 			&profile.IsPublic,
 			&profile.IsProfileCompleted,
+			&profile.IsOnline,
+			&profile.LastSeenAt,
 			&profile.CreatedAt,
 			&profile.UpdatedAt,
 		); err != nil {
@@ -671,12 +724,16 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 
 	const query = `
 		SELECT
-			user_id, first_name, last_name, display_name, bio, birth_date,
-			avatar_file_id, city_id, country_code, locale, timezone, currency,
-			is_public, is_profile_completed, created_at, updated_at
-		FROM user_profiles
-		WHERE is_public = TRUE
-		  AND user_id = ANY($1)
+			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
+			p.is_public, p.is_profile_completed,
+			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
+			u.last_seen_at,
+			p.created_at, p.updated_at
+		FROM user_profiles p
+		JOIN users u ON u.id = p.user_id
+		WHERE p.is_public = TRUE
+		  AND p.user_id = ANY($1)
 	`
 
 	rows, err := r.pool.Query(ctx, query, userIDs)
@@ -703,6 +760,8 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 			&item.Currency,
 			&item.IsPublic,
 			&item.IsProfileCompleted,
+			&item.IsOnline,
+			&item.LastSeenAt,
 			&item.CreatedAt,
 			&item.UpdatedAt,
 		); err != nil {

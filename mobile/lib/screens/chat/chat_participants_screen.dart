@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/chat/models/conversation_vm.dart';
+import '../../features/chat/utils/chat_presence_status.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class ChatParticipantsScreen extends StatelessWidget {
@@ -86,7 +87,6 @@ class ChatParticipantsScreen extends StatelessWidget {
                                 padding: const EdgeInsets.only(bottom: 34),
                                 child: _ParticipantRow(
                                   participant: participant,
-                                  isMe: participant.userId == currentUserId,
                                   onTap: () => _openParticipantProfile(
                                     context,
                                     participant,
@@ -315,7 +315,8 @@ class _OrganizerCard extends StatelessWidget {
               child: _ParticipantText(
                 participant: participant,
                 nameSize: compact ? 22 : 25,
-                status: l10n.chatParticipantHostStatus,
+                status: chatPresenceStatusLabel(l10n, participant),
+                online: participant.isOnline,
               ),
             ),
           ],
@@ -328,12 +329,10 @@ class _OrganizerCard extends StatelessWidget {
 class _ParticipantRow extends StatelessWidget {
   const _ParticipantRow({
     required this.participant,
-    required this.isMe,
     required this.onTap,
   });
 
   final ParticipantInfo participant;
-  final bool isMe;
   final VoidCallback onTap;
 
   @override
@@ -352,10 +351,8 @@ class _ParticipantRow extends StatelessWidget {
             child: _ParticipantText(
               participant: participant,
               nameSize: compact ? 22 : 25,
-              status: isMe
-                  ? l10n.chatParticipantYouStatus
-                  : l10n.chatParticipantJoinedStatus,
-              online: isMe,
+              status: chatPresenceStatusLabel(l10n, participant),
+              online: participant.isOnline,
             ),
           ),
         ],
@@ -401,19 +398,36 @@ class _ParticipantText extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          status,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: nameSize >= 25 ? 18 : 16,
-            height: 1.3,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.72,
-            color: online
-                ? AppColors.accent
-                : const Color(0xFFf6f1ea).withValues(alpha: 0.48),
-          ),
+        Row(
+          children: [
+            if (online) ...[
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.accent,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: Text(
+                status,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: nameSize >= 25 ? 18 : 16,
+                  height: 1.3,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 0.72,
+                  color: online
+                      ? AppColors.accent
+                      : const Color(0xFFf6f1ea).withValues(alpha: 0.48),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

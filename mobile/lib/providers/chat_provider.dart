@@ -39,6 +39,8 @@ class ChatProvider extends ChangeNotifier {
   bool get messagesLoading => _messagesLoading;
   String? get messagesError => _messagesError;
   bool get sendingMessage => _sendingMessage;
+  bool get hasMoreMessages => _hasMoreMessages;
+  bool get loadingMoreMessages => _loadingMoreMessages;
 
   // ── WebSocket ──────────────────────────────────────────────────
   StreamSubscription<ChatEvent>? _eventSubscription;
@@ -154,6 +156,7 @@ class ChatProvider extends ChangeNotifier {
     String content, {
     String type = 'text',
     List<String>? fileIds,
+    String? replyToMessageId,
   }) async {
     final normalizedFileIds = fileIds
             ?.map((id) => id.trim())
@@ -177,6 +180,7 @@ class ChatProvider extends ChangeNotifier {
         content: content.trim(),
         type: normalizedFileIds.isEmpty ? type : 'file',
         fileIds: normalizedFileIds,
+        replyToMessageId: replyToMessageId,
       );
       _messages = _uniqueMessages([msg, ..._messages]);
       return true;
@@ -187,6 +191,31 @@ class ChatProvider extends ChangeNotifier {
       _sendingMessage = false;
       notifyListeners();
     }
+  }
+
+  Future<DeleteMessageResultVm> deleteMessage(String messageId) async {
+    if (_activeConversation == null) {
+      throw StateError('No active conversation');
+    }
+
+    final result =
+        await _chatApi.deleteMessage(_activeConversation!.id, messageId);
+    if (result.hardDeleted) {
+      _messages =
+          _messages.where((message) => message.id != messageId).toList();
+    } else {
+      final deletedAt = result.deletedAt ?? DateTime.now().toUtc();
+      _messages = _messages
+          .map(
+            (message) => message.id == messageId
+                ? message.copyWith(deletedAt: deletedAt)
+                : message,
+          )
+          .toList();
+    }
+    notifyListeners();
+    unawaited(loadConversations());
+    return result;
   }
 
   Future<void> markAsRead() async {
@@ -247,9 +276,13 @@ class ChatProvider extends ChangeNotifier {
 
     if (_activeConversation?.id == event.conversationId) {
       final exists = _messages.any((m) => m.id == msg.id);
-      if (!exists) {
-        _messages = _uniqueMessages([msg, ..._messages]);
-      }
+      _messages = exists
+          ? _uniqueMessages(
+              _messages
+                  .map((message) => message.id == msg.id ? msg : message)
+                  .toList(),
+            )
+          : _uniqueMessages([msg, ..._messages]);
     }
 
     // Update conversation list preview
@@ -265,20 +298,11 @@ class ChatProvider extends ChangeNotifier {
 
     _messages = _messages.map((m) {
       if (m.id == messageId) {
-        return MessageVm(
-          id: m.id,
-          senderUserId: m.senderUserId,
-          senderDisplayName: m.senderDisplayName,
-          senderAvatarFileId: m.senderAvatarFileId,
-          type: m.type,
+        return m.copyWith(
           content: newContent,
-          fileIds: m.fileIds,
-          replyToMessageId: m.replyToMessageId,
           editedAt: DateTime.tryParse(
             event.payload['editedAt'] as String? ?? '',
           ),
-          deletedAt: m.deletedAt,
-          sentAt: m.sentAt,
         );
       }
       return m;
@@ -287,7 +311,26 @@ class ChatProvider extends ChangeNotifier {
 
   void _onMessageDeleted(ChatEvent event) {
     final messageId = event.payload['messageId'] as String;
-    _messages = _messages.where((m) => m.id != messageId).toList();
+    final hardDeleted = event.payload['hardDeleted'] == true;
+
+    if (hardDeleted) {
+      _messages = _messages.where((m) => m.id != messageId).toList();
+    } else {
+      final deletedAt = DateTime.tryParse(
+        event.payload['deletedAt'] as String? ?? '',
+      );
+      _messages = _messages
+          .map(
+            (message) => message.id == messageId
+                ? message.copyWith(
+                    deletedAt: deletedAt ?? DateTime.now().toUtc(),
+                  )
+                : message,
+          )
+          .toList();
+    }
+
+    unawaited(loadConversations());
   }
 
   void _onReadUpdated(ChatEvent event) {

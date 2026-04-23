@@ -33,3 +33,8 @@ type MessageListResponse struct {
 	Items      []MessageResponse `json:"items"`
 	NextCursor *string           `json:"nextCursor"`
 }
+
+type DeleteMessageResponse struct {
+	HardDeleted bool    `json:"hardDeleted"`
+	DeletedAt   *string `json:"deletedAt,omitempty"`
+}

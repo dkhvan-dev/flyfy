@@ -712,6 +712,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileMessageAction => 'Message';
 
   @override
+  String get profileMessageOpenFailed =>
+      'Failed to open chat. Please try again.';
+
+  @override
   String get profileSettingsPageTitle => 'Settings';
 
   @override
@@ -2598,6 +2602,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatActiveNow => 'ACTIVE NOW';
 
   @override
+  String get chatPresenceOnline => 'online';
+
+  @override
+  String get chatPresenceOffline => 'offline';
+
+  @override
+  String get chatPresenceLastSeenJustNow => 'last seen just now';
+
+  @override
+  String chatPresenceLastSeenMinutes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'last seen $count minutes ago',
+      one: 'last seen 1 minute ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatPresenceLastSeenHours(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'last seen $count hours ago',
+      one: 'last seen 1 hour ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatPresenceLastSeenDays(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'last seen $count days ago',
+      one: 'last seen 1 day ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String chatParticipantsCount(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2622,10 +2668,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatMessageDeleted => 'Message deleted';
 
   @override
+  String get chatDeleteAction => 'Delete';
+
+  @override
+  String get chatDeleteFailed =>
+      'Failed to delete the message. Please try again.';
+
+  @override
   String get chatEditedLabel => 'edited';
 
   @override
   String get chatUserFallbackName => 'User';
+
+  @override
+  String get chatReplyPreviewFallback => 'Message';
 
   @override
   String chatSystemUserJoined(Object name) {
@@ -2685,7 +2741,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The attachment is too large. Use a file up to 25 MB.';
 
   @override
-  String get chatComposerHint => 'Type a message...';
+  String get chatComposerHint => 'Message...';
 
   @override
   String get chatComposerClosedHint => 'Chat is closed';

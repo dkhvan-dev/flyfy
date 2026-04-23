@@ -715,6 +715,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileMessageAction => 'Жазу';
 
   @override
+  String get profileMessageOpenFailed =>
+      'Чатты ашу мүмкін болмады. Қайта көріңіз.';
+
+  @override
   String get profileSettingsPageTitle => 'Баптаулар';
 
   @override
@@ -2611,6 +2615,48 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatActiveNow => 'ҚАЗІР ЖЕЛІДЕ';
 
   @override
+  String get chatPresenceOnline => 'желіде';
+
+  @override
+  String get chatPresenceOffline => 'желіде емес';
+
+  @override
+  String get chatPresenceLastSeenJustNow => 'желіде жаңа ғана болды';
+
+  @override
+  String chatPresenceLastSeenMinutes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'желіде $count минут бұрын болды',
+      one: 'желіде 1 минут бұрын болды',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatPresenceLastSeenHours(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'желіде $count сағат бұрын болды',
+      one: 'желіде 1 сағат бұрын болды',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatPresenceLastSeenDays(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'желіде $count күн бұрын болды',
+      one: 'желіде 1 күн бұрын болды',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String chatParticipantsCount(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2634,10 +2680,19 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatMessageDeleted => 'Хабар өшірілді';
 
   @override
+  String get chatDeleteAction => 'Өшіру';
+
+  @override
+  String get chatDeleteFailed => 'Хабарды өшіру мүмкін болмады. Қайта көріңіз.';
+
+  @override
   String get chatEditedLabel => 'өзгертілді';
 
   @override
   String get chatUserFallbackName => 'Пайдаланушы';
+
+  @override
+  String get chatReplyPreviewFallback => 'Хабар';
 
   @override
   String chatSystemUserJoined(Object name) {
@@ -2698,7 +2753,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Тіркеме тым үлкен. 25 МБ-қа дейінгі файлды пайдаланыңыз.';
 
   @override
-  String get chatComposerHint => 'Хабар жазыңыз...';
+  String get chatComposerHint => 'Хабар...';
 
   @override
   String get chatComposerClosedHint => 'Чат жабылды';

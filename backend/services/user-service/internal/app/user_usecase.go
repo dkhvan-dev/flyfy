@@ -61,6 +61,7 @@ func (u *UserUseCase) GetOrCreateBySubject(ctx context.Context, input InitUserIn
 	}
 
 	userID := uuid.New()
+	now := time.Now().UTC()
 	defaultCurrency := "KZT"
 	defaultLocale := "KZ"
 	defaultTimezone := "Asia/Almaty"
@@ -72,8 +73,8 @@ func (u *UserUseCase) GetOrCreateBySubject(ctx context.Context, input InitUserIn
 		Currency:           &defaultCurrency,
 		IsPublic:           true,
 		IsProfileCompleted: false,
-		CreatedAt:          time.Now().UTC(),
-		UpdatedAt:          time.Now().UTC(),
+		CreatedAt:          now,
+		UpdatedAt:          now,
 	}
 
 	user := &model.User{
@@ -82,8 +83,9 @@ func (u *UserUseCase) GetOrCreateBySubject(ctx context.Context, input InitUserIn
 		Status:        enum.UserStatusActive,
 		PrimaryPhone:  normalizeOptionalString(input.PrimaryPhone),
 		PrimaryEmail:  normalizeOptionalString(input.PrimaryEmail),
-		CreatedAt:     time.Now().UTC(),
-		UpdatedAt:     time.Now().UTC(),
+		LastSeenAt:    &now,
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 
 	settings := &model.UserSettings{
@@ -93,8 +95,8 @@ func (u *UserUseCase) GetOrCreateBySubject(ctx context.Context, input InitUserIn
 		NotificationsSMSEnabled:   true,
 		MarketingEnabled:          false,
 		DarkModeEnabled:           false,
-		CreatedAt:                 time.Now().UTC(),
-		UpdatedAt:                 time.Now().UTC(),
+		CreatedAt:                 now,
+		UpdatedAt:                 now,
 	}
 
 	reputation := &model.UserReputation{
@@ -105,14 +107,14 @@ func (u *UserUseCase) GetOrCreateBySubject(ctx context.Context, input InitUserIn
 		CompletedActivities: 0,
 		CancellationsCount:  0,
 		ReportsCount:        0,
-		CreatedAt:           time.Now().UTC(),
-		UpdatedAt:           time.Now().UTC(),
+		CreatedAt:           now,
+		UpdatedAt:           now,
 	}
 
 	defaultRole := &model.UserSystemRole{
 		UserID:    userID,
 		Role:      enum.SystemRoleUser,
-		GrantedAt: time.Now().UTC(),
+		GrantedAt: now,
 	}
 
 	if err = u.repo.CreateUserAggregate(ctx, user, profile, settings, reputation, defaultRole); err != nil {
@@ -369,6 +371,22 @@ func (u *UserUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, input
 	}
 
 	return u.GetAggregateByUserID(ctx, userID)
+}
+
+func (u *UserUseCase) UpdateLastSeen(ctx context.Context, userID uuid.UUID) (*model.User, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+
+	user, err := u.repo.UpdateLastSeen(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("update last seen: %w", err)
+	}
+	if user == nil || user.IsDeleted {
+		return nil, ErrUserNotFound
+	}
+
+	return user, nil
 }
 
 func (u *UserUseCase) GrantRole(

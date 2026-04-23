@@ -1372,6 +1372,12 @@ abstract class AppLocalizations {
   /// **'Message'**
   String get profileMessageAction;
 
+  /// No description provided for @profileMessageOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to open chat. Please try again.'**
+  String get profileMessageOpenFailed;
+
   /// No description provided for @profileSettingsPageTitle.
   ///
   /// In en, this message translates to:
@@ -4816,6 +4822,42 @@ abstract class AppLocalizations {
   /// **'ACTIVE NOW'**
   String get chatActiveNow;
 
+  /// No description provided for @chatPresenceOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'online'**
+  String get chatPresenceOnline;
+
+  /// No description provided for @chatPresenceOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'offline'**
+  String get chatPresenceOffline;
+
+  /// No description provided for @chatPresenceLastSeenJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'last seen just now'**
+  String get chatPresenceLastSeenJustNow;
+
+  /// No description provided for @chatPresenceLastSeenMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{last seen 1 minute ago} other{last seen {count} minutes ago}}'**
+  String chatPresenceLastSeenMinutes(num count);
+
+  /// No description provided for @chatPresenceLastSeenHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{last seen 1 hour ago} other{last seen {count} hours ago}}'**
+  String chatPresenceLastSeenHours(num count);
+
+  /// No description provided for @chatPresenceLastSeenDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{last seen 1 day ago} other{last seen {count} days ago}}'**
+  String chatPresenceLastSeenDays(num count);
+
   /// No description provided for @chatParticipantsCount.
   ///
   /// In en, this message translates to:
@@ -4846,6 +4888,18 @@ abstract class AppLocalizations {
   /// **'Message deleted'**
   String get chatMessageDeleted;
 
+  /// No description provided for @chatDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get chatDeleteAction;
+
+  /// No description provided for @chatDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete the message. Please try again.'**
+  String get chatDeleteFailed;
+
   /// No description provided for @chatEditedLabel.
   ///
   /// In en, this message translates to:
@@ -4857,6 +4911,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'User'**
   String get chatUserFallbackName;
+
+  /// No description provided for @chatReplyPreviewFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get chatReplyPreviewFallback;
 
   /// No description provided for @chatSystemUserJoined.
   ///
@@ -4957,7 +5017,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatComposerHint.
   ///
   /// In en, this message translates to:
-  /// **'Type a message...'**
+  /// **'Message...'**
   String get chatComposerHint;
 
   /// No description provided for @chatComposerClosedHint.

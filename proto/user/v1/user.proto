@@ -80,6 +80,7 @@ message User {
   string deleted_at = 7;
   string created_at = 8;
   string updated_at = 9;
+  string last_seen_at = 10;
 }
 
 message UserProfile {
@@ -98,6 +99,8 @@ message UserProfile {
   bool is_public = 13;
   string created_at = 14;
   string updated_at = 15;
+  bool is_online = 16;
+  string last_seen_at = 17;
 }
 
 message UserSettings {
@@ -164,6 +167,8 @@ message PublicProfile {
   string locale = 6;
   string timezone = 7;
   bool is_public = 8;
+  bool is_online = 9;
+  string last_seen_at = 10;
 }
 
 message GetPublicProfilesByUserIdsRequest {

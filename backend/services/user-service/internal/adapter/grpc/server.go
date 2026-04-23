@@ -277,6 +277,11 @@ func toProtoUser(user *model.User) *userv1.User {
 		deletedAt = user.DeletedAt.UTC().Format(time.RFC3339)
 	}
 
+	var lastSeenAt string
+	if user.LastSeenAt != nil {
+		lastSeenAt = user.LastSeenAt.UTC().Format(time.RFC3339)
+	}
+
 	return &userv1.User{
 		Id:            user.ID.String(),
 		AuthSubjectId: user.AuthSubjectID,
@@ -287,6 +292,7 @@ func toProtoUser(user *model.User) *userv1.User {
 		DeletedAt:     deletedAt,
 		CreatedAt:     user.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:     user.UpdatedAt.UTC().Format(time.RFC3339),
+		LastSeenAt:    lastSeenAt,
 	}
 }
 
@@ -306,6 +312,11 @@ func toProtoProfile(profile *model.UserProfile) *userv1.UserProfile {
 		cityID = profile.CityID.String()
 	}
 
+	var lastSeenAt string
+	if profile.LastSeenAt != nil {
+		lastSeenAt = profile.LastSeenAt.UTC().Format(time.RFC3339)
+	}
+
 	return &userv1.UserProfile{
 		UserId:       profile.UserID.String(),
 		FirstName:    valueOrEmpty(profile.FirstName),
@@ -322,6 +333,8 @@ func toProtoProfile(profile *model.UserProfile) *userv1.UserProfile {
 		IsPublic:     profile.IsPublic,
 		CreatedAt:    profile.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:    profile.UpdatedAt.UTC().Format(time.RFC3339),
+		IsOnline:     profile.IsOnline,
+		LastSeenAt:   lastSeenAt,
 	}
 }
 
@@ -358,6 +371,11 @@ func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
 		avatarFileID = profile.AvatarFileID.String()
 	}
 
+	var lastSeenAt string
+	if profile.LastSeenAt != nil {
+		lastSeenAt = profile.LastSeenAt.UTC().Format(time.RFC3339)
+	}
+
 	return &userv1.PublicProfile{
 		UserId:       profile.UserID.String(),
 		DisplayName:  valueOrEmpty(profile.DisplayName),
@@ -367,6 +385,8 @@ func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
 		Locale:       profile.Locale,
 		Timezone:     profile.Timezone,
 		IsPublic:     profile.IsPublic,
+		IsOnline:     profile.IsOnline,
+		LastSeenAt:   lastSeenAt,
 	}
 }
 

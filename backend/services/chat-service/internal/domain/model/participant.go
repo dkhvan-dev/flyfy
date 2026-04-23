@@ -1,8 +1,8 @@
 package model
 
 import (
-	"time"
 	"github.com/google/uuid"
+	"time"
 )
 
 type Participant struct {
@@ -18,4 +18,6 @@ type Participant struct {
 	// Populated on read
 	DisplayName  string
 	AvatarFileID *string
+	IsOnline     bool
+	LastSeenAt   *time.Time
 }

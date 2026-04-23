@@ -30,6 +30,31 @@ class MessageVm {
   bool get hasFiles => fileIds.isNotEmpty;
   bool get isSystem => type == 'system';
 
+  MessageVm copyWith({
+    String? senderDisplayName,
+    String? senderAvatarFileId,
+    String? type,
+    String? content,
+    List<String>? fileIds,
+    String? replyToMessageId,
+    DateTime? editedAt,
+    DateTime? deletedAt,
+  }) {
+    return MessageVm(
+      id: id,
+      senderUserId: senderUserId,
+      senderDisplayName: senderDisplayName ?? this.senderDisplayName,
+      senderAvatarFileId: senderAvatarFileId ?? this.senderAvatarFileId,
+      type: type ?? this.type,
+      content: content ?? this.content,
+      fileIds: fileIds ?? this.fileIds,
+      replyToMessageId: replyToMessageId ?? this.replyToMessageId,
+      editedAt: editedAt ?? this.editedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      sentAt: sentAt,
+    );
+  }
+
   factory MessageVm.fromJson(Map<String, dynamic> json) {
     return MessageVm(
       id: (json['id'] ?? json['messageId']) as String,
@@ -38,8 +63,7 @@ class MessageVm {
       senderAvatarFileId: json['senderAvatarFileId'] as String?,
       type: json['type'] as String,
       content: json['content'] as String,
-      fileIds:
-          (json['fileIds'] as List<dynamic>?)
+      fileIds: (json['fileIds'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],

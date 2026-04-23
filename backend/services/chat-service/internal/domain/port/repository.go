@@ -43,6 +43,26 @@ type ChatTxRepository interface {
 	UpdateParticipant(ctx context.Context, p *model.Participant) error
 	CreateMessage(ctx context.Context, msg *model.Message) error
 	UpdateMessage(ctx context.Context, msg *model.Message) error
+	DeleteMessage(ctx context.Context, messageID uuid.UUID) error
+	GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error)
+	GetPreviousMessage(
+		ctx context.Context,
+		conversationID uuid.UUID,
+		sentAt time.Time,
+		messageID uuid.UUID,
+	) (*model.Message, error)
+	HasReadByOtherParticipant(
+		ctx context.Context,
+		conversationID uuid.UUID,
+		messageID uuid.UUID,
+		actorUserID uuid.UUID,
+	) (bool, error)
+	ReplaceLastReadMessageID(
+		ctx context.Context,
+		conversationID uuid.UUID,
+		fromMessageID uuid.UUID,
+		toMessageID *uuid.UUID,
+	) error
 	CreateMessageFiles(ctx context.Context, messageID uuid.UUID, fileIDs []string) error
 }
 

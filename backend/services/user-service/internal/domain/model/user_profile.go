@@ -30,6 +30,8 @@ type UserProfile struct {
 	Currency           *string    `json:"currency,omitempty"`
 	IsPublic           bool       `json:"is_public"`
 	IsProfileCompleted bool       `json:"is_profile_completed"`
+	IsOnline           bool       `json:"is_online"`
+	LastSeenAt         *time.Time `json:"last_seen_at,omitempty"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }

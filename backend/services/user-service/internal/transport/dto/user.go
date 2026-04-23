@@ -22,6 +22,7 @@ type UserResponse struct {
 	PrimaryEmail  *string `json:"primaryEmail,omitempty"`
 	IsDeleted     bool    `json:"isDeleted"`
 	DeletedAt     *string `json:"deletedAt,omitempty"`
+	LastSeenAt    *string `json:"lastSeenAt,omitempty"`
 	CreatedAt     string  `json:"createdAt"`
 	UpdatedAt     string  `json:"updatedAt"`
 }
@@ -104,4 +105,6 @@ type PublicProfileResponse struct {
 	Locale       string  `json:"locale"`
 	Timezone     string  `json:"timezone"`
 	IsPublic     bool    `json:"isPublic"`
+	IsOnline     bool    `json:"isOnline"`
+	LastSeenAt   *string `json:"lastSeenAt,omitempty"`
 }

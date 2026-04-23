@@ -1341,22 +1341,9 @@ class _SharedAvatar extends StatelessWidget {
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: url == null
-          ? Center(
-              child: Text(
-                initial,
-                style: TextStyle(
-                  fontSize: size * 0.38,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          : Image.network(
-              url,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Center(
+      child: ClipOval(
+        child: url == null
+            ? Center(
                 child: Text(
                   initial,
                   style: TextStyle(
@@ -1365,8 +1352,22 @@ class _SharedAvatar extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
+              )
+            : Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Center(
+                  child: Text(
+                    initial,
+                    style: TextStyle(
+                      fontSize: size * 0.38,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
-            ),
+      ),
     );
   }
 }

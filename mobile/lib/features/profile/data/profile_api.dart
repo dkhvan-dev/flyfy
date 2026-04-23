@@ -19,6 +19,10 @@ class ProfileApi {
     return UserProfileVm.fromJson(data);
   }
 
+  Future<void> updatePresence() async {
+    await _apiClient.updatePresence();
+  }
+
   Future<UserProfileVm> getOrInitMe({
     String? primaryPhoneHint,
     String? primaryEmailHint,
@@ -29,9 +33,8 @@ class ProfileApi {
       final statusCode = e.response?.statusCode;
       final data = e.response?.data;
 
-      final errorMessage = data is Map<String, dynamic>
-          ? data['error']?.toString()
-          : null;
+      final errorMessage =
+          data is Map<String, dynamic> ? data['error']?.toString() : null;
 
       final isUserNotFound =
           statusCode == 404 && errorMessage == 'user not found';

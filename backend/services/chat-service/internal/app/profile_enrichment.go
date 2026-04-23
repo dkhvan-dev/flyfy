@@ -39,6 +39,8 @@ func enrichParticipants(ctx context.Context, resolver port.UserProfileResolver, 
 			participant.DisplayName = profile.DisplayName
 		}
 		participant.AvatarFileID = profile.AvatarFileID
+		participant.IsOnline = profile.IsOnline
+		participant.LastSeenAt = profile.LastSeenAt
 	}
 }
 

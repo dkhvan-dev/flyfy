@@ -228,6 +228,7 @@
   "profileFollowingAction": "Жазылған",
   "profileFollowUpdateFailed": "Жазылу күйін жаңарту мүмкін болмады",
   "profileMessageAction": "Жазу",
+  "profileMessageOpenFailed": "Чатты ашу мүмкін болмады. Қайта көріңіз.",
   "profileSettingsPageTitle": "Баптаулар",
   "profileSaveChangesButton": "Өзгерістерді сақтау",
   "profileDeactivateAccountLabel": "Аккаунтты өшіру",
@@ -906,6 +907,27 @@
   "chatGroupFallbackTitle": "Топтық чат",
   "chatActivityFallbackTitle": "Іс-шара чаты",
   "chatActiveNow": "ҚАЗІР ЖЕЛІДЕ",
+  "chatPresenceOnline": "желіде",
+  "chatPresenceOffline": "желіде емес",
+  "chatPresenceLastSeenJustNow": "желіде жаңа ғана болды",
+  "chatPresenceLastSeenMinutes": "{count, plural, =1{желіде 1 минут бұрын болды} other{желіде {count} минут бұрын болды}}",
+  "@chatPresenceLastSeenMinutes": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatPresenceLastSeenHours": "{count, plural, =1{желіде 1 сағат бұрын болды} other{желіде {count} сағат бұрын болды}}",
+  "@chatPresenceLastSeenHours": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatPresenceLastSeenDays": "{count, plural, =1{желіде 1 күн бұрын болды} other{желіде {count} күн бұрын болды}}",
+  "@chatPresenceLastSeenDays": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "chatParticipantsCount": "{count, plural, =0{Қатысушылар жоқ} other{{count} қатысушы}}",
   "@chatParticipantsCount": {
     "placeholders": {
@@ -916,8 +938,11 @@
   "chatDateToday": "Бүгін",
   "chatDateYesterday": "Кеше",
   "chatMessageDeleted": "Хабар өшірілді",
+  "chatDeleteAction": "Өшіру",
+  "chatDeleteFailed": "Хабарды өшіру мүмкін болмады. Қайта көріңіз.",
   "chatEditedLabel": "өзгертілді",
   "chatUserFallbackName": "Пайдаланушы",
+  "chatReplyPreviewFallback": "Хабар",
   "chatSystemUserJoined": "{name} қосылды",
   "@chatSystemUserJoined": {
     "placeholders": {
@@ -944,7 +969,7 @@
   "chatAttachmentUploadFailed": "Тіркемені жүктеу мүмкін болмады. Қайта көріңіз.",
   "chatAttachmentUnsupported": "Бұл файл түрі чат тіркемелері үшін қолдау таппайды.",
   "chatAttachmentTooLarge": "Тіркеме тым үлкен. 25 МБ-қа дейінгі файлды пайдаланыңыз.",
-  "chatComposerHint": "Хабар жазыңыз...",
+  "chatComposerHint": "Хабар...",
   "chatComposerClosedHint": "Чат жабылды",
   "chatActivityChatClosed": "Бұл белсенділік чаты енді тек оқуға қолжетімді.",
   "chatActivityChatClosedHistoryNotice": "Белсенділік аяқталды. Бұл чатқа енді хабар жіберу мүмкін емес.",

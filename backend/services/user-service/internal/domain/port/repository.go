@@ -31,6 +31,7 @@ type UserRepository interface {
 	IsFollowing(ctx context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) (bool, error)
 
 	UpdateProfile(ctx context.Context, profile *model.UserProfile) error
+	UpdateLastSeen(ctx context.Context, userID uuid.UUID) (*model.User, error)
 	UpdateSettings(ctx context.Context, settings *model.UserSettings) error
 	FollowUser(ctx context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) error
 	UnfollowUser(ctx context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) error

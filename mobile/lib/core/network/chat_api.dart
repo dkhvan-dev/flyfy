@@ -34,16 +34,14 @@ class ChatApi {
   Future<ConversationDetail> getConversation(String conversationId) async {
     final response =
         await _apiClient.dio.get('/chat/conversations/$conversationId');
-    return ConversationDetail.fromJson(
-        response.data as Map<String, dynamic>);
+    return ConversationDetail.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<ConversationDetail> getConversationByActivity(
       String activityId) async {
-    final response = await _apiClient.dio
-        .get('/chat/conversations/by-activity/$activityId');
-    return ConversationDetail.fromJson(
-        response.data as Map<String, dynamic>);
+    final response =
+        await _apiClient.dio.get('/chat/conversations/by-activity/$activityId');
+    return ConversationDetail.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<String> createActivityConversation({
@@ -62,8 +60,7 @@ class ChatApi {
     return data['id'] as String;
   }
 
-  Future<ConversationDetail> createDirectConversation(
-      String participantUserId) async {
+  Future<String> createDirectConversation(String participantUserId) async {
     final response = await _apiClient.dio.post(
       '/chat/conversations',
       data: {
@@ -71,8 +68,8 @@ class ChatApi {
         'participantUserIds': [participantUserId],
       },
     );
-    return ConversationDetail.fromJson(
-        response.data as Map<String, dynamic>);
+    final data = response.data as Map<String, dynamic>;
+    return data['id'] as String;
   }
 
   // ── Messages ───────────────────────────────────────────────────
@@ -128,17 +125,41 @@ class ChatApi {
     );
   }
 
-  Future<void> deleteMessage(
-      String conversationId, String messageId) async {
-    await _apiClient.dio
-        .delete('/chat/conversations/$conversationId/messages/$messageId');
+  Future<DeleteMessageResultVm> deleteMessage(
+    String conversationId,
+    String messageId,
+  ) async {
+    final response = await _apiClient.dio.delete(
+      '/chat/conversations/$conversationId/messages/$messageId',
+    );
+    return DeleteMessageResultVm.fromJson(
+      response.data as Map<String, dynamic>,
+    );
   }
 
-  Future<void> markRead(
-      String conversationId, String lastReadMessageId) async {
+  Future<void> markRead(String conversationId, String lastReadMessageId) async {
     await _apiClient.dio.post(
       '/chat/conversations/$conversationId/read',
       data: {'lastReadMessageId': lastReadMessageId},
+    );
+  }
+}
+
+class DeleteMessageResultVm {
+  const DeleteMessageResultVm({
+    required this.hardDeleted,
+    this.deletedAt,
+  });
+
+  final bool hardDeleted;
+  final DateTime? deletedAt;
+
+  factory DeleteMessageResultVm.fromJson(Map<String, dynamic> json) {
+    return DeleteMessageResultVm(
+      hardDeleted: json['hardDeleted'] == true,
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.tryParse(json['deletedAt'].toString()),
     );
   }
 }

@@ -222,24 +222,28 @@ class _ConversationTile extends StatelessWidget {
               ? [const Color(0xFF4a2d14), const Color(0xFF2a1608)]
               : [const Color(0xFFf3d7b3), const Color(0xFF6f3f22)],
         ),
+      ),
+      foregroundDecoration: BoxDecoration(
+        shape: BoxShape.circle,
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.12),
           width: 2,
         ),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Center(child: _fallbackInitial(title)),
-          if (imageUrl != null)
-            Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Center(child: _fallbackInitial(title)),
-            ),
-        ],
+      child: ClipOval(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Center(child: _fallbackInitial(title)),
+            if (imageUrl != null)
+              Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    Center(child: _fallbackInitial(title)),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -317,7 +321,7 @@ class _ConversationTile extends StatelessWidget {
         if (lastMessage != null) ...[
           const SizedBox(height: 5),
           Text(
-            _previewText(lastMessage),
+            _previewText(lastMessage, l10n),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -331,7 +335,8 @@ class _ConversationTile extends StatelessWidget {
     );
   }
 
-  String _previewText(LastMessagePreview message) {
+  String _previewText(LastMessagePreview message, AppLocalizations l10n) {
+    if (message.isDeleted) return l10n.chatMessageDeleted;
     if (message.senderDisplayName.trim().toLowerCase() == 'system') {
       return message.contentPreview;
     }

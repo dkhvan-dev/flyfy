@@ -135,6 +135,10 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 				ContentPreview:    preview,
 				SentAt:            c.LastMessage.SentAt.Format(time.RFC3339),
 			}
+			if c.LastMessage.DeletedAt != nil {
+				s := c.LastMessage.DeletedAt.UTC().Format(time.RFC3339)
+				item.LastMessage.DeletedAt = &s
+			}
 		}
 		items = append(items, item)
 	}
@@ -543,7 +547,14 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 		Type:               msg.Type,
 		Content:            msg.Content,
 		FileIDs:            msg.FileIDs,
-		SentAt:             msg.SentAt.Format(time.RFC3339),
+		ReplyToMessageID: func() *string {
+			if msg.ReplyToMessageID == nil {
+				return nil
+			}
+			s := msg.ReplyToMessageID.String()
+			return &s
+		}(),
+		SentAt: msg.SentAt.Format(time.RFC3339),
 	})
 }
 
@@ -651,12 +662,22 @@ func (h *Handler) DeleteMessage(w http.ResponseWriter, r *http.Request, convID, 
 		return
 	}
 
-	if err := h.messageUC.DeleteMessage(r.Context(), convID, msgID, actorUserID); err != nil {
+	result, err := h.messageUC.DeleteMessage(r.Context(), convID, msgID, actorUserID)
+	if err != nil {
 		h.writeAppError(w, err, "delete message failed")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	var deletedAt *string
+	if result.DeletedAt != nil {
+		value := result.DeletedAt.UTC().Format(time.RFC3339)
+		deletedAt = &value
+	}
+
+	writeJSON(w, http.StatusOK, dto.DeleteMessageResponse{
+		HardDeleted: result.HardDeleted,
+		DeletedAt:   deletedAt,
+	})
 }
 
 func (h *Handler) MarkRead(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
@@ -802,6 +823,11 @@ func participantInfosFromModel(participants []*model.Participant) []dto.Particip
 			AvatarFileID: p.AvatarFileID,
 			Role:         p.Role,
 			JoinedAt:     p.JoinedAt.Format(time.RFC3339),
+			IsOnline:     p.IsOnline,
+		}
+		if p.LastSeenAt != nil {
+			s := p.LastSeenAt.UTC().Format(time.RFC3339)
+			item.LastSeenAt = &s
 		}
 		if p.LastReadMsgID != nil {
 			s := p.LastReadMsgID.String()

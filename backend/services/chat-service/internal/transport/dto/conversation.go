@@ -41,11 +41,12 @@ type ConversationListItem struct {
 }
 
 type LastMessagePreview struct {
-	ID                string `json:"id"`
-	SenderUserID      string `json:"senderUserId"`
-	SenderDisplayName string `json:"senderDisplayName"`
-	ContentPreview    string `json:"contentPreview"`
-	SentAt            string `json:"sentAt"`
+	ID                string  `json:"id"`
+	SenderUserID      string  `json:"senderUserId"`
+	SenderDisplayName string  `json:"senderDisplayName"`
+	ContentPreview    string  `json:"contentPreview"`
+	DeletedAt         *string `json:"deletedAt,omitempty"`
+	SentAt            string  `json:"sentAt"`
 }
 
 type ConversationDetail struct {
@@ -71,6 +72,8 @@ type ParticipantInfo struct {
 	Role              string  `json:"role"`
 	JoinedAt          string  `json:"joinedAt"`
 	LastReadMessageID *string `json:"lastReadMessageId,omitempty"`
+	IsOnline          bool    `json:"isOnline"`
+	LastSeenAt        *string `json:"lastSeenAt,omitempty"`
 }
 
 type PinnedMessageInfo struct {

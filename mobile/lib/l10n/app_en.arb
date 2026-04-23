@@ -228,6 +228,7 @@
   "profileFollowingAction": "Following",
   "profileFollowUpdateFailed": "Failed to update follow status",
   "profileMessageAction": "Message",
+  "profileMessageOpenFailed": "Failed to open chat. Please try again.",
   "profileSettingsPageTitle": "Settings",
   "profileSaveChangesButton": "Save changes",
   "profileDeactivateAccountLabel": "Deactivate account",
@@ -906,6 +907,27 @@
   "chatGroupFallbackTitle": "Group Chat",
   "chatActivityFallbackTitle": "Activity chat",
   "chatActiveNow": "ACTIVE NOW",
+  "chatPresenceOnline": "online",
+  "chatPresenceOffline": "offline",
+  "chatPresenceLastSeenJustNow": "last seen just now",
+  "chatPresenceLastSeenMinutes": "{count, plural, =1{last seen 1 minute ago} other{last seen {count} minutes ago}}",
+  "@chatPresenceLastSeenMinutes": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatPresenceLastSeenHours": "{count, plural, =1{last seen 1 hour ago} other{last seen {count} hours ago}}",
+  "@chatPresenceLastSeenHours": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatPresenceLastSeenDays": "{count, plural, =1{last seen 1 day ago} other{last seen {count} days ago}}",
+  "@chatPresenceLastSeenDays": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "chatParticipantsCount": "{count, plural, =0{No participants} =1{1 participant} other{{count} participants}}",
   "@chatParticipantsCount": {
     "placeholders": {
@@ -916,8 +938,11 @@
   "chatDateToday": "Today",
   "chatDateYesterday": "Yesterday",
   "chatMessageDeleted": "Message deleted",
+  "chatDeleteAction": "Delete",
+  "chatDeleteFailed": "Failed to delete the message. Please try again.",
   "chatEditedLabel": "edited",
   "chatUserFallbackName": "User",
+  "chatReplyPreviewFallback": "Message",
   "chatSystemUserJoined": "{name} joined",
   "@chatSystemUserJoined": {
     "placeholders": {
@@ -944,7 +969,7 @@
   "chatAttachmentUploadFailed": "Failed to upload the attachment. Please try again.",
   "chatAttachmentUnsupported": "This file type is not supported for chat attachments.",
   "chatAttachmentTooLarge": "The attachment is too large. Use a file up to 25 MB.",
-  "chatComposerHint": "Type a message...",
+  "chatComposerHint": "Message...",
   "chatComposerClosedHint": "Chat is closed",
   "chatActivityChatClosed": "This activity chat is now read-only.",
   "chatActivityChatClosedHistoryNotice": "The activity has ended. Messages can no longer be sent in this chat.",

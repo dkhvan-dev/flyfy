@@ -53,6 +53,11 @@ type SendMessageInput struct {
 	ReplyToMessageID  *uuid.UUID
 }
 
+type DeleteMessageResult struct {
+	HardDeleted bool
+	DeletedAt   *time.Time
+}
+
 func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput) (*model.Message, error) {
 	messageType := strings.TrimSpace(input.Type)
 	if messageType == "" {
@@ -194,47 +199,115 @@ func (u *MessageUseCase) EditMessage(ctx context.Context, conversationID, messag
 	return msg, nil
 }
 
-func (u *MessageUseCase) DeleteMessage(ctx context.Context, conversationID, messageID, actorUserID uuid.UUID) error {
+func (u *MessageUseCase) DeleteMessage(
+	ctx context.Context,
+	conversationID,
+	messageID,
+	actorUserID uuid.UUID,
+) (*DeleteMessageResult, error) {
 	msg, err := u.repo.GetMessageByID(ctx, messageID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if msg == nil || msg.ConversationID != conversationID {
-		return ErrMessageNotFound
+		return nil, ErrMessageNotFound
 	}
 	if msg.DeletedAt != nil {
-		return ErrMessageAlreadyDeleted
+		return nil, ErrMessageAlreadyDeleted
 	}
 
 	if msg.SenderUserID != actorUserID {
-		participant, err := u.repo.GetParticipant(ctx, conversationID, actorUserID)
-		if err != nil {
-			return err
-		}
-		if participant == nil || participant.Role != "admin" {
-			return ErrNotMessageAuthor
-		}
+		return nil, ErrNotMessageAuthor
 	}
 
 	now := time.Now().UTC()
-	msg.DeletedAt = &now
+	result := &DeleteMessageResult{}
 
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
-		return txRepo.UpdateMessage(ctx, msg)
+		readByOthers, err := txRepo.HasReadByOtherParticipant(
+			ctx,
+			conversationID,
+			messageID,
+			actorUserID,
+		)
+		if err != nil {
+			return err
+		}
+
+		if readByOthers {
+			msg.DeletedAt = &now
+			if err := txRepo.UpdateMessage(ctx, msg); err != nil {
+				return err
+			}
+			result.HardDeleted = false
+			result.DeletedAt = &now
+			return nil
+		}
+
+		previousMsg, err := txRepo.GetPreviousMessage(
+			ctx,
+			conversationID,
+			msg.SentAt,
+			msg.ID,
+		)
+		if err != nil {
+			return err
+		}
+
+		var previousMessageID *uuid.UUID
+		if previousMsg != nil {
+			previousMessageID = &previousMsg.ID
+		}
+		if err := txRepo.ReplaceLastReadMessageID(
+			ctx,
+			conversationID,
+			msg.ID,
+			previousMessageID,
+		); err != nil {
+			return err
+		}
+
+		if err := txRepo.DeleteMessage(ctx, msg.ID); err != nil {
+			return err
+		}
+
+		conv, err := txRepo.GetConversationByIDForUpdate(ctx, conversationID)
+		if err != nil {
+			return err
+		}
+		if conv != nil {
+			lastMessage, err := txRepo.GetLastMessage(ctx, conversationID)
+			if err != nil {
+				return err
+			}
+			if lastMessage != nil {
+				conv.LastActivityAt = lastMessage.SentAt
+			} else {
+				conv.LastActivityAt = conv.CreatedAt
+			}
+			if err := txRepo.UpdateConversation(ctx, conv); err != nil {
+				return err
+			}
+		}
+
+		result.HardDeleted = true
+		result.DeletedAt = nil
+		return nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	go func() {
 		evt := event.New("message.deleted", conversationID, event.MessageDeletedPayload{
-			MessageID: messageID,
-			DeletedAt: now,
+			MessageID:   messageID,
+			DeletedAt:   result.DeletedAt,
+			HardDeleted: result.HardDeleted,
 		})
 		_ = u.publisher.Publish(context.Background(), "chat.message.deleted", evt)
 	}()
 
-	return nil
+	return result, nil
 }
 
 func (u *MessageUseCase) ListMessages(ctx context.Context, conversationID, actorUserID uuid.UUID, limit int, cursor *uuid.UUID, direction string) ([]*model.Message, error) {

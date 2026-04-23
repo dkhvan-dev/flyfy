@@ -74,8 +74,10 @@ class _SuperAppState extends State<SuperApp> {
             builder: (context, child) {
               return _DismissKeyboardOnTap(
                 child: AppLockGate(
-                  child: _AttendanceSyncBridge(
-                    child: child ?? const SizedBox.shrink(),
+                  child: _PresenceHeartbeatBridge(
+                    child: _AttendanceSyncBridge(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               );
@@ -108,6 +110,106 @@ class _SuperAppState extends State<SuperApp> {
     if (hasStoredSession) {
       await _sessionProvider.restoreSession();
       await _authProvider.checkAuthStatus();
+    }
+  }
+}
+
+class _PresenceHeartbeatBridge extends StatefulWidget {
+  const _PresenceHeartbeatBridge({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PresenceHeartbeatBridge> createState() =>
+      _PresenceHeartbeatBridgeState();
+}
+
+class _PresenceHeartbeatBridgeState extends State<_PresenceHeartbeatBridge>
+    with WidgetsBindingObserver {
+  static const _heartbeatInterval = Duration(seconds: 45);
+  static const _minHeartbeatGap = Duration(seconds: 20);
+
+  Timer? _heartbeatTimer;
+  String? _activeUserId;
+  DateTime? _lastHeartbeatAt;
+  bool _heartbeatInFlight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    _heartbeatTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed ||
+        state == AppLifecycleState.paused) {
+      unawaited(_sendHeartbeat(force: true));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.watch<SessionProvider>();
+    final userId = session.profile?.userId ?? '';
+
+    if (session.isAuthenticated && userId.isNotEmpty) {
+      if (_activeUserId != userId) {
+        _activeUserId = userId;
+        _restartTimer();
+        _scheduleHeartbeat(force: true);
+      }
+    } else if (_activeUserId != null) {
+      _activeUserId = null;
+      _lastHeartbeatAt = null;
+      _heartbeatTimer?.cancel();
+      _heartbeatTimer = null;
+    }
+
+    return widget.child;
+  }
+
+  void _restartTimer() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(
+      _heartbeatInterval,
+      (_) => _scheduleHeartbeat(),
+    );
+  }
+
+  void _scheduleHeartbeat({bool force = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_sendHeartbeat(force: force));
+    });
+  }
+
+  Future<void> _sendHeartbeat({required bool force}) async {
+    final session = context.read<SessionProvider>();
+    final userId = session.profile?.userId ?? '';
+    if (!session.isAuthenticated || userId.isEmpty) return;
+    if (_heartbeatInFlight) return;
+
+    final now = DateTime.now();
+    if (!force &&
+        _lastHeartbeatAt != null &&
+        now.difference(_lastHeartbeatAt!) < _minHeartbeatGap) {
+      return;
+    }
+
+    _heartbeatInFlight = true;
+    try {
+      await session.updatePresenceSilently();
+      _lastHeartbeatAt = DateTime.now();
+    } finally {
+      _heartbeatInFlight = false;
     }
   }
 }

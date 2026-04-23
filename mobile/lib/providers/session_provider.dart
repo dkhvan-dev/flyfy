@@ -8,8 +8,8 @@ enum SessionStatus { initial, loading, authenticated, unauthenticated }
 
 class SessionProvider extends ChangeNotifier {
   SessionProvider({SecureStorage? secureStorage, ProfileApi? profileApi})
-    : _secureStorage = secureStorage ?? SecureStorage(),
-      _profileApi = profileApi ?? ProfileApi();
+      : _secureStorage = secureStorage ?? SecureStorage(),
+        _profileApi = profileApi ?? ProfileApi();
 
   final SecureStorage _secureStorage;
   final ProfileApi _profileApi;
@@ -33,8 +33,7 @@ class SessionProvider extends ChangeNotifier {
     try {
       final accessToken = await _secureStorage.getAccessToken();
       final refreshToken = await _secureStorage.getRefreshToken();
-      final hasStoredTokens =
-          (accessToken != null && accessToken.isNotEmpty) ||
+      final hasStoredTokens = (accessToken != null && accessToken.isNotEmpty) ||
           (refreshToken != null && refreshToken.isNotEmpty);
 
       if (!hasStoredTokens) {
@@ -68,12 +67,21 @@ class SessionProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updatePresenceSilently() async {
+    if (!isAuthenticated) return;
+
+    try {
+      await _profileApi.updatePresence();
+    } catch (_) {
+      // Presence should never interrupt the current user flow.
+    }
+  }
+
   Future<void> refreshSessionSilently() async {
     try {
       final accessToken = await _secureStorage.getAccessToken();
       final refreshToken = await _secureStorage.getRefreshToken();
-      final hasStoredTokens =
-          (accessToken != null && accessToken.isNotEmpty) ||
+      final hasStoredTokens = (accessToken != null && accessToken.isNotEmpty) ||
           (refreshToken != null && refreshToken.isNotEmpty);
       if (!hasStoredTokens) {
         return;

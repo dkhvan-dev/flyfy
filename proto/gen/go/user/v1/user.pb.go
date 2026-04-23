@@ -572,6 +572,7 @@ type User struct {
 	DeletedAt     string                 `protobuf:"bytes,7,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
 	CreatedAt     string                 `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     string                 `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	LastSeenAt    string                 `protobuf:"bytes,10,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -669,6 +670,13 @@ func (x *User) GetUpdatedAt() string {
 	return ""
 }
 
+func (x *User) GetLastSeenAt() string {
+	if x != nil {
+		return x.LastSeenAt
+	}
+	return ""
+}
+
 type UserProfile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -686,6 +694,8 @@ type UserProfile struct {
 	IsPublic      bool                   `protobuf:"varint,13,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
 	CreatedAt     string                 `protobuf:"bytes,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     string                 `protobuf:"bytes,15,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	IsOnline      bool                   `protobuf:"varint,16,opt,name=is_online,json=isOnline,proto3" json:"is_online,omitempty"`
+	LastSeenAt    string                 `protobuf:"bytes,17,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -821,6 +831,20 @@ func (x *UserProfile) GetCreatedAt() string {
 func (x *UserProfile) GetUpdatedAt() string {
 	if x != nil {
 		return x.UpdatedAt
+	}
+	return ""
+}
+
+func (x *UserProfile) GetIsOnline() bool {
+	if x != nil {
+		return x.IsOnline
+	}
+	return false
+}
+
+func (x *UserProfile) GetLastSeenAt() string {
+	if x != nil {
+		return x.LastSeenAt
 	}
 	return ""
 }
@@ -1371,6 +1395,8 @@ type PublicProfile struct {
 	Locale        string                 `protobuf:"bytes,6,opt,name=locale,proto3" json:"locale,omitempty"`
 	Timezone      string                 `protobuf:"bytes,7,opt,name=timezone,proto3" json:"timezone,omitempty"`
 	IsPublic      bool                   `protobuf:"varint,8,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
+	IsOnline      bool                   `protobuf:"varint,9,opt,name=is_online,json=isOnline,proto3" json:"is_online,omitempty"`
+	LastSeenAt    string                 `protobuf:"bytes,10,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1459,6 +1485,20 @@ func (x *PublicProfile) GetIsPublic() bool {
 		return x.IsPublic
 	}
 	return false
+}
+
+func (x *PublicProfile) GetIsOnline() bool {
+	if x != nil {
+		return x.IsOnline
+	}
+	return false
+}
+
+func (x *PublicProfile) GetLastSeenAt() string {
+	if x != nil {
+		return x.LastSeenAt
+	}
+	return ""
 }
 
 type GetPublicProfilesByUserIdsRequest struct {
@@ -1685,7 +1725,7 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"reputation\x18\x04 \x01(\v2\x17.user.v1.UserReputationR\n" +
 	"reputation\x12\x14\n" +
-	"\x05roles\x18\x05 \x03(\tR\x05roles\"\x9c\x02\n" +
+	"\x05roles\x18\x05 \x03(\tR\x05roles\"\xbe\x02\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12&\n" +
 	"\x0fauth_subject_id\x18\x02 \x01(\tR\rauthSubjectId\x12\x16\n" +
@@ -1699,7 +1739,10 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\b \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\t \x01(\tR\tupdatedAt\"\xc3\x03\n" +
+	"updated_at\x18\t \x01(\tR\tupdatedAt\x12 \n" +
+	"\flast_seen_at\x18\n" +
+	" \x01(\tR\n" +
+	"lastSeenAt\"\x82\x04\n" +
 	"\vUserProfile\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
 	"\n" +
@@ -1720,7 +1763,10 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x0e \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x0f \x01(\tR\tupdatedAt\"\xf8\x02\n" +
+	"updated_at\x18\x0f \x01(\tR\tupdatedAt\x12\x1b\n" +
+	"\tis_online\x18\x10 \x01(\bR\bisOnline\x12 \n" +
+	"\flast_seen_at\x18\x11 \x01(\tR\n" +
+	"lastSeenAt\"\xf8\x02\n" +
 	"\fUserSettings\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12<\n" +
 	"\x1anotifications_push_enabled\x18\x02 \x01(\bR\x18notificationsPushEnabled\x12>\n" +
@@ -1771,7 +1817,7 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x05R\x06offset\"J\n" +
 	"\x1aListPublicProfilesResponse\x12,\n" +
-	"\x05items\x18\x01 \x03(\v2\x16.user.v1.PublicProfileR\x05items\"\xf7\x01\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.user.v1.PublicProfileR\x05items\"\xb6\x02\n" +
 	"\rPublicProfile\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x10\n" +
@@ -1780,7 +1826,11 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\fcountry_code\x18\x05 \x01(\tR\vcountryCode\x12\x16\n" +
 	"\x06locale\x18\x06 \x01(\tR\x06locale\x12\x1a\n" +
 	"\btimezone\x18\a \x01(\tR\btimezone\x12\x1b\n" +
-	"\tis_public\x18\b \x01(\bR\bisPublic\">\n" +
+	"\tis_public\x18\b \x01(\bR\bisPublic\x12\x1b\n" +
+	"\tis_online\x18\t \x01(\bR\bisOnline\x12 \n" +
+	"\flast_seen_at\x18\n" +
+	" \x01(\tR\n" +
+	"lastSeenAt\">\n" +
 	"!GetPublicProfilesByUserIdsRequest\x12\x19\n" +
 	"\buser_ids\x18\x01 \x03(\tR\auserIds\"R\n" +
 	"\"GetPublicProfilesByUserIdsResponse\x12,\n" +

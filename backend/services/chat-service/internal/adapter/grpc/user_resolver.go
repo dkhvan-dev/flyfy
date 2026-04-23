@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/domain/port"
 	userv1 "github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1"
@@ -112,6 +113,8 @@ func publicProfileFromProto(userID uuid.UUID, item *userv1.PublicProfile) port.P
 		UserID:       userID,
 		DisplayName:  strings.TrimSpace(item.GetDisplayName()),
 		AvatarFileID: avatarFileID,
+		IsOnline:     item.GetIsOnline(),
+		LastSeenAt:   parseOptionalRFC3339(item.GetLastSeenAt()),
 	}
 }
 
@@ -133,5 +136,20 @@ func userProfileFromProto(userID uuid.UUID, profile *userv1.UserProfile) port.Pu
 		UserID:       userID,
 		DisplayName:  displayName,
 		AvatarFileID: avatarFileID,
+		IsOnline:     profile.GetIsOnline(),
+		LastSeenAt:   parseOptionalRFC3339(profile.GetLastSeenAt()),
 	}
+}
+
+func parseOptionalRFC3339(value string) *time.Time {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return nil
+	}
+	utc := parsed.UTC()
+	return &utc
 }

@@ -24,6 +24,7 @@ type User struct {
 	PrimaryEmail  *string
 	IsDeleted     bool
 	DeletedAt     *time.Time
+	LastSeenAt    *time.Time
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -44,6 +45,7 @@ func NewUser(params NewUserParams) (*User, error) {
 		PrimaryPhone:  normalizeOptionalString(params.PrimaryPhone),
 		PrimaryEmail:  normalizeOptionalString(params.PrimaryEmail),
 		IsDeleted:     false,
+		LastSeenAt:    &now,
 		CreatedAt:     now,
 		UpdatedAt:     now,
 	}
