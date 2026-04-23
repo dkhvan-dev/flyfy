@@ -30,7 +30,7 @@ import 'chat_shared_content_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, this.conversationId, this.activityId})
-      : assert(conversationId != null || activityId != null);
+    : assert(conversationId != null || activityId != null);
 
   final String? conversationId;
   final String? activityId;
@@ -62,6 +62,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Duration _voiceRecordingDuration = Duration.zero;
   MessageVm? _replyToMessage;
   String? _highlightedMessageId;
+  int _pinnedMessageIndex = 0;
 
   @override
   void initState() {
@@ -115,6 +116,7 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _replyToMessage = null;
       _highlightedMessageId = null;
+      _pinnedMessageIndex = 0;
       _messageItemKeys.clear();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -171,11 +173,11 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
 
       final sent = await context.read<ChatProvider>().sendMessage(
-            text,
-            type: fileIds.isEmpty ? 'text' : 'file',
-            fileIds: fileIds,
-            replyToMessageId: replyToMessageId,
-          );
+        text,
+        type: fileIds.isEmpty ? 'text' : 'file',
+        fileIds: fileIds,
+        replyToMessageId: replyToMessageId,
+      );
 
       if (!mounted || !sent) return;
 
@@ -255,7 +257,8 @@ class _ChatScreenState extends State<ChatScreen> {
     int localId,
   ) async {
     final name = file.name.trim();
-    final bytes = file.bytes ??
+    final bytes =
+        file.bytes ??
         (file.path == null ? null : await File(file.path!).readAsBytes());
     if (name.isEmpty || bytes == null || bytes.isEmpty) {
       return null;
@@ -325,8 +328,9 @@ class _ChatScreenState extends State<ChatScreen> {
       _voiceRecordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted || _voiceRecordingStartedAt == null) return;
         setState(() {
-          _voiceRecordingDuration =
-              DateTime.now().difference(_voiceRecordingStartedAt!);
+          _voiceRecordingDuration = DateTime.now().difference(
+            _voiceRecordingStartedAt!,
+          );
         });
       });
     } catch (_) {
@@ -405,11 +409,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (!mounted) return;
       final sent = await context.read<ChatProvider>().sendMessage(
-            '',
-            type: 'file',
-            fileIds: [upload.fileId],
-            replyToMessageId: replyToMessageId,
-          );
+        '',
+        type: 'file',
+        fileIds: [upload.fileId],
+        replyToMessageId: replyToMessageId,
+      );
       if (sent && mounted) {
         setState(() => _replyToMessage = null);
         context.read<ChatProvider>().markAsRead();
@@ -508,8 +512,59 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _replyToMessage = null);
   }
 
+  bool _canManagePins(ConversationDetail conversation, String currentUserId) {
+    final participant = conversation.participants
+        .where((p) => p.userId == currentUserId)
+        .firstOrNull;
+    if (participant == null) {
+      return false;
+    }
+    if (conversation.isDirect) {
+      return true;
+    }
+    return participant.role == 'admin';
+  }
+
+  bool _isMessagePinned(ConversationDetail conversation, String messageId) {
+    return conversation.pinnedMessages.any((pin) => pin.id == messageId);
+  }
+
+  int _normalizedPinnedMessageIndex(int total) {
+    if (total <= 0) return 0;
+    return _pinnedMessageIndex % total;
+  }
+
+  Future<void> _handlePinnedBannerTap(
+    List<PinnedMessageInfo> pinnedMessages,
+  ) async {
+    if (pinnedMessages.isEmpty) return;
+
+    final currentIndex = _normalizedPinnedMessageIndex(pinnedMessages.length);
+    final didScroll = await _scrollToMessage(pinnedMessages[currentIndex].id);
+    if (!mounted || !didScroll || pinnedMessages.length < 2) {
+      return;
+    }
+
+    setState(() {
+      _pinnedMessageIndex = (currentIndex + 1) % pinnedMessages.length;
+    });
+  }
+
   Future<void> _showMessageActions(MessageVm message) async {
     if (message.isSystem || message.isDeleted) return;
+
+    final chat = context.read<ChatProvider>();
+    final conversation = chat.activeConversation;
+    if (conversation == null) return;
+
+    final currentUserId =
+        context.read<SessionProvider>().profile?.userId.trim() ?? '';
+    final canDelete = message.senderUserId == currentUserId;
+    final canManagePins = _canManagePins(conversation, currentUserId);
+    final isPinned = _isMessagePinned(conversation, message.id);
+    if (!canDelete && !canManagePins) {
+      return;
+    }
 
     final l10n = AppLocalizations.of(context)!;
     final action = await showModalBottomSheet<String>(
@@ -524,17 +579,31 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Color(0xFFff6b5f),
+              if (canManagePins)
+                ListTile(
+                  leading: Icon(
+                    isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+                    color: AppColors.accent,
+                  ),
+                  title: Text(
+                    isPinned ? l10n.chatUnpinAction : l10n.chatPinAction,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  onTap: () =>
+                      Navigator.pop(sheetContext, isPinned ? 'unpin' : 'pin'),
                 ),
-                title: Text(
-                  l10n.chatDeleteAction,
-                  style: const TextStyle(color: Colors.white),
+              if (canDelete)
+                ListTile(
+                  leading: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFff6b5f),
+                  ),
+                  title: Text(
+                    l10n.chatDeleteAction,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  onTap: () => Navigator.pop(sheetContext, 'delete'),
                 ),
-                onTap: () => Navigator.pop(sheetContext, 'delete'),
-              ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => Navigator.pop(sheetContext),
@@ -548,11 +617,34 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
-    if (!mounted || action != 'delete') return;
+
+    if (!mounted || action == null) return;
+
+    if (action == 'pin' || action == 'unpin') {
+      try {
+        if (action == 'pin') {
+          await context.read<ChatProvider>().pinMessage(message.id);
+        } else {
+          await context.read<ChatProvider>().unpinMessage(message.id);
+        }
+      } catch (e) {
+        if (!mounted) return;
+        final messageText = e is DioException
+            ? DioErrorMapper.toMessage(e)
+            : action == 'pin'
+            ? l10n.chatPinFailed
+            : l10n.chatUnpinFailed;
+        await showErrorDialog(context, title: l10n.error, message: messageText);
+      }
+      return;
+    }
+
+    if (action != 'delete') return;
 
     try {
-      final result =
-          await context.read<ChatProvider>().deleteMessage(message.id);
+      final result = await context.read<ChatProvider>().deleteMessage(
+        message.id,
+      );
       if (!mounted) return;
       setState(() {
         if (_replyToMessage?.id == message.id) {
@@ -567,11 +659,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final messageText = e is DioException
           ? DioErrorMapper.toMessage(e)
           : l10n.chatDeleteFailed;
-      await showErrorDialog(
-        context,
-        title: l10n.error,
-        message: messageText,
-      );
+      await showErrorDialog(context, title: l10n.error, message: messageText);
     }
   }
 
@@ -582,9 +670,9 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Future<void> _scrollToMessage(String messageId) async {
+  Future<bool> _scrollToMessage(String messageId) async {
     final normalizedMessageId = messageId.trim();
-    if (normalizedMessageId.isEmpty) return;
+    if (normalizedMessageId.isEmpty) return false;
 
     final chat = context.read<ChatProvider>();
     while (!chat.messages.any((message) => message.id == normalizedMessageId) &&
@@ -596,11 +684,19 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
 
-    if (!mounted) return;
+    if (!mounted) return false;
+    final targetExists = chat.messages.any(
+      (message) => message.id == normalizedMessageId,
+    );
+    if (!targetExists) {
+      return false;
+    }
+
     _highlightMessage(normalizedMessageId);
     await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) return;
+    if (!mounted) return false;
     await _ensureMessageVisible(normalizedMessageId);
+    return true;
   }
 
   void _highlightMessage(String messageId) {
@@ -619,8 +715,8 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
     }
 
-    final targetRenderObject =
-        _messageItemKeys[messageId]?.currentContext?.findRenderObject();
+    final targetRenderObject = _messageItemKeys[messageId]?.currentContext
+        ?.findRenderObject();
     if (targetRenderObject == null ||
         !mounted ||
         !_scrollController.hasClients) {
@@ -712,6 +808,16 @@ class _ChatScreenState extends State<ChatScreen> {
                 onSharedContentTap: () =>
                     _openSharedContent(conv, currentUserId, chat.messages),
               ),
+              if (conv.pinnedMessages.isNotEmpty)
+                _PinnedMessagesBar(
+                  pinnedMessages: conv.pinnedMessages,
+                  participants: conv.participants,
+                  currentIndex: _normalizedPinnedMessageIndex(
+                    conv.pinnedMessages.length,
+                  ),
+                  onTap: () =>
+                      unawaited(_handlePinnedBannerTap(conv.pinnedMessages)),
+                ),
               Expanded(
                 child: _MessageList(
                   messages: chat.messages,
@@ -722,7 +828,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   highlightedMessageId: _highlightedMessageId,
                   messageKeyForId: _messageItemKey,
                   onReplyMessage: _selectReplyMessage,
-                  onDeleteMessage: (message) =>
+                  onMessageLongPress: (message) =>
                       unawaited(_showMessageActions(message)),
                   onReplyPreviewTap: (messageId) =>
                       unawaited(_scrollToMessage(messageId)),
@@ -1092,67 +1198,133 @@ class _GroupTopBarContent extends StatelessWidget {
   }
 }
 
-// ── Pinned message ───────────────────────────────────────────────
+// ── Pinned messages ──────────────────────────────────────────────
 
-class _PinnedMessageBanner extends StatelessWidget {
-  const _PinnedMessageBanner({required this.pinned});
+class _PinnedMessagesBar extends StatelessWidget {
+  const _PinnedMessagesBar({
+    required this.pinnedMessages,
+    required this.participants,
+    required this.currentIndex,
+    required this.onTap,
+  });
 
-  final PinnedMessageInfo pinned;
+  final List<PinnedMessageInfo> pinnedMessages;
+  final List<ParticipantInfo> participants;
+  final int currentIndex;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final hz = _scale(context, 24);
-    final l10n = AppLocalizations.of(context)!;
+    if (pinnedMessages.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: _scale(context, 16)),
+    final pinned = pinnedMessages[currentIndex];
+    final l10n = AppLocalizations.of(context)!;
+    final accentColor = _nameColorFor(pinned.senderUserId);
+    final pinnedMessage = _pinnedMessageAsMessageVm(pinned);
+    final senderName = _senderNameForMessage(pinnedMessage, participants, l10n);
+
+    return Padding(
       padding: EdgeInsets.fromLTRB(
-        hz,
-        _scale(context, 26),
-        hz,
-        _scale(context, 22),
+        _scale(context, 14),
+        _scale(context, 10),
+        _scale(context, 14),
+        _scale(context, 2),
       ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_scale(context, 32)),
-        gradient: const LinearGradient(
-          colors: [Color(0x05FF9100), Color(0x24FF9100), Color(0x05FF9100)],
-        ),
-        color: const Color(0xB842220C),
-        border: Border.all(color: const Color(0x40FF9800)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.push_pin,
-                size: _scale(context, 16),
-                color: const Color(0xFFff9800),
-              ),
-              SizedBox(width: _scale(context, 8)),
-              Text(
-                l10n.chatPinnedMessageLabel,
-                style: TextStyle(
-                  fontSize: _scale(context, 13),
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                  color: const Color(0xFFff9800),
-                ),
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            horizontal: _scale(context, 16),
+            vertical: _scale(context, 12),
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_scale(context, 18)),
+            color: const Color(0xFF201108),
+            border: Border.all(color: const Color(0x3DFF9800)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
-          SizedBox(height: _scale(context, 8)),
-          Text(
-            pinned.content,
-            style: TextStyle(
-              fontSize: _scale(context, 16),
-              height: 1.45,
-              letterSpacing: -0.3,
-              color: const Color(0xFFf3ede7),
-            ),
+          child: Row(
+            children: [
+              Container(
+                width: _scale(context, 4),
+                height: _scale(context, 42),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  color: AppColors.accent,
+                ),
+              ),
+              SizedBox(width: _scale(context, 12)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.push_pin_rounded,
+                          size: _scale(context, 15),
+                          color: const Color(0xFFff9800),
+                        ),
+                        SizedBox(width: _scale(context, 6)),
+                        Expanded(
+                          child: Text(
+                            l10n.chatPinnedMessageLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: _scale(context, 11),
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.7,
+                              color: const Color(0xFFff9800),
+                            ),
+                          ),
+                        ),
+                        if (pinnedMessages.length > 1)
+                          Text(
+                            '${currentIndex + 1}/${pinnedMessages.length}',
+                            style: TextStyle(
+                              fontSize: _scale(context, 11),
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white.withValues(alpha: 0.54),
+                            ),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: _scale(context, 6)),
+                    Text(
+                      senderName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: _scale(context, 13),
+                        fontWeight: FontWeight.w800,
+                        color: accentColor,
+                      ),
+                    ),
+                    SizedBox(height: _scale(context, 2)),
+                    _ReplyPreviewText(message: pinnedMessage),
+                  ],
+                ),
+              ),
+              SizedBox(width: _scale(context, 8)),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: _scale(context, 20),
+                color: Colors.white.withValues(alpha: 0.56),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1170,7 +1342,7 @@ class _MessageList extends StatelessWidget {
     required this.highlightedMessageId,
     required this.messageKeyForId,
     required this.onReplyMessage,
-    required this.onDeleteMessage,
+    required this.onMessageLongPress,
     required this.onReplyPreviewTap,
   });
 
@@ -1182,7 +1354,7 @@ class _MessageList extends StatelessWidget {
   final String? highlightedMessageId;
   final GlobalKey Function(String messageId) messageKeyForId;
   final ValueChanged<MessageVm> onReplyMessage;
-  final ValueChanged<MessageVm> onDeleteMessage;
+  final ValueChanged<MessageVm> onMessageLongPress;
   final ValueChanged<String> onReplyPreviewTap;
 
   @override
@@ -1249,9 +1421,9 @@ class _MessageList extends StatelessWidget {
               ? null
               : messagesById[msg.replyToMessageId!],
           onReply: () => onReplyMessage(msg),
-          onDelete: msg.senderUserId == currentUserId
-              ? () => onDeleteMessage(msg)
-              : null,
+          onLongPress: msg.isSystem || msg.isDeleted
+              ? null
+              : () => onMessageLongPress(msg),
           onReplyPreviewTap: msg.replyToMessageId == null
               ? null
               : () => onReplyPreviewTap(msg.replyToMessageId!),
@@ -1269,10 +1441,6 @@ class _MessageList extends StatelessWidget {
       items.add(
         _DaySeparator(label: _dateLabelFor(messages.last.sentAt, l10n)),
       );
-    }
-
-    if (conversation.pinnedMessage != null) {
-      items.add(_PinnedMessageBanner(pinned: conversation.pinnedMessage!));
     }
 
     return items;
@@ -1480,6 +1648,19 @@ String _messagePreviewText(MessageVm message, AppLocalizations l10n) {
   }
   if (message.fileIds.isNotEmpty) return '';
   return l10n.chatReplyPreviewFallback;
+}
+
+MessageVm _pinnedMessageAsMessageVm(PinnedMessageInfo pinned) {
+  return MessageVm(
+    id: pinned.id,
+    senderUserId: pinned.senderUserId,
+    senderDisplayName: pinned.senderDisplayName,
+    senderAvatarFileId: pinned.senderAvatarFileId,
+    type: pinned.type,
+    content: pinned.content,
+    fileIds: pinned.fileIds,
+    sentAt: pinned.sentAt,
+  );
 }
 
 String _singleLinePreview(String value) {
@@ -1740,7 +1921,7 @@ class _MessageBubble extends StatelessWidget {
     required this.participants,
     required this.repliedMessage,
     required this.onReply,
-    required this.onDelete,
+    required this.onLongPress,
     required this.onReplyPreviewTap,
     required this.l10n,
   });
@@ -1755,14 +1936,15 @@ class _MessageBubble extends StatelessWidget {
   final List<ParticipantInfo> participants;
   final MessageVm? repliedMessage;
   final VoidCallback onReply;
-  final VoidCallback? onDelete;
+  final VoidCallback? onLongPress;
   final VoidCallback? onReplyPreviewTap;
   final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
-    final senderParticipant =
-        participants.where((p) => p.userId == message.senderUserId).firstOrNull;
+    final senderParticipant = participants
+        .where((p) => p.userId == message.senderUserId)
+        .firstOrNull;
     final senderName = _senderNameForMessage(message, participants, l10n);
     final isDeleted = message.isDeleted;
 
@@ -1895,7 +2077,8 @@ class _MessageBubble extends StatelessWidget {
                                     l10n,
                                   ),
                             preview: _ReplyPreviewText(
-                              message: repliedMessage ??
+                              message:
+                                  repliedMessage ??
                                   MessageVm(
                                     id: message.replyToMessageId!,
                                     senderUserId: '',
@@ -1974,7 +2157,7 @@ class _MessageBubble extends StatelessWidget {
       },
       background: const _ReplySwipeBackground(),
       child: GestureDetector(
-        onLongPress: isDeleted ? null : onDelete,
+        onLongPress: isDeleted ? null : onLongPress,
         behavior: HitTestBehavior.opaque,
         child: content,
       ),
@@ -2183,11 +2366,7 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
       final message = e is DioException
           ? DioErrorMapper.toMessage(e)
           : l10n.chatAttachmentDownloadFailed;
-      await showErrorDialog(
-        context,
-        title: l10n.error,
-        message: message,
-      );
+      await showErrorDialog(context, title: l10n.error, message: message);
     } finally {
       if (mounted) {
         setState(() => _busyFileIds.remove(item.fileId));
@@ -2244,7 +2423,8 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
     return FutureBuilder<List<_ChatAttachmentViewData>>(
       future: _future,
       builder: (context, snapshot) {
-        final items = snapshot.data ??
+        final items =
+            snapshot.data ??
             widget.fileIds
                 .map(
                   (fileId) => _ChatAttachmentViewData(
@@ -2437,8 +2617,8 @@ class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
   Future<void> _seekToFraction(double fraction, Duration duration) async {
     if (duration.inMilliseconds <= 0 || _preparing) return;
     final target = Duration(
-      milliseconds:
-          (duration.inMilliseconds * fraction.clamp(0.0, 1.0)).round(),
+      milliseconds: (duration.inMilliseconds * fraction.clamp(0.0, 1.0))
+          .round(),
     );
     await _player.seek(target);
   }
@@ -2460,10 +2640,12 @@ class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
             stream: _player.playerStateStream,
             builder: (context, snapshot) {
               final processing = snapshot.data?.processingState;
-              final busy = _preparing ||
+              final busy =
+                  _preparing ||
                   processing == ProcessingState.loading ||
                   processing == ProcessingState.buffering;
-              final playing = (snapshot.data?.playing ?? false) &&
+              final playing =
+                  (snapshot.data?.playing ?? false) &&
                   processing != ProcessingState.completed;
 
               return GestureDetector(
@@ -2522,7 +2704,7 @@ class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
                     final progress = duration.inMilliseconds <= 0
                         ? 0.0
                         : (position.inMilliseconds / duration.inMilliseconds)
-                            .clamp(0.0, 1.0);
+                              .clamp(0.0, 1.0);
 
                     return Row(
                       children: [
@@ -2588,12 +2770,15 @@ class _VoiceWaveform extends StatelessWidget {
 
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTapDown:
-              enabled ? (details) => seekAt(details.localPosition) : null,
-          onHorizontalDragStart:
-              enabled ? (details) => seekAt(details.localPosition) : null,
-          onHorizontalDragUpdate:
-              enabled ? (details) => seekAt(details.localPosition) : null,
+          onTapDown: enabled
+              ? (details) => seekAt(details.localPosition)
+              : null,
+          onHorizontalDragStart: enabled
+              ? (details) => seekAt(details.localPosition)
+              : null,
+          onHorizontalDragUpdate: enabled
+              ? (details) => seekAt(details.localPosition)
+              : null,
           child: SizedBox(
             height: _scale(context, 28),
             child: Row(
@@ -2705,10 +2890,7 @@ class _AttachmentFileRow extends StatelessWidget {
               ),
             ),
             SizedBox(width: _scale(context, 10)),
-            _AttachmentDownloadBadge(
-              downloaded: item.downloaded,
-              busy: busy,
-            ),
+            _AttachmentDownloadBadge(downloaded: item.downloaded, busy: busy),
           ],
         ),
       ),
@@ -3457,8 +3639,8 @@ class _ChatComposer extends StatelessWidget {
                               hintText: messagingClosed
                                   ? l10n.chatComposerClosedHint
                                   : attachmentUploading
-                                      ? l10n.chatAttachmentUploading
-                                      : l10n.chatComposerHint,
+                                  ? l10n.chatAttachmentUploading
+                                  : l10n.chatComposerHint,
                               hintStyle: TextStyle(
                                 fontSize: _scale(context, 15),
                                 color: Colors.white.withValues(alpha: 0.48),
@@ -3487,7 +3669,8 @@ class _ChatComposer extends StatelessWidget {
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
-                    final hasDraft = value.text.trim().isNotEmpty ||
+                    final hasDraft =
+                        value.text.trim().isNotEmpty ||
                         pendingAttachments.isNotEmpty;
                     final disabled =
                         sending || attachmentUploading || messagingClosed;
@@ -3497,8 +3680,8 @@ class _ChatComposer extends StatelessWidget {
                       onTap: disabled
                           ? null
                           : showMic
-                              ? onVoiceStart
-                              : onSend,
+                          ? onVoiceStart
+                          : onSend,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         width: btnSize,

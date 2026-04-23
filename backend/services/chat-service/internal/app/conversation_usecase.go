@@ -380,11 +380,14 @@ func (u *ConversationUseCase) GetConversationByID(ctx context.Context, conversat
 		return nil, err
 	}
 
-	if conv.PinnedMessageID != nil {
-		conv.PinnedMessage, _ = u.repo.GetMessageByID(ctx, *conv.PinnedMessageID)
-		if conv.PinnedMessage != nil {
-			enrichMessages(ctx, u.profileResolver, []*model.Message{conv.PinnedMessage})
-		}
+	conv.PinnedMessages, err = loadPinnedMessages(
+		ctx,
+		u.repo,
+		u.profileResolver,
+		conversationID,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return conv, nil
@@ -422,11 +425,14 @@ func (u *ConversationUseCase) GetConversationByActivityID(ctx context.Context, a
 		return nil, err
 	}
 
-	if conv.PinnedMessageID != nil {
-		conv.PinnedMessage, _ = u.repo.GetMessageByID(ctx, *conv.PinnedMessageID)
-		if conv.PinnedMessage != nil {
-			enrichMessages(ctx, u.profileResolver, []*model.Message{conv.PinnedMessage})
-		}
+	conv.PinnedMessages, err = loadPinnedMessages(
+		ctx,
+		u.repo,
+		u.profileResolver,
+		conv.ID,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return conv, nil
@@ -619,93 +625,117 @@ func (u *ConversationUseCase) MuteConversation(ctx context.Context, input MuteIn
 	})
 }
 
-func (u *ConversationUseCase) PinMessage(ctx context.Context, conversationID, messageID, actorUserID uuid.UUID) error {
+func (u *ConversationUseCase) PinMessage(
+	ctx context.Context,
+	conversationID, messageID, actorUserID uuid.UUID,
+) ([]*model.ConversationPin, error) {
 	conv, err := u.repo.GetConversationByID(ctx, conversationID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if conv == nil {
-		return ErrConversationNotFound
-	}
-	if conv.Type == "direct" {
-		return ErrCannotPinInDirectChat
+		return nil, ErrConversationNotFound
 	}
 
 	participant, err := u.repo.GetParticipant(ctx, conversationID, actorUserID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if participant == nil || participant.LeftAt != nil {
-		return ErrNotParticipant
+		return nil, ErrNotParticipant
 	}
-	if participant.Role != "admin" {
-		return ErrNotAdmin
+	if conv.Type != "direct" && participant.Role != "admin" {
+		return nil, ErrNotAdmin
 	}
 
 	msg, err := u.repo.GetMessageByID(ctx, messageID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if msg == nil || msg.ConversationID != conversationID {
-		return ErrMessageNotFound
+		return nil, ErrMessageNotFound
+	}
+	if msg.DeletedAt != nil {
+		return nil, ErrMessageAlreadyDeleted
 	}
 
-	conv.PinnedMessageID = &messageID
+	now := time.Now().UTC()
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
-		return txRepo.UpdateConversation(ctx, conv)
+		return txRepo.CreateConversationPin(ctx, &model.ConversationPin{
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			MessageID:      messageID,
+			PinnedByUserID: actorUserID,
+			PinnedAt:       now,
+		})
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	pins, err := loadPinnedMessages(ctx, u.repo, u.profileResolver, conversationID)
+	if err != nil {
+		return nil, err
+	}
+
+	publishedPins := pins
 	go func() {
-		evt := event.New("message.pinned", conversationID, event.MessagePinnedPayload{
-			PinnedMessage: &event.PinnedMessageInfo{
-				MessageID:         msg.ID,
-				SenderUserID:      msg.SenderUserID,
-				SenderDisplayName: msg.SenderDisplayName,
-				Content:           msg.Content,
-				SentAt:            msg.SentAt,
-			},
-		})
-		_ = u.publisher.Publish(context.Background(), "chat.message.pinned", evt)
+		_ = publishPinnedMessages(
+			context.Background(),
+			u.publisher,
+			conversationID,
+			publishedPins,
+		)
 	}()
 
-	return nil
+	return pins, nil
 }
 
-func (u *ConversationUseCase) UnpinMessage(ctx context.Context, conversationID, actorUserID uuid.UUID) error {
+func (u *ConversationUseCase) UnpinMessage(
+	ctx context.Context,
+	conversationID, messageID, actorUserID uuid.UUID,
+) ([]*model.ConversationPin, error) {
 	conv, err := u.repo.GetConversationByID(ctx, conversationID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if conv == nil {
-		return ErrConversationNotFound
+		return nil, ErrConversationNotFound
 	}
 
 	participant, err := u.repo.GetParticipant(ctx, conversationID, actorUserID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if participant == nil || participant.LeftAt != nil {
-		return ErrNotParticipant
+		return nil, ErrNotParticipant
 	}
-	if participant.Role != "admin" {
-		return ErrNotAdmin
+	if conv.Type != "direct" && participant.Role != "admin" {
+		return nil, ErrNotAdmin
 	}
 
-	conv.PinnedMessageID = nil
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
-		return txRepo.UpdateConversation(ctx, conv)
+		_, err := txRepo.DeleteConversationPin(ctx, conversationID, messageID)
+		return err
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	pins, err := loadPinnedMessages(ctx, u.repo, u.profileResolver, conversationID)
+	if err != nil {
+		return nil, err
+	}
+
+	publishedPins := pins
 	go func() {
-		evt := event.New("message.pinned", conversationID, event.MessagePinnedPayload{PinnedMessage: nil})
-		_ = u.publisher.Publish(context.Background(), "chat.message.pinned", evt)
+		_ = publishPinnedMessages(
+			context.Background(),
+			u.publisher,
+			conversationID,
+			publishedPins,
+		)
 	}()
 
-	return nil
+	return pins, nil
 }

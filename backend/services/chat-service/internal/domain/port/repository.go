@@ -44,6 +44,9 @@ type ChatTxRepository interface {
 	CreateMessage(ctx context.Context, msg *model.Message) error
 	UpdateMessage(ctx context.Context, msg *model.Message) error
 	DeleteMessage(ctx context.Context, messageID uuid.UUID) error
+	CreateConversationPin(ctx context.Context, pin *model.ConversationPin) error
+	DeleteConversationPin(ctx context.Context, conversationID, messageID uuid.UUID) (bool, error)
+	DeleteConversationPinsByMessageID(ctx context.Context, messageID uuid.UUID) (int64, error)
 	GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error)
 	GetPreviousMessage(
 		ctx context.Context,
@@ -79,5 +82,6 @@ type ChatRepository interface {
 	GetUnreadCount(ctx context.Context, conversationID, userID uuid.UUID) (int, error)
 	GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error)
 	GetMessageFileIDs(ctx context.Context, messageID uuid.UUID) ([]string, error)
+	ListPinnedMessagesByConversationID(ctx context.Context, conversationID uuid.UUID) ([]*model.ConversationPin, error)
 	WithTx(ctx context.Context, fn func(repo ChatTxRepository) error) error
 }

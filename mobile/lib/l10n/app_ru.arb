@@ -935,6 +935,10 @@
     }
   },
   "chatPinnedMessageLabel": "ЗАКРЕПЛЕННОЕ СООБЩЕНИЕ",
+  "chatPinAction": "Закрепить",
+  "chatUnpinAction": "Открепить",
+  "chatPinFailed": "Не удалось закрепить сообщение. Попробуйте еще раз.",
+  "chatUnpinFailed": "Не удалось открепить сообщение. Попробуйте еще раз.",
   "chatDateToday": "Сегодня",
   "chatDateYesterday": "Вчера",
   "chatMessageDeleted": "Сообщение удалено",

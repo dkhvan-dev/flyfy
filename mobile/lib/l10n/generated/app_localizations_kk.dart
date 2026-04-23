@@ -2671,6 +2671,19 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatPinnedMessageLabel => 'БЕКІТІЛГЕН ХАБАР';
 
   @override
+  String get chatPinAction => 'Бекіту';
+
+  @override
+  String get chatUnpinAction => 'Бекітуден алу';
+
+  @override
+  String get chatPinFailed => 'Хабарды бекіту мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get chatUnpinFailed =>
+      'Хабарды бекітуден алу мүмкін болмады. Қайта көріңіз.';
+
+  @override
   String get chatDateToday => 'Бүгін';
 
   @override

@@ -50,19 +50,19 @@ type LastMessagePreview struct {
 }
 
 type ConversationDetail struct {
-	ID                      string             `json:"id"`
-	Type                    string             `json:"type"`
-	Title                   *string            `json:"title"`
-	AvatarFileID            *string            `json:"avatarFileId"`
-	CreatedAt               string             `json:"createdAt"`
-	ActivityID              *string            `json:"activityId"`
-	Participants            []ParticipantInfo  `json:"participants"`
-	PinnedMessage           *PinnedMessageInfo `json:"pinnedMessage"`
-	UnreadCount             int                `json:"unreadCount"`
-	MutedUntil              *string            `json:"mutedUntil"`
-	MessagingAvailableUntil *string            `json:"messagingAvailableUntil,omitempty"`
-	CanSendMessages         bool               `json:"canSendMessages"`
-	LastActivityAt          string             `json:"lastActivityAt"`
+	ID                      string              `json:"id"`
+	Type                    string              `json:"type"`
+	Title                   *string             `json:"title"`
+	AvatarFileID            *string             `json:"avatarFileId"`
+	CreatedAt               string              `json:"createdAt"`
+	ActivityID              *string             `json:"activityId"`
+	Participants            []ParticipantInfo   `json:"participants"`
+	PinnedMessages          []PinnedMessageInfo `json:"pinnedMessages"`
+	UnreadCount             int                 `json:"unreadCount"`
+	MutedUntil              *string             `json:"mutedUntil"`
+	MessagingAvailableUntil *string             `json:"messagingAvailableUntil,omitempty"`
+	CanSendMessages         bool                `json:"canSendMessages"`
+	LastActivityAt          string              `json:"lastActivityAt"`
 }
 
 type ParticipantInfo struct {
@@ -77,11 +77,15 @@ type ParticipantInfo struct {
 }
 
 type PinnedMessageInfo struct {
-	ID                string `json:"id"`
-	SenderUserID      string `json:"senderUserId"`
-	SenderDisplayName string `json:"senderDisplayName"`
-	Content           string `json:"content"`
-	SentAt            string `json:"sentAt"`
+	ID                 string   `json:"id"`
+	SenderUserID       string   `json:"senderUserId"`
+	SenderDisplayName  string   `json:"senderDisplayName"`
+	SenderAvatarFileID *string  `json:"senderAvatarFileId,omitempty"`
+	Type               string   `json:"type"`
+	Content            string   `json:"content"`
+	FileIDs            []string `json:"fileIds,omitempty"`
+	SentAt             string   `json:"sentAt"`
+	PinnedAt           string   `json:"pinnedAt"`
 }
 
 type ConversationListResponse struct {
@@ -95,4 +99,8 @@ type MuteRequest struct {
 
 type PinRequest struct {
 	MessageID string `json:"messageId"`
+}
+
+type PinnedMessagesResponse struct {
+	Items []PinnedMessageInfo `json:"items"`
 }

@@ -2672,6 +2672,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatPinnedMessageLabel => 'ЗАКРЕПЛЕННОЕ СООБЩЕНИЕ';
 
   @override
+  String get chatPinAction => 'Закрепить';
+
+  @override
+  String get chatUnpinAction => 'Открепить';
+
+  @override
+  String get chatPinFailed =>
+      'Не удалось закрепить сообщение. Попробуйте еще раз.';
+
+  @override
+  String get chatUnpinFailed =>
+      'Не удалось открепить сообщение. Попробуйте еще раз.';
+
+  @override
   String get chatDateToday => 'Сегодня';
 
   @override

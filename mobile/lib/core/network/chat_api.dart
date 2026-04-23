@@ -32,15 +32,18 @@ class ChatApi {
   }
 
   Future<ConversationDetail> getConversation(String conversationId) async {
-    final response =
-        await _apiClient.dio.get('/chat/conversations/$conversationId');
+    final response = await _apiClient.dio.get(
+      '/chat/conversations/$conversationId',
+    );
     return ConversationDetail.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<ConversationDetail> getConversationByActivity(
-      String activityId) async {
-    final response =
-        await _apiClient.dio.get('/chat/conversations/by-activity/$activityId');
+    String activityId,
+  ) async {
+    final response = await _apiClient.dio.get(
+      '/chat/conversations/by-activity/$activityId',
+    );
     return ConversationDetail.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -50,11 +53,7 @@ class ChatApi {
   }) async {
     final response = await _apiClient.dio.post(
       '/chat/conversations',
-      data: {
-        'type': 'activity',
-        'activityId': activityId,
-        'title': title,
-      },
+      data: {'type': 'activity', 'activityId': activityId, 'title': title},
     );
     final data = response.data as Map<String, dynamic>;
     return data['id'] as String;
@@ -143,13 +142,39 @@ class ChatApi {
       data: {'lastReadMessageId': lastReadMessageId},
     );
   }
+
+  Future<List<PinnedMessageInfo>> pinMessage(
+    String conversationId,
+    String messageId,
+  ) async {
+    final response = await _apiClient.dio.post(
+      '/chat/conversations/$conversationId/pin',
+      data: {'messageId': messageId},
+    );
+    return _parsePinnedMessages(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<PinnedMessageInfo>> unpinMessage(
+    String conversationId,
+    String messageId,
+  ) async {
+    final response = await _apiClient.dio.delete(
+      '/chat/conversations/$conversationId/pin/$messageId',
+    );
+    return _parsePinnedMessages(response.data as Map<String, dynamic>);
+  }
+
+  List<PinnedMessageInfo> _parsePinnedMessages(Map<String, dynamic> json) {
+    final items = (json['items'] as List<dynamic>?) ?? const [];
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(PinnedMessageInfo.fromJson)
+        .toList(growable: false);
+  }
 }
 
 class DeleteMessageResultVm {
-  const DeleteMessageResultVm({
-    required this.hardDeleted,
-    this.deletedAt,
-  });
+  const DeleteMessageResultVm({required this.hardDeleted, this.deletedAt});
 
   final bool hardDeleted;
   final DateTime? deletedAt;

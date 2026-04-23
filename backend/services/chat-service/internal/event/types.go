@@ -66,13 +66,17 @@ type ParticipantLeftPayload struct {
 }
 
 type MessagePinnedPayload struct {
-	PinnedMessage *PinnedMessageInfo `json:"pinnedMessage"`
+	PinnedMessages []PinnedMessageInfo `json:"pinnedMessages"`
 }
 
 type PinnedMessageInfo struct {
-	MessageID         uuid.UUID `json:"id"`
-	SenderUserID      uuid.UUID `json:"senderUserId"`
-	SenderDisplayName string    `json:"senderDisplayName"`
-	Content           string    `json:"content"`
-	SentAt            time.Time `json:"sentAt"`
+	MessageID          uuid.UUID `json:"id"`
+	SenderUserID       uuid.UUID `json:"senderUserId"`
+	SenderDisplayName  string    `json:"senderDisplayName"`
+	SenderAvatarFileID *string   `json:"senderAvatarFileId,omitempty"`
+	Type               string    `json:"type"`
+	Content            string    `json:"content"`
+	FileIDs            []string  `json:"fileIds,omitempty"`
+	SentAt             time.Time `json:"sentAt"`
+	PinnedAt           time.Time `json:"pinnedAt"`
 }

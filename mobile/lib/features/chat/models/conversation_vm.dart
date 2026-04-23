@@ -89,7 +89,8 @@ class ConversationVm {
       title: json['title'] as String?,
       avatarFileId: json['avatarFileId'] as String?,
       activityId: json['activityId'] as String?,
-      participants: (json['participants'] as List<dynamic>?)
+      participants:
+          (json['participants'] as List<dynamic>?)
               ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -149,7 +150,7 @@ class ConversationDetail {
   final DateTime createdAt;
   final String? activityId;
   final List<ParticipantInfo> participants;
-  final PinnedMessageInfo? pinnedMessage;
+  final List<PinnedMessageInfo> pinnedMessages;
   final int unreadCount;
   final String? mutedUntil;
   final DateTime? messagingAvailableUntil;
@@ -164,7 +165,7 @@ class ConversationDetail {
     required this.createdAt,
     this.activityId,
     this.participants = const [],
-    this.pinnedMessage,
+    this.pinnedMessages = const [],
     this.unreadCount = 0,
     this.mutedUntil,
     this.messagingAvailableUntil,
@@ -198,6 +199,7 @@ class ConversationDetail {
 
   ConversationDetail copyWith({
     List<ParticipantInfo>? participants,
+    List<PinnedMessageInfo>? pinnedMessages,
     int? unreadCount,
   }) {
     return ConversationDetail(
@@ -208,7 +210,7 @@ class ConversationDetail {
       createdAt: createdAt,
       activityId: activityId,
       participants: participants ?? this.participants,
-      pinnedMessage: pinnedMessage,
+      pinnedMessages: pinnedMessages ?? this.pinnedMessages,
       unreadCount: unreadCount ?? this.unreadCount,
       mutedUntil: mutedUntil,
       messagingAvailableUntil: messagingAvailableUntil,
@@ -225,15 +227,18 @@ class ConversationDetail {
       avatarFileId: json['avatarFileId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       activityId: json['activityId'] as String?,
-      participants: (json['participants'] as List<dynamic>?)
+      participants:
+          (json['participants'] as List<dynamic>?)
               ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      pinnedMessage: json['pinnedMessage'] != null
-          ? PinnedMessageInfo.fromJson(
-              json['pinnedMessage'] as Map<String, dynamic>,
-            )
-          : null,
+      pinnedMessages:
+          (json['pinnedMessages'] as List<dynamic>?)
+              ?.map(
+                (e) => PinnedMessageInfo.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const [],
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
       mutedUntil: json['mutedUntil'] as String?,
       messagingAvailableUntil: _parseDateTimeOrNull(
@@ -303,15 +308,23 @@ class PinnedMessageInfo {
   final String id;
   final String senderUserId;
   final String senderDisplayName;
+  final String? senderAvatarFileId;
+  final String type;
   final String content;
+  final List<String> fileIds;
   final DateTime sentAt;
+  final DateTime pinnedAt;
 
   const PinnedMessageInfo({
     required this.id,
     required this.senderUserId,
     required this.senderDisplayName,
+    this.senderAvatarFileId,
+    required this.type,
     required this.content,
+    this.fileIds = const [],
     required this.sentAt,
+    required this.pinnedAt,
   });
 
   factory PinnedMessageInfo.fromJson(Map<String, dynamic> json) {
@@ -319,8 +332,16 @@ class PinnedMessageInfo {
       id: json['id'] as String,
       senderUserId: json['senderUserId'] as String,
       senderDisplayName: json['senderDisplayName'] as String,
+      senderAvatarFileId: json['senderAvatarFileId'] as String?,
+      type: (json['type'] as String?) ?? 'text',
       content: json['content'] as String,
+      fileIds:
+          (json['fileIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       sentAt: DateTime.parse(json['sentAt'] as String),
+      pinnedAt: DateTime.parse(json['pinnedAt'] as String),
     );
   }
 }

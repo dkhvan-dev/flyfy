@@ -222,8 +222,15 @@ func (u *MessageUseCase) DeleteMessage(
 
 	now := time.Now().UTC()
 	result := &DeleteMessageResult{}
+	var pinsChanged bool
 
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
+		removedPinsCount, err := txRepo.DeleteConversationPinsByMessageID(ctx, msg.ID)
+		if err != nil {
+			return err
+		}
+		pinsChanged = removedPinsCount > 0
+
 		readByOthers, err := txRepo.HasReadByOtherParticipant(
 			ctx,
 			conversationID,
@@ -298,6 +305,17 @@ func (u *MessageUseCase) DeleteMessage(
 		return nil, err
 	}
 
+	var pinnedMessages []*model.ConversationPin
+	if pinsChanged {
+		pinnedMessages, _ = loadPinnedMessages(
+			ctx,
+			u.repo,
+			u.profileResolver,
+			conversationID,
+		)
+	}
+
+	publishedPins := pinnedMessages
 	go func() {
 		evt := event.New("message.deleted", conversationID, event.MessageDeletedPayload{
 			MessageID:   messageID,
@@ -305,6 +323,14 @@ func (u *MessageUseCase) DeleteMessage(
 			HardDeleted: result.HardDeleted,
 		})
 		_ = u.publisher.Publish(context.Background(), "chat.message.deleted", evt)
+		if pinsChanged {
+			_ = publishPinnedMessages(
+				context.Background(),
+				u.publisher,
+				conversationID,
+				publishedPins,
+			)
+		}
 	}()
 
 	return result, nil

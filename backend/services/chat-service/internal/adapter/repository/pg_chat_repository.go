@@ -45,6 +45,8 @@ func (r *PGChatRepository) WithTx(ctx context.Context, fn func(repo port.ChatTxR
 
 const conversationColumns = `id, type, title, avatar_file_id, activity_id, pinned_message_id, messaging_available_until, created_at, last_activity_at`
 const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
+const messageColumns = `id, conversation_id, sender_user_id, type, content, reply_to_message_id, edited_at, deleted_at, sent_at`
+const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.type, m.content, m.reply_to_message_id, m.edited_at, m.deleted_at, m.sent_at`
 
 func scanConversation(row pgx.Row) (*model.Conversation, error) {
 	var c model.Conversation
@@ -129,8 +131,6 @@ func (r *PGChatRepository) ListConversationsByUserID(ctx context.Context, filter
 	}
 	return convs, rows.Err()
 }
-
-const messageColumns = `id, conversation_id, sender_user_id, type, content, reply_to_message_id, edited_at, deleted_at, sent_at`
 
 func scanMessage(row pgx.Row) (*model.Message, error) {
 	var m model.Message
@@ -225,6 +225,57 @@ func (r *PGChatRepository) GetMessageFileIDs(ctx context.Context, messageID uuid
 		ids = append(ids, id)
 	}
 	return ids, rows.Err()
+}
+
+func (r *PGChatRepository) ListPinnedMessagesByConversationID(
+	ctx context.Context,
+	conversationID uuid.UUID,
+) ([]*model.ConversationPin, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT
+			cp.id,
+			cp.conversation_id,
+			cp.message_id,
+			cp.pinned_by_user_id,
+			cp.pinned_at,
+			`+messageSelectColumns+`
+		FROM conversation_pins cp
+		INNER JOIN messages m
+			ON m.id = cp.message_id
+		   AND m.conversation_id = cp.conversation_id
+		WHERE cp.conversation_id = $1
+		  AND m.deleted_at IS NULL
+		ORDER BY cp.pinned_at DESC, cp.id DESC
+	`, conversationID)
+	if err != nil {
+		return nil, fmt.Errorf("list pinned messages: %w", err)
+	}
+	defer rows.Close()
+
+	var pins []*model.ConversationPin
+	for rows.Next() {
+		pin := &model.ConversationPin{Message: &model.Message{}}
+		if err := rows.Scan(
+			&pin.ID,
+			&pin.ConversationID,
+			&pin.MessageID,
+			&pin.PinnedByUserID,
+			&pin.PinnedAt,
+			&pin.Message.ID,
+			&pin.Message.ConversationID,
+			&pin.Message.SenderUserID,
+			&pin.Message.Type,
+			&pin.Message.Content,
+			&pin.Message.ReplyToMessageID,
+			&pin.Message.EditedAt,
+			&pin.Message.DeletedAt,
+			&pin.Message.SentAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan pinned message: %w", err)
+		}
+		pins = append(pins, pin)
+	}
+	return pins, rows.Err()
 }
 
 func (r *PGChatRepository) GetParticipant(ctx context.Context, conversationID, userID uuid.UUID) (*model.Participant, error) {
@@ -401,6 +452,44 @@ func (tx *pgChatTxRepository) UpdateMessage(ctx context.Context, msg *model.Mess
 func (tx *pgChatTxRepository) DeleteMessage(ctx context.Context, messageID uuid.UUID) error {
 	_, err := tx.tx.Exec(ctx, `DELETE FROM messages WHERE id = $1`, messageID)
 	return err
+}
+
+func (tx *pgChatTxRepository) CreateConversationPin(
+	ctx context.Context,
+	pin *model.ConversationPin,
+) error {
+	_, err := tx.tx.Exec(ctx, `
+		INSERT INTO conversation_pins (id, conversation_id, message_id, pinned_by_user_id, pinned_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (conversation_id, message_id) DO NOTHING
+	`, pin.ID, pin.ConversationID, pin.MessageID, pin.PinnedByUserID, pin.PinnedAt)
+	return err
+}
+
+func (tx *pgChatTxRepository) DeleteConversationPin(
+	ctx context.Context,
+	conversationID, messageID uuid.UUID,
+) (bool, error) {
+	tag, err := tx.tx.Exec(ctx, `
+		DELETE FROM conversation_pins
+		WHERE conversation_id = $1
+		  AND message_id = $2
+	`, conversationID, messageID)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
+func (tx *pgChatTxRepository) DeleteConversationPinsByMessageID(
+	ctx context.Context,
+	messageID uuid.UUID,
+) (int64, error) {
+	tag, err := tx.tx.Exec(ctx, `DELETE FROM conversation_pins WHERE message_id = $1`, messageID)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
 }
 
 func (tx *pgChatTxRepository) GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error) {

@@ -935,6 +935,10 @@
     }
   },
   "chatPinnedMessageLabel": "БЕКІТІЛГЕН ХАБАР",
+  "chatPinAction": "Бекіту",
+  "chatUnpinAction": "Бекітуден алу",
+  "chatPinFailed": "Хабарды бекіту мүмкін болмады. Қайта көріңіз.",
+  "chatUnpinFailed": "Хабарды бекітуден алу мүмкін болмады. Қайта көріңіз.",
   "chatDateToday": "Бүгін",
   "chatDateYesterday": "Кеше",
   "chatMessageDeleted": "Хабар өшірілді",

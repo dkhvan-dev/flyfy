@@ -19,6 +19,7 @@ type Conversation struct {
 	// Populated on read (not stored in conversations table)
 	Participants     []*Participant
 	PinnedMessage    *Message
+	PinnedMessages   []*ConversationPin
 	UnreadCount      int
 	ParticipantCount int
 	LastMessage      *Message

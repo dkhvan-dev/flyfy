@@ -9,8 +9,8 @@ import '../features/chat/models/message_vm.dart';
 
 class ChatProvider extends ChangeNotifier {
   ChatProvider({ChatApi? chatApi, ChatWsService? wsService})
-      : _chatApi = chatApi ?? ChatApi(),
-        _wsService = wsService ?? ChatWsService();
+    : _chatApi = chatApi ?? ChatApi(),
+      _wsService = wsService ?? ChatWsService();
 
   final ChatApi _chatApi;
   final ChatWsService _wsService;
@@ -158,7 +158,8 @@ class ChatProvider extends ChangeNotifier {
     List<String>? fileIds,
     String? replyToMessageId,
   }) async {
-    final normalizedFileIds = fileIds
+    final normalizedFileIds =
+        fileIds
             ?.map((id) => id.trim())
             .where((id) => id.isNotEmpty)
             .toList(growable: false) ??
@@ -198,11 +199,14 @@ class ChatProvider extends ChangeNotifier {
       throw StateError('No active conversation');
     }
 
-    final result =
-        await _chatApi.deleteMessage(_activeConversation!.id, messageId);
+    final result = await _chatApi.deleteMessage(
+      _activeConversation!.id,
+      messageId,
+    );
     if (result.hardDeleted) {
-      _messages =
-          _messages.where((message) => message.id != messageId).toList();
+      _messages = _messages
+          .where((message) => message.id != messageId)
+          .toList();
     } else {
       final deletedAt = result.deletedAt ?? DateTime.now().toUtc();
       _messages = _messages
@@ -213,9 +217,44 @@ class ChatProvider extends ChangeNotifier {
           )
           .toList();
     }
+    _activeConversation = _activeConversation?.copyWith(
+      pinnedMessages: _activeConversation!.pinnedMessages
+          .where((pin) => pin.id != messageId)
+          .toList(growable: false),
+    );
     notifyListeners();
     unawaited(loadConversations());
     return result;
+  }
+
+  Future<void> pinMessage(String messageId) async {
+    if (_activeConversation == null) {
+      throw StateError('No active conversation');
+    }
+
+    final pinnedMessages = await _chatApi.pinMessage(
+      _activeConversation!.id,
+      messageId,
+    );
+    _activeConversation = _activeConversation!.copyWith(
+      pinnedMessages: pinnedMessages,
+    );
+    notifyListeners();
+  }
+
+  Future<void> unpinMessage(String messageId) async {
+    if (_activeConversation == null) {
+      throw StateError('No active conversation');
+    }
+
+    final pinnedMessages = await _chatApi.unpinMessage(
+      _activeConversation!.id,
+      messageId,
+    );
+    _activeConversation = _activeConversation!.copyWith(
+      pinnedMessages: pinnedMessages,
+    );
+    notifyListeners();
   }
 
   Future<void> markAsRead() async {
@@ -265,6 +304,8 @@ class ChatProvider extends ChangeNotifier {
         _onMessageDeleted(event);
       case 'read_updated':
         _onReadUpdated(event);
+      case 'message_pinned':
+        _onMessagePinned(event);
       default:
         break;
     }
@@ -330,13 +371,22 @@ class ChatProvider extends ChangeNotifier {
           .toList();
     }
 
+    if (_activeConversation?.id == event.conversationId) {
+      _activeConversation = _activeConversation!.copyWith(
+        pinnedMessages: _activeConversation!.pinnedMessages
+            .where((pin) => pin.id != messageId)
+            .toList(growable: false),
+      );
+    }
+
     unawaited(loadConversations());
   }
 
   void _onReadUpdated(ChatEvent event) {
     final userId = event.payload['userId'] as String?;
-    final lastReadMessageId = (event.payload['lastReadMsgId'] ??
-        event.payload['lastReadMessageId']) as String?;
+    final lastReadMessageId =
+        (event.payload['lastReadMsgId'] ?? event.payload['lastReadMessageId'])
+            as String?;
     if (userId == null || lastReadMessageId == null) {
       return;
     }
@@ -368,6 +418,23 @@ class ChatProvider extends ChangeNotifier {
               : c,
         )
         .toList();
+  }
+
+  void _onMessagePinned(ChatEvent event) {
+    if (_activeConversation?.id != event.conversationId) {
+      return;
+    }
+
+    final items =
+        (event.payload['pinnedMessages'] as List<dynamic>?) ?? const [];
+    final pinnedMessages = items
+        .whereType<Map<String, dynamic>>()
+        .map(PinnedMessageInfo.fromJson)
+        .toList(growable: false);
+
+    _activeConversation = _activeConversation!.copyWith(
+      pinnedMessages: pinnedMessages,
+    );
   }
 
   List<MessageVm> _uniqueMessages(List<MessageVm> items) {

@@ -390,12 +390,25 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	case "pin":
-		switch r.Method {
-		case http.MethodPost:
+		switch {
+		case len(parts) == 2 && r.Method == http.MethodPost:
 			h.PinMessage(w, r, convID)
 			return
-		case http.MethodDelete:
-			h.UnpinMessage(w, r, convID)
+		case len(parts) == 3 && r.Method == http.MethodDelete:
+			msgID, err := uuid.Parse(parts[2])
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "invalid message id")
+				return
+			}
+			h.UnpinMessage(w, r, convID, msgID)
+			return
+		case len(parts) == 2 && r.Method == http.MethodDelete:
+			msgID, err := uuid.Parse(strings.TrimSpace(r.URL.Query().Get("messageId")))
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "invalid message id")
+				return
+			}
+			h.UnpinMessage(w, r, convID, msgID)
 			return
 		}
 	}
@@ -440,16 +453,7 @@ func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request, convID
 	}
 
 	detail.Participants = participantInfosFromModel(conv.Participants)
-
-	if conv.PinnedMessage != nil {
-		detail.PinnedMessage = &dto.PinnedMessageInfo{
-			ID:                conv.PinnedMessage.ID.String(),
-			SenderUserID:      conv.PinnedMessage.SenderUserID.String(),
-			SenderDisplayName: conv.PinnedMessage.SenderDisplayName,
-			Content:           conv.PinnedMessage.Content,
-			SentAt:            conv.PinnedMessage.SentAt.Format(time.RFC3339),
-		}
-	}
+	detail.PinnedMessages = pinnedMessageInfosFromModel(conv.PinnedMessages)
 
 	writeJSON(w, http.StatusOK, detail)
 }
@@ -491,16 +495,7 @@ func (h *Handler) GetConversationByActivity(w http.ResponseWriter, r *http.Reque
 	}
 
 	detail.Participants = participantInfosFromModel(conv.Participants)
-
-	if conv.PinnedMessage != nil {
-		detail.PinnedMessage = &dto.PinnedMessageInfo{
-			ID:                conv.PinnedMessage.ID.String(),
-			SenderUserID:      conv.PinnedMessage.SenderUserID.String(),
-			SenderDisplayName: conv.PinnedMessage.SenderDisplayName,
-			Content:           conv.PinnedMessage.Content,
-			SentAt:            conv.PinnedMessage.SentAt.Format(time.RFC3339),
-		}
-	}
+	detail.PinnedMessages = pinnedMessageInfosFromModel(conv.PinnedMessages)
 
 	writeJSON(w, http.StatusOK, detail)
 }
@@ -787,27 +782,33 @@ func (h *Handler) PinMessage(w http.ResponseWriter, r *http.Request, convID uuid
 		return
 	}
 
-	if err := h.conversationUC.PinMessage(r.Context(), convID, msgID, actorUserID); err != nil {
+	pins, err := h.conversationUC.PinMessage(r.Context(), convID, msgID, actorUserID)
+	if err != nil {
 		h.writeAppError(w, err, "pin message failed")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, dto.PinnedMessagesResponse{
+		Items: pinnedMessageInfosFromModel(pins),
+	})
 }
 
-func (h *Handler) UnpinMessage(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
+func (h *Handler) UnpinMessage(w http.ResponseWriter, r *http.Request, convID, msgID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing authenticated user")
 		return
 	}
 
-	if err := h.conversationUC.UnpinMessage(r.Context(), convID, actorUserID); err != nil {
+	pins, err := h.conversationUC.UnpinMessage(r.Context(), convID, msgID, actorUserID)
+	if err != nil {
 		h.writeAppError(w, err, "unpin message failed")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, dto.PinnedMessagesResponse{
+		Items: pinnedMessageInfosFromModel(pins),
+	})
 }
 
 func participantInfosFromModel(participants []*model.Participant) []dto.ParticipantInfo {
@@ -834,6 +835,30 @@ func participantInfosFromModel(participants []*model.Participant) []dto.Particip
 			item.LastReadMessageID = &s
 		}
 		items = append(items, item)
+	}
+	return items
+}
+
+func pinnedMessageInfosFromModel(
+	pins []*model.ConversationPin,
+) []dto.PinnedMessageInfo {
+	items := make([]dto.PinnedMessageInfo, 0, len(pins))
+	for _, pin := range pins {
+		if pin == nil || pin.Message == nil {
+			continue
+		}
+
+		items = append(items, dto.PinnedMessageInfo{
+			ID:                 pin.Message.ID.String(),
+			SenderUserID:       pin.Message.SenderUserID.String(),
+			SenderDisplayName:  pin.Message.SenderDisplayName,
+			SenderAvatarFileID: pin.Message.SenderAvatarFileID,
+			Type:               pin.Message.Type,
+			Content:            pin.Message.Content,
+			FileIDs:            append([]string(nil), pin.Message.FileIDs...),
+			SentAt:             pin.Message.SentAt.Format(time.RFC3339),
+			PinnedAt:           pin.PinnedAt.Format(time.RFC3339),
+		})
 	}
 	return items
 }

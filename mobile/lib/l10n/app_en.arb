@@ -935,6 +935,10 @@
     }
   },
   "chatPinnedMessageLabel": "PINNED MESSAGE",
+  "chatPinAction": "Pin",
+  "chatUnpinAction": "Unpin",
+  "chatPinFailed": "Failed to pin the message. Please try again.",
+  "chatUnpinFailed": "Failed to unpin the message. Please try again.",
   "chatDateToday": "Today",
   "chatDateYesterday": "Yesterday",
   "chatMessageDeleted": "Message deleted",

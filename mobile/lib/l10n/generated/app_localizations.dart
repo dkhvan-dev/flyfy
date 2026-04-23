@@ -4870,6 +4870,30 @@ abstract class AppLocalizations {
   /// **'PINNED MESSAGE'**
   String get chatPinnedMessageLabel;
 
+  /// No description provided for @chatPinAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get chatPinAction;
+
+  /// No description provided for @chatUnpinAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get chatUnpinAction;
+
+  /// No description provided for @chatPinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to pin the message. Please try again.'**
+  String get chatPinFailed;
+
+  /// No description provided for @chatUnpinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to unpin the message. Please try again.'**
+  String get chatUnpinFailed;
+
   /// No description provided for @chatDateToday.
   ///
   /// In en, this message translates to:

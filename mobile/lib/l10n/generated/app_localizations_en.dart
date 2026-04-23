@@ -2659,6 +2659,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatPinnedMessageLabel => 'PINNED MESSAGE';
 
   @override
+  String get chatPinAction => 'Pin';
+
+  @override
+  String get chatUnpinAction => 'Unpin';
+
+  @override
+  String get chatPinFailed => 'Failed to pin the message. Please try again.';
+
+  @override
+  String get chatUnpinFailed =>
+      'Failed to unpin the message. Please try again.';
+
+  @override
   String get chatDateToday => 'Today';
 
   @override
