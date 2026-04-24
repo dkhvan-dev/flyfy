@@ -695,6 +695,7 @@
   "editLocationLocked": "Место проведения нельзя изменить после публикации",
   "editPriceRestrictionHint": "Цену нельзя изменить, если записались другие участники",
   "myActivitiesTitle": "Мои активности",
+  "myStoriesTitle": "Мои истории",
   "myActivitiesEmpty": "У вас пока нет созданных активностей",
   "myActivitiesEmptyHint": "Создайте первую активность, и она появится здесь",
   "myActivitiesLoadFailed": "Не удалось загрузить ваши активности",

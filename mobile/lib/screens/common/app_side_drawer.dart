@@ -9,7 +9,7 @@ import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/locale_provider.dart';
 
-enum AppDrawerActiveItem { home, activities, myActivities }
+enum AppDrawerActiveItem { home, activities, myActivities, myStories }
 
 const Map<String, Map<String, String>> _localizedCountryNames = {
   'KZ': {'en': 'Kazakhstan', 'ru': 'Казахстан', 'kk': 'Қазақстан'},
@@ -274,6 +274,7 @@ class AppSideDrawer extends StatelessWidget {
     required this.onLanguageTap,
     required this.onHomeTap,
     required this.onMyActivitiesTap,
+    required this.onMyStoriesTap,
     required this.onActivitiesTap,
     required this.onLoginTap,
     required this.onLogoutTap,
@@ -290,6 +291,7 @@ class AppSideDrawer extends StatelessWidget {
   final VoidCallback onLanguageTap;
   final VoidCallback onHomeTap;
   final VoidCallback onMyActivitiesTap;
+  final VoidCallback onMyStoriesTap;
   final VoidCallback onActivitiesTap;
   final VoidCallback onLoginTap;
   final VoidCallback onLogoutTap;
@@ -631,6 +633,17 @@ class AppSideDrawer extends StatelessWidget {
                                   AppDrawerActiveItem.myActivities,
                               usePreferencePalette: true,
                               onTap: onMyActivitiesTap,
+                            ),
+                            SizedBox(height: layout.menuGap),
+                            _DrawerMenuItem(
+                              layout: layout,
+                              label: l10n.myStoriesTitle,
+                              icon: Icons.auto_stories_rounded,
+                              isActive:
+                                  activeItem ==
+                                  AppDrawerActiveItem.myStories,
+                              usePreferencePalette: true,
+                              onTap: onMyStoriesTap,
                             ),
                             SizedBox(height: layout.menuGap),
                             _DrawerMenuItem(

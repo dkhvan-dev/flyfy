@@ -3820,6 +3820,12 @@ abstract class AppLocalizations {
   /// **'My Activities'**
   String get myActivitiesTitle;
 
+  /// No description provided for @myStoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Stories'**
+  String get myStoriesTitle;
+
   /// No description provided for @myActivitiesEmpty.
   ///
   /// In en, this message translates to:

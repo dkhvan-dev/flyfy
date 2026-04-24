@@ -462,6 +462,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         onLanguageTap: () => _runDrawerAction(_showLanguageSheet),
         onHomeTap: () => _runDrawerAction(() async => context.go('/')),
         onMyActivitiesTap: () => _runDrawerAction(_openMyActivities),
+        onMyStoriesTap: () =>
+            _runDrawerAction(() async => context.push('/me/stories')),
         onActivitiesTap: () => _runDrawerAction(() async {}),
         onLoginTap: () => _runDrawerAction(
           () async => context.push('/login?from=/activities'),

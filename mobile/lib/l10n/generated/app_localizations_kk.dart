@@ -2056,6 +2056,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myActivitiesTitle => 'Менің белсенділіктерім';
 
   @override
+  String get myStoriesTitle => 'Менің тарихтарым';
+
+  @override
   String get myActivitiesEmpty => 'Сізде әлі жасалған белсенділіктер жоқ';
 
   @override

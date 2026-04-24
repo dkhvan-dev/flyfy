@@ -642,6 +642,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onLanguageTap: () => _runDrawerAction(_showLanguageSheet),
         onHomeTap: () => _runDrawerAction(() => context.go('/')),
         onMyActivitiesTap: () => _runDrawerAction(_openMyActivities),
+        onMyStoriesTap: () =>
+            _runDrawerAction(() => context.push('/me/stories')),
         onActivitiesTap: () => _runDrawerAction(_openActivities),
         onLoginTap: () => _runDrawerAction(() => context.push('/login')),
         onLogoutTap: () => _runDrawerAction(_confirmLogout),
@@ -2185,6 +2187,7 @@ class _HomeSideDrawer extends StatelessWidget {
     required this.onLanguageTap,
     required this.onHomeTap,
     required this.onMyActivitiesTap,
+    required this.onMyStoriesTap,
     required this.onActivitiesTap,
     required this.onLoginTap,
     required this.onLogoutTap,
@@ -2200,6 +2203,7 @@ class _HomeSideDrawer extends StatelessWidget {
   final VoidCallback onLanguageTap;
   final VoidCallback onHomeTap;
   final VoidCallback onMyActivitiesTap;
+  final VoidCallback onMyStoriesTap;
   final VoidCallback onActivitiesTap;
   final VoidCallback onLoginTap;
   final VoidCallback onLogoutTap;
@@ -2537,6 +2541,14 @@ class _HomeSideDrawer extends StatelessWidget {
                               icon: Icons.event_note_rounded,
                               usePreferencePalette: true,
                               onTap: onMyActivitiesTap,
+                            ),
+                            SizedBox(height: layout.menuGap),
+                            _DrawerMenuItem(
+                              layout: layout,
+                              label: l10n.myStoriesTitle,
+                              icon: Icons.auto_stories_rounded,
+                              usePreferencePalette: true,
+                              onTap: onMyStoriesTap,
                             ),
                             SizedBox(height: layout.menuGap),
                             _DrawerMenuItem(

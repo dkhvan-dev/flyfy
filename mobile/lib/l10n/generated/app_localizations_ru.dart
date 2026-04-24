@@ -2044,6 +2044,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myActivitiesTitle => 'Мои активности';
 
   @override
+  String get myStoriesTitle => 'Мои истории';
+
+  @override
   String get myActivitiesEmpty => 'У вас пока нет созданных активностей';
 
   @override

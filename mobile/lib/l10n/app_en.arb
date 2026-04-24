@@ -695,6 +695,7 @@
   "editLocationLocked": "Location cannot be changed after publication",
   "editPriceRestrictionHint": "Price cannot be changed if other participants have already joined",
   "myActivitiesTitle": "My Activities",
+  "myStoriesTitle": "My Stories",
   "myActivitiesEmpty": "You haven't created any activities yet",
   "myActivitiesEmptyHint": "Create your first activity and it will appear here",
   "myActivitiesLoadFailed": "Failed to load your activities",

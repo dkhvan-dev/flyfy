@@ -80,6 +80,11 @@ class AppRouter {
               _withAndroidBackSwipe(const StoriesScreen()),
         ),
         GoRoute(
+          path: '/me/stories',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const StoriesScreen(myOnly: true)),
+        ),
+        GoRoute(
           path: '/stories/create',
           builder: (context, state) {
             final initialStory = state.extra is StoryVm

@@ -17,7 +17,9 @@ import '../../providers/session_provider.dart';
 import '../common/app_side_drawer.dart';
 
 class StoriesScreen extends StatefulWidget {
-  const StoriesScreen({super.key});
+  const StoriesScreen({super.key, this.myOnly = false});
+
+  final bool myOnly;
 
   @override
   State<StoriesScreen> createState() => _StoriesScreenState();
@@ -86,15 +88,25 @@ class _StoriesScreenState extends State<StoriesScreen> {
     }
 
     try {
-      final stories = await _api.listStories(
-        search: _searchQuery,
-        categories: _selectedCategory == null
-            ? null
-            : <String>[_selectedCategory!],
-        place: _selectedPlace,
-        sort: _sort,
-        limit: 40,
-      );
+      final stories = widget.myOnly
+          ? await _api.listMyStories(
+              search: _searchQuery,
+              categories: _selectedCategory == null
+                  ? null
+                  : <String>[_selectedCategory!],
+              place: _selectedPlace,
+              sort: _sort,
+              limit: 40,
+            )
+          : await _api.listStories(
+              search: _searchQuery,
+              categories: _selectedCategory == null
+                  ? null
+                  : <String>[_selectedCategory!],
+              place: _selectedPlace,
+              sort: _sort,
+              limit: 40,
+            );
 
       if (!mounted) {
         return;
@@ -384,6 +396,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
         onHomeTap: () => _runDrawerAction(() async => context.go('/')),
         onMyActivitiesTap: () =>
             _runDrawerAction(() async => context.push('/me/activities')),
+        onMyStoriesTap: () =>
+            _runDrawerAction(() async => context.push('/me/stories')),
         onActivitiesTap: () =>
             _runDrawerAction(() async => context.push('/activities')),
         onLoginTap: () =>
@@ -411,7 +425,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
                   adaptive.scale(18),
                 ),
                 child: _StoriesTopBar(
-                  title: l10n.storiesDiscoverTitle,
+                  title: widget.myOnly
+                      ? l10n.myStoriesTitle
+                      : l10n.storiesDiscoverTitle,
                   onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
                   onNotificationsTap: () => context.push('/notifications'),
                 ),

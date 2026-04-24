@@ -2044,6 +2044,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myActivitiesTitle => 'My Activities';
 
   @override
+  String get myStoriesTitle => 'My Stories';
+
+  @override
   String get myActivitiesEmpty => 'You haven\'t created any activities yet';
 
   @override
