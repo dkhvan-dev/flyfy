@@ -1,15 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/network/dio_error_mapper.dart';
+import '../../core/network/file_api.dart';
 import '../../core/network/story_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
+import '../../features/stories/story_content_codec.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -18,10 +20,16 @@ import '../../providers/session_provider.dart';
 import 'stories_screen.dart';
 
 class StoryDetailsScreen extends StatefulWidget {
-  const StoryDetailsScreen({super.key, required this.slug, this.initialStory});
+  const StoryDetailsScreen({
+    super.key,
+    required this.slug,
+    this.initialStory,
+    this.initialCommentId,
+  });
 
   final String slug;
   final StoryVm? initialStory;
+  final String? initialCommentId;
 
   @override
   State<StoryDetailsScreen> createState() => _StoryDetailsScreenState();
@@ -30,7 +38,12 @@ class StoryDetailsScreen extends StatefulWidget {
 class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   final _storyApi = StoryApi();
   final _profileApi = ProfileApi();
+  final _scrollController = ScrollController();
   final _commentController = TextEditingController();
+  final _commentFocusNode = FocusNode();
+  final _commentsSectionKey = GlobalKey();
+  final _commentComposerKey = GlobalKey();
+  final Map<String, GlobalKey> _commentCardKeys = <String, GlobalKey>{};
 
   StoryDetailVm? _detail;
   UserProfileVm? _authorProfile;
@@ -40,7 +53,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   bool _isSharing = false;
   bool _isFollowing = false;
   bool _didTrackView = false;
+  bool _didHandleInitialCommentJump = false;
   String? _errorMessage;
+  String? _editingCommentId;
 
   @override
   void initState() {
@@ -58,7 +73,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _commentController.dispose();
+    _commentFocusNode.dispose();
     super.dispose();
   }
 
@@ -82,6 +99,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       });
 
       await Future.wait<void>([_loadAuthorProfile(), _trackViewIfNeeded()]);
+      await _handleInitialCommentJump();
     } on DioException catch (e) {
       if (!mounted) {
         return;
@@ -124,6 +142,88 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     } catch (_) {
       // Soft failure: story should still render.
     }
+  }
+
+  GlobalKey _commentKeyFor(String commentId) {
+    return _commentCardKeys.putIfAbsent(commentId, GlobalKey.new);
+  }
+
+  Future<void> _handleInitialCommentJump() async {
+    final targetCommentId = (widget.initialCommentId ?? '').trim();
+    if (_didHandleInitialCommentJump || targetCommentId.isEmpty) {
+      return;
+    }
+
+    var detail = _detail;
+    if (detail == null) {
+      return;
+    }
+
+    if (!detail.comments.any((comment) => comment.id == targetCommentId)) {
+      try {
+        final comments = await _storyApi.listComments(
+          detail.story.id,
+          limit: 100,
+        );
+        if (!mounted) {
+          return;
+        }
+        if (comments.any((comment) => comment.id == targetCommentId)) {
+          setState(() {
+            _detail = detail!.copyWith(comments: comments);
+          });
+          detail = _detail;
+        }
+      } catch (_) {
+        // If the deep-linked comment is older than the initial page and the
+        // fetch fails, the screen should still open normally.
+      }
+    }
+
+    _didHandleInitialCommentJump = true;
+    if (!(detail?.comments.any((comment) => comment.id == targetCommentId) ??
+        false)) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToComment(targetCommentId);
+    });
+  }
+
+  Future<void> _scrollToComments({bool focusComposer = false}) async {
+    final targetContext = _commentComposerKey.currentContext ??
+        _commentsSectionKey.currentContext;
+    if (targetContext != null) {
+      await Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+        alignment: focusComposer ? 0.12 : 0.04,
+      );
+    }
+
+    if (focusComposer && mounted) {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      if (mounted) {
+        _commentFocusNode.requestFocus();
+      }
+    }
+  }
+
+  Future<void> _scrollToComment(String commentId) async {
+    final targetContext = _commentKeyFor(commentId).currentContext;
+    if (targetContext == null) {
+      await _scrollToComments();
+      return;
+    }
+
+    await Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 360),
+      curve: Curves.easeOutCubic,
+      alignment: 0.14,
+    );
   }
 
   Future<void> _trackViewIfNeeded() async {
@@ -221,7 +321,6 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       if (!mounted) {
         return;
       }
-      await Clipboard.setData(ClipboardData(text: shareUrl));
       setState(() {
         _detail = detail.copyWith(
           story: detail.story.copyWith(
@@ -233,9 +332,11 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.storyLinkCopied)));
+      await _shareTextViaSystemSheet(
+        text: shareUrl,
+        title: detail.story.title,
+        subject: detail.story.title,
+      );
     } on DioException catch (e) {
       if (!mounted) {
         return;
@@ -244,6 +345,15 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         context,
         title: l10n.error,
         message: DioErrorMapper.toMessage(e),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.storyShareFailed,
       );
     } finally {
       if (mounted) {
@@ -307,13 +417,22 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
   Future<void> _submitComment() async {
     final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthProvider>();
+    final currentUserId =
+        (context.read<SessionProvider>().profile?.userId ?? '').trim();
     final detail = _detail;
     final body = _commentController.text.trim();
+    final editingCommentId = _editingCommentId;
     if (detail == null || body.isEmpty || _isSubmittingComment) {
       return;
     }
     if (auth.state != AuthState.authenticated) {
       context.push('/login?from=/stories/${Uri.encodeComponent(widget.slug)}');
+      return;
+    }
+    if (editingCommentId == null && _commentLockEndsAt(currentUserId) != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.storyCommentRateLimit)));
       return;
     }
 
@@ -322,18 +441,39 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     });
 
     try {
-      final created = await _storyApi.createComment(detail.story.id, body);
+      final result = editingCommentId == null
+          ? await _storyApi.createComment(detail.story.id, body)
+          : await _storyApi.updateComment(
+              detail.story.id,
+              editingCommentId,
+              body,
+            );
       if (!mounted) {
         return;
       }
       _commentController.clear();
-      final nextComments = [created, ...detail.comments];
-      final nextStory = detail.story.copyWith(
-        stats: detail.story.stats.copyWith(comments: nextComments.length),
-      );
+      _commentFocusNode.unfocus();
+      final nextComments = editingCommentId == null
+          ? [result, ...detail.comments]
+          : detail.comments
+              .map((comment) => comment.id == result.id ? result : comment)
+              .toList(growable: false);
+      final nextStory = editingCommentId == null
+          ? detail.story.copyWith(
+              stats: detail.story.stats.copyWith(
+                comments: detail.story.stats.comments + 1,
+              ),
+            )
+          : detail.story;
       setState(() {
+        _editingCommentId = null;
         _detail = detail.copyWith(story: nextStory, comments: nextComments);
       });
+      if (editingCommentId == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToComment(result.id);
+        });
+      }
     } on DioException catch (e) {
       if (!mounted) {
         return;
@@ -350,6 +490,165 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         });
       }
     }
+  }
+
+  Future<void> _toggleCommentLike(StoryCommentVm comment) async {
+    final l10n = AppLocalizations.of(context)!;
+    final auth = context.read<AuthProvider>();
+    final detail = _detail;
+    if (detail == null) {
+      return;
+    }
+    if (auth.state != AuthState.authenticated) {
+      context.push('/login?from=/stories/${Uri.encodeComponent(widget.slug)}');
+      return;
+    }
+
+    try {
+      final result = comment.likedByMe
+          ? await _storyApi.unlikeComment(detail.story.id, comment.id)
+          : await _storyApi.likeComment(detail.story.id, comment.id);
+      if (!mounted) {
+        return;
+      }
+      final nextComments = detail.comments
+          .map(
+            (item) => item.id == comment.id
+                ? item.copyWith(likes: result.$1, likedByMe: result.$2)
+                : item,
+          )
+          .toList(growable: false);
+      setState(() {
+        _detail = detail.copyWith(comments: nextComments);
+      });
+    } on DioException catch (e) {
+      if (!mounted) {
+        return;
+      }
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: DioErrorMapper.toMessage(e),
+      );
+    }
+  }
+
+  Future<void> _shareComment(StoryCommentVm comment) async {
+    final l10n = AppLocalizations.of(context)!;
+    final detail = _detail;
+    if (detail == null) {
+      return;
+    }
+
+    final shareUrl = comment.shareUrl.trim().isNotEmpty
+        ? comment.shareUrl.trim()
+        : '${detail.story.shareUrl}?comment=${comment.id}';
+    try {
+      await _shareTextViaSystemSheet(
+        text: shareUrl,
+        title: detail.story.title,
+        subject: detail.story.title,
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      await showErrorDialog(
+        context,
+        title: l10n.error,
+        message: l10n.storyCommentShareFailed,
+      );
+    }
+  }
+
+  Rect? _sharePositionOrigin() {
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return null;
+    }
+    return renderObject.localToGlobal(Offset.zero) & renderObject.size;
+  }
+
+  Future<void> _shareTextViaSystemSheet({
+    required String text,
+    String? title,
+    String? subject,
+  }) async {
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        title: title,
+        subject: subject,
+        sharePositionOrigin: _sharePositionOrigin(),
+      ),
+    );
+  }
+
+  void _startEditingComment(StoryCommentVm comment) {
+    setState(() {
+      _editingCommentId = comment.id;
+      _commentController.text = comment.body;
+      _commentController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _commentController.text.length),
+      );
+    });
+    _scrollToComments(focusComposer: true);
+  }
+
+  void _cancelCommentEditing() {
+    setState(() {
+      _editingCommentId = null;
+      _commentController.clear();
+    });
+    _commentFocusNode.unfocus();
+  }
+
+  StoryCommentVm? _latestRecentOwnComment(String currentUserId) {
+    final normalizedUserId = currentUserId.trim();
+    if (normalizedUserId.isEmpty) {
+      return null;
+    }
+    final detail = _detail;
+    if (detail == null) {
+      return null;
+    }
+
+    final now = DateTime.now();
+    StoryCommentVm? latest;
+    for (final comment in detail.comments) {
+      if (comment.author.userId.trim() != normalizedUserId) {
+        continue;
+      }
+      if (!comment.createdAt.add(const Duration(hours: 3)).isAfter(now)) {
+        continue;
+      }
+      if (latest == null || comment.createdAt.isAfter(latest.createdAt)) {
+        latest = comment;
+      }
+    }
+    return latest;
+  }
+
+  DateTime? _commentLockEndsAt(String currentUserId) {
+    final latest = _latestRecentOwnComment(currentUserId);
+    if (latest == null) {
+      return null;
+    }
+    return latest.createdAt.add(const Duration(hours: 3)).toLocal();
+  }
+
+  String _formatCommentCooldownLabel(
+    BuildContext context,
+    DateTime lockEndsAt,
+  ) {
+    final localTime = TimeOfDay.fromDateTime(lockEndsAt);
+    final formattedTime = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(localTime);
+    return AppLocalizations.of(
+      context,
+    )!
+        .storyCommentCooldownUntil(formattedTime);
   }
 
   Future<void> _deleteComment(StoryCommentVm comment) async {
@@ -406,9 +705,15 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
           .where((item) => item.id != comment.id)
           .toList(growable: false);
       final nextStory = detail.story.copyWith(
-        stats: detail.story.stats.copyWith(comments: nextComments.length),
+        stats: detail.story.stats.copyWith(
+          comments: (detail.story.stats.comments - 1).clamp(0, 1 << 31),
+        ),
       );
       setState(() {
+        if (_editingCommentId == comment.id) {
+          _editingCommentId = null;
+          _commentController.clear();
+        }
         _detail = detail.copyWith(story: nextStory, comments: nextComments);
       });
     } on DioException catch (e) {
@@ -428,11 +733,18 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
     if (story == null) {
       return;
     }
-    final refreshed = await context.push<bool>(
+    final result = await context.push<Object?>(
       '/stories/${story.id}/edit',
       extra: story,
     );
-    if (refreshed == true && mounted) {
+    if (result is! StoryVm || !mounted) {
+      return;
+    }
+    final refreshed = result;
+    if (mounted) {
+      setState(() {
+        _detail = _detail?.copyWith(story: refreshed);
+      });
       await _loadDetail(silent: true);
       if (!mounted) {
         return;
@@ -515,6 +827,9 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
         (context.watch<SessionProvider>().profile?.userId ?? '').trim();
     final story = detail?.story;
     final isAuthor = story?.isOwnedBy(currentUserId) ?? false;
+    final commentLockEndsAt =
+        _editingCommentId == null ? _commentLockEndsAt(currentUserId) : null;
+    final isCommentComposerLocked = commentLockEndsAt != null;
 
     return Scaffold(
       backgroundColor: StoryPalette.backgroundDeep,
@@ -553,6 +868,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                       builder: (context) {
                         final currentDetail = detail!;
                         return CustomScrollView(
+                          controller: _scrollController,
                           physics: const BouncingScrollPhysics(),
                           slivers: [
                             SliverToBoxAdapter(
@@ -576,7 +892,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Transform.translate(
-                                      offset: Offset(0, -adaptive.scale(18)),
+                                      offset: Offset(0, adaptive.scale(8)),
                                       child: _AuthorCard(
                                         story: story,
                                         authorProfile: _authorProfile,
@@ -590,20 +906,49 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                                         onFollowTap: _toggleFollow,
                                         onEditTap: _editStory,
                                         onDeleteTap: _deleteStory,
+                                        onViewsTap: null,
+                                        onLikesTap: _toggleLike,
+                                        onCommentsTap: () => _scrollToComments(
+                                            focusComposer: true),
+                                        onSharesTap: _shareStory,
                                       ),
                                     ),
-                                    SizedBox(height: adaptive.scale(4)),
+                                    SizedBox(height: adaptive.scale(12)),
                                     _StoryArticle(story: story),
                                     SizedBox(height: adaptive.scale(24)),
                                     _CommentComposer(
+                                      key: _commentComposerKey,
                                       controller: _commentController,
+                                      focusNode: _commentFocusNode,
                                       isSubmitting: _isSubmittingComment,
+                                      enabled: !isCommentComposerLocked,
+                                      isEditing: _editingCommentId != null,
+                                      helperText: isCommentComposerLocked
+                                          ? _formatCommentCooldownLabel(
+                                              context,
+                                              commentLockEndsAt,
+                                            )
+                                          : null,
+                                      editingTitle: _editingCommentId == null
+                                          ? null
+                                          : l10n.storyCommentEditingTitle,
+                                      submitLabel: _editingCommentId == null
+                                          ? null
+                                          : l10n.storyCommentSaveAction,
+                                      onCancelEdit: _editingCommentId == null
+                                          ? null
+                                          : _cancelCommentEditing,
                                       onSubmit: _submitComment,
                                     ),
                                     SizedBox(height: adaptive.scale(18)),
                                     _CommentsSection(
+                                      key: _commentsSectionKey,
                                       comments: currentDetail.comments,
+                                      commentKeyForId: _commentKeyFor,
+                                      onEditComment: _startEditingComment,
                                       onDeleteComment: _deleteComment,
+                                      onLikeComment: _toggleCommentLike,
+                                      onShareComment: _shareComment,
                                     ),
                                     SizedBox(height: adaptive.scale(24)),
                                     _RelatedStoriesSection(
@@ -625,21 +970,6 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
                     ),
         ),
       ),
-      floatingActionButton: story == null
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _toggleLike,
-              backgroundColor: story.likedByViewer
-                  ? AppColors.accent
-                  : const Color(0xFF2A180C),
-              foregroundColor: Colors.white,
-              icon: Icon(
-                story.likedByViewer
-                    ? Icons.favorite_rounded
-                    : Icons.favorite_border_rounded,
-              ),
-              label: Text(formatStoryCountCompact(story.stats.likes)),
-            ),
     );
   }
 }
@@ -869,6 +1199,10 @@ class _AuthorCard extends StatelessWidget {
     required this.onFollowTap,
     required this.onEditTap,
     required this.onDeleteTap,
+    required this.onViewsTap,
+    required this.onLikesTap,
+    required this.onCommentsTap,
+    required this.onSharesTap,
   });
 
   final StoryVm story;
@@ -879,6 +1213,10 @@ class _AuthorCard extends StatelessWidget {
   final VoidCallback onFollowTap;
   final VoidCallback onEditTap;
   final VoidCallback onDeleteTap;
+  final VoidCallback? onViewsTap;
+  final VoidCallback? onLikesTap;
+  final VoidCallback onCommentsTap;
+  final VoidCallback onSharesTap;
 
   @override
   Widget build(BuildContext context) {
@@ -956,6 +1294,7 @@ class _AuthorCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
+                  flex: 6,
                   child: OutlinedButton(
                     onPressed: onEditTap,
                     style: OutlinedButton.styleFrom(
@@ -969,11 +1308,17 @@ class _AuthorCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    child: Text(l10n.storyEditAction),
+                    child: Text(
+                      l10n.storyEditAction,
+                      maxLines: 1,
+                      overflow: TextOverflow.fade,
+                      softWrap: false,
+                    ),
                   ),
                 ),
                 SizedBox(width: adaptive.scale(10)),
                 Expanded(
+                  flex: 4,
                   child: TextButton(
                     onPressed: onDeleteTap,
                     style: TextButton.styleFrom(
@@ -1022,13 +1367,18 @@ class _AuthorCard extends StatelessWidget {
                     icon: Icons.remove_red_eye_outlined,
                     number: formatStoryCountCompact(story.stats.views),
                     label: l10n.storyStatViews,
+                    onTap: onViewsTap,
                   ),
                 ),
                 Expanded(
                   child: _StatItem(
-                    icon: Icons.favorite_border_rounded,
+                    icon: story.likedByViewer
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
                     number: formatStoryCountCompact(story.stats.likes),
                     label: l10n.storyStatLikes,
+                    onTap: onLikesTap,
+                    active: story.likedByViewer,
                   ),
                 ),
                 Expanded(
@@ -1036,13 +1386,7 @@ class _AuthorCard extends StatelessWidget {
                     icon: Icons.mode_comment_outlined,
                     number: formatStoryCountCompact(story.stats.comments),
                     label: l10n.storyStatComments,
-                  ),
-                ),
-                Expanded(
-                  child: _StatItem(
-                    icon: Icons.share_outlined,
-                    number: formatStoryCountCompact(story.stats.shares),
-                    label: l10n.storyStatShares,
+                    onTap: onCommentsTap,
                   ),
                 ),
               ],
@@ -1059,39 +1403,60 @@ class _StatItem extends StatelessWidget {
     required this.icon,
     required this.number,
     required this.label,
+    this.onTap,
+    this.active = false,
   });
 
   final IconData icon;
   final String number;
   final String label;
+  final VoidCallback? onTap;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    return Column(
-      children: [
-        Icon(icon, color: StoryPalette.textSoft, size: adaptive.scale(18)),
-        SizedBox(height: adaptive.scale(6)),
-        Text(
-          number,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.82),
-            fontSize: adaptive.scale(10),
-            fontWeight: FontWeight.w700,
+    final iconColor = active ? AppColors.accent : StoryPalette.textSoft;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(adaptive.radius(14)),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: adaptive.scale(6),
+            horizontal: adaptive.scale(4),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: iconColor, size: adaptive.scale(18)),
+              SizedBox(height: adaptive.scale(6)),
+              Text(
+                number,
+                style: TextStyle(
+                  color: active
+                      ? AppColors.accent
+                      : Colors.white.withValues(alpha: 0.82),
+                  fontSize: adaptive.scale(10),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: adaptive.scale(2)),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: active ? AppColors.accent : StoryPalette.textMuted,
+                  fontSize: adaptive.scale(8),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.7,
+                ),
+              ),
+            ],
           ),
         ),
-        SizedBox(height: adaptive.scale(2)),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: StoryPalette.textMuted,
-            fontSize: adaptive.scale(8),
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.7,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1105,27 +1470,37 @@ class _StoryArticle extends StatelessWidget {
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     final content = (story.content ?? '').trim();
-    final paragraphs = content.isEmpty
-        ? <String>[story.excerpt]
-        : content
-            .split(RegExp(r'\n{2,}'))
-            .map((part) => part.trim())
-            .where((part) => part.isNotEmpty)
-            .toList(growable: false);
+    final parts = content.isEmpty
+        ? <StoryContentPart>[StoryContentPart.text(story.excerpt)]
+        : parseStoryContentParts(content);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final paragraph in paragraphs) ...[
-          Text(
-            paragraph,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.84),
-              fontSize: adaptive.scale(15),
-              height: 1.8,
+        for (final part in parts) ...[
+          if (part.isText)
+            ...((part.text ?? '')
+                .split(RegExp(r'\n{2,}'))
+                .map((item) => item.trim())
+                .where((item) => item.isNotEmpty)
+                .map(
+                  (paragraph) => Padding(
+                    padding: EdgeInsets.only(bottom: adaptive.scale(16)),
+                    child: Text(
+                      paragraph,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.84),
+                        fontSize: adaptive.scale(15),
+                        height: 1.8,
+                      ),
+                    ),
+                  ),
+                )),
+          if (!part.isText && (part.imageFileId ?? '').trim().isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(bottom: adaptive.scale(18)),
+              child: _StoryArticleImage(fileId: part.imageFileId!.trim()),
             ),
-          ),
-          SizedBox(height: adaptive.scale(16)),
         ],
         if (story.tags.isNotEmpty) ...[
           SizedBox(height: adaptive.scale(8)),
@@ -1173,15 +1548,68 @@ class _StoryArticle extends StatelessWidget {
   }
 }
 
+class _StoryArticleImage extends StatelessWidget {
+  const _StoryArticleImage({required this.fileId});
+
+  final String fileId;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    final imageUrl = resolvePublicFileContentUrl(fileId);
+    if (imageUrl == null) {
+      return const SizedBox.shrink();
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(adaptive.radius(22)),
+      child: AspectRatio(
+        aspectRatio: 16 / 10,
+        child: DecoratedBox(
+          decoration: const BoxDecoration(color: Color(0xFF2A1708)),
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) {
+              return const Center(
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  color: Colors.white54,
+                  size: 30,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CommentComposer extends StatelessWidget {
   const _CommentComposer({
+    super.key,
     required this.controller,
+    required this.focusNode,
     required this.isSubmitting,
+    required this.enabled,
+    required this.isEditing,
+    required this.helperText,
+    required this.editingTitle,
+    required this.submitLabel,
+    required this.onCancelEdit,
     required this.onSubmit,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final bool isSubmitting;
+  final bool enabled;
+  final bool isEditing;
+  final String? helperText;
+  final String? editingTitle;
+  final String? submitLabel;
+  final VoidCallback? onCancelEdit;
   final VoidCallback onSubmit;
 
   @override
@@ -1189,61 +1617,134 @@ class _CommentComposer extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Container(
+        if (editingTitle != null) ...[
+          Container(
+            margin: EdgeInsets.only(bottom: adaptive.scale(10)),
+            padding: EdgeInsets.symmetric(
+              horizontal: adaptive.scale(14),
+              vertical: adaptive.scale(10),
+            ),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(adaptive.radius(20)),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            ),
-            child: TextField(
-              controller: controller,
-              minLines: 1,
-              maxLines: 4,
-              style: TextStyle(
-                color: StoryPalette.text,
-                fontSize: adaptive.scale(15),
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: l10n.storyCommentHint,
-                hintStyle: TextStyle(
-                  color: StoryPalette.textMuted,
-                  fontSize: adaptive.scale(15),
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: adaptive.scale(16),
-                  vertical: adaptive.scale(14),
-                ),
+              color: AppColors.accent.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(adaptive.radius(16)),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.16),
               ),
             ),
-          ),
-        ),
-        SizedBox(width: adaptive.scale(10)),
-        ElevatedButton(
-          onPressed: isSubmitting ? null : onSubmit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            foregroundColor: Colors.white,
-            minimumSize: Size(adaptive.scale(54), adaptive.scale(54)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(adaptive.radius(18)),
-            ),
-          ),
-          child: isSubmitting
-              ? SizedBox(
-                  width: adaptive.scale(18),
-                  height: adaptive.scale(18),
-                  child: const CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    editingTitle!,
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontSize: adaptive.scale(13),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                )
-              : Icon(Icons.send_rounded, size: adaptive.scale(18)),
+                ),
+                if (onCancelEdit != null)
+                  TextButton(
+                    onPressed: onCancelEdit,
+                    style: TextButton.styleFrom(
+                      foregroundColor: StoryPalette.textSoft,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: adaptive.scale(8),
+                        vertical: adaptive.scale(4),
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(l10n.cancel),
+                  ),
+              ],
+            ),
+          ),
+        ],
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(adaptive.radius(20)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+                child: TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  enabled: enabled || isEditing,
+                  minLines: 1,
+                  maxLines: 4,
+                  style: TextStyle(
+                    color: StoryPalette.text,
+                    fontSize: adaptive.scale(15),
+                  ),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: l10n.storyCommentHint,
+                    hintStyle: TextStyle(
+                      color: StoryPalette.textMuted,
+                      fontSize: adaptive.scale(15),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: adaptive.scale(16),
+                      vertical: adaptive.scale(14),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: adaptive.scale(10)),
+            ElevatedButton(
+              onPressed:
+                  isSubmitting || (!enabled && !isEditing) ? null : onSubmit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+                minimumSize: Size(adaptive.scale(54), adaptive.scale(54)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(adaptive.radius(18)),
+                ),
+              ),
+              child: isSubmitting
+                  ? SizedBox(
+                      width: adaptive.scale(18),
+                      height: adaptive.scale(18),
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : isEditing
+                      ? Text(
+                          submitLabel ?? l10n.storyCommentSaveAction,
+                          style: TextStyle(
+                            fontSize: adaptive.scale(13),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        )
+                      : Icon(Icons.send_rounded, size: adaptive.scale(18)),
+            ),
+          ],
         ),
+        if ((helperText ?? '').trim().isNotEmpty) ...[
+          SizedBox(height: adaptive.scale(8)),
+          Text(
+            helperText!,
+            style: TextStyle(
+              color: StoryPalette.textMuted,
+              fontSize: adaptive.scale(12),
+              height: 1.4,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1251,12 +1752,21 @@ class _CommentComposer extends StatelessWidget {
 
 class _CommentsSection extends StatelessWidget {
   const _CommentsSection({
+    super.key,
     required this.comments,
+    required this.commentKeyForId,
+    required this.onEditComment,
     required this.onDeleteComment,
+    required this.onLikeComment,
+    required this.onShareComment,
   });
 
   final List<StoryCommentVm> comments;
+  final GlobalKey Function(String commentId) commentKeyForId;
+  final ValueChanged<StoryCommentVm> onEditComment;
   final ValueChanged<StoryCommentVm> onDeleteComment;
+  final ValueChanged<StoryCommentVm> onLikeComment;
+  final ValueChanged<StoryCommentVm> onShareComment;
 
   @override
   Widget build(BuildContext context) {
@@ -1288,9 +1798,14 @@ class _CommentsSection extends StatelessWidget {
             children: [
               for (final comment in comments) ...[
                 _CommentCard(
+                  key: commentKeyForId(comment.id),
                   comment: comment,
+                  onEdit:
+                      comment.editable ? () => onEditComment(comment) : null,
                   onDelete:
-                      comment.editable ? () => onDeleteComment(comment) : null,
+                      comment.deletable ? () => onDeleteComment(comment) : null,
+                  onLike: () => onLikeComment(comment),
+                  onShare: () => onShareComment(comment),
                 ),
                 SizedBox(height: adaptive.scale(12)),
               ],
@@ -1302,9 +1817,19 @@ class _CommentsSection extends StatelessWidget {
 }
 
 class _CommentCard extends StatelessWidget {
-  const _CommentCard({required this.comment, this.onDelete});
+  const _CommentCard({
+    super.key,
+    required this.comment,
+    required this.onLike,
+    required this.onShare,
+    this.onEdit,
+    this.onDelete,
+  });
 
   final StoryCommentVm comment;
+  final VoidCallback onLike;
+  final VoidCallback onShare;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   @override
@@ -1348,18 +1873,19 @@ class _CommentCard extends StatelessWidget {
                         fontSize: adaptive.scale(11),
                       ),
                     ),
+                    if (comment.edited) ...[
+                      SizedBox(height: adaptive.scale(2)),
+                      Text(
+                        '• ${AppLocalizations.of(context)!.chatEditedLabel}',
+                        style: TextStyle(
+                          color: StoryPalette.textMuted,
+                          fontSize: adaptive.scale(11),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              if (onDelete != null)
-                IconButton(
-                  onPressed: onDelete,
-                  icon: Icon(
-                    Icons.delete_outline_rounded,
-                    color: StoryPalette.textMuted,
-                    size: adaptive.scale(18),
-                  ),
-                ),
             ],
           ),
           SizedBox(height: adaptive.scale(10)),
@@ -1371,7 +1897,89 @@ class _CommentCard extends StatelessWidget {
               height: 1.5,
             ),
           ),
+          SizedBox(height: adaptive.scale(12)),
+          Wrap(
+            spacing: adaptive.scale(10),
+            runSpacing: adaptive.scale(10),
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _CommentActionButton(
+                icon: comment.likedByMe
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                label: formatStoryCountCompact(comment.likes),
+                accent: comment.likedByMe,
+                onTap: onLike,
+              ),
+              _CommentActionButton(
+                icon: Icons.share_outlined,
+                label: AppLocalizations.of(context)!.storyCommentShareAction,
+                onTap: onShare,
+              ),
+              if (onEdit != null)
+                _CommentActionButton(
+                  icon: Icons.edit_outlined,
+                  label: AppLocalizations.of(context)!.storyEditAction,
+                  onTap: onEdit!,
+                ),
+              if (onDelete != null)
+                _CommentActionButton(
+                  icon: Icons.delete_outline_rounded,
+                  label: AppLocalizations.of(context)!.storyDeleteCommentAction,
+                  onTap: onDelete!,
+                ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _CommentActionButton extends StatelessWidget {
+  const _CommentActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.accent = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    final color = accent ? AppColors.accent : StoryPalette.textMuted;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: adaptive.scale(10),
+            vertical: adaptive.scale(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: adaptive.scale(15)),
+              SizedBox(width: adaptive.scale(6)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: adaptive.scale(12),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

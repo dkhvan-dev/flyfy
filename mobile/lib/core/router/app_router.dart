@@ -106,11 +106,16 @@ class AppRouter {
           path: '/stories/:slug',
           builder: (context, state) {
             final slug = state.pathParameters['slug'] ?? '';
+            final initialCommentId = state.uri.queryParameters['comment'];
             final initialStory = state.extra is StoryVm
                 ? state.extra! as StoryVm
                 : null;
             return _withAndroidBackSwipe(
-              StoryDetailsScreen(slug: slug, initialStory: initialStory),
+              StoryDetailsScreen(
+                slug: slug,
+                initialStory: initialStory,
+                initialCommentId: initialCommentId,
+              ),
             );
           },
         ),

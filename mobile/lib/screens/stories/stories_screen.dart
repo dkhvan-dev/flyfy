@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/story_api.dart';
+import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../features/stories/story_ui.dart';
@@ -220,10 +221,47 @@ class _StoriesScreenState extends State<StoriesScreen> {
       return;
     }
 
-    final result = await context.push<bool>('/stories/create');
-    if (result == true && mounted) {
-      await _loadStories(showLoader: false);
+    final result = await context.push<StoryVm>('/stories/create');
+    if (result != null && mounted) {
+      _upsertStory(result);
+      unawaited(_loadStories(showLoader: false));
     }
+  }
+
+  void _upsertStory(StoryVm story) {
+    if (!story.isPublished || !_matchesActiveFilters(story)) {
+      return;
+    }
+    setState(() {
+      final next = _stories
+          .where((item) => item.id != story.id)
+          .toList(growable: true);
+      next.insert(0, story);
+      next.sort((a, b) => b.sortDate.compareTo(a.sortDate));
+      _stories = next;
+    });
+  }
+
+  bool _matchesActiveFilters(StoryVm story) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      final haystack =
+          '${story.title} ${story.excerpt} ${story.author.preferredName} ${story.placeName ?? ''}'
+              .toLowerCase();
+      if (!haystack.contains(query)) {
+        return false;
+      }
+    }
+    if ((_selectedCategory ?? '').trim().isNotEmpty &&
+        story.category.trim().toUpperCase() !=
+            _selectedCategory!.trim().toUpperCase()) {
+      return false;
+    }
+    if ((_selectedPlace ?? '').trim().isNotEmpty &&
+        (story.placeName ?? '').trim() != _selectedPlace!.trim()) {
+      return false;
+    }
+    return true;
   }
 
   Future<void> _openStory(StoryVm story) async {
@@ -352,22 +390,12 @@ class _StoriesScreenState extends State<StoriesScreen> {
             _runDrawerAction(() async => context.push('/login?from=/stories')),
         onLogoutTap: () => _runDrawerAction(_confirmLogout),
       ),
-      bottomNavigationBar: StoriesBottomNavBar(
-        active: StoriesNavItem.stories,
-        onItemTap: (item) {
-          switch (item) {
-            case StoriesNavItem.home:
-              context.go('/');
-            case StoriesNavItem.activities:
-              context.push('/activities');
-            case StoriesNavItem.stories:
-              break;
-            case StoriesNavItem.chats:
-              context.push('/chats');
-            case StoriesNavItem.profile:
-              context.push('/profile');
-          }
-        },
+      bottomNavigationBar: CreateActionBottomNavigationBar(
+        onHomeTap: () => context.go('/'),
+        onQrTap: () => context.push('/qr'),
+        onCreateTap: _openCreateStory,
+        onServicesTap: () => context.push('/services'),
+        onChatsTap: () => context.push('/chats'),
       ),
       body: DecoratedBox(
         decoration: storyScreenBackground(),
@@ -437,14 +465,6 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               },
                             ),
                             SizedBox(height: adaptive.scale(18)),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: _ShareYourStoryButton(
-                                label: l10n.storyCreateCta,
-                                onTap: _openCreateStory,
-                              ),
-                            ),
-                            SizedBox(height: adaptive.scale(18)),
                             if (_isLoading)
                               const _StoriesLoadingState()
                             else if (_errorMessage != null)
@@ -457,8 +477,6 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               _StoriesEmptyState(
                                 title: l10n.storyEmptyTitle,
                                 subtitle: l10n.storyEmptySubtitle,
-                                actionLabel: l10n.storyCreateFirst,
-                                onActionTap: _openCreateStory,
                               )
                             else ...[
                               if (_isRefreshing)
@@ -699,43 +717,6 @@ class _StoriesSortRow extends StatelessWidget {
             SizedBox(width: adaptive.scale(22)),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _ShareYourStoryButton extends StatelessWidget {
-  const _ShareYourStoryButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final adaptive = StoryAdaptive.of(context);
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: Colors.white,
-        minimumSize: Size(adaptive.scale(180), adaptive.scale(54)),
-        padding: EdgeInsets.symmetric(
-          horizontal: adaptive.scale(20),
-          vertical: adaptive.scale(14),
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(adaptive.radius(999)),
-        ),
-        elevation: 0,
-      ),
-      icon: Icon(Icons.add_rounded, size: adaptive.scale(18)),
-      label: Text(
-        label,
-        style: TextStyle(
-          fontSize: adaptive.scale(15),
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.6,
-        ),
       ),
     );
   }
@@ -987,17 +968,10 @@ class _StoriesErrorState extends StatelessWidget {
 }
 
 class _StoriesEmptyState extends StatelessWidget {
-  const _StoriesEmptyState({
-    required this.title,
-    required this.subtitle,
-    required this.actionLabel,
-    required this.onActionTap,
-  });
+  const _StoriesEmptyState({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
-  final String actionLabel;
-  final VoidCallback onActionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1042,19 +1016,6 @@ class _StoriesEmptyState extends StatelessWidget {
               fontSize: adaptive.scale(15),
               height: 1.45,
             ),
-          ),
-          SizedBox(height: adaptive.scale(18)),
-          ElevatedButton(
-            onPressed: onActionTap,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
-              minimumSize: Size(double.infinity, adaptive.scale(54)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(adaptive.radius(999)),
-              ),
-            ),
-            child: Text(actionLabel),
           ),
         ],
       ),

@@ -222,6 +222,21 @@ func (h *Handler) handleStoryActions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+		if len(parts) == 4 && parts[3] == "likes" {
+			commentID, parseErr := uuid.Parse(parts[2])
+			if parseErr != nil {
+				writeError(w, http.StatusBadRequest, "invalid comment id")
+				return
+			}
+			if r.Method == http.MethodPost {
+				h.LikeComment(w, r, storyID, commentID)
+				return
+			}
+			if r.Method == http.MethodDelete {
+				h.UnlikeComment(w, r, storyID, commentID)
+				return
+			}
+		}
 	case "share":
 		if len(parts) == 2 && r.Method == http.MethodPost {
 			h.ShareStory(w, r, storyID)
@@ -387,6 +402,32 @@ func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request, storyID 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *Handler) LikeComment(w http.ResponseWriter, r *http.Request, storyID uuid.UUID, commentID uuid.UUID) {
+	count, likedByMe, err := h.useCase.LikeComment(r.Context(), SubjectFromContext(r.Context()), storyID, commentID)
+	if err != nil {
+		h.writeUseCaseError(w, err, "failed to like comment")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.CommentLikeResponse{
+		Likes:     count,
+		LikedByMe: likedByMe,
+	})
+}
+
+func (h *Handler) UnlikeComment(w http.ResponseWriter, r *http.Request, storyID uuid.UUID, commentID uuid.UUID) {
+	count, likedByMe, err := h.useCase.UnlikeComment(r.Context(), SubjectFromContext(r.Context()), storyID, commentID)
+	if err != nil {
+		h.writeUseCaseError(w, err, "failed to unlike comment")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.CommentLikeResponse{
+		Likes:     count,
+		LikedByMe: likedByMe,
+	})
+}
+
 func (h *Handler) ShareStory(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
 	shareURL, count, err := h.useCase.ShareStory(r.Context(), storyID)
 	if err != nil {
@@ -412,6 +453,7 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, err error, fallback s
 		errors.Is(err, app.ErrInvalidStoryPlace),
 		errors.Is(err, app.ErrInvalidStoryCover),
 		errors.Is(err, app.ErrInvalidCommentBody),
+		errors.Is(err, app.ErrStoryCommentRateLimited),
 		errors.Is(err, app.ErrCannotLikeOwnStory):
 		writeError(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, app.ErrUnauthenticatedWriter):
@@ -488,6 +530,11 @@ func toStoryCommentResponse(item *app.StoryCommentView) *dto.StoryCommentRespons
 		StoryID:   item.Comment.StoryID.String(),
 		Body:      item.Comment.Body,
 		Editable:  item.Editable,
+		Deletable: item.Deletable,
+		Edited:    item.Comment.IsEdited(),
+		Likes:     item.Comment.LikeCount,
+		LikedByMe: item.LikedByViewer,
+		ShareURL:  item.ShareURL,
 		Author:    toAuthorResponse(item.Author),
 		CreatedAt: item.Comment.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt: item.Comment.UpdatedAt.UTC().Format(time.RFC3339),

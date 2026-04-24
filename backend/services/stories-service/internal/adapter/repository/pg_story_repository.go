@@ -505,9 +505,30 @@ func (r *PGStoryRepository) UpdateComment(ctx context.Context, comment *model.St
 	return nil
 }
 
+func (r *PGStoryRepository) GetLatestActiveCommentByAuthor(ctx context.Context, storyID uuid.UUID, authorUserID uuid.UUID) (*model.StoryComment, error) {
+	const query = `
+		SELECT id, story_id, author_user_id, body, like_count, created_at, updated_at, deleted_at
+		FROM story_comments
+		WHERE story_id = $1 AND author_user_id = $2 AND deleted_at IS NULL
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+
+	row := r.pool.QueryRow(ctx, query, storyID, authorUserID)
+	comment, err := scanComment(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("select latest active comment by author: %w", err)
+	}
+
+	return comment, nil
+}
+
 func (r *PGStoryRepository) GetCommentByID(ctx context.Context, storyID uuid.UUID, commentID uuid.UUID) (*model.StoryComment, error) {
 	const query = `
-		SELECT id, story_id, author_user_id, body, created_at, updated_at, deleted_at
+		SELECT id, story_id, author_user_id, body, like_count, created_at, updated_at, deleted_at
 		FROM story_comments
 		WHERE story_id = $1 AND id = $2
 		LIMIT 1
@@ -529,7 +550,7 @@ func (r *PGStoryRepository) ListComments(ctx context.Context, storyID uuid.UUID,
 	rows, err := r.pool.Query(
 		ctx,
 		`
-			SELECT id, story_id, author_user_id, body, created_at, updated_at, deleted_at
+			SELECT id, story_id, author_user_id, body, like_count, created_at, updated_at, deleted_at
 			FROM story_comments
 			WHERE story_id = $1 AND deleted_at IS NULL
 			ORDER BY created_at DESC
@@ -554,6 +575,112 @@ func (r *PGStoryRepository) ListComments(ctx context.Context, storyID uuid.UUID,
 	}
 
 	return items, rows.Err()
+}
+
+func (r *PGStoryRepository) LikeComment(ctx context.Context, storyID uuid.UUID, commentID uuid.UUID, userID uuid.UUID) (bool, int, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return false, 0, fmt.Errorf("begin comment like tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	const insertQuery = `
+		INSERT INTO story_comment_likes (comment_id, user_id, created_at)
+		SELECT $2, $3, NOW()
+		WHERE EXISTS (
+			SELECT 1
+			FROM story_comments
+			WHERE story_id = $1 AND id = $2 AND deleted_at IS NULL
+		)
+		ON CONFLICT (comment_id, user_id) DO NOTHING
+	`
+	tag, err := tx.Exec(ctx, insertQuery, storyID, commentID, userID)
+	if err != nil {
+		return false, 0, fmt.Errorf("insert comment like: %w", err)
+	}
+
+	changed := tag.RowsAffected() > 0
+	if changed {
+		if _, err = tx.Exec(ctx, `UPDATE story_comments SET like_count = like_count + 1 WHERE story_id = $1 AND id = $2 AND deleted_at IS NULL`, storyID, commentID); err != nil {
+			return false, 0, fmt.Errorf("increment comment like count: %w", err)
+		}
+	}
+
+	var likeCount int
+	if err = tx.QueryRow(ctx, `SELECT like_count FROM story_comments WHERE story_id = $1 AND id = $2 AND deleted_at IS NULL`, storyID, commentID).Scan(&likeCount); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, 0, ErrNotFound
+		}
+		return false, 0, fmt.Errorf("select comment like count: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return false, 0, fmt.Errorf("commit comment like tx: %w", err)
+	}
+
+	return changed, likeCount, nil
+}
+
+func (r *PGStoryRepository) UnlikeComment(ctx context.Context, storyID uuid.UUID, commentID uuid.UUID, userID uuid.UUID) (bool, int, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return false, 0, fmt.Errorf("begin comment unlike tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	tag, err := tx.Exec(
+		ctx,
+		`
+			DELETE FROM story_comment_likes
+			WHERE comment_id = $2 AND user_id = $3
+			  AND EXISTS (
+				SELECT 1
+				FROM story_comments
+				WHERE story_id = $1 AND id = $2 AND deleted_at IS NULL
+			  )
+		`,
+		storyID,
+		commentID,
+		userID,
+	)
+	if err != nil {
+		return false, 0, fmt.Errorf("delete comment like: %w", err)
+	}
+
+	changed := tag.RowsAffected() > 0
+	if changed {
+		if _, err = tx.Exec(ctx, `UPDATE story_comments SET like_count = GREATEST(like_count - 1, 0) WHERE story_id = $1 AND id = $2 AND deleted_at IS NULL`, storyID, commentID); err != nil {
+			return false, 0, fmt.Errorf("decrement comment like count: %w", err)
+		}
+	}
+
+	var likeCount int
+	if err = tx.QueryRow(ctx, `SELECT like_count FROM story_comments WHERE story_id = $1 AND id = $2 AND deleted_at IS NULL`, storyID, commentID).Scan(&likeCount); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, 0, ErrNotFound
+		}
+		return false, 0, fmt.Errorf("select comment like count after unlike: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return false, 0, fmt.Errorf("commit comment unlike tx: %w", err)
+	}
+
+	return changed, likeCount, nil
+}
+
+func (r *PGStoryRepository) HasCommentLike(ctx context.Context, commentID uuid.UUID, userID uuid.UUID) (bool, error) {
+	var exists bool
+	if err := r.pool.QueryRow(
+		ctx,
+		`SELECT EXISTS(SELECT 1 FROM story_comment_likes WHERE comment_id = $1 AND user_id = $2)`,
+		commentID,
+		userID,
+	).Scan(&exists); err != nil {
+		return false, fmt.Errorf("check comment like exists: %w", err)
+	}
+
+	return exists, nil
 }
 
 func (r *PGStoryRepository) DeleteComment(ctx context.Context, storyID uuid.UUID, commentID uuid.UUID) (bool, error) {
@@ -642,6 +769,7 @@ func scanComment(scanner interface{ Scan(dest ...any) error }) (*model.StoryComm
 		&item.StoryID,
 		&item.AuthorUserID,
 		&item.Body,
+		&item.LikeCount,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 		&item.DeletedAt,

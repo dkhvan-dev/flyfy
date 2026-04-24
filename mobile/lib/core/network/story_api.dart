@@ -1,5 +1,3 @@
-import 'package:dio/dio.dart';
-
 import '../../features/stories/models/save_story_request.dart';
 import '../../features/stories/models/story_vm.dart';
 import 'api_client.dart';
@@ -30,7 +28,6 @@ class StoryApi {
         'limit': limit,
         'offset': offset,
       },
-      options: Options(extra: const {'requiresAuth': false}),
     );
 
     final data = response.data as Map<String, dynamic>? ?? const {};
@@ -79,7 +76,6 @@ class StoryApi {
   Future<StoryDetailVm> getPublicStoryBySlug(String slug) async {
     final response = await _apiClient.dio.get(
       '/public/stories/${Uri.encodeComponent(slug)}',
-      options: Options(extra: const {'requiresAuth': false}),
     );
     return StoryDetailVm.fromJson(response.data as Map<String, dynamic>);
   }
@@ -135,7 +131,6 @@ class StoryApi {
     final response = await _apiClient.dio.get(
       '/stories/$storyId/comments',
       queryParameters: {'limit': limit, 'offset': offset},
-      options: Options(extra: const {'requiresAuth': false}),
     );
     final data = response.data as Map<String, dynamic>? ?? const {};
     final rawItems = data['items'];
@@ -170,6 +165,34 @@ class StoryApi {
 
   Future<void> deleteComment(String storyId, String commentId) async {
     await _apiClient.dio.delete('/stories/$storyId/comments/$commentId');
+  }
+
+  Future<(int likes, bool likedByMe)> likeComment(
+    String storyId,
+    String commentId,
+  ) async {
+    final response = await _apiClient.dio.post(
+      '/stories/$storyId/comments/$commentId/likes',
+    );
+    final data = response.data as Map<String, dynamic>? ?? const {};
+    return (
+      int.tryParse(data['likes']?.toString() ?? '') ?? 0,
+      data['likedByMe'] == true,
+    );
+  }
+
+  Future<(int likes, bool likedByMe)> unlikeComment(
+    String storyId,
+    String commentId,
+  ) async {
+    final response = await _apiClient.dio.delete(
+      '/stories/$storyId/comments/$commentId/likes',
+    );
+    final data = response.data as Map<String, dynamic>? ?? const {};
+    return (
+      int.tryParse(data['likes']?.toString() ?? '') ?? 0,
+      data['likedByMe'] == true,
+    );
   }
 
   Future<(String shareUrl, int shares)> shareStory(String storyId) async {

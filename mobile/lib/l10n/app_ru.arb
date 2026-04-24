@@ -845,6 +845,7 @@
   "storyCategoryCulinary": "Гастрономия",
   "storyDetailsTitle": "Детали истории",
   "storyLinkCopied": "Ссылка на историю скопирована",
+  "storyShareFailed": "Не удалось открыть окно отправки ссылки. Попробуйте еще раз.",
   "storyAuthorLabel": "Автор",
   "storyFollowAction": "Подписаться",
   "storyFollowingAction": "Подписаны",
@@ -856,6 +857,18 @@
   "storyCommentHint": "Оставьте комментарий",
   "storyCommentsTitle": "Комментарии",
   "storyCommentsEmpty": "Комментариев пока нет. Начните обсуждение первым.",
+  "storyCommentRateLimit": "Можно оставлять только один комментарий раз в 3 часа.",
+  "storyCommentCooldownUntil": "Следующий комментарий можно оставить после {time}.",
+  "@storyCommentCooldownUntil": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "storyCommentLinkCopied": "Ссылка на комментарий скопирована",
+  "storyCommentShareFailed": "Не удалось открыть окно отправки комментария. Попробуйте еще раз.",
+  "storyCommentEditingTitle": "Редактирование комментария",
+  "storyCommentSaveAction": "Сохранить",
+  "storyCommentShareAction": "Поделиться",
   "storyDeleteCommentTitle": "Удалить комментарий?",
   "storyDeleteCommentMessage": "Комментарий будет удален без возможности восстановления.",
   "storyDeleteCommentAction": "Удалить",
@@ -896,6 +909,7 @@
   "storyCategoryLabel": "Выберите категорию",
   "storyCategoryRequired": "Выберите категорию истории",
   "storyContentHint": "Начните свой рассказ здесь...",
+  "storyContinueSectionHint": "Продолжите историю здесь...",
   "storyContentRequired": "Напишите текст истории",
   "storyContentTooLong": "Текст истории не должен превышать {count} символов",
   "@storyContentTooLong": {
@@ -904,6 +918,12 @@
     }
   },
   "storyCharacterCountLabel": "Количество символов",
+  "storyInlineImageAddAction": "Добавить фото",
+  "storyInlineImageHint": "Изображения будут показаны между абзацами истории.",
+  "storyContinueSectionLabel": "Можно продолжить текст ниже или добавить еще фото.",
+  "storyInlineImageUnsupported": "Этот формат изображения не поддерживается для тела истории.",
+  "storyInlineImageTooLarge": "Изображение слишком большое. Выберите файл до 20 МБ.",
+  "storyInlineImageUploadFailed": "Не удалось загрузить изображение в историю. Попробуйте еще раз.",
   "storyAiHintUnavailable": "AI-подсказки для текста пока недоступны",
   "storyWritersNoteTitle": "Совет автору",
   "storyWritersNoteBody": "Попробуйте начать с чувственной детали. Вместо «Я приехал в Токио» опишите неоновое свечение, отражающееся в мокром асфальте Сибуи.",

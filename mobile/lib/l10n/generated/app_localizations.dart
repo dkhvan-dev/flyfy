@@ -4510,6 +4510,12 @@ abstract class AppLocalizations {
   /// **'Story link copied'**
   String get storyLinkCopied;
 
+  /// No description provided for @storyShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open the share sheet. Please try again.'**
+  String get storyShareFailed;
+
   /// No description provided for @storyAuthorLabel.
   ///
   /// In en, this message translates to:
@@ -4575,6 +4581,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No comments yet. Start the conversation.'**
   String get storyCommentsEmpty;
+
+  /// No description provided for @storyCommentRateLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can leave only one comment every 3 hours.'**
+  String get storyCommentRateLimit;
+
+  /// No description provided for @storyCommentCooldownUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'You can leave the next comment after {time}.'**
+  String storyCommentCooldownUntil(Object time);
+
+  /// No description provided for @storyCommentLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment link copied'**
+  String get storyCommentLinkCopied;
+
+  /// No description provided for @storyCommentShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open the comment share sheet. Please try again.'**
+  String get storyCommentShareFailed;
+
+  /// No description provided for @storyCommentEditingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing comment'**
+  String get storyCommentEditingTitle;
+
+  /// No description provided for @storyCommentSaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get storyCommentSaveAction;
+
+  /// No description provided for @storyCommentShareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get storyCommentShareAction;
 
   /// No description provided for @storyDeleteCommentTitle.
   ///
@@ -4786,6 +4834,12 @@ abstract class AppLocalizations {
   /// **'Start your narrative here...'**
   String get storyContentHint;
 
+  /// No description provided for @storyContinueSectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue the story here...'**
+  String get storyContinueSectionHint;
+
   /// No description provided for @storyContentRequired.
   ///
   /// In en, this message translates to:
@@ -4803,6 +4857,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Character Count'**
   String get storyCharacterCountLabel;
+
+  /// No description provided for @storyInlineImageAddAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get storyInlineImageAddAction;
+
+  /// No description provided for @storyInlineImageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Images will appear between story paragraphs.'**
+  String get storyInlineImageHint;
+
+  /// No description provided for @storyContinueSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue the text below or add more photos.'**
+  String get storyContinueSectionLabel;
+
+  /// No description provided for @storyInlineImageUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This image format is not supported for story content.'**
+  String get storyInlineImageUnsupported;
+
+  /// No description provided for @storyInlineImageTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This image is too large. Choose a file up to 20 MB.'**
+  String get storyInlineImageTooLarge;
+
+  /// No description provided for @storyInlineImageUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to upload the image into the story. Please try again.'**
+  String get storyInlineImageUploadFailed;
 
   /// No description provided for @storyAiHintUnavailable.
   ///

@@ -2442,6 +2442,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storyLinkCopied => 'Ссылка на историю скопирована';
 
   @override
+  String get storyShareFailed =>
+      'Не удалось открыть окно отправки ссылки. Попробуйте еще раз.';
+
+  @override
   String get storyAuthorLabel => 'Автор';
 
   @override
@@ -2474,6 +2478,31 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get storyCommentsEmpty =>
       'Комментариев пока нет. Начните обсуждение первым.';
+
+  @override
+  String get storyCommentRateLimit =>
+      'Можно оставлять только один комментарий раз в 3 часа.';
+
+  @override
+  String storyCommentCooldownUntil(Object time) {
+    return 'Следующий комментарий можно оставить после $time.';
+  }
+
+  @override
+  String get storyCommentLinkCopied => 'Ссылка на комментарий скопирована';
+
+  @override
+  String get storyCommentShareFailed =>
+      'Не удалось открыть окно отправки комментария. Попробуйте еще раз.';
+
+  @override
+  String get storyCommentEditingTitle => 'Редактирование комментария';
+
+  @override
+  String get storyCommentSaveAction => 'Сохранить';
+
+  @override
+  String get storyCommentShareAction => 'Поделиться';
 
   @override
   String get storyDeleteCommentTitle => 'Удалить комментарий?';
@@ -2587,6 +2616,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storyContentHint => 'Начните свой рассказ здесь...';
 
   @override
+  String get storyContinueSectionHint => 'Продолжите историю здесь...';
+
+  @override
   String get storyContentRequired => 'Напишите текст истории';
 
   @override
@@ -2596,6 +2628,29 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storyCharacterCountLabel => 'Количество символов';
+
+  @override
+  String get storyInlineImageAddAction => 'Добавить фото';
+
+  @override
+  String get storyInlineImageHint =>
+      'Изображения будут показаны между абзацами истории.';
+
+  @override
+  String get storyContinueSectionLabel =>
+      'Можно продолжить текст ниже или добавить еще фото.';
+
+  @override
+  String get storyInlineImageUnsupported =>
+      'Этот формат изображения не поддерживается для тела истории.';
+
+  @override
+  String get storyInlineImageTooLarge =>
+      'Изображение слишком большое. Выберите файл до 20 МБ.';
+
+  @override
+  String get storyInlineImageUploadFailed =>
+      'Не удалось загрузить изображение в историю. Попробуйте еще раз.';
 
   @override
   String get storyAiHintUnavailable =>

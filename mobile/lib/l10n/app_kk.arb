@@ -845,6 +845,7 @@
   "storyCategoryCulinary": "Гастрономия",
   "storyDetailsTitle": "Хикая туралы",
   "storyLinkCopied": "Хикая сілтемесі көшірілді",
+  "storyShareFailed": "Сілтемені бөлісу терезесін ашу мүмкін болмады. Қайта көріңіз.",
   "storyAuthorLabel": "Автор",
   "storyFollowAction": "Жазылу",
   "storyFollowingAction": "Жазылған",
@@ -856,6 +857,18 @@
   "storyCommentHint": "Пікір қалдырыңыз",
   "storyCommentsTitle": "Пікірлер",
   "storyCommentsEmpty": "Әзірге пікір жоқ. Алғашқы болып пікір жазыңыз.",
+  "storyCommentRateLimit": "3 сағат ішінде тек бір пікір ғана қалдыруға болады.",
+  "storyCommentCooldownUntil": "Келесі пікірді {time} кейін қалдыруға болады.",
+  "@storyCommentCooldownUntil": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "storyCommentLinkCopied": "Пікірге сілтеме көшірілді",
+  "storyCommentShareFailed": "Пікірді бөлісу терезесін ашу мүмкін болмады. Қайта көріңіз.",
+  "storyCommentEditingTitle": "Пікірді өңдеу",
+  "storyCommentSaveAction": "Сақтау",
+  "storyCommentShareAction": "Бөлісу",
   "storyDeleteCommentTitle": "Пікірді өшіру керек пе?",
   "storyDeleteCommentMessage": "Пікір қайтарымсыз өшіріледі.",
   "storyDeleteCommentAction": "Өшіру",
@@ -896,6 +909,7 @@
   "storyCategoryLabel": "Санатты таңдаңыз",
   "storyCategoryRequired": "Хикая санатын таңдаңыз",
   "storyContentHint": "Әңгімеңізді осы жерден бастаңыз...",
+  "storyContinueSectionHint": "Хикаяны осы жерден жалғастырыңыз...",
   "storyContentRequired": "Хикая мәтінін жазыңыз",
   "storyContentTooLong": "Хикая мәтіні {count} таңбадан аспауы керек",
   "@storyContentTooLong": {
@@ -904,6 +918,12 @@
     }
   },
   "storyCharacterCountLabel": "Таңба саны",
+  "storyInlineImageAddAction": "Фото қосу",
+  "storyInlineImageHint": "Суреттер хикая абзацтарының арасында көрсетіледі.",
+  "storyContinueSectionLabel": "Мәтінді төменде жалғастыруға немесе тағы фото қосуға болады.",
+  "storyInlineImageUnsupported": "Бұл сурет форматына хикая мәтіні үшін қолдау жоқ.",
+  "storyInlineImageTooLarge": "Сурет тым үлкен. 20 МБ-қа дейінгі файл таңдаңыз.",
+  "storyInlineImageUploadFailed": "Суретті хикаяға жүктеу мүмкін болмады. Қайта көріңіз.",
   "storyAiHintUnavailable": "AI мәтін кеңестері әзірге қолжетімсіз",
   "storyWritersNoteTitle": "Авторға кеңес",
   "storyWritersNoteBody": "Әңгімеңізді сезімдік детальдан бастаңыз. «Мен Токиоға келдім» деудің орнына, Сибуяның дымқыл асфальтында шағылысқан неон жарығын суреттеңіз.",

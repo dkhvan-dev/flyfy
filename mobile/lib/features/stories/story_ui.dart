@@ -25,8 +25,7 @@ class StoryAdaptive {
     final mq = MediaQuery.of(context);
     final textScaler = mq.textScaler;
     final baseStyle = Theme.of(context).textTheme.bodyMedium;
-    final textScaleFactor =
-        textScaler.scale(baseStyle?.fontSize ?? 14) /
+    final textScaleFactor = textScaler.scale(baseStyle?.fontSize ?? 14) /
         (baseStyle?.fontSize ?? 14);
 
     return StoryAdaptive._(
@@ -46,20 +45,20 @@ class StoryAdaptive {
   double scale(
     double value, {
     double minFactor = 0.82,
-    double maxFactor = 1.10,
+    double maxFactor = 1.06,
   }) {
     final baseFactor = (shortestSide / 393).clamp(minFactor, maxFactor);
-    final textPenalty = textScaleFactor > 1.1
-        ? 1 - ((textScaleFactor - 1.1) * 0.12)
-        : 1.0;
+    final textPenalty =
+        textScaleFactor > 1.1 ? 1 - ((textScaleFactor - 1.1) * 0.12) : 1.0;
     final factor = math.max(
       minFactor,
       math.min(maxFactor, baseFactor * textPenalty),
     );
-    return value * factor;
+    final tunedFactor = math.max(minFactor, math.min(maxFactor, factor * 0.90));
+    return value * tunedFactor;
   }
 
-  double radius(double value) => scale(value, minFactor: 0.85, maxFactor: 1.08);
+  double radius(double value) => scale(value, minFactor: 0.84, maxFactor: 1.04);
 }
 
 abstract final class StoryPalette {

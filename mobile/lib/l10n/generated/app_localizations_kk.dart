@@ -2454,6 +2454,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyLinkCopied => 'Хикая сілтемесі көшірілді';
 
   @override
+  String get storyShareFailed =>
+      'Сілтемені бөлісу терезесін ашу мүмкін болмады. Қайта көріңіз.';
+
+  @override
   String get storyAuthorLabel => 'Автор';
 
   @override
@@ -2486,6 +2490,31 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get storyCommentsEmpty =>
       'Әзірге пікір жоқ. Алғашқы болып пікір жазыңыз.';
+
+  @override
+  String get storyCommentRateLimit =>
+      '3 сағат ішінде тек бір пікір ғана қалдыруға болады.';
+
+  @override
+  String storyCommentCooldownUntil(Object time) {
+    return 'Келесі пікірді $time кейін қалдыруға болады.';
+  }
+
+  @override
+  String get storyCommentLinkCopied => 'Пікірге сілтеме көшірілді';
+
+  @override
+  String get storyCommentShareFailed =>
+      'Пікірді бөлісу терезесін ашу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get storyCommentEditingTitle => 'Пікірді өңдеу';
+
+  @override
+  String get storyCommentSaveAction => 'Сақтау';
+
+  @override
+  String get storyCommentShareAction => 'Бөлісу';
 
   @override
   String get storyDeleteCommentTitle => 'Пікірді өшіру керек пе?';
@@ -2597,6 +2626,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyContentHint => 'Әңгімеңізді осы жерден бастаңыз...';
 
   @override
+  String get storyContinueSectionHint => 'Хикаяны осы жерден жалғастырыңыз...';
+
+  @override
   String get storyContentRequired => 'Хикая мәтінін жазыңыз';
 
   @override
@@ -2606,6 +2638,29 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get storyCharacterCountLabel => 'Таңба саны';
+
+  @override
+  String get storyInlineImageAddAction => 'Фото қосу';
+
+  @override
+  String get storyInlineImageHint =>
+      'Суреттер хикая абзацтарының арасында көрсетіледі.';
+
+  @override
+  String get storyContinueSectionLabel =>
+      'Мәтінді төменде жалғастыруға немесе тағы фото қосуға болады.';
+
+  @override
+  String get storyInlineImageUnsupported =>
+      'Бұл сурет форматына хикая мәтіні үшін қолдау жоқ.';
+
+  @override
+  String get storyInlineImageTooLarge =>
+      'Сурет тым үлкен. 20 МБ-қа дейінгі файл таңдаңыз.';
+
+  @override
+  String get storyInlineImageUploadFailed =>
+      'Суретті хикаяға жүктеу мүмкін болмады. Қайта көріңіз.';
 
   @override
   String get storyAiHintUnavailable => 'AI мәтін кеңестері әзірге қолжетімсіз';

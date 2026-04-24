@@ -11,6 +11,7 @@ type StoryComment struct {
 	StoryID      uuid.UUID
 	AuthorUserID uuid.UUID
 	Body         string
+	LikeCount    int
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    *time.Time
@@ -18,4 +19,8 @@ type StoryComment struct {
 
 func (c *StoryComment) IsOwnedBy(userID uuid.UUID) bool {
 	return c != nil && userID != uuid.Nil && c.AuthorUserID == userID
+}
+
+func (c *StoryComment) IsEdited() bool {
+	return c != nil && c.UpdatedAt.After(c.CreatedAt.Add(time.Second))
 }

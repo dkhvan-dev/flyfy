@@ -26,9 +26,14 @@ const (
 	defaultListLimit     = 20
 	maxListLimit         = 100
 	defaultCommentLimit  = 20
+	commentCreateWindow  = 3 * time.Hour
 )
 
-var nonSlugPattern = regexp.MustCompile(`[^a-z0-9]+`)
+var (
+	nonSlugPattern         = regexp.MustCompile(`[^a-z0-9]+`)
+	storyImageMarkerRegexp = regexp.MustCompile(`\[\[story-image:[^\]]+\]\]`)
+	storySpacingRegexp     = regexp.MustCompile(`\n{3,}`)
+)
 
 type StoryAuthor struct {
 	UserID       uuid.UUID
@@ -48,9 +53,12 @@ type StoryView struct {
 }
 
 type StoryCommentView struct {
-	Comment  *model.StoryComment
-	Author   StoryAuthor
-	Editable bool
+	Comment       *model.StoryComment
+	Author        StoryAuthor
+	Editable      bool
+	Deletable     bool
+	LikedByViewer bool
+	ShareURL      string
 }
 
 type StoryDetail struct {
@@ -341,9 +349,6 @@ func (u *StoryUseCase) LikeStory(ctx context.Context, subject string, storyID uu
 	if story == nil || !story.IsPublished() {
 		return 0, ErrStoryNotFound
 	}
-	if story.IsOwnedBy(viewerUserID) {
-		return 0, ErrCannotLikeOwnStory
-	}
 
 	_, count, err := u.repo.LikeStory(ctx, storyID, viewerUserID)
 	if err != nil {
@@ -437,6 +442,14 @@ func (u *StoryUseCase) CreateComment(ctx context.Context, subject string, storyI
 	}
 
 	now := time.Now().UTC()
+	latestComment, err := u.repo.GetLatestActiveCommentByAuthor(ctx, storyID, authorUserID)
+	if err != nil {
+		return nil, fmt.Errorf("get latest author comment: %w", err)
+	}
+	if latestComment != nil && latestComment.CreatedAt.Add(commentCreateWindow).After(now) {
+		return nil, ErrStoryCommentRateLimited
+	}
+
 	comment := &model.StoryComment{
 		ID:           uuid.New(),
 		StoryID:      storyID,
@@ -531,7 +544,7 @@ func (u *StoryUseCase) DeleteComment(ctx context.Context, subject string, storyI
 	if comment == nil || comment.DeletedAt != nil {
 		return ErrStoryCommentNotFound
 	}
-	if !comment.IsOwnedBy(actorUserID) && !story.IsOwnedBy(actorUserID) {
+	if !comment.IsOwnedBy(actorUserID) {
 		return ErrStoryCommentAccessDenied
 	}
 
@@ -540,6 +553,78 @@ func (u *StoryUseCase) DeleteComment(ctx context.Context, subject string, storyI
 	}
 
 	return nil
+}
+
+func (u *StoryUseCase) LikeComment(ctx context.Context, subject string, storyID uuid.UUID, commentID uuid.UUID) (int, bool, error) {
+	viewerUserID, err := u.requireUserID(ctx, subject)
+	if err != nil {
+		return 0, false, err
+	}
+	if storyID == uuid.Nil {
+		return 0, false, ErrInvalidStoryID
+	}
+	if commentID == uuid.Nil {
+		return 0, false, ErrInvalidCommentID
+	}
+
+	story, err := u.repo.GetStoryByID(ctx, storyID)
+	if err != nil {
+		return 0, false, fmt.Errorf("get story for comment like: %w", err)
+	}
+	if story == nil || !story.IsPublished() {
+		return 0, false, ErrStoryNotFound
+	}
+
+	comment, err := u.repo.GetCommentByID(ctx, storyID, commentID)
+	if err != nil {
+		return 0, false, fmt.Errorf("get comment for like: %w", err)
+	}
+	if comment == nil || comment.DeletedAt != nil {
+		return 0, false, ErrStoryCommentNotFound
+	}
+
+	_, count, err := u.repo.LikeComment(ctx, storyID, commentID, viewerUserID)
+	if err != nil {
+		return 0, false, fmt.Errorf("like comment: %w", err)
+	}
+
+	return count, true, nil
+}
+
+func (u *StoryUseCase) UnlikeComment(ctx context.Context, subject string, storyID uuid.UUID, commentID uuid.UUID) (int, bool, error) {
+	viewerUserID, err := u.requireUserID(ctx, subject)
+	if err != nil {
+		return 0, false, err
+	}
+	if storyID == uuid.Nil {
+		return 0, false, ErrInvalidStoryID
+	}
+	if commentID == uuid.Nil {
+		return 0, false, ErrInvalidCommentID
+	}
+
+	story, err := u.repo.GetStoryByID(ctx, storyID)
+	if err != nil {
+		return 0, false, fmt.Errorf("get story for comment unlike: %w", err)
+	}
+	if story == nil || !story.IsPublished() {
+		return 0, false, ErrStoryNotFound
+	}
+
+	comment, err := u.repo.GetCommentByID(ctx, storyID, commentID)
+	if err != nil {
+		return 0, false, fmt.Errorf("get comment for unlike: %w", err)
+	}
+	if comment == nil || comment.DeletedAt != nil {
+		return 0, false, ErrStoryCommentNotFound
+	}
+
+	_, count, err := u.repo.UnlikeComment(ctx, storyID, commentID, viewerUserID)
+	if err != nil {
+		return 0, false, fmt.Errorf("unlike comment: %w", err)
+	}
+
+	return count, false, nil
 }
 
 func (u *StoryUseCase) ShareStory(ctx context.Context, storyID uuid.UUID) (string, int, error) {
@@ -640,10 +725,11 @@ func normalizeStoryInput(input CreateStoryInput) (*model.Story, error) {
 	}
 
 	content := strings.TrimSpace(input.Content)
-	if utf8.RuneCountInString(content) > maxStoryContentChars {
+	visibleContent := visibleStoryContent(content)
+	if utf8.RuneCountInString(visibleContent) > maxStoryContentChars {
 		return nil, ErrInvalidStoryContent
 	}
-	if status == enum.StoryStatusPublished && content == "" {
+	if status == enum.StoryStatusPublished && visibleContent == "" {
 		return nil, ErrInvalidStoryContent
 	}
 
@@ -676,7 +762,7 @@ func normalizeStoryInput(input CreateStoryInput) (*model.Story, error) {
 
 func sanitizeTags(tags []string) ([]string, error) {
 	if len(tags) == 0 {
-		return nil, nil
+		return []string{}, nil
 	}
 
 	seen := make(map[string]struct{}, len(tags))
@@ -703,11 +789,15 @@ func sanitizeTags(tags []string) ([]string, error) {
 		return nil, ErrInvalidStoryTags
 	}
 
+	if result == nil {
+		return []string{}, nil
+	}
+
 	return result, nil
 }
 
 func buildExcerpt(content string, title string) string {
-	source := strings.TrimSpace(content)
+	source := visibleStoryContent(content)
 	if source == "" {
 		source = strings.TrimSpace(title)
 	}
@@ -717,6 +807,13 @@ func buildExcerpt(content string, title string) string {
 
 	runes := []rune(source)
 	return strings.TrimSpace(string(runes[:180])) + "..."
+}
+
+func visibleStoryContent(content string) string {
+	cleaned := storyImageMarkerRegexp.ReplaceAllString(content, "\n\n")
+	cleaned = strings.ReplaceAll(cleaned, "\r\n", "\n")
+	cleaned = storySpacingRegexp.ReplaceAllString(cleaned, "\n\n")
+	return strings.TrimSpace(cleaned)
 }
 
 func buildStorySlug(title string, storyID uuid.UUID) string {
@@ -819,7 +916,7 @@ func (u *StoryUseCase) buildStoryViews(ctx context.Context, stories []*model.Sto
 		}
 		author := toStoryAuthor(story.AuthorUserID, profiles[story.AuthorUserID])
 		likedByViewer := false
-		if viewerUserID != nil && *viewerUserID != uuid.Nil && !story.IsOwnedBy(*viewerUserID) {
+		if viewerUserID != nil && *viewerUserID != uuid.Nil {
 			likedByViewer, err = u.repo.HasStoryLike(ctx, story.ID, *viewerUserID)
 			if err != nil {
 				return nil, fmt.Errorf("check viewer like: %w", err)
@@ -871,14 +968,24 @@ func (u *StoryUseCase) buildCommentViews(
 			continue
 		}
 		editable := false
+		deletable := false
+		likedByViewer := false
 		if viewerUserID != nil && *viewerUserID != uuid.Nil {
-			editable = comment.IsOwnedBy(*viewerUserID) || (story != nil && story.IsOwnedBy(*viewerUserID))
+			editable = comment.IsOwnedBy(*viewerUserID)
+			deletable = editable
+			likedByViewer, err = u.repo.HasCommentLike(ctx, comment.ID, *viewerUserID)
+			if err != nil {
+				return nil, fmt.Errorf("check viewer comment like: %w", err)
+			}
 		}
 
 		items = append(items, &StoryCommentView{
-			Comment:  comment,
-			Author:   toStoryAuthor(comment.AuthorUserID, profiles[comment.AuthorUserID]),
-			Editable: editable,
+			Comment:       comment,
+			Author:        toStoryAuthor(comment.AuthorUserID, profiles[comment.AuthorUserID]),
+			Editable:      editable,
+			Deletable:     deletable,
+			LikedByViewer: likedByViewer,
+			ShareURL:      u.shareCommentURL(story, comment.ID),
 		})
 	}
 
@@ -902,4 +1009,15 @@ func (u *StoryUseCase) shareURL(slug string) string {
 		return ""
 	}
 	return u.storiesBaseURL + "/" + strings.TrimLeft(strings.TrimSpace(slug), "/")
+}
+
+func (u *StoryUseCase) shareCommentURL(story *model.Story, commentID uuid.UUID) string {
+	if story == nil || commentID == uuid.Nil {
+		return ""
+	}
+	base := u.shareURL(story.Slug)
+	if base == "" {
+		return ""
+	}
+	return base + "?comment=" + commentID.String()
 }

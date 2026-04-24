@@ -2439,6 +2439,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyLinkCopied => 'Story link copied';
 
   @override
+  String get storyShareFailed =>
+      'Unable to open the share sheet. Please try again.';
+
+  @override
   String get storyAuthorLabel => 'Author';
 
   @override
@@ -2470,6 +2474,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storyCommentsEmpty => 'No comments yet. Start the conversation.';
+
+  @override
+  String get storyCommentRateLimit =>
+      'You can leave only one comment every 3 hours.';
+
+  @override
+  String storyCommentCooldownUntil(Object time) {
+    return 'You can leave the next comment after $time.';
+  }
+
+  @override
+  String get storyCommentLinkCopied => 'Comment link copied';
+
+  @override
+  String get storyCommentShareFailed =>
+      'Unable to open the comment share sheet. Please try again.';
+
+  @override
+  String get storyCommentEditingTitle => 'Editing comment';
+
+  @override
+  String get storyCommentSaveAction => 'Save';
+
+  @override
+  String get storyCommentShareAction => 'Share';
 
   @override
   String get storyDeleteCommentTitle => 'Delete comment?';
@@ -2583,6 +2612,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyContentHint => 'Start your narrative here...';
 
   @override
+  String get storyContinueSectionHint => 'Continue the story here...';
+
+  @override
   String get storyContentRequired => 'Write the story body';
 
   @override
@@ -2592,6 +2624,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storyCharacterCountLabel => 'Character Count';
+
+  @override
+  String get storyInlineImageAddAction => 'Add photo';
+
+  @override
+  String get storyInlineImageHint =>
+      'Images will appear between story paragraphs.';
+
+  @override
+  String get storyContinueSectionLabel =>
+      'Continue the text below or add more photos.';
+
+  @override
+  String get storyInlineImageUnsupported =>
+      'This image format is not supported for story content.';
+
+  @override
+  String get storyInlineImageTooLarge =>
+      'This image is too large. Choose a file up to 20 MB.';
+
+  @override
+  String get storyInlineImageUploadFailed =>
+      'Unable to upload the image into the story. Please try again.';
 
   @override
   String get storyAiHintUnavailable => 'AI writing hints are not available yet';

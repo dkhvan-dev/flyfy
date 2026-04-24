@@ -22,7 +22,11 @@ type StoryRepository interface {
 	IncrementShareCount(ctx context.Context, storyID uuid.UUID) (int, error)
 	CreateComment(ctx context.Context, comment *model.StoryComment) error
 	UpdateComment(ctx context.Context, comment *model.StoryComment) error
+	GetLatestActiveCommentByAuthor(ctx context.Context, storyID uuid.UUID, authorUserID uuid.UUID) (*model.StoryComment, error)
 	GetCommentByID(ctx context.Context, storyID uuid.UUID, commentID uuid.UUID) (*model.StoryComment, error)
 	ListComments(ctx context.Context, storyID uuid.UUID, limit int, offset int) ([]*model.StoryComment, error)
 	DeleteComment(ctx context.Context, storyID uuid.UUID, commentID uuid.UUID) (bool, error)
+	LikeComment(ctx context.Context, storyID uuid.UUID, commentID uuid.UUID, userID uuid.UUID) (bool, int, error)
+	UnlikeComment(ctx context.Context, storyID uuid.UUID, commentID uuid.UUID, userID uuid.UUID) (bool, int, error)
+	HasCommentLike(ctx context.Context, commentID uuid.UUID, userID uuid.UUID) (bool, error)
 }

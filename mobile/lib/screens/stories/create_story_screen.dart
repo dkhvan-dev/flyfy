@@ -11,6 +11,7 @@ import '../../core/network/story_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/stories/models/save_story_request.dart';
+import '../../features/stories/story_content_codec.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -41,16 +42,19 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   final _titleController = TextEditingController();
   final _placeController = TextEditingController();
   final _tagController = TextEditingController();
-  final _contentController = TextEditingController();
+  final List<_StoryComposerSection> _sections = <_StoryComposerSection>[];
 
   int _step = 0;
   bool _isLoading = false;
   bool _isSaving = false;
   bool _isUploadingCover = false;
+  bool _isUploadingInlineImage = false;
   String _selectedCategory = 'JOURNAL';
   String? _coverFileId;
+  String? _coverImageUrl;
   Uint8List? _coverPreviewBytes;
   final List<String> _tags = <String>[];
+  int _activeSectionIndex = 0;
 
   String? _titleError;
   String? _coverError;
@@ -60,11 +64,13 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   @override
   void initState() {
     super.initState();
+    _setComposerSectionsFromContent('');
     final story = widget.initialStory;
     if (story != null) {
       _prefill(story);
-    } else if ((widget.storyId ?? '').trim().isNotEmpty) {
-      _loadStoryForEdit();
+    }
+    if ((widget.storyId ?? '').trim().isNotEmpty) {
+      _loadStoryForEdit(showLoader: story == null);
     }
   }
 
@@ -73,19 +79,21 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     _titleController.dispose();
     _placeController.dispose();
     _tagController.dispose();
-    _contentController.dispose();
+    _disposeSections();
     super.dispose();
   }
 
-  Future<void> _loadStoryForEdit() async {
+  Future<void> _loadStoryForEdit({bool showLoader = true}) async {
     final storyId = (widget.storyId ?? '').trim();
     if (storyId.isEmpty) {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (showLoader) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       final story = await _storyApi.getStoryById(storyId);
@@ -99,7 +107,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
       }
       await _showApiError(DioErrorMapper.toMessage(e));
     } finally {
-      if (mounted) {
+      if (mounted && showLoader) {
         setState(() {
           _isLoading = false;
         });
@@ -110,17 +118,132 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   void _prefill(StoryVm story) {
     _titleController.text = story.title;
     _placeController.text = (story.placeName ?? '').trim();
-    _contentController.text = (story.content ?? '').trim();
-    _selectedCategory = story.category.trim().isEmpty
-        ? 'JOURNAL'
-        : story.category.trim();
+    _setComposerSectionsFromContent((story.content ?? '').trim());
+    _selectedCategory =
+        story.category.trim().isEmpty ? 'JOURNAL' : story.category.trim();
     _coverFileId = (story.coverFileId ?? '').trim().isEmpty
         ? null
         : story.coverFileId!.trim();
+    _coverImageUrl = story.coverUrl;
+    _coverPreviewBytes = null;
     _tags
       ..clear()
       ..addAll(story.tags);
     setState(() {});
+  }
+
+  void _disposeSections() {
+    for (final section in _sections) {
+      section.dispose();
+    }
+    _sections.clear();
+  }
+
+  _StoryComposerSection _buildComposerSection({
+    String text = '',
+    List<_StoryInlineImageDraft>? images,
+  }) {
+    return _StoryComposerSection(
+      initialText: text,
+      images: images ?? const <_StoryInlineImageDraft>[],
+    );
+  }
+
+  void _setComposerSectionsFromContent(String content) {
+    _disposeSections();
+
+    final parts = parseStoryContentParts(content);
+    final sections = <_StoryComposerSection>[];
+    var currentText = '';
+    var currentImages = <_StoryInlineImageDraft>[];
+
+    void flushCurrent() {
+      sections.add(
+        _buildComposerSection(text: currentText, images: currentImages),
+      );
+      currentText = '';
+      currentImages = <_StoryInlineImageDraft>[];
+    }
+
+    for (final part in parts) {
+      if (part.isText) {
+        final text = (part.text ?? '').trim();
+        if (text.isEmpty) {
+          continue;
+        }
+        if (currentImages.isNotEmpty) {
+          flushCurrent();
+        }
+        currentText = currentText.isEmpty ? text : '$currentText\n\n$text';
+        continue;
+      }
+
+      final fileId = (part.imageFileId ?? '').trim();
+      if (fileId.isEmpty) {
+        continue;
+      }
+      currentImages.add(_StoryInlineImageDraft(fileId: fileId));
+    }
+
+    if (currentText.isNotEmpty ||
+        currentImages.isNotEmpty ||
+        sections.isEmpty) {
+      flushCurrent();
+    }
+
+    if (sections.isEmpty) {
+      sections.add(_buildComposerSection());
+    }
+
+    _sections.addAll(sections);
+    _activeSectionIndex = 0;
+  }
+
+  String _serializedStoryContent() {
+    final parts = <String>[];
+    for (final section in _sections) {
+      final text = section.controller.text.trim();
+      if (text.isNotEmpty) {
+        parts.add(text);
+      }
+      for (final image in section.images) {
+        final marker = storyImageMarker(image.fileId);
+        if (marker.isNotEmpty) {
+          parts.add(marker);
+        }
+      }
+    }
+    return parts.join('\n\n').trim();
+  }
+
+  void _handleSectionChanged() {
+    if (_contentError != null) {
+      setState(() {
+        _contentError = null;
+      });
+      return;
+    }
+    setState(() {});
+  }
+
+  void _setActiveSection(int index) {
+    if (index < 0 ||
+        index >= _sections.length ||
+        _activeSectionIndex == index) {
+      return;
+    }
+    setState(() {
+      _activeSectionIndex = index;
+    });
+  }
+
+  void _ensureTrailingSectionAfter(int sectionIndex) {
+    if (sectionIndex < 0 || sectionIndex >= _sections.length) {
+      return;
+    }
+    if (sectionIndex == _sections.length - 1) {
+      _sections.add(_buildComposerSection());
+    }
   }
 
   Future<void> _pickCover() async {
@@ -215,6 +338,113 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     }
   }
 
+  Future<void> _pickInlineImage({int? sectionIndex}) async {
+    if (_isUploadingInlineImage || _isSaving || _sections.isEmpty) {
+      return;
+    }
+
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 92,
+      maxWidth: 2200,
+    );
+    if (picked == null || !mounted) {
+      return;
+    }
+
+    final contentType = _resolveImageContentType(picked.name);
+    if (contentType == null) {
+      await _showApiError(
+        AppLocalizations.of(context)!.storyInlineImageUnsupported,
+      );
+      return;
+    }
+
+    final bytes = await picked.readAsBytes();
+    if (bytes.length > _maxCoverBytes) {
+      if (!mounted) {
+        return;
+      }
+      await _showApiError(
+        AppLocalizations.of(context)!.storyInlineImageTooLarge,
+      );
+      return;
+    }
+
+    final targetIndex = ((sectionIndex ?? _activeSectionIndex)).clamp(
+      0,
+      _sections.length - 1,
+    );
+
+    setState(() {
+      _isUploadingInlineImage = true;
+    });
+
+    try {
+      final upload = await _fileApi.createStoryInlineImageUpload(
+        originalName: picked.name,
+        contentType: contentType,
+        sizeBytes: bytes.length,
+      );
+      await _fileApi.uploadBinary(
+        upload: upload,
+        bytes: bytes,
+        contentType: contentType,
+      );
+      await _fileApi.completeUpload(upload.fileId);
+
+      if (!mounted) {
+        return;
+      }
+
+      final nextIndex = targetIndex == _sections.length - 1
+          ? targetIndex + 1
+          : targetIndex + 1;
+      setState(() {
+        _sections[targetIndex].images.add(
+              _StoryInlineImageDraft(
+                  fileId: upload.fileId, previewBytes: bytes),
+            );
+        _contentError = null;
+        _ensureTrailingSectionAfter(targetIndex);
+        _activeSectionIndex = nextIndex.clamp(0, _sections.length - 1);
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || nextIndex >= _sections.length) {
+          return;
+        }
+        _sections[nextIndex].focusNode.requestFocus();
+      });
+    } on DioException catch (e) {
+      if (!mounted) {
+        return;
+      }
+      await _showApiError(DioErrorMapper.toMessage(e));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      await _showApiError(
+        AppLocalizations.of(context)!.storyInlineImageUploadFailed,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingInlineImage = false;
+        });
+      }
+    }
+  }
+
+  void _removeInlineImage(int sectionIndex, _StoryInlineImageDraft image) {
+    if (sectionIndex < 0 || sectionIndex >= _sections.length) {
+      return;
+    }
+    setState(() {
+      _sections[sectionIndex].images.remove(image);
+    });
+  }
+
   void _addTagFromInput() {
     final raw = _tagController.text.trim();
     if (raw.isEmpty) {
@@ -278,10 +508,10 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   bool _validateStepTwo() {
     final l10n = AppLocalizations.of(context)!;
     String? contentError;
-    final content = _contentController.text.trim();
+    final content = extractStoryVisibleText(_serializedStoryContent());
     if (content.isEmpty) {
       contentError = l10n.storyContentRequired;
-    } else if (content.length > _maxContentLength) {
+    } else if (content.characters.length > _maxContentLength) {
       contentError = l10n.storyContentTooLong(_maxContentLength);
     }
 
@@ -316,7 +546,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
     final request = SaveStoryRequest(
       title: _titleController.text.trim(),
-      content: _contentController.text.trim(),
+      content: _serializedStoryContent(),
       category: _selectedCategory,
       status: status,
       coverFileId: _coverFileId,
@@ -328,20 +558,23 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
     try {
       if (widget.isEditMode) {
-        final storyId = (widget.storyId ?? widget.initialStory?.id ?? '')
-            .trim();
+        final storyId =
+            (widget.storyId ?? widget.initialStory?.id ?? '').trim();
         if (storyId.isEmpty) {
           throw StateError('Missing story id');
         }
-        await _storyApi.updateStory(storyId, request);
+        final updatedStory = await _storyApi.updateStory(storyId, request);
+        if (!mounted) {
+          return;
+        }
+        context.pop(updatedStory);
       } else {
-        await _storyApi.createStory(request);
+        final createdStory = await _storyApi.createStory(request);
+        if (!mounted) {
+          return;
+        }
+        context.pop(createdStory);
       }
-
-      if (!mounted) {
-        return;
-      }
-      context.pop(true);
     } on DioException catch (e) {
       if (!mounted) {
         return;
@@ -393,127 +626,171 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: StoryPalette.backgroundDeep,
       body: DecoratedBox(
         decoration: storyScreenBackground(),
         child: SafeArea(
-          child: AnimatedPadding(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            padding: EdgeInsets.only(bottom: bottomInset),
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.accent),
-                  )
-                : Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      adaptive.scale(16),
-                      adaptive.scale(18),
-                      adaptive.scale(16),
-                      adaptive.scale(18),
-                    ),
-                    child: Column(
-                      children: [
-                        _CreateStoryTopBar(
-                          title: l10n.storyCreateTitle,
-                          onBackTap: () {
-                            if (_step == 1) {
-                              setState(() {
-                                _step = 0;
-                              });
-                              return;
-                            }
-                            context.pop(false);
-                          },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompactHeight =
+                  adaptive.isShort || constraints.maxHeight < 720;
+              final isVeryCompactHeight =
+                  adaptive.isVeryShort || constraints.maxHeight < 660;
+              final horizontalPadding = adaptive.scale(
+                adaptive.isVeryNarrow ? 14 : 16,
+                minFactor: 0.86,
+                maxFactor: 1.0,
+              );
+              final verticalPadding = adaptive.scale(
+                isVeryCompactHeight ? 12 : 18,
+                minFactor: 0.82,
+                maxFactor: 1.0,
+              );
+              final topSpacing = adaptive.scale(
+                isCompactHeight ? 12 : 18,
+                minFactor: 0.8,
+                maxFactor: 1.0,
+              );
+              final contentSpacing = adaptive.scale(
+                isVeryCompactHeight ? 18 : 26,
+                minFactor: 0.8,
+                maxFactor: 1.0,
+              );
+              final footerSpacing = adaptive.scale(
+                isCompactHeight ? 12 : 18,
+                minFactor: 0.8,
+                maxFactor: 1.0,
+              );
+              final keyboardPadding = bottomInset > 0
+                  ? bottomInset +
+                      adaptive.scale(8, minFactor: 0.8, maxFactor: 1)
+                  : 0.0;
+
+              return AnimatedPadding(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                padding: EdgeInsets.only(bottom: keyboardPadding),
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.accent,
                         ),
-                        SizedBox(height: adaptive.scale(18)),
-                        _CreateStoryStepper(step: _step),
-                        SizedBox(height: adaptive.scale(26)),
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 220),
-                            child: _step == 0
-                                ? _CreateStoryStepOne(
-                                    key: const ValueKey('step1'),
-                                    titleController: _titleController,
-                                    placeController: _placeController,
-                                    tagController: _tagController,
-                                    tags: _tags,
-                                    selectedCategory: _selectedCategory,
-                                    coverFileId: _coverFileId,
-                                    coverPreviewBytes: _coverPreviewBytes,
-                                    isUploadingCover: _isUploadingCover,
-                                    titleError: _titleError,
-                                    coverError: _coverError,
-                                    categoryError: _categoryError,
-                                    onPickCover: _pickCover,
-                                    onSelectCategory: (category) {
-                                      setState(() {
-                                        _selectedCategory = category;
-                                        _categoryError = null;
-                                      });
-                                    },
-                                    onAddTag: _addTagFromInput,
-                                    onRemoveTag: _removeTag,
-                                  )
-                                : _CreateStoryStepTwo(
-                                    key: const ValueKey('step2'),
-                                    contentController: _contentController,
-                                    contentError: _contentError,
-                                    onBackTap: () {
-                                      setState(() {
-                                        _step = 0;
-                                      });
-                                    },
-                                    onPickExtraMedia: _pickCover,
-                                  ),
-                          ),
+                      )
+                    : Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          verticalPadding,
+                          horizontalPadding,
+                          verticalPadding,
                         ),
-                        SizedBox(height: adaptive.scale(18)),
-                        if (_step == 0)
-                          _CreateStoryPrimaryButton(
-                            label: l10n.storyContinueAction,
-                            isLoading: false,
-                            onTap: () {
-                              if (_validateStepOne()) {
-                                setState(() {
-                                  _step = 1;
-                                });
-                              }
-                            },
-                          )
-                        else ...[
-                          _CreateStoryActions(
-                            isSaving: _isSaving,
-                            backLabel: l10n.backButtonLabel,
-                            publishLabel: widget.isEditMode
-                                ? l10n.storyUpdateAction
-                                : l10n.storyPublishAction,
-                            onBackTap: () {
-                              setState(() {
-                                _step = 0;
-                              });
-                            },
-                            onPublishTap: () => _saveStory('PUBLISHED'),
-                          ),
-                          SizedBox(height: adaptive.scale(10)),
-                          TextButton(
-                            onPressed: _isSaving
-                                ? null
-                                : () => _saveStory('DRAFT'),
-                            child: Text(
-                              l10n.storySaveDraftAction,
-                              style: TextStyle(
-                                color: AppColors.accent,
-                                fontSize: adaptive.scale(15),
-                                fontWeight: FontWeight.w700,
+                        child: Column(
+                          children: [
+                            _CreateStoryTopBar(
+                              title: l10n.storyCreateTitle,
+                              onBackTap: () {
+                                if (_step == 1) {
+                                  setState(() {
+                                    _step = 0;
+                                  });
+                                  return;
+                                }
+                                context.pop();
+                              },
+                            ),
+                            SizedBox(height: topSpacing),
+                            _CreateStoryStepper(step: _step),
+                            SizedBox(height: contentSpacing),
+                            Expanded(
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 220),
+                                child: _step == 0
+                                    ? _CreateStoryStepOne(
+                                        key: const ValueKey('step1'),
+                                        titleController: _titleController,
+                                        placeController: _placeController,
+                                        tagController: _tagController,
+                                        tags: _tags,
+                                        selectedCategory: _selectedCategory,
+                                        coverFileId: _coverFileId,
+                                        coverImageUrl: _coverImageUrl,
+                                        coverPreviewBytes: _coverPreviewBytes,
+                                        isUploadingCover: _isUploadingCover,
+                                        titleError: _titleError,
+                                        coverError: _coverError,
+                                        categoryError: _categoryError,
+                                        onPickCover: _pickCover,
+                                        onSelectCategory: (category) {
+                                          setState(() {
+                                            _selectedCategory = category;
+                                            _categoryError = null;
+                                          });
+                                        },
+                                        onAddTag: _addTagFromInput,
+                                        onRemoveTag: _removeTag,
+                                      )
+                                    : _CreateStoryStepTwo(
+                                        key: const ValueKey('step2'),
+                                        sections: _sections,
+                                        maxContentLength: _maxContentLength,
+                                        contentError: _contentError,
+                                        isUploadingInlineImage:
+                                            _isUploadingInlineImage,
+                                        onContentChanged: _handleSectionChanged,
+                                        onSectionFocused: _setActiveSection,
+                                        onPickExtraMedia: _pickInlineImage,
+                                        onRemoveImage: _removeInlineImage,
+                                      ),
                               ),
                             ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                            SizedBox(height: footerSpacing),
+                            if (_step == 0)
+                              _CreateStoryPrimaryButton(
+                                label: l10n.storyContinueAction,
+                                isLoading: false,
+                                onTap: () {
+                                  if (_validateStepOne()) {
+                                    setState(() {
+                                      _step = 1;
+                                    });
+                                  }
+                                },
+                              )
+                            else ...[
+                              _CreateStoryActions(
+                                isSaving: _isSaving,
+                                publishLabel: widget.isEditMode
+                                    ? l10n.storyUpdateAction
+                                    : l10n.storyPublishAction,
+                                onPublishTap: () => _saveStory('PUBLISHED'),
+                              ),
+                              SizedBox(
+                                height: adaptive.scale(
+                                  isCompactHeight ? 6 : 10,
+                                  minFactor: 0.8,
+                                  maxFactor: 1.0,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _isSaving
+                                    ? null
+                                    : () => _saveStory('DRAFT'),
+                                child: Text(
+                                  l10n.storySaveDraftAction,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.accent,
+                                    fontSize: adaptive.scale(15),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+              );
+            },
           ),
         ),
       ),
@@ -530,35 +807,48 @@ class _CreateStoryTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    return SizedBox(
-      height: adaptive.scale(48),
-      child: Stack(
-        alignment: Alignment.center,
+    final buttonSize = adaptive.scale(
+      adaptive.isVeryShort ? 38 : 42,
+      minFactor: 0.82,
+      maxFactor: 1.0,
+    );
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: buttonSize),
+      child: Row(
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
+          SizedBox(
+            width: buttonSize,
+            height: buttonSize,
             child: GestureDetector(
               onTap: onBackTap,
-              child: SizedBox(
-                width: adaptive.scale(40),
-                height: adaptive.scale(40),
-                child: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: StoryPalette.text,
-                  size: adaptive.scale(24),
-                ),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: StoryPalette.text,
+                size: adaptive.scale(22),
               ),
             ),
           ),
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              color: StoryPalette.text,
-              fontSize: adaptive.scale(18),
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.6,
+          SizedBox(width: adaptive.scale(10, minFactor: 0.8, maxFactor: 1.0)),
+          Expanded(
+            child: Text(
+              title.toUpperCase(),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: StoryPalette.text,
+                fontSize: adaptive.scale(
+                  adaptive.isVeryNarrow ? 16 : 18,
+                  minFactor: 0.82,
+                  maxFactor: 1.0,
+                ),
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+              ),
             ),
           ),
+          SizedBox(width: adaptive.scale(10, minFactor: 0.8, maxFactor: 1.0)),
+          SizedBox(width: buttonSize, height: buttonSize),
         ],
       ),
     );
@@ -575,20 +865,35 @@ class _CreateStoryStepper extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     final currentColor = AppColors.accent;
     final doneColor = const Color(0xFF22D063);
+    final dotSize = adaptive.scale(
+      adaptive.isVeryNarrow || adaptive.isVeryShort ? 54 : 62,
+      minFactor: 0.82,
+      maxFactor: 1.0,
+    );
+    final connectorWidth = adaptive.scale(
+      adaptive.isVeryNarrow ? 42 : 62,
+      minFactor: 0.78,
+      maxFactor: 1.0,
+    );
+    final gap = adaptive.scale(
+      adaptive.isVeryNarrow ? 10 : 18,
+      minFactor: 0.78,
+      maxFactor: 1.0,
+    );
 
     Widget dot(int index) {
       final isCurrent = step == index;
       final isDone = step > index;
       return Container(
-        width: adaptive.scale(62),
-        height: adaptive.scale(62),
+        width: dotSize,
+        height: dotSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: isDone
               ? doneColor
               : (isCurrent
-                    ? currentColor
-                    : currentColor.withValues(alpha: 0.18)),
+                  ? currentColor
+                  : currentColor.withValues(alpha: 0.18)),
           boxShadow: isCurrent || isDone
               ? [
                   BoxShadow(
@@ -625,9 +930,9 @@ class _CreateStoryStepper extends StatelessWidget {
       children: [
         dot(0),
         Container(
-          width: adaptive.scale(62),
+          width: connectorWidth,
           height: adaptive.scale(4),
-          margin: EdgeInsets.symmetric(horizontal: adaptive.scale(18)),
+          margin: EdgeInsets.symmetric(horizontal: gap),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(adaptive.radius(999)),
             color: step > 0
@@ -650,6 +955,7 @@ class _CreateStoryStepOne extends StatelessWidget {
     required this.tags,
     required this.selectedCategory,
     required this.coverFileId,
+    required this.coverImageUrl,
     required this.coverPreviewBytes,
     required this.isUploadingCover,
     required this.titleError,
@@ -667,6 +973,7 @@ class _CreateStoryStepOne extends StatelessWidget {
   final List<String> tags;
   final String selectedCategory;
   final String? coverFileId;
+  final String? coverImageUrl;
   final Uint8List? coverPreviewBytes;
   final bool isUploadingCover;
   final String? titleError;
@@ -690,11 +997,13 @@ class _CreateStoryStepOne extends StatelessWidget {
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CoverUploadBox(
             coverFileId: coverFileId,
+            coverImageUrl: coverImageUrl,
             coverPreviewBytes: coverPreviewBytes,
             isUploading: isUploadingCover,
             errorText: coverError,
@@ -712,9 +1021,9 @@ class _CreateStoryStepOne extends StatelessWidget {
             l10n.storyPlacePrompt,
             style: TextStyle(
               color: StoryPalette.text,
-              fontSize: adaptive.scale(34),
+              fontSize: adaptive.scale(14),
               height: 0.97,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               letterSpacing: -1.4,
             ),
           ),
@@ -750,7 +1059,11 @@ class _CreateStoryStepOne extends StatelessWidget {
               crossAxisCount: adaptive.isVeryNarrow ? 1 : 2,
               crossAxisSpacing: adaptive.scale(16),
               mainAxisSpacing: adaptive.scale(16),
-              mainAxisExtent: adaptive.scale(104),
+              mainAxisExtent: adaptive.scale(
+                adaptive.isVeryNarrow ? 96 : 104,
+                minFactor: 0.82,
+                maxFactor: 1.0,
+              ),
             ),
             itemBuilder: (context, index) {
               final category = categories[index];
@@ -783,68 +1096,57 @@ class _CreateStoryStepOne extends StatelessWidget {
 class _CreateStoryStepTwo extends StatelessWidget {
   const _CreateStoryStepTwo({
     super.key,
-    required this.contentController,
+    required this.sections,
+    required this.maxContentLength,
     required this.contentError,
-    required this.onBackTap,
+    required this.isUploadingInlineImage,
+    required this.onContentChanged,
+    required this.onSectionFocused,
     required this.onPickExtraMedia,
+    required this.onRemoveImage,
   });
 
-  final TextEditingController contentController;
+  final List<_StoryComposerSection> sections;
+  final int maxContentLength;
   final String? contentError;
-  final VoidCallback onBackTap;
-  final VoidCallback onPickExtraMedia;
+  final bool isUploadingInlineImage;
+  final VoidCallback onContentChanged;
+  final ValueChanged<int> onSectionFocused;
+  final Future<void> Function({int? sectionIndex}) onPickExtraMedia;
+  final void Function(int sectionIndex, _StoryInlineImageDraft image)
+      onRemoveImage;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
-    final count = contentController.text.characters.length;
+    final visibleText = sections
+        .map((section) => section.controller.text.trim())
+        .where((text) => text.isNotEmpty)
+        .join('\n\n');
+    final count = visibleText.characters.length;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: adaptive.scale(360, minFactor: 0.75, maxFactor: 1.0),
+          for (final entry in sections.indexed) ...[
+            _StoryComposerSectionCard(
+              section: entry.$2,
+              index: entry.$1,
+              isFirst: entry.$1 == 0,
+              adaptive: adaptive,
+              isUploadingInlineImage: isUploadingInlineImage,
+              onChanged: onContentChanged,
+              onFocus: () => onSectionFocused(entry.$1),
+              onAddImage: () => onPickExtraMedia(sectionIndex: entry.$1),
+              onRemoveImage: (image) => onRemoveImage(entry.$1, image),
             ),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                    color: AppColors.accent.withValues(alpha: 0.42),
-                    width: adaptive.scale(5),
-                  ),
-                ),
-              ),
-              child: TextField(
-                controller: contentController,
-                minLines: 10,
-                maxLines: null,
-                style: TextStyle(
-                  color: StoryPalette.text,
-                  fontSize: adaptive.scale(25),
-                  height: 1.45,
-                  letterSpacing: -0.5,
-                ),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: l10n.storyContentHint,
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.24),
-                    fontSize: adaptive.scale(25),
-                  ),
-                  contentPadding: EdgeInsets.fromLTRB(
-                    adaptive.scale(22),
-                    adaptive.scale(18),
-                    adaptive.scale(6),
-                    adaptive.scale(18),
-                  ),
-                ),
-              ),
-            ),
-          ),
+            if (entry.$1 != sections.length - 1)
+              SizedBox(height: adaptive.scale(18)),
+          ],
           if (contentError != null) ...[
             SizedBox(height: adaptive.scale(10)),
             Text(
@@ -880,33 +1182,13 @@ class _CreateStoryStepTwo extends StatelessWidget {
                 ),
                 SizedBox(height: adaptive.scale(14)),
                 Text(
-                  '$count / $_CreateStoryScreenState._maxContentLength',
+                  '$count / $maxContentLength',
                   style: TextStyle(
                     color: AppColors.accent,
                     fontSize: adaptive.scale(18),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.8,
                   ),
-                ),
-                SizedBox(height: adaptive.scale(20)),
-                Row(
-                  children: [
-                    _ToolButton(label: '99', onTap: null),
-                    SizedBox(width: adaptive.scale(14)),
-                    _ToolButton(
-                      icon: Icons.add_photo_alternate_outlined,
-                      onTap: onPickExtraMedia,
-                    ),
-                    SizedBox(width: adaptive.scale(14)),
-                    _ToolButton(
-                      icon: Icons.auto_awesome_outlined,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(l10n.storyAiHintUnavailable)),
-                        );
-                      },
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -975,78 +1257,345 @@ class _CreateStoryStepTwo extends StatelessWidget {
 class _CreateStoryActions extends StatelessWidget {
   const _CreateStoryActions({
     required this.isSaving,
-    required this.backLabel,
     required this.publishLabel,
-    required this.onBackTap,
     required this.onPublishTap,
   });
 
   final bool isSaving;
-  final String backLabel;
   final String publishLabel;
-  final VoidCallback onBackTap;
   final VoidCallback onPublishTap;
 
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
+    final buttonHeight = adaptive.scale(
+      adaptive.isShort ? 66 : 74,
+      minFactor: 0.82,
+      maxFactor: 1.0,
+    );
+    final shouldStack =
+        adaptive.isVeryNarrow || adaptive.textScaleFactor > 1.15;
+
+    Widget publishButton() {
+      return ElevatedButton(
+        onPressed: isSaving ? null : onPublishTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
+          minimumSize: Size(double.infinity, buttonHeight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(adaptive.radius(999)),
+          ),
+        ),
+        child: isSaving
+            ? SizedBox(
+                width: adaptive.scale(22),
+                height: adaptive.scale(22),
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                publishLabel,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: adaptive.scale(18),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+      );
+    }
+
+    if (shouldStack) {
+      return Column(
+        children: [
+          SizedBox(width: double.infinity, child: publishButton()),
+          SizedBox(height: adaptive.scale(12, minFactor: 0.82, maxFactor: 1)),
+        ],
+      );
+    }
+
     return Row(
       children: [
-        Expanded(
-          flex: 32,
-          child: OutlinedButton(
-            onPressed: isSaving ? null : onBackTap,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.accent,
-              side: BorderSide(
-                color: AppColors.accent.withValues(alpha: 0.36),
-                width: 2,
-              ),
-              minimumSize: Size(double.infinity, adaptive.scale(74)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(adaptive.radius(999)),
-              ),
-            ),
-            child: Text(
-              backLabel,
-              style: TextStyle(
-                fontSize: adaptive.scale(20),
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ),
         SizedBox(width: adaptive.scale(16)),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: isSaving ? null : onPublishTap,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
-              minimumSize: Size(double.infinity, adaptive.scale(74)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(adaptive.radius(999)),
+        Expanded(child: publishButton()),
+      ],
+    );
+  }
+}
+
+class _StoryComposerSection {
+  _StoryComposerSection({
+    String initialText = '',
+    List<_StoryInlineImageDraft> images = const <_StoryInlineImageDraft>[],
+  })  : controller = TextEditingController(text: initialText),
+        focusNode = FocusNode(),
+        images = List<_StoryInlineImageDraft>.from(images);
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final List<_StoryInlineImageDraft> images;
+
+  void dispose() {
+    controller.dispose();
+    focusNode.dispose();
+  }
+}
+
+class _StoryInlineImageDraft {
+  const _StoryInlineImageDraft({required this.fileId, this.previewBytes});
+
+  final String fileId;
+  final Uint8List? previewBytes;
+}
+
+class _StoryComposerSectionCard extends StatelessWidget {
+  const _StoryComposerSectionCard({
+    required this.section,
+    required this.index,
+    required this.isFirst,
+    required this.adaptive,
+    required this.isUploadingInlineImage,
+    required this.onChanged,
+    required this.onFocus,
+    required this.onAddImage,
+    required this.onRemoveImage,
+  });
+
+  final _StoryComposerSection section;
+  final int index;
+  final bool isFirst;
+  final StoryAdaptive adaptive;
+  final bool isUploadingInlineImage;
+  final VoidCallback onChanged;
+  final VoidCallback onFocus;
+  final VoidCallback onAddImage;
+  final ValueChanged<_StoryInlineImageDraft> onRemoveImage;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final hasImages = section.images.isNotEmpty;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        adaptive.scale(18),
+        adaptive.scale(16),
+        adaptive.scale(18),
+        adaptive.scale(16),
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(adaptive.radius(24)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: Colors.white.withValues(alpha: 0.025),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: section.controller,
+            focusNode: section.focusNode,
+            minLines: isFirst ? 8 : 4,
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            textAlignVertical: TextAlignVertical.top,
+            onTap: onFocus,
+            onChanged: (_) => onChanged(),
+            style: TextStyle(
+              color: StoryPalette.text,
+              fontSize: adaptive.scale(
+                adaptive.isVeryNarrow ? 20 : 23,
+                minFactor: 0.82,
+                maxFactor: 1.0,
+              ),
+              height: 1.5,
+              letterSpacing: -0.4,
+            ),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: isFirst
+                  ? l10n.storyContentHint
+                  : l10n.storyContinueSectionHint,
+              hintStyle: TextStyle(
+                color: Colors.white.withValues(alpha: 0.24),
+                fontSize: adaptive.scale(
+                  adaptive.isVeryNarrow ? 20 : 23,
+                  minFactor: 0.82,
+                  maxFactor: 1.0,
+                ),
               ),
             ),
-            child: isSaving
-                ? SizedBox(
-                    width: adaptive.scale(22),
-                    height: adaptive.scale(22),
-                    child: const CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(
-                    publishLabel,
-                    style: TextStyle(
-                      fontSize: adaptive.scale(21),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+          ),
+          SizedBox(height: adaptive.scale(10)),
+          Row(
+            children: [
+              _InlineImageActionChip(
+                icon: isUploadingInlineImage
+                    ? Icons.hourglass_top_rounded
+                    : Icons.add_photo_alternate_outlined,
+                label: l10n.storyInlineImageAddAction,
+                onTap: isUploadingInlineImage ? null : onAddImage,
+              ),
+            ],
+          ),
+          if (hasImages) ...[
+            SizedBox(height: adaptive.scale(14)),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: section.images.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: adaptive.isVeryNarrow ? 2 : 3,
+                crossAxisSpacing: adaptive.scale(10),
+                mainAxisSpacing: adaptive.scale(10),
+                mainAxisExtent: adaptive.scale(
+                  120,
+                  minFactor: 0.84,
+                  maxFactor: 1,
+                ),
+              ),
+              itemBuilder: (context, imageIndex) {
+                final image = section.images[imageIndex];
+                return _InlineImageCard(
+                  image: image,
+                  onRemove: () => onRemoveImage(image),
+                );
+              },
+            ),
+          ],
+          if (index > 0 || hasImages) ...[
+            SizedBox(height: adaptive.scale(6)),
+            Text(
+              hasImages
+                  ? l10n.storyInlineImageHint
+                  : l10n.storyContinueSectionLabel,
+              style: TextStyle(
+                color: StoryPalette.textMuted,
+                fontSize: adaptive.scale(12),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineImageActionChip extends StatelessWidget {
+  const _InlineImageActionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: adaptive.scale(14),
+            vertical: adaptive.scale(10),
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(adaptive.radius(999)),
+            color: AppColors.accent.withValues(alpha: 0.08),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: AppColors.accent, size: adaptive.scale(18)),
+              SizedBox(width: adaptive.scale(8)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: AppColors.accent,
+                  fontSize: adaptive.scale(13),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _InlineImageCard extends StatelessWidget {
+  const _InlineImageCard({required this.image, required this.onRemove});
+
+  final _StoryInlineImageDraft image;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    final imageUrl = resolvePublicFileContentUrl(image.fileId);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(adaptive.radius(18)),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: const BoxDecoration(color: Color(0xFF2A1708)),
+            child: image.previewBytes != null
+                ? Image.memory(image.previewBytes!, fit: BoxFit.cover)
+                : (imageUrl == null
+                    ? const Center(
+                        child: Icon(
+                          Icons.image_outlined,
+                          color: Colors.white54,
+                        ),
+                      )
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) {
+                          return const Center(
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: Colors.white54,
+                            ),
+                          );
+                        },
+                      )),
+          ),
+          Positioned(
+            top: adaptive.scale(8),
+            right: adaptive.scale(8),
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: adaptive.scale(28),
+                height: adaptive.scale(28),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.52),
+                ),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: adaptive.scale(16),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1067,7 +1616,11 @@ class _CreateStoryPrimaryButton extends StatelessWidget {
     final adaptive = StoryAdaptive.of(context);
     return SizedBox(
       width: double.infinity,
-      height: adaptive.scale(74),
+      height: adaptive.scale(
+        adaptive.isShort ? 66 : 74,
+        minFactor: 0.82,
+        maxFactor: 1.0,
+      ),
       child: ElevatedButton(
         onPressed: isLoading ? null : onTap,
         style: ElevatedButton.styleFrom(
@@ -1089,7 +1642,7 @@ class _CreateStoryPrimaryButton extends StatelessWidget {
             : Text(
                 label,
                 style: TextStyle(
-                  fontSize: adaptive.scale(21),
+                  fontSize: adaptive.scale(18),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -1101,6 +1654,7 @@ class _CreateStoryPrimaryButton extends StatelessWidget {
 class _CoverUploadBox extends StatelessWidget {
   const _CoverUploadBox({
     required this.coverFileId,
+    required this.coverImageUrl,
     required this.coverPreviewBytes,
     required this.isUploading,
     required this.errorText,
@@ -1108,6 +1662,7 @@ class _CoverUploadBox extends StatelessWidget {
   });
 
   final String? coverFileId;
+  final String? coverImageUrl;
   final Uint8List? coverPreviewBytes;
   final bool isUploading;
   final String? errorText;
@@ -1117,8 +1672,15 @@ class _CoverUploadBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
-    final hasCover =
-        (coverFileId ?? '').trim().isNotEmpty || coverPreviewBytes != null;
+    final normalizedCoverUrl = (coverImageUrl ?? '').trim();
+    final hasCover = (coverFileId ?? '').trim().isNotEmpty ||
+        coverPreviewBytes != null ||
+        normalizedCoverUrl.isNotEmpty;
+    final minHeight = adaptive.scale(
+      adaptive.isVeryShort ? 220 : (adaptive.isShort ? 260 : 332),
+      minFactor: 0.72,
+      maxFactor: 1.0,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1128,7 +1690,7 @@ class _CoverUploadBox extends StatelessWidget {
           borderRadius: BorderRadius.circular(adaptive.radius(26)),
           child: Container(
             width: double.infinity,
-            constraints: BoxConstraints(minHeight: adaptive.scale(332)),
+            constraints: BoxConstraints(minHeight: minHeight),
             padding: EdgeInsets.all(adaptive.scale(22)),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(adaptive.radius(26)),
@@ -1153,18 +1715,38 @@ class _CoverUploadBox extends StatelessWidget {
                                   coverPreviewBytes!,
                                   fit: BoxFit.cover,
                                 )
-                              : const DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFF2A1708),
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.image_rounded,
-                                      color: Colors.white54,
-                                      size: 34,
+                              : normalizedCoverUrl.isNotEmpty
+                                  ? Image.network(
+                                      normalizedCoverUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return const DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: Color(0xFF2A1708),
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.image_rounded,
+                                              color: Colors.white54,
+                                              size: 34,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : const DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: Color(0xFF2A1708),
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.image_rounded,
+                                          color: Colors.white54,
+                                          size: 34,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
                         ),
                         if (isUploading)
                           const Positioned.fill(
@@ -1184,8 +1766,16 @@ class _CoverUploadBox extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: adaptive.scale(124),
-                        height: adaptive.scale(124),
+                        width: adaptive.scale(
+                          adaptive.isShort ? 92 : 124,
+                          minFactor: 0.76,
+                          maxFactor: 1.0,
+                        ),
+                        height: adaptive.scale(
+                          adaptive.isShort ? 92 : 124,
+                          minFactor: 0.76,
+                          maxFactor: 1.0,
+                        ),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.accent.withValues(alpha: 0.08),
@@ -1255,7 +1845,11 @@ class _StoryFormField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final height = adaptive.scale(72);
+    final height = adaptive.scale(
+      adaptive.isShort ? 64 : 72,
+      minFactor: 0.84,
+      maxFactor: 1.0,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1272,7 +1866,7 @@ class _StoryFormField extends StatelessWidget {
           SizedBox(height: adaptive.scale(12)),
         ],
         Container(
-          height: height,
+          constraints: BoxConstraints(minHeight: height),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(height / 2),
             color: AppColors.accent.withValues(alpha: 0.08),
@@ -1297,9 +1891,15 @@ class _StoryFormField extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
+                  minLines: 1,
+                  maxLines: 2,
                   style: TextStyle(
                     color: StoryPalette.text,
-                    fontSize: adaptive.scale(18),
+                    fontSize: adaptive.scale(
+                      adaptive.isVeryNarrow ? 16 : 18,
+                      minFactor: 0.86,
+                      maxFactor: 1.0,
+                    ),
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
@@ -1307,7 +1907,11 @@ class _StoryFormField extends StatelessWidget {
                     hintText: hint,
                     hintStyle: TextStyle(
                       color: Colors.white.withValues(alpha: 0.38),
-                      fontSize: adaptive.scale(18),
+                      fontSize: adaptive.scale(
+                        adaptive.isVeryNarrow ? 16 : 18,
+                        minFactor: 0.86,
+                        maxFactor: 1.0,
+                      ),
                     ),
                   ),
                 ),
@@ -1362,28 +1966,52 @@ class _TagEntrySection extends StatelessWidget {
           ),
         ),
         SizedBox(height: adaptive.scale(10)),
-        Row(
-          children: [
-            Expanded(
-              child: _StoryFormField(
-                controller: controller,
-                hint: l10n.storyTagHint,
-              ),
-            ),
-            SizedBox(width: adaptive.scale(10)),
-            ElevatedButton(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final stackInput =
+                adaptive.isVeryNarrow || constraints.maxWidth < 320;
+            final addButton = ElevatedButton(
               onPressed: onSubmitted,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: Colors.white,
-                minimumSize: Size(adaptive.scale(54), adaptive.scale(54)),
+                minimumSize: Size(
+                  stackInput ? double.infinity : adaptive.scale(54),
+                  adaptive.scale(54),
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(adaptive.radius(18)),
                 ),
               ),
               child: Icon(Icons.add_rounded, size: adaptive.scale(20)),
-            ),
-          ],
+            );
+
+            if (stackInput) {
+              return Column(
+                children: [
+                  _StoryFormField(
+                    controller: controller,
+                    hint: l10n.storyTagHint,
+                  ),
+                  SizedBox(height: adaptive.scale(10)),
+                  SizedBox(width: double.infinity, child: addButton),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(
+                  child: _StoryFormField(
+                    controller: controller,
+                    hint: l10n.storyTagHint,
+                  ),
+                ),
+                SizedBox(width: adaptive.scale(10)),
+                addButton,
+              ],
+            );
+          },
         ),
         if (tags.isNotEmpty) ...[
           SizedBox(height: adaptive.scale(14)),
@@ -1481,6 +2109,8 @@ class _StoryCategoryCard extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: selected
                       ? AppColors.accent
@@ -1491,48 +2121,6 @@ class _StoryCategoryCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ToolButton extends StatelessWidget {
-  const _ToolButton({this.label, this.icon, required this.onTap})
-    : assert(label != null || icon != null);
-
-  final String? label;
-  final IconData? icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final adaptive = StoryAdaptive.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: adaptive.scale(54),
-        height: adaptive.scale(54),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.045),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.02)),
-        ),
-        child: Center(
-          child: label != null
-              ? Text(
-                  label!,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    fontSize: adaptive.scale(17),
-                    fontWeight: FontWeight.w800,
-                  ),
-                )
-              : Icon(
-                  icon,
-                  color: Colors.white.withValues(alpha: 0.92),
-                  size: adaptive.scale(22),
-                ),
         ),
       ),
     );

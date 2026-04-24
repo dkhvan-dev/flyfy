@@ -17,6 +17,7 @@ var (
 	ErrInvalidStoryPlace          = errors.New("story place is invalid")
 	ErrInvalidStoryCover          = errors.New("story cover is required for published stories")
 	ErrInvalidCommentBody         = errors.New("comment body is required and must be 800 characters or fewer")
+	ErrStoryCommentRateLimited    = errors.New("you can leave only one comment every 3 hours")
 	ErrUnauthenticatedWriter      = errors.New("missing authenticated subject")
 	ErrCannotLikeOwnStory         = errors.New("you cannot like your own story")
 	ErrCannotCommentOwnDeleted    = errors.New("cannot comment on deleted story")

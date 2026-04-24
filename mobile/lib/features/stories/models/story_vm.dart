@@ -248,6 +248,11 @@ class StoryCommentVm {
     required this.storyId,
     required this.body,
     required this.editable,
+    required this.deletable,
+    required this.edited,
+    required this.likes,
+    required this.likedByMe,
+    required this.shareUrl,
     required this.author,
     required this.createdAt,
     required this.updatedAt,
@@ -257,6 +262,11 @@ class StoryCommentVm {
   final String storyId;
   final String body;
   final bool editable;
+  final bool deletable;
+  final bool edited;
+  final int likes;
+  final bool likedByMe;
+  final String shareUrl;
   final StoryAuthorVm author;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -267,6 +277,11 @@ class StoryCommentVm {
       storyId: json['storyId']?.toString() ?? '',
       body: json['body']?.toString() ?? '',
       editable: json['editable'] == true,
+      deletable: json['deletable'] == true,
+      edited: json['edited'] == true,
+      likes: int.tryParse(json['likes']?.toString() ?? '') ?? 0,
+      likedByMe: json['likedByMe'] == true,
+      shareUrl: json['shareUrl']?.toString() ?? '',
       author: StoryAuthorVm.fromJson(
         json['author'] as Map<String, dynamic>? ?? const {},
       ),
@@ -276,6 +291,34 @@ class StoryCommentVm {
       updatedAt:
           DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
+
+  StoryCommentVm copyWith({
+    String? body,
+    bool? editable,
+    bool? deletable,
+    bool? edited,
+    int? likes,
+    bool? likedByMe,
+    String? shareUrl,
+    StoryAuthorVm? author,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return StoryCommentVm(
+      id: id,
+      storyId: storyId,
+      body: body ?? this.body,
+      editable: editable ?? this.editable,
+      deletable: deletable ?? this.deletable,
+      edited: edited ?? this.edited,
+      likes: likes ?? this.likes,
+      likedByMe: likedByMe ?? this.likedByMe,
+      shareUrl: shareUrl ?? this.shareUrl,
+      author: author ?? this.author,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

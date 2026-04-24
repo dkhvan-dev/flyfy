@@ -845,6 +845,7 @@
   "storyCategoryCulinary": "Culinary",
   "storyDetailsTitle": "Story Details",
   "storyLinkCopied": "Story link copied",
+  "storyShareFailed": "Unable to open the share sheet. Please try again.",
   "storyAuthorLabel": "Author",
   "storyFollowAction": "Follow",
   "storyFollowingAction": "Following",
@@ -856,6 +857,18 @@
   "storyCommentHint": "Leave a thoughtful comment",
   "storyCommentsTitle": "Comments",
   "storyCommentsEmpty": "No comments yet. Start the conversation.",
+  "storyCommentRateLimit": "You can leave only one comment every 3 hours.",
+  "storyCommentCooldownUntil": "You can leave the next comment after {time}.",
+  "@storyCommentCooldownUntil": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "storyCommentLinkCopied": "Comment link copied",
+  "storyCommentShareFailed": "Unable to open the comment share sheet. Please try again.",
+  "storyCommentEditingTitle": "Editing comment",
+  "storyCommentSaveAction": "Save",
+  "storyCommentShareAction": "Share",
   "storyDeleteCommentTitle": "Delete comment?",
   "storyDeleteCommentMessage": "This comment will be permanently removed.",
   "storyDeleteCommentAction": "Delete",
@@ -896,6 +909,7 @@
   "storyCategoryLabel": "Select Category",
   "storyCategoryRequired": "Select a story category",
   "storyContentHint": "Start your narrative here...",
+  "storyContinueSectionHint": "Continue the story here...",
   "storyContentRequired": "Write the story body",
   "storyContentTooLong": "The story body must not exceed {count} characters",
   "@storyContentTooLong": {
@@ -904,6 +918,12 @@
     }
   },
   "storyCharacterCountLabel": "Character Count",
+  "storyInlineImageAddAction": "Add photo",
+  "storyInlineImageHint": "Images will appear between story paragraphs.",
+  "storyContinueSectionLabel": "Continue the text below or add more photos.",
+  "storyInlineImageUnsupported": "This image format is not supported for story content.",
+  "storyInlineImageTooLarge": "This image is too large. Choose a file up to 20 MB.",
+  "storyInlineImageUploadFailed": "Unable to upload the image into the story. Please try again.",
   "storyAiHintUnavailable": "AI writing hints are not available yet",
   "storyWritersNoteTitle": "Writer's Note",
   "storyWritersNoteBody": "Try starting with a sensory detail. Instead of “I arrived in Tokyo,” describe the neon glow reflecting off the damp pavement in Shibuya.",

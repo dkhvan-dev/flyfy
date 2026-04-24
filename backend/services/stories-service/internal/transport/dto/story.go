@@ -62,6 +62,11 @@ type StoryCommentResponse struct {
 	StoryID   string         `json:"storyId"`
 	Body      string         `json:"body"`
 	Editable  bool           `json:"editable"`
+	Deletable bool           `json:"deletable"`
+	Edited    bool           `json:"edited"`
+	Likes     int            `json:"likes"`
+	LikedByMe bool           `json:"likedByMe"`
+	ShareURL  string         `json:"shareUrl"`
 	Author    AuthorResponse `json:"author"`
 	CreatedAt string         `json:"createdAt"`
 	UpdatedAt string         `json:"updatedAt"`
@@ -83,6 +88,11 @@ type ViewResponse struct {
 
 type LikeResponse struct {
 	Likes int `json:"likes"`
+}
+
+type CommentLikeResponse struct {
+	Likes     int  `json:"likes"`
+	LikedByMe bool `json:"likedByMe"`
 }
 
 type ShareResponse struct {
