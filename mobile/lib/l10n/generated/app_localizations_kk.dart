@@ -2611,6 +2611,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyPlaceHint => 'Қала немесе елді енгізіңіз';
 
   @override
+  String get storyCountryHint => 'Елді іздеу';
+
+  @override
+  String get storyCityHint => 'Қаланы іздеу';
+
+  @override
   String get storyTagsFieldLabel => 'Тегтер';
 
   @override

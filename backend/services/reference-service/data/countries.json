@@ -1,0 +1,272 @@
+[
+  {
+    "code": "KZ",
+    "code3": "KAZ",
+    "numeric": "398",
+    "currencyCode": "KZT",
+    "phoneCode": "+7",
+    "name": {"en": "Kazakhstan", "ru": "Казахстан", "kk": "Қазақстан"},
+    "capital": {"en": "Astana", "ru": "Астана", "kk": "Астана"}
+  },
+  {
+    "code": "RU",
+    "code3": "RUS",
+    "numeric": "643",
+    "currencyCode": "RUB",
+    "phoneCode": "+7",
+    "name": {"en": "Russia", "ru": "Россия", "kk": "Ресей"},
+    "capital": {"en": "Moscow", "ru": "Москва", "kk": "Мәскеу"}
+  },
+  {
+    "code": "UZ",
+    "code3": "UZB",
+    "numeric": "860",
+    "currencyCode": "UZS",
+    "phoneCode": "+998",
+    "name": {"en": "Uzbekistan", "ru": "Узбекистан", "kk": "Өзбекстан"},
+    "capital": {"en": "Tashkent", "ru": "Ташкент", "kk": "Ташкент"}
+  },
+  {
+    "code": "KG",
+    "code3": "KGZ",
+    "numeric": "417",
+    "currencyCode": "KGS",
+    "phoneCode": "+996",
+    "name": {"en": "Kyrgyzstan", "ru": "Кыргызстан", "kk": "Қырғызстан"},
+    "capital": {"en": "Bishkek", "ru": "Бишкек", "kk": "Бішкек"}
+  },
+  {
+    "code": "TJ",
+    "code3": "TJK",
+    "numeric": "762",
+    "currencyCode": "TJS",
+    "phoneCode": "+992",
+    "name": {"en": "Tajikistan", "ru": "Таджикистан", "kk": "Тәжікстан"},
+    "capital": {"en": "Dushanbe", "ru": "Душанбе", "kk": "Душанбе"}
+  },
+  {
+    "code": "TM",
+    "code3": "TKM",
+    "numeric": "795",
+    "currencyCode": "TMT",
+    "phoneCode": "+993",
+    "name": {"en": "Turkmenistan", "ru": "Туркменистан", "kk": "Түрікменстан"},
+    "capital": {"en": "Ashgabat", "ru": "Ашхабад", "kk": "Ашғабат"}
+  },
+  {
+    "code": "GE",
+    "code3": "GEO",
+    "numeric": "268",
+    "currencyCode": "GEL",
+    "phoneCode": "+995",
+    "name": {"en": "Georgia", "ru": "Грузия", "kk": "Грузия"},
+    "capital": {"en": "Tbilisi", "ru": "Тбилиси", "kk": "Тбилиси"}
+  },
+  {
+    "code": "AZ",
+    "code3": "AZE",
+    "numeric": "031",
+    "currencyCode": "AZN",
+    "phoneCode": "+994",
+    "name": {"en": "Azerbaijan", "ru": "Азербайджан", "kk": "Әзірбайжан"},
+    "capital": {"en": "Baku", "ru": "Баку", "kk": "Баку"}
+  },
+  {
+    "code": "AM",
+    "code3": "ARM",
+    "numeric": "051",
+    "currencyCode": "AMD",
+    "phoneCode": "+374",
+    "name": {"en": "Armenia", "ru": "Армения", "kk": "Армения"},
+    "capital": {"en": "Yerevan", "ru": "Ереван", "kk": "Ереван"}
+  },
+  {
+    "code": "BY",
+    "code3": "BLR",
+    "numeric": "112",
+    "currencyCode": "BYN",
+    "phoneCode": "+375",
+    "name": {"en": "Belarus", "ru": "Беларусь", "kk": "Беларусь"},
+    "capital": {"en": "Minsk", "ru": "Минск", "kk": "Минск"}
+  },
+  {
+    "code": "UA",
+    "code3": "UKR",
+    "numeric": "804",
+    "currencyCode": "UAH",
+    "phoneCode": "+380",
+    "name": {"en": "Ukraine", "ru": "Украина", "kk": "Украина"},
+    "capital": {"en": "Kyiv", "ru": "Киев", "kk": "Киев"}
+  },
+  {
+    "code": "MD",
+    "code3": "MDA",
+    "numeric": "498",
+    "currencyCode": "MDL",
+    "phoneCode": "+373",
+    "name": {"en": "Moldova", "ru": "Молдова", "kk": "Молдова"},
+    "capital": {"en": "Chisinau", "ru": "Кишинёв", "kk": "Кишинёв"}
+  },
+  {
+    "code": "TR",
+    "code3": "TUR",
+    "numeric": "792",
+    "currencyCode": "TRY",
+    "phoneCode": "+90",
+    "name": {"en": "Turkey", "ru": "Турция", "kk": "Түркия"},
+    "capital": {"en": "Ankara", "ru": "Анкара", "kk": "Анкара"}
+  },
+  {
+    "code": "AE",
+    "code3": "ARE",
+    "numeric": "784",
+    "currencyCode": "AED",
+    "phoneCode": "+971",
+    "name": {"en": "United Arab Emirates", "ru": "ОАЭ", "kk": "БАЭ"},
+    "capital": {"en": "Abu Dhabi", "ru": "Абу-Даби", "kk": "Абу-Даби"}
+  },
+  {
+    "code": "TH",
+    "code3": "THA",
+    "numeric": "764",
+    "currencyCode": "THB",
+    "phoneCode": "+66",
+    "name": {"en": "Thailand", "ru": "Таиланд", "kk": "Тайланд"},
+    "capital": {"en": "Bangkok", "ru": "Бангкок", "kk": "Бангкок"}
+  },
+  {
+    "code": "EG",
+    "code3": "EGY",
+    "numeric": "818",
+    "currencyCode": "EGP",
+    "phoneCode": "+20",
+    "name": {"en": "Egypt", "ru": "Египет", "kk": "Мысыр"},
+    "capital": {"en": "Cairo", "ru": "Каир", "kk": "Каир"}
+  },
+  {
+    "code": "CN",
+    "code3": "CHN",
+    "numeric": "156",
+    "currencyCode": "CNY",
+    "phoneCode": "+86",
+    "name": {"en": "China", "ru": "Китай", "kk": "Қытай"},
+    "capital": {"en": "Beijing", "ru": "Пекин", "kk": "Пекин"}
+  },
+  {
+    "code": "KR",
+    "code3": "KOR",
+    "numeric": "410",
+    "currencyCode": "KRW",
+    "phoneCode": "+82",
+    "name": {"en": "South Korea", "ru": "Южная Корея", "kk": "Оңтүстік Корея"},
+    "capital": {"en": "Seoul", "ru": "Сеул", "kk": "Сеул"}
+  },
+  {
+    "code": "JP",
+    "code3": "JPN",
+    "numeric": "392",
+    "currencyCode": "JPY",
+    "phoneCode": "+81",
+    "name": {"en": "Japan", "ru": "Япония", "kk": "Жапония"},
+    "capital": {"en": "Tokyo", "ru": "Токио", "kk": "Токио"}
+  },
+  {
+    "code": "IN",
+    "code3": "IND",
+    "numeric": "356",
+    "currencyCode": "INR",
+    "phoneCode": "+91",
+    "name": {"en": "India", "ru": "Индия", "kk": "Үндістан"},
+    "capital": {"en": "New Delhi", "ru": "Нью-Дели", "kk": "Нью-Дели"}
+  },
+  {
+    "code": "US",
+    "code3": "USA",
+    "numeric": "840",
+    "currencyCode": "USD",
+    "phoneCode": "+1",
+    "name": {"en": "United States", "ru": "США", "kk": "АҚШ"},
+    "capital": {"en": "Washington", "ru": "Вашингтон", "kk": "Вашингтон"}
+  },
+  {
+    "code": "GB",
+    "code3": "GBR",
+    "numeric": "826",
+    "currencyCode": "GBP",
+    "phoneCode": "+44",
+    "name": {"en": "United Kingdom", "ru": "Великобритания", "kk": "Ұлыбритания"},
+    "capital": {"en": "London", "ru": "Лондон", "kk": "Лондон"}
+  },
+  {
+    "code": "DE",
+    "code3": "DEU",
+    "numeric": "276",
+    "currencyCode": "EUR",
+    "phoneCode": "+49",
+    "name": {"en": "Germany", "ru": "Германия", "kk": "Германия"},
+    "capital": {"en": "Berlin", "ru": "Берлин", "kk": "Берлин"}
+  },
+  {
+    "code": "FR",
+    "code3": "FRA",
+    "numeric": "250",
+    "currencyCode": "EUR",
+    "phoneCode": "+33",
+    "name": {"en": "France", "ru": "Франция", "kk": "Франция"},
+    "capital": {"en": "Paris", "ru": "Париж", "kk": "Париж"}
+  },
+  {
+    "code": "IT",
+    "code3": "ITA",
+    "numeric": "380",
+    "currencyCode": "EUR",
+    "phoneCode": "+39",
+    "name": {"en": "Italy", "ru": "Италия", "kk": "Италия"},
+    "capital": {"en": "Rome", "ru": "Рим", "kk": "Рим"}
+  },
+  {
+    "code": "ES",
+    "code3": "ESP",
+    "numeric": "724",
+    "currencyCode": "EUR",
+    "phoneCode": "+34",
+    "name": {"en": "Spain", "ru": "Испания", "kk": "Испания"},
+    "capital": {"en": "Madrid", "ru": "Мадрид", "kk": "Мадрид"}
+  },
+  {
+    "code": "MN",
+    "code3": "MNG",
+    "numeric": "496",
+    "currencyCode": "MNT",
+    "phoneCode": "+976",
+    "name": {"en": "Mongolia", "ru": "Монголия", "kk": "Моңғолия"},
+    "capital": {"en": "Ulaanbaatar", "ru": "Улан-Батор", "kk": "Ұлан-Батор"}
+  },
+  {
+    "code": "MY",
+    "code3": "MYS",
+    "numeric": "458",
+    "currencyCode": "MYR",
+    "phoneCode": "+60",
+    "name": {"en": "Malaysia", "ru": "Малайзия", "kk": "Малайзия"},
+    "capital": {"en": "Kuala Lumpur", "ru": "Куала-Лумпур", "kk": "Куала-Лумпур"}
+  },
+  {
+    "code": "ID",
+    "code3": "IDN",
+    "numeric": "360",
+    "currencyCode": "IDR",
+    "phoneCode": "+62",
+    "name": {"en": "Indonesia", "ru": "Индонезия", "kk": "Индонезия"},
+    "capital": {"en": "Jakarta", "ru": "Джакарта", "kk": "Джакарта"}
+  },
+  {
+    "code": "MV",
+    "code3": "MDV",
+    "numeric": "462",
+    "currencyCode": "MVR",
+    "phoneCode": "+960",
+    "name": {"en": "Maldives", "ru": "Мальдивы", "kk": "Мальдив аралдары"},
+    "capital": {"en": "Male", "ru": "Мале", "kk": "Мале"}
+  }
+]

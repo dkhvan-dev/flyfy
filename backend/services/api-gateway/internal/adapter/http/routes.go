@@ -18,6 +18,7 @@ type RoutePolicy struct {
 	Upstream           string
 	RateLimitPerMinute *int
 	RewritePrefix      string
+	Cacheable          bool
 }
 
 func routePolicies(apiPrefix string) []RoutePolicy {
@@ -150,6 +151,30 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			AuthMode:      RouteAuthAuthenticated,
 			Upstream:      "chat",
 			RewritePrefix: "/v1/ws",
+		},
+		{
+			Name:          "reference-countries",
+			Prefix:        apiPrefix + "/reference/countries",
+			AuthMode:      RouteAuthPublic,
+			Upstream:      "reference",
+			RewritePrefix: "/v1/countries",
+			Cacheable:     true,
+		},
+		{
+			Name:          "reference-cities",
+			Prefix:        apiPrefix + "/reference/cities",
+			AuthMode:      RouteAuthPublic,
+			Upstream:      "reference",
+			RewritePrefix: "/v1/cities",
+			Cacheable:     true,
+		},
+		{
+			Name:          "reference-currencies",
+			Prefix:        apiPrefix + "/reference/currencies",
+			AuthMode:      RouteAuthPublic,
+			Upstream:      "reference",
+			RewritePrefix: "/v1/currencies",
+			Cacheable:     true,
 		},
 	}
 }

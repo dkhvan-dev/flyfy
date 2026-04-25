@@ -238,6 +238,10 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 		args = append(args, term)
 		clauses = append(clauses, fmt.Sprintf("COALESCE(place_name, '') ILIKE $%d", len(args)))
 	}
+	if strings.TrimSpace(filter.PlaceCountryCode) != "" {
+		args = append(args, strings.ToUpper(strings.TrimSpace(filter.PlaceCountryCode)))
+		clauses = append(clauses, fmt.Sprintf("UPPER(COALESCE(place_country_code, '')) = $%d", len(args)))
+	}
 
 	orderBy := "published_at DESC NULLS LAST, created_at DESC"
 	switch filter.Sort {

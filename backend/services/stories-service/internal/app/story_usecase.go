@@ -649,15 +649,18 @@ func (u *StoryUseCase) ShareStory(ctx context.Context, storyID uuid.UUID) (strin
 }
 
 func (u *StoryUseCase) normalizeListInput(input ListStoriesInput, viewerUserID *uuid.UUID) (model.StoryListFilter, error) {
+	placeQuery, placeCountryCode := normalizePlaceFilters(input.Place)
+
 	filter := model.StoryListFilter{
-		Search:        strings.TrimSpace(input.Search),
-		PlaceQuery:    strings.TrimSpace(input.Place),
-		AuthorUserID:  input.AuthorID,
-		ViewerUserID:  viewerUserID,
-		IncludeDrafts: false,
-		OnlyPublished: true,
-		Limit:         input.Limit,
-		Offset:        input.Offset,
+		Search:           strings.TrimSpace(input.Search),
+		PlaceQuery:       placeQuery,
+		PlaceCountryCode: placeCountryCode,
+		AuthorUserID:     input.AuthorID,
+		ViewerUserID:     viewerUserID,
+		IncludeDrafts:    false,
+		OnlyPublished:    true,
+		Limit:            input.Limit,
+		Offset:           input.Offset,
 	}
 
 	if filter.Limit <= 0 {
@@ -703,6 +706,33 @@ func (u *StoryUseCase) normalizeListInput(input ListStoriesInput, viewerUserID *
 	}
 
 	return filter, nil
+}
+
+func normalizePlaceFilters(raw string) (placeQuery string, placeCountryCode string) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", ""
+	}
+
+	if looksLikeCountryCode(trimmed) {
+		return "", strings.ToUpper(trimmed)
+	}
+
+	return trimmed, ""
+}
+
+func looksLikeCountryCode(value string) bool {
+	if utf8.RuneCountInString(value) != 2 {
+		return false
+	}
+
+	for _, r := range value {
+		if r > unicode.MaxASCII || !unicode.IsLetter(r) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func normalizeStoryInput(input CreateStoryInput) (*model.Story, error) {

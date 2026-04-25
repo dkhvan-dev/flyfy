@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
+import '../../core/network/reference_api.dart';
 import '../../core/network/story_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
@@ -40,8 +42,10 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   final _imagePicker = ImagePicker();
 
   final _titleController = TextEditingController();
-  final _placeController = TextEditingController();
   final _tagController = TextEditingController();
+
+  ReferenceCountry? _selectedCountry;
+  ReferenceCity? _selectedCity;
   final List<_StoryComposerSection> _sections = <_StoryComposerSection>[];
 
   int _step = 0;
@@ -77,7 +81,6 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   @override
   void dispose() {
     _titleController.dispose();
-    _placeController.dispose();
     _tagController.dispose();
     _disposeSections();
     super.dispose();
@@ -117,7 +120,6 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   void _prefill(StoryVm story) {
     _titleController.text = story.title;
-    _placeController.text = (story.placeName ?? '').trim();
     _setComposerSectionsFromContent((story.content ?? '').trim());
     _selectedCategory =
         story.category.trim().isEmpty ? 'JOURNAL' : story.category.trim();
@@ -129,7 +131,47 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     _tags
       ..clear()
       ..addAll(story.tags);
+
+    final countryCode = (story.placeCountryCode ?? '').trim();
+    final placeName = (story.placeName ?? '').trim();
+    if (countryCode.isNotEmpty) {
+      _selectedCountry = ReferenceCountry(code: countryCode, name: countryCode);
+      _resolveCountryName(countryCode);
+    }
+    if (placeName.isNotEmpty) {
+      // placeName may be "City, Country" — extract just the city part.
+      final cityName = placeName.contains(',')
+          ? placeName.split(',').first.trim()
+          : placeName;
+      _selectedCity = ReferenceCity(
+        id: '',
+        countryCode: countryCode,
+        name: cityName,
+      );
+    }
     setState(() {});
+  }
+
+  Future<void> _resolveCountryName(String code) async {
+    final lang = Localizations.localeOf(context).languageCode;
+    final country = await ReferenceApi().getCountry(code, lang: lang);
+    if (country != null && mounted) {
+      setState(() {
+        _selectedCountry = country;
+      });
+    }
+  }
+
+  String? _buildPlaceName() {
+    final city = _selectedCity?.name;
+    final country = _selectedCountry?.name;
+    // Don't use raw code as display name (e.g. "KZ").
+    final countryDisplay =
+        (country != null && country != _selectedCountry?.code) ? country : null;
+    if (city != null && countryDisplay != null) {
+      return '$city, $countryDisplay';
+    }
+    return city ?? countryDisplay;
   }
 
   void _disposeSections() {
@@ -550,9 +592,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
       category: _selectedCategory,
       status: status,
       coverFileId: _coverFileId,
-      placeName: _placeController.text.trim().isEmpty
-          ? null
-          : _placeController.text.trim(),
+      placeName: _buildPlaceName(),
+      placeCountryCode: _selectedCountry?.code,
       tags: _tags,
     );
 
@@ -623,10 +664,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       backgroundColor: StoryPalette.backgroundDeep,
       body: DecoratedBox(
         decoration: storyScreenBackground(),
@@ -662,16 +701,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                 minFactor: 0.8,
                 maxFactor: 1.0,
               );
-              final keyboardPadding = bottomInset > 0
-                  ? bottomInset +
-                      adaptive.scale(8, minFactor: 0.8, maxFactor: 1)
-                  : 0.0;
-
-              return AnimatedPadding(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                padding: EdgeInsets.only(bottom: keyboardPadding),
-                child: _isLoading
+              return _isLoading
                     ? const Center(
                         child: CircularProgressIndicator(
                           color: AppColors.accent,
@@ -708,8 +738,30 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                                     ? _CreateStoryStepOne(
                                         key: const ValueKey('step1'),
                                         titleController: _titleController,
-                                        placeController: _placeController,
                                         tagController: _tagController,
+                                        selectedCountry: _selectedCountry,
+                                        selectedCity: _selectedCity,
+                                        onCountryChanged: (country) {
+                                          setState(() {
+                                            _selectedCountry = country;
+                                            if (country == null) {
+                                              _selectedCity = null;
+                                            }
+                                          });
+                                        },
+                                        onCityChanged: (city) {
+                                          setState(() {
+                                            _selectedCity = city;
+                                            if (city != null &&
+                                                _selectedCountry == null) {
+                                              _selectedCountry =
+                                                  ReferenceCountry(
+                                                code: city.countryCode,
+                                                name: city.countryCode,
+                                              );
+                                            }
+                                          });
+                                        },
                                         tags: _tags,
                                         selectedCategory: _selectedCategory,
                                         coverFileId: _coverFileId,
@@ -788,8 +840,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                             ],
                           ],
                         ),
-                      ),
-              );
+                      );
             },
           ),
         ),
@@ -950,8 +1001,11 @@ class _CreateStoryStepOne extends StatelessWidget {
   const _CreateStoryStepOne({
     super.key,
     required this.titleController,
-    required this.placeController,
     required this.tagController,
+    required this.selectedCountry,
+    required this.selectedCity,
+    required this.onCountryChanged,
+    required this.onCityChanged,
     required this.tags,
     required this.selectedCategory,
     required this.coverFileId,
@@ -968,8 +1022,11 @@ class _CreateStoryStepOne extends StatelessWidget {
   });
 
   final TextEditingController titleController;
-  final TextEditingController placeController;
   final TextEditingController tagController;
+  final ReferenceCountry? selectedCountry;
+  final ReferenceCity? selectedCity;
+  final ValueChanged<ReferenceCountry?> onCountryChanged;
+  final ValueChanged<ReferenceCity?> onCityChanged;
   final List<String> tags;
   final String selectedCategory;
   final String? coverFileId;
@@ -1028,10 +1085,34 @@ class _CreateStoryStepOne extends StatelessWidget {
             ),
           ),
           SizedBox(height: adaptive.scale(18)),
-          _StoryFormField(
-            controller: placeController,
-            hint: l10n.storyPlaceHint,
-            leadingIcon: Icons.place_outlined,
+          _ReferenceSearchField<ReferenceCountry>(
+            hint: l10n.storyCountryHint,
+            leadingIcon: Icons.flag_outlined,
+            selectedLabel: selectedCountry?.name,
+            onSearch: (query) async {
+              final lang = Localizations.localeOf(context).languageCode;
+              return ReferenceApi().searchCountries(query, lang: lang);
+            },
+            itemLabel: (c) => c.name,
+            onSelected: onCountryChanged,
+            onCleared: () => onCountryChanged(null),
+          ),
+          SizedBox(height: adaptive.scale(14)),
+          _ReferenceSearchField<ReferenceCity>(
+            hint: l10n.storyCityHint,
+            leadingIcon: Icons.location_city_outlined,
+            selectedLabel: selectedCity?.name,
+            onSearch: (query) async {
+              final lang = Localizations.localeOf(context).languageCode;
+              return ReferenceApi().searchCities(
+                query,
+                countryCode: selectedCountry?.code,
+                lang: lang,
+              );
+            },
+            itemLabel: (c) => c.name,
+            onSelected: onCityChanged,
+            onCleared: () => onCityChanged(null),
           ),
           SizedBox(height: adaptive.scale(24)),
           _TagEntrySection(
@@ -1823,6 +1904,285 @@ class _CoverUploadBox extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ReferenceSearchField<T> extends StatefulWidget {
+  const _ReferenceSearchField({
+    super.key,
+    required this.hint,
+    required this.leadingIcon,
+    required this.onSearch,
+    required this.itemLabel,
+    required this.onSelected,
+    required this.onCleared,
+    this.selectedLabel,
+  });
+
+  final String hint;
+  final IconData leadingIcon;
+  final String? selectedLabel;
+  final Future<List<T>> Function(String query) onSearch;
+  final String Function(T item) itemLabel;
+  final ValueChanged<T> onSelected;
+  final VoidCallback onCleared;
+
+  @override
+  State<_ReferenceSearchField<T>> createState() =>
+      _ReferenceSearchFieldState<T>();
+}
+
+class _ReferenceSearchFieldState<T> extends State<_ReferenceSearchField<T>> {
+  final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+  final _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+  List<T> _results = [];
+  Timer? _debounce;
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.selectedLabel != null) {
+      _controller.text = widget.selectedLabel!;
+    }
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ReferenceSearchField<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedLabel != oldWidget.selectedLabel &&
+        widget.selectedLabel != null &&
+        !_focusNode.hasFocus) {
+      _controller.text = widget.selectedLabel!;
+    }
+    if (widget.selectedLabel == null && oldWidget.selectedLabel != null) {
+      _controller.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _removeOverlay();
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted && !_focusNode.hasFocus) {
+          _removeOverlay();
+        }
+      });
+    }
+  }
+
+  void _onChanged(String query) {
+    _debounce?.cancel();
+    if (query.trim().isEmpty) {
+      _removeOverlay();
+      if (widget.selectedLabel != null) {
+        widget.onCleared();
+      }
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      _performSearch(query);
+    });
+  }
+
+  Future<void> _performSearch(String query) async {
+    if (!mounted) return;
+    setState(() => _isSearching = true);
+    try {
+      final results = await widget.onSearch(query);
+      if (!mounted) return;
+      _results = results;
+      if (_results.isNotEmpty) {
+        _showOverlay();
+      } else {
+        _removeOverlay();
+      }
+    } catch (_) {
+      // Silently handle search errors.
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  void _showOverlay() {
+    _removeOverlay();
+    final adaptive = StoryAdaptive.of(context);
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final width = renderBox?.size.width ?? 300;
+
+    _overlayEntry = OverlayEntry(
+      builder: (_) => Positioned(
+        width: width,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: Offset(0, adaptive.scale(52)),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: BoxConstraints(maxHeight: adaptive.scale(220)),
+              decoration: BoxDecoration(
+                color: const Color(0xFF271609),
+                borderRadius: BorderRadius.circular(adaptive.scale(16)),
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.15),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(adaptive.scale(16)),
+                child: ListView.builder(
+                  padding: EdgeInsets.symmetric(
+                    vertical: adaptive.scale(6),
+                  ),
+                  shrinkWrap: true,
+                  itemCount: _results.length,
+                  itemBuilder: (context, index) {
+                    final item = _results[index];
+                    return InkWell(
+                      onTap: () {
+                        _controller.text = widget.itemLabel(item);
+                        widget.onSelected(item);
+                        _removeOverlay();
+                        _focusNode.unfocus();
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: adaptive.scale(18),
+                          vertical: adaptive.scale(12),
+                        ),
+                        child: Text(
+                          widget.itemLabel(item),
+                          style: TextStyle(
+                            color: StoryPalette.text,
+                            fontSize: adaptive.scale(16),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    final height = adaptive.scale(adaptive.isShort ? 64 : 72, minFactor: 0.84, maxFactor: 1.0);
+
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: Container(
+        constraints: BoxConstraints(minHeight: height),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(height / 2),
+          color: AppColors.accent.withValues(alpha: 0.08),
+        ),
+        child: Row(
+          children: [
+            SizedBox(width: adaptive.scale(20)),
+            Icon(
+              widget.leadingIcon,
+              color: Colors.white.withValues(alpha: 0.55),
+              size: adaptive.scale(24),
+            ),
+            SizedBox(width: adaptive.scale(12)),
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                onChanged: _onChanged,
+                style: TextStyle(
+                  color: StoryPalette.text,
+                  fontSize: adaptive.scale(
+                    adaptive.isVeryNarrow ? 16 : 18,
+                    minFactor: 0.86,
+                    maxFactor: 1.0,
+                  ),
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: widget.hint,
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.38),
+                    fontSize: adaptive.scale(
+                      adaptive.isVeryNarrow ? 16 : 18,
+                      minFactor: 0.86,
+                      maxFactor: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (_isSearching)
+              Padding(
+                padding: EdgeInsets.only(right: adaptive.scale(16)),
+                child: SizedBox(
+                  width: adaptive.scale(18),
+                  height: adaptive.scale(18),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
+                ),
+              )
+            else if (widget.selectedLabel != null)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  _controller.clear();
+                  _removeOverlay();
+                  widget.onCleared();
+                },
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: adaptive.scale(12),
+                    vertical: adaptive.scale(8),
+                  ),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: Colors.white.withValues(alpha: 0.45),
+                    size: adaptive.scale(20),
+                  ),
+                ),
+              )
+            else
+              SizedBox(width: adaptive.scale(20)),
+          ],
+        ),
+      ),
     );
   }
 }

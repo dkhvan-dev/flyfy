@@ -44,6 +44,17 @@ func main() {
 		2*time.Second,
 	)
 
+	// Redis response cache for reference data.
+	responseCache := httpadapter.NewResponseCache(cfg.Redis)
+	defer responseCache.Close()
+
+	if err := responseCache.Ping(ctx); err != nil {
+		log.Warn().Err(err).Msg("redis response cache not available, caching disabled")
+		responseCache = nil
+	} else {
+		log.Info().Msg("redis response cache connected")
+	}
+
 	proxyHandler, err := httpadapter.NewProxyHandler(cfg, readiness)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize proxy handler")
@@ -54,7 +65,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         cfg.HTTP.Address(),
-		Handler:      httpadapter.Chain(cfg, tokenVerifier, mux),
+		Handler:      httpadapter.Chain(cfg, tokenVerifier, responseCache, mux),
 		ReadTimeout:  cfg.HTTP.ReadTimeout,
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,

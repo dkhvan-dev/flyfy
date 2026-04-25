@@ -1,0 +1,127 @@
+[
+  {"id": "almaty", "countryCode": "KZ", "name": {"en": "Almaty", "ru": "Алматы", "kk": "Алматы"}, "population": 2000900},
+  {"id": "astana", "countryCode": "KZ", "name": {"en": "Astana", "ru": "Астана", "kk": "Астана"}, "population": 1350000},
+  {"id": "shymkent", "countryCode": "KZ", "name": {"en": "Shymkent", "ru": "Шымкент", "kk": "Шымкент"}, "population": 1100000},
+  {"id": "karaganda", "countryCode": "KZ", "name": {"en": "Karaganda", "ru": "Караганда", "kk": "Қарағанды"}, "population": 497000},
+  {"id": "aktobe", "countryCode": "KZ", "name": {"en": "Aktobe", "ru": "Актобе", "kk": "Ақтөбе"}, "population": 500000},
+  {"id": "taraz", "countryCode": "KZ", "name": {"en": "Taraz", "ru": "Тараз", "kk": "Тараз"}, "population": 362000},
+  {"id": "pavlodar", "countryCode": "KZ", "name": {"en": "Pavlodar", "ru": "Павлодар", "kk": "Павлодар"}, "population": 342000},
+  {"id": "ust-kamenogorsk", "countryCode": "KZ", "name": {"en": "Ust-Kamenogorsk", "ru": "Усть-Каменогорск", "kk": "Өскемен"}, "population": 335000},
+  {"id": "semey", "countryCode": "KZ", "name": {"en": "Semey", "ru": "Семей", "kk": "Семей"}, "population": 322000},
+  {"id": "atyrau", "countryCode": "KZ", "name": {"en": "Atyrau", "ru": "Атырау", "kk": "Атырау"}, "population": 290000},
+  {"id": "kostanay", "countryCode": "KZ", "name": {"en": "Kostanay", "ru": "Костанай", "kk": "Қостанай"}, "population": 243000},
+  {"id": "kyzylorda", "countryCode": "KZ", "name": {"en": "Kyzylorda", "ru": "Кызылорда", "kk": "Қызылорда"}, "population": 300000},
+  {"id": "oral", "countryCode": "KZ", "name": {"en": "Oral", "ru": "Уральск", "kk": "Орал"}, "population": 310000},
+  {"id": "petropavlovsk", "countryCode": "KZ", "name": {"en": "Petropavlovsk", "ru": "Петропавловск", "kk": "Петропавл"}, "population": 218000},
+  {"id": "aktau", "countryCode": "KZ", "name": {"en": "Aktau", "ru": "Актау", "kk": "Ақтау"}, "population": 190000},
+  {"id": "turkestan", "countryCode": "KZ", "name": {"en": "Turkestan", "ru": "Туркестан", "kk": "Түркістан"}, "population": 180000},
+  {"id": "taldykorgan", "countryCode": "KZ", "name": {"en": "Taldykorgan", "ru": "Талдыкорган", "kk": "Талдықорған"}, "population": 145000},
+  {"id": "kokshetau", "countryCode": "KZ", "name": {"en": "Kokshetau", "ru": "Кокшетау", "kk": "Көкшетау"}, "population": 150000},
+
+  {"id": "moscow", "countryCode": "RU", "name": {"en": "Moscow", "ru": "Москва", "kk": "Мәскеу"}, "population": 12600000},
+  {"id": "spb", "countryCode": "RU", "name": {"en": "Saint Petersburg", "ru": "Санкт-Петербург", "kk": "Санкт-Петербург"}, "population": 5400000},
+  {"id": "novosibirsk", "countryCode": "RU", "name": {"en": "Novosibirsk", "ru": "Новосибирск", "kk": "Новосібір"}, "population": 1620000},
+  {"id": "yekaterinburg", "countryCode": "RU", "name": {"en": "Yekaterinburg", "ru": "Екатеринбург", "kk": "Екатеринбург"}, "population": 1495000},
+  {"id": "kazan", "countryCode": "RU", "name": {"en": "Kazan", "ru": "Казань", "kk": "Қазан"}, "population": 1260000},
+  {"id": "sochi", "countryCode": "RU", "name": {"en": "Sochi", "ru": "Сочи", "kk": "Сочи"}, "population": 443000},
+  {"id": "omsk", "countryCode": "RU", "name": {"en": "Omsk", "ru": "Омск", "kk": "Омбы"}, "population": 1140000},
+
+  {"id": "tashkent", "countryCode": "UZ", "name": {"en": "Tashkent", "ru": "Ташкент", "kk": "Ташкент"}, "population": 2860000},
+  {"id": "samarkand", "countryCode": "UZ", "name": {"en": "Samarkand", "ru": "Самарканд", "kk": "Самарқанд"}, "population": 540000},
+  {"id": "bukhara", "countryCode": "UZ", "name": {"en": "Bukhara", "ru": "Бухара", "kk": "Бұхара"}, "population": 280000},
+  {"id": "khiva", "countryCode": "UZ", "name": {"en": "Khiva", "ru": "Хива", "kk": "Хиуа"}, "population": 90000},
+  {"id": "fergana", "countryCode": "UZ", "name": {"en": "Fergana", "ru": "Фергана", "kk": "Ферғана"}, "population": 310000},
+  {"id": "namangan", "countryCode": "UZ", "name": {"en": "Namangan", "ru": "Наманган", "kk": "Наманган"}, "population": 595000},
+
+  {"id": "bishkek", "countryCode": "KG", "name": {"en": "Bishkek", "ru": "Бишкек", "kk": "Бішкек"}, "population": 1074000},
+  {"id": "osh", "countryCode": "KG", "name": {"en": "Osh", "ru": "Ош", "kk": "Ош"}, "population": 322000},
+  {"id": "karakol", "countryCode": "KG", "name": {"en": "Karakol", "ru": "Каракол", "kk": "Қаракол"}, "population": 82000},
+
+  {"id": "dushanbe", "countryCode": "TJ", "name": {"en": "Dushanbe", "ru": "Душанбе", "kk": "Душанбе"}, "population": 863000},
+  {"id": "khujand", "countryCode": "TJ", "name": {"en": "Khujand", "ru": "Худжанд", "kk": "Худжанд"}, "population": 181000},
+
+  {"id": "ashgabat", "countryCode": "TM", "name": {"en": "Ashgabat", "ru": "Ашхабад", "kk": "Ашғабат"}, "population": 1030000},
+
+  {"id": "tbilisi", "countryCode": "GE", "name": {"en": "Tbilisi", "ru": "Тбилиси", "kk": "Тбилиси"}, "population": 1170000},
+  {"id": "batumi", "countryCode": "GE", "name": {"en": "Batumi", "ru": "Батуми", "kk": "Батуми"}, "population": 172000},
+
+  {"id": "baku", "countryCode": "AZ", "name": {"en": "Baku", "ru": "Баку", "kk": "Баку"}, "population": 2300000},
+
+  {"id": "yerevan", "countryCode": "AM", "name": {"en": "Yerevan", "ru": "Ереван", "kk": "Ереван"}, "population": 1084000},
+
+  {"id": "minsk", "countryCode": "BY", "name": {"en": "Minsk", "ru": "Минск", "kk": "Минск"}, "population": 2000000},
+
+  {"id": "kyiv", "countryCode": "UA", "name": {"en": "Kyiv", "ru": "Киев", "kk": "Киев"}, "population": 2960000},
+  {"id": "odesa", "countryCode": "UA", "name": {"en": "Odesa", "ru": "Одесса", "kk": "Одесса"}, "population": 1010000},
+  {"id": "lviv", "countryCode": "UA", "name": {"en": "Lviv", "ru": "Львов", "kk": "Львов"}, "population": 720000},
+
+  {"id": "chisinau", "countryCode": "MD", "name": {"en": "Chisinau", "ru": "Кишинёв", "kk": "Кишинёв"}, "population": 672000},
+
+  {"id": "istanbul", "countryCode": "TR", "name": {"en": "Istanbul", "ru": "Стамбул", "kk": "Стамбұл"}, "population": 15460000},
+  {"id": "ankara", "countryCode": "TR", "name": {"en": "Ankara", "ru": "Анкара", "kk": "Анкара"}, "population": 5660000},
+  {"id": "antalya", "countryCode": "TR", "name": {"en": "Antalya", "ru": "Анталья", "kk": "Анталья"}, "population": 2620000},
+  {"id": "bodrum", "countryCode": "TR", "name": {"en": "Bodrum", "ru": "Бодрум", "kk": "Бодрум"}, "population": 180000},
+
+  {"id": "dubai", "countryCode": "AE", "name": {"en": "Dubai", "ru": "Дубай", "kk": "Дубай"}, "population": 3500000},
+  {"id": "abu-dhabi", "countryCode": "AE", "name": {"en": "Abu Dhabi", "ru": "Абу-Даби", "kk": "Абу-Даби"}, "population": 1480000},
+  {"id": "sharjah", "countryCode": "AE", "name": {"en": "Sharjah", "ru": "Шарджа", "kk": "Шарджа"}, "population": 1400000},
+
+  {"id": "bangkok", "countryCode": "TH", "name": {"en": "Bangkok", "ru": "Бангкок", "kk": "Бангкок"}, "population": 10700000},
+  {"id": "phuket", "countryCode": "TH", "name": {"en": "Phuket", "ru": "Пхукет", "kk": "Пхукет"}, "population": 416000},
+  {"id": "pattaya", "countryCode": "TH", "name": {"en": "Pattaya", "ru": "Паттайя", "kk": "Паттайя"}, "population": 120000},
+  {"id": "chiang-mai", "countryCode": "TH", "name": {"en": "Chiang Mai", "ru": "Чиангмай", "kk": "Чиангмай"}, "population": 127000},
+
+  {"id": "cairo", "countryCode": "EG", "name": {"en": "Cairo", "ru": "Каир", "kk": "Каир"}, "population": 10100000},
+  {"id": "hurghada", "countryCode": "EG", "name": {"en": "Hurghada", "ru": "Хургада", "kk": "Хургада"}, "population": 260000},
+  {"id": "sharm-el-sheikh", "countryCode": "EG", "name": {"en": "Sharm El Sheikh", "ru": "Шарм-эль-Шейх", "kk": "Шарм-эль-Шейх"}, "population": 73000},
+
+  {"id": "beijing", "countryCode": "CN", "name": {"en": "Beijing", "ru": "Пекин", "kk": "Пекин"}, "population": 21540000},
+  {"id": "shanghai", "countryCode": "CN", "name": {"en": "Shanghai", "ru": "Шанхай", "kk": "Шанхай"}, "population": 24870000},
+  {"id": "urumqi", "countryCode": "CN", "name": {"en": "Urumqi", "ru": "Урумчи", "kk": "Үрімші"}, "population": 4050000},
+  {"id": "guangzhou", "countryCode": "CN", "name": {"en": "Guangzhou", "ru": "Гуанчжоу", "kk": "Гуанчжоу"}, "population": 18680000},
+
+  {"id": "seoul", "countryCode": "KR", "name": {"en": "Seoul", "ru": "Сеул", "kk": "Сеул"}, "population": 9770000},
+  {"id": "busan", "countryCode": "KR", "name": {"en": "Busan", "ru": "Пусан", "kk": "Пусан"}, "population": 3430000},
+  {"id": "jeju", "countryCode": "KR", "name": {"en": "Jeju", "ru": "Чеджу", "kk": "Чеджу"}, "population": 680000},
+
+  {"id": "tokyo", "countryCode": "JP", "name": {"en": "Tokyo", "ru": "Токио", "kk": "Токио"}, "population": 13960000},
+  {"id": "osaka", "countryCode": "JP", "name": {"en": "Osaka", "ru": "Осака", "kk": "Осака"}, "population": 2750000},
+  {"id": "kyoto", "countryCode": "JP", "name": {"en": "Kyoto", "ru": "Киото", "kk": "Киото"}, "population": 1460000},
+
+  {"id": "new-delhi", "countryCode": "IN", "name": {"en": "New Delhi", "ru": "Нью-Дели", "kk": "Нью-Дели"}, "population": 11030000},
+  {"id": "mumbai", "countryCode": "IN", "name": {"en": "Mumbai", "ru": "Мумбаи", "kk": "Мумбаи"}, "population": 12440000},
+  {"id": "goa", "countryCode": "IN", "name": {"en": "Goa", "ru": "Гоа", "kk": "Гоа"}, "population": 1460000},
+
+  {"id": "new-york", "countryCode": "US", "name": {"en": "New York", "ru": "Нью-Йорк", "kk": "Нью-Йорк"}, "population": 8340000},
+  {"id": "los-angeles", "countryCode": "US", "name": {"en": "Los Angeles", "ru": "Лос-Анджелес", "kk": "Лос-Анджелес"}, "population": 3970000},
+  {"id": "miami", "countryCode": "US", "name": {"en": "Miami", "ru": "Майами", "kk": "Майами"}, "population": 440000},
+
+  {"id": "london", "countryCode": "GB", "name": {"en": "London", "ru": "Лондон", "kk": "Лондон"}, "population": 8980000},
+  {"id": "manchester", "countryCode": "GB", "name": {"en": "Manchester", "ru": "Манчестер", "kk": "Манчестер"}, "population": 553000},
+  {"id": "edinburgh", "countryCode": "GB", "name": {"en": "Edinburgh", "ru": "Эдинбург", "kk": "Эдинбург"}, "population": 524000},
+
+  {"id": "berlin", "countryCode": "DE", "name": {"en": "Berlin", "ru": "Берлин", "kk": "Берлин"}, "population": 3640000},
+  {"id": "munich", "countryCode": "DE", "name": {"en": "Munich", "ru": "Мюнхен", "kk": "Мюнхен"}, "population": 1490000},
+  {"id": "frankfurt", "countryCode": "DE", "name": {"en": "Frankfurt", "ru": "Франкфурт", "kk": "Франкфурт"}, "population": 753000},
+
+  {"id": "paris", "countryCode": "FR", "name": {"en": "Paris", "ru": "Париж", "kk": "Париж"}, "population": 2160000},
+  {"id": "nice", "countryCode": "FR", "name": {"en": "Nice", "ru": "Ницца", "kk": "Ницца"}, "population": 340000},
+  {"id": "lyon", "countryCode": "FR", "name": {"en": "Lyon", "ru": "Лион", "kk": "Лион"}, "population": 516000},
+
+  {"id": "rome", "countryCode": "IT", "name": {"en": "Rome", "ru": "Рим", "kk": "Рим"}, "population": 2870000},
+  {"id": "milan", "countryCode": "IT", "name": {"en": "Milan", "ru": "Милан", "kk": "Милан"}, "population": 1370000},
+  {"id": "venice", "countryCode": "IT", "name": {"en": "Venice", "ru": "Венеция", "kk": "Венеция"}, "population": 260000},
+
+  {"id": "madrid", "countryCode": "ES", "name": {"en": "Madrid", "ru": "Мадрид", "kk": "Мадрид"}, "population": 3220000},
+  {"id": "barcelona", "countryCode": "ES", "name": {"en": "Barcelona", "ru": "Барселона", "kk": "Барселона"}, "population": 1620000},
+
+  {"id": "ulaanbaatar", "countryCode": "MN", "name": {"en": "Ulaanbaatar", "ru": "Улан-Батор", "kk": "Ұлан-Батор"}, "population": 1540000},
+
+  {"id": "kuala-lumpur", "countryCode": "MY", "name": {"en": "Kuala Lumpur", "ru": "Куала-Лумпур", "kk": "Куала-Лумпур"}, "population": 1980000},
+  {"id": "langkawi", "countryCode": "MY", "name": {"en": "Langkawi", "ru": "Лангкави", "kk": "Лангкави"}, "population": 100000},
+
+  {"id": "jakarta", "countryCode": "ID", "name": {"en": "Jakarta", "ru": "Джакарта", "kk": "Джакарта"}, "population": 10560000},
+  {"id": "bali", "countryCode": "ID", "name": {"en": "Bali", "ru": "Бали", "kk": "Бали"}, "population": 4320000},
+
+  {"id": "male", "countryCode": "MV", "name": {"en": "Male", "ru": "Мале", "kk": "Мале"}, "population": 252000}
+]

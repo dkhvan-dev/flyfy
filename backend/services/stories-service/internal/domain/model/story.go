@@ -41,17 +41,18 @@ func (s *Story) IsOwnedBy(userID uuid.UUID) bool {
 }
 
 type StoryListFilter struct {
-	Search          string
-	Categories      []enum.StoryCategory
-	AuthorUserID    *uuid.UUID
-	ViewerUserID    *uuid.UUID
-	IncludeDrafts   bool
-	IncludeDeleted  bool
-	OnlyPublished   bool
-	PlaceQuery      string
-	Sort            string
-	Limit           int
-	Offset          int
-	ExcludeStoryID  *uuid.UUID
-	RelatedToAuthor *uuid.UUID
+	Search           string
+	Categories       []enum.StoryCategory
+	AuthorUserID     *uuid.UUID
+	ViewerUserID     *uuid.UUID
+	IncludeDrafts    bool
+	IncludeDeleted   bool
+	OnlyPublished    bool
+	PlaceQuery       string
+	PlaceCountryCode string
+	Sort             string
+	Limit            int
+	Offset           int
+	ExcludeStoryID   *uuid.UUID
+	RelatedToAuthor  *uuid.UUID
 }

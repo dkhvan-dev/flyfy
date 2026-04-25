@@ -904,6 +904,8 @@
   },
   "storyPlacePrompt": "Где произошла эта история?",
   "storyPlaceHint": "Введите город или страну",
+  "storyCountryHint": "Поиск страны",
+  "storyCityHint": "Поиск города",
   "storyTagsFieldLabel": "Теги",
   "storyTagHint": "Добавить тег",
   "storyTagsLimit": "Можно добавить не более 8 тегов",

@@ -904,6 +904,8 @@
   },
   "storyPlacePrompt": "Where did this story take place?",
   "storyPlaceHint": "Search city or country",
+  "storyCountryHint": "Search country",
+  "storyCityHint": "Search city",
   "storyTagsFieldLabel": "Tags",
   "storyTagHint": "Add a tag",
   "storyTagsLimit": "You can add up to 8 tags",

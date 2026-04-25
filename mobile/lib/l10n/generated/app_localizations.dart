@@ -4804,6 +4804,18 @@ abstract class AppLocalizations {
   /// **'Search city or country'**
   String get storyPlaceHint;
 
+  /// No description provided for @storyCountryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country'**
+  String get storyCountryHint;
+
+  /// No description provided for @storyCityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search city'**
+  String get storyCityHint;
+
   /// No description provided for @storyTagsFieldLabel.
   ///
   /// In en, this message translates to:

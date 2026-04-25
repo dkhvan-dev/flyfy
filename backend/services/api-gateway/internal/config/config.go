@@ -19,6 +19,7 @@ type Config struct {
 	TokenService TokenServiceConfig
 	CORS         CORSConfig
 	RateLimit    RateLimitConfig
+	Redis        RedisConfig
 }
 
 type AppConfig struct {
@@ -63,6 +64,13 @@ type DownstreamsConfig struct {
 	ActivityService    string `env:"ACTIVITY_SERVICE_HTTP_URL, default=http://activity-service:8086"`
 	StoriesService     string `env:"STORIES_SERVICE_HTTP_URL, default=http://stories-service:8087"`
 	ChatService        string `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
+	ReferenceService   string `env:"REFERENCE_SERVICE_HTTP_URL, default=http://reference-service:8089"`
+}
+
+type RedisConfig struct {
+	Addr string        `env:"REDIS_ADDR, default=localhost:6379"`
+	DB   int           `env:"REDIS_CACHE_DB, default=3"`
+	TTL  time.Duration `env:"REDIS_CACHE_TTL, default=1h"`
 }
 
 type TokenServiceConfig struct {

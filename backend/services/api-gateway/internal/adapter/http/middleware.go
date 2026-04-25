@@ -96,10 +96,16 @@ func (rl *rateLimiter) Cleanup(now time.Time) {
 	}
 }
 
-func Chain(cfg *config.Config, verifier app.TokenVerifier, next http.Handler) http.Handler {
+func Chain(cfg *config.Config, verifier app.TokenVerifier, cache *ResponseCache, next http.Handler) http.Handler {
 	var limiter *rateLimiter
 	if cfg.RateLimit.Enabled {
 		limiter = newRateLimiter(cfg.RateLimit.RequestsPerMinute, time.Minute)
+	}
+
+	// Cache wraps the final dispatch so cached responses skip proxying.
+	var dispatchHandler http.Handler = next
+	if cache != nil {
+		dispatchHandler = cache.Middleware(next)
 	}
 
 	handler := corsMiddleware(cfg,
@@ -107,7 +113,7 @@ func Chain(cfg *config.Config, verifier app.TokenVerifier, next http.Handler) ht
 			routePolicyMiddleware(cfg,
 				rateLimitMiddleware(cfg, limiter,
 					logMiddleware(
-						authMiddleware(cfg, verifier, next),
+						authMiddleware(cfg, verifier, dispatchHandler),
 					),
 				),
 			),

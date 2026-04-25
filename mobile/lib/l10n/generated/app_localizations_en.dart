@@ -2597,6 +2597,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyPlaceHint => 'Search city or country';
 
   @override
+  String get storyCountryHint => 'Search country';
+
+  @override
+  String get storyCityHint => 'Search city';
+
+  @override
   String get storyTagsFieldLabel => 'Tags';
 
   @override

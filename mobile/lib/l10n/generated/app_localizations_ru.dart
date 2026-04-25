@@ -2601,6 +2601,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storyPlaceHint => 'Введите город или страну';
 
   @override
+  String get storyCountryHint => 'Поиск страны';
+
+  @override
+  String get storyCityHint => 'Поиск города';
+
+  @override
   String get storyTagsFieldLabel => 'Теги';
 
   @override

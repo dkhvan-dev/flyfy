@@ -904,6 +904,8 @@
   },
   "storyPlacePrompt": "Бұл хикая қай жерде өтті?",
   "storyPlaceHint": "Қала немесе елді енгізіңіз",
+  "storyCountryHint": "Елді іздеу",
+  "storyCityHint": "Қаланы іздеу",
   "storyTagsFieldLabel": "Тегтер",
   "storyTagHint": "Тег қосу",
   "storyTagsLimit": "Ең көбі 8 тег қосуға болады",

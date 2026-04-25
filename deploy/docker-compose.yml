@@ -767,6 +767,30 @@ services:
       - flyfy-network
 
   # ============================================
+  # Reference Service
+  # ============================================
+  reference-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/reference-service/Dockerfile
+    container_name: reference-service
+    ports:
+      - "8089:8089"
+    environment:
+      APP_NAME: reference-service
+      APP_ENV: development
+
+      HTTP_PORT: 8089
+      HTTP_READ_TIMEOUT: 10s
+      HTTP_WRITE_TIMEOUT: 10s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      LOG_LEVEL: info
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
   # API Gateway
   # ============================================
   api-gateway:
@@ -789,6 +813,10 @@ services:
         condition: service_started
       chat-service:
         condition: service_started
+      reference-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
@@ -815,6 +843,11 @@ services:
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
       STORIES_SERVICE_HTTP_URL: http://stories-service:8087
       CHAT_SERVICE_HTTP_URL: http://chat-service:8088
+      REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
+
+      REDIS_ADDR: redis:6379
+      REDIS_CACHE_DB: 3
+      REDIS_CACHE_TTL: 1h
 
       TOKEN_SERVICE_GRPC_TARGET: dns:///token-service:50051
       TOKEN_SERVICE_ID: api-gateway
