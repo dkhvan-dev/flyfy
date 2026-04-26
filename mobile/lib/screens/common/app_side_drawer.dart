@@ -39,9 +39,6 @@ String resolveDrawerLocation(UserProfileVm? profile, Locale locale) {
 }
 
 String resolveDrawerLanguageLabel(String code) {
-  for (final option in _languageOptions) {
-    if (option.code == code) return option.label;
-  }
   return code.toUpperCase();
 }
 
@@ -225,7 +222,7 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: AppColors.textPrimary,
-                              fontSize: isCompact ? 28 : 32,
+                              fontSize: isCompact ? 14 : 18,
                               height: 0.98,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -1.1,
@@ -602,11 +599,23 @@ class AppSideDrawer extends StatelessWidget {
                               ),
                             ),
                             SizedBox(height: layout.sectionGap),
-                            _DrawerPreferenceCard(
+                            _DrawerMenuItem(
                               layout: layout,
                               icon: Icons.language_rounded,
-                              title: l10n.appLanguageTitle,
-                              value: languageLabel,
+                              iconWidget: Center(
+                                child: Text(
+                                  languageLabel,
+                                  style: TextStyle(
+                                    color: AppColors.accent,
+                                    fontSize: layout.iconBoxSize * 0.36,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                              label: l10n.appLanguageTitle,
+                              labelFontSize: layout.menuLabelSize - 3,
+                              usePreferencePalette: true,
                               onTap: onLanguageTap,
                             ),
                             SizedBox(height: layout.sectionGap),
@@ -888,82 +897,6 @@ class _DrawerSectionTitle extends StatelessWidget {
   }
 }
 
-class _DrawerPreferenceCard extends StatelessWidget {
-  const _DrawerPreferenceCard({
-    required this.layout,
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.onTap,
-  });
-
-  final _AppDrawerLayout layout;
-  final IconData icon;
-  final String title;
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(layout.cardRadius),
-        child: Ink(
-          padding: EdgeInsets.all(layout.cardPadding),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(layout.cardRadius),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.03),
-                AppColors.accent.withValues(alpha: 0.07),
-              ],
-            ),
-            border: Border.all(color: AppColors.accent.withValues(alpha: 0.20)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: layout.iconBoxSize,
-                height: layout.iconBoxSize,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: AppColors.accent.withValues(alpha: 0.12),
-                ),
-                child: Icon(icon, color: AppColors.accent),
-              ),
-              SizedBox(width: layout.profileGap),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.90),
-                    fontSize: layout.menuLabelSize - 1,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                value,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: layout.menuLabelSize - 1,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _DrawerMenuItem extends StatelessWidget {
   const _DrawerMenuItem({
@@ -971,6 +904,8 @@ class _DrawerMenuItem extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onTap,
+    this.iconWidget,
+    this.labelFontSize,
     this.isActive = false,
     this.usePreferencePalette = false,
   });
@@ -979,6 +914,8 @@ class _DrawerMenuItem extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
+  final Widget? iconWidget;
+  final double? labelFontSize;
   final bool isActive;
   final bool usePreferencePalette;
 
@@ -1055,7 +992,7 @@ class _DrawerMenuItem extends StatelessWidget {
                         ? AppColors.accent.withValues(alpha: 0.12)
                         : Colors.white.withValues(alpha: 0.04),
                   ),
-                  child: Icon(
+                  child: iconWidget ?? Icon(
                     icon,
                     color: isActive
                         ? Colors.white
@@ -1073,7 +1010,7 @@ class _DrawerMenuItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: foregroundColor,
-                      fontSize: layout.menuLabelSize,
+                      fontSize: labelFontSize ?? layout.menuLabelSize,
                       fontWeight: isActive
                           ? FontWeight.w700
                           : matchesPreferencePalette
