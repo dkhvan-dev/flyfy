@@ -526,6 +526,172 @@
       }
     }
   },
+  "attractionsTitle": "Достопримечательности",
+  "attractionsSearchHint": "Куда отправимся?",
+  "attractionsLoadFailed": "Не удалось загрузить достопримечательности",
+  "attractionsRecommendedTitle": "Рекомендовано",
+  "attractionsCuratedListEyebrow": "Подборка",
+  "attractionsSeeAll": "Смотреть все",
+  "attractionsNoResults": "Достопримечательности не найдены",
+  "attractionsFiltersTitle": "Фильтры",
+  "attractionFilterClearAll": "Очистить всё",
+  "attractionFilterCategoriesSection": "Категории",
+  "attractionFilterCategoryAll": "Все места",
+  "attractionFilterCategoryParks": "Парки",
+  "attractionFilterCategoryMuseums": "Музеи",
+  "attractionFilterCategoryNature": "Природа",
+  "attractionFilterCategoryHistory": "История",
+  "attractionFilterCategoryAdventure": "Приключения",
+  "attractionFilterMinRatingSection": "Минимальный рейтинг",
+  "attractionFilterRatingAny": "Любой",
+  "attractionFilterDurationSection": "Длительность",
+  "attractionFilterDurationShort": "Короткое < 2 ч",
+  "attractionFilterDurationMedium": "Среднее 2–5 ч",
+  "attractionFilterDurationFullDay": "Целый день 5 ч+",
+  "attractionFilterDurationMultiDay": "Несколько дней",
+  "attractionFilterRangeSection": "Точный диапазон",
+  "attractionFilterRangeValue": "{min} ч – {max} ч",
+  "@attractionFilterRangeValue": {
+    "placeholders": {
+      "min": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "attractionFilterRangeMinTick": "1 ч",
+  "attractionFilterRangeMaxTick": "12 ч+",
+  "attractionFilterPriceRangeSection": "Диапазон цен",
+  "attractionFilterShowSpots": "Показать {count} мест",
+  "@attractionFilterShowSpots": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "attractionFilterClear": "Очистить",
+  "attractionMinPriceLabel": "Мин. цена",
+  "attractionMaxPriceLabel": "Макс. цена",
+  "attractionPriceValidationError": "Введите корректную цену",
+  "attractionPriceRangeValidationError": "Максимальная цена должна быть больше минимальной",
+  "attractionHoursUnit": "Часы",
+  "attractionDaysUnit": "Дни",
+  "attractionHoursUnitShort": "ч",
+  "attractionDaysUnitShort": "дн",
+  "attractionMinLabel": "Мин.",
+  "attractionMaxLabel": "Макс.",
+  "attractionDurationValidationError": "Введите корректную длительность",
+  "attractionDurationRangeValidationError": "Максимальная длительность должна быть больше минимальной",
+  "attractionDetailsLoadFailed": "Не удалось загрузить достопримечательность",
+  "attractionDetailsTitle": "Детали места",
+  "attractionMustVisitBadge": "Стоит посетить",
+  "attractionStatRating": "Рейтинг",
+  "attractionStatDuration": "Длительность",
+  "attractionStatPrice": "Цена",
+  "attractionExperienceSection": "Впечатление",
+  "attractionExpectSection": "Что ожидать",
+  "attractionVisitPlanSection": "План визита",
+  "attractionFlyFyTipTitle": "Совет FlyFy",
+  "attractionVisitDurationLabel": "Время на месте",
+  "attractionVisitDurationFlexible": "Гибко",
+  "attractionVisitTicketsLabel": "Билеты",
+  "attractionVisitFreeEntry": "Бесплатно или зависит от сезона",
+  "attractionVisitBookingRecommended": "лучше бронировать",
+  "attractionVisitBestTimeLabel": "Лучшее время",
+  "attractionVisitBestTimeEarlyMorning": "Раннее утро",
+  "attractionVisitBestTimeMorning": "Утро",
+  "attractionVisitBestTimeAfternoon": "День",
+  "attractionVisitBestTimeSunset": "Закат",
+  "attractionVisitBestTimeAnytime": "В любое время",
+  "attractionVisitGoodForLabel": "Подходит для",
+  "attractionVisitAccessLabel": "Доступ",
+  "attractionVisitAccessGood": "Удобный доступ",
+  "attractionVisitAccessLimited": "Ограниченный доступ",
+  "attractionVisitAccessUnknown": "Уточните на месте",
+  "attractionVisitSafetyLabel": "Подготовка",
+  "attractionVisitSafetyCheckWeather": "Проверьте погоду",
+  "attractionVisitSafetyBringWater": "Возьмите воду",
+  "attractionVisitSafetyCheckHours": "Проверьте часы работы",
+  "attractionVisitAudienceCouples": "Пары",
+  "attractionVisitAudienceWellness": "Оздоровление",
+  "attractionVisitTipNature": "Заранее проверьте транспорт и погоду: с гидом маршрут обычно безопаснее и предсказуемее.",
+  "attractionVisitTipCulture": "Приходите пораньше: будет спокойнее для фото, а рядом останется время на культурные точки.",
+  "attractionVisitTipDefault": "Проверьте актуальное расписание и совместите локацию с соседними активностями, чтобы не терять время на дорогу.",
+  "attractionReviewsSection": "Голоса путешественников",
+  "attractionSeeAllReviews": "Все отзывы ({count})",
+  "@attractionSeeAllReviews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionNoReviews": "Отзывов пока нет. Станьте первым!",
+  "attractionAddReview": "Оставить отзыв",
+  "attractionReviewSheetTitle": "Поделитесь впечатлением",
+  "attractionReviewRatingLabel": "Оценка",
+  "attractionReviewCommentLabel": "Комментарий",
+  "attractionReviewCommentHint": "Что понравилось, что посоветуете и что важно знать другим?",
+  "attractionReviewAddPhoto": "Фото",
+  "attractionReviewAddVideo": "Видео",
+  "attractionReviewSubmit": "Опубликовать отзыв",
+  "attractionReviewSubmitting": "Публикуем...",
+  "attractionReviewMediaLimit": "Можно прикрепить до {count} файлов",
+  "@attractionReviewMediaLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionReviewPickFailed": "Не удалось прикрепить файл",
+  "attractionReviewMediaTooLarge": "Файл слишком большой",
+  "attractionReviewUnsupportedFormat": "Формат файла не поддерживается",
+  "attractionReviewSubmitFailed": "Не удалось опубликовать отзыв",
+  "attractionReviewSubmitSuccess": "Отзыв опубликован",
+  "attractionReviewCommentRequired": "Напишите короткий комментарий",
+  "attractionReviewRemoveMedia": "Удалить файл",
+  "attractionReviewVideoPreview": "Видео",
+  "attractionFindTours": "Найти туры",
+  "attractionMapLink": "Открыть на карте",
+  "attractionVerifiedNomad": "Проверенный путешественник",
+  "attractionReviewsTitle": "Отзывы",
+  "attractionTravelerFallback": "Путешественник",
+  "attractionPriceVaries": "Цена варьируется",
+  "attractionPriceVariesShort": "Варьируется",
+  "attractionDurationHours": "{hours} ч",
+  "@attractionDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionDurationDays": "{days} дн",
+  "@attractionDurationDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionBackTooltip": "Назад",
+  "attractionNotificationsTooltip": "Уведомления",
+  "attractionBookmarkTooltip": "Сохранить место",
+  "attractionTagFamilyLabel": "Для семьи",
+  "attractionTagFamilySubtitle": "Подходит для всех возрастов",
+  "attractionTagSunsetLabel": "Лучше на закате",
+  "attractionTagSunsetSubtitle": "Красивые сумеречные виды",
+  "attractionTagAccessibilityLabel": "Доступность",
+  "attractionTagAccessibilitySubtitle": "Подходит для колясок",
+  "attractionTagDiningLabel": "Рестораны",
+  "attractionTagDiningSubtitle": "Гастрономические места",
+  "attractionTagOutdoorLabel": "На природе",
+  "attractionTagOutdoorSubtitle": "Свежий воздух и виды",
+  "attractionTagPhotoLabel": "Фотолокация",
+  "attractionTagPhotoSubtitle": "Для запоминающихся кадров",
+  "attractionTagHistoryLabel": "История",
+  "attractionTagHistorySubtitle": "Культурное наследие",
+  "attractionTagAdventureLabel": "Приключения",
+  "attractionTagAdventureSubtitle": "Активные впечатления",
+  "attractionTagUniqueSubtitle": "Уникальное впечатление",
   "activitiesEntryTitle": "Активности",
   "activitiesEntrySubtitle": "Найдите офлайн и онлайн события, к которым можно присоединиться",
   "comingSoon": "Скоро появится",

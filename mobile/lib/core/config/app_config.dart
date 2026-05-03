@@ -12,22 +12,24 @@ final class AppConfig {
       return _normalize(_baseUrlFromDefine);
     }
 
+    const String testUrl = "https://interested-character-frequencies-farmers.trycloudflare.com/api/v1";
+
     if (kIsWeb) {
-      return "https://moved-markets-honey-auckland.trycloudflare.com/api/v1";
+      return testUrl;
       // return 'http://localhost:8080/api/v1';
     }
 
     if (Platform.isIOS || Platform.isMacOS) {
-      return "https://moved-markets-honey-auckland.trycloudflare.com/api/v1";
+      return testUrl;
       // return 'http://localhost:8080/api/v1';
     }
 
     if (Platform.isAndroid) {
-      return "https://moved-markets-honey-auckland.trycloudflare.com/api/v1";
+      return testUrl;
       // return 'http://10.0.2.2:8080/api/v1';
     }
 
-      return "https://moved-markets-honey-auckland.trycloudflare.com/api/v1";
+      return testUrl;
     // return 'http://localhost:8080/api/v1';
   }
 

@@ -1567,6 +1567,405 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get attractionsTitle => 'Discover attractions';
+
+  @override
+  String get attractionsSearchHint => 'Where to next?';
+
+  @override
+  String get attractionsLoadFailed => 'Failed to load attractions';
+
+  @override
+  String get attractionsRecommendedTitle => 'Recommended';
+
+  @override
+  String get attractionsCuratedListEyebrow => 'Curated list';
+
+  @override
+  String get attractionsSeeAll => 'See all';
+
+  @override
+  String get attractionsNoResults => 'No attractions found';
+
+  @override
+  String get attractionsFiltersTitle => 'Filters';
+
+  @override
+  String get attractionFilterClearAll => 'Clear all';
+
+  @override
+  String get attractionFilterCategoriesSection => 'Categories';
+
+  @override
+  String get attractionFilterCategoryAll => 'All Spots';
+
+  @override
+  String get attractionFilterCategoryParks => 'Parks';
+
+  @override
+  String get attractionFilterCategoryMuseums => 'Museums';
+
+  @override
+  String get attractionFilterCategoryNature => 'Nature';
+
+  @override
+  String get attractionFilterCategoryHistory => 'History';
+
+  @override
+  String get attractionFilterCategoryAdventure => 'Adventure';
+
+  @override
+  String get attractionFilterMinRatingSection => 'Minimum rating';
+
+  @override
+  String get attractionFilterRatingAny => 'Any';
+
+  @override
+  String get attractionFilterDurationSection => 'Duration';
+
+  @override
+  String get attractionFilterDurationShort => 'Short < 2h';
+
+  @override
+  String get attractionFilterDurationMedium => 'Medium 2–5h';
+
+  @override
+  String get attractionFilterDurationFullDay => 'Full Day 5h+';
+
+  @override
+  String get attractionFilterDurationMultiDay => 'Multi-day';
+
+  @override
+  String get attractionFilterRangeSection => 'Specific range';
+
+  @override
+  String attractionFilterRangeValue(int min, int max) {
+    return '${min}h – ${max}h';
+  }
+
+  @override
+  String get attractionFilterRangeMinTick => '1h';
+
+  @override
+  String get attractionFilterRangeMaxTick => '12h+';
+
+  @override
+  String get attractionFilterPriceRangeSection => 'Price range';
+
+  @override
+  String attractionFilterShowSpots(int count) {
+    return 'Show $count spots';
+  }
+
+  @override
+  String get attractionFilterClear => 'Clear';
+
+  @override
+  String get attractionMinPriceLabel => 'Min price';
+
+  @override
+  String get attractionMaxPriceLabel => 'Max price';
+
+  @override
+  String get attractionPriceValidationError => 'Enter a valid price';
+
+  @override
+  String get attractionPriceRangeValidationError =>
+      'Max price must be greater than min price';
+
+  @override
+  String get attractionHoursUnit => 'Hours';
+
+  @override
+  String get attractionDaysUnit => 'Days';
+
+  @override
+  String get attractionHoursUnitShort => 'h';
+
+  @override
+  String get attractionDaysUnitShort => 'd';
+
+  @override
+  String get attractionMinLabel => 'Min';
+
+  @override
+  String get attractionMaxLabel => 'Max';
+
+  @override
+  String get attractionDurationValidationError => 'Enter a valid duration';
+
+  @override
+  String get attractionDurationRangeValidationError =>
+      'Max duration must be greater than min';
+
+  @override
+  String get attractionDetailsLoadFailed => 'Failed to load attraction';
+
+  @override
+  String get attractionDetailsTitle => 'Attraction details';
+
+  @override
+  String get attractionMustVisitBadge => 'Must visit';
+
+  @override
+  String get attractionStatRating => 'Rating';
+
+  @override
+  String get attractionStatDuration => 'Duration';
+
+  @override
+  String get attractionStatPrice => 'Price';
+
+  @override
+  String get attractionExperienceSection => 'The experience';
+
+  @override
+  String get attractionExpectSection => 'What to expect';
+
+  @override
+  String get attractionVisitPlanSection => 'Plan your visit';
+
+  @override
+  String get attractionFlyFyTipTitle => 'FlyFy tip';
+
+  @override
+  String get attractionVisitDurationLabel => 'Time needed';
+
+  @override
+  String get attractionVisitDurationFlexible => 'Flexible';
+
+  @override
+  String get attractionVisitTicketsLabel => 'Tickets';
+
+  @override
+  String get attractionVisitFreeEntry => 'Free or varies';
+
+  @override
+  String get attractionVisitBookingRecommended => 'book ahead';
+
+  @override
+  String get attractionVisitBestTimeLabel => 'Best time';
+
+  @override
+  String get attractionVisitBestTimeEarlyMorning => 'Early morning';
+
+  @override
+  String get attractionVisitBestTimeMorning => 'Morning';
+
+  @override
+  String get attractionVisitBestTimeAfternoon => 'Afternoon';
+
+  @override
+  String get attractionVisitBestTimeSunset => 'Sunset';
+
+  @override
+  String get attractionVisitBestTimeAnytime => 'Anytime';
+
+  @override
+  String get attractionVisitGoodForLabel => 'Good for';
+
+  @override
+  String get attractionVisitAccessLabel => 'Access';
+
+  @override
+  String get attractionVisitAccessGood => 'Easy access';
+
+  @override
+  String get attractionVisitAccessLimited => 'Limited access';
+
+  @override
+  String get attractionVisitAccessUnknown => 'Check locally';
+
+  @override
+  String get attractionVisitSafetyLabel => 'Prepare';
+
+  @override
+  String get attractionVisitSafetyCheckWeather => 'Check weather';
+
+  @override
+  String get attractionVisitSafetyBringWater => 'Bring water';
+
+  @override
+  String get attractionVisitSafetyCheckHours => 'Check hours';
+
+  @override
+  String get attractionVisitAudienceCouples => 'Couples';
+
+  @override
+  String get attractionVisitAudienceWellness => 'Wellness';
+
+  @override
+  String get attractionVisitTipNature =>
+      'Plan transport and weather before you go; guided routes are usually safer and more predictable.';
+
+  @override
+  String get attractionVisitTipCulture =>
+      'Come earlier in the day for calmer photos and leave time for nearby cultural stops.';
+
+  @override
+  String get attractionVisitTipDefault =>
+      'Check current hours and combine this stop with nearby activities to avoid losing time in transit.';
+
+  @override
+  String get attractionReviewsSection => 'Explorer\'s voice';
+
+  @override
+  String attractionSeeAllReviews(int count) {
+    return 'See all ($count)';
+  }
+
+  @override
+  String get attractionNoReviews => 'No reviews yet. Be the first!';
+
+  @override
+  String get attractionAddReview => 'Add review';
+
+  @override
+  String get attractionReviewSheetTitle => 'Share your visit';
+
+  @override
+  String get attractionReviewRatingLabel => 'Rating';
+
+  @override
+  String get attractionReviewCommentLabel => 'Comment';
+
+  @override
+  String get attractionReviewCommentHint =>
+      'What stood out, what would you recommend, and what should others know?';
+
+  @override
+  String get attractionReviewAddPhoto => 'Photo';
+
+  @override
+  String get attractionReviewAddVideo => 'Video';
+
+  @override
+  String get attractionReviewSubmit => 'Publish review';
+
+  @override
+  String get attractionReviewSubmitting => 'Publishing...';
+
+  @override
+  String attractionReviewMediaLimit(int count) {
+    return 'You can attach up to $count files';
+  }
+
+  @override
+  String get attractionReviewPickFailed => 'Could not attach this file';
+
+  @override
+  String get attractionReviewMediaTooLarge => 'File is too large';
+
+  @override
+  String get attractionReviewUnsupportedFormat => 'Unsupported file format';
+
+  @override
+  String get attractionReviewSubmitFailed => 'Could not publish the review';
+
+  @override
+  String get attractionReviewSubmitSuccess => 'Review published';
+
+  @override
+  String get attractionReviewCommentRequired => 'Write a short comment';
+
+  @override
+  String get attractionReviewRemoveMedia => 'Remove file';
+
+  @override
+  String get attractionReviewVideoPreview => 'Video';
+
+  @override
+  String get attractionFindTours => 'Find tours';
+
+  @override
+  String get attractionMapLink => 'View on map';
+
+  @override
+  String get attractionVerifiedNomad => 'Verified nomad';
+
+  @override
+  String get attractionReviewsTitle => 'Reviews';
+
+  @override
+  String get attractionTravelerFallback => 'Traveler';
+
+  @override
+  String get attractionPriceVaries => 'Price varies';
+
+  @override
+  String get attractionPriceVariesShort => 'Varies';
+
+  @override
+  String attractionDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String attractionDurationDays(int days) {
+    return '$days d';
+  }
+
+  @override
+  String get attractionBackTooltip => 'Back';
+
+  @override
+  String get attractionNotificationsTooltip => 'Notifications';
+
+  @override
+  String get attractionBookmarkTooltip => 'Save attraction';
+
+  @override
+  String get attractionTagFamilyLabel => 'Family friendly';
+
+  @override
+  String get attractionTagFamilySubtitle => 'Suitable for all ages';
+
+  @override
+  String get attractionTagSunsetLabel => 'Best at sunset';
+
+  @override
+  String get attractionTagSunsetSubtitle => 'Stunning twilight views';
+
+  @override
+  String get attractionTagAccessibilityLabel => 'Accessibility';
+
+  @override
+  String get attractionTagAccessibilitySubtitle => 'Wheelchair friendly';
+
+  @override
+  String get attractionTagDiningLabel => 'Fine dining';
+
+  @override
+  String get attractionTagDiningSubtitle => 'Gourmet restaurants';
+
+  @override
+  String get attractionTagOutdoorLabel => 'Outdoor';
+
+  @override
+  String get attractionTagOutdoorSubtitle => 'Nature and fresh air';
+
+  @override
+  String get attractionTagPhotoLabel => 'Photo spot';
+
+  @override
+  String get attractionTagPhotoSubtitle => 'Great for memorable shots';
+
+  @override
+  String get attractionTagHistoryLabel => 'Historic';
+
+  @override
+  String get attractionTagHistorySubtitle => 'Rich cultural heritage';
+
+  @override
+  String get attractionTagAdventureLabel => 'Adventure';
+
+  @override
+  String get attractionTagAdventureSubtitle => 'Active experiences';
+
+  @override
+  String get attractionTagUniqueSubtitle => 'Unique experience';
+
+  @override
   String get activitiesEntryTitle => 'Activities';
 
   @override

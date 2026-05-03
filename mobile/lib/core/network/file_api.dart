@@ -7,7 +7,7 @@ import 'api_client.dart';
 
 String? resolvePublicFileContentUrl(String fileId) {
   final trimmed = fileId.trim();
-  if (trimmed.isEmpty) {
+  if (trimmed.isEmpty || trimmed == '00000000-0000-0000-0000-000000000000') {
     return null;
   }
   return '${AppConfig.apiBaseUrl}/public/files/$trimmed/content';
@@ -56,6 +56,20 @@ class FileApi {
       contentType: contentType,
       sizeBytes: sizeBytes,
       purpose: 'ACTIVITY_MEDIA',
+      visibility: 'PUBLIC',
+    );
+  }
+
+  Future<FileUploadRequestVm> createAttractionReviewMediaUpload({
+    required String originalName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    return _createUploadRequest(
+      originalName: originalName,
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      purpose: 'ATTRACTION_REVIEW_MEDIA',
       visibility: 'PUBLIC',
     );
   }

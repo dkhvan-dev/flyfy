@@ -526,6 +526,172 @@
       }
     }
   },
+  "attractionsTitle": "Discover attractions",
+  "attractionsSearchHint": "Where to next?",
+  "attractionsLoadFailed": "Failed to load attractions",
+  "attractionsRecommendedTitle": "Recommended",
+  "attractionsCuratedListEyebrow": "Curated list",
+  "attractionsSeeAll": "See all",
+  "attractionsNoResults": "No attractions found",
+  "attractionsFiltersTitle": "Filters",
+  "attractionFilterClearAll": "Clear all",
+  "attractionFilterCategoriesSection": "Categories",
+  "attractionFilterCategoryAll": "All Spots",
+  "attractionFilterCategoryParks": "Parks",
+  "attractionFilterCategoryMuseums": "Museums",
+  "attractionFilterCategoryNature": "Nature",
+  "attractionFilterCategoryHistory": "History",
+  "attractionFilterCategoryAdventure": "Adventure",
+  "attractionFilterMinRatingSection": "Minimum rating",
+  "attractionFilterRatingAny": "Any",
+  "attractionFilterDurationSection": "Duration",
+  "attractionFilterDurationShort": "Short < 2h",
+  "attractionFilterDurationMedium": "Medium 2–5h",
+  "attractionFilterDurationFullDay": "Full Day 5h+",
+  "attractionFilterDurationMultiDay": "Multi-day",
+  "attractionFilterRangeSection": "Specific range",
+  "attractionFilterRangeValue": "{min}h – {max}h",
+  "@attractionFilterRangeValue": {
+    "placeholders": {
+      "min": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "attractionFilterRangeMinTick": "1h",
+  "attractionFilterRangeMaxTick": "12h+",
+  "attractionFilterPriceRangeSection": "Price range",
+  "attractionFilterShowSpots": "Show {count} spots",
+  "@attractionFilterShowSpots": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "attractionFilterClear": "Clear",
+  "attractionMinPriceLabel": "Min price",
+  "attractionMaxPriceLabel": "Max price",
+  "attractionPriceValidationError": "Enter a valid price",
+  "attractionPriceRangeValidationError": "Max price must be greater than min price",
+  "attractionHoursUnit": "Hours",
+  "attractionDaysUnit": "Days",
+  "attractionHoursUnitShort": "h",
+  "attractionDaysUnitShort": "d",
+  "attractionMinLabel": "Min",
+  "attractionMaxLabel": "Max",
+  "attractionDurationValidationError": "Enter a valid duration",
+  "attractionDurationRangeValidationError": "Max duration must be greater than min",
+  "attractionDetailsLoadFailed": "Failed to load attraction",
+  "attractionDetailsTitle": "Attraction details",
+  "attractionMustVisitBadge": "Must visit",
+  "attractionStatRating": "Rating",
+  "attractionStatDuration": "Duration",
+  "attractionStatPrice": "Price",
+  "attractionExperienceSection": "The experience",
+  "attractionExpectSection": "What to expect",
+  "attractionVisitPlanSection": "Plan your visit",
+  "attractionFlyFyTipTitle": "FlyFy tip",
+  "attractionVisitDurationLabel": "Time needed",
+  "attractionVisitDurationFlexible": "Flexible",
+  "attractionVisitTicketsLabel": "Tickets",
+  "attractionVisitFreeEntry": "Free or varies",
+  "attractionVisitBookingRecommended": "book ahead",
+  "attractionVisitBestTimeLabel": "Best time",
+  "attractionVisitBestTimeEarlyMorning": "Early morning",
+  "attractionVisitBestTimeMorning": "Morning",
+  "attractionVisitBestTimeAfternoon": "Afternoon",
+  "attractionVisitBestTimeSunset": "Sunset",
+  "attractionVisitBestTimeAnytime": "Anytime",
+  "attractionVisitGoodForLabel": "Good for",
+  "attractionVisitAccessLabel": "Access",
+  "attractionVisitAccessGood": "Easy access",
+  "attractionVisitAccessLimited": "Limited access",
+  "attractionVisitAccessUnknown": "Check locally",
+  "attractionVisitSafetyLabel": "Prepare",
+  "attractionVisitSafetyCheckWeather": "Check weather",
+  "attractionVisitSafetyBringWater": "Bring water",
+  "attractionVisitSafetyCheckHours": "Check hours",
+  "attractionVisitAudienceCouples": "Couples",
+  "attractionVisitAudienceWellness": "Wellness",
+  "attractionVisitTipNature": "Plan transport and weather before you go; guided routes are usually safer and more predictable.",
+  "attractionVisitTipCulture": "Come earlier in the day for calmer photos and leave time for nearby cultural stops.",
+  "attractionVisitTipDefault": "Check current hours and combine this stop with nearby activities to avoid losing time in transit.",
+  "attractionReviewsSection": "Explorer's voice",
+  "attractionSeeAllReviews": "See all ({count})",
+  "@attractionSeeAllReviews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionNoReviews": "No reviews yet. Be the first!",
+  "attractionAddReview": "Add review",
+  "attractionReviewSheetTitle": "Share your visit",
+  "attractionReviewRatingLabel": "Rating",
+  "attractionReviewCommentLabel": "Comment",
+  "attractionReviewCommentHint": "What stood out, what would you recommend, and what should others know?",
+  "attractionReviewAddPhoto": "Photo",
+  "attractionReviewAddVideo": "Video",
+  "attractionReviewSubmit": "Publish review",
+  "attractionReviewSubmitting": "Publishing...",
+  "attractionReviewMediaLimit": "You can attach up to {count} files",
+  "@attractionReviewMediaLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionReviewPickFailed": "Could not attach this file",
+  "attractionReviewMediaTooLarge": "File is too large",
+  "attractionReviewUnsupportedFormat": "Unsupported file format",
+  "attractionReviewSubmitFailed": "Could not publish the review",
+  "attractionReviewSubmitSuccess": "Review published",
+  "attractionReviewCommentRequired": "Write a short comment",
+  "attractionReviewRemoveMedia": "Remove file",
+  "attractionReviewVideoPreview": "Video",
+  "attractionFindTours": "Find tours",
+  "attractionMapLink": "View on map",
+  "attractionVerifiedNomad": "Verified nomad",
+  "attractionReviewsTitle": "Reviews",
+  "attractionTravelerFallback": "Traveler",
+  "attractionPriceVaries": "Price varies",
+  "attractionPriceVariesShort": "Varies",
+  "attractionDurationHours": "{hours} h",
+  "@attractionDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionDurationDays": "{days} d",
+  "@attractionDurationDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionBackTooltip": "Back",
+  "attractionNotificationsTooltip": "Notifications",
+  "attractionBookmarkTooltip": "Save attraction",
+  "attractionTagFamilyLabel": "Family friendly",
+  "attractionTagFamilySubtitle": "Suitable for all ages",
+  "attractionTagSunsetLabel": "Best at sunset",
+  "attractionTagSunsetSubtitle": "Stunning twilight views",
+  "attractionTagAccessibilityLabel": "Accessibility",
+  "attractionTagAccessibilitySubtitle": "Wheelchair friendly",
+  "attractionTagDiningLabel": "Fine dining",
+  "attractionTagDiningSubtitle": "Gourmet restaurants",
+  "attractionTagOutdoorLabel": "Outdoor",
+  "attractionTagOutdoorSubtitle": "Nature and fresh air",
+  "attractionTagPhotoLabel": "Photo spot",
+  "attractionTagPhotoSubtitle": "Great for memorable shots",
+  "attractionTagHistoryLabel": "Historic",
+  "attractionTagHistorySubtitle": "Rich cultural heritage",
+  "attractionTagAdventureLabel": "Adventure",
+  "attractionTagAdventureSubtitle": "Active experiences",
+  "attractionTagUniqueSubtitle": "Unique experience",
   "activitiesEntryTitle": "Activities",
   "activitiesEntrySubtitle": "Find offline and online events you can join",
   "comingSoon": "Coming soon",

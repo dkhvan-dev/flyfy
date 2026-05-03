@@ -169,6 +169,10 @@ class _HomeScreenState extends State<HomeScreen> {
     context.push(path);
   }
 
+  void _openAttractions() {
+    context.push('/attractions');
+  }
+
   void _openActivityDetails(String activityId) {
     final authProvider = context.read<AuthProvider>();
 
@@ -742,12 +746,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       _SectionHeader(
                                         title: l10n.homeTopDestinations,
                                         actionLabel: l10n.homeSeeAll,
-                                        onActionTap: _openActivities,
+                                        onActionTap: _openAttractions,
                                       ),
                                       const SizedBox(height: 14),
                                       _TopDestinationsRow(
                                         destinations: destinations,
-                                        onTap: _openActivities,
+                                        onTap: _openAttractions,
                                       ),
                                       const SizedBox(height: 26),
                                       _SectionHeader(

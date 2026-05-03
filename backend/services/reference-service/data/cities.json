@@ -17,6 +17,8 @@
   {"id": "turkestan", "countryCode": "KZ", "name": {"en": "Turkestan", "ru": "Туркестан", "kk": "Түркістан"}, "population": 180000},
   {"id": "taldykorgan", "countryCode": "KZ", "name": {"en": "Taldykorgan", "ru": "Талдыкорган", "kk": "Талдықорған"}, "population": 145000},
   {"id": "kokshetau", "countryCode": "KZ", "name": {"en": "Kokshetau", "ru": "Кокшетау", "kk": "Көкшетау"}, "population": 150000},
+  {"id": "balkhash", "countryCode": "KZ", "name": {"en": "Balkhash", "ru": "Балхаш", "kk": "Балқаш"}, "population": 80000},
+  {"id": "zhezkazgan", "countryCode": "KZ", "name": {"en": "Zhezkazgan", "ru": "Жезказган", "kk": "Жезқазған"}, "population": 86000},
 
   {"id": "moscow", "countryCode": "RU", "name": {"en": "Moscow", "ru": "Москва", "kk": "Мәскеу"}, "population": 12600000},
   {"id": "spb", "countryCode": "RU", "name": {"en": "Saint Petersburg", "ru": "Санкт-Петербург", "kk": "Санкт-Петербург"}, "population": 5400000},

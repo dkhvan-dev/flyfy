@@ -52,6 +52,17 @@ func DefaultUploadPolicies(globalMaxSize int64) UploadPolicies {
 				"image/jpeg", "image/png", "image/webp",
 			),
 		},
+		enum.FilePurposeAttractionReviewMedia: {
+			MaxSizeBytes: 50 * 1024 * 1024,
+			AllowedExtensions: setOf(
+				"jpg", "jpeg", "png", "webp",
+				"mp4", "mov", "webm", "m4v",
+			),
+			AllowedContentTypes: setOf(
+				"image/jpeg", "image/png", "image/webp",
+				"video/mp4", "video/quicktime", "video/webm", "video/x-m4v",
+			),
+		},
 		enum.FilePurposeChatAttachment: {
 			MaxSizeBytes: 25 * 1024 * 1024,
 			AllowedExtensions: setOf(

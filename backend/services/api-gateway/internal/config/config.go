@@ -65,6 +65,7 @@ type DownstreamsConfig struct {
 	StoriesService     string `env:"STORIES_SERVICE_HTTP_URL, default=http://stories-service:8087"`
 	ChatService        string `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
 	ReferenceService   string `env:"REFERENCE_SERVICE_HTTP_URL, default=http://reference-service:8089"`
+	AttractionService  string `env:"ATTRACTION_SERVICE_HTTP_URL, default=http://attraction-service:8090"`
 }
 
 type RedisConfig struct {

@@ -1564,6 +1564,409 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get attractionsTitle => 'Достопримечательности';
+
+  @override
+  String get attractionsSearchHint => 'Куда отправимся?';
+
+  @override
+  String get attractionsLoadFailed =>
+      'Не удалось загрузить достопримечательности';
+
+  @override
+  String get attractionsRecommendedTitle => 'Рекомендовано';
+
+  @override
+  String get attractionsCuratedListEyebrow => 'Подборка';
+
+  @override
+  String get attractionsSeeAll => 'Смотреть все';
+
+  @override
+  String get attractionsNoResults => 'Достопримечательности не найдены';
+
+  @override
+  String get attractionsFiltersTitle => 'Фильтры';
+
+  @override
+  String get attractionFilterClearAll => 'Очистить всё';
+
+  @override
+  String get attractionFilterCategoriesSection => 'Категории';
+
+  @override
+  String get attractionFilterCategoryAll => 'Все места';
+
+  @override
+  String get attractionFilterCategoryParks => 'Парки';
+
+  @override
+  String get attractionFilterCategoryMuseums => 'Музеи';
+
+  @override
+  String get attractionFilterCategoryNature => 'Природа';
+
+  @override
+  String get attractionFilterCategoryHistory => 'История';
+
+  @override
+  String get attractionFilterCategoryAdventure => 'Приключения';
+
+  @override
+  String get attractionFilterMinRatingSection => 'Минимальный рейтинг';
+
+  @override
+  String get attractionFilterRatingAny => 'Любой';
+
+  @override
+  String get attractionFilterDurationSection => 'Длительность';
+
+  @override
+  String get attractionFilterDurationShort => 'Короткое < 2 ч';
+
+  @override
+  String get attractionFilterDurationMedium => 'Среднее 2–5 ч';
+
+  @override
+  String get attractionFilterDurationFullDay => 'Целый день 5 ч+';
+
+  @override
+  String get attractionFilterDurationMultiDay => 'Несколько дней';
+
+  @override
+  String get attractionFilterRangeSection => 'Точный диапазон';
+
+  @override
+  String attractionFilterRangeValue(int min, int max) {
+    return '$min ч – $max ч';
+  }
+
+  @override
+  String get attractionFilterRangeMinTick => '1 ч';
+
+  @override
+  String get attractionFilterRangeMaxTick => '12 ч+';
+
+  @override
+  String get attractionFilterPriceRangeSection => 'Диапазон цен';
+
+  @override
+  String attractionFilterShowSpots(int count) {
+    return 'Показать $count мест';
+  }
+
+  @override
+  String get attractionFilterClear => 'Очистить';
+
+  @override
+  String get attractionMinPriceLabel => 'Мин. цена';
+
+  @override
+  String get attractionMaxPriceLabel => 'Макс. цена';
+
+  @override
+  String get attractionPriceValidationError => 'Введите корректную цену';
+
+  @override
+  String get attractionPriceRangeValidationError =>
+      'Максимальная цена должна быть больше минимальной';
+
+  @override
+  String get attractionHoursUnit => 'Часы';
+
+  @override
+  String get attractionDaysUnit => 'Дни';
+
+  @override
+  String get attractionHoursUnitShort => 'ч';
+
+  @override
+  String get attractionDaysUnitShort => 'дн';
+
+  @override
+  String get attractionMinLabel => 'Мин.';
+
+  @override
+  String get attractionMaxLabel => 'Макс.';
+
+  @override
+  String get attractionDurationValidationError =>
+      'Введите корректную длительность';
+
+  @override
+  String get attractionDurationRangeValidationError =>
+      'Максимальная длительность должна быть больше минимальной';
+
+  @override
+  String get attractionDetailsLoadFailed =>
+      'Не удалось загрузить достопримечательность';
+
+  @override
+  String get attractionDetailsTitle => 'Детали места';
+
+  @override
+  String get attractionMustVisitBadge => 'Стоит посетить';
+
+  @override
+  String get attractionStatRating => 'Рейтинг';
+
+  @override
+  String get attractionStatDuration => 'Длительность';
+
+  @override
+  String get attractionStatPrice => 'Цена';
+
+  @override
+  String get attractionExperienceSection => 'Впечатление';
+
+  @override
+  String get attractionExpectSection => 'Что ожидать';
+
+  @override
+  String get attractionVisitPlanSection => 'План визита';
+
+  @override
+  String get attractionFlyFyTipTitle => 'Совет FlyFy';
+
+  @override
+  String get attractionVisitDurationLabel => 'Время на месте';
+
+  @override
+  String get attractionVisitDurationFlexible => 'Гибко';
+
+  @override
+  String get attractionVisitTicketsLabel => 'Билеты';
+
+  @override
+  String get attractionVisitFreeEntry => 'Бесплатно или зависит от сезона';
+
+  @override
+  String get attractionVisitBookingRecommended => 'лучше бронировать';
+
+  @override
+  String get attractionVisitBestTimeLabel => 'Лучшее время';
+
+  @override
+  String get attractionVisitBestTimeEarlyMorning => 'Раннее утро';
+
+  @override
+  String get attractionVisitBestTimeMorning => 'Утро';
+
+  @override
+  String get attractionVisitBestTimeAfternoon => 'День';
+
+  @override
+  String get attractionVisitBestTimeSunset => 'Закат';
+
+  @override
+  String get attractionVisitBestTimeAnytime => 'В любое время';
+
+  @override
+  String get attractionVisitGoodForLabel => 'Подходит для';
+
+  @override
+  String get attractionVisitAccessLabel => 'Доступ';
+
+  @override
+  String get attractionVisitAccessGood => 'Удобный доступ';
+
+  @override
+  String get attractionVisitAccessLimited => 'Ограниченный доступ';
+
+  @override
+  String get attractionVisitAccessUnknown => 'Уточните на месте';
+
+  @override
+  String get attractionVisitSafetyLabel => 'Подготовка';
+
+  @override
+  String get attractionVisitSafetyCheckWeather => 'Проверьте погоду';
+
+  @override
+  String get attractionVisitSafetyBringWater => 'Возьмите воду';
+
+  @override
+  String get attractionVisitSafetyCheckHours => 'Проверьте часы работы';
+
+  @override
+  String get attractionVisitAudienceCouples => 'Пары';
+
+  @override
+  String get attractionVisitAudienceWellness => 'Оздоровление';
+
+  @override
+  String get attractionVisitTipNature =>
+      'Заранее проверьте транспорт и погоду: с гидом маршрут обычно безопаснее и предсказуемее.';
+
+  @override
+  String get attractionVisitTipCulture =>
+      'Приходите пораньше: будет спокойнее для фото, а рядом останется время на культурные точки.';
+
+  @override
+  String get attractionVisitTipDefault =>
+      'Проверьте актуальное расписание и совместите локацию с соседними активностями, чтобы не терять время на дорогу.';
+
+  @override
+  String get attractionReviewsSection => 'Голоса путешественников';
+
+  @override
+  String attractionSeeAllReviews(int count) {
+    return 'Все отзывы ($count)';
+  }
+
+  @override
+  String get attractionNoReviews => 'Отзывов пока нет. Станьте первым!';
+
+  @override
+  String get attractionAddReview => 'Оставить отзыв';
+
+  @override
+  String get attractionReviewSheetTitle => 'Поделитесь впечатлением';
+
+  @override
+  String get attractionReviewRatingLabel => 'Оценка';
+
+  @override
+  String get attractionReviewCommentLabel => 'Комментарий';
+
+  @override
+  String get attractionReviewCommentHint =>
+      'Что понравилось, что посоветуете и что важно знать другим?';
+
+  @override
+  String get attractionReviewAddPhoto => 'Фото';
+
+  @override
+  String get attractionReviewAddVideo => 'Видео';
+
+  @override
+  String get attractionReviewSubmit => 'Опубликовать отзыв';
+
+  @override
+  String get attractionReviewSubmitting => 'Публикуем...';
+
+  @override
+  String attractionReviewMediaLimit(int count) {
+    return 'Можно прикрепить до $count файлов';
+  }
+
+  @override
+  String get attractionReviewPickFailed => 'Не удалось прикрепить файл';
+
+  @override
+  String get attractionReviewMediaTooLarge => 'Файл слишком большой';
+
+  @override
+  String get attractionReviewUnsupportedFormat =>
+      'Формат файла не поддерживается';
+
+  @override
+  String get attractionReviewSubmitFailed => 'Не удалось опубликовать отзыв';
+
+  @override
+  String get attractionReviewSubmitSuccess => 'Отзыв опубликован';
+
+  @override
+  String get attractionReviewCommentRequired => 'Напишите короткий комментарий';
+
+  @override
+  String get attractionReviewRemoveMedia => 'Удалить файл';
+
+  @override
+  String get attractionReviewVideoPreview => 'Видео';
+
+  @override
+  String get attractionFindTours => 'Найти туры';
+
+  @override
+  String get attractionMapLink => 'Открыть на карте';
+
+  @override
+  String get attractionVerifiedNomad => 'Проверенный путешественник';
+
+  @override
+  String get attractionReviewsTitle => 'Отзывы';
+
+  @override
+  String get attractionTravelerFallback => 'Путешественник';
+
+  @override
+  String get attractionPriceVaries => 'Цена варьируется';
+
+  @override
+  String get attractionPriceVariesShort => 'Варьируется';
+
+  @override
+  String attractionDurationHours(int hours) {
+    return '$hours ч';
+  }
+
+  @override
+  String attractionDurationDays(int days) {
+    return '$days дн';
+  }
+
+  @override
+  String get attractionBackTooltip => 'Назад';
+
+  @override
+  String get attractionNotificationsTooltip => 'Уведомления';
+
+  @override
+  String get attractionBookmarkTooltip => 'Сохранить место';
+
+  @override
+  String get attractionTagFamilyLabel => 'Для семьи';
+
+  @override
+  String get attractionTagFamilySubtitle => 'Подходит для всех возрастов';
+
+  @override
+  String get attractionTagSunsetLabel => 'Лучше на закате';
+
+  @override
+  String get attractionTagSunsetSubtitle => 'Красивые сумеречные виды';
+
+  @override
+  String get attractionTagAccessibilityLabel => 'Доступность';
+
+  @override
+  String get attractionTagAccessibilitySubtitle => 'Подходит для колясок';
+
+  @override
+  String get attractionTagDiningLabel => 'Рестораны';
+
+  @override
+  String get attractionTagDiningSubtitle => 'Гастрономические места';
+
+  @override
+  String get attractionTagOutdoorLabel => 'На природе';
+
+  @override
+  String get attractionTagOutdoorSubtitle => 'Свежий воздух и виды';
+
+  @override
+  String get attractionTagPhotoLabel => 'Фотолокация';
+
+  @override
+  String get attractionTagPhotoSubtitle => 'Для запоминающихся кадров';
+
+  @override
+  String get attractionTagHistoryLabel => 'История';
+
+  @override
+  String get attractionTagHistorySubtitle => 'Культурное наследие';
+
+  @override
+  String get attractionTagAdventureLabel => 'Приключения';
+
+  @override
+  String get attractionTagAdventureSubtitle => 'Активные впечатления';
+
+  @override
+  String get attractionTagUniqueSubtitle => 'Уникальное впечатление';
+
+  @override
   String get activitiesEntryTitle => 'Активности';
 
   @override

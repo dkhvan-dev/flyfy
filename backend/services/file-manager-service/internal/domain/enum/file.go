@@ -39,12 +39,13 @@ func (v FileVisibility) IsValid() bool {
 type FilePurpose string
 
 const (
-	FilePurposeAvatar               FilePurpose = "AVATAR"
-	FilePurposeGuideVerificationDoc FilePurpose = "GUIDE_VERIFICATION_DOC"
-	FilePurposeActivityMedia        FilePurpose = "ACTIVITY_MEDIA"
-	FilePurposeTourMedia            FilePurpose = "TOUR_MEDIA"
-	FilePurposeChatAttachment       FilePurpose = "CHAT_ATTACHMENT"
-	FilePurposeGenericDocument      FilePurpose = "GENERIC_DOCUMENT"
+	FilePurposeAvatar                FilePurpose = "AVATAR"
+	FilePurposeGuideVerificationDoc  FilePurpose = "GUIDE_VERIFICATION_DOC"
+	FilePurposeActivityMedia         FilePurpose = "ACTIVITY_MEDIA"
+	FilePurposeTourMedia             FilePurpose = "TOUR_MEDIA"
+	FilePurposeAttractionReviewMedia FilePurpose = "ATTRACTION_REVIEW_MEDIA"
+	FilePurposeChatAttachment        FilePurpose = "CHAT_ATTACHMENT"
+	FilePurposeGenericDocument       FilePurpose = "GENERIC_DOCUMENT"
 )
 
 func (p FilePurpose) IsValid() bool {
@@ -53,6 +54,7 @@ func (p FilePurpose) IsValid() bool {
 		FilePurposeGuideVerificationDoc,
 		FilePurposeActivityMedia,
 		FilePurposeTourMedia,
+		FilePurposeAttractionReviewMedia,
 		FilePurposeChatAttachment,
 		FilePurposeGenericDocument:
 		return true

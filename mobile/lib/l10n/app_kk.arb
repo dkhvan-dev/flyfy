@@ -526,6 +526,172 @@
       }
     }
   },
+  "attractionsTitle": "Көрікті жерлер",
+  "attractionsSearchHint": "Қайда барамыз?",
+  "attractionsLoadFailed": "Көрікті жерлерді жүктеу сәтсіз аяқталды",
+  "attractionsRecommendedTitle": "Ұсынылады",
+  "attractionsCuratedListEyebrow": "Таңдаулылар",
+  "attractionsSeeAll": "Барлығын көру",
+  "attractionsNoResults": "Көрікті жерлер табылмады",
+  "attractionsFiltersTitle": "Сүзгілер",
+  "attractionFilterClearAll": "Барлығын тазалау",
+  "attractionFilterCategoriesSection": "Санаттар",
+  "attractionFilterCategoryAll": "Барлық орындар",
+  "attractionFilterCategoryParks": "Саябақтар",
+  "attractionFilterCategoryMuseums": "Мұражайлар",
+  "attractionFilterCategoryNature": "Табиғат",
+  "attractionFilterCategoryHistory": "Тарих",
+  "attractionFilterCategoryAdventure": "Шытырман",
+  "attractionFilterMinRatingSection": "Минимум рейтинг",
+  "attractionFilterRatingAny": "Кез келген",
+  "attractionFilterDurationSection": "Ұзақтығы",
+  "attractionFilterDurationShort": "Қысқа < 2 сағ",
+  "attractionFilterDurationMedium": "Орташа 2–5 сағ",
+  "attractionFilterDurationFullDay": "Толық күн 5 сағ+",
+  "attractionFilterDurationMultiDay": "Бірнеше күн",
+  "attractionFilterRangeSection": "Нақты ауқым",
+  "attractionFilterRangeValue": "{min} сағ – {max} сағ",
+  "@attractionFilterRangeValue": {
+    "placeholders": {
+      "min": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "attractionFilterRangeMinTick": "1 сағ",
+  "attractionFilterRangeMaxTick": "12 сағ+",
+  "attractionFilterPriceRangeSection": "Баға ауқымы",
+  "attractionFilterShowSpots": "{count} орын көрсету",
+  "@attractionFilterShowSpots": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "attractionFilterClear": "Тазалау",
+  "attractionMinPriceLabel": "Мин. баға",
+  "attractionMaxPriceLabel": "Макс. баға",
+  "attractionPriceValidationError": "Дұрыс баға енгізіңіз",
+  "attractionPriceRangeValidationError": "Максималды баға минималды бағадан жоғары болуы керек",
+  "attractionHoursUnit": "Сағат",
+  "attractionDaysUnit": "Күн",
+  "attractionHoursUnitShort": "сағ",
+  "attractionDaysUnitShort": "күн",
+  "attractionMinLabel": "Мин.",
+  "attractionMaxLabel": "Макс.",
+  "attractionDurationValidationError": "Дұрыс ұзақтық енгізіңіз",
+  "attractionDurationRangeValidationError": "Максималды ұзақтық минималды ұзақтықтан жоғары болуы керек",
+  "attractionDetailsLoadFailed": "Көрікті жерді жүктеу сәтсіз аяқталды",
+  "attractionDetailsTitle": "Жер туралы",
+  "attractionMustVisitBadge": "Бару керек",
+  "attractionStatRating": "Рейтинг",
+  "attractionStatDuration": "Ұзақтығы",
+  "attractionStatPrice": "Баға",
+  "attractionExperienceSection": "Әсер",
+  "attractionExpectSection": "Не күтуге болады",
+  "attractionVisitPlanSection": "Сапар жоспары",
+  "attractionFlyFyTipTitle": "FlyFy кеңесі",
+  "attractionVisitDurationLabel": "Орынға уақыт",
+  "attractionVisitDurationFlexible": "Икемді",
+  "attractionVisitTicketsLabel": "Билеттер",
+  "attractionVisitFreeEntry": "Тегін немесе маусымға байланысты",
+  "attractionVisitBookingRecommended": "алдын ала брондаған дұрыс",
+  "attractionVisitBestTimeLabel": "Ең жақсы уақыт",
+  "attractionVisitBestTimeEarlyMorning": "Ерте таң",
+  "attractionVisitBestTimeMorning": "Таңертең",
+  "attractionVisitBestTimeAfternoon": "Күндіз",
+  "attractionVisitBestTimeSunset": "Күн батқанда",
+  "attractionVisitBestTimeAnytime": "Кез келген уақытта",
+  "attractionVisitGoodForLabel": "Кімге қолайлы",
+  "attractionVisitAccessLabel": "Қолжетімділік",
+  "attractionVisitAccessGood": "Жету ыңғайлы",
+  "attractionVisitAccessLimited": "Қолжетімділігі шектеулі",
+  "attractionVisitAccessUnknown": "Орнында нақтылаңыз",
+  "attractionVisitSafetyLabel": "Дайындық",
+  "attractionVisitSafetyCheckWeather": "Ауа райын тексеріңіз",
+  "attractionVisitSafetyBringWater": "Су алыңыз",
+  "attractionVisitSafetyCheckHours": "Жұмыс уақытын тексеріңіз",
+  "attractionVisitAudienceCouples": "Жұптар",
+  "attractionVisitAudienceWellness": "Сауықтыру",
+  "attractionVisitTipNature": "Жолға шығар алдында көлік пен ауа райын тексеріңіз: гидпен бағыт әдетте қауіпсіз әрі болжамды.",
+  "attractionVisitTipCulture": "Ертерек келіңіз: фотоға ыңғайлырақ, әрі жақын мәдени орындарға уақыт қалады.",
+  "attractionVisitTipDefault": "Ағымдағы кестені тексеріп, жолға уақыт жоғалтпау үшін жақын белсенділіктермен біріктіріңіз.",
+  "attractionReviewsSection": "Саяхатшылар пікірі",
+  "attractionSeeAllReviews": "Барлық пікірлер ({count})",
+  "@attractionSeeAllReviews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionNoReviews": "Әзірге пікір жоқ. Бірінші болыңыз!",
+  "attractionAddReview": "Пікір қалдыру",
+  "attractionReviewSheetTitle": "Әсеріңізбен бөлісіңіз",
+  "attractionReviewRatingLabel": "Баға",
+  "attractionReviewCommentLabel": "Пікір",
+  "attractionReviewCommentHint": "Не ұнады, не ұсынар едіңіз және басқалар нені білуі керек?",
+  "attractionReviewAddPhoto": "Фото",
+  "attractionReviewAddVideo": "Видео",
+  "attractionReviewSubmit": "Пікірді жариялау",
+  "attractionReviewSubmitting": "Жариялануда...",
+  "attractionReviewMediaLimit": "{count} файлға дейін тіркей аласыз",
+  "@attractionReviewMediaLimit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionReviewPickFailed": "Файлды тіркеу мүмкін болмады",
+  "attractionReviewMediaTooLarge": "Файл тым үлкен",
+  "attractionReviewUnsupportedFormat": "Файл пішімі қолдау көрсетілмейді",
+  "attractionReviewSubmitFailed": "Пікірді жариялау мүмкін болмады",
+  "attractionReviewSubmitSuccess": "Пікір жарияланды",
+  "attractionReviewCommentRequired": "Қысқа пікір жазыңыз",
+  "attractionReviewRemoveMedia": "Файлды жою",
+  "attractionReviewVideoPreview": "Видео",
+  "attractionFindTours": "Турлар табу",
+  "attractionMapLink": "Картадан көру",
+  "attractionVerifiedNomad": "Тексерілген саяхатшы",
+  "attractionReviewsTitle": "Пікірлер",
+  "attractionTravelerFallback": "Саяхатшы",
+  "attractionPriceVaries": "Баға өзгеруі мүмкін",
+  "attractionPriceVariesShort": "Өзгеруі мүмкін",
+  "attractionDurationHours": "{hours} сағ",
+  "@attractionDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionDurationDays": "{days} күн",
+  "@attractionDurationDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "attractionBackTooltip": "Артқа",
+  "attractionNotificationsTooltip": "Хабарландырулар",
+  "attractionBookmarkTooltip": "Жерді сақтау",
+  "attractionTagFamilyLabel": "Отбасына қолайлы",
+  "attractionTagFamilySubtitle": "Барлық жасқа жарайды",
+  "attractionTagSunsetLabel": "Күн батқанда жақсы",
+  "attractionTagSunsetSubtitle": "Әдемі кешкі көріністер",
+  "attractionTagAccessibilityLabel": "Қолжетімділік",
+  "attractionTagAccessibilitySubtitle": "Арбаға қолайлы",
+  "attractionTagDiningLabel": "Мейрамханалар",
+  "attractionTagDiningSubtitle": "Гастрономиялық орындар",
+  "attractionTagOutdoorLabel": "Табиғатта",
+  "attractionTagOutdoorSubtitle": "Таза ауа мен көріністер",
+  "attractionTagPhotoLabel": "Фото орын",
+  "attractionTagPhotoSubtitle": "Есте қаларлық кадрлар",
+  "attractionTagHistoryLabel": "Тарихи",
+  "attractionTagHistorySubtitle": "Бай мәдени мұра",
+  "attractionTagAdventureLabel": "Шытырман",
+  "attractionTagAdventureSubtitle": "Белсенді әсерлер",
+  "attractionTagUniqueSubtitle": "Ерекше әсер",
   "activitiesEntryTitle": "Белсенділіктер",
   "activitiesEntrySubtitle": "Қосылуға болатын офлайн және онлайн іс-шараларды табыңыз",
   "comingSoon": "Жақында пайда болады",

@@ -32,6 +32,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	filesLimit := 180
 	activityLimit := 180
 	storiesLimit := 180
+	attractionLimit := 180
 	chatLimit := 300
 
 	return []RoutePolicy{
@@ -175,6 +176,30 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:      "reference",
 			RewritePrefix: "/v1/currencies",
 			Cacheable:     true,
+		},
+		{
+			Name:               "attraction-reviews",
+			Prefix:             apiPrefix + "/attractions/",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "attraction",
+			RateLimitPerMinute: &attractionLimit,
+			RewritePrefix:      "/v1/attractions/",
+		},
+		{
+			Name:               "attractions",
+			Prefix:             apiPrefix + "/attractions",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "attraction",
+			RateLimitPerMinute: &attractionLimit,
+			RewritePrefix:      "/v1/attractions",
+		},
+		{
+			Name:               "reviews-delete",
+			Prefix:             apiPrefix + "/reviews/",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "attraction",
+			RateLimitPerMinute: &attractionLimit,
+			RewritePrefix:      "/v1/reviews/",
 		},
 	}
 }

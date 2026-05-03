@@ -767,6 +767,100 @@ services:
       - flyfy-network
 
   # ============================================
+  # Attraction PostgreSQL
+  # ============================================
+  attraction-postgres:
+    image: postgres:17-alpine
+    container_name: attraction-postgres
+    environment:
+      POSTGRES_DB: attraction_service_db
+      POSTGRES_USER: attraction_service
+      POSTGRES_PASSWORD: attraction_secret_dev
+    ports:
+      - "5441:5432"
+    volumes:
+      - attraction_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/009_attraction_service.sh:/docker-entrypoint-initdb.d/009_attraction_service.sh
+      - ../backend/services/attraction-service/migrations:/migrations/attraction-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U attraction_service -d attraction_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  attraction-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: attraction-postgres-migrator
+    environment:
+      PGHOST: attraction-postgres
+      PGPORT: 5432
+      POSTGRES_DB: attraction_service_db
+      POSTGRES_USER: attraction_service
+      POSTGRES_PASSWORD: attraction_secret_dev
+    volumes:
+      - ./init-scripts/009_attraction_service_migrate.sh:/usr/local/bin/009_attraction_service_migrate.sh:ro
+      - ../backend/services/attraction-service/migrations:/migrations/attraction-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/009_attraction_service_migrate.sh"]
+    depends_on:
+      attraction-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Attraction Service
+  # ============================================
+  attraction-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/attraction-service/Dockerfile
+    container_name: attraction-service
+    depends_on:
+      attraction-postgres:
+        condition: service_healthy
+      attraction-postgres-migrator:
+        condition: service_completed_successfully
+      user-service:
+        condition: service_started
+    ports:
+      - "8090:8090"
+    environment:
+      APP_NAME: attraction-service
+      APP_ENV: development
+
+      HTTP_PORT: 8090
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 15s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      POSTGRES_HOST: attraction-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: attraction_service
+      POSTGRES_PASSWORD: attraction_secret_dev
+      POSTGRES_DB: attraction_service_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_CONNS: 10
+      POSTGRES_MIN_CONNS: 2
+
+      LOG_LEVEL: info
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      REQUIRE_AUTHENTICATED_WRITES: "true"
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+
+      USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Reference Service
   # ============================================
   reference-service:
@@ -815,6 +909,8 @@ services:
         condition: service_started
       reference-service:
         condition: service_started
+      attraction-service:
+        condition: service_started
       redis:
         condition: service_healthy
     ports:
@@ -844,6 +940,7 @@ services:
       STORIES_SERVICE_HTTP_URL: http://stories-service:8087
       CHAT_SERVICE_HTTP_URL: http://chat-service:8088
       REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
+      ATTRACTION_SERVICE_HTTP_URL: http://attraction-service:8090
 
       REDIS_ADDR: redis:6379
       REDIS_CACHE_DB: 3
@@ -883,4 +980,5 @@ volumes:
   stories_postgres_data:
   chat_postgres_data:
   nats_data:
+  attraction_postgres_data:
   token_service_keys:

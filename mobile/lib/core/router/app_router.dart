@@ -27,6 +27,9 @@ import '../../screens/activities/my_activities_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
 import '../../screens/chat/conversations_screen.dart';
 import '../../screens/chat/chat_screen.dart';
+import '../../screens/attractions/attractions_screen.dart';
+import '../../screens/attractions/attraction_details_screen.dart';
+import '../../features/attractions/models/attraction_vm.dart';
 import '../../screens/common/feature_stub_screen.dart';
 import '../../screens/map/map_screen.dart';
 
@@ -253,6 +256,26 @@ class AppRouter {
               _withAndroidBackSwipe(const FeatureStubScreen(title: 'Menu')),
         ),
         GoRoute(
+          path: '/attractions',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const AttractionsScreen()),
+        ),
+        GoRoute(
+          path: '/attractions/:attractionId',
+          builder: (context, state) {
+            final attractionId = state.pathParameters['attractionId'] ?? '';
+            final initialAttraction = state.extra is AttractionVm
+                ? state.extra! as AttractionVm
+                : null;
+            return _withAndroidBackSwipe(
+              AttractionDetailsScreen(
+                attractionId: attractionId,
+                initialAttraction: initialAttraction,
+              ),
+            );
+          },
+        ),
+        GoRoute(
           path: '/map',
           builder: (context, state) => _withAndroidBackSwipe(const MapScreen()),
         ),
@@ -347,6 +370,10 @@ class AppRouter {
     }
 
     if (location.startsWith('/stories/')) {
+      return true;
+    }
+
+    if (location == '/attractions' || location.startsWith('/attractions/')) {
       return true;
     }
 
