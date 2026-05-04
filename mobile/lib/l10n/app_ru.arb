@@ -33,6 +33,15 @@
   "logoutConfirmButton": "Выйти",
   "cancel": "Отмена",
   "loginButton": "Войти",
+  "commonPaginationPrevious": "Предыдущая страница",
+  "commonPaginationNext": "Следующая страница",
+  "commonPaginationLabel": "Страница {current} из {total}",
+  "@commonPaginationLabel": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
   "codeSentTo": "Код отправлен на {phone}",
   "@codeSentTo": {
     "placeholders": {

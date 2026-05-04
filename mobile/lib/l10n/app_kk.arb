@@ -33,6 +33,15 @@
   "logoutConfirmButton": "Шығу",
   "cancel": "Бас тарту",
   "loginButton": "Кіру",
+  "commonPaginationPrevious": "Алдыңғы бет",
+  "commonPaginationNext": "Келесі бет",
+  "commonPaginationLabel": "{total} беттің {current}-беті",
+  "@commonPaginationLabel": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
   "codeSentTo": "{phone} нөміріне код жіберілді",
   "@codeSentTo": {
     "placeholders": {

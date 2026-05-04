@@ -111,6 +111,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginButton => 'Log in';
 
   @override
+  String get commonPaginationPrevious => 'Previous page';
+
+  @override
+  String get commonPaginationNext => 'Next page';
+
+  @override
+  String commonPaginationLabel(Object current, Object total) {
+    return 'Page $current of $total';
+  }
+
+  @override
   String codeSentTo(Object phone) {
     return 'Code sent to $phone';
   }

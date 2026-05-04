@@ -33,6 +33,15 @@
   "logoutConfirmButton": "Sign out",
   "cancel": "Cancel",
   "loginButton": "Log in",
+  "commonPaginationPrevious": "Previous page",
+  "commonPaginationNext": "Next page",
+  "commonPaginationLabel": "Page {current} of {total}",
+  "@commonPaginationLabel": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
   "codeSentTo": "Code sent to {phone}",
   "@codeSentTo": {
     "placeholders": {

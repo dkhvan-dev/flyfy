@@ -112,6 +112,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get loginButton => 'Войти';
 
   @override
+  String get commonPaginationPrevious => 'Предыдущая страница';
+
+  @override
+  String get commonPaginationNext => 'Следующая страница';
+
+  @override
+  String commonPaginationLabel(Object current, Object total) {
+    return 'Страница $current из $total';
+  }
+
+  @override
   String codeSentTo(Object phone) {
     return 'Код отправлен на $phone';
   }

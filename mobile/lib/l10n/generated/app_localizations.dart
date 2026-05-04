@@ -298,6 +298,24 @@ abstract class AppLocalizations {
   /// **'Log in'**
   String get loginButton;
 
+  /// No description provided for @commonPaginationPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get commonPaginationPrevious;
+
+  /// No description provided for @commonPaginationNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get commonPaginationNext;
+
+  /// No description provided for @commonPaginationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {current} of {total}'**
+  String commonPaginationLabel(Object current, Object total);
+
   /// No description provided for @codeSentTo.
   ///
   /// In en, this message translates to:

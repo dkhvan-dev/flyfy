@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/pagination_bar.dart';
 import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
@@ -20,6 +21,8 @@ class AttractionsScreen extends StatefulWidget {
 }
 
 class _AttractionsScreenState extends State<AttractionsScreen> {
+  static const int _pageSize = 8;
+
   final AttractionApi _api = AttractionApi();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -29,6 +32,13 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   String? _error;
   AttractionFilterResult _filters = AttractionFilterResult.empty;
   Timer? _searchDebounce;
+  int _currentPage = 1;
+  int _totalAttractions = 0;
+
+  int get _totalPages {
+    final pages = (_totalAttractions / _pageSize).ceil();
+    return pages < 1 ? 1 : pages;
+  }
 
   @override
   void initState() {
@@ -51,12 +61,13 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(
       const Duration(milliseconds: 400),
-      _loadAttractions,
+      () => _loadAttractions(page: 1),
     );
   }
 
-  Future<void> _loadAttractions() async {
+  Future<void> _loadAttractions({int page = 1}) async {
     if (!mounted) return;
+    final normalizedPage = page < 1 ? 1 : page;
     setState(() {
       _loading = _attractions.isEmpty;
       _error = null;
@@ -76,11 +87,14 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
         durationUnit: _filters.durationUnit,
         sort: 'rating',
         locale: locale,
-        limit: 40,
+        limit: _pageSize,
+        offset: (normalizedPage - 1) * _pageSize,
       );
       if (!mounted) return;
       setState(() {
         _attractions = result.items;
+        _totalAttractions = result.total;
+        _currentPage = result.total == 0 ? 1 : normalizedPage;
         _loading = false;
       });
     } catch (_) {
@@ -107,7 +121,23 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     );
     if (result == null || !mounted) return;
     setState(() => _filters = result);
-    _loadAttractions();
+    _loadAttractions(page: 1);
+  }
+
+  Future<void> _refreshAttractions() {
+    return _loadAttractions(page: _currentPage);
+  }
+
+  Future<void> _handlePageChanged(int page) async {
+    if (page == _currentPage || _loading) return;
+    FocusScope.of(context).unfocus();
+    await _loadAttractions(page: page);
+    if (!mounted || !_scrollController.hasClients) return;
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _onBack() {
@@ -253,7 +283,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
                   ),
                 ),
                 textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _loadAttractions(),
+                onSubmitted: (_) => _loadAttractions(page: 1),
               ),
             ),
             IconButton(
@@ -296,7 +326,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
             ),
             SizedBox(height: a.scale(12)),
             TextButton(
-              onPressed: _loadAttractions,
+              onPressed: () => _loadAttractions(page: _currentPage),
               child: Text(
                 l10n.retryButton,
                 style: const TextStyle(color: AppColors.accent),
@@ -312,7 +342,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     return RefreshIndicator(
       color: AppColors.accent,
       backgroundColor: const Color(0xFF271609),
-      onRefresh: _loadAttractions,
+      onRefresh: _refreshAttractions,
       child: CustomScrollView(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -368,6 +398,22 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
             SliverPadding(
               padding: EdgeInsets.fromLTRB(padX, 0, padX, a.scale(24)),
               sliver: _buildGrid(a, l10n),
+            ),
+          if (_attractions.isNotEmpty && _totalPages > 1)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  padX,
+                  a.scale(10, minFactor: 0.72),
+                  padX,
+                  a.scale(34, minFactor: 0.78),
+                ),
+                child: FlyfyPaginationBar(
+                  currentPage: _currentPage,
+                  totalPages: _totalPages,
+                  onPageChanged: _handlePageChanged,
+                ),
+              ),
             ),
         ],
       ),
@@ -483,9 +529,8 @@ class _DiscoverCard extends StatelessWidget {
             minWidth: 420,
             maxWidth: 720,
           );
-          final coverUrl = coverMedia == null
-              ? null
-              : resolveAttractionMediaUrl(coverMedia);
+          final coverUrl =
+              coverMedia == null ? null : resolveAttractionMediaUrl(coverMedia);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -654,13 +699,13 @@ class _DiscoverCard extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-    color: Colors.white.withValues(alpha: 0.05),
-    child: const Center(
-      child: Icon(
-        Icons.landscape_rounded,
-        color: AppColors.textCaption,
-        size: 48,
-      ),
-    ),
-  );
+        color: Colors.white.withValues(alpha: 0.05),
+        child: const Center(
+          child: Icon(
+            Icons.landscape_rounded,
+            color: AppColors.textCaption,
+            size: 48,
+          ),
+        ),
+      );
 }

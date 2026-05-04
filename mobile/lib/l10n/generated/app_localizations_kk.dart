@@ -114,6 +114,17 @@ class AppLocalizationsKk extends AppLocalizations {
   String get loginButton => 'Кіру';
 
   @override
+  String get commonPaginationPrevious => 'Алдыңғы бет';
+
+  @override
+  String get commonPaginationNext => 'Келесі бет';
+
+  @override
+  String commonPaginationLabel(Object current, Object total) {
+    return '$total беттің $current-беті';
+  }
+
+  @override
   String codeSentTo(Object phone) {
     return '$phone нөміріне код жіберілді';
   }
