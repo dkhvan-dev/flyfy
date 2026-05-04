@@ -8,10 +8,6 @@ import '../../l10n/generated/app_localizations.dart';
 import 'models/attraction_vm.dart';
 
 const double attractionTypographyScaleFactor = 0.8;
-const Map<String, String> attractionExternalImageHeaders = {
-  'User-Agent': 'FlyFyMobile/1.0 FlutterImageLoader',
-  'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-};
 
 class AttractionTextScale extends StatelessWidget {
   const AttractionTextScale({super.key, required this.child});
@@ -107,42 +103,12 @@ int attractionImageTargetWidth(
       .toInt();
 }
 
-String? resolveAttractionMediaUrl(AttractionMediaVm media, {int? targetWidth}) {
-  final externalUrl = media.externalUrl.trim();
-  if (externalUrl.isNotEmpty) {
-    return _withWikimediaImageWidth(externalUrl, targetWidth);
-  }
+String? resolveAttractionMediaUrl(AttractionMediaVm media) {
   return resolvePublicFileContentUrl(media.fileId);
 }
 
 Map<String, String>? attractionImageRequestHeaders(String? url) {
-  final uri = Uri.tryParse((url ?? '').trim());
-  if (uri == null) {
-    return null;
-  }
-
-  final host = uri.host.toLowerCase();
-  if (host == 'commons.wikimedia.org' || host.endsWith('.wikimedia.org')) {
-    return attractionExternalImageHeaders;
-  }
   return null;
-}
-
-String _withWikimediaImageWidth(String url, int? targetWidth) {
-  if (targetWidth == null) {
-    return url;
-  }
-
-  final uri = Uri.tryParse(url);
-  if (uri == null ||
-      uri.host.toLowerCase() != 'commons.wikimedia.org' ||
-      !uri.path.contains('/Special:FilePath/')) {
-    return url;
-  }
-
-  final queryParameters = Map<String, String>.from(uri.queryParameters)
-    ..['width'] = targetWidth.toString();
-  return uri.replace(queryParameters: queryParameters).toString();
 }
 
 String formatAttractionDurationLabel(

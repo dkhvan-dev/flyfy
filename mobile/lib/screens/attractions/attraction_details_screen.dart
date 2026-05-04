@@ -15,6 +15,7 @@ import '../../features/attractions/models/attraction_review_vm.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
+import '../map/map_screen.dart';
 
 class AttractionDetailsScreen extends StatefulWidget {
   const AttractionDetailsScreen({
@@ -36,6 +37,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
   final FileApi _fileApi = FileApi();
   final ReferenceApi _referenceApi = ReferenceApi();
   final ScrollController _scrollController = ScrollController();
+  final PageController _heroImageController = PageController();
 
   AttractionVm? _attraction;
   List<AttractionReviewVm> _reviews = [];
@@ -59,6 +61,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
 
   @override
   void dispose() {
+    _heroImageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -85,10 +88,13 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
       final attraction = results[0] as AttractionVm;
       final reviewResult =
           results[1] as ({List<AttractionReviewVm> items, int total});
-      final currentUserReview =
-          (results[2] as AttractionReviewVm?) ??
+      final currentUserReview = (results[2] as AttractionReviewVm?) ??
           _findReviewByAuthor(reviewResult.items, currentUserId);
       final locationLabel = await _resolveLocationLabel(attraction, locale);
+      final mediaCount = attraction.media.length;
+      final imageIndex = mediaCount == 0
+          ? 0
+          : _currentImageIndex.clamp(0, mediaCount - 1).toInt();
 
       setState(() {
         _attraction = attraction;
@@ -96,6 +102,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
         _currentUserReview = currentUserReview;
         _reviewTotal = reviewResult.total;
         _locationLabel = locationLabel;
+        _currentImageIndex = imageIndex;
         _loading = false;
         _checkingCurrentUserReview = false;
       });
@@ -207,6 +214,42 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     );
   }
 
+  Future<void> _openImageGallery(
+    List<AttractionMediaVm> media,
+    int initialIndex,
+  ) async {
+    if (media.isEmpty) return;
+    final selectedIndex = await showGeneralDialog<int>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black,
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return _AttractionImageGallery(
+          media: media,
+          initialIndex: initialIndex.clamp(0, media.length - 1).toInt(),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+    );
+
+    if (!mounted || selectedIndex == null || selectedIndex >= media.length) {
+      return;
+    }
+
+    setState(() => _currentImageIndex = selectedIndex);
+    if (_heroImageController.hasClients) {
+      await _heroImageController.animateToPage(
+        selectedIndex,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
   Future<bool> _submitReview(
     double rating,
     String comment,
@@ -280,6 +323,35 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     );
   }
 
+  String _resolvedLocationLabel(AttractionVm attraction) {
+    final resolved = (_locationLabel?.trim().isNotEmpty ?? false)
+        ? _locationLabel!.trim()
+        : _fallbackLocationLabel(attraction);
+    return resolved.trim().isNotEmpty
+        ? resolved.trim()
+        : attraction.countryCode.trim().toUpperCase();
+  }
+
+  void _openMap() {
+    final attraction = _attraction;
+    if (attraction != null && attraction.hasLocation) {
+      final sourceUrl = attraction.locationSourceUrl.trim();
+      context.push(
+        '/map',
+        extra: MapTarget(
+          title: attraction.title,
+          subtitle: _resolvedLocationLabel(attraction),
+          latitude: attraction.latitude!,
+          longitude: attraction.longitude!,
+          sourceUrl: sourceUrl.isEmpty ? null : sourceUrl,
+        ),
+      );
+      return;
+    }
+
+    context.push('/map');
+  }
+
   @override
   Widget build(BuildContext context) {
     return AttractionTextScale(
@@ -301,39 +373,41 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
                         ),
                       )
                     : _error != null && _attraction == null
-                    ? _buildError(l10n, adaptive)
-                    : Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Column(
-                              children: [
-                                _buildTopBar(adaptive, l10n),
-                                Expanded(
-                                  child: RefreshIndicator(
-                                    color: AppColors.accent,
-                                    backgroundColor: const Color(0xFF271609),
-                                    onRefresh: _loadData,
-                                    child: CustomScrollView(
-                                      controller: _scrollController,
-                                      physics:
-                                          const AlwaysScrollableScrollPhysics(),
-                                      slivers: [
-                                        SliverToBoxAdapter(
-                                          child: _buildHero(adaptive, l10n),
+                        ? _buildError(l10n, adaptive)
+                        : Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Column(
+                                  children: [
+                                    _buildTopBar(adaptive, l10n),
+                                    Expanded(
+                                      child: RefreshIndicator(
+                                        color: AppColors.accent,
+                                        backgroundColor:
+                                            const Color(0xFF271609),
+                                        onRefresh: _loadData,
+                                        child: CustomScrollView(
+                                          controller: _scrollController,
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          slivers: [
+                                            SliverToBoxAdapter(
+                                              child: _buildHero(adaptive, l10n),
+                                            ),
+                                            SliverToBoxAdapter(
+                                              child:
+                                                  _buildContent(adaptive, l10n),
+                                            ),
+                                          ],
                                         ),
-                                        SliverToBoxAdapter(
-                                          child: _buildContent(adaptive, l10n),
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              _buildBottomCta(adaptive, l10n),
+                            ],
                           ),
-                          _buildBottomCta(adaptive, l10n),
-                        ],
-                      ),
               ),
             ),
           );
@@ -473,13 +547,11 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     final heroHeight = (available * 0.42).clamp(240.0, 360.0);
     final media = attraction.media.isNotEmpty
         ? (List<AttractionMediaVm>.from(attraction.media)
-            ..sort((x, y) => x.position.compareTo(y.position)))
+          ..sort((x, y) => x.position.compareTo(y.position)))
         : <AttractionMediaVm>[];
 
     final padX = a.scale(28);
-    final locationLabel = (_locationLabel?.trim().isNotEmpty ?? false)
-        ? _locationLabel!.trim()
-        : _fallbackLocationLabel(attraction);
+    final locationLabel = _resolvedLocationLabel(attraction);
 
     return SizedBox(
       height: heroHeight,
@@ -488,51 +560,30 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
         children: [
           if (media.isNotEmpty)
             PageView.builder(
+              controller: _heroImageController,
               itemCount: media.length,
               onPageChanged: (i) => setState(() => _currentImageIndex = i),
-              itemBuilder: (_, i) {
-                final imageTargetWidth = attractionImageTargetWidth(
-                  context,
-                  mq.size.width,
-                  minWidth: 900,
-                  maxWidth: 1600,
-                );
-                final url = resolveAttractionMediaUrl(
-                  media[i],
-                  targetWidth: imageTargetWidth,
-                );
-                return url != null
-                    ? Image.network(
-                        url,
-                        headers: attractionImageRequestHeaders(url),
-                        fit: BoxFit.cover,
-                        cacheWidth: imageTargetWidth,
-                        filterQuality: FilterQuality.medium,
-                        gaplessPlayback: true,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) {
-                            return child;
-                          }
-                          return _heroPlaceholder();
-                        },
-                        errorBuilder: (_, __, ___) => _heroPlaceholder(),
-                      )
-                    : _heroPlaceholder();
-              },
+              itemBuilder: (_, i) => _buildHeroMediaPage(
+                media: media,
+                index: i,
+                logicalWidth: mq.size.width,
+              ),
             )
           else
             _heroPlaceholder(),
           Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    const Color(0xFF211609).withValues(alpha: 0.96),
-                  ],
-                  stops: const [0.42, 1.0],
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      const Color(0xFF211609).withValues(alpha: 0.96),
+                    ],
+                    stops: const [0.42, 1.0],
+                  ),
                 ),
               ),
             ),
@@ -541,93 +592,116 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
             left: padX,
             right: padX,
             bottom: a.scale(38, minFactor: 0.68),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (media.length > 1) ...[
-                  Center(child: _buildImageIndicator(media.length, a)),
-                  SizedBox(height: a.scale(12)),
-                ],
-                if (attraction.rating >= 4.0) ...[
-                  Container(
-                    height: a.scale(27, minFactor: 0.9),
-                    padding: EdgeInsets.symmetric(horizontal: a.scale(13)),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      l10n.attractionMustVisitBadge.toUpperCase(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: a.scale(11),
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  SizedBox(height: a.scale(10)),
-                ],
-                Text(
-                  attraction.title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: a.scale(38, minFactor: 0.86),
-                    fontWeight: FontWeight.w900,
-                    height: 0.95,
-                    letterSpacing: -3.0,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: a.scale(8)),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_rounded,
-                      color: AppColors.accent,
-                      size: a.scale(14),
-                    ),
-                    SizedBox(width: a.scale(6)),
-                    Flexible(
-                      flex: 3,
-                      child: Text(
-                        locationLabel.toUpperCase(),
-                        style: TextStyle(
-                          color: const Color(0xFFD8C2AD),
-                          fontSize: a.scale(14, minFactor: 0.82),
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.4,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    SizedBox(width: a.scale(12)),
-                    Flexible(
-                      flex: 2,
-                      child: Text(
-                        '${l10n.attractionMapLink.toUpperCase()} →',
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontSize: a.scale(14, minFactor: 0.82),
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.6,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+            child: IgnorePointer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (media.length > 1) ...[
+                    Center(child: _buildImageIndicator(media.length, a)),
+                    SizedBox(height: a.scale(12)),
                   ],
-                ),
-              ],
+                  if (attraction.rating >= 4.0) ...[
+                    Container(
+                      height: a.scale(27, minFactor: 0.9),
+                      padding: EdgeInsets.symmetric(horizontal: a.scale(13)),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        l10n.attractionMustVisitBadge.toUpperCase(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: a.scale(11),
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(height: a.scale(10)),
+                  ],
+                  Text(
+                    attraction.title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: a.scale(38, minFactor: 0.86),
+                      fontWeight: FontWeight.w900,
+                      height: 0.95,
+                      letterSpacing: -3.0,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: a.scale(8)),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_rounded,
+                        color: AppColors.accent,
+                        size: a.scale(14),
+                      ),
+                      SizedBox(width: a.scale(6)),
+                      Expanded(
+                        child: Text(
+                          locationLabel.toUpperCase(),
+                          style: TextStyle(
+                            color: const Color(0xFFD8C2AD),
+                            fontSize: a.scale(14, minFactor: 0.82),
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHeroMediaPage({
+    required List<AttractionMediaVm> media,
+    required int index,
+    required double logicalWidth,
+  }) {
+    final imageTargetWidth = attractionImageTargetWidth(
+      context,
+      logicalWidth,
+      minWidth: 900,
+      maxWidth: 1600,
+    );
+    final url = resolveAttractionMediaUrl(media[index]);
+    if (url == null) {
+      return _heroPlaceholder();
+    }
+
+    return GestureDetector(
+      onTap: () => _openImageGallery(media, index),
+      behavior: HitTestBehavior.opaque,
+      child: Image.network(
+        url,
+        headers: attractionImageRequestHeaders(url),
+        fit: BoxFit.cover,
+        cacheWidth: imageTargetWidth,
+        filterQuality: FilterQuality.medium,
+        gaplessPlayback: true,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) {
+            return child;
+          }
+          return _heroPlaceholder();
+        },
+        errorBuilder: (_, __, ___) => _heroPlaceholder(),
       ),
     );
   }
@@ -687,13 +761,112 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildStats(attraction, a, l10n),
-          SizedBox(height: a.scale(54)),
+          SizedBox(height: a.scale(18, minFactor: 0.72)),
+          _buildLocationBlock(attraction, a, l10n),
+          SizedBox(height: a.scale(46, minFactor: 0.72)),
           _buildExperience(attraction, a, l10n),
           SizedBox(height: a.scale(56)),
           _buildVisitPlan(attraction, a, l10n),
           SizedBox(height: a.scale(56)),
           _buildReviews(a, l10n),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLocationBlock(
+    AttractionVm v,
+    AttractionAdaptive a,
+    AppLocalizations l10n,
+  ) {
+    final locationLabel = _resolvedLocationLabel(v);
+    final radius = BorderRadius.circular(a.radius(16));
+
+    return Semantics(
+      button: true,
+      label: l10n.attractionMapLink,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _openMap,
+          borderRadius: radius,
+          child: Ink(
+            padding: EdgeInsets.symmetric(
+              horizontal: a.scale(14),
+              vertical: a.scale(13, minFactor: 0.84),
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF332416),
+              borderRadius: radius,
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.22),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: a.scale(42, minFactor: 0.84),
+                  height: a.scale(42, minFactor: 0.84),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    color: AppColors.accent,
+                    size: a.scale(21, minFactor: 0.86),
+                  ),
+                ),
+                SizedBox(width: a.scale(12, minFactor: 0.78)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        locationLabel,
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: a.scale(16, minFactor: 0.86),
+                          fontWeight: FontWeight.w900,
+                          height: 1.15,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: a.scale(3, minFactor: 0.7)),
+                      Text(
+                        l10n.attractionMapLink,
+                        style: TextStyle(
+                          color: const Color(0xFFD8C2AD),
+                          fontSize: a.scale(12, minFactor: 0.88),
+                          fontWeight: FontWeight.w800,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: a.scale(10, minFactor: 0.72)),
+                Container(
+                  width: a.scale(40, minFactor: 0.86),
+                  height: a.scale(40, minFactor: 0.86),
+                  decoration: const BoxDecoration(
+                    color: AppColors.accent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.map_rounded,
+                    color: Colors.white,
+                    size: a.scale(20, minFactor: 0.86),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1128,6 +1301,207 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
   }
 }
 
+class _AttractionImageGallery extends StatefulWidget {
+  const _AttractionImageGallery({
+    required this.media,
+    required this.initialIndex,
+  }) : assert(media.length > 0);
+
+  final List<AttractionMediaVm> media;
+  final int initialIndex;
+
+  @override
+  State<_AttractionImageGallery> createState() =>
+      _AttractionImageGalleryState();
+}
+
+class _AttractionImageGalleryState extends State<_AttractionImageGallery> {
+  late final PageController _controller;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex =
+        widget.initialIndex.clamp(0, widget.media.length - 1).toInt();
+    _controller = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: PageView.builder(
+                  controller: _controller,
+                  itemCount: widget.media.length,
+                  onPageChanged: (index) {
+                    setState(() => _currentIndex = index);
+                  },
+                  itemBuilder: (context, index) =>
+                      _buildGalleryPage(context, widget.media[index]),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                left: 12,
+                child: _GalleryIconButton(
+                  icon: Icons.close_rounded,
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  onTap: () => Navigator.of(context).pop(_currentIndex),
+                ),
+              ),
+              if (widget.media.length > 1)
+                Positioned(
+                  top: 15,
+                  left: 76,
+                  right: 76,
+                  child: Center(
+                    child: Container(
+                      height: 38,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.48),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.14),
+                        ),
+                      ),
+                      child: Text(
+                        '${_currentIndex + 1}/${widget.media.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGalleryPage(BuildContext context, AttractionMediaVm media) {
+    final mq = MediaQuery.of(context);
+    final imageTargetWidth = attractionImageTargetWidth(
+      context,
+      mq.size.width,
+      minWidth: 900,
+      maxWidth: 2200,
+    );
+    final url = resolveAttractionMediaUrl(media);
+    if (url == null) {
+      return const _GalleryPlaceholder();
+    }
+
+    return InteractiveViewer(
+      minScale: 0.8,
+      maxScale: 4,
+      child: Center(
+        child: Image.network(
+          url,
+          headers: attractionImageRequestHeaders(url),
+          fit: BoxFit.contain,
+          cacheWidth: imageTargetWidth,
+          filterQuality: FilterQuality.medium,
+          gaplessPlayback: true,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) {
+              return child;
+            }
+            return const _GalleryLoading();
+          },
+          errorBuilder: (_, __, ___) => const _GalleryPlaceholder(),
+        ),
+      ),
+    );
+  }
+}
+
+class _GalleryIconButton extends StatelessWidget {
+  const _GalleryIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.black.withValues(alpha: 0.54),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          ),
+          child: Icon(icon, color: Colors.white, size: 24),
+        ),
+      ),
+    );
+  }
+}
+
+class _GalleryLoading extends StatelessWidget {
+  const _GalleryLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox(
+        width: 28,
+        height: 28,
+        child: CircularProgressIndicator(
+          color: AppColors.accent,
+          strokeWidth: 2.4,
+        ),
+      ),
+    );
+  }
+}
+
+class _GalleryPlaceholder extends StatelessWidget {
+  const _GalleryPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Icon(
+        Icons.image_not_supported_rounded,
+        color: AppColors.textCaption,
+        size: 54,
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Visit plan cards and copy
 // ---------------------------------------------------------------------------
@@ -1305,9 +1679,8 @@ List<_VisitPlanItem> _visitPlanItems(
     _VisitPlanItem(
       icon: Icons.schedule_rounded,
       label: l10n.attractionVisitDurationLabel,
-      value: duration.isNotEmpty
-          ? duration
-          : l10n.attractionVisitDurationFlexible,
+      value:
+          duration.isNotEmpty ? duration : l10n.attractionVisitDurationFlexible,
     ),
     _VisitPlanItem(
       icon: Icons.confirmation_number_outlined,
@@ -1364,8 +1737,7 @@ String _localizedFlyFyTip(
   }
 
   final category = attraction.category.toUpperCase();
-  final isLongRoute =
-      attraction.durationUnit?.toUpperCase() == 'DAYS' ||
+  final isLongRoute = attraction.durationUnit?.toUpperCase() == 'DAYS' ||
       (attraction.durationValue ?? 0) >= 6;
   if (_isNatureLikeCategory(category) || isLongRoute) {
     return l10n.attractionVisitTipNature;
@@ -1571,9 +1943,8 @@ class _ReviewCard extends StatelessWidget {
                     CircleAvatar(
                       radius: adaptive.scale(19),
                       backgroundColor: const Color(0xFF245163),
-                      backgroundImage: avatarUrl != null
-                          ? NetworkImage(avatarUrl)
-                          : null,
+                      backgroundImage:
+                          avatarUrl != null ? NetworkImage(avatarUrl) : null,
                       child: avatarUrl == null
                           ? Icon(
                               Icons.person_rounded,
@@ -1672,7 +2043,7 @@ class _ReviewCard extends StatelessWidget {
       minWidth: 220,
       maxWidth: 360,
     );
-    final url = resolveAttractionMediaUrl(media, targetWidth: imageTargetWidth);
+    final url = resolveAttractionMediaUrl(media);
     final isVideo = media.mediaType.toUpperCase() == 'VIDEO';
 
     return ClipRRect(
@@ -1696,34 +2067,34 @@ class _ReviewCard extends StatelessWidget {
                 ],
               )
             : (url == null
-                  ? Icon(
-                      Icons.image_rounded,
-                      color: AppColors.textCaption,
-                      size: a.scale(28),
-                    )
-                  : Image.network(
-                      url,
-                      headers: attractionImageRequestHeaders(url),
-                      fit: BoxFit.cover,
-                      cacheWidth: imageTargetWidth,
-                      filterQuality: FilterQuality.medium,
-                      gaplessPlayback: true,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) {
-                          return child;
-                        }
-                        return Icon(
-                          Icons.image_rounded,
-                          color: AppColors.textCaption,
-                          size: a.scale(28),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.image_not_supported_rounded,
+                ? Icon(
+                    Icons.image_rounded,
+                    color: AppColors.textCaption,
+                    size: a.scale(28),
+                  )
+                : Image.network(
+                    url,
+                    headers: attractionImageRequestHeaders(url),
+                    fit: BoxFit.cover,
+                    cacheWidth: imageTargetWidth,
+                    filterQuality: FilterQuality.medium,
+                    gaplessPlayback: true,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) {
+                        return child;
+                      }
+                      return Icon(
+                        Icons.image_rounded,
                         color: AppColors.textCaption,
                         size: a.scale(28),
-                      ),
-                    )),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.image_not_supported_rounded,
+                      color: AppColors.textCaption,
+                      size: a.scale(28),
+                    ),
+                  )),
       ),
     );
   }
@@ -1758,12 +2129,11 @@ class _ReviewCard extends StatelessWidget {
   }
 }
 
-typedef _SubmitReviewCallback =
-    Future<bool> Function(
-      double rating,
-      String comment,
-      List<_ReviewDraftMedia> media,
-    );
+typedef _SubmitReviewCallback = Future<bool> Function(
+  double rating,
+  String comment,
+  List<_ReviewDraftMedia> media,
+);
 
 class _ReviewDraftMedia {
   const _ReviewDraftMedia({

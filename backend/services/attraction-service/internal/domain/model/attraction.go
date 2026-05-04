@@ -8,31 +8,34 @@ import (
 )
 
 type Attraction struct {
-	ID            uuid.UUID
-	AuthorUserID  uuid.UUID
-	DefaultLocale string
-	Locale        string
-	Title         string
-	Description   string
-	CountryCode   string
-	CityID        string
-	Category      enum.AttractionCategory
-	PriceAmount   *float64
-	PriceCurrency *string
-	DurationValue *int
-	DurationUnit  *enum.DurationUnit
-	Rating        float64
-	ReviewCount   int
-	Spots         *int
-	Source        enum.ContentSource
-	Status        enum.AttractionStatus
-	Tags          []string
-	VisitInfo     AttractionVisitInfo
-	Translations  map[string]AttractionTranslation
-	Media         []AttractionMedia
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	DeletedAt     *time.Time
+	ID                uuid.UUID
+	AuthorUserID      uuid.UUID
+	DefaultLocale     string
+	Locale            string
+	Title             string
+	Description       string
+	CountryCode       string
+	CityID            string
+	Latitude          *float64
+	Longitude         *float64
+	LocationSourceURL string
+	Category          enum.AttractionCategory
+	PriceAmount       *float64
+	PriceCurrency     *string
+	DurationValue     *int
+	DurationUnit      *enum.DurationUnit
+	Rating            float64
+	ReviewCount       int
+	Spots             *int
+	Source            enum.ContentSource
+	Status            enum.AttractionStatus
+	Tags              []string
+	VisitInfo         AttractionVisitInfo
+	Translations      map[string]AttractionTranslation
+	Media             []AttractionMedia
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	DeletedAt         *time.Time
 }
 
 func (a *Attraction) IsPublished() bool {

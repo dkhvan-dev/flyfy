@@ -90,9 +90,8 @@ class AppRouter {
         GoRoute(
           path: '/stories/create',
           builder: (context, state) {
-            final initialStory = state.extra is StoryVm
-                ? state.extra! as StoryVm
-                : null;
+            final initialStory =
+                state.extra is StoryVm ? state.extra! as StoryVm : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(initialStory: initialStory),
             );
@@ -102,9 +101,8 @@ class AppRouter {
           path: '/stories/:storyId/edit',
           builder: (context, state) {
             final storyId = state.pathParameters['storyId'] ?? '';
-            final initialStory = state.extra is StoryVm
-                ? state.extra! as StoryVm
-                : null;
+            final initialStory =
+                state.extra is StoryVm ? state.extra! as StoryVm : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(storyId: storyId, initialStory: initialStory),
             );
@@ -115,9 +113,8 @@ class AppRouter {
           builder: (context, state) {
             final slug = state.pathParameters['slug'] ?? '';
             final initialCommentId = state.uri.queryParameters['comment'];
-            final initialStory = state.extra is StoryVm
-                ? state.extra! as StoryVm
-                : null;
+            final initialStory =
+                state.extra is StoryVm ? state.extra! as StoryVm : null;
             return _withAndroidBackSwipe(
               StoryDetailsScreen(
                 slug: slug,
@@ -277,7 +274,13 @@ class AppRouter {
         ),
         GoRoute(
           path: '/map',
-          builder: (context, state) => _withAndroidBackSwipe(const MapScreen()),
+          builder: (context, state) {
+            final initialTarget =
+                state.extra is MapTarget ? state.extra! as MapTarget : null;
+            return _withAndroidBackSwipe(
+              MapScreen(initialTarget: initialTarget),
+            );
+          },
         ),
         GoRoute(
           path: '/notifications',

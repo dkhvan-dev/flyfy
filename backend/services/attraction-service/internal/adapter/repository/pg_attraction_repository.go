@@ -96,18 +96,18 @@ func (r *PGAttractionRepository) CreateAttraction(ctx context.Context, attractio
 	const query = `
 		INSERT INTO attractions (
 			id, author_user_id, default_locale,
-			country_code, city_id, category,
+			country_code, city_id, latitude, longitude, location_source_url, category,
 			price_amount, price_currency,
 			duration_value, duration_unit,
 			rating, review_count, spots, source, status, tags, visit_info,
 			created_at, updated_at
 		) VALUES (
 			$1, $2, $3,
-			$4, $5, $6,
-			$7, $8,
-			$9, $10,
-			$11, $12, $13, $14, $15, $16, $17,
-			$18, $19
+			$4, $5, $6, $7, $8, $9,
+			$10, $11,
+			$12, $13,
+			$14, $15, $16, $17, $18, $19, $20,
+			$21, $22
 		)
 	`
 
@@ -127,6 +127,9 @@ func (r *PGAttractionRepository) CreateAttraction(ctx context.Context, attractio
 		normalizeDBLocale(attraction.DefaultLocale),
 		attraction.CountryCode,
 		attraction.CityID,
+		attraction.Latitude,
+		attraction.Longitude,
+		attraction.LocationSourceURL,
 		string(attraction.Category),
 		attraction.PriceAmount,
 		attraction.PriceCurrency,
@@ -178,16 +181,19 @@ func (r *PGAttractionRepository) UpdateAttraction(ctx context.Context, attractio
 			default_locale = $2,
 			country_code = $3,
 			city_id = $4,
-			category = $5,
-			price_amount = $6,
-			price_currency = $7,
-			duration_value = $8,
-			duration_unit = $9,
-			spots = $10,
-			status = $11,
-			tags = $12,
-			visit_info = $13,
-			updated_at = $14
+			latitude = $5,
+			longitude = $6,
+			location_source_url = $7,
+			category = $8,
+			price_amount = $9,
+			price_currency = $10,
+			duration_value = $11,
+			duration_unit = $12,
+			spots = $13,
+			status = $14,
+			tags = $15,
+			visit_info = $16,
+			updated_at = $17
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
@@ -206,6 +212,9 @@ func (r *PGAttractionRepository) UpdateAttraction(ctx context.Context, attractio
 		normalizeDBLocale(attraction.DefaultLocale),
 		attraction.CountryCode,
 		attraction.CityID,
+		attraction.Latitude,
+		attraction.Longitude,
+		attraction.LocationSourceURL,
 		string(attraction.Category),
 		attraction.PriceAmount,
 		attraction.PriceCurrency,
@@ -277,7 +286,7 @@ func (r *PGAttractionRepository) GetAttractionByID(ctx context.Context, id uuid.
 			COALESCE(requested.title, fallback.title, '') AS title,
 			COALESCE(requested.description, fallback.description, '') AS description,
 			COALESCE(requested.locale, fallback.locale, a.default_locale) AS locale,
-			a.country_code, a.city_id, a.category,
+			a.country_code, a.city_id, a.latitude, a.longitude, a.location_source_url, a.category,
 			a.price_amount, a.price_currency,
 			a.duration_value, a.duration_unit,
 			a.rating, a.review_count, a.spots, a.source, a.status, a.tags, a.visit_info,
@@ -452,7 +461,7 @@ func (r *PGAttractionRepository) ListAttractions(ctx context.Context, filter mod
 			COALESCE(requested.title, fallback.title, '') AS title,
 			COALESCE(requested.description, fallback.description, '') AS description,
 			COALESCE(requested.locale, fallback.locale, a.default_locale) AS locale,
-			a.country_code, a.city_id, a.category,
+			a.country_code, a.city_id, a.latitude, a.longitude, a.location_source_url, a.category,
 			a.price_amount, a.price_currency,
 			a.duration_value, a.duration_unit,
 			a.rating, a.review_count, a.spots, a.source, a.status, a.tags, a.visit_info,
@@ -1026,17 +1035,20 @@ func (r *PGAttractionRepository) RecalcRating(ctx context.Context, attractionID 
 
 func scanAttraction(scanner interface{ Scan(dest ...any) error }) (*model.Attraction, error) {
 	var (
-		item          model.Attraction
-		categoryRaw   string
-		sourceRaw     string
-		statusRaw     string
-		durationUnit  *string
-		priceCurrency *string
-		priceAmount   *float64
-		durationValue *int
-		spots         *int
-		visitInfoJSON []byte
-		deletedAt     *time.Time
+		item              model.Attraction
+		categoryRaw       string
+		sourceRaw         string
+		statusRaw         string
+		durationUnit      *string
+		priceCurrency     *string
+		priceAmount       *float64
+		durationValue     *int
+		spots             *int
+		latitude          *float64
+		longitude         *float64
+		locationSourceURL string
+		visitInfoJSON     []byte
+		deletedAt         *time.Time
 	)
 
 	if err := scanner.Scan(
@@ -1048,6 +1060,9 @@ func scanAttraction(scanner interface{ Scan(dest ...any) error }) (*model.Attrac
 		&item.Locale,
 		&item.CountryCode,
 		&item.CityID,
+		&latitude,
+		&longitude,
+		&locationSourceURL,
 		&categoryRaw,
 		&priceAmount,
 		&priceCurrency,
@@ -1074,6 +1089,9 @@ func scanAttraction(scanner interface{ Scan(dest ...any) error }) (*model.Attrac
 	item.PriceCurrency = priceCurrency
 	item.DurationValue = durationValue
 	item.Spots = spots
+	item.Latitude = latitude
+	item.Longitude = longitude
+	item.LocationSourceURL = locationSourceURL
 	item.DeletedAt = deletedAt
 	visitInfo, err := unmarshalVisitInfo(visitInfoJSON)
 	if err != nil {

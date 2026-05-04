@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"net/url"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -57,40 +59,46 @@ type ReviewView struct {
 // ---------------------------------------------------------------------------
 
 type CreateAttractionInput struct {
-	Title         string
-	Description   string
-	DefaultLocale string
-	Translations  map[string]AttractionTranslationInput
-	CountryCode   string
-	CityID        string
-	Category      string
-	PriceAmount   *float64
-	PriceCurrency *string
-	DurationValue *int
-	DurationUnit  *string
-	Rating        float64
-	Spots         *int
-	Status        string
-	Tags          []string
-	VisitInfo     *AttractionVisitInfoInput
+	Title             string
+	Description       string
+	DefaultLocale     string
+	Translations      map[string]AttractionTranslationInput
+	CountryCode       string
+	CityID            string
+	Latitude          *float64
+	Longitude         *float64
+	LocationSourceURL string
+	Category          string
+	PriceAmount       *float64
+	PriceCurrency     *string
+	DurationValue     *int
+	DurationUnit      *string
+	Rating            float64
+	Spots             *int
+	Status            string
+	Tags              []string
+	VisitInfo         *AttractionVisitInfoInput
 }
 
 type UpdateAttractionInput struct {
-	Title         string
-	Description   string
-	DefaultLocale string
-	Translations  map[string]AttractionTranslationInput
-	CountryCode   string
-	CityID        string
-	Category      string
-	PriceAmount   *float64
-	PriceCurrency *string
-	DurationValue *int
-	DurationUnit  *string
-	Spots         *int
-	Status        string
-	Tags          []string
-	VisitInfo     *AttractionVisitInfoInput
+	Title             string
+	Description       string
+	DefaultLocale     string
+	Translations      map[string]AttractionTranslationInput
+	CountryCode       string
+	CityID            string
+	Latitude          *float64
+	Longitude         *float64
+	LocationSourceURL string
+	Category          string
+	PriceAmount       *float64
+	PriceCurrency     *string
+	DurationValue     *int
+	DurationUnit      *string
+	Spots             *int
+	Status            string
+	Tags              []string
+	VisitInfo         *AttractionVisitInfoInput
 }
 
 type ListAttractionsInput struct {
@@ -208,6 +216,10 @@ func (u *AttractionUseCase) CreateAttraction(ctx context.Context, subject string
 	if err = validateDuration(input.DurationValue, input.DurationUnit); err != nil {
 		return nil, err
 	}
+	locationSourceURL, err := normalizeLocation(input.Latitude, input.Longitude, input.LocationSourceURL)
+	if err != nil {
+		return nil, err
+	}
 
 	if input.Rating < 0 || input.Rating > 5.0 {
 		input.Rating = 0
@@ -221,27 +233,30 @@ func (u *AttractionUseCase) CreateAttraction(ctx context.Context, subject string
 
 	now := time.Now().UTC()
 	attraction := &model.Attraction{
-		ID:            uuid.New(),
-		AuthorUserID:  authorUserID,
-		DefaultLocale: defaultLocale,
-		Locale:        defaultLocale,
-		Title:         title,
-		Description:   desc,
-		CountryCode:   countryCode,
-		CityID:        cityID,
-		Category:      category,
-		PriceAmount:   input.PriceAmount,
-		PriceCurrency: input.PriceCurrency,
-		DurationValue: input.DurationValue,
-		Rating:        input.Rating,
-		Spots:         input.Spots,
-		Source:        enum.SourceUser,
-		Status:        status,
-		Tags:          tags,
-		VisitInfo:     visitInfo,
-		Translations:  translations,
-		CreatedAt:     now,
-		UpdatedAt:     now,
+		ID:                uuid.New(),
+		AuthorUserID:      authorUserID,
+		DefaultLocale:     defaultLocale,
+		Locale:            defaultLocale,
+		Title:             title,
+		Description:       desc,
+		CountryCode:       countryCode,
+		CityID:            cityID,
+		Latitude:          input.Latitude,
+		Longitude:         input.Longitude,
+		LocationSourceURL: locationSourceURL,
+		Category:          category,
+		PriceAmount:       input.PriceAmount,
+		PriceCurrency:     input.PriceCurrency,
+		DurationValue:     input.DurationValue,
+		Rating:            input.Rating,
+		Spots:             input.Spots,
+		Source:            enum.SourceUser,
+		Status:            status,
+		Tags:              tags,
+		VisitInfo:         visitInfo,
+		Translations:      translations,
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 
 	if input.DurationUnit != nil {
@@ -310,6 +325,17 @@ func (u *AttractionUseCase) UpdateAttraction(ctx context.Context, subject string
 	if err = validateDuration(input.DurationValue, input.DurationUnit); err != nil {
 		return nil, err
 	}
+	latitude := attraction.Latitude
+	longitude := attraction.Longitude
+	locationSourceURL := attraction.LocationSourceURL
+	if input.Latitude != nil || input.Longitude != nil || strings.TrimSpace(input.LocationSourceURL) != "" {
+		locationSourceURL, err = normalizeLocation(input.Latitude, input.Longitude, input.LocationSourceURL)
+		if err != nil {
+			return nil, err
+		}
+		latitude = input.Latitude
+		longitude = input.Longitude
+	}
 
 	attraction.Title = title
 	attraction.Description = desc
@@ -318,6 +344,9 @@ func (u *AttractionUseCase) UpdateAttraction(ctx context.Context, subject string
 	attraction.Translations = translations
 	attraction.CountryCode = countryCode
 	attraction.CityID = cityID
+	attraction.Latitude = latitude
+	attraction.Longitude = longitude
+	attraction.LocationSourceURL = locationSourceURL
 	attraction.Category = category
 	attraction.PriceAmount = input.PriceAmount
 	attraction.PriceCurrency = input.PriceCurrency
@@ -727,6 +756,38 @@ func validateDuration(value *int, unit *string) error {
 		}
 	}
 	return nil
+}
+
+func normalizeLocation(latitude *float64, longitude *float64, sourceURL string) (string, error) {
+	hasLatitude := latitude != nil
+	hasLongitude := longitude != nil
+	if hasLatitude != hasLongitude {
+		return "", ErrInvalidLocation
+	}
+
+	sourceURL = strings.TrimSpace(sourceURL)
+	if !hasLatitude {
+		if sourceURL != "" {
+			return "", ErrInvalidLocation
+		}
+		return "", nil
+	}
+
+	if math.IsNaN(*latitude) || math.IsInf(*latitude, 0) || *latitude < -90 || *latitude > 90 {
+		return "", ErrInvalidLocation
+	}
+	if math.IsNaN(*longitude) || math.IsInf(*longitude, 0) || *longitude < -180 || *longitude > 180 {
+		return "", ErrInvalidLocation
+	}
+
+	if sourceURL == "" {
+		return "", nil
+	}
+	parsed, err := url.ParseRequestURI(sourceURL)
+	if err != nil || parsed.Scheme != "https" || parsed.Host == "" {
+		return "", ErrInvalidLocation
+	}
+	return sourceURL, nil
 }
 
 func normalizeAttractionTranslations(

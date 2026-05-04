@@ -74,6 +74,20 @@ class FileApi {
     );
   }
 
+  Future<FileUploadRequestVm> createAttractionMediaUpload({
+    required String originalName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    return _createUploadRequest(
+      originalName: originalName,
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      purpose: 'ATTRACTION_MEDIA',
+      visibility: 'PUBLIC',
+    );
+  }
+
   Future<FileUploadRequestVm> createAvatarUpload({
     required String originalName,
     required String contentType,

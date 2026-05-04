@@ -12,8 +12,28 @@ import '../../core/device/device_context_service.dart';
 import '../../core/ui/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 
+class MapTarget {
+  const MapTarget({
+    required this.title,
+    required this.latitude,
+    required this.longitude,
+    this.subtitle,
+    this.sourceUrl,
+  });
+
+  final String title;
+  final String? subtitle;
+  final double latitude;
+  final double longitude;
+  final String? sourceUrl;
+
+  LatLng get point => LatLng(latitude, longitude);
+}
+
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  const MapScreen({super.key, this.initialTarget});
+
+  final MapTarget? initialTarget;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -42,6 +62,7 @@ class _MapScreenState extends State<MapScreen> {
   String? _locationLabel;
   LatLng _mapCenter = _fallbackCenter;
   LatLng? _userLocation;
+  _LocalPlace? _targetPlace;
   List<_LocalPlace> _places = const [];
   _LocalPlace? _selectedPlace;
   int _autoPlacesRetryCount = 0;
@@ -49,7 +70,12 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    unawaited(_bootstrap());
+    final target = widget.initialTarget;
+    if (target != null) {
+      unawaited(_bootstrapTarget(target));
+    } else {
+      unawaited(_bootstrap());
+    }
   }
 
   @override
@@ -96,6 +122,38 @@ class _MapScreenState extends State<MapScreen> {
       });
       await _loadPlaces(_fallbackCenter, selectFirst: true);
     }
+  }
+
+  Future<void> _bootstrapTarget(MapTarget target) async {
+    _autoPlacesRetryCount = 0;
+    _placesRetryDebounce?.cancel();
+
+    final targetPlace = _LocalPlace(
+      id: 'target:${target.latitude}:${target.longitude}',
+      title: target.title,
+      categoryValue: 'attraction',
+      categoryLabel: target.subtitle?.trim().isNotEmpty == true
+          ? target.subtitle!.trim()
+          : target.title,
+      point: target.point,
+      distanceMeters: 0,
+    );
+
+    setState(() {
+      _mapCenter = target.point;
+      _userLocation = null;
+      _targetPlace = targetPlace;
+      _selectedPlace = targetPlace;
+      _locationLabel = target.subtitle?.trim().isNotEmpty == true
+          ? target.subtitle!.trim()
+          : target.title;
+      _locationIssueCode = null;
+      _placesErrorMessage = null;
+      _bootstrapping = false;
+    });
+
+    _moveMap(target.point);
+    await _loadPlaces(target.point);
   }
 
   Future<void> _recenterToUser() async {
@@ -167,9 +225,12 @@ class _MapScreenState extends State<MapScreen> {
       _LocalPlace? selected = previousSelectionId == null
           ? null
           : places.cast<_LocalPlace?>().firstWhere(
-              (place) => place?.id == previousSelectionId,
-              orElse: () => null,
-            );
+                (place) => place?.id == previousSelectionId,
+                orElse: () => null,
+              );
+      if (selected == null && _targetPlace?.id == previousSelectionId) {
+        selected = _targetPlace;
+      }
 
       if (selected == null && selectFirst && places.isNotEmpty) {
         selected = places.first;
@@ -185,7 +246,7 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         _placesErrorMessage = 'nearby_places_load_failed';
         _places = const [];
-        _selectedPlace = null;
+        _selectedPlace = _targetPlace;
       });
       _schedulePlacesRetry(center, selectFirst: selectFirst);
     } finally {
@@ -322,10 +383,10 @@ class _MapScreenState extends State<MapScreen> {
                   ultraCompactHeight
                       ? 102
                       : narrowScreen
-                      ? 130
-                      : compactHeight
-                      ? 114
-                      : 124,
+                          ? 130
+                          : compactHeight
+                              ? 114
+                              : 124,
                   min: 96,
                   max: 138,
                 );
@@ -340,8 +401,8 @@ class _MapScreenState extends State<MapScreen> {
                   ultraCompactHeight
                       ? 10
                       : compactHeight
-                      ? 12
-                      : 14,
+                          ? 12
+                          : 14,
                   min: 8,
                   max: 16,
                 );
@@ -493,6 +554,31 @@ class _MapScreenState extends State<MapScreen> {
                                                 child:
                                                     const _UserLocationMarker(),
                                               ),
+                                            if (_targetPlace != null)
+                                              Marker(
+                                                point: _targetPlace!.point,
+                                                width: _mapScaled(
+                                                  context,
+                                                  58,
+                                                  min: 48,
+                                                  max: 60,
+                                                ),
+                                                height: _mapScaled(
+                                                  context,
+                                                  68,
+                                                  min: 56,
+                                                  max: 70,
+                                                ),
+                                                alignment: Alignment.topCenter,
+                                                child: _PlaceMarker(
+                                                  place: _targetPlace!,
+                                                  selected: selectedPlace?.id ==
+                                                      _targetPlace!.id,
+                                                  onTap: () => _selectPlace(
+                                                    _targetPlace!,
+                                                  ),
+                                                ),
+                                              ),
                                             for (final place in _places)
                                               Marker(
                                                 point: place.point,
@@ -511,8 +597,7 @@ class _MapScreenState extends State<MapScreen> {
                                                 alignment: Alignment.topCenter,
                                                 child: _PlaceMarker(
                                                   place: place,
-                                                  selected:
-                                                      selectedPlace?.id ==
+                                                  selected: selectedPlace?.id ==
                                                       place.id,
                                                   onTap: () =>
                                                       _selectPlace(place),
@@ -570,24 +655,29 @@ class _MapScreenState extends State<MapScreen> {
                                                     .mapSearchingNearbyPlaces,
                                               )
                                             : _placesErrorMessage != null
-                                            ? _MapBanner(
-                                                key: const ValueKey('error'),
-                                                icon:
-                                                    Icons.error_outline_rounded,
-                                                label: l10n.mapPlacesLoadFailed,
-                                                actionLabel: l10n.retryButton,
-                                                onActionTap: () => _loadPlaces(
-                                                  _mapCenter,
-                                                  selectFirst: true,
-                                                ),
-                                              )
-                                            : const SizedBox.shrink(),
+                                                ? _MapBanner(
+                                                    key:
+                                                        const ValueKey('error'),
+                                                    icon: Icons
+                                                        .error_outline_rounded,
+                                                    label: l10n
+                                                        .mapPlacesLoadFailed,
+                                                    actionLabel:
+                                                        l10n.retryButton,
+                                                    onActionTap: () =>
+                                                        _loadPlaces(
+                                                      _mapCenter,
+                                                      selectFirst: true,
+                                                    ),
+                                                  )
+                                                : const SizedBox.shrink(),
                                       ),
                                     ),
                                     if (!_bootstrapping &&
                                         !_loadingPlaces &&
                                         _places.isEmpty &&
-                                        _placesErrorMessage == null)
+                                        _placesErrorMessage == null &&
+                                        _targetPlace == null)
                                       Center(
                                         child: Padding(
                                           padding: EdgeInsets.symmetric(
@@ -636,19 +726,18 @@ class _MapScreenState extends State<MapScreen> {
                                             itemCount: _places.length,
                                             separatorBuilder: (_, __) =>
                                                 SizedBox(
-                                                  width: _mapScaled(
-                                                    context,
-                                                    12,
-                                                    min: 10,
-                                                    max: 12,
-                                                  ),
-                                                ),
+                                              width: _mapScaled(
+                                                context,
+                                                12,
+                                                min: 10,
+                                                max: 12,
+                                              ),
+                                            ),
                                             itemBuilder: (context, index) {
                                               final place = _places[index];
                                               return _PlacePreviewCard(
                                                 place: place,
-                                                selected:
-                                                    selectedPlace?.id ==
+                                                selected: selectedPlace?.id ==
                                                     place.id,
                                                 distanceLabel: _formatDistance(
                                                   place,
@@ -1233,8 +1322,7 @@ class _PlacePreviewCard extends StatelessWidget {
         builder: (context, constraints) {
           final textScale = MediaQuery.textScalerOf(context).scale(1);
           final screenWidth = MediaQuery.sizeOf(context).width;
-          final compactCard =
-              screenWidth < 380 ||
+          final compactCard = screenWidth < 380 ||
               constraints.maxHeight <
                   _mapScaled(context, 118, min: 112, max: 118) ||
               textScale > 1.02;
@@ -1605,19 +1693,19 @@ class _SelectedPlaceCard extends StatelessWidget {
 
 class _NearbyPlacesApi {
   _NearbyPlacesApi()
-    : _dio = Dio(
-        BaseOptions(
-          connectTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 25),
-          sendTimeout: const Duration(seconds: 15),
-          contentType: 'text/plain',
-          responseType: ResponseType.plain,
-          headers: const {
-            'Accept': 'application/json',
-            'User-Agent': 'Flyfy/1.0 (nearby places)',
-          },
-        ),
-      );
+      : _dio = Dio(
+          BaseOptions(
+            connectTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 25),
+            sendTimeout: const Duration(seconds: 15),
+            contentType: 'text/plain',
+            responseType: ResponseType.plain,
+            headers: const {
+              'Accept': 'application/json',
+              'User-Agent': 'Flyfy/1.0 (nearby places)',
+            },
+          ),
+        );
 
   final Dio _dio;
   static final List<Uri> _publicEndpoints = [
@@ -1740,11 +1828,9 @@ out center $resultLimit;
       final element = rawElement.cast<String, dynamic>();
       final tags =
           (element['tags'] as Map?)?.cast<String, dynamic>() ?? const {};
-      final lat =
-          (element['lat'] as num?)?.toDouble() ??
+      final lat = (element['lat'] as num?)?.toDouble() ??
           (element['center'] as Map?)?['lat'] as num?;
-      final lon =
-          (element['lon'] as num?)?.toDouble() ??
+      final lon = (element['lon'] as num?)?.toDouble() ??
           (element['center'] as Map?)?['lon'] as num?;
       if (lat == null || lon == null) {
         continue;

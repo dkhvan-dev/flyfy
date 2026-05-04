@@ -19,6 +19,7 @@ var (
 	ErrInvalidMediaType       = errors.New("media type must be PHOTO or VIDEO")
 	ErrInvalidDuration        = errors.New("invalid duration: value and unit must both be set or both be empty")
 	ErrInvalidPrice           = errors.New("invalid price: amount and currency must both be set or both be empty")
+	ErrInvalidLocation        = errors.New("invalid location: latitude and longitude must both be set and source URL must be HTTPS")
 	ErrInvalidVisitInfo       = errors.New("invalid visit info")
 	ErrReviewConflict         = errors.New("you have already reviewed this attraction")
 	ErrCannotReviewOwn        = errors.New("you cannot review your own attraction")

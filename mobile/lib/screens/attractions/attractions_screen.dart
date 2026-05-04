@@ -485,10 +485,7 @@ class _DiscoverCard extends StatelessWidget {
           );
           final coverUrl = coverMedia == null
               ? null
-              : resolveAttractionMediaUrl(
-                  coverMedia,
-                  targetWidth: imageTargetWidth,
-                );
+              : resolveAttractionMediaUrl(coverMedia);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,

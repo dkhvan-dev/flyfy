@@ -149,6 +149,9 @@ class AttractionVm {
     required this.description,
     required this.countryCode,
     required this.cityId,
+    this.latitude,
+    this.longitude,
+    required this.locationSourceUrl,
     required this.category,
     this.priceAmount,
     this.priceCurrency,
@@ -176,6 +179,9 @@ class AttractionVm {
   final String description;
   final String countryCode;
   final String cityId;
+  final double? latitude;
+  final double? longitude;
+  final String locationSourceUrl;
   final String category;
   final double? priceAmount;
   final String? priceCurrency;
@@ -207,25 +213,26 @@ class AttractionVm {
     return fileId == null || fileId.isEmpty ? null : fileId;
   }
 
+  bool get hasLocation => latitude != null && longitude != null;
+
   factory AttractionVm.fromJson(Map<String, dynamic> json) {
     final mediaList = (json['media'] as List<dynamic>? ?? [])
         .whereType<Map<String, dynamic>>()
         .map(AttractionMediaVm.fromJson)
         .toList();
 
-    final tagsList = (json['tags'] as List<dynamic>? ?? [])
-        .whereType<String>()
-        .toList();
-    final translations = (json['translations'] as Map<String, dynamic>? ?? {})
-        .map((key, value) {
-          if (value is! Map<String, dynamic>) {
-            return MapEntry(
-              key,
-              const AttractionTranslationVm(title: '', description: ''),
-            );
-          }
-          return MapEntry(key, AttractionTranslationVm.fromJson(value));
-        });
+    final tagsList =
+        (json['tags'] as List<dynamic>? ?? []).whereType<String>().toList();
+    final translations =
+        (json['translations'] as Map<String, dynamic>? ?? {}).map((key, value) {
+      if (value is! Map<String, dynamic>) {
+        return MapEntry(
+          key,
+          const AttractionTranslationVm(title: '', description: ''),
+        );
+      }
+      return MapEntry(key, AttractionTranslationVm.fromJson(value));
+    });
 
     return AttractionVm(
       id: json['id'] as String? ?? '',
@@ -235,6 +242,9 @@ class AttractionVm {
       description: json['description'] as String? ?? '',
       countryCode: json['countryCode'] as String? ?? '',
       cityId: json['cityId'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      locationSourceUrl: json['locationSourceUrl'] as String? ?? '',
       category: json['category'] as String? ?? 'OTHER',
       priceAmount: (json['priceAmount'] as num?)?.toDouble(),
       priceCurrency: json['priceCurrency'] as String?,
