@@ -152,10 +152,10 @@ class _PaginationMetrics {
         : 1.0;
 
     const pageWeight = 1.0;
-    const activeOuterWeight = 1.56;
-    const arrowWeight = 1.1;
-    const dotWeight = 0.54;
-    const gapWeight = 0.16;
+    const activeOuterWeight = 1.34;
+    const arrowWeight = 1.04;
+    const dotWeight = 0.48;
+    const gapWeight = 0.14;
 
     final slotWeight = slots.fold<double>(0, (sum, slot) {
       if (slot.isDots) {
@@ -166,9 +166,10 @@ class _PaginationMetrics {
     });
     final totalGapWeight = (slots.length + 1) * gapWeight;
     final totalWeight = slotWeight + arrowWeight * 2 + totalGapWeight;
-    final unit = width / totalWeight;
+    final maxUnit = (width * 0.092).clamp(28.0, 38.0).toDouble();
+    final unit = math.min(width / totalWeight, maxUnit);
     final activeOuterSize = unit * activeOuterWeight;
-    final activeSize = activeOuterSize * 0.76;
+    final activeSize = activeOuterSize * 0.78;
 
     return _PaginationMetrics(
       pageSize: unit * pageWeight,
@@ -178,11 +179,11 @@ class _PaginationMetrics {
       dotWidth: unit * dotWeight,
       gap: unit * gapWeight,
       labelGap: unit * 0.26,
-      numberFontSize: unit * 0.5,
-      activeNumberFontSize: activeSize * 0.5,
+      numberFontSize: unit * 0.46,
+      activeNumberFontSize: activeSize * 0.46,
       dotsFontSize: unit * 0.52,
       arrowIconSize: unit * 0.58,
-      labelFontSize: width * 0.033,
+      labelFontSize: (unit * 0.34).clamp(10.0, 13.0).toDouble(),
     );
   }
 }
@@ -487,6 +488,8 @@ class _RoundPaginationButton extends StatelessWidget {
     this.onTap,
   });
 
+  static const double _minTouchTargetSize = 44;
+
   final double size;
   final Color background;
   final Color? border;
@@ -496,31 +499,37 @@ class _RoundPaginationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hitTargetSize = math.max(size, _minTouchTargetSize);
     final button = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
-        child: Ink(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: background,
-            shape: BoxShape.circle,
-            border: border == null
-                ? null
-                : Border.all(color: border!, width: size * 0.035),
-            boxShadow: border == null
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      blurRadius: 0,
-                      spreadRadius: size * 0.018,
-                    ),
-                  ],
+        child: SizedBox.square(
+          dimension: hitTargetSize,
+          child: Center(
+            child: Ink(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: background,
+                shape: BoxShape.circle,
+                border: border == null
+                    ? null
+                    : Border.all(color: border!, width: size * 0.035),
+                boxShadow: border == null
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 0,
+                          spreadRadius: size * 0.018,
+                        ),
+                      ],
+              ),
+              child: Center(child: child),
+            ),
           ),
-          child: Center(child: child),
         ),
       ),
     );

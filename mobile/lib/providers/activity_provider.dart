@@ -18,6 +18,8 @@ class ActivityProvider extends ChangeNotifier {
     : _activityApi = activityApi ?? ActivityApi(),
       _chatApi = chatApi ?? ChatApi();
 
+  static const int _listFetchLimit = 100;
+
   final ActivityApi _activityApi;
   final ChatApi _chatApi;
 
@@ -110,7 +112,7 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _items = await _activityApi.getActivities();
+      _items = await _activityApi.getActivities(limit: _listFetchLimit);
       _state = ActivitiesState.success;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
@@ -129,7 +131,7 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _items = await _activityApi.getActivities();
+      _items = await _activityApi.getActivities(limit: _listFetchLimit);
       _state = ActivitiesState.success;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
@@ -149,7 +151,9 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _myItems = await _activityApi.getMyHostedActivities();
+      _myItems = await _activityApi.getMyHostedActivities(
+        limit: _listFetchLimit,
+      );
       _myState = ActivitiesState.success;
     } on DioException catch (e) {
       _myErrorMessage = DioErrorMapper.toMessage(e);
@@ -168,7 +172,9 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _myItems = await _activityApi.getMyHostedActivities();
+      _myItems = await _activityApi.getMyHostedActivities(
+        limit: _listFetchLimit,
+      );
       _myState = ActivitiesState.success;
     } on DioException catch (e) {
       _myErrorMessage = DioErrorMapper.toMessage(e);
@@ -188,7 +194,9 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _joinedItems = await _activityApi.getMyJoinedActivities();
+      _joinedItems = await _activityApi.getMyJoinedActivities(
+        limit: _listFetchLimit,
+      );
       _joinedState = ActivitiesState.success;
     } on DioException catch (e) {
       _joinedErrorMessage = DioErrorMapper.toMessage(e);
@@ -207,7 +215,9 @@ class ActivityProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _joinedItems = await _activityApi.getMyJoinedActivities();
+      _joinedItems = await _activityApi.getMyJoinedActivities(
+        limit: _listFetchLimit,
+      );
       _joinedState = ActivitiesState.success;
     } on DioException catch (e) {
       _joinedErrorMessage = DioErrorMapper.toMessage(e);

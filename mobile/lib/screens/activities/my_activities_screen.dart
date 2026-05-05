@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:superapp/core/ui/app_colors.dart';
 
 import '../../core/ui/app_bottom_navigation_bars.dart';
+import '../../core/ui/pagination_bar.dart';
+import '../../core/utils/pagination.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
@@ -24,6 +26,8 @@ class MyActivitiesScreen extends StatefulWidget {
 }
 
 class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
+  static const int _pageSize = 6;
+
   static const List<String> _hostedFilterOrder = <String>[
     'DRAFT',
     'PUBLISHED',
@@ -45,9 +49,12 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
   _MyActivitiesTab _activeTab = _MyActivitiesTab.hosted;
   _MyActivitiesFilters _filters = const _MyActivitiesFilters();
   String _searchQuery = '';
+  int _hostedPage = 1;
+  int _attendedPage = 1;
 
   @override
   void initState() {
@@ -66,6 +73,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
       ..removeListener(_handleSearchChanged)
       ..dispose();
     _searchFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -142,6 +150,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
     setState(() {
       _searchQuery = nextQuery;
+      _hostedPage = 1;
+      _attendedPage = 1;
     });
   }
 
@@ -168,6 +178,41 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     return _activeTab == _MyActivitiesTab.hosted
         ? provider.myItems
         : provider.joinedItems;
+  }
+
+  int get _activePage {
+    return _activeTab == _MyActivitiesTab.hosted ? _hostedPage : _attendedPage;
+  }
+
+  Future<void> _setActivePage(int page) async {
+    if (page == _activePage) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() {
+      if (_activeTab == _MyActivitiesTab.hosted) {
+        _hostedPage = page;
+      } else {
+        _attendedPage = page;
+      }
+    });
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _resetActivePage() {
+    if (_activeTab == _MyActivitiesTab.hosted) {
+      _hostedPage = 1;
+    } else {
+      _attendedPage = 1;
+    }
   }
 
   List<String> _statusOrderForTab(_MyActivitiesTab tab) {
@@ -317,6 +362,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
         startDate: result.startDate,
         endDate: result.endDate,
       );
+      _resetActivePage();
     });
   }
 
@@ -355,6 +401,11 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
               final items = _activeItems(provider);
               final state = _activeState(provider);
               final filteredItems = _filterItems(items);
+              final paginatedItems = paginateItems(
+                filteredItems,
+                currentPage: _activePage,
+                pageSize: _pageSize,
+              );
               final errorMessage = _activeError(provider);
               final isInitialLoading =
                   state == ActivitiesState.loading && items.isEmpty;
@@ -371,6 +422,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                       maxWidth: layout.maxContentWidth,
                     ),
                     child: ListView(
+                      controller: _scrollController,
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: EdgeInsets.fromLTRB(
                         layout.horizontalPadding,
@@ -436,23 +488,27 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                                 : l10n.myActivitiesAttendedEmptyHint,
                           ),
                         ] else ...[
-                          for (var i = 0; i < filteredItems.length; i++) ...[
+                          for (
+                            var i = 0;
+                            i < paginatedItems.items.length;
+                            i++
+                          ) ...[
                             _MyActivitiesCard(
-                              item: filteredItems[i],
+                              item: paginatedItems.items[i],
                               tab: _activeTab,
                               localeName: Localizations.localeOf(
                                 context,
                               ).toString(),
                               onPrimaryTap: () {
                                 if (_activeTab == _MyActivitiesTab.attended) {
-                                  _openDetails(filteredItems[i]);
+                                  _openDetails(paginatedItems.items[i]);
                                   return;
                                 }
 
-                                final status = filteredItems[i].status
+                                final status = paginatedItems.items[i].status
                                     .toUpperCase();
                                 if (status == 'DRAFT') {
-                                  _openEdit(filteredItems[i]);
+                                  _openEdit(paginatedItems.items[i]);
                                   return;
                                 }
                                 if (status == 'REVIEW_REQUIRED') {
@@ -461,15 +517,15 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                                 if (status == 'COMPLETED' ||
                                     status == 'CANCELLED' ||
                                     status == 'ARCHIVED') {
-                                  _openDetails(filteredItems[i]);
+                                  _openDetails(paginatedItems.items[i]);
                                   return;
                                 }
-                                _openEdit(filteredItems[i]);
+                                _openEdit(paginatedItems.items[i]);
                               },
                               onSecondaryTap:
                                   _activeTab == _MyActivitiesTab.hosted
                                   ? () {
-                                      final item = filteredItems[i];
+                                      final item = paginatedItems.items[i];
                                       if (item.status.toUpperCase() ==
                                           'CANCELLED') {
                                         _openRepeat(item);
@@ -480,22 +536,32 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                                   : null,
                               onTertiaryTap:
                                   _activeTab == _MyActivitiesTab.hosted &&
-                                      filteredItems[i].status.toUpperCase() ==
+                                      paginatedItems.items[i].status
+                                              .toUpperCase() ==
                                           'DRAFT'
                                   ? _showComingSoon
                                   : null,
                               onCardTap: () {
                                 if (_activeTab == _MyActivitiesTab.hosted &&
-                                    filteredItems[i].status.toUpperCase() ==
+                                    paginatedItems.items[i].status
+                                            .toUpperCase() ==
                                         'DRAFT') {
-                                  _openEdit(filteredItems[i]);
+                                  _openEdit(paginatedItems.items[i]);
                                   return;
                                 }
-                                _openDetails(filteredItems[i]);
+                                _openDetails(paginatedItems.items[i]);
                               },
                             ),
-                            if (i != filteredItems.length - 1)
+                            if (i != paginatedItems.items.length - 1)
                               SizedBox(height: layout.cardSpacing),
+                          ],
+                          if (paginatedItems.hasMultiplePages) ...[
+                            SizedBox(height: layout.sectionSpacing),
+                            FlyfyPaginationBar(
+                              currentPage: paginatedItems.currentPage,
+                              totalPages: paginatedItems.totalPages,
+                              onPageChanged: _setActivePage,
+                            ),
                           ],
                         ],
                       ],

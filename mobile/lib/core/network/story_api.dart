@@ -7,7 +7,7 @@ class StoryApi {
 
   final ApiClient _apiClient;
 
-  Future<List<StoryVm>> listStories({
+  Future<StoryListPage> listStoriesPage({
     String? search,
     List<String>? categories,
     String? place,
@@ -16,6 +16,8 @@ class StoryApi {
     int offset = 0,
     String? authorId,
   }) async {
+    final pageLimit = limit < 1 ? 1 : limit;
+    final pageOffset = offset < 0 ? 0 : offset;
     final response = await _apiClient.dio.get(
       '/stories',
       queryParameters: {
@@ -25,20 +27,88 @@ class StoryApi {
         if ((place ?? '').trim().isNotEmpty) 'place': place!.trim(),
         if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
         if ((authorId ?? '').trim().isNotEmpty) 'authorId': authorId!.trim(),
-        'limit': limit,
-        'offset': offset,
+        'limit': pageLimit + 1,
+        'offset': pageOffset,
       },
     );
 
     final data = response.data as Map<String, dynamic>? ?? const {};
     final rawItems = data['items'];
     if (rawItems is! List) {
-      return const [];
+      return const StoryListPage(items: [], hasMore: false);
     }
-    return rawItems
+    final items = rawItems
         .whereType<Map<String, dynamic>>()
         .map(StoryVm.fromJson)
         .toList(growable: false);
+    final hasMore = items.length > pageLimit;
+
+    return StoryListPage(
+      items: hasMore ? items.take(pageLimit).toList(growable: false) : items,
+      hasMore: hasMore,
+    );
+  }
+
+  Future<List<StoryVm>> listStories({
+    String? search,
+    List<String>? categories,
+    String? place,
+    String? sort,
+    int limit = 20,
+    int offset = 0,
+    String? authorId,
+  }) async {
+    final page = await listStoriesPage(
+      search: search,
+      categories: categories,
+      place: place,
+      sort: sort,
+      limit: limit,
+      offset: offset,
+      authorId: authorId,
+    );
+
+    return page.items;
+  }
+
+  Future<StoryListPage> listMyStoriesPage({
+    String? search,
+    List<String>? categories,
+    String? place,
+    String? sort,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final pageLimit = limit < 1 ? 1 : limit;
+    final pageOffset = offset < 0 ? 0 : offset;
+    final response = await _apiClient.dio.get(
+      '/stories/mine',
+      queryParameters: {
+        if ((search ?? '').trim().isNotEmpty) 'search': search!.trim(),
+        if (categories != null && categories.isNotEmpty)
+          'category': categories.join(','),
+        if ((place ?? '').trim().isNotEmpty) 'place': place!.trim(),
+        if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
+        'limit': pageLimit + 1,
+        'offset': pageOffset,
+      },
+    );
+
+    final data = response.data as Map<String, dynamic>? ?? const {};
+    final rawItems = data['items'];
+    if (rawItems is! List) {
+      return const StoryListPage(items: [], hasMore: false);
+    }
+    final items = rawItems
+        .whereType<Map<String, dynamic>>()
+        .map(StoryVm.fromJson)
+        .toList(growable: false);
+    final hasMore = items.length > pageLimit;
+
+    return StoryListPage(
+      items: hasMore ? items.take(pageLimit).toList(growable: false) : items,
+      hasMore: hasMore,
+    );
   }
 
   Future<List<StoryVm>> listMyStories({
@@ -49,28 +119,16 @@ class StoryApi {
     int limit = 20,
     int offset = 0,
   }) async {
-    final response = await _apiClient.dio.get(
-      '/stories/mine',
-      queryParameters: {
-        if ((search ?? '').trim().isNotEmpty) 'search': search!.trim(),
-        if (categories != null && categories.isNotEmpty)
-          'category': categories.join(','),
-        if ((place ?? '').trim().isNotEmpty) 'place': place!.trim(),
-        if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
-        'limit': limit,
-        'offset': offset,
-      },
+    final page = await listMyStoriesPage(
+      search: search,
+      categories: categories,
+      place: place,
+      sort: sort,
+      limit: limit,
+      offset: offset,
     );
 
-    final data = response.data as Map<String, dynamic>? ?? const {};
-    final rawItems = data['items'];
-    if (rawItems is! List) {
-      return const [];
-    }
-    return rawItems
-        .whereType<Map<String, dynamic>>()
-        .map(StoryVm.fromJson)
-        .toList(growable: false);
+    return page.items;
   }
 
   Future<StoryDetailVm> getPublicStoryBySlug(String slug) async {
@@ -203,4 +261,11 @@ class StoryApi {
       int.tryParse(data['shares']?.toString() ?? '') ?? 0,
     );
   }
+}
+
+class StoryListPage {
+  const StoryListPage({required this.items, required this.hasMore});
+
+  final List<StoryVm> items;
+  final bool hasMore;
 }

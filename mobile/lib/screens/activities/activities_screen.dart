@@ -9,6 +9,8 @@ import '../../core/device/device_context_service.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
+import '../../core/ui/pagination_bar.dart';
+import '../../core/utils/pagination.dart';
 import '../../features/activities/activity_currency.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
@@ -31,9 +33,12 @@ class ActivitiesScreen extends StatefulWidget {
 }
 
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
+  static const int _discoverPageSize = 8;
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
   final DeviceContextService _deviceContextService =
       const DeviceContextService();
   final GuideApi _guideApi = GuideApi();
@@ -44,6 +49,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   String? _priceFilterCountryCode;
   String? _guideBadgeUserId;
   bool _showGuideBadge = false;
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -63,6 +69,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       ..removeListener(_handleSearchChanged)
       ..dispose();
     _searchFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -81,7 +88,27 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     }
     setState(() {
       _searchQuery = nextQuery;
+      _currentPage = 1;
     });
+  }
+
+  Future<void> _handleDiscoverPageChanged(int page) async {
+    if (page == _currentPage) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _currentPage = page;
+    });
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   Future<void> _onCreateTap(BuildContext context) async {
@@ -304,6 +331,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
     setState(() {
       _filters = _filters.copyWith(categorySlugs: result);
+      _currentPage = 1;
     });
   }
 
@@ -338,6 +366,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         minPrice: result.minPrice,
         maxPrice: result.maxPrice,
       );
+      _currentPage = 1;
     });
   }
 
@@ -396,6 +425,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         startDate: result.startDate,
         endDate: result.endDate,
       );
+      _currentPage = 1;
     });
   }
 
@@ -418,6 +448,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
     setState(() {
       _filters = _filters.copyWith(visibilities: result);
+      _currentPage = 1;
     });
   }
 
@@ -510,6 +541,11 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   searchQuery: _searchQuery,
                   categoryLabelsBySlug: categoryLabelsBySlug,
                 );
+                final paginatedItems = paginateItems(
+                  filteredItems,
+                  currentPage: _currentPage,
+                  pageSize: _discoverPageSize,
+                );
 
                 return Align(
                   alignment: Alignment.topCenter,
@@ -520,6 +556,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                       backgroundColor: const Color(0xFF201208),
                       onRefresh: () => _refreshActivities(currentUserId),
                       child: CustomScrollView(
+                        controller: _scrollController,
                         physics: const BouncingScrollPhysics(
                           parent: AlwaysScrollableScrollPhysics(),
                         ),
@@ -612,6 +649,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                         _searchController.clear();
                                         setState(() {
                                           _filters = const _DiscoverFilters();
+                                          _currentPage = 1;
                                         });
                                       },
                                     ),
@@ -692,6 +730,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   _searchController.clear();
                                   setState(() {
                                     _filters = const _DiscoverFilters();
+                                    _currentPage = 1;
                                   });
                                 },
                               ),
@@ -707,14 +746,16 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   max: 20,
                                 ),
                                 layout.horizontalPadding,
-                                140 + safeBottomInset,
+                                paginatedItems.hasMultiplePages
+                                    ? layout.cardGap
+                                    : 140 + safeBottomInset,
                               ),
                               sliver: SliverList.separated(
-                                itemCount: filteredItems.length,
+                                itemCount: paginatedItems.items.length,
                                 separatorBuilder: (_, __) =>
                                     SizedBox(height: layout.cardGap),
                                 itemBuilder: (context, index) {
-                                  final item = filteredItems[index];
+                                  final item = paginatedItems.items[index];
                                   final categorySlug = _normalizeSlug(
                                     item.categorySlug,
                                   );
@@ -742,6 +783,23 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                         _openActivityDetails(context, item.id),
                                   );
                                 },
+                              ),
+                            ),
+                          if (filteredItems.isNotEmpty &&
+                              paginatedItems.hasMultiplePages)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  layout.horizontalPadding,
+                                  0,
+                                  layout.horizontalPadding,
+                                  140 + safeBottomInset,
+                                ),
+                                child: FlyfyPaginationBar(
+                                  currentPage: paginatedItems.currentPage,
+                                  totalPages: paginatedItems.totalPages,
+                                  onPageChanged: _handleDiscoverPageChanged,
+                                ),
                               ),
                             ),
                         ],

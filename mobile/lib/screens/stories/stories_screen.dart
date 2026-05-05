@@ -10,6 +10,7 @@ import '../../core/network/reference_api.dart';
 import '../../core/network/story_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/pagination_bar.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -27,15 +28,20 @@ class StoriesScreen extends StatefulWidget {
 }
 
 class _StoriesScreenState extends State<StoriesScreen> {
+  static const int _pageSize = 8;
+
   final _api = StoryApi();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
 
   Timer? _searchDebounce;
   List<StoryVm> _stories = const [];
   bool _isLoading = true;
   bool _isRefreshing = false;
   String? _errorMessage;
+  int _currentPage = 1;
+  bool _hasNextPage = false;
 
   String _searchQuery = '';
   String? _selectedCategory;
@@ -55,6 +61,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
     _searchController
       ..removeListener(_handleSearchChanged)
       ..dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -71,11 +78,14 @@ class _StoriesScreenState extends State<StoriesScreen> {
       setState(() {
         _searchQuery = next;
       });
-      _loadStories(showLoader: false);
+      _loadStories(showLoader: false, page: 1);
     });
   }
 
-  Future<void> _loadStories({bool showLoader = true}) async {
+  Future<void> _loadStories({bool showLoader = true, int? page}) async {
+    final requestedPage = page ?? _currentPage;
+    final normalizedPage = requestedPage < 1 ? 1 : requestedPage;
+
     if (showLoader) {
       setState(() {
         _isLoading = true;
@@ -89,31 +99,37 @@ class _StoriesScreenState extends State<StoriesScreen> {
     }
 
     try {
-      final stories = widget.myOnly
-          ? await _api.listMyStories(
+      final storiesPage = widget.myOnly
+          ? await _api.listMyStoriesPage(
               search: _searchQuery,
               categories: _selectedCategory == null
                   ? null
                   : <String>[_selectedCategory!],
               place: _selectedPlace?.code,
               sort: _sort,
-              limit: 40,
+              limit: _pageSize,
+              offset: (normalizedPage - 1) * _pageSize,
             )
-          : await _api.listStories(
+          : await _api.listStoriesPage(
               search: _searchQuery,
               categories: _selectedCategory == null
                   ? null
                   : <String>[_selectedCategory!],
               place: _selectedPlace?.code,
               sort: _sort,
-              limit: 40,
+              limit: _pageSize,
+              offset: (normalizedPage - 1) * _pageSize,
             );
 
       if (!mounted) {
         return;
       }
       setState(() {
-        _stories = stories;
+        _stories = storiesPage.items;
+        _currentPage = storiesPage.items.isEmpty && normalizedPage > 1
+            ? 1
+            : normalizedPage;
+        _hasNextPage = storiesPage.hasMore;
         _isLoading = false;
         _isRefreshing = false;
       });
@@ -177,7 +193,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
     setState(() {
       _selectedCategory = selected;
     });
-    await _loadStories(showLoader: false);
+    await _loadStories(showLoader: false, page: 1);
   }
 
   Future<void> _showPlaceSheet() async {
@@ -201,16 +217,33 @@ class _StoriesScreenState extends State<StoriesScreen> {
     if (selected != null && selected.code.isEmpty) {
       // "All" was selected — clear the filter.
       setState(() => _selectedPlace = null);
-      await _loadStories(showLoader: false);
+      await _loadStories(showLoader: false, page: 1);
       return;
     }
     if (selected != null && selected.code != (_selectedPlace?.code ?? '')) {
       setState(() => _selectedPlace = selected);
-      await _loadStories(showLoader: false);
+      await _loadStories(showLoader: false, page: 1);
     }
   }
 
   Future<void> _refresh() => _loadStories(showLoader: false);
+
+  Future<void> _handlePageChanged(int page) async {
+    if (page == _currentPage || _isLoading || _isRefreshing) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    await _loadStories(showLoader: false, page: page);
+    if (!mounted || !_scrollController.hasClients) {
+      return;
+    }
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   Future<void> _openCreateStory() async {
     final authProvider = context.read<AuthProvider>();
@@ -222,7 +255,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
     final result = await context.push<StoryVm>('/stories/create');
     if (result != null && mounted) {
       _upsertStory(result);
-      unawaited(_loadStories(showLoader: false));
+      unawaited(_loadStories(showLoader: false, page: 1));
     }
   }
 
@@ -359,6 +392,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
       Localizations.localeOf(context),
     );
     final isLoggedIn = auth.state == AuthState.authenticated;
+    final totalPages = _hasNextPage ? _currentPage + 1 : _currentPage;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -423,6 +457,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                   color: AppColors.accent,
                   onRefresh: _refresh,
                   child: CustomScrollView(
+                    controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
                     ),
@@ -449,7 +484,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
                                       _selectedCategory!,
                                     ),
                               placeLabel:
-                                  _selectedPlace?.name ?? l10n.storyFilterCountry,
+                                  _selectedPlace?.name ??
+                                  l10n.storyFilterCountry,
                               placeActive: _selectedPlace != null,
                               onCategoryTap: _showCategorySheet,
                               onPlaceTap: _showPlaceSheet,
@@ -464,7 +500,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                                 setState(() {
                                   _sort = value;
                                 });
-                                _loadStories(showLoader: false);
+                                _loadStories(showLoader: false, page: 1);
                               },
                             ),
                             SizedBox(height: adaptive.scale(18)),
@@ -499,6 +535,15 @@ class _StoriesScreenState extends State<StoriesScreen> {
                                   onTap: () => _openStory(story),
                                 ),
                                 SizedBox(height: adaptive.scale(30)),
+                              ],
+                              if (totalPages > 1) ...[
+                                SizedBox(height: adaptive.scale(4)),
+                                FlyfyPaginationBar(
+                                  currentPage: _currentPage,
+                                  totalPages: totalPages,
+                                  onPageChanged: _handlePageChanged,
+                                ),
+                                SizedBox(height: adaptive.scale(18)),
                               ],
                             ],
                           ]),
@@ -1279,7 +1324,12 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
     try {
       final lang = Localizations.localeOf(context).languageCode;
       final results = await _api.listCountries(lang: lang);
-      if (mounted) setState(() { _results = results; _isLoading = false; });
+      if (mounted) {
+        setState(() {
+          _results = results;
+          _isLoading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -1302,7 +1352,12 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
     try {
       final lang = Localizations.localeOf(context).languageCode;
       final results = await _api.searchCountries(query, lang: lang, limit: 30);
-      if (mounted) setState(() { _results = results; _isLoading = false; });
+      if (mounted) {
+        setState(() {
+          _results = results;
+          _isLoading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -1331,17 +1386,27 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
               child: Row(
                 children: [
                   SizedBox(width: adaptive.scale(14)),
-                  Icon(Icons.search_rounded, color: StoryPalette.textMuted, size: adaptive.scale(18)),
+                  Icon(
+                    Icons.search_rounded,
+                    color: StoryPalette.textMuted,
+                    size: adaptive.scale(18),
+                  ),
                   SizedBox(width: adaptive.scale(8)),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
                       autofocus: true,
-                      style: TextStyle(color: StoryPalette.textSoft, fontSize: adaptive.scale(14)),
+                      style: TextStyle(
+                        color: StoryPalette.textSoft,
+                        fontSize: adaptive.scale(14),
+                      ),
                       decoration: InputDecoration(
                         border: InputBorder.none,
                         hintText: l10n.storyCountryHint,
-                        hintStyle: TextStyle(color: StoryPalette.textMuted, fontSize: adaptive.scale(14)),
+                        hintStyle: TextStyle(
+                          color: StoryPalette.textMuted,
+                          fontSize: adaptive.scale(14),
+                        ),
                       ),
                     ),
                   ),
@@ -1353,9 +1418,9 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
             _FilterOptionTile(
               label: l10n.storyFilterAll,
               selected: widget.currentCode == null,
-              onTap: () => Navigator.of(context).pop(
-                ReferenceCountry(code: '', name: ''),
-              ),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(ReferenceCountry(code: '', name: '')),
             ),
             if (_isLoading)
               Padding(
@@ -1363,12 +1428,17 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
                 child: const SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.accent,
+                  ),
                 ),
               )
             else
               ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.35),
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.35,
+                ),
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: _results.length,
