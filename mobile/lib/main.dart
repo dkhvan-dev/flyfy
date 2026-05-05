@@ -6,7 +6,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'core/auth/app_lock_gate.dart';
 import 'features/attendance/attendance_sync_manager.dart';
 import 'providers/auth_provider.dart';
 import 'providers/session_provider.dart';
@@ -73,11 +72,9 @@ class _SuperAppState extends State<SuperApp> {
             locale: localeProvider.locale,
             builder: (context, child) {
               return _DismissKeyboardOnTap(
-                child: AppLockGate(
-                  child: _PresenceHeartbeatBridge(
-                    child: _AttendanceSyncBridge(
-                      child: child ?? const SizedBox.shrink(),
-                    ),
+                child: _PresenceHeartbeatBridge(
+                  child: _AttendanceSyncBridge(
+                    child: child ?? const SizedBox.shrink(),
                   ),
                 ),
               );

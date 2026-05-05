@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/auth/app_lock_gate.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -126,10 +125,6 @@ class _OtpScreenState extends State<OtpScreen> {
         primaryPhoneHint: updatedAuth.lastPrimaryPhoneHint ?? widget.phone,
         primaryEmailHint: updatedAuth.lastPrimaryEmailHint,
       );
-
-      if (!ctx.mounted) return;
-
-      await ensureAppLockSetup(ctx);
 
       if (!ctx.mounted) return;
 

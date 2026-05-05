@@ -43,10 +43,9 @@ class AuthProvider extends ChangeNotifier {
     try {
       final token = await _secureStorage.getAccessToken();
       final refreshToken = await _secureStorage.getRefreshToken();
-      final hasPin = await _secureStorage.hasAppLockPin();
-      final hasRestorableSession =
-          hasPin && refreshToken != null && refreshToken.isNotEmpty;
-      _state = (token != null && token.isNotEmpty) || hasRestorableSession
+      final hasAccess = token != null && token.isNotEmpty;
+      final hasRefresh = refreshToken != null && refreshToken.isNotEmpty;
+      _state = hasAccess || hasRefresh
           ? AuthState.authenticated
           : AuthState.unauthenticated;
     } catch (_) {

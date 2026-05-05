@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/auth/app_lock_gate.dart';
 import '../../core/ui/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
@@ -835,10 +834,6 @@ class _LoginScreenState extends State<LoginScreen> {
       primaryPhoneHint: authProvider.lastPrimaryPhoneHint,
       primaryEmailHint: authProvider.lastPrimaryEmailHint,
     );
-
-    if (!ctx.mounted) return;
-
-    await ensureAppLockSetup(ctx);
 
     if (!ctx.mounted) return;
 
