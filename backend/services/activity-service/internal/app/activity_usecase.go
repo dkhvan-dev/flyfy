@@ -369,6 +369,8 @@ func isActivityAutoCompletableStatus(status enum.ActivityStatus) bool {
 	case enum.ActivityStatusPublished,
 		enum.ActivityStatusEnrollmentOpen,
 		enum.ActivityStatusFull,
+		enum.ActivityStatusRegistrationClosed,
+		enum.ActivityStatusConfirmed,
 		enum.ActivityStatusStarted:
 		return true
 	default:
@@ -380,7 +382,9 @@ func isActivityAutoStartableStatus(status enum.ActivityStatus) bool {
 	switch status {
 	case enum.ActivityStatusPublished,
 		enum.ActivityStatusEnrollmentOpen,
-		enum.ActivityStatusFull:
+		enum.ActivityStatusFull,
+		enum.ActivityStatusRegistrationClosed,
+		enum.ActivityStatusConfirmed:
 		return true
 	default:
 		return false
@@ -396,7 +400,22 @@ func isActivityExtendableStatus(status enum.ActivityStatus) bool {
 	case enum.ActivityStatusPublished,
 		enum.ActivityStatusEnrollmentOpen,
 		enum.ActivityStatusFull,
+		enum.ActivityStatusRegistrationClosed,
+		enum.ActivityStatusConfirmed,
 		enum.ActivityStatusStarted:
+		return true
+	default:
+		return false
+	}
+}
+
+func isActivityRegistrationFinalizableStatus(status enum.ActivityStatus) bool {
+	switch status {
+	case enum.ActivityStatusPublished,
+		enum.ActivityStatusEnrollmentOpen,
+		enum.ActivityStatusFull,
+		enum.ActivityStatusRegistrationClosed,
+		enum.ActivityStatusConfirmationPending:
 		return true
 	default:
 		return false
@@ -412,6 +431,21 @@ func (u *ActivityUseCase) normalizeLifecycle(
 	}
 
 	now := time.Now().UTC()
+	if isActivityRegistrationFinalizableStatus(item.Status) &&
+		!now.Before(item.RegistrationDeadline) {
+		normalized, _, err := u.finalizeRegistrationInternal(
+			ctx,
+			item.ID,
+			"automatic_read_repair",
+		)
+		if err != nil {
+			return nil, err
+		}
+		if normalized != nil {
+			item = normalized
+		}
+	}
+
 	if isActivityAutoCompletableStatus(item.Status) && !now.Before(item.EndAt) {
 		return u.completeActivityInternal(
 			ctx,
@@ -485,6 +519,58 @@ func (u *ActivityUseCase) AutoCompleteDueActivities(
 	return completedCount, nil
 }
 
+type ActivityRegistrationFinalizationStats struct {
+	Finalized int
+	Confirmed int
+	Cancelled int
+}
+
+func (u *ActivityUseCase) AutoFinalizeRegistrationDueActivities(
+	ctx context.Context,
+	limit int,
+) (ActivityRegistrationFinalizationStats, error) {
+	items, err := u.repo.ListActivitiesDueForRegistrationFinalization(
+		ctx,
+		time.Now().UTC(),
+		limit,
+	)
+	if err != nil {
+		return ActivityRegistrationFinalizationStats{}, fmt.Errorf(
+			"list activities due for registration finalization: %w",
+			err,
+		)
+	}
+
+	stats := ActivityRegistrationFinalizationStats{}
+	for _, item := range items {
+		if item == nil || !isActivityRegistrationFinalizableStatus(item.Status) {
+			continue
+		}
+
+		updated, changed, finalizeErr := u.finalizeRegistrationInternal(
+			ctx,
+			item.ID,
+			"automatic_scheduler",
+		)
+		if finalizeErr != nil {
+			return stats, fmt.Errorf("finalize registration for activity %s: %w", item.ID, finalizeErr)
+		}
+		if !changed || updated == nil {
+			continue
+		}
+
+		stats.Finalized++
+		switch updated.Status {
+		case enum.ActivityStatusConfirmed:
+			stats.Confirmed++
+		case enum.ActivityStatusCancelled:
+			stats.Cancelled++
+		}
+	}
+
+	return stats, nil
+}
+
 func (u *ActivityUseCase) AutoStartDueActivities(
 	ctx context.Context,
 	limit int,
@@ -513,6 +599,293 @@ func (u *ActivityUseCase) AutoStartDueActivities(
 	}
 
 	return startedCount, nil
+}
+
+func (u *ActivityUseCase) finalizeRegistrationInternal(
+	ctx context.Context,
+	activityID uuid.UUID,
+	trigger string,
+) (*model.Activity, bool, error) {
+	var updated *model.Activity
+	changed := false
+
+	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
+		item, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
+		if err != nil {
+			return fmt.Errorf("get activity by id for registration finalization: %w", err)
+		}
+		if item == nil {
+			return ErrActivityNotFound
+		}
+
+		now := time.Now().UTC()
+		if !isActivityRegistrationFinalizableStatus(item.Status) ||
+			now.Before(item.RegistrationDeadline) {
+			updated = item
+			return nil
+		}
+
+		participants, err := txRepo.ListParticipantsByActivityIDForUpdate(ctx, item.ID)
+		if err != nil {
+			return fmt.Errorf("list participants for registration finalization: %w", err)
+		}
+
+		eligibleCount := countEligibleParticipantsForMinimum(item, participants)
+		minParticipants := minimumParticipants(item)
+		if eligibleCount < minParticipants {
+			if err = u.cancelActivityInTx(
+				ctx,
+				txRepo,
+				item,
+				nil,
+				enum.ActivityCancellationSourceSystem,
+				CancellationReasonMinParticipantsNotMet,
+				trigger,
+				now,
+				participants,
+				map[string]any{
+					"eligibleParticipants": eligibleCount,
+					"minParticipants":      minParticipants,
+					"registrationDeadline": item.RegistrationDeadline.Format(time.RFC3339),
+				},
+			); err != nil {
+				return err
+			}
+
+			updated = item
+			changed = true
+			return nil
+		}
+
+		previousStatus := item.Status
+		item.Status = enum.ActivityStatusConfirmed
+		item.CancellationReason = nil
+		item.CancellationSource = nil
+		item.CancelledByUserID = nil
+		item.CancelledAt = nil
+		item.Revision++
+		item.UpdatedAt = now
+
+		if err = txRepo.UpdateActivity(ctx, item); err != nil {
+			return fmt.Errorf("confirm activity after registration deadline: %w", err)
+		}
+
+		event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
+			ActivityID: item.ID,
+			EventType:  enum.ActivityEventTypeRegistrationFinalized,
+			PayloadJSON: mustJSON(map[string]any{
+				"trigger":                 trigger,
+				"previousStatus":          string(previousStatus),
+				"status":                  string(item.Status),
+				"eligibleParticipants":    eligibleCount,
+				"minParticipants":         minParticipants,
+				"registrationDeadline":    item.RegistrationDeadline.Format(time.RFC3339),
+				"hostExcludedFromMinimum": true,
+				"paymentMode":             "mock",
+			}),
+		})
+		if eventErr == nil {
+			if err = txRepo.CreateActivityEvent(ctx, event); err != nil {
+				return fmt.Errorf("create registration finalized event: %w", err)
+			}
+		}
+
+		if isPaidActivity(item) {
+			for _, participant := range participants {
+				if !participantEligibleForMinimum(item, participant) {
+					continue
+				}
+				paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
+					ActivityID:    item.ID,
+					ParticipantID: participant.ID,
+					UserID:        participant.UserID,
+					EventType:     ParticipantEventTypePaymentCaptureMocked,
+					PayloadJSON: mustJSON(map[string]any{
+						"activityId":    item.ID.String(),
+						"participantId": participant.ID.String(),
+						"priceType":     string(item.PriceType),
+						"priceAmount":   item.PriceAmount,
+						"currency":      item.Currency,
+						"trigger":       trigger,
+						"idempotencyKey": fmt.Sprintf(
+							"activity_confirm:%s:participant:%s",
+							item.ID,
+							participant.ID,
+						),
+					}),
+				})
+				if paymentEventErr == nil {
+					if err = txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
+						return fmt.Errorf("create mocked payment capture event: %w", err)
+					}
+				}
+			}
+		}
+
+		updated = item
+		changed = true
+		return nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+
+	if changed {
+		u.syncActivityChat(ctx, updated)
+	}
+
+	return updated, changed, nil
+}
+
+func (u *ActivityUseCase) cancelActivityInTx(
+	ctx context.Context,
+	txRepo port.ActivityTxRepository,
+	item *model.Activity,
+	actorUserID *uuid.UUID,
+	source enum.ActivityCancellationSource,
+	reason string,
+	trigger string,
+	now time.Time,
+	participants []*model.ActivityParticipant,
+	extraPayload map[string]any,
+) error {
+	now = now.UTC()
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return ErrActivityCancellationReasonRequired
+	}
+	if !source.IsValid() {
+		return ErrActivityNotCancellable
+	}
+
+	item.Status = enum.ActivityStatusCancelled
+	item.CancelledAt = &now
+	item.CancellationReason = model.NormalizeOptionalString(&reason)
+	item.CancellationSource = &source
+	item.CancelledByUserID = actorUserID
+	item.CompletedAt = nil
+	item.CompletionReason = nil
+	item.Revision++
+	item.UpdatedAt = now
+
+	if err := txRepo.UpdateActivity(ctx, item); err != nil {
+		return fmt.Errorf("cancel activity: %w", err)
+	}
+
+	for _, participant := range participants {
+		if participant == nil || !participant.Status.IsActive() {
+			continue
+		}
+
+		previousStatus := participant.Status
+		if err := participant.SetStatus(enum.ParticipantStatusCancelledByActivity, now); err != nil {
+			return err
+		}
+		participantCancelReason := ParticipantCancelReasonActivityCancelled
+		participant.CancelReason = model.NormalizeOptionalString(&participantCancelReason)
+		participant.CancelledByUserID = actorUserID
+
+		if err := txRepo.UpdateParticipant(ctx, participant); err != nil {
+			return fmt.Errorf("cancel activity participant: %w", err)
+		}
+
+		participantEvent, participantEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
+			ActivityID:    item.ID,
+			ParticipantID: participant.ID,
+			UserID:        participant.UserID,
+			EventType:     string(enum.ParticipantStatusCancelledByActivity),
+			ActorUserID:   actorUserID,
+			PayloadJSON: mustJSON(map[string]any{
+				"reason":  reason,
+				"source":  string(source),
+				"trigger": trigger,
+			}),
+		})
+		if participantEventErr == nil {
+			if err := txRepo.CreateParticipantEvent(ctx, participantEvent); err != nil {
+				return fmt.Errorf("create participant activity-cancel event: %w", err)
+			}
+		}
+
+		if isPaidActivity(item) && participant.PaidAt != nil {
+			paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
+				ActivityID:    item.ID,
+				ParticipantID: participant.ID,
+				UserID:        participant.UserID,
+				EventType:     ParticipantEventTypePaymentRefundMocked,
+				ActorUserID:   actorUserID,
+				PayloadJSON: mustJSON(map[string]any{
+					"activityId":    item.ID.String(),
+					"participantId": participant.ID.String(),
+					"reason":        reason,
+					"source":        string(source),
+					"priceType":     string(item.PriceType),
+					"priceAmount":   item.PriceAmount,
+					"currency":      item.Currency,
+					"policy":        "full_refund_activity_cancelled",
+					"idempotencyKey": fmt.Sprintf(
+						"activity_cancel:%s:participant:%s",
+						item.ID,
+						participant.ID,
+					),
+				}),
+			})
+			if paymentEventErr == nil {
+				if err := txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
+					return fmt.Errorf("create mocked payment refund event: %w", err)
+				}
+			}
+		} else if isPaidActivity(item) && previousStatus == enum.ParticipantStatusPendingPayment {
+			paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
+				ActivityID:    item.ID,
+				ParticipantID: participant.ID,
+				UserID:        participant.UserID,
+				EventType:     ParticipantEventTypePaymentAuthorizationCancelledMocked,
+				ActorUserID:   actorUserID,
+				PayloadJSON: mustJSON(map[string]any{
+					"activityId":    item.ID.String(),
+					"participantId": participant.ID.String(),
+					"reason":        reason,
+					"source":        string(source),
+					"policy":        "pending_payment_cancelled_before_capture",
+					"idempotencyKey": fmt.Sprintf(
+						"activity_cancel_auth:%s:participant:%s",
+						item.ID,
+						participant.ID,
+					),
+				}),
+			})
+			if paymentEventErr == nil {
+				if err := txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
+					return fmt.Errorf("create mocked authorization cancel event: %w", err)
+				}
+			}
+		}
+	}
+
+	payload := map[string]any{
+		"cancelledAt": now.Format(time.RFC3339),
+		"reason":      reason,
+		"source":      string(source),
+		"trigger":     trigger,
+	}
+	for key, value := range extraPayload {
+		payload[key] = value
+	}
+
+	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
+		ActivityID:  item.ID,
+		EventType:   enum.ActivityEventTypeCancelled,
+		ActorUserID: actorUserID,
+		PayloadJSON: mustJSON(payload),
+	})
+	if eventErr == nil {
+		if err := txRepo.CreateActivityEvent(ctx, event); err != nil {
+			return fmt.Errorf("create activity cancelled event: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (u *ActivityUseCase) startActivityInternal(
@@ -764,7 +1137,9 @@ func (u *ActivityUseCase) StartActivity(
 	}
 	if item.Status != enum.ActivityStatusEnrollmentOpen &&
 		item.Status != enum.ActivityStatusFull &&
-		item.Status != enum.ActivityStatusPublished {
+		item.Status != enum.ActivityStatusPublished &&
+		item.Status != enum.ActivityStatusRegistrationClosed &&
+		item.Status != enum.ActivityStatusConfirmed {
 		return nil, ErrActivityNotStartable
 	}
 
@@ -842,54 +1217,67 @@ func (u *ActivityUseCase) CancelActivity(
 	actorUserID uuid.UUID,
 	reason string,
 ) (*model.Activity, error) {
-	item, err := u.GetActivityByID(ctx, activityID)
-	if err != nil {
-		return nil, err
-	}
-	if actorUserID == uuid.Nil || actorUserID != item.HostUserID {
-		return nil, ErrInvalidActorUserID
-	}
-	if item.Status == enum.ActivityStatusCancelled {
-		return nil, ErrActivityAlreadyCancelled
-	}
-	if item.Status.IsTerminal() {
-		return nil, ErrActivityNotCancellable
-	}
-
-	now := time.Now().UTC()
 	reason = strings.TrimSpace(reason)
 	if reason == "" {
 		return nil, ErrActivityCancellationReasonRequired
 	}
-
-	item.Status = enum.ActivityStatusCancelled
-	item.CancelledAt = &now
-	item.CancellationReason = model.NormalizeOptionalString(&reason)
-	item.CompletedAt = nil
-	item.CompletionReason = nil
-	item.Revision++
-	item.UpdatedAt = now
-
-	if err = u.repo.UpdateActivity(ctx, item); err != nil {
-		return nil, fmt.Errorf("cancel activity: %w", err)
+	if activityID == uuid.Nil {
+		return nil, ErrInvalidActivityID
+	}
+	if actorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
 	}
 
-	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
-		ActivityID:  item.ID,
-		EventType:   enum.ActivityEventTypeCancelled,
-		ActorUserID: &actorUserID,
-		PayloadJSON: mustJSON(map[string]any{
-			"cancelledAt": now.Format(time.RFC3339),
-			"reason":      reason,
-		}),
+	var updated *model.Activity
+
+	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
+		item, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
+		if err != nil {
+			return fmt.Errorf("get activity by id for cancellation: %w", err)
+		}
+		if item == nil {
+			return ErrActivityNotFound
+		}
+		if actorUserID != item.HostUserID {
+			return ErrInvalidActorUserID
+		}
+		if item.Status == enum.ActivityStatusCancelled {
+			return ErrActivityAlreadyCancelled
+		}
+		if item.Status.IsTerminal() {
+			return ErrActivityNotCancellable
+		}
+
+		participants, err := txRepo.ListParticipantsByActivityIDForUpdate(ctx, item.ID)
+		if err != nil {
+			return fmt.Errorf("list participants for cancellation: %w", err)
+		}
+
+		if err = u.cancelActivityInTx(
+			ctx,
+			txRepo,
+			item,
+			&actorUserID,
+			enum.ActivityCancellationSourceHost,
+			reason,
+			"manual_host",
+			time.Now().UTC(),
+			participants,
+			map[string]any{},
+		); err != nil {
+			return err
+		}
+
+		updated = item
+		return nil
 	})
-	if eventErr == nil {
-		_ = u.repo.CreateActivityEvent(ctx, event)
+	if err != nil {
+		return nil, err
 	}
 
-	u.syncActivityChat(ctx, item)
+	u.syncActivityChat(ctx, updated)
 
-	return item, nil
+	return updated, nil
 }
 
 func (u *ActivityUseCase) ExtendActivity(
@@ -1219,6 +1607,8 @@ func hasOtherPriceBlockingParticipants(
 
 		switch participant.Status {
 		case enum.ParticipantStatusCancelled,
+			enum.ParticipantStatusLateCancelled,
+			enum.ParticipantStatusCancelledByActivity,
 			enum.ParticipantStatusDeclined,
 			enum.ParticipantStatusExpired:
 			continue

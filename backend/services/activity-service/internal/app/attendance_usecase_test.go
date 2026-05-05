@@ -32,6 +32,10 @@ func (s *attendanceRepoStub) ListActivities(ctx context.Context, filter port.Act
 	return nil, nil
 }
 
+func (s *attendanceRepoStub) ListActivitiesDueForRegistrationFinalization(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error) {
+	return nil, nil
+}
+
 func (s *attendanceRepoStub) ListActivitiesDueForStart(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error) {
 	return nil, nil
 }
@@ -149,6 +153,10 @@ func (s *attendanceTxRepoStub) HasActiveOverlappingJoinedActivity(ctx context.Co
 
 func (s *attendanceTxRepoStub) CountOccupiedSlotsForUpdate(ctx context.Context, activityID uuid.UUID) (int, error) {
 	return 0, nil
+}
+
+func (s *attendanceTxRepoStub) ListParticipantsByActivityIDForUpdate(ctx context.Context, activityID uuid.UUID) ([]*model.ActivityParticipant, error) {
+	return nil, nil
 }
 
 func (s *attendanceTxRepoStub) CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error {

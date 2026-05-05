@@ -47,6 +47,8 @@ type ActivityResponse struct {
 	CoverImageURL *string  `json:"coverImageUrl,omitempty"`
 
 	CancellationReason *string `json:"cancellationReason,omitempty"`
+	CancellationSource *string `json:"cancellationSource,omitempty"`
+	CancelledByUserID  *string `json:"cancelledByUserId,omitempty"`
 	CancelledAt        *string `json:"cancelledAt,omitempty"`
 	StartedAt          *string `json:"startedAt,omitempty"`
 	CompletedAt        *string `json:"completedAt,omitempty"`

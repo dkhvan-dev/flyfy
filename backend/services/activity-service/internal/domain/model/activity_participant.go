@@ -110,6 +110,12 @@ func (p *ActivityParticipant) SetStatus(status enum.ParticipantStatus, now time.
 	case enum.ParticipantStatusCancelled:
 		ts := now.UTC()
 		p.CancelledAt = &ts
+	case enum.ParticipantStatusLateCancelled:
+		ts := now.UTC()
+		p.CancelledAt = &ts
+	case enum.ParticipantStatusCancelledByActivity:
+		ts := now.UTC()
+		p.CancelledAt = &ts
 	}
 
 	return nil

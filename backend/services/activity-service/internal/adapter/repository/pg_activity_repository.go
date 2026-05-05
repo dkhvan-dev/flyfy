@@ -39,7 +39,7 @@ const activitySelectColumns = `
 	price_type, price_amount, currency, price_locked_at,
 	requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
 	country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
-	cancellation_reason, cancelled_at, started_at, completed_at, completion_reason, published_at,
+	cancellation_reason, cancellation_source, cancelled_by_user_id, cancelled_at, started_at, completed_at, completion_reason, published_at,
 	revision, created_at, updated_at
 `
 
@@ -53,7 +53,7 @@ const qualifiedActivitySelectColumns = `
 	a.price_type, a.price_amount, a.currency, a.price_locked_at,
 	a.requires_profile_completion, a.requires_attendance_confirmation, a.confirmation_deadline,
 	a.country_code, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url, a.visibility_password_hash,
-	a.cancellation_reason, a.cancelled_at, a.started_at, a.completed_at, a.completion_reason, a.published_at,
+	a.cancellation_reason, a.cancellation_source, a.cancelled_by_user_id, a.cancelled_at, a.started_at, a.completed_at, a.completion_reason, a.published_at,
 	a.revision, a.created_at, a.updated_at
 `
 
@@ -92,7 +92,7 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			price_type, price_amount, currency, price_locked_at,
 			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
 			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
-			cancellation_reason, cancelled_at, started_at, completed_at, completion_reason, published_at,
+			cancellation_reason, cancellation_source, cancelled_by_user_id, cancelled_at, started_at, completed_at, completion_reason, published_at,
 			revision, created_at, updated_at
 		) VALUES (
 			$1, $2, $3,
@@ -104,8 +104,8 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			$20, $21, $22, $23,
 			$24, $25, $26,
 			$27, $28, $29, $30, $31, $32, $33, $34,
-			$35, $36, $37, $38, $39, $40,
-			$41, $42, $43
+			$35, $36, $37, $38, $39, $40, $41, $42,
+			$43, $44, $45
 		)
 	`
 
@@ -121,7 +121,7 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 		string(item.PriceType), item.PriceAmount, item.Currency, item.PriceLockedAt,
 		item.RequiresProfileCompletion, item.RequiresAttendanceConfirmation, item.ConfirmationDeadline,
 		item.CountryCode, item.CityName, item.AddressText, item.Latitude, item.Longitude, item.MapURL, item.MeetingURL, item.VisibilityPasswordHash,
-		item.CancellationReason, item.CancelledAt, item.StartedAt, item.CompletedAt, item.CompletionReason, item.PublishedAt,
+		item.CancellationReason, optionalActivityCancellationSourceString(item.CancellationSource), item.CancelledByUserID, item.CancelledAt, item.StartedAt, item.CompletedAt, item.CompletionReason, item.PublishedAt,
 		item.Revision, item.CreatedAt, item.UpdatedAt,
 	)
 	if err != nil {
@@ -169,13 +169,15 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 			meeting_url = $33,
 			visibility_password_hash = $34,
 			cancellation_reason = $35,
-			cancelled_at = $36,
-			started_at = $37,
-			completed_at = $38,
-			completion_reason = $39,
-			published_at = $40,
-			revision = $41,
-			updated_at = $42
+			cancellation_source = $36,
+			cancelled_by_user_id = $37,
+			cancelled_at = $38,
+			started_at = $39,
+			completed_at = $40,
+			completion_reason = $41,
+			published_at = $42,
+			revision = $43,
+			updated_at = $44
 		WHERE id = $1
 	`
 
@@ -217,6 +219,8 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 		item.MeetingURL,
 		item.VisibilityPasswordHash,
 		item.CancellationReason,
+		optionalActivityCancellationSourceString(item.CancellationSource),
+		item.CancelledByUserID,
 		item.CancelledAt,
 		item.StartedAt,
 		item.CompletedAt,
@@ -341,6 +345,55 @@ func (r *PGActivityRepository) ListActivities(ctx context.Context, filter port.A
 	return result, rows.Err()
 }
 
+func (r *PGActivityRepository) ListActivitiesDueForRegistrationFinalization(
+	ctx context.Context,
+	before time.Time,
+	limit int,
+) ([]*model.Activity, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+
+	query := `
+		SELECT
+	` + activitySelectColumns + `
+		FROM activities
+		WHERE status = ANY($1)
+		  AND registration_deadline <= $2
+		ORDER BY registration_deadline ASC
+		LIMIT $3
+	`
+
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		[]string{
+			string(enum.ActivityStatusPublished),
+			string(enum.ActivityStatusEnrollmentOpen),
+			string(enum.ActivityStatusFull),
+			string(enum.ActivityStatusRegistrationClosed),
+			string(enum.ActivityStatusConfirmationPending),
+		},
+		before.UTC(),
+		limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list activities due for registration finalization: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]*model.Activity, 0, limit)
+	for rows.Next() {
+		item, scanErr := scanActivity(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan activity due for registration finalization: %w", scanErr)
+		}
+		result = append(result, item)
+	}
+
+	return result, rows.Err()
+}
+
 func (r *PGActivityRepository) ListActivitiesDueForStart(
 	ctx context.Context,
 	before time.Time,
@@ -368,6 +421,8 @@ func (r *PGActivityRepository) ListActivitiesDueForStart(
 			string(enum.ActivityStatusPublished),
 			string(enum.ActivityStatusEnrollmentOpen),
 			string(enum.ActivityStatusFull),
+			string(enum.ActivityStatusRegistrationClosed),
+			string(enum.ActivityStatusConfirmed),
 		},
 		before.UTC(),
 		limit,
@@ -415,6 +470,8 @@ func (r *PGActivityRepository) ListActivitiesDueForCompletion(
 			string(enum.ActivityStatusPublished),
 			string(enum.ActivityStatusEnrollmentOpen),
 			string(enum.ActivityStatusFull),
+			string(enum.ActivityStatusRegistrationClosed),
+			string(enum.ActivityStatusConfirmed),
 			string(enum.ActivityStatusStarted),
 		},
 		before.UTC(),
@@ -941,6 +998,39 @@ func (r *PGActivityTxRepository) CountOccupiedSlotsForUpdate(ctx context.Context
 	return count, nil
 }
 
+func (r *PGActivityTxRepository) ListParticipantsByActivityIDForUpdate(
+	ctx context.Context,
+	activityID uuid.UUID,
+) ([]*model.ActivityParticipant, error) {
+	const query = `
+		SELECT
+			id, activity_id, user_id, status, joined_at, approved_at, waitlisted_at,
+			payment_due_at, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
+			cancelled_at, cancelled_by_user_id, cancel_reason, created_at, updated_at
+		FROM activity_participants
+		WHERE activity_id = $1
+		ORDER BY created_at ASC
+		FOR UPDATE
+	`
+
+	rows, err := r.tx.Query(ctx, query, activityID)
+	if err != nil {
+		return nil, fmt.Errorf("list participants by activity id for update: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]*model.ActivityParticipant, 0)
+	for rows.Next() {
+		item, scanErr := scanParticipant(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan participant for update: %w", scanErr)
+		}
+		result = append(result, item)
+	}
+
+	return result, rows.Err()
+}
+
 func (r *PGActivityTxRepository) CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error {
 	const query = `
 		INSERT INTO activity_participants (
@@ -1190,13 +1280,15 @@ func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model
 			meeting_url = $33,
 			visibility_password_hash = $34,
 			cancellation_reason = $35,
-			cancelled_at = $36,
-			started_at = $37,
-			completed_at = $38,
-			completion_reason = $39,
-			published_at = $40,
-			revision = $41,
-			updated_at = $42
+			cancellation_source = $36,
+			cancelled_by_user_id = $37,
+			cancelled_at = $38,
+			started_at = $39,
+			completed_at = $40,
+			completion_reason = $41,
+			published_at = $42,
+			revision = $43,
+			updated_at = $44
 		WHERE id = $1
 	`
 
@@ -1238,6 +1330,8 @@ func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model
 		item.MeetingURL,
 		item.VisibilityPasswordHash,
 		item.CancellationReason,
+		optionalActivityCancellationSourceString(item.CancellationSource),
+		item.CancelledByUserID,
 		item.CancelledAt,
 		item.StartedAt,
 		item.CompletedAt,
@@ -1405,13 +1499,14 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 	var (
 		item model.Activity
 
-		formatRaw           string
-		statusRaw           string
-		visibilityRaw       string
-		joinModeRaw         string
-		moderationStatusRaw string
-		capacityTypeRaw     string
-		priceTypeRaw        string
+		formatRaw             string
+		statusRaw             string
+		visibilityRaw         string
+		joinModeRaw           string
+		moderationStatusRaw   string
+		capacityTypeRaw       string
+		priceTypeRaw          string
+		cancellationSourceRaw *string
 	)
 
 	err := row.Scan(
@@ -1459,6 +1554,8 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 		&item.VisibilityPasswordHash,
 
 		&item.CancellationReason,
+		&cancellationSourceRaw,
+		&item.CancelledByUserID,
 		&item.CancelledAt,
 		&item.StartedAt,
 		&item.CompletedAt,
@@ -1480,6 +1577,10 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 	item.ModerationStatus = enum.ActivityModerationStatus(moderationStatusRaw)
 	item.CapacityType = enum.ActivityCapacityType(capacityTypeRaw)
 	item.PriceType = enum.ActivityPriceType(priceTypeRaw)
+	if cancellationSourceRaw != nil {
+		source := enum.ActivityCancellationSource(*cancellationSourceRaw)
+		item.CancellationSource = &source
+	}
 
 	return &item, nil
 }
@@ -1611,4 +1712,12 @@ func translateUniqueViolation(err error) error {
 		}
 	}
 	return err
+}
+
+func optionalActivityCancellationSourceString(source *enum.ActivityCancellationSource) *string {
+	if source == nil {
+		return nil
+	}
+	value := string(*source)
+	return &value
 }

@@ -199,6 +199,19 @@ func runActivityLifecycleTicker(ctx context.Context, activityUC *app.ActivityUse
 		tickCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 		defer cancel()
 
+		finalizationStats, err := activityUC.AutoFinalizeRegistrationDueActivities(tickCtx, 100)
+		if err != nil {
+			log.Error().Err(err).Msg("finalize activity registration deadlines")
+			return
+		}
+		if finalizationStats.Finalized > 0 {
+			log.Info().
+				Int("finalized", finalizationStats.Finalized).
+				Int("confirmed", finalizationStats.Confirmed).
+				Int("cancelled", finalizationStats.Cancelled).
+				Msg("activity registrations finalized by lifecycle ticker")
+		}
+
 		startedCount, err := activityUC.AutoStartDueActivities(tickCtx, 100)
 		if err != nil {
 			log.Error().Err(err).Msg("auto-start due activities")

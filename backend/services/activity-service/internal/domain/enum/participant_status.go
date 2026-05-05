@@ -3,17 +3,19 @@ package enum
 type ParticipantStatus string
 
 const (
-	ParticipantStatusRequested      ParticipantStatus = "REQUESTED"
-	ParticipantStatusApproved       ParticipantStatus = "APPROVED"
-	ParticipantStatusWaitlisted     ParticipantStatus = "WAITLISTED"
-	ParticipantStatusPendingPayment ParticipantStatus = "PENDING_PAYMENT"
-	ParticipantStatusConfirmed      ParticipantStatus = "CONFIRMED"
-	ParticipantStatusDeclined       ParticipantStatus = "DECLINED"
-	ParticipantStatusCancelled      ParticipantStatus = "CANCELLED"
-	ParticipantStatusExpired        ParticipantStatus = "EXPIRED"
-	ParticipantStatusCheckedIn      ParticipantStatus = "CHECKED_IN"
-	ParticipantStatusAttended       ParticipantStatus = "ATTENDED"
-	ParticipantStatusNoShow         ParticipantStatus = "NO_SHOW"
+	ParticipantStatusRequested           ParticipantStatus = "REQUESTED"
+	ParticipantStatusApproved            ParticipantStatus = "APPROVED"
+	ParticipantStatusWaitlisted          ParticipantStatus = "WAITLISTED"
+	ParticipantStatusPendingPayment      ParticipantStatus = "PENDING_PAYMENT"
+	ParticipantStatusConfirmed           ParticipantStatus = "CONFIRMED"
+	ParticipantStatusDeclined            ParticipantStatus = "DECLINED"
+	ParticipantStatusCancelled           ParticipantStatus = "CANCELLED"
+	ParticipantStatusLateCancelled       ParticipantStatus = "LATE_CANCELLED"
+	ParticipantStatusCancelledByActivity ParticipantStatus = "CANCELLED_BY_ACTIVITY"
+	ParticipantStatusExpired             ParticipantStatus = "EXPIRED"
+	ParticipantStatusCheckedIn           ParticipantStatus = "CHECKED_IN"
+	ParticipantStatusAttended            ParticipantStatus = "ATTENDED"
+	ParticipantStatusNoShow              ParticipantStatus = "NO_SHOW"
 )
 
 func (v ParticipantStatus) IsValid() bool {
@@ -25,6 +27,8 @@ func (v ParticipantStatus) IsValid() bool {
 		ParticipantStatusConfirmed,
 		ParticipantStatusDeclined,
 		ParticipantStatusCancelled,
+		ParticipantStatusLateCancelled,
+		ParticipantStatusCancelledByActivity,
 		ParticipantStatusExpired,
 		ParticipantStatusCheckedIn,
 		ParticipantStatusAttended,

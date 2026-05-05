@@ -452,6 +452,9 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 			string(enum.ActivityStatusPublished),
 			string(enum.ActivityStatusEnrollmentOpen),
 			string(enum.ActivityStatusFull),
+			string(enum.ActivityStatusRegistrationClosed),
+			string(enum.ActivityStatusConfirmationPending),
+			string(enum.ActivityStatusConfirmed),
 			string(enum.ActivityStatusStarted),
 			string(enum.ActivityStatusCompleted),
 		}
@@ -1069,6 +1072,8 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 		CoverFileID:                    coverFileID,
 		CoverImageURL:                  coverImageURL,
 		CancellationReason:             item.CancellationReason,
+		CancellationSource:             formatOptionalCancellationSource(item.CancellationSource),
+		CancelledByUserID:              formatOptionalUUID(item.CancelledByUserID),
 		CancelledAt:                    formatOptionalTime(item.CancelledAt),
 		StartedAt:                      formatOptionalTime(item.StartedAt),
 		CompletedAt:                    formatOptionalTime(item.CompletedAt),
@@ -1190,6 +1195,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrActivityFull),
 		errors.Is(err, app.ErrAlreadyJoined),
 		errors.Is(err, app.ErrParticipantStateInvalid),
+		errors.Is(err, app.ErrActivityLeaveClosed),
 		errors.Is(err, app.ErrPriceChangeForbidden),
 		errors.Is(err, app.ErrCriticalFieldsUpdateForbidden),
 		errors.Is(err, app.ErrActivityMediaFileNotReady),
@@ -1208,6 +1214,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, model.ErrInvalidActivityVisibility),
 		errors.Is(err, model.ErrInvalidActivityJoinMode),
 		errors.Is(err, model.ErrInvalidActivityModerationStatus),
+		errors.Is(err, model.ErrInvalidActivityCancellationSource),
 		errors.Is(err, model.ErrInvalidCategorySlug),
 		errors.Is(err, model.ErrInvalidLanguageCode),
 		errors.Is(err, model.ErrInvalidTimezone),
@@ -1337,6 +1344,14 @@ func formatOptionalUUID(v *uuid.UUID) *string {
 		return nil
 	}
 	s := v.String()
+	return &s
+}
+
+func formatOptionalCancellationSource(v *enum.ActivityCancellationSource) *string {
+	if v == nil {
+		return nil
+	}
+	s := string(*v)
 	return &s
 }
 

@@ -32,6 +32,7 @@ var (
 	ErrParticipantScheduleConflict = errors.New("user already joined another activity with overlapping time")
 	ErrParticipantAlreadyCancelled = errors.New("participant already cancelled")
 	ErrParticipantStateInvalid     = errors.New("participant state is invalid for this action")
+	ErrActivityLeaveClosed         = errors.New("activity cannot be left after it has started")
 
 	ErrModerationReviewRequired = errors.New("moderation review is required")
 	ErrModerationStateInvalid   = errors.New("activity moderation state is invalid")

@@ -40,6 +40,7 @@ type ActivityTxRepository interface {
 		endAt time.Time,
 	) (bool, error)
 	CountOccupiedSlotsForUpdate(ctx context.Context, activityID uuid.UUID) (int, error)
+	ListParticipantsByActivityIDForUpdate(ctx context.Context, activityID uuid.UUID) ([]*model.ActivityParticipant, error)
 
 	CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error
 	UpdateParticipant(ctx context.Context, item *model.ActivityParticipant) error
@@ -57,6 +58,7 @@ type ActivityRepository interface {
 	UpdateActivity(ctx context.Context, item *model.Activity) error
 	GetActivityByID(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
 	ListActivities(ctx context.Context, filter ActivityFilter) ([]*model.Activity, error)
+	ListActivitiesDueForRegistrationFinalization(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error)
 	ListActivitiesDueForStart(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error)
 	ListActivitiesDueForCompletion(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error)
 

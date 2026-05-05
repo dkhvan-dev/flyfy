@@ -11,35 +11,36 @@ import (
 )
 
 var (
-	ErrInvalidActivityID               = errors.New("invalid activity id")
-	ErrInvalidHostUserID               = errors.New("invalid host user id")
-	ErrInvalidActivityTitle            = errors.New("invalid activity title")
-	ErrInvalidActivityDescription      = errors.New("invalid activity description")
-	ErrInvalidActivityFormat           = errors.New("invalid activity format")
-	ErrInvalidActivityStatus           = errors.New("invalid activity status")
-	ErrInvalidActivityVisibility       = errors.New("invalid activity visibility")
-	ErrInvalidActivityJoinMode         = errors.New("invalid activity join mode")
-	ErrInvalidActivityModerationStatus = errors.New("invalid activity moderation status")
-	ErrInvalidCategorySlug             = errors.New("invalid category slug")
-	ErrInvalidLanguageCode             = errors.New("invalid language code")
-	ErrInvalidTimezone                 = errors.New("invalid timezone")
-	ErrInvalidActivityTimeRange        = errors.New("invalid activity time range")
-	ErrInvalidRegistrationDeadline     = errors.New("invalid registration deadline")
-	ErrActivityTooSoon                 = errors.New("activity start time must be at least 1 hour from now")
-	ErrActivityStartTooFar             = errors.New("activity start time must be within the allowed planning window")
-	ErrActivityDurationTooLong         = errors.New("activity duration cannot exceed 1 month")
-	ErrInvalidCapacityType             = errors.New("invalid capacity type")
-	ErrInvalidCapacity                 = errors.New("invalid capacity")
-	ErrInvalidPriceType                = errors.New("invalid price type")
-	ErrInvalidPrice                    = errors.New("invalid price")
-	ErrInvalidCurrency                 = errors.New("invalid currency")
-	ErrInvalidMeetingURL               = errors.New("invalid meeting url")
-	ErrInvalidOfflineLocation          = errors.New("invalid offline location")
-	ErrInvalidVisibilityPassword       = errors.New("invalid activity visibility password")
-	ErrPriceLocked                     = errors.New("activity price is locked")
-	ErrOnlyAuthorCanDuplicate          = errors.New("only author can duplicate activity")
-	ErrActivityCannotBePublished       = errors.New("activity cannot be published")
-	ErrCriticalFieldsLocked            = errors.New("critical activity fields are locked after publication")
+	ErrInvalidActivityID                 = errors.New("invalid activity id")
+	ErrInvalidHostUserID                 = errors.New("invalid host user id")
+	ErrInvalidActivityTitle              = errors.New("invalid activity title")
+	ErrInvalidActivityDescription        = errors.New("invalid activity description")
+	ErrInvalidActivityFormat             = errors.New("invalid activity format")
+	ErrInvalidActivityStatus             = errors.New("invalid activity status")
+	ErrInvalidActivityVisibility         = errors.New("invalid activity visibility")
+	ErrInvalidActivityJoinMode           = errors.New("invalid activity join mode")
+	ErrInvalidActivityModerationStatus   = errors.New("invalid activity moderation status")
+	ErrInvalidActivityCancellationSource = errors.New("invalid activity cancellation source")
+	ErrInvalidCategorySlug               = errors.New("invalid category slug")
+	ErrInvalidLanguageCode               = errors.New("invalid language code")
+	ErrInvalidTimezone                   = errors.New("invalid timezone")
+	ErrInvalidActivityTimeRange          = errors.New("invalid activity time range")
+	ErrInvalidRegistrationDeadline       = errors.New("invalid registration deadline")
+	ErrActivityTooSoon                   = errors.New("activity start time must be at least 1 hour from now")
+	ErrActivityStartTooFar               = errors.New("activity start time must be within the allowed planning window")
+	ErrActivityDurationTooLong           = errors.New("activity duration cannot exceed 1 month")
+	ErrInvalidCapacityType               = errors.New("invalid capacity type")
+	ErrInvalidCapacity                   = errors.New("invalid capacity")
+	ErrInvalidPriceType                  = errors.New("invalid price type")
+	ErrInvalidPrice                      = errors.New("invalid price")
+	ErrInvalidCurrency                   = errors.New("invalid currency")
+	ErrInvalidMeetingURL                 = errors.New("invalid meeting url")
+	ErrInvalidOfflineLocation            = errors.New("invalid offline location")
+	ErrInvalidVisibilityPassword         = errors.New("invalid activity visibility password")
+	ErrPriceLocked                       = errors.New("activity price is locked")
+	ErrOnlyAuthorCanDuplicate            = errors.New("only author can duplicate activity")
+	ErrActivityCannotBePublished         = errors.New("activity cannot be published")
+	ErrCriticalFieldsLocked              = errors.New("critical activity fields are locked after publication")
 )
 
 const maxLimitedActivityParticipants = 100
@@ -90,6 +91,8 @@ type Activity struct {
 	VisibilityPasswordHash *string
 
 	CancellationReason *string
+	CancellationSource *enum.ActivityCancellationSource
+	CancelledByUserID  *uuid.UUID
 	CancelledAt        *time.Time
 	StartedAt          *time.Time
 	CompletedAt        *time.Time
@@ -232,6 +235,9 @@ func (a *Activity) Validate(now time.Time, skipStartTimeCheck bool, skipDuration
 	}
 	if !a.ModerationStatus.IsValid() {
 		return ErrInvalidActivityModerationStatus
+	}
+	if a.CancellationSource != nil && !a.CancellationSource.IsValid() {
+		return ErrInvalidActivityCancellationSource
 	}
 	if strings.TrimSpace(a.CategorySlug) == "" {
 		return ErrInvalidCategorySlug
@@ -468,6 +474,8 @@ func (a *Activity) Publish(now time.Time, reviewRequired bool) error {
 	}
 
 	a.CancellationReason = nil
+	a.CancellationSource = nil
+	a.CancelledByUserID = nil
 	a.CancelledAt = nil
 	a.StartedAt = nil
 	a.CompletedAt = nil
