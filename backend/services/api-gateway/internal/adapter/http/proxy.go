@@ -24,6 +24,7 @@ type ProxyHandler struct {
 	chatProxy        *httputil.ReverseProxy
 	referenceProxy   *httputil.ReverseProxy
 	attractionProxy  *httputil.ReverseProxy
+	paymentProxy     *httputil.ReverseProxy
 }
 
 func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHandler, error) {
@@ -72,6 +73,11 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
+	paymentProxy, err := newSingleHostProxy("payment", cfg.Downstreams.PaymentService)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ProxyHandler{
 		cfg:              cfg,
 		readiness:        readiness,
@@ -84,6 +90,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		chatProxy:        chatProxy,
 		referenceProxy:   referenceProxy,
 		attractionProxy:  attractionProxy,
+		paymentProxy:     paymentProxy,
 	}, nil
 }
 
@@ -160,6 +167,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.referenceProxy
 	case "attraction":
 		return h.attractionProxy
+	case "payment":
+		return h.paymentProxy
 	default:
 		return nil
 	}

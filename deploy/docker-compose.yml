@@ -812,6 +812,51 @@ services:
       - flyfy-network
 
   # ============================================
+  # Payment PostgreSQL
+  # ============================================
+  payment-postgres:
+    image: postgres:17-alpine
+    container_name: payment-postgres
+    environment:
+      POSTGRES_DB: payment_service_db
+      POSTGRES_USER: payment_service
+      POSTGRES_PASSWORD: payment_secret_dev
+    ports:
+      - "5442:5432"
+    volumes:
+      - payment_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/010_payment_service.sh:/docker-entrypoint-initdb.d/010_payment_service.sh
+      - ../backend/services/payment-service/migrations:/migrations/payment-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_service -d payment_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  payment-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: payment-postgres-migrator
+    environment:
+      PGHOST: payment-postgres
+      PGPORT: 5432
+      POSTGRES_DB: payment_service_db
+      POSTGRES_USER: payment_service
+      POSTGRES_PASSWORD: payment_secret_dev
+    volumes:
+      - ./init-scripts/010_payment_service_migrate.sh:/usr/local/bin/010_payment_service_migrate.sh:ro
+      - ../backend/services/payment-service/migrations:/migrations/payment-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/010_payment_service_migrate.sh"]
+    depends_on:
+      payment-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Attraction Service
   # ============================================
   attraction-service:
@@ -856,6 +901,55 @@ services:
       REQUEST_ID_HEADER: X-Request-Id
 
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Payment Service
+  # ============================================
+  payment-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/payment-service/Dockerfile
+    container_name: payment-service
+    depends_on:
+      payment-postgres:
+        condition: service_healthy
+      payment-postgres-migrator:
+        condition: service_completed_successfully
+    ports:
+      - "8091:8091"
+    environment:
+      APP_NAME: payment-service
+      APP_ENV: development
+
+      HTTP_PORT: 8091
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 15s
+      HTTP_IDLE_TIMEOUT: 60s
+
+      POSTGRES_HOST: payment-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: payment_service
+      POSTGRES_PASSWORD: payment_secret_dev
+      POSTGRES_DB: payment_service_db
+      POSTGRES_SSLMODE: disable
+      POSTGRES_MAX_OPEN_CONNS: 20
+      POSTGRES_MIN_OPEN_CONNS: 2
+      POSTGRES_MAX_CONN_LIFETIME: 1h
+      POSTGRES_MAX_CONN_IDLE_TIME: 30m
+
+      LOG_LEVEL: info
+      PAYMENT_PROVIDER: mock
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      REQUIRE_AUTHENTICATED_REQUESTS: "true"
+      REQUIRE_AUTHENTICATED_WRITES: "true"
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -911,6 +1005,8 @@ services:
         condition: service_started
       attraction-service:
         condition: service_started
+      payment-service:
+        condition: service_started
       redis:
         condition: service_healthy
     ports:
@@ -941,6 +1037,7 @@ services:
       CHAT_SERVICE_HTTP_URL: http://chat-service:8088
       REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
       ATTRACTION_SERVICE_HTTP_URL: http://attraction-service:8090
+      PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
 
       REDIS_ADDR: redis:6379
       REDIS_CACHE_DB: 3
@@ -981,4 +1078,5 @@ volumes:
   chat_postgres_data:
   nats_data:
   attraction_postgres_data:
+  payment_postgres_data:
   token_service_keys:

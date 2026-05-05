@@ -34,6 +34,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	storiesLimit := 180
 	attractionLimit := 180
 	chatLimit := 300
+	paymentLimit := 180
 
 	return []RoutePolicy{
 		{
@@ -121,6 +122,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "activity",
 			RateLimitPerMinute: &activityLimit,
 			RewritePrefix:      "/v1/activities",
+		},
+		{
+			Name:               "payments",
+			Prefix:             apiPrefix + "/payments",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "payment",
+			RateLimitPerMinute: &paymentLimit,
+			RewritePrefix:      "/v1/payments",
 		},
 		{
 			Name:               "public-stories",

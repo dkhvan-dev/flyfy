@@ -40,6 +40,7 @@ func main() {
 			"user-service":         httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.UserService+"/health", 2*time.Second),
 			"guide-service":        httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.GuideService+"/health", 2*time.Second),
 			"file-manager-service": httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.FileManagerService+"/health", 2*time.Second),
+			"payment-service":      httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.PaymentService+"/health", 2*time.Second),
 		},
 		2*time.Second,
 	)
