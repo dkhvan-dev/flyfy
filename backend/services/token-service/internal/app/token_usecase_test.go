@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/go-jose/go-jose/v4"
 	"github.com/google/uuid"
@@ -13,6 +15,7 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/config"
 	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/port"
 )
 
 // --- Mock implementations ---
@@ -133,12 +136,184 @@ func (m *mockAuditLogger) LogServiceAuth(_ context.Context, callerID, action, re
 	m.events = append(m.events, callerID+":"+action+":"+result)
 }
 
+// --- Session port mocks ---
+
+type mockSessionStore struct {
+	mu      sync.Mutex
+	byID    map[uuid.UUID]*model.UserSession
+	history map[string]uuid.UUID
+}
+
+func newMockSessionStore() *mockSessionStore {
+	return &mockSessionStore{
+		byID:    make(map[uuid.UUID]*model.UserSession),
+		history: make(map[string]uuid.UUID),
+	}
+}
+
+func (m *mockSessionStore) CreateActive(_ context.Context, sess *model.UserSession, reason string) (*model.UserSession, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var replaced *model.UserSession
+	for _, s := range m.byID {
+		if s.UserID == sess.UserID && s.RevokedAt == nil {
+			now := time.Now()
+			s.RevokedAt = &now
+			s.RevokeReason = reason
+			cp := *s
+			replaced = &cp
+		}
+	}
+	cp := *sess
+	m.byID[sess.ID] = &cp
+	return replaced, nil
+}
+
+func (m *mockSessionStore) GetByID(_ context.Context, id uuid.UUID) (*model.UserSession, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.byID[id]
+	if !ok {
+		return nil, model.ErrSessionNotFound
+	}
+	cp := *s
+	return &cp, nil
+}
+
+func (m *mockSessionStore) GetActiveByUserID(_ context.Context, userID uuid.UUID) (*model.UserSession, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, s := range m.byID {
+		if s.UserID == userID && s.RevokedAt == nil {
+			cp := *s
+			return &cp, nil
+		}
+	}
+	return nil, model.ErrSessionNotFound
+}
+
+func (m *mockSessionStore) GetActiveByRefreshJTI(_ context.Context, jti string) (*model.UserSession, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, s := range m.byID {
+		if s.RefreshJTI == jti && s.RevokedAt == nil {
+			cp := *s
+			return &cp, nil
+		}
+	}
+	return nil, model.ErrSessionNotFound
+}
+
+func (m *mockSessionStore) RotateRefresh(_ context.Context, sessionID uuid.UUID, prev port.RotatePrev, next port.RotateNext) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.byID[sessionID]
+	if !ok || s.RevokedAt != nil || s.RefreshJTI != prev.RefreshJTI {
+		return model.ErrSessionNotFound
+	}
+	m.history[prev.RefreshJTI] = sessionID
+	s.RefreshJTI = next.RefreshJTI
+	s.RefreshTokenHash = next.RefreshTokenHash
+	s.RefreshIssuedAt = next.IssuedAt
+	s.RefreshExpiresAt = next.ExpiresAt
+	s.LastRefreshedAt = &next.RotatedAt
+	s.LastUsedAt = next.RotatedAt
+	return nil
+}
+
+func (m *mockSessionStore) Revoke(_ context.Context, id uuid.UUID, reason string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.byID[id]
+	if !ok || s.RevokedAt != nil {
+		return nil
+	}
+	now := time.Now()
+	s.RevokedAt = &now
+	s.RevokeReason = reason
+	return nil
+}
+
+func (m *mockSessionStore) RevokeAllForUser(_ context.Context, userID uuid.UUID, reason string) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	n := 0
+	for _, s := range m.byID {
+		if s.UserID == userID && s.RevokedAt == nil {
+			now := time.Now()
+			s.RevokedAt = &now
+			s.RevokeReason = reason
+			n++
+		}
+	}
+	return n, nil
+}
+
+func (m *mockSessionStore) TouchLastUsed(_ context.Context, id uuid.UUID, at time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if s, ok := m.byID[id]; ok && s.RevokedAt == nil {
+		s.LastUsedAt = at
+	}
+	return nil
+}
+
+func (m *mockSessionStore) FindHistoricalRefreshJTI(_ context.Context, jti string) (uuid.UUID, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	id, ok := m.history[jti]
+	return id, ok, nil
+}
+
+func (m *mockSessionStore) ListByUserID(_ context.Context, userID uuid.UUID, _ int) ([]*model.UserSession, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []*model.UserSession
+	for _, s := range m.byID {
+		if s.UserID == userID {
+			cp := *s
+			out = append(out, &cp)
+		}
+	}
+	return out, nil
+}
+
+type mockRevokedSessionCache struct {
+	mu      sync.Mutex
+	revoked map[uuid.UUID]bool
+}
+
+func newMockRevokedSessionCache() *mockRevokedSessionCache {
+	return &mockRevokedSessionCache{revoked: make(map[uuid.UUID]bool)}
+}
+
+func (m *mockRevokedSessionCache) MarkRevoked(_ context.Context, id uuid.UUID, _ time.Duration) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.revoked[id] = true
+	return nil
+}
+
+func (m *mockRevokedSessionCache) IsRevoked(_ context.Context, id uuid.UUID) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.revoked[id], nil
+}
+
+type mockSessionAuditLogger struct{}
+
+func (m *mockSessionAuditLogger) LogSessionEvent(_ context.Context, _ uuid.UUID, _ *uuid.UUID, _ string, _, _ string, _ map[string]string) {
+}
+
 // --- Test setup ---
 
 func setupUseCase(t *testing.T) (*app.TokenUseCase, *mockKeyStore, *mockRevocationStore, *mockAuditLogger) {
 	t.Helper()
 	keyStore := newMockKeyStore(t)
 	revStore := newMockRevocationStore()
+	sessionStore := newMockSessionStore()
+	revSessionCache := newMockRevokedSessionCache()
+	sessionAudit := &mockSessionAuditLogger{}
 	svcStore := newMockServiceAccountStore()
 	pwVerifier := &mockPasswordVerifier{}
 	audit := &mockAuditLogger{}
@@ -152,8 +327,13 @@ func setupUseCase(t *testing.T) (*app.TokenUseCase, *mockKeyStore, *mockRevocati
 		RSAKeySize:      2048,
 		MaxKeysInJWKS:   3,
 	}
+	sessionCfg := config.SessionConfig{
+		InactivityTTL:         365 * 24 * time.Hour,
+		EnforceSingle:         true,
+		RevokedCacheTTLBuffer: 10 * time.Minute,
+	}
 
-	uc := app.NewTokenUseCase(cfg, keyStore, revStore, svcStore, pwVerifier, audit, logger)
+	uc := app.NewTokenUseCase(cfg, sessionCfg, keyStore, revStore, sessionStore, revSessionCache, sessionAudit, svcStore, pwVerifier, audit, logger)
 	return uc, keyStore, revStore, audit
 }
 
@@ -168,7 +348,7 @@ func TestGenerateUserTokens(t *testing.T) {
 		Type:        model.TokenTypeUser,
 		Role:        model.RoleTourist,
 		Permissions: []string{"profile:read", "activities:join"},
-	})
+	}, model.DeviceInfo{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -198,7 +378,7 @@ func TestValidateAccessToken(t *testing.T) {
 		Type:        model.TokenTypeUser,
 		Role:        model.RoleGuide,
 		Permissions: []string{"guide:manage"},
-	})
+	}, model.DeviceInfo{})
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -228,7 +408,7 @@ func TestValidateAccessToken_RejectsRefreshToken(t *testing.T) {
 		UserID: uuid.New(),
 		Type:   model.TokenTypeUser,
 		Role:   model.RoleTourist,
-	})
+	}, model.DeviceInfo{})
 
 	// Try to validate refresh token as access token — should fail
 	_, err := uc.ValidateAccessToken(ctx, pair.RefreshToken)
@@ -246,7 +426,7 @@ func TestRevokeToken(t *testing.T) {
 		UserID: userID,
 		Type:   model.TokenTypeUser,
 		Role:   model.RoleTourist,
-	})
+	}, model.DeviceInfo{})
 
 	// Validate first — should work
 	claims, err := uc.ValidateAccessToken(ctx, pair.AccessToken)
@@ -376,7 +556,7 @@ func TestKeyRotation(t *testing.T) {
 		UserID: uuid.New(),
 		Type:   model.TokenTypeUser,
 		Role:   model.RoleTourist,
-	})
+	}, model.DeviceInfo{})
 
 	_, err := uc.ValidateAccessToken(ctx, pair.AccessToken)
 	if err != nil {

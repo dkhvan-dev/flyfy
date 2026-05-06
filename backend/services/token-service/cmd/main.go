@@ -92,12 +92,19 @@ func main() {
 		logger.Warn().Msg("using in-memory key store; JWT sessions will be invalidated on service restart")
 	}
 	revStore := repository.NewRedisRevocationStore(rdb)
+	revSessionCache := repository.NewRedisRevokedSessionCache(rdb)
+	sessionStore := repository.NewPgSessionStore(pgPool)
+	sessionAudit := repository.NewPgSessionAuditLogger(pgPool, logger)
 	svcStore := repository.NewPgServiceAccountStore(pgPool)
 	passwordVerifier := crypto.NewBcryptVerifier(0) // 0 = use DefaultCost (12)
 	audit := repository.NewZerologAuditLogger(logger)
 
 	// --- Application (use cases) ---
-	tokenUC := app.NewTokenUseCase(cfg.JWT, keyStore, revStore, svcStore, passwordVerifier, audit, logger)
+	tokenUC := app.NewTokenUseCase(
+		cfg.JWT, cfg.Session,
+		keyStore, revStore, sessionStore, revSessionCache, sessionAudit,
+		svcStore, passwordVerifier, audit, logger,
+	)
 
 	// --- Ensure initial key ---
 	scheduler := app.NewKeyRotationScheduler(tokenUC, cfg.JWT, logger)
@@ -109,20 +116,23 @@ func main() {
 	go scheduler.Start(ctx)
 
 	// --- gRPC Server ---
-	grpcHandler := handler.NewTokenGRPCHandler(tokenUC, tokenUC, tokenUC, tokenUC, logger)
+	grpcHandler := handler.NewTokenGRPCHandler(tokenUC, tokenUC, tokenUC, tokenUC, tokenUC, tokenUC, logger)
 
 	// Define method permissions for S2S auth interceptor
 	// Methods listed here require service token + specified roles.
 	// AuthenticateService is intentionally NOT protected (it's the login endpoint for services).
 	methodPerms := interceptor.MethodPermissions{
 		// These methods require service auth + specific roles
-		"/token.v1.TokenService/GenerateUserTokens":   {"token:generate"},
-		"/token.v1.TokenService/ValidateAccessToken":  {"token:validate"},
-		"/token.v1.TokenService/ValidateRefreshToken": {"token:validate"},
-		"/token.v1.TokenService/RefreshTokens":        {"token:generate", "token:validate"},
-		"/token.v1.TokenService/RevokeToken":          {"token:revoke"},
-		"/token.v1.TokenService/ValidateServiceToken": {"token:validate"},
-		"/token.v1.TokenService/GenerateServiceToken": {"token:generate"},
+		"/token.v1.TokenService/GenerateUserTokens":    {"token:generate"},
+		"/token.v1.TokenService/ValidateAccessToken":   {"token:validate"},
+		"/token.v1.TokenService/ValidateRefreshToken":  {"token:validate"},
+		"/token.v1.TokenService/RefreshTokens":         {"token:generate", "token:validate"},
+		"/token.v1.TokenService/RevokeToken":           {"token:revoke"},
+		"/token.v1.TokenService/ListUserSessions":      {"token:revoke"},
+		"/token.v1.TokenService/RevokeSession":         {"token:revoke"},
+		"/token.v1.TokenService/RevokeAllUserSessions": {"token:revoke"},
+		"/token.v1.TokenService/ValidateServiceToken":  {"token:validate"},
+		"/token.v1.TokenService/GenerateServiceToken":  {"token:generate"},
 		// AuthenticateService is NOT in this map → public (no service token required)
 	}
 

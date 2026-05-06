@@ -22,18 +22,113 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// DeviceInfo describes the client device that owns a session.
+// All fields are optional; the server will store whatever is provided.
+type DeviceInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"` // stable id provided by the client (install uuid)
+	Platform      string                 `protobuf:"bytes,2,opt,name=platform,proto3" json:"platform,omitempty"`                 // "ios" | "android" | "web"
+	OsVersion     string                 `protobuf:"bytes,3,opt,name=os_version,json=osVersion,proto3" json:"os_version,omitempty"`
+	AppVersion    string                 `protobuf:"bytes,4,opt,name=app_version,json=appVersion,proto3" json:"app_version,omitempty"`
+	Model         string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
+	UserAgent     string                 `protobuf:"bytes,6,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	IpAddress     string                 `protobuf:"bytes,7,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeviceInfo) Reset() {
+	*x = DeviceInfo{}
+	mi := &file_token_token_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeviceInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeviceInfo) ProtoMessage() {}
+
+func (x *DeviceInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeviceInfo.ProtoReflect.Descriptor instead.
+func (*DeviceInfo) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *DeviceInfo) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+func (x *DeviceInfo) GetPlatform() string {
+	if x != nil {
+		return x.Platform
+	}
+	return ""
+}
+
+func (x *DeviceInfo) GetOsVersion() string {
+	if x != nil {
+		return x.OsVersion
+	}
+	return ""
+}
+
+func (x *DeviceInfo) GetAppVersion() string {
+	if x != nil {
+		return x.AppVersion
+	}
+	return ""
+}
+
+func (x *DeviceInfo) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *DeviceInfo) GetUserAgent() string {
+	if x != nil {
+		return x.UserAgent
+	}
+	return ""
+}
+
+func (x *DeviceInfo) GetIpAddress() string {
+	if x != nil {
+		return x.IpAddress
+	}
+	return ""
+}
+
 type GenerateUserTokensRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"` // "tourist", "guide", "agency", "admin"
 	Permissions   []string               `protobuf:"bytes,3,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	Device        *DeviceInfo            `protobuf:"bytes,4,opt,name=device,proto3" json:"device,omitempty"` // optional but recommended; drives session metadata
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GenerateUserTokensRequest) Reset() {
 	*x = GenerateUserTokensRequest{}
-	mi := &file_token_token_proto_msgTypes[0]
+	mi := &file_token_token_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +140,7 @@ func (x *GenerateUserTokensRequest) String() string {
 func (*GenerateUserTokensRequest) ProtoMessage() {}
 
 func (x *GenerateUserTokensRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[0]
+	mi := &file_token_token_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +153,7 @@ func (x *GenerateUserTokensRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateUserTokensRequest.ProtoReflect.Descriptor instead.
 func (*GenerateUserTokensRequest) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{0}
+	return file_token_token_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GenerateUserTokensRequest) GetUserId() string {
@@ -82,6 +177,13 @@ func (x *GenerateUserTokensRequest) GetPermissions() []string {
 	return nil
 }
 
+func (x *GenerateUserTokensRequest) GetDevice() *DeviceInfo {
+	if x != nil {
+		return x.Device
+	}
+	return nil
+}
+
 type ValidateTokenRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
@@ -91,7 +193,7 @@ type ValidateTokenRequest struct {
 
 func (x *ValidateTokenRequest) Reset() {
 	*x = ValidateTokenRequest{}
-	mi := &file_token_token_proto_msgTypes[1]
+	mi := &file_token_token_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -103,7 +205,7 @@ func (x *ValidateTokenRequest) String() string {
 func (*ValidateTokenRequest) ProtoMessage() {}
 
 func (x *ValidateTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[1]
+	mi := &file_token_token_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -116,7 +218,7 @@ func (x *ValidateTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateTokenRequest.ProtoReflect.Descriptor instead.
 func (*ValidateTokenRequest) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{1}
+	return file_token_token_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ValidateTokenRequest) GetToken() string {
@@ -129,13 +231,14 @@ func (x *ValidateTokenRequest) GetToken() string {
 type RefreshTokensRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	Device        *DeviceInfo            `protobuf:"bytes,2,opt,name=device,proto3" json:"device,omitempty"` // optional; updates session device metadata on rotate
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RefreshTokensRequest) Reset() {
 	*x = RefreshTokensRequest{}
-	mi := &file_token_token_proto_msgTypes[2]
+	mi := &file_token_token_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -147,7 +250,7 @@ func (x *RefreshTokensRequest) String() string {
 func (*RefreshTokensRequest) ProtoMessage() {}
 
 func (x *RefreshTokensRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[2]
+	mi := &file_token_token_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -160,7 +263,7 @@ func (x *RefreshTokensRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTokensRequest.ProtoReflect.Descriptor instead.
 func (*RefreshTokensRequest) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{2}
+	return file_token_token_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RefreshTokensRequest) GetRefreshToken() string {
@@ -168,6 +271,13 @@ func (x *RefreshTokensRequest) GetRefreshToken() string {
 		return x.RefreshToken
 	}
 	return ""
+}
+
+func (x *RefreshTokensRequest) GetDevice() *DeviceInfo {
+	if x != nil {
+		return x.Device
+	}
+	return nil
 }
 
 type RevokeTokenRequest struct {
@@ -181,7 +291,7 @@ type RevokeTokenRequest struct {
 
 func (x *RevokeTokenRequest) Reset() {
 	*x = RevokeTokenRequest{}
-	mi := &file_token_token_proto_msgTypes[3]
+	mi := &file_token_token_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +303,7 @@ func (x *RevokeTokenRequest) String() string {
 func (*RevokeTokenRequest) ProtoMessage() {}
 
 func (x *RevokeTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[3]
+	mi := &file_token_token_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +316,7 @@ func (x *RevokeTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeTokenRequest.ProtoReflect.Descriptor instead.
 func (*RevokeTokenRequest) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{3}
+	return file_token_token_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RevokeTokenRequest) GetJti() string {
@@ -240,7 +350,7 @@ type AuthenticateServiceRequest struct {
 
 func (x *AuthenticateServiceRequest) Reset() {
 	*x = AuthenticateServiceRequest{}
-	mi := &file_token_token_proto_msgTypes[4]
+	mi := &file_token_token_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -252,7 +362,7 @@ func (x *AuthenticateServiceRequest) String() string {
 func (*AuthenticateServiceRequest) ProtoMessage() {}
 
 func (x *AuthenticateServiceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[4]
+	mi := &file_token_token_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -265,7 +375,7 @@ func (x *AuthenticateServiceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthenticateServiceRequest.ProtoReflect.Descriptor instead.
 func (*AuthenticateServiceRequest) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{4}
+	return file_token_token_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *AuthenticateServiceRequest) GetServiceId() string {
@@ -292,7 +402,7 @@ type GenerateServiceTokenRequest struct {
 
 func (x *GenerateServiceTokenRequest) Reset() {
 	*x = GenerateServiceTokenRequest{}
-	mi := &file_token_token_proto_msgTypes[5]
+	mi := &file_token_token_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -304,7 +414,7 @@ func (x *GenerateServiceTokenRequest) String() string {
 func (*GenerateServiceTokenRequest) ProtoMessage() {}
 
 func (x *GenerateServiceTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[5]
+	mi := &file_token_token_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -317,7 +427,7 @@ func (x *GenerateServiceTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateServiceTokenRequest.ProtoReflect.Descriptor instead.
 func (*GenerateServiceTokenRequest) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{5}
+	return file_token_token_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GenerateServiceTokenRequest) GetServiceId() string {
@@ -334,19 +444,169 @@ func (x *GenerateServiceTokenRequest) GetRoles() []string {
 	return nil
 }
 
-type TokenPairResponse struct {
+type ListUserSessionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	RefreshToken  string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
-	TokenType     string                 `protobuf:"bytes,3,opt,name=token_type,json=tokenType,proto3" json:"token_type,omitempty"` // "Bearer"
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *ListUserSessionsRequest) Reset() {
+	*x = ListUserSessionsRequest{}
+	mi := &file_token_token_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUserSessionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUserSessionsRequest) ProtoMessage() {}
+
+func (x *ListUserSessionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUserSessionsRequest.ProtoReflect.Descriptor instead.
+func (*ListUserSessionsRequest) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListUserSessionsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type RevokeSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeSessionRequest) Reset() {
+	*x = RevokeSessionRequest{}
+	mi := &file_token_token_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeSessionRequest) ProtoMessage() {}
+
+func (x *RevokeSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeSessionRequest.ProtoReflect.Descriptor instead.
+func (*RevokeSessionRequest) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *RevokeSessionRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *RevokeSessionRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type RevokeAllUserSessionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAllUserSessionsRequest) Reset() {
+	*x = RevokeAllUserSessionsRequest{}
+	mi := &file_token_token_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAllUserSessionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAllUserSessionsRequest) ProtoMessage() {}
+
+func (x *RevokeAllUserSessionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAllUserSessionsRequest.ProtoReflect.Descriptor instead.
+func (*RevokeAllUserSessionsRequest) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *RevokeAllUserSessionsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *RevokeAllUserSessionsRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type TokenPairResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken      string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	RefreshToken     string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	TokenType        string                 `protobuf:"bytes,3,opt,name=token_type,json=tokenType,proto3" json:"token_type,omitempty"`                        // "Bearer"
+	ExpiresAt        *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`                        // access expiry
+	RefreshExpiresAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=refresh_expires_at,json=refreshExpiresAt,proto3" json:"refresh_expires_at,omitempty"` // refresh expiry
+	SessionId        string                 `protobuf:"bytes,6,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
 func (x *TokenPairResponse) Reset() {
 	*x = TokenPairResponse{}
-	mi := &file_token_token_proto_msgTypes[6]
+	mi := &file_token_token_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -358,7 +618,7 @@ func (x *TokenPairResponse) String() string {
 func (*TokenPairResponse) ProtoMessage() {}
 
 func (x *TokenPairResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[6]
+	mi := &file_token_token_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -371,7 +631,7 @@ func (x *TokenPairResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TokenPairResponse.ProtoReflect.Descriptor instead.
 func (*TokenPairResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{6}
+	return file_token_token_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *TokenPairResponse) GetAccessToken() string {
@@ -402,6 +662,20 @@ func (x *TokenPairResponse) GetExpiresAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *TokenPairResponse) GetRefreshExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RefreshExpiresAt
+	}
+	return nil
+}
+
+func (x *TokenPairResponse) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
 type ServiceTokenResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
@@ -412,7 +686,7 @@ type ServiceTokenResponse struct {
 
 func (x *ServiceTokenResponse) Reset() {
 	*x = ServiceTokenResponse{}
-	mi := &file_token_token_proto_msgTypes[7]
+	mi := &file_token_token_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -424,7 +698,7 @@ func (x *ServiceTokenResponse) String() string {
 func (*ServiceTokenResponse) ProtoMessage() {}
 
 func (x *ServiceTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[7]
+	mi := &file_token_token_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -437,7 +711,7 @@ func (x *ServiceTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceTokenResponse.ProtoReflect.Descriptor instead.
 func (*ServiceTokenResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{7}
+	return file_token_token_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ServiceTokenResponse) GetToken() string {
@@ -466,13 +740,14 @@ type ValidatedClaimsResponse struct {
 	IssuedAt      *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
 	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	UserId        string                 `protobuf:"bytes,10,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,11,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ValidatedClaimsResponse) Reset() {
 	*x = ValidatedClaimsResponse{}
-	mi := &file_token_token_proto_msgTypes[8]
+	mi := &file_token_token_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -484,7 +759,7 @@ func (x *ValidatedClaimsResponse) String() string {
 func (*ValidatedClaimsResponse) ProtoMessage() {}
 
 func (x *ValidatedClaimsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[8]
+	mi := &file_token_token_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -497,7 +772,7 @@ func (x *ValidatedClaimsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatedClaimsResponse.ProtoReflect.Descriptor instead.
 func (*ValidatedClaimsResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{8}
+	return file_token_token_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ValidatedClaimsResponse) GetValid() bool {
@@ -570,6 +845,13 @@ func (x *ValidatedClaimsResponse) GetUserId() string {
 	return ""
 }
 
+func (x *ValidatedClaimsResponse) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
 type RevokeTokenResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Revoked       bool                   `protobuf:"varint,1,opt,name=revoked,proto3" json:"revoked,omitempty"`
@@ -579,7 +861,7 @@ type RevokeTokenResponse struct {
 
 func (x *RevokeTokenResponse) Reset() {
 	*x = RevokeTokenResponse{}
-	mi := &file_token_token_proto_msgTypes[9]
+	mi := &file_token_token_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -591,7 +873,7 @@ func (x *RevokeTokenResponse) String() string {
 func (*RevokeTokenResponse) ProtoMessage() {}
 
 func (x *RevokeTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_token_token_proto_msgTypes[9]
+	mi := &file_token_token_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -604,7 +886,7 @@ func (x *RevokeTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeTokenResponse.ProtoReflect.Descriptor instead.
 func (*RevokeTokenResponse) Descriptor() ([]byte, []int) {
-	return file_token_token_proto_rawDescGZIP(), []int{9}
+	return file_token_token_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *RevokeTokenResponse) GetRevoked() bool {
@@ -614,19 +896,266 @@ func (x *RevokeTokenResponse) GetRevoked() bool {
 	return false
 }
 
+type UserSessionInfo struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	SessionId        string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	UserId           string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Device           *DeviceInfo            `protobuf:"bytes,3,opt,name=device,proto3" json:"device,omitempty"`
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastUsedAt       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=last_used_at,json=lastUsedAt,proto3" json:"last_used_at,omitempty"`
+	LastRefreshedAt  *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_refreshed_at,json=lastRefreshedAt,proto3" json:"last_refreshed_at,omitempty"`
+	RefreshExpiresAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=refresh_expires_at,json=refreshExpiresAt,proto3" json:"refresh_expires_at,omitempty"`
+	IsCurrent        bool                   `protobuf:"varint,8,opt,name=is_current,json=isCurrent,proto3" json:"is_current,omitempty"` // for future use (set when caller's sid matches)
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *UserSessionInfo) Reset() {
+	*x = UserSessionInfo{}
+	mi := &file_token_token_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserSessionInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserSessionInfo) ProtoMessage() {}
+
+func (x *UserSessionInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserSessionInfo.ProtoReflect.Descriptor instead.
+func (*UserSessionInfo) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *UserSessionInfo) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *UserSessionInfo) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UserSessionInfo) GetDevice() *DeviceInfo {
+	if x != nil {
+		return x.Device
+	}
+	return nil
+}
+
+func (x *UserSessionInfo) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *UserSessionInfo) GetLastUsedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastUsedAt
+	}
+	return nil
+}
+
+func (x *UserSessionInfo) GetLastRefreshedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastRefreshedAt
+	}
+	return nil
+}
+
+func (x *UserSessionInfo) GetRefreshExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RefreshExpiresAt
+	}
+	return nil
+}
+
+func (x *UserSessionInfo) GetIsCurrent() bool {
+	if x != nil {
+		return x.IsCurrent
+	}
+	return false
+}
+
+type ListUserSessionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sessions      []*UserSessionInfo     `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListUserSessionsResponse) Reset() {
+	*x = ListUserSessionsResponse{}
+	mi := &file_token_token_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUserSessionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUserSessionsResponse) ProtoMessage() {}
+
+func (x *ListUserSessionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUserSessionsResponse.ProtoReflect.Descriptor instead.
+func (*ListUserSessionsResponse) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListUserSessionsResponse) GetSessions() []*UserSessionInfo {
+	if x != nil {
+		return x.Sessions
+	}
+	return nil
+}
+
+type RevokeSessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Revoked       bool                   `protobuf:"varint,1,opt,name=revoked,proto3" json:"revoked,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeSessionResponse) Reset() {
+	*x = RevokeSessionResponse{}
+	mi := &file_token_token_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeSessionResponse) ProtoMessage() {}
+
+func (x *RevokeSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeSessionResponse.ProtoReflect.Descriptor instead.
+func (*RevokeSessionResponse) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *RevokeSessionResponse) GetRevoked() bool {
+	if x != nil {
+		return x.Revoked
+	}
+	return false
+}
+
+type RevokeAllUserSessionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RevokedCount  int32                  `protobuf:"varint,1,opt,name=revoked_count,json=revokedCount,proto3" json:"revoked_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAllUserSessionsResponse) Reset() {
+	*x = RevokeAllUserSessionsResponse{}
+	mi := &file_token_token_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAllUserSessionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAllUserSessionsResponse) ProtoMessage() {}
+
+func (x *RevokeAllUserSessionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_token_token_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAllUserSessionsResponse.ProtoReflect.Descriptor instead.
+func (*RevokeAllUserSessionsResponse) Descriptor() ([]byte, []int) {
+	return file_token_token_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *RevokeAllUserSessionsResponse) GetRevokedCount() int32 {
+	if x != nil {
+		return x.RevokedCount
+	}
+	return 0
+}
+
 var File_token_token_proto protoreflect.FileDescriptor
 
 const file_token_token_proto_rawDesc = "" +
 	"\n" +
-	"\x11token/token.proto\x12\btoken.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"j\n" +
+	"\x11token/token.proto\x12\btoken.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd9\x01\n" +
+	"\n" +
+	"DeviceInfo\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x1a\n" +
+	"\bplatform\x18\x02 \x01(\tR\bplatform\x12\x1d\n" +
+	"\n" +
+	"os_version\x18\x03 \x01(\tR\tosVersion\x12\x1f\n" +
+	"\vapp_version\x18\x04 \x01(\tR\n" +
+	"appVersion\x12\x14\n" +
+	"\x05model\x18\x05 \x01(\tR\x05model\x12\x1d\n" +
+	"\n" +
+	"user_agent\x18\x06 \x01(\tR\tuserAgent\x12\x1d\n" +
+	"\n" +
+	"ip_address\x18\a \x01(\tR\tipAddress\"\x98\x01\n" +
 	"\x19GenerateUserTokensRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\x12 \n" +
-	"\vpermissions\x18\x03 \x03(\tR\vpermissions\",\n" +
+	"\vpermissions\x18\x03 \x03(\tR\vpermissions\x12,\n" +
+	"\x06device\x18\x04 \x01(\v2\x14.token.v1.DeviceInfoR\x06device\",\n" +
 	"\x14ValidateTokenRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\";\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"i\n" +
 	"\x14RefreshTokensRequest\x12#\n" +
-	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"P\n" +
+	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\x12,\n" +
+	"\x06device\x18\x02 \x01(\v2\x14.token.v1.DeviceInfoR\x06device\"P\n" +
 	"\x12RevokeTokenRequest\x12\x10\n" +
 	"\x03jti\x18\x01 \x01(\tR\x03jti\x12\x10\n" +
 	"\x03exp\x18\x02 \x01(\x03R\x03exp\x12\x16\n" +
@@ -638,18 +1167,30 @@ const file_token_token_proto_rawDesc = "" +
 	"\x1bGenerateServiceTokenRequest\x12\x1d\n" +
 	"\n" +
 	"service_id\x18\x01 \x01(\tR\tserviceId\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xb5\x01\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\"2\n" +
+	"\x17ListUserSessionsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"M\n" +
+	"\x14RevokeSessionRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"O\n" +
+	"\x1cRevokeAllUserSessionsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"\x9e\x02\n" +
 	"\x11TokenPairResponse\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x12\x1d\n" +
 	"\n" +
 	"token_type\x18\x03 \x01(\tR\ttokenType\x129\n" +
 	"\n" +
-	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"g\n" +
+	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12H\n" +
+	"\x12refresh_expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x10refreshExpiresAt\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x06 \x01(\tR\tsessionId\"g\n" +
 	"\x14ServiceTokenResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x129\n" +
 	"\n" +
-	"expires_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\xc8\x02\n" +
+	"expires_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\xe7\x02\n" +
 	"\x17ValidatedClaimsResponse\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x18\n" +
 	"\asubject\x18\x02 \x01(\tR\asubject\x12\x12\n" +
@@ -662,15 +1203,39 @@ const file_token_token_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x17\n" +
 	"\auser_id\x18\n" +
-	" \x01(\tR\x06userId\"/\n" +
+	" \x01(\tR\x06userId\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\v \x01(\tR\tsessionId\"/\n" +
 	"\x13RevokeTokenResponse\x12\x18\n" +
-	"\arevoked\x18\x01 \x01(\bR\arevoked2\xcc\x05\n" +
+	"\arevoked\x18\x01 \x01(\bR\arevoked\"\xa1\x03\n" +
+	"\x0fUserSessionInfo\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12,\n" +
+	"\x06device\x18\x03 \x01(\v2\x14.token.v1.DeviceInfoR\x06device\x129\n" +
+	"\n" +
+	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12<\n" +
+	"\flast_used_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"lastUsedAt\x12F\n" +
+	"\x11last_refreshed_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x0flastRefreshedAt\x12H\n" +
+	"\x12refresh_expires_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x10refreshExpiresAt\x12\x1d\n" +
+	"\n" +
+	"is_current\x18\b \x01(\bR\tisCurrent\"Q\n" +
+	"\x18ListUserSessionsResponse\x125\n" +
+	"\bsessions\x18\x01 \x03(\v2\x19.token.v1.UserSessionInfoR\bsessions\"1\n" +
+	"\x15RevokeSessionResponse\x12\x18\n" +
+	"\arevoked\x18\x01 \x01(\bR\arevoked\"D\n" +
+	"\x1dRevokeAllUserSessionsResponse\x12#\n" +
+	"\rrevoked_count\x18\x01 \x01(\x05R\frevokedCount2\xe3\a\n" +
 	"\fTokenService\x12V\n" +
 	"\x12GenerateUserTokens\x12#.token.v1.GenerateUserTokensRequest\x1a\x1b.token.v1.TokenPairResponse\x12X\n" +
 	"\x13ValidateAccessToken\x12\x1e.token.v1.ValidateTokenRequest\x1a!.token.v1.ValidatedClaimsResponse\x12Y\n" +
 	"\x14ValidateRefreshToken\x12\x1e.token.v1.ValidateTokenRequest\x1a!.token.v1.ValidatedClaimsResponse\x12L\n" +
 	"\rRefreshTokens\x12\x1e.token.v1.RefreshTokensRequest\x1a\x1b.token.v1.TokenPairResponse\x12J\n" +
-	"\vRevokeToken\x12\x1c.token.v1.RevokeTokenRequest\x1a\x1d.token.v1.RevokeTokenResponse\x12[\n" +
+	"\vRevokeToken\x12\x1c.token.v1.RevokeTokenRequest\x1a\x1d.token.v1.RevokeTokenResponse\x12Y\n" +
+	"\x10ListUserSessions\x12!.token.v1.ListUserSessionsRequest\x1a\".token.v1.ListUserSessionsResponse\x12P\n" +
+	"\rRevokeSession\x12\x1e.token.v1.RevokeSessionRequest\x1a\x1f.token.v1.RevokeSessionResponse\x12h\n" +
+	"\x15RevokeAllUserSessions\x12&.token.v1.RevokeAllUserSessionsRequest\x1a'.token.v1.RevokeAllUserSessionsResponse\x12[\n" +
 	"\x13AuthenticateService\x12$.token.v1.AuthenticateServiceRequest\x1a\x1e.token.v1.ServiceTokenResponse\x12Y\n" +
 	"\x14ValidateServiceToken\x12\x1e.token.v1.ValidateTokenRequest\x1a!.token.v1.ValidatedClaimsResponse\x12]\n" +
 	"\x14GenerateServiceToken\x12%.token.v1.GenerateServiceTokenRequest\x1a\x1e.token.v1.ServiceTokenResponseB8Z6github.com/dkhvan-dev/flyfy/proto/gen/go/token;tokenpbb\x06proto3"
@@ -687,46 +1252,69 @@ func file_token_token_proto_rawDescGZIP() []byte {
 	return file_token_token_proto_rawDescData
 }
 
-var file_token_token_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_token_token_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_token_token_proto_goTypes = []any{
-	(*GenerateUserTokensRequest)(nil),   // 0: token.v1.GenerateUserTokensRequest
-	(*ValidateTokenRequest)(nil),        // 1: token.v1.ValidateTokenRequest
-	(*RefreshTokensRequest)(nil),        // 2: token.v1.RefreshTokensRequest
-	(*RevokeTokenRequest)(nil),          // 3: token.v1.RevokeTokenRequest
-	(*AuthenticateServiceRequest)(nil),  // 4: token.v1.AuthenticateServiceRequest
-	(*GenerateServiceTokenRequest)(nil), // 5: token.v1.GenerateServiceTokenRequest
-	(*TokenPairResponse)(nil),           // 6: token.v1.TokenPairResponse
-	(*ServiceTokenResponse)(nil),        // 7: token.v1.ServiceTokenResponse
-	(*ValidatedClaimsResponse)(nil),     // 8: token.v1.ValidatedClaimsResponse
-	(*RevokeTokenResponse)(nil),         // 9: token.v1.RevokeTokenResponse
-	(*timestamppb.Timestamp)(nil),       // 10: google.protobuf.Timestamp
+	(*DeviceInfo)(nil),                    // 0: token.v1.DeviceInfo
+	(*GenerateUserTokensRequest)(nil),     // 1: token.v1.GenerateUserTokensRequest
+	(*ValidateTokenRequest)(nil),          // 2: token.v1.ValidateTokenRequest
+	(*RefreshTokensRequest)(nil),          // 3: token.v1.RefreshTokensRequest
+	(*RevokeTokenRequest)(nil),            // 4: token.v1.RevokeTokenRequest
+	(*AuthenticateServiceRequest)(nil),    // 5: token.v1.AuthenticateServiceRequest
+	(*GenerateServiceTokenRequest)(nil),   // 6: token.v1.GenerateServiceTokenRequest
+	(*ListUserSessionsRequest)(nil),       // 7: token.v1.ListUserSessionsRequest
+	(*RevokeSessionRequest)(nil),          // 8: token.v1.RevokeSessionRequest
+	(*RevokeAllUserSessionsRequest)(nil),  // 9: token.v1.RevokeAllUserSessionsRequest
+	(*TokenPairResponse)(nil),             // 10: token.v1.TokenPairResponse
+	(*ServiceTokenResponse)(nil),          // 11: token.v1.ServiceTokenResponse
+	(*ValidatedClaimsResponse)(nil),       // 12: token.v1.ValidatedClaimsResponse
+	(*RevokeTokenResponse)(nil),           // 13: token.v1.RevokeTokenResponse
+	(*UserSessionInfo)(nil),               // 14: token.v1.UserSessionInfo
+	(*ListUserSessionsResponse)(nil),      // 15: token.v1.ListUserSessionsResponse
+	(*RevokeSessionResponse)(nil),         // 16: token.v1.RevokeSessionResponse
+	(*RevokeAllUserSessionsResponse)(nil), // 17: token.v1.RevokeAllUserSessionsResponse
+	(*timestamppb.Timestamp)(nil),         // 18: google.protobuf.Timestamp
 }
 var file_token_token_proto_depIdxs = []int32{
-	10, // 0: token.v1.TokenPairResponse.expires_at:type_name -> google.protobuf.Timestamp
-	10, // 1: token.v1.ServiceTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
-	10, // 2: token.v1.ValidatedClaimsResponse.issued_at:type_name -> google.protobuf.Timestamp
-	10, // 3: token.v1.ValidatedClaimsResponse.expires_at:type_name -> google.protobuf.Timestamp
-	0,  // 4: token.v1.TokenService.GenerateUserTokens:input_type -> token.v1.GenerateUserTokensRequest
-	1,  // 5: token.v1.TokenService.ValidateAccessToken:input_type -> token.v1.ValidateTokenRequest
-	1,  // 6: token.v1.TokenService.ValidateRefreshToken:input_type -> token.v1.ValidateTokenRequest
-	2,  // 7: token.v1.TokenService.RefreshTokens:input_type -> token.v1.RefreshTokensRequest
-	3,  // 8: token.v1.TokenService.RevokeToken:input_type -> token.v1.RevokeTokenRequest
-	4,  // 9: token.v1.TokenService.AuthenticateService:input_type -> token.v1.AuthenticateServiceRequest
-	1,  // 10: token.v1.TokenService.ValidateServiceToken:input_type -> token.v1.ValidateTokenRequest
-	5,  // 11: token.v1.TokenService.GenerateServiceToken:input_type -> token.v1.GenerateServiceTokenRequest
-	6,  // 12: token.v1.TokenService.GenerateUserTokens:output_type -> token.v1.TokenPairResponse
-	8,  // 13: token.v1.TokenService.ValidateAccessToken:output_type -> token.v1.ValidatedClaimsResponse
-	8,  // 14: token.v1.TokenService.ValidateRefreshToken:output_type -> token.v1.ValidatedClaimsResponse
-	6,  // 15: token.v1.TokenService.RefreshTokens:output_type -> token.v1.TokenPairResponse
-	9,  // 16: token.v1.TokenService.RevokeToken:output_type -> token.v1.RevokeTokenResponse
-	7,  // 17: token.v1.TokenService.AuthenticateService:output_type -> token.v1.ServiceTokenResponse
-	8,  // 18: token.v1.TokenService.ValidateServiceToken:output_type -> token.v1.ValidatedClaimsResponse
-	7,  // 19: token.v1.TokenService.GenerateServiceToken:output_type -> token.v1.ServiceTokenResponse
-	12, // [12:20] is the sub-list for method output_type
-	4,  // [4:12] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	0,  // 0: token.v1.GenerateUserTokensRequest.device:type_name -> token.v1.DeviceInfo
+	0,  // 1: token.v1.RefreshTokensRequest.device:type_name -> token.v1.DeviceInfo
+	18, // 2: token.v1.TokenPairResponse.expires_at:type_name -> google.protobuf.Timestamp
+	18, // 3: token.v1.TokenPairResponse.refresh_expires_at:type_name -> google.protobuf.Timestamp
+	18, // 4: token.v1.ServiceTokenResponse.expires_at:type_name -> google.protobuf.Timestamp
+	18, // 5: token.v1.ValidatedClaimsResponse.issued_at:type_name -> google.protobuf.Timestamp
+	18, // 6: token.v1.ValidatedClaimsResponse.expires_at:type_name -> google.protobuf.Timestamp
+	0,  // 7: token.v1.UserSessionInfo.device:type_name -> token.v1.DeviceInfo
+	18, // 8: token.v1.UserSessionInfo.created_at:type_name -> google.protobuf.Timestamp
+	18, // 9: token.v1.UserSessionInfo.last_used_at:type_name -> google.protobuf.Timestamp
+	18, // 10: token.v1.UserSessionInfo.last_refreshed_at:type_name -> google.protobuf.Timestamp
+	18, // 11: token.v1.UserSessionInfo.refresh_expires_at:type_name -> google.protobuf.Timestamp
+	14, // 12: token.v1.ListUserSessionsResponse.sessions:type_name -> token.v1.UserSessionInfo
+	1,  // 13: token.v1.TokenService.GenerateUserTokens:input_type -> token.v1.GenerateUserTokensRequest
+	2,  // 14: token.v1.TokenService.ValidateAccessToken:input_type -> token.v1.ValidateTokenRequest
+	2,  // 15: token.v1.TokenService.ValidateRefreshToken:input_type -> token.v1.ValidateTokenRequest
+	3,  // 16: token.v1.TokenService.RefreshTokens:input_type -> token.v1.RefreshTokensRequest
+	4,  // 17: token.v1.TokenService.RevokeToken:input_type -> token.v1.RevokeTokenRequest
+	7,  // 18: token.v1.TokenService.ListUserSessions:input_type -> token.v1.ListUserSessionsRequest
+	8,  // 19: token.v1.TokenService.RevokeSession:input_type -> token.v1.RevokeSessionRequest
+	9,  // 20: token.v1.TokenService.RevokeAllUserSessions:input_type -> token.v1.RevokeAllUserSessionsRequest
+	5,  // 21: token.v1.TokenService.AuthenticateService:input_type -> token.v1.AuthenticateServiceRequest
+	2,  // 22: token.v1.TokenService.ValidateServiceToken:input_type -> token.v1.ValidateTokenRequest
+	6,  // 23: token.v1.TokenService.GenerateServiceToken:input_type -> token.v1.GenerateServiceTokenRequest
+	10, // 24: token.v1.TokenService.GenerateUserTokens:output_type -> token.v1.TokenPairResponse
+	12, // 25: token.v1.TokenService.ValidateAccessToken:output_type -> token.v1.ValidatedClaimsResponse
+	12, // 26: token.v1.TokenService.ValidateRefreshToken:output_type -> token.v1.ValidatedClaimsResponse
+	10, // 27: token.v1.TokenService.RefreshTokens:output_type -> token.v1.TokenPairResponse
+	13, // 28: token.v1.TokenService.RevokeToken:output_type -> token.v1.RevokeTokenResponse
+	15, // 29: token.v1.TokenService.ListUserSessions:output_type -> token.v1.ListUserSessionsResponse
+	16, // 30: token.v1.TokenService.RevokeSession:output_type -> token.v1.RevokeSessionResponse
+	17, // 31: token.v1.TokenService.RevokeAllUserSessions:output_type -> token.v1.RevokeAllUserSessionsResponse
+	11, // 32: token.v1.TokenService.AuthenticateService:output_type -> token.v1.ServiceTokenResponse
+	12, // 33: token.v1.TokenService.ValidateServiceToken:output_type -> token.v1.ValidatedClaimsResponse
+	11, // 34: token.v1.TokenService.GenerateServiceToken:output_type -> token.v1.ServiceTokenResponse
+	24, // [24:35] is the sub-list for method output_type
+	13, // [13:24] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_token_token_proto_init() }
@@ -740,7 +1328,7 @@ func file_token_token_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_token_token_proto_rawDesc), len(file_token_token_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

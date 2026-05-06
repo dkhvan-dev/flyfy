@@ -129,6 +129,7 @@ func (c *TokenServiceClient) GenerateUserTokens(
 	ctx context.Context,
 	userID, role string,
 	permissions []string,
+	device model.DeviceInfo,
 ) (*model.AuthResult, error) {
 	authCtx, err := c.withServiceAuth(ctx)
 	if err != nil {
@@ -139,6 +140,7 @@ func (c *TokenServiceClient) GenerateUserTokens(
 		UserId:      userID,
 		Role:        role,
 		Permissions: permissions,
+		Device:      deviceToProto(device),
 	}
 
 	resp, err := c.client.GenerateUserTokens(authCtx, req)
@@ -153,13 +155,10 @@ func (c *TokenServiceClient) GenerateUserTokens(
 		return nil, fmt.Errorf("GenerateUserTokens RPC: %w", err)
 	}
 
-	return &model.AuthResult{
-		AccessToken:  resp.GetAccessToken(),
-		RefreshToken: resp.GetRefreshToken(),
-	}, nil
+	return tokenPairRespToAuthResult(resp), nil
 }
 
-func (c *TokenServiceClient) RefreshTokens(ctx context.Context, refreshToken string) (*model.AuthResult, error) {
+func (c *TokenServiceClient) RefreshTokens(ctx context.Context, refreshToken string, device model.DeviceInfo) (*model.AuthResult, error) {
 	authCtx, err := c.withServiceAuth(ctx)
 	if err != nil {
 		return nil, err
@@ -167,6 +166,7 @@ func (c *TokenServiceClient) RefreshTokens(ctx context.Context, refreshToken str
 
 	req := &tokenpb.RefreshTokensRequest{
 		RefreshToken: refreshToken,
+		Device:       deviceToProto(device),
 	}
 
 	resp, err := c.client.RefreshTokens(authCtx, req)
@@ -181,10 +181,7 @@ func (c *TokenServiceClient) RefreshTokens(ctx context.Context, refreshToken str
 		return nil, fmt.Errorf("RefreshTokens RPC: %w", err)
 	}
 
-	return &model.AuthResult{
-		AccessToken:  resp.GetAccessToken(),
-		RefreshToken: resp.GetRefreshToken(),
-	}, nil
+	return tokenPairRespToAuthResult(resp), nil
 }
 
 func (c *TokenServiceClient) RevokeToken(ctx context.Context, jti string, expiresAt int64, reason string) error {
@@ -246,6 +243,7 @@ func (c *TokenServiceClient) ValidateAccessToken(ctx context.Context, token stri
 		Role:        resp.GetRole(),
 		Permissions: resp.GetPermissions(),
 		JTI:         resp.GetJti(),
+		SessionID:   resp.GetSessionId(),
 		ExpiresAt:   exp,
 	}, nil
 }
@@ -282,6 +280,66 @@ func (c *TokenServiceClient) ValidateRefreshToken(ctx context.Context, token str
 		Role:        resp.GetRole(),
 		Permissions: resp.GetPermissions(),
 		JTI:         resp.GetJti(),
+		SessionID:   resp.GetSessionId(),
 		ExpiresAt:   exp,
 	}, nil
+}
+
+// RevokeSession revokes a single user session by id (preferred over RevokeToken).
+func (c *TokenServiceClient) RevokeSession(ctx context.Context, sessionID, reason string) error {
+	authCtx, err := c.withServiceAuth(ctx)
+	if err != nil {
+		return err
+	}
+
+	req := &tokenpb.RevokeSessionRequest{
+		SessionId: sessionID,
+		Reason:    reason,
+	}
+
+	_, err = c.client.RevokeSession(authCtx, req)
+	if err != nil && isUnauthenticatedRPC(err) {
+		c.invalidateServiceToken()
+		retryCtx, retryErr := c.withServiceAuth(ctx)
+		if retryErr == nil {
+			_, err = c.client.RevokeSession(retryCtx, req)
+		}
+	}
+	if err != nil {
+		return fmt.Errorf("RevokeSession RPC: %w", err)
+	}
+	return nil
+}
+
+// --- helpers ---
+
+func deviceToProto(d model.DeviceInfo) *tokenpb.DeviceInfo {
+	if d == (model.DeviceInfo{}) {
+		return nil
+	}
+	return &tokenpb.DeviceInfo{
+		DeviceId:   d.DeviceID,
+		Platform:   d.Platform,
+		OsVersion:  d.OSVersion,
+		AppVersion: d.AppVersion,
+		Model:      d.Model,
+		UserAgent:  d.UserAgent,
+		IpAddress:  d.IPAddress,
+	}
+}
+
+func tokenPairRespToAuthResult(resp *tokenpb.TokenPairResponse) *model.AuthResult {
+	out := &model.AuthResult{
+		AccessToken:  resp.GetAccessToken(),
+		RefreshToken: resp.GetRefreshToken(),
+		TokenType:    resp.GetTokenType(),
+		SessionID:    resp.GetSessionId(),
+	}
+	if resp.GetExpiresAt() != nil {
+		out.ExpiresAt = resp.GetExpiresAt().AsTime()
+	}
+	if resp.GetRefreshExpiresAt() != nil {
+		out.RefreshExpiresAt = resp.GetRefreshExpiresAt().AsTime()
+	}
+	return out
 }

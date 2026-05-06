@@ -86,7 +86,7 @@ func (uc *AuthUseCase) SendOTP(ctx context.Context, phone string) error {
 }
 
 // VerifyOTPAndLogin verifies the OTP code and returns tokens.
-func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string) (*model.AuthResult, error) {
+func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string, device model.DeviceInfo) (*model.AuthResult, error) {
 	phone = normalizePhone(phone)
 	if phone == "" {
 		return nil, model.ErrPhoneRequired
@@ -115,7 +115,7 @@ func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string
 		return nil, model.ErrUserBlocked
 	}
 
-	result, err := uc.tokenClient.GenerateUserTokens(ctx, user.ID.String(), string(user.Role), nil)
+	result, err := uc.tokenClient.GenerateUserTokens(ctx, user.ID.String(), string(user.Role), nil, device)
 	if err != nil {
 		uc.logger.Error().Err(err).Str("user_id", user.ID.String()).Msg("failed to generate tokens")
 		return nil, model.ErrTokenServiceUnavailable
@@ -127,6 +127,7 @@ func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string
 	uc.logger.Info().
 		Str("user_id", user.ID.String()).
 		Bool("is_new", isNew).
+		Str("session_id", result.SessionID).
 		Msg("phone login successful")
 
 	return result, nil
@@ -135,27 +136,27 @@ func (uc *AuthUseCase) VerifyOTPAndLogin(ctx context.Context, phone, code string
 // --- OAuth Flows ---
 
 // GoogleLogin authenticates via Google ID Token.
-func (uc *AuthUseCase) GoogleLogin(ctx context.Context, idToken string) (*model.AuthResult, error) {
+func (uc *AuthUseCase) GoogleLogin(ctx context.Context, idToken string, device model.DeviceInfo) (*model.AuthResult, error) {
 	userInfo, err := uc.googleVerifier.Verify(ctx, idToken)
 	if err != nil {
 		return nil, model.ErrOAuthFailed
 	}
 
-	return uc.oauthLogin(ctx, model.ProviderGoogle, userInfo)
+	return uc.oauthLogin(ctx, model.ProviderGoogle, userInfo, device)
 }
 
 // AppleLogin authenticates via Apple ID Token.
-func (uc *AuthUseCase) AppleLogin(ctx context.Context, idToken string) (*model.AuthResult, error) {
+func (uc *AuthUseCase) AppleLogin(ctx context.Context, idToken string, device model.DeviceInfo) (*model.AuthResult, error) {
 	userInfo, err := uc.appleVerifier.Verify(ctx, idToken)
 	if err != nil {
 		return nil, model.ErrOAuthFailed
 	}
 
-	return uc.oauthLogin(ctx, model.ProviderApple, userInfo)
+	return uc.oauthLogin(ctx, model.ProviderApple, userInfo, device)
 }
 
 // oauthLogin is the shared logic for Google/Apple login.
-func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvider, info *model.OAuthUserInfo) (*model.AuthResult, error) {
+func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvider, info *model.OAuthUserInfo, device model.DeviceInfo) (*model.AuthResult, error) {
 	if info.ProviderID == "" {
 		return nil, model.ErrOAuthProviderID
 	}
@@ -194,7 +195,7 @@ func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvid
 		return nil, model.ErrUserBlocked
 	}
 
-	result, err := uc.tokenClient.GenerateUserTokens(ctx, user.ID.String(), string(user.Role), nil)
+	result, err := uc.tokenClient.GenerateUserTokens(ctx, user.ID.String(), string(user.Role), nil, device)
 	if err != nil {
 		return nil, model.ErrTokenServiceUnavailable
 	}
@@ -209,6 +210,7 @@ func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvid
 		Str("user_id", user.ID.String()).
 		Str("provider", string(provider)).
 		Bool("is_new", isNew).
+		Str("session_id", result.SessionID).
 		Msg("OAuth login successful")
 
 	return result, nil
@@ -217,8 +219,8 @@ func (uc *AuthUseCase) oauthLogin(ctx context.Context, provider model.AuthProvid
 // --- Token Management ---
 
 // RefreshTokens issues new tokens using a refresh token.
-func (uc *AuthUseCase) RefreshTokens(ctx context.Context, refreshToken string) (*model.AuthResult, error) {
-	result, err := uc.tokenClient.RefreshTokens(ctx, refreshToken)
+func (uc *AuthUseCase) RefreshTokens(ctx context.Context, refreshToken string, device model.DeviceInfo) (*model.AuthResult, error) {
+	result, err := uc.tokenClient.RefreshTokens(ctx, refreshToken, device)
 	if err != nil {
 		uc.logger.Error().Err(err).Msg("token refresh failed")
 		return nil, model.ErrInvalidRefreshToken
@@ -226,28 +228,41 @@ func (uc *AuthUseCase) RefreshTokens(ctx context.Context, refreshToken string) (
 	return result, nil
 }
 
-// Logout revokes both access and refresh tokens.
+// Logout revokes the current session. We extract the session_id from whichever
+// token the client provides — preferring the access token (cheaper to validate).
+// Falls back to per-JTI revoke for defence in depth and so that pre-session
+// tokens (issued by an older token-service) can still be invalidated.
 func (uc *AuthUseCase) Logout(ctx context.Context, accessToken, refreshToken string) error {
-	// Validate and revoke access token
+	var sessionID string
+
 	if accessToken != "" {
-		claims, err := uc.tokenClient.ValidateAccessToken(ctx, accessToken)
-		if err == nil {
-			if revokeErr := uc.tokenClient.RevokeToken(ctx, claims.JTI, claims.ExpiresAt, "logout"); revokeErr != nil {
-				uc.logger.Warn().Err(revokeErr).Str("jti", claims.JTI).Msg("failed to revoke access token")
+		if claims, err := uc.tokenClient.ValidateAccessToken(ctx, accessToken); err == nil {
+			if claims.SessionID != "" {
+				sessionID = claims.SessionID
+			} else if revokeErr := uc.tokenClient.RevokeToken(ctx, claims.JTI, claims.ExpiresAt, "logout"); revokeErr != nil {
+				uc.logger.Warn().Err(revokeErr).Str("jti", claims.JTI).Msg("failed to revoke access JTI")
 			}
 		}
 	}
 
-	// Validate and revoke refresh token
 	if refreshToken != "" {
-		claims, err := uc.tokenClient.ValidateRefreshToken(ctx, refreshToken)
-		if err == nil {
-			if revokeErr := uc.tokenClient.RevokeToken(ctx, claims.JTI, claims.ExpiresAt, "logout"); revokeErr != nil {
-				uc.logger.Warn().Err(revokeErr).Str("jti", claims.JTI).Msg("failed to revoke refresh token")
+		if claims, err := uc.tokenClient.ValidateRefreshToken(ctx, refreshToken); err == nil {
+			if sessionID == "" && claims.SessionID != "" {
+				sessionID = claims.SessionID
+			} else if claims.SessionID == "" {
+				if revokeErr := uc.tokenClient.RevokeToken(ctx, claims.JTI, claims.ExpiresAt, "logout"); revokeErr != nil {
+					uc.logger.Warn().Err(revokeErr).Str("jti", claims.JTI).Msg("failed to revoke refresh JTI")
+				}
 			}
 		}
 	}
 
+	if sessionID != "" {
+		if err := uc.tokenClient.RevokeSession(ctx, sessionID, "user_logout"); err != nil {
+			uc.logger.Warn().Err(err).Str("session_id", sessionID).Msg("failed to revoke session")
+			return err
+		}
+	}
 	return nil
 }
 

@@ -2,7 +2,9 @@ package http
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -112,7 +114,7 @@ func (h *AuthHandler) handleVerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.auth.VerifyOTPAndLogin(r.Context(), req.Phone, req.Code)
+	result, err := h.auth.VerifyOTPAndLogin(r.Context(), req.Phone, req.Code, deviceFromRequest(r))
 	if err != nil {
 		switch err {
 		case model.ErrInvalidOTP:
@@ -149,7 +151,7 @@ func (h *AuthHandler) handleGoogleLogin(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	result, err := h.auth.GoogleLogin(r.Context(), req.IDToken)
+	result, err := h.auth.GoogleLogin(r.Context(), req.IDToken, deviceFromRequest(r))
 	if err != nil {
 		h.handleOAuthError(w, err)
 		return
@@ -170,7 +172,7 @@ func (h *AuthHandler) handleAppleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.auth.AppleLogin(r.Context(), req.IDToken)
+	result, err := h.auth.AppleLogin(r.Context(), req.IDToken, deviceFromRequest(r))
 	if err != nil {
 		h.handleOAuthError(w, err)
 		return
@@ -211,7 +213,7 @@ func (h *AuthHandler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.auth.RefreshTokens(r.Context(), req.RefreshToken)
+	result, err := h.auth.RefreshTokens(r.Context(), req.RefreshToken, deviceFromRequest(r))
 	if err != nil {
 		switch err {
 		case model.ErrInvalidRefreshToken:
@@ -284,4 +286,37 @@ func jsonContentType(next http.Handler) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// deviceFromRequest extracts client device metadata. Mobile is expected to send
+// X-Device-* headers; web/legacy clients fall back to User-Agent + IP.
+// All fields are optional — missing headers are stored as empty strings.
+func deviceFromRequest(r *http.Request) model.DeviceInfo {
+	return model.DeviceInfo{
+		DeviceID:   r.Header.Get("X-Device-Id"),
+		Platform:   r.Header.Get("X-Device-Platform"),
+		OSVersion:  r.Header.Get("X-Device-Os"),
+		AppVersion: r.Header.Get("X-App-Version"),
+		Model:      r.Header.Get("X-Device-Model"),
+		UserAgent:  r.UserAgent(),
+		IPAddress:  clientIP(r),
+	}
+}
+
+// clientIP returns the best-effort client IP. Honors X-Forwarded-For (first
+// hop) and X-Real-IP if present; otherwise falls back to RemoteAddr.
+func clientIP(r *http.Request) string {
+	if xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); xff != "" {
+		if comma := strings.Index(xff, ","); comma > 0 {
+			return strings.TrimSpace(xff[:comma])
+		}
+		return xff
+	}
+	if xri := strings.TrimSpace(r.Header.Get("X-Real-IP")); xri != "" {
+		return xri
+	}
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
+	}
+	return r.RemoteAddr
 }

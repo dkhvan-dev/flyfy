@@ -15,4 +15,10 @@ var (
 	ErrInvalidCredentials = errors.New("invalid service credentials")
 	ErrPermissionDenied   = errors.New("permission denied")
 	ErrRateLimited        = errors.New("rate limit exceeded")
+
+	ErrSessionNotFound  = errors.New("user session not found")
+	ErrSessionRevoked   = errors.New("user session has been revoked")
+	ErrSessionExpired   = errors.New("user session has expired due to inactivity")
+	ErrSessionConflict  = errors.New("concurrent session creation conflict")
+	ErrTokenReuseDetect = errors.New("refresh token reuse detected; session revoked")
 )

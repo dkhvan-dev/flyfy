@@ -15,18 +15,38 @@ service TokenService {
   rpc RefreshTokens(RefreshTokensRequest)              returns (TokenPairResponse);
   rpc RevokeToken(RevokeTokenRequest)                  returns (RevokeTokenResponse);
 
+  // Session management
+  rpc ListUserSessions(ListUserSessionsRequest)        returns (ListUserSessionsResponse);
+  rpc RevokeSession(RevokeSessionRequest)              returns (RevokeSessionResponse);
+  rpc RevokeAllUserSessions(RevokeAllUserSessionsRequest) returns (RevokeAllUserSessionsResponse);
+
   // Service-to-service tokens
   rpc AuthenticateService(AuthenticateServiceRequest)  returns (ServiceTokenResponse);
   rpc ValidateServiceToken(ValidateTokenRequest)       returns (ValidatedClaimsResponse);
   rpc GenerateServiceToken(GenerateServiceTokenRequest) returns (ServiceTokenResponse);
 }
 
+// --- Shared types ---
+
+// DeviceInfo describes the client device that owns a session.
+// All fields are optional; the server will store whatever is provided.
+message DeviceInfo {
+  string device_id   = 1;  // stable id provided by the client (install uuid)
+  string platform    = 2;  // "ios" | "android" | "web"
+  string os_version  = 3;
+  string app_version = 4;
+  string model       = 5;
+  string user_agent  = 6;
+  string ip_address  = 7;
+}
+
 // --- Requests ---
 
 message GenerateUserTokensRequest {
-  string user_id     = 1;
-  string role        = 2;  // "tourist", "guide", "agency", "admin"
+  string user_id              = 1;
+  string role                 = 2;  // "tourist", "guide", "agency", "admin"
   repeated string permissions = 3;
+  DeviceInfo device           = 4;  // optional but recommended; drives session metadata
 }
 
 message ValidateTokenRequest {
@@ -35,6 +55,7 @@ message ValidateTokenRequest {
 
 message RefreshTokensRequest {
   string refresh_token = 1;
+  DeviceInfo device    = 2;  // optional; updates session device metadata on rotate
 }
 
 message RevokeTokenRequest {
@@ -53,13 +74,29 @@ message GenerateServiceTokenRequest {
   repeated string roles = 2;
 }
 
+message ListUserSessionsRequest {
+  string user_id = 1;
+}
+
+message RevokeSessionRequest {
+  string session_id = 1;
+  string reason     = 2;
+}
+
+message RevokeAllUserSessionsRequest {
+  string user_id = 1;
+  string reason  = 2;
+}
+
 // --- Responses ---
 
 message TokenPairResponse {
-  string access_token  = 1;
-  string refresh_token = 2;
-  string token_type    = 3;  // "Bearer"
-  google.protobuf.Timestamp expires_at = 4;
+  string access_token                          = 1;
+  string refresh_token                         = 2;
+  string token_type                            = 3;  // "Bearer"
+  google.protobuf.Timestamp expires_at         = 4;  // access expiry
+  google.protobuf.Timestamp refresh_expires_at = 5;  // refresh expiry
+  string session_id                            = 6;
 }
 
 message ServiceTokenResponse {
@@ -78,8 +115,32 @@ message ValidatedClaimsResponse {
   google.protobuf.Timestamp issued_at = 8;
   google.protobuf.Timestamp expires_at = 9;
   string user_id = 10;
+  string session_id = 11;
 }
 
 message RevokeTokenResponse {
   bool revoked = 1;
+}
+
+message UserSessionInfo {
+  string session_id                          = 1;
+  string user_id                             = 2;
+  DeviceInfo device                          = 3;
+  google.protobuf.Timestamp created_at       = 4;
+  google.protobuf.Timestamp last_used_at     = 5;
+  google.protobuf.Timestamp last_refreshed_at = 6;
+  google.protobuf.Timestamp refresh_expires_at = 7;
+  bool   is_current                          = 8;  // for future use (set when caller's sid matches)
+}
+
+message ListUserSessionsResponse {
+  repeated UserSessionInfo sessions = 1;
+}
+
+message RevokeSessionResponse {
+  bool revoked = 1;
+}
+
+message RevokeAllUserSessionsResponse {
+  int32 revoked_count = 1;
 }

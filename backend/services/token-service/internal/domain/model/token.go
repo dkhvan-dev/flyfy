@@ -45,10 +45,12 @@ type ServiceClaims struct {
 
 // TokenPair is the result of generating access + refresh tokens.
 type TokenPair struct {
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	TokenType    string    `json:"token_type"`
+	AccessToken      string    `json:"access_token"`
+	RefreshToken     string    `json:"refresh_token"`
+	ExpiresAt        time.Time `json:"expires_at"`         // access expiry
+	RefreshExpiresAt time.Time `json:"refresh_expires_at"` // refresh expiry
+	TokenType        string    `json:"token_type"`
+	SessionID        uuid.UUID `json:"session_id"`
 }
 
 // ServiceToken is the result of generating a service token.
@@ -102,6 +104,7 @@ type ValidatedClaims struct {
 	Roles       []string  `json:"roles,omitempty"` // for service tokens
 	Permissions []string  `json:"permissions,omitempty"`
 	JTI         string    `json:"jti"`
+	SessionID   string    `json:"sid,omitempty"` // user-token sessions only
 	IssuedAt    time.Time `json:"iat"`
 	ExpiresAt   time.Time `json:"exp"`
 }

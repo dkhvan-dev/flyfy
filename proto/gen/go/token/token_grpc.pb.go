@@ -19,14 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TokenService_GenerateUserTokens_FullMethodName   = "/token.v1.TokenService/GenerateUserTokens"
-	TokenService_ValidateAccessToken_FullMethodName  = "/token.v1.TokenService/ValidateAccessToken"
-	TokenService_ValidateRefreshToken_FullMethodName = "/token.v1.TokenService/ValidateRefreshToken"
-	TokenService_RefreshTokens_FullMethodName        = "/token.v1.TokenService/RefreshTokens"
-	TokenService_RevokeToken_FullMethodName          = "/token.v1.TokenService/RevokeToken"
-	TokenService_AuthenticateService_FullMethodName  = "/token.v1.TokenService/AuthenticateService"
-	TokenService_ValidateServiceToken_FullMethodName = "/token.v1.TokenService/ValidateServiceToken"
-	TokenService_GenerateServiceToken_FullMethodName = "/token.v1.TokenService/GenerateServiceToken"
+	TokenService_GenerateUserTokens_FullMethodName    = "/token.v1.TokenService/GenerateUserTokens"
+	TokenService_ValidateAccessToken_FullMethodName   = "/token.v1.TokenService/ValidateAccessToken"
+	TokenService_ValidateRefreshToken_FullMethodName  = "/token.v1.TokenService/ValidateRefreshToken"
+	TokenService_RefreshTokens_FullMethodName         = "/token.v1.TokenService/RefreshTokens"
+	TokenService_RevokeToken_FullMethodName           = "/token.v1.TokenService/RevokeToken"
+	TokenService_ListUserSessions_FullMethodName      = "/token.v1.TokenService/ListUserSessions"
+	TokenService_RevokeSession_FullMethodName         = "/token.v1.TokenService/RevokeSession"
+	TokenService_RevokeAllUserSessions_FullMethodName = "/token.v1.TokenService/RevokeAllUserSessions"
+	TokenService_AuthenticateService_FullMethodName   = "/token.v1.TokenService/AuthenticateService"
+	TokenService_ValidateServiceToken_FullMethodName  = "/token.v1.TokenService/ValidateServiceToken"
+	TokenService_GenerateServiceToken_FullMethodName  = "/token.v1.TokenService/GenerateServiceToken"
 )
 
 // TokenServiceClient is the client API for TokenService service.
@@ -41,6 +44,10 @@ type TokenServiceClient interface {
 	ValidateRefreshToken(ctx context.Context, in *ValidateTokenRequest, opts ...grpc.CallOption) (*ValidatedClaimsResponse, error)
 	RefreshTokens(ctx context.Context, in *RefreshTokensRequest, opts ...grpc.CallOption) (*TokenPairResponse, error)
 	RevokeToken(ctx context.Context, in *RevokeTokenRequest, opts ...grpc.CallOption) (*RevokeTokenResponse, error)
+	// Session management
+	ListUserSessions(ctx context.Context, in *ListUserSessionsRequest, opts ...grpc.CallOption) (*ListUserSessionsResponse, error)
+	RevokeSession(ctx context.Context, in *RevokeSessionRequest, opts ...grpc.CallOption) (*RevokeSessionResponse, error)
+	RevokeAllUserSessions(ctx context.Context, in *RevokeAllUserSessionsRequest, opts ...grpc.CallOption) (*RevokeAllUserSessionsResponse, error)
 	// Service-to-service tokens
 	AuthenticateService(ctx context.Context, in *AuthenticateServiceRequest, opts ...grpc.CallOption) (*ServiceTokenResponse, error)
 	ValidateServiceToken(ctx context.Context, in *ValidateTokenRequest, opts ...grpc.CallOption) (*ValidatedClaimsResponse, error)
@@ -105,6 +112,36 @@ func (c *tokenServiceClient) RevokeToken(ctx context.Context, in *RevokeTokenReq
 	return out, nil
 }
 
+func (c *tokenServiceClient) ListUserSessions(ctx context.Context, in *ListUserSessionsRequest, opts ...grpc.CallOption) (*ListUserSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserSessionsResponse)
+	err := c.cc.Invoke(ctx, TokenService_ListUserSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tokenServiceClient) RevokeSession(ctx context.Context, in *RevokeSessionRequest, opts ...grpc.CallOption) (*RevokeSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeSessionResponse)
+	err := c.cc.Invoke(ctx, TokenService_RevokeSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tokenServiceClient) RevokeAllUserSessions(ctx context.Context, in *RevokeAllUserSessionsRequest, opts ...grpc.CallOption) (*RevokeAllUserSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeAllUserSessionsResponse)
+	err := c.cc.Invoke(ctx, TokenService_RevokeAllUserSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tokenServiceClient) AuthenticateService(ctx context.Context, in *AuthenticateServiceRequest, opts ...grpc.CallOption) (*ServiceTokenResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ServiceTokenResponse)
@@ -147,6 +184,10 @@ type TokenServiceServer interface {
 	ValidateRefreshToken(context.Context, *ValidateTokenRequest) (*ValidatedClaimsResponse, error)
 	RefreshTokens(context.Context, *RefreshTokensRequest) (*TokenPairResponse, error)
 	RevokeToken(context.Context, *RevokeTokenRequest) (*RevokeTokenResponse, error)
+	// Session management
+	ListUserSessions(context.Context, *ListUserSessionsRequest) (*ListUserSessionsResponse, error)
+	RevokeSession(context.Context, *RevokeSessionRequest) (*RevokeSessionResponse, error)
+	RevokeAllUserSessions(context.Context, *RevokeAllUserSessionsRequest) (*RevokeAllUserSessionsResponse, error)
 	// Service-to-service tokens
 	AuthenticateService(context.Context, *AuthenticateServiceRequest) (*ServiceTokenResponse, error)
 	ValidateServiceToken(context.Context, *ValidateTokenRequest) (*ValidatedClaimsResponse, error)
@@ -175,6 +216,15 @@ func (UnimplementedTokenServiceServer) RefreshTokens(context.Context, *RefreshTo
 }
 func (UnimplementedTokenServiceServer) RevokeToken(context.Context, *RevokeTokenRequest) (*RevokeTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RevokeToken not implemented")
+}
+func (UnimplementedTokenServiceServer) ListUserSessions(context.Context, *ListUserSessionsRequest) (*ListUserSessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUserSessions not implemented")
+}
+func (UnimplementedTokenServiceServer) RevokeSession(context.Context, *RevokeSessionRequest) (*RevokeSessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeSession not implemented")
+}
+func (UnimplementedTokenServiceServer) RevokeAllUserSessions(context.Context, *RevokeAllUserSessionsRequest) (*RevokeAllUserSessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeAllUserSessions not implemented")
 }
 func (UnimplementedTokenServiceServer) AuthenticateService(context.Context, *AuthenticateServiceRequest) (*ServiceTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AuthenticateService not implemented")
@@ -296,6 +346,60 @@ func _TokenService_RevokeToken_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TokenService_ListUserSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TokenServiceServer).ListUserSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TokenService_ListUserSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TokenServiceServer).ListUserSessions(ctx, req.(*ListUserSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TokenService_RevokeSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TokenServiceServer).RevokeSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TokenService_RevokeSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TokenServiceServer).RevokeSession(ctx, req.(*RevokeSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TokenService_RevokeAllUserSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeAllUserSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TokenServiceServer).RevokeAllUserSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TokenService_RevokeAllUserSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TokenServiceServer).RevokeAllUserSessions(ctx, req.(*RevokeAllUserSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TokenService_AuthenticateService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AuthenticateServiceRequest)
 	if err := dec(in); err != nil {
@@ -376,6 +480,18 @@ var TokenService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeToken",
 			Handler:    _TokenService_RevokeToken_Handler,
+		},
+		{
+			MethodName: "ListUserSessions",
+			Handler:    _TokenService_ListUserSessions_Handler,
+		},
+		{
+			MethodName: "RevokeSession",
+			Handler:    _TokenService_RevokeSession_Handler,
+		},
+		{
+			MethodName: "RevokeAllUserSessions",
+			Handler:    _TokenService_RevokeAllUserSessions_Handler,
 		},
 		{
 			MethodName: "AuthenticateService",

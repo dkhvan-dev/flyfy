@@ -3,6 +3,9 @@ package port
 import (
 	"context"
 	"crypto/rsa"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/token-service/internal/domain/model"
 	"github.com/go-jose/go-jose/v4"
@@ -12,8 +15,11 @@ import (
 
 // TokenGenerator creates new JWT tokens.
 type TokenGenerator interface {
-	// GenerateUserTokens creates access + refresh token pair for a user.
-	GenerateUserTokens(ctx context.Context, claims model.UserClaims) (*model.TokenPair, error)
+	// GenerateUserTokens creates an access + refresh token pair AND a backing
+	// user session. If the user already has an active session, that session is
+	// revoked first (single-session enforcement). Device metadata is stored on
+	// the new session for diagnostics and future "active sessions" UX.
+	GenerateUserTokens(ctx context.Context, claims model.UserClaims, device model.DeviceInfo) (*model.TokenPair, error)
 
 	// GenerateServiceToken creates a service-to-service JWT.
 	GenerateServiceToken(ctx context.Context, claims model.ServiceClaims) (*model.ServiceToken, error)
@@ -31,6 +37,14 @@ type TokenValidator interface {
 	ValidateServiceToken(ctx context.Context, tokenStr string) (*model.ValidatedClaims, error)
 }
 
+// TokenRefresher rotates refresh tokens with reuse detection.
+type TokenRefresher interface {
+	// RefreshTokens validates the supplied refresh token, rotates it (issuing
+	// a new pair), and returns the new pair. Reusing an already-rotated refresh
+	// token revokes the entire session (token theft mitigation).
+	RefreshTokens(ctx context.Context, refreshToken string, device model.DeviceInfo) (*model.TokenPair, error)
+}
+
 // TokenRevoker handles token revocation (logout).
 type TokenRevoker interface {
 	// Revoke invalidates a token by its JTI.
@@ -38,6 +52,19 @@ type TokenRevoker interface {
 
 	// IsRevoked checks if a token has been revoked.
 	IsRevoked(ctx context.Context, jti string) (bool, error)
+}
+
+// SessionManager handles user-session lifecycle from the outside (logout, list, admin).
+type SessionManager interface {
+	// LogoutSession revokes a single session (typically the caller's own).
+	LogoutSession(ctx context.Context, sessionID uuid.UUID, reason string) error
+
+	// ListUserSessions returns all sessions (active + recently revoked) for a user.
+	// Used for the "active devices" UX — implementations may bound by recency.
+	ListUserSessions(ctx context.Context, userID uuid.UUID) ([]*model.UserSession, error)
+
+	// RevokeAllUserSessions force-logs the user out everywhere (admin / panic button).
+	RevokeAllUserSessions(ctx context.Context, userID uuid.UUID, reason string) (int, error)
 }
 
 // ServiceAuthenticator handles service-to-service authentication.
@@ -75,13 +102,83 @@ type KeyStore interface {
 	DeleteExpiredKeys(ctx context.Context, maxKeys int) error
 }
 
-// RevocationStore manages the token revocation list.
+// RevocationStore manages the per-JTI revocation list (fast deny-list).
 type RevocationStore interface {
 	// Add puts a token JTI into the revocation list with TTL.
 	Add(ctx context.Context, jti string, expiresAt int64) error
 
 	// Exists checks if a JTI is in the revocation list.
 	Exists(ctx context.Context, jti string) (bool, error)
+}
+
+// RevokedSessionCache is a fast cache (Redis) of revoked session_ids so that
+// every ValidateAccessToken can short-circuit without hitting Postgres.
+type RevokedSessionCache interface {
+	// MarkRevoked stores the session_id with the given TTL.
+	// TTL should outlive the longest-lived access token for that session.
+	MarkRevoked(ctx context.Context, sessionID uuid.UUID, ttl time.Duration) error
+
+	// IsRevoked returns true if the session_id is present in the cache.
+	IsRevoked(ctx context.Context, sessionID uuid.UUID) (bool, error)
+}
+
+// SessionStore persists user_sessions and refresh_token_history.
+type SessionStore interface {
+	// CreateActive atomically:
+	//   1. Revokes any currently-active session for sess.UserID.
+	//   2. Inserts the new session.
+	// Returns the previously active session (if any) so the caller can push it
+	// to the revocation list / audit log.
+	//
+	// On the very-rare race where the partial-unique index fires, returns
+	// model.ErrSessionConflict so the caller can decide on retry/error mapping.
+	CreateActive(ctx context.Context, sess *model.UserSession, replaceReason string) (replaced *model.UserSession, err error)
+
+	GetByID(ctx context.Context, sessionID uuid.UUID) (*model.UserSession, error)
+	GetActiveByUserID(ctx context.Context, userID uuid.UUID) (*model.UserSession, error)
+	GetActiveByRefreshJTI(ctx context.Context, refreshJTI string) (*model.UserSession, error)
+
+	// RotateRefresh updates the session's refresh JTI/hash/timestamps and
+	// pushes the previous refresh JTI into refresh_token_history. Atomically.
+	RotateRefresh(ctx context.Context, sessionID uuid.UUID, prev RotatePrev, next RotateNext) error
+
+	Revoke(ctx context.Context, sessionID uuid.UUID, reason string) error
+	RevokeAllForUser(ctx context.Context, userID uuid.UUID, reason string) (int, error)
+	TouchLastUsed(ctx context.Context, sessionID uuid.UUID, at time.Time) error
+
+	// FindHistoricalRefreshJTI returns (sessionID, true, nil) if the supplied
+	// refresh JTI is in refresh_token_history (i.e. it was already rotated).
+	FindHistoricalRefreshJTI(ctx context.Context, refreshJTI string) (uuid.UUID, bool, error)
+
+	ListByUserID(ctx context.Context, userID uuid.UUID, limit int) ([]*model.UserSession, error)
+}
+
+// RotatePrev / RotateNext are simple value bundles for SessionStore.RotateRefresh.
+type RotatePrev struct {
+	RefreshJTI       string
+	RefreshTokenHash string
+	IssuedAt         time.Time
+}
+
+type RotateNext struct {
+	RefreshJTI       string
+	RefreshTokenHash string
+	IssuedAt         time.Time
+	ExpiresAt        time.Time
+	Device           model.DeviceInfo // overwrite when supplied; empty fields keep existing values
+	RotatedAt        time.Time
+}
+
+// SessionAuditLogger records session-lifecycle events for security review.
+type SessionAuditLogger interface {
+	LogSessionEvent(
+		ctx context.Context,
+		userID uuid.UUID,
+		sessionID *uuid.UUID,
+		event string,
+		ipAddress, userAgent string,
+		metadata map[string]string,
+	)
 }
 
 // ServiceAccountStore manages service account data.

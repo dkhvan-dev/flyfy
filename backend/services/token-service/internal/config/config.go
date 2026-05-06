@@ -17,12 +17,30 @@ type Config struct {
 	// JWT
 	JWT JWTConfig
 
+	// Sessions
+	Session SessionConfig
+
 	// Database
 	Postgres PostgresConfig
 	Redis    RedisConfig
 
 	// Telemetry
 	OTELEndpoint string `env:"OTEL_ENDPOINT, default=localhost:4317"`
+}
+
+// SessionConfig controls user-session lifecycle:
+//   - InactivityTTL: a refresh token whose session has not been used for
+//     longer than this is treated as expired (re-login required). Set
+//     extremely high for "infinite session" UX (Booking/AirBnB style).
+//   - EnforceSingle: when true (default), every successful login revokes
+//     the user's previous session.
+//   - RevokedCacheTTLBuffer: extra TTL added on top of the access TTL when
+//     marking a revoked session in Redis — guarantees that any access token
+//     issued just before the revoke cannot outlive the cache entry.
+type SessionConfig struct {
+	InactivityTTL         time.Duration `env:"SESSION_INACTIVITY_TTL, default=8760h"` // 365 days
+	EnforceSingle         bool          `env:"SESSION_ENFORCE_SINGLE, default=true"`
+	RevokedCacheTTLBuffer time.Duration `env:"SESSION_REVOKED_CACHE_TTL_BUFFER, default=10m"`
 }
 
 type JWTConfig struct {

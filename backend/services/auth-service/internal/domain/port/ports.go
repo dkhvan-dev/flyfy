@@ -9,23 +9,25 @@ import (
 // --- Primary Ports (driven by incoming requests) ---
 
 // Authenticator is the main use-case port for authentication flows.
+// All login/refresh methods take DeviceInfo so the new session can record device
+// metadata; pass an empty struct if the caller doesn't have it.
 type Authenticator interface {
 	// SendOTP sends an OTP code to the given phone number.
 	SendOTP(ctx context.Context, phone string) error
 
 	// VerifyOTPAndLogin verifies the OTP code and returns tokens.
-	VerifyOTPAndLogin(ctx context.Context, phone, code string) (*model.AuthResult, error)
+	VerifyOTPAndLogin(ctx context.Context, phone, code string, device model.DeviceInfo) (*model.AuthResult, error)
 
 	// GoogleLogin authenticates a user via Google ID Token.
-	GoogleLogin(ctx context.Context, idToken string) (*model.AuthResult, error)
+	GoogleLogin(ctx context.Context, idToken string, device model.DeviceInfo) (*model.AuthResult, error)
 
 	// AppleLogin authenticates a user via Apple ID Token.
-	AppleLogin(ctx context.Context, idToken string) (*model.AuthResult, error)
+	AppleLogin(ctx context.Context, idToken string, device model.DeviceInfo) (*model.AuthResult, error)
 
 	// RefreshTokens issues a new token pair using a refresh token.
-	RefreshTokens(ctx context.Context, refreshToken string) (*model.AuthResult, error)
+	RefreshTokens(ctx context.Context, refreshToken string, device model.DeviceInfo) (*model.AuthResult, error)
 
-	// Logout revokes the given tokens.
+	// Logout revokes the session associated with the supplied tokens.
 	Logout(ctx context.Context, accessToken, refreshToken string) error
 }
 
@@ -72,14 +74,19 @@ type OAuthVerifier interface {
 
 // TokenClient communicates with the token-service via gRPC.
 type TokenClient interface {
-	// GenerateUserTokens requests a token pair for a user.
-	GenerateUserTokens(ctx context.Context, userID, role string, permissions []string) (*model.AuthResult, error)
+	// GenerateUserTokens requests a token pair for a user. Device metadata
+	// (when supplied) is stored on the new session for audit / future "active
+	// devices" UI.
+	GenerateUserTokens(ctx context.Context, userID, role string, permissions []string, device model.DeviceInfo) (*model.AuthResult, error)
 
 	// RefreshTokens validates a refresh token and issues a new token pair.
-	RefreshTokens(ctx context.Context, refreshToken string) (*model.AuthResult, error)
+	RefreshTokens(ctx context.Context, refreshToken string, device model.DeviceInfo) (*model.AuthResult, error)
 
-	// RevokeToken revokes a specific token by JTI.
+	// RevokeToken revokes a specific token by JTI (legacy single-JTI revoke).
 	RevokeToken(ctx context.Context, jti string, expiresAt int64, reason string) error
+
+	// RevokeSession revokes a single user session (preferred logout path).
+	RevokeSession(ctx context.Context, sessionID, reason string) error
 
 	// ValidateAccessToken validates an access token and extracts claims.
 	ValidateAccessToken(ctx context.Context, token string) (*TokenClaims, error)
@@ -94,5 +101,6 @@ type TokenClaims struct {
 	Role        string
 	Permissions []string
 	JTI         string
+	SessionID   string
 	ExpiresAt   int64
 }
