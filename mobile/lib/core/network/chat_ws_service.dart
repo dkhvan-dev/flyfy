@@ -41,6 +41,9 @@ class ChatWsService {
   Timer? _reconnectTimer;
   final _eventController = StreamController<ChatEvent>.broadcast();
   final _connectionController = StreamController<bool>.broadcast();
+  DateTime? _lastConnectErrorLoggedAt;
+  String? _lastConnectErrorSignature;
+  int _reconnectAttempts = 0;
   bool _disposed = false;
   bool _connected = false;
 
@@ -73,11 +76,14 @@ class ChatWsService {
 
       await _channel!.ready;
       _connected = true;
+      _reconnectAttempts = 0;
+      _lastConnectErrorLoggedAt = null;
+      _lastConnectErrorSignature = null;
       _connectionController.add(true);
 
       _channel!.stream.listen(_onMessage, onError: _onError, onDone: _onDone);
     } catch (e) {
-      debugPrint('ChatWS connect error: $e');
+      _logConnectError(e);
       _scheduleReconnect();
     }
   }
@@ -108,7 +114,31 @@ class ChatWsService {
   void _scheduleReconnect() {
     if (_disposed) return;
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 3), connect);
+    final delay = _nextReconnectDelay();
+    _reconnectTimer = Timer(delay, connect);
+  }
+
+  Duration _nextReconnectDelay() {
+    final multiplier = 1 << _reconnectAttempts.clamp(0, 3).toInt();
+    final seconds = (3 * multiplier).clamp(3, 30).toInt();
+    _reconnectAttempts = (_reconnectAttempts + 1).clamp(0, 4).toInt();
+    return Duration(seconds: seconds);
+  }
+
+  void _logConnectError(Object error) {
+    final signature = error.toString();
+    final now = DateTime.now();
+    final shouldLog =
+        signature != _lastConnectErrorSignature ||
+        _lastConnectErrorLoggedAt == null ||
+        now.difference(_lastConnectErrorLoggedAt!) >
+            const Duration(seconds: 30);
+
+    if (!shouldLog) return;
+
+    _lastConnectErrorSignature = signature;
+    _lastConnectErrorLoggedAt = now;
+    debugPrint('ChatWS connect error: $error');
   }
 
   void sendTyping(String conversationId) {
@@ -126,6 +156,7 @@ class ChatWsService {
     _channel?.sink.close();
     _channel = null;
     _connected = false;
+    _reconnectAttempts = 0;
     _connectionController.add(false);
   }
 

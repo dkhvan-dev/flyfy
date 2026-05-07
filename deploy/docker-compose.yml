@@ -25,6 +25,26 @@ services:
     networks:
       - flyfy-network
 
+  token-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: token-postgres-migrator
+    environment:
+      PGHOST: token-postgres
+      PGPORT: 5432
+      POSTGRES_DB: token_service
+      POSTGRES_USER: token_service
+      POSTGRES_PASSWORD: token_secret_dev
+    volumes:
+      - ./init-scripts/001_token_service_migrate.sh:/usr/local/bin/001_token_service_migrate.sh:ro
+      - ../backend/services/token-service/migrations:/migrations/token-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/001_token_service_migrate.sh"]
+    depends_on:
+      token-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
   # ============================================
   # Auth Service PostgreSQL
   # ============================================
@@ -396,6 +416,8 @@ services:
     depends_on:
       token-postgres:
         condition: service_healthy
+      token-postgres-migrator:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: unless-stopped
