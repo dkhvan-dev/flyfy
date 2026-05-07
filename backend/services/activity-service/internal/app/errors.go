@@ -48,6 +48,12 @@ var (
 	ErrActivityMediaFileNotReady   = errors.New("activity media file is not ready")
 	ErrActivityMediaFileNotAllowed = errors.New("activity media file is not allowed")
 
+	ErrPaymentGatewayUnavailable  = errors.New("payment gateway is unavailable")
+	ErrPaymentAuthorizationFailed = errors.New("payment authorization failed")
+	ErrPaymentCaptureFailed       = errors.New("payment capture failed")
+	ErrPaymentRefundFailed        = errors.New("payment refund failed")
+	ErrPaymentVoidFailed          = errors.New("payment authorization void failed")
+
 	ErrAttendanceAccessDenied       = errors.New("attendance access denied")
 	ErrAttendanceQRUnavailable      = errors.New("attendance qr is unavailable for this activity")
 	ErrAttendanceQRInvalid          = errors.New("attendance qr is invalid")

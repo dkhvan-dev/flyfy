@@ -19,6 +19,7 @@ type Config struct {
 	UserService UserServiceConfig
 	FileManager FileManagerConfig
 	ChatService ChatServiceConfig
+	Payment     PaymentServiceConfig
 }
 
 type AppConfig struct {
@@ -101,6 +102,11 @@ type FileManagerConfig struct {
 type ChatServiceConfig struct {
 	HTTPURL        string        `env:"CHAT_SERVICE_HTTP_URL, default=http://chat-service:8088"`
 	RequestTimeout time.Duration `env:"CHAT_SERVICE_REQUEST_TIMEOUT, default=5s"`
+}
+
+type PaymentServiceConfig struct {
+	HTTPURL        string        `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
+	RequestTimeout time.Duration `env:"PAYMENT_SERVICE_REQUEST_TIMEOUT, default=5s"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

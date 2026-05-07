@@ -13,6 +13,7 @@ import (
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/filemanager"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/grpc"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/http"
+	paymentadapter "github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/payment"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/adapter/repository"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/config"
@@ -79,6 +80,15 @@ func main() {
 		cfg.ChatService.RequestTimeout,
 	)
 	activityUC.SetChatGateway(chatClient)
+	paymentClient, err := paymentadapter.New(
+		cfg.Payment.HTTPURL,
+		cfg.Security.InternalServiceToken,
+		cfg.Payment.RequestTimeout,
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed initialize payment-service client")
+	}
+	activityUC.SetPaymentGateway(paymentClient)
 	attendanceUC := app.NewAttendanceUseCase(
 		repo,
 		cfg.Attendance.QRSigningSecret,
@@ -86,6 +96,7 @@ func main() {
 		cfg.Attendance.OfflineWindow,
 	)
 	joinUC := app.NewJoinUseCase(repo, chatClient, actorResolver)
+	joinUC.SetPaymentGateway(paymentClient)
 	searchUC := app.NewSearchUseCase(repo)
 	moderationUC := app.NewModerationUseCase(activityUC)
 

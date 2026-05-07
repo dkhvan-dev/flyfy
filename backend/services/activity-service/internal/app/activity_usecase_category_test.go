@@ -161,6 +161,41 @@ type activityTxRepoStub struct {
 	countOccupiedSlotsForUpdate              func(ctx context.Context, activityID uuid.UUID) (int, error)
 }
 
+type paymentGatewayStub struct {
+	authorize func(ctx context.Context, input port.PaymentCreateInput) (*port.PaymentTransaction, error)
+	capture   func(ctx context.Context, input port.PaymentChildInput) (*port.PaymentTransaction, error)
+	refund    func(ctx context.Context, input port.PaymentChildInput) (*port.PaymentTransaction, error)
+	void      func(ctx context.Context, input port.PaymentChildInput) (*port.PaymentTransaction, error)
+}
+
+func (s paymentGatewayStub) Authorize(ctx context.Context, input port.PaymentCreateInput) (*port.PaymentTransaction, error) {
+	if s.authorize != nil {
+		return s.authorize(ctx, input)
+	}
+	return &port.PaymentTransaction{ID: uuid.New(), Status: port.PaymentStatusSucceeded}, nil
+}
+
+func (s paymentGatewayStub) Capture(ctx context.Context, input port.PaymentChildInput) (*port.PaymentTransaction, error) {
+	if s.capture != nil {
+		return s.capture(ctx, input)
+	}
+	return &port.PaymentTransaction{ID: uuid.New(), Status: port.PaymentStatusSucceeded}, nil
+}
+
+func (s paymentGatewayStub) Refund(ctx context.Context, input port.PaymentChildInput) (*port.PaymentTransaction, error) {
+	if s.refund != nil {
+		return s.refund(ctx, input)
+	}
+	return &port.PaymentTransaction{ID: uuid.New(), Status: port.PaymentStatusSucceeded}, nil
+}
+
+func (s paymentGatewayStub) Void(ctx context.Context, input port.PaymentChildInput) (*port.PaymentTransaction, error) {
+	if s.void != nil {
+		return s.void(ctx, input)
+	}
+	return &port.PaymentTransaction{ID: uuid.New(), Status: port.PaymentStatusSucceeded}, nil
+}
+
 func (s *activityTxRepoStub) GetActivityByIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Activity, error) {
 	if s.getActivityByIDForUpdate != nil {
 		return s.getActivityByIDForUpdate(ctx, activityID)
@@ -747,7 +782,101 @@ func TestAutoFinalizeRegistrationCancelsWhenMinimumParticipantsNotMet(t *testing
 	}
 }
 
-func TestJoinPaidActivityMocksAuthorizationAndConfirmsParticipant(t *testing.T) {
+func TestAutoFinalizeRegistrationCapturesAuthorizedPaidParticipants(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	userID := uuid.New()
+	minParticipants := 1
+	priceAmount := 2500.0
+	currency := "KZT"
+	authPaymentID := uuid.New()
+	capturePaymentID := uuid.New()
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+	activity.MinParticipants = &minParticipants
+	activity.PriceType = enum.ActivityPriceTypePaid
+	activity.PriceAmount = &priceAmount
+	activity.Currency = &currency
+	activity.RegistrationDeadline = time.Now().UTC().Add(-5 * time.Minute)
+	activity.StartAt = time.Now().UTC().Add(45 * time.Minute)
+	activity.EndAt = activity.StartAt.Add(90 * time.Minute)
+
+	participant := validParticipant(t, activityID, userID, enum.ParticipantStatusConfirmed)
+	participant.PaymentTransactionID = &authPaymentID
+	participants := []*model.ActivityParticipant{participant}
+
+	var updatedActivity *model.Activity
+	createdEventTypes := make([]string, 0)
+	repo := &activityRepoStub{
+		listActivitiesDueForRegistrationFinalization: func(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error) {
+			return []*model.Activity{activity}, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				listParticipantsByActivityIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) ([]*model.ActivityParticipant, error) {
+					return participants, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					return participant, nil
+				},
+				updateActivity: func(ctx context.Context, item *model.Activity) error {
+					updatedActivity = item
+					return nil
+				},
+				updateParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					participant = item
+					return nil
+				},
+				createActivityEvent: func(ctx context.Context, item *model.ActivityEvent) error {
+					return nil
+				},
+				createParticipantEvent: func(ctx context.Context, item *model.ParticipantEvent) error {
+					createdEventTypes = append(createdEventTypes, item.EventType)
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	uc.SetPaymentGateway(paymentGatewayStub{
+		capture: func(ctx context.Context, input port.PaymentChildInput) (*port.PaymentTransaction, error) {
+			if input.ParentTransactionID != authPaymentID {
+				t.Fatalf("capture parent id = %s, want %s", input.ParentTransactionID, authPaymentID)
+			}
+			return &port.PaymentTransaction{ID: capturePaymentID, Status: port.PaymentStatusSucceeded}, nil
+		},
+	})
+
+	stats, err := uc.AutoFinalizeRegistrationDueActivities(context.Background(), 100)
+	if err != nil {
+		t.Fatalf("AutoFinalizeRegistrationDueActivities() error = %v", err)
+	}
+	if stats.Confirmed != 1 || stats.Cancelled != 0 || stats.Finalized != 1 {
+		t.Fatalf("AutoFinalizeRegistrationDueActivities() stats = %+v, want confirmed", stats)
+	}
+	if updatedActivity == nil || updatedActivity.Status != enum.ActivityStatusConfirmed {
+		t.Fatalf("updated activity = %+v, want confirmed", updatedActivity)
+	}
+	if participant.PaymentTransactionID == nil || *participant.PaymentTransactionID != capturePaymentID {
+		t.Fatalf("participant payment id = %+v, want capture id %s", participant.PaymentTransactionID, capturePaymentID)
+	}
+	if participant.PaidAt == nil {
+		t.Fatal("participant PaidAt is nil after capture")
+	}
+	if !containsString(createdEventTypes, ParticipantEventTypePaymentCaptureSucceeded) {
+		t.Fatalf("created event types = %v, want capture event", createdEventTypes)
+	}
+}
+
+func TestJoinPaidActivityAuthorizesPaymentAndConfirmsParticipant(t *testing.T) {
 	t.Parallel()
 
 	activityID := uuid.New()
@@ -772,12 +901,16 @@ func TestJoinPaidActivityMocksAuthorizationAndConfirmsParticipant(t *testing.T) 
 					return activity, nil
 				},
 				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
-					return nil, nil
+					return createdParticipant, nil
 				},
 				countOccupiedSlotsForUpdate: func(ctx context.Context, requestedID uuid.UUID) (int, error) {
 					return 0, nil
 				},
 				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+				updateParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
 					createdParticipant = item
 					return nil
 				},
@@ -791,6 +924,7 @@ func TestJoinPaidActivityMocksAuthorizationAndConfirmsParticipant(t *testing.T) 
 	}
 
 	uc := NewJoinUseCase(repo, nil)
+	uc.SetPaymentGateway(paymentGatewayStub{})
 	participant, err := uc.JoinActivity(context.Background(), JoinActivityInput{
 		ActivityID: activityID,
 		UserID:     userID,
@@ -804,11 +938,14 @@ func TestJoinPaidActivityMocksAuthorizationAndConfirmsParticipant(t *testing.T) 
 	if participant.Status != enum.ParticipantStatusConfirmed {
 		t.Fatalf("participant status = %s, want %s", participant.Status, enum.ParticipantStatusConfirmed)
 	}
-	if participant.PaidAt == nil {
-		t.Fatal("paid participant PaidAt is nil")
+	if participant.PaymentTransactionID == nil {
+		t.Fatal("paid participant PaymentTransactionID is nil")
 	}
-	if !containsString(createdEventTypes, ParticipantEventTypePaymentAuthorizationMocked) {
-		t.Fatalf("created event types = %v, want mocked authorization event", createdEventTypes)
+	if participant.PaidAt != nil {
+		t.Fatal("paid participant PaidAt should stay nil until capture")
+	}
+	if !containsString(createdEventTypes, ParticipantEventTypePaymentAuthorizationSucceeded) {
+		t.Fatalf("created event types = %v, want authorization event", createdEventTypes)
 	}
 }
 
@@ -833,7 +970,9 @@ func TestLeavePaidActivityAfterDeadlineMarksLateCancellationWithoutRefund(t *tes
 
 	participant := validParticipant(t, activityID, userID, enum.ParticipantStatusConfirmed)
 	paidAt := now.Add(-20 * time.Minute)
+	paymentTransactionID := uuid.New()
 	participant.PaidAt = &paidAt
+	participant.PaymentTransactionID = &paymentTransactionID
 
 	createdEventTypes := make([]string, 0)
 	repo := &activityRepoStub{
@@ -865,8 +1004,8 @@ func TestLeavePaidActivityAfterDeadlineMarksLateCancellationWithoutRefund(t *tes
 	if updated.Status != enum.ParticipantStatusLateCancelled {
 		t.Fatalf("participant status = %s, want %s", updated.Status, enum.ParticipantStatusLateCancelled)
 	}
-	if !containsString(createdEventTypes, ParticipantEventTypePaymentRefundDeniedMocked) {
-		t.Fatalf("created event types = %v, want mocked refund denied event", createdEventTypes)
+	if !containsString(createdEventTypes, ParticipantEventTypePaymentRefundDenied) {
+		t.Fatalf("created event types = %v, want refund denied event", createdEventTypes)
 	}
 }
 

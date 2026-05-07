@@ -9,6 +9,7 @@ type ParticipantResponse struct {
 	ApprovedAt            *string `json:"approvedAt,omitempty"`
 	WaitlistedAt          *string `json:"waitlistedAt,omitempty"`
 	PaymentDueAt          *string `json:"paymentDueAt,omitempty"`
+	PaymentTransactionID  *string `json:"paymentTransactionId,omitempty"`
 	PaidAt                *string `json:"paidAt,omitempty"`
 	AttendanceConfirmedAt *string `json:"attendanceConfirmedAt,omitempty"`
 	CheckedInAt           *string `json:"checkedInAt,omitempty"`

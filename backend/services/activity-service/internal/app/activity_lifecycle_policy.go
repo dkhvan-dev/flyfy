@@ -13,12 +13,6 @@ const (
 
 	ParticipantCancelReasonActivityCancelled = "ACTIVITY_CANCELLED"
 	ParticipantCancelReasonLateCancellation  = "LATE_CANCELLATION"
-
-	ParticipantEventTypePaymentAuthorizationMocked          = "PAYMENT_AUTHORIZATION_MOCKED"
-	ParticipantEventTypePaymentCaptureMocked                = "PAYMENT_CAPTURE_MOCKED"
-	ParticipantEventTypePaymentRefundMocked                 = "PAYMENT_REFUND_MOCKED"
-	ParticipantEventTypePaymentRefundDeniedMocked           = "PAYMENT_REFUND_DENIED_MOCKED"
-	ParticipantEventTypePaymentAuthorizationCancelledMocked = "PAYMENT_AUTHORIZATION_CANCELLED_MOCKED"
 )
 
 func isPaidActivity(item *model.Activity) bool {
@@ -27,17 +21,6 @@ func isPaidActivity(item *model.Activity) bool {
 	}
 	return item.PriceType == enum.ActivityPriceTypePaid ||
 		item.PriceType == enum.ActivityPriceTypeDeposit
-}
-
-func mockPaymentModeForJoin(
-	item *model.Activity,
-	status enum.ParticipantStatus,
-) *string {
-	if !isPaidActivity(item) || status != enum.ParticipantStatusConfirmed {
-		return nil
-	}
-	value := "authorized"
-	return &value
 }
 
 func isParticipantCancellationTerminal(status enum.ParticipantStatus) bool {
@@ -59,7 +42,7 @@ func participantEligibleForMinimum(item *model.Activity, participant *model.Acti
 	if isPaidActivity(item) {
 		switch participant.Status {
 		case enum.ParticipantStatusConfirmed, enum.ParticipantStatusCheckedIn:
-			return participant.PaidAt != nil
+			return participant.PaidAt != nil || participant.PaymentTransactionID != nil
 		default:
 			return false
 		}

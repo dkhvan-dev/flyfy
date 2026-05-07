@@ -616,6 +616,8 @@ services:
         condition: service_healthy
       activity-postgres-migrator:
         condition: service_completed_successfully
+      payment-service:
+        condition: service_started
     ports:
       - "8086:8086"
       - "9096:9096"
@@ -649,6 +651,8 @@ services:
       USER_SERVICE_GRPC_ADDR: dns:///user-service:9094
       CHAT_SERVICE_HTTP_URL: http://chat-service:8088
       CHAT_SERVICE_REQUEST_TIMEOUT: 5s
+      PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
+      PAYMENT_SERVICE_REQUEST_TIMEOUT: 5s
     restart: unless-stopped
     networks:
       - flyfy-network

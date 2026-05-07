@@ -680,7 +680,7 @@ func (r *PGActivityRepository) GetParticipantByActivityAndUser(ctx context.Conte
 	const query = `
 		SELECT
 			id, activity_id, user_id, status, joined_at, approved_at, waitlisted_at,
-			payment_due_at, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
+			payment_due_at, payment_transaction_id, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
 			cancelled_at, cancelled_by_user_id, cancel_reason, created_at, updated_at
 		FROM activity_participants
 		WHERE activity_id = $1 AND user_id = $2
@@ -704,7 +704,7 @@ func (r *PGActivityRepository) ListParticipantsByActivityID(ctx context.Context,
 	const query = `
 		SELECT
 			id, activity_id, user_id, status, joined_at, approved_at, waitlisted_at,
-			payment_due_at, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
+			payment_due_at, payment_transaction_id, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
 			cancelled_at, cancelled_by_user_id, cancel_reason, created_at, updated_at
 		FROM activity_participants
 		WHERE activity_id = $1
@@ -734,12 +734,12 @@ func (r *PGActivityRepository) CreateParticipant(ctx context.Context, item *mode
 	const query = `
 		INSERT INTO activity_participants (
 			id, activity_id, user_id, status, joined_at, approved_at, waitlisted_at,
-			payment_due_at, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
+			payment_due_at, payment_transaction_id, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
 			cancelled_at, cancelled_by_user_id, cancel_reason, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7,
-			$8, $9, $10, $11, $12,
-			$13, $14, $15, $16, $17
+			$8, $9, $10, $11, $12, $13,
+			$14, $15, $16, $17, $18
 		)
 	`
 
@@ -754,6 +754,7 @@ func (r *PGActivityRepository) CreateParticipant(ctx context.Context, item *mode
 		item.ApprovedAt,
 		item.WaitlistedAt,
 		item.PaymentDueAt,
+		item.PaymentTransactionID,
 		item.PaidAt,
 		item.AttendanceConfirmedAt,
 		item.CheckedInAt,
@@ -780,14 +781,15 @@ func (r *PGActivityRepository) UpdateParticipant(ctx context.Context, item *mode
 			approved_at = $4,
 			waitlisted_at = $5,
 			payment_due_at = $6,
-			paid_at = $7,
-			attendance_confirmed_at = $8,
-			checked_in_at = $9,
-			attended_at = $10,
-			cancelled_at = $11,
-			cancelled_by_user_id = $12,
-			cancel_reason = $13,
-			updated_at = $14
+			payment_transaction_id = $7,
+			paid_at = $8,
+			attendance_confirmed_at = $9,
+			checked_in_at = $10,
+			attended_at = $11,
+			cancelled_at = $12,
+			cancelled_by_user_id = $13,
+			cancel_reason = $14,
+			updated_at = $15
 		WHERE id = $1
 	`
 
@@ -800,6 +802,7 @@ func (r *PGActivityRepository) UpdateParticipant(ctx context.Context, item *mode
 		item.ApprovedAt,
 		item.WaitlistedAt,
 		item.PaymentDueAt,
+		item.PaymentTransactionID,
 		item.PaidAt,
 		item.AttendanceConfirmedAt,
 		item.CheckedInAt,
@@ -869,7 +872,7 @@ func (r *PGActivityTxRepository) GetParticipantByActivityAndUserForUpdate(ctx co
 	const query = `
 		SELECT
 			id, activity_id, user_id, status, joined_at, approved_at, waitlisted_at,
-			payment_due_at, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
+			payment_due_at, payment_transaction_id, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
 			cancelled_at, cancelled_by_user_id, cancel_reason, created_at, updated_at
 		FROM activity_participants
 		WHERE activity_id = $1 AND user_id = $2
@@ -1005,7 +1008,7 @@ func (r *PGActivityTxRepository) ListParticipantsByActivityIDForUpdate(
 	const query = `
 		SELECT
 			id, activity_id, user_id, status, joined_at, approved_at, waitlisted_at,
-			payment_due_at, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
+			payment_due_at, payment_transaction_id, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
 			cancelled_at, cancelled_by_user_id, cancel_reason, created_at, updated_at
 		FROM activity_participants
 		WHERE activity_id = $1
@@ -1035,12 +1038,12 @@ func (r *PGActivityTxRepository) CreateParticipant(ctx context.Context, item *mo
 	const query = `
 		INSERT INTO activity_participants (
 			id, activity_id, user_id, status, joined_at, approved_at, waitlisted_at,
-			payment_due_at, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
+			payment_due_at, payment_transaction_id, paid_at, attendance_confirmed_at, checked_in_at, attended_at,
 			cancelled_at, cancelled_by_user_id, cancel_reason, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7,
-			$8, $9, $10, $11, $12,
-			$13, $14, $15, $16, $17
+			$8, $9, $10, $11, $12, $13,
+			$14, $15, $16, $17, $18
 		)
 	`
 
@@ -1055,6 +1058,7 @@ func (r *PGActivityTxRepository) CreateParticipant(ctx context.Context, item *mo
 		item.ApprovedAt,
 		item.WaitlistedAt,
 		item.PaymentDueAt,
+		item.PaymentTransactionID,
 		item.PaidAt,
 		item.AttendanceConfirmedAt,
 		item.CheckedInAt,
@@ -1081,14 +1085,15 @@ func (r *PGActivityTxRepository) UpdateParticipant(ctx context.Context, item *mo
 			approved_at = $4,
 			waitlisted_at = $5,
 			payment_due_at = $6,
-			paid_at = $7,
-			attendance_confirmed_at = $8,
-			checked_in_at = $9,
-			attended_at = $10,
-			cancelled_at = $11,
-			cancelled_by_user_id = $12,
-			cancel_reason = $13,
-			updated_at = $14
+			payment_transaction_id = $7,
+			paid_at = $8,
+			attendance_confirmed_at = $9,
+			checked_in_at = $10,
+			attended_at = $11,
+			cancelled_at = $12,
+			cancelled_by_user_id = $13,
+			cancel_reason = $14,
+			updated_at = $15
 		WHERE id = $1
 	`
 
@@ -1101,6 +1106,7 @@ func (r *PGActivityTxRepository) UpdateParticipant(ctx context.Context, item *mo
 		item.ApprovedAt,
 		item.WaitlistedAt,
 		item.PaymentDueAt,
+		item.PaymentTransactionID,
 		item.PaidAt,
 		item.AttendanceConfirmedAt,
 		item.CheckedInAt,
@@ -1631,6 +1637,7 @@ func scanParticipant(row participantScanner) (*model.ActivityParticipant, error)
 		&item.ApprovedAt,
 		&item.WaitlistedAt,
 		&item.PaymentDueAt,
+		&item.PaymentTransactionID,
 		&item.PaidAt,
 		&item.AttendanceConfirmedAt,
 		&item.CheckedInAt,

@@ -25,6 +25,7 @@ type ActivityParticipant struct {
 	ApprovedAt            *time.Time
 	WaitlistedAt          *time.Time
 	PaymentDueAt          *time.Time
+	PaymentTransactionID  *uuid.UUID
 	PaidAt                *time.Time
 	AttendanceConfirmedAt *time.Time
 	CheckedInAt           *time.Time

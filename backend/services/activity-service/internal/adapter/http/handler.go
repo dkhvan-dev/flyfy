@@ -1166,6 +1166,7 @@ func toParticipantResponse(item *model.ActivityParticipant) dto.ParticipantRespo
 		ApprovedAt:            formatOptionalTime(item.ApprovedAt),
 		WaitlistedAt:          formatOptionalTime(item.WaitlistedAt),
 		PaymentDueAt:          formatOptionalTime(item.PaymentDueAt),
+		PaymentTransactionID:  formatOptionalUUID(item.PaymentTransactionID),
 		PaidAt:                formatOptionalTime(item.PaidAt),
 		AttendanceConfirmedAt: formatOptionalTime(item.AttendanceConfirmedAt),
 		CheckedInAt:           formatOptionalTime(item.CheckedInAt),

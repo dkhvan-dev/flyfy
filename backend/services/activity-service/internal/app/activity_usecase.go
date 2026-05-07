@@ -21,6 +21,7 @@ type ActivityUseCase struct {
 	policy      *PolicyService
 	fileManager port.ActivityMediaFileManager
 	chatGateway port.ActivityChatGateway
+	payment     port.ActivityPaymentGateway
 }
 
 func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.ActivityMediaFileManager) *ActivityUseCase {
@@ -38,6 +39,10 @@ func NewActivityUseCase(repo port.ActivityRepository, fileManager ...port.Activi
 
 func (u *ActivityUseCase) SetChatGateway(chatGateway port.ActivityChatGateway) {
 	u.chatGateway = chatGateway
+}
+
+func (u *ActivityUseCase) SetPaymentGateway(paymentGateway port.ActivityPaymentGateway) {
+	u.payment = paymentGateway
 }
 
 func (u *ActivityUseCase) syncActivityChat(ctx context.Context, item *model.Activity) {
@@ -608,6 +613,8 @@ func (u *ActivityUseCase) finalizeRegistrationInternal(
 ) (*model.Activity, bool, error) {
 	var updated *model.Activity
 	changed := false
+	captureTasks := make([]participantPaymentTask, 0)
+	cancellationPaymentTasks := make([]participantPaymentTask, 0)
 
 	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		item, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
@@ -643,6 +650,7 @@ func (u *ActivityUseCase) finalizeRegistrationInternal(
 				trigger,
 				now,
 				participants,
+				&cancellationPaymentTasks,
 				map[string]any{
 					"eligibleParticipants": eligibleCount,
 					"minParticipants":      minParticipants,
@@ -681,7 +689,7 @@ func (u *ActivityUseCase) finalizeRegistrationInternal(
 				"minParticipants":         minParticipants,
 				"registrationDeadline":    item.RegistrationDeadline.Format(time.RFC3339),
 				"hostExcludedFromMinimum": true,
-				"paymentMode":             "mock",
+				"paymentMode":             "payment_service",
 			}),
 		})
 		if eventErr == nil {
@@ -695,30 +703,26 @@ func (u *ActivityUseCase) finalizeRegistrationInternal(
 				if !participantEligibleForMinimum(item, participant) {
 					continue
 				}
-				paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
-					ActivityID:    item.ID,
-					ParticipantID: participant.ID,
-					UserID:        participant.UserID,
-					EventType:     ParticipantEventTypePaymentCaptureMocked,
-					PayloadJSON: mustJSON(map[string]any{
-						"activityId":    item.ID.String(),
-						"participantId": participant.ID.String(),
-						"priceType":     string(item.PriceType),
-						"priceAmount":   item.PriceAmount,
-						"currency":      item.Currency,
-						"trigger":       trigger,
-						"idempotencyKey": fmt.Sprintf(
-							"activity_confirm:%s:participant:%s",
-							item.ID,
-							participant.ID,
-						),
-					}),
-				})
-				if paymentEventErr == nil {
-					if err = txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
-						return fmt.Errorf("create mocked payment capture event: %w", err)
-					}
+				if participant.PaymentTransactionID == nil || participant.PaidAt != nil {
+					continue
 				}
+				captureTasks = append(captureTasks, participantPaymentTask{
+					Action:                     participantPaymentActionCapture,
+					ActivityID:                 item.ID,
+					ParticipantID:              participant.ID,
+					UserID:                     participant.UserID,
+					ParentPaymentTransactionID: *participant.PaymentTransactionID,
+					IdempotencyKey: fmt.Sprintf(
+						"activity_confirm_capture:%s:participant:%s",
+						item.ID,
+						participant.ID,
+					),
+					EventType:      ParticipantEventTypePaymentCaptureSucceeded,
+					Policy:         "capture_authorized_payment_after_registration_deadline",
+					Trigger:        trigger,
+					MarkPaid:       true,
+					ErrorOnFailure: ErrPaymentCaptureFailed,
+				})
 			}
 		}
 
@@ -728,6 +732,17 @@ func (u *ActivityUseCase) finalizeRegistrationInternal(
 	})
 	if err != nil {
 		return nil, false, err
+	}
+
+	for _, task := range captureTasks {
+		if err = executeParticipantPaymentTask(ctx, u.repo, u.payment, task); err != nil {
+			return nil, false, err
+		}
+	}
+	for _, task := range cancellationPaymentTasks {
+		if err = executeParticipantPaymentTask(ctx, u.repo, u.payment, task); err != nil {
+			return nil, false, err
+		}
 	}
 
 	if changed {
@@ -747,6 +762,7 @@ func (u *ActivityUseCase) cancelActivityInTx(
 	trigger string,
 	now time.Time,
 	participants []*model.ActivityParticipant,
+	paymentTasks *[]participantPaymentTask,
 	extraPayload map[string]any,
 ) error {
 	now = now.UTC()
@@ -777,7 +793,6 @@ func (u *ActivityUseCase) cancelActivityInTx(
 			continue
 		}
 
-		previousStatus := participant.Status
 		if err := participant.SetStatus(enum.ParticipantStatusCancelledByActivity, now); err != nil {
 			return err
 		}
@@ -807,58 +822,45 @@ func (u *ActivityUseCase) cancelActivityInTx(
 			}
 		}
 
-		if isPaidActivity(item) && participant.PaidAt != nil {
-			paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
-				ActivityID:    item.ID,
-				ParticipantID: participant.ID,
-				UserID:        participant.UserID,
-				EventType:     ParticipantEventTypePaymentRefundMocked,
-				ActorUserID:   actorUserID,
-				PayloadJSON: mustJSON(map[string]any{
-					"activityId":    item.ID.String(),
-					"participantId": participant.ID.String(),
-					"reason":        reason,
-					"source":        string(source),
-					"priceType":     string(item.PriceType),
-					"priceAmount":   item.PriceAmount,
-					"currency":      item.Currency,
-					"policy":        "full_refund_activity_cancelled",
-					"idempotencyKey": fmt.Sprintf(
-						"activity_cancel:%s:participant:%s",
+		if isPaidActivity(item) && participant.PaymentTransactionID != nil && paymentTasks != nil {
+			if participant.PaidAt != nil {
+				*paymentTasks = append(*paymentTasks, participantPaymentTask{
+					Action:                     participantPaymentActionRefund,
+					ActivityID:                 item.ID,
+					ParticipantID:              participant.ID,
+					UserID:                     participant.UserID,
+					ParentPaymentTransactionID: *participant.PaymentTransactionID,
+					ActorUserID:                actorUserID,
+					IdempotencyKey: fmt.Sprintf(
+						"activity_cancel_refund:%s:participant:%s",
 						item.ID,
 						participant.ID,
 					),
-				}),
-			})
-			if paymentEventErr == nil {
-				if err := txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
-					return fmt.Errorf("create mocked payment refund event: %w", err)
-				}
-			}
-		} else if isPaidActivity(item) && previousStatus == enum.ParticipantStatusPendingPayment {
-			paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
-				ActivityID:    item.ID,
-				ParticipantID: participant.ID,
-				UserID:        participant.UserID,
-				EventType:     ParticipantEventTypePaymentAuthorizationCancelledMocked,
-				ActorUserID:   actorUserID,
-				PayloadJSON: mustJSON(map[string]any{
-					"activityId":    item.ID.String(),
-					"participantId": participant.ID.String(),
-					"reason":        reason,
-					"source":        string(source),
-					"policy":        "pending_payment_cancelled_before_capture",
-					"idempotencyKey": fmt.Sprintf(
-						"activity_cancel_auth:%s:participant:%s",
+					EventType:      ParticipantEventTypePaymentRefundSucceeded,
+					Policy:         "full_refund_activity_cancelled",
+					Reason:         reason,
+					Trigger:        trigger,
+					ErrorOnFailure: ErrPaymentRefundFailed,
+				})
+			} else {
+				*paymentTasks = append(*paymentTasks, participantPaymentTask{
+					Action:                     participantPaymentActionVoid,
+					ActivityID:                 item.ID,
+					ParticipantID:              participant.ID,
+					UserID:                     participant.UserID,
+					ParentPaymentTransactionID: *participant.PaymentTransactionID,
+					ActorUserID:                actorUserID,
+					IdempotencyKey: fmt.Sprintf(
+						"activity_cancel_auth_void:%s:participant:%s",
 						item.ID,
 						participant.ID,
 					),
-				}),
-			})
-			if paymentEventErr == nil {
-				if err := txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
-					return fmt.Errorf("create mocked authorization cancel event: %w", err)
-				}
+					EventType:      ParticipantEventTypePaymentAuthorizationVoided,
+					Policy:         "authorization_voided_activity_cancelled",
+					Reason:         reason,
+					Trigger:        trigger,
+					ErrorOnFailure: ErrPaymentVoidFailed,
+				})
 			}
 		}
 	}
@@ -1229,6 +1231,7 @@ func (u *ActivityUseCase) CancelActivity(
 	}
 
 	var updated *model.Activity
+	paymentTasks := make([]participantPaymentTask, 0)
 
 	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		item, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
@@ -1263,6 +1266,7 @@ func (u *ActivityUseCase) CancelActivity(
 			"manual_host",
 			time.Now().UTC(),
 			participants,
+			&paymentTasks,
 			map[string]any{},
 		); err != nil {
 			return err
@@ -1276,6 +1280,11 @@ func (u *ActivityUseCase) CancelActivity(
 	}
 
 	u.syncActivityChat(ctx, updated)
+	for _, task := range paymentTasks {
+		if err = executeParticipantPaymentTask(ctx, u.repo, u.payment, task); err != nil {
+			return nil, err
+		}
+	}
 
 	return updated, nil
 }

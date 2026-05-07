@@ -18,6 +18,7 @@ type JoinUseCase struct {
 	repo                port.ActivityRepository
 	chatGateway         port.ActivityChatGateway
 	userProfileResolver port.UserProfileResolver
+	payment             port.ActivityPaymentGateway
 }
 
 func NewJoinUseCase(
@@ -34,6 +35,10 @@ func NewJoinUseCase(
 		chatGateway:         chatGateway,
 		userProfileResolver: resolver,
 	}
+}
+
+func (u *JoinUseCase) SetPaymentGateway(paymentGateway port.ActivityPaymentGateway) {
+	u.payment = paymentGateway
 }
 
 type JoinActivityInput struct {
@@ -57,6 +62,8 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 	}
 
 	var created *model.ActivityParticipant
+	var activityForPostCommit *model.Activity
+	requiresPaymentAuthorization := false
 	var chatInput *port.EnsureActivityParticipantInput
 
 	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
@@ -120,7 +127,11 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			status = enum.ParticipantStatusApproved
 		}
 		if status == enum.ParticipantStatusApproved && isPaidActivity(activity) {
-			status = enum.ParticipantStatusConfirmed
+			if err = ensurePaymentGateway(u.payment); err != nil {
+				return err
+			}
+			status = enum.ParticipantStatusPendingPayment
+			requiresPaymentAuthorization = true
 		}
 
 		if activity.CapacityType == enum.ActivityCapacityTypeLimited && activity.MaxParticipants != nil {
@@ -142,10 +153,6 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			nowCopy := now
 			participant.ApprovedAt = &nowCopy
 		}
-		if status == enum.ParticipantStatusConfirmed && isPaidActivity(activity) {
-			nowCopy := now
-			participant.PaidAt = &nowCopy
-		}
 		if status == enum.ParticipantStatusWaitlisted {
 			nowCopy := now
 			participant.WaitlistedAt = &nowCopy
@@ -166,7 +173,7 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			ActorUserID:   &input.UserID,
 			PayloadJSON: mustJSON(map[string]any{
 				"status":      string(status),
-				"paymentMode": mockPaymentModeForJoin(activity, status),
+				"paymentMode": paymentModeForParticipant(activity, status),
 			}),
 		})
 		if participantEventErr == nil {
@@ -174,34 +181,6 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 				return fmt.Errorf("create participant event: %w", err)
 			}
 		}
-		if status == enum.ParticipantStatusConfirmed && isPaidActivity(activity) {
-			paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
-				ActivityID:    activity.ID,
-				ParticipantID: participant.ID,
-				UserID:        participant.UserID,
-				EventType:     ParticipantEventTypePaymentAuthorizationMocked,
-				ActorUserID:   &input.UserID,
-				PayloadJSON: mustJSON(map[string]any{
-					"activityId":    activity.ID.String(),
-					"participantId": participant.ID.String(),
-					"priceType":     string(activity.PriceType),
-					"priceAmount":   activity.PriceAmount,
-					"currency":      activity.Currency,
-					"policy":        "mock_authorized_on_join",
-					"idempotencyKey": fmt.Sprintf(
-						"activity_join:%s:participant:%s",
-						activity.ID,
-						participant.ID,
-					),
-				}),
-			})
-			if paymentEventErr == nil {
-				if err = txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
-					return fmt.Errorf("create mocked payment authorization event: %w", err)
-				}
-			}
-		}
-
 		if status == enum.ParticipantStatusWaitlisted {
 			if err = txRepo.UpdateActivity(ctx, activity); err != nil {
 				return fmt.Errorf("update activity full status: %w", err)
@@ -223,20 +202,33 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 		}
 
 		created = participant
-		if participant.Status.IsActive() {
-			messagingAvailableUntil := activityChatMessagingAvailableUntil(activity)
-			chatInput = &port.EnsureActivityParticipantInput{
-				ActivityID:              activity.ID,
-				ActivityTitle:           activity.Title,
-				MessagingAvailableUntil: &messagingAvailableUntil,
-				HostUserID:              activity.HostUserID,
-				UserID:                  participant.UserID,
-			}
-		}
+		activityForPostCommit = activity
 		return nil
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if requiresPaymentAuthorization {
+		authorized, authErr := u.authorizeParticipantPayment(ctx, activityForPostCommit, created, input.UserID)
+		if authErr != nil {
+			return nil, authErr
+		}
+		created = authorized
+	}
+
+	if created != nil &&
+		created.Status.IsActive() &&
+		created.Status != enum.ParticipantStatusPendingPayment &&
+		activityForPostCommit != nil {
+		messagingAvailableUntil := activityChatMessagingAvailableUntil(activityForPostCommit)
+		chatInput = &port.EnsureActivityParticipantInput{
+			ActivityID:              activityForPostCommit.ID,
+			ActivityTitle:           activityForPostCommit.Title,
+			MessagingAvailableUntil: &messagingAvailableUntil,
+			HostUserID:              activityForPostCommit.HostUserID,
+			UserID:                  created.UserID,
+		}
 	}
 
 	if u.chatGateway != nil && chatInput != nil {
@@ -311,6 +303,7 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 	}
 
 	var updated *model.ActivityParticipant
+	var paymentTask *participantPaymentTask
 
 	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		activity, err := txRepo.GetActivityByIDForUpdate(ctx, input.ActivityID)
@@ -342,7 +335,6 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 			return ErrActivityLeaveClosed
 		}
 
-		previousStatus := participant.Status
 		lateCancellation := isLateParticipantCancellation(activity, now)
 		nextStatus := enum.ParticipantStatusCancelled
 		cancelPolicy := "free_cancellation_before_registration_deadline"
@@ -385,63 +377,68 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 			}
 		}
 
-		if isPaidActivity(activity) && participant.PaidAt != nil {
-			eventType := ParticipantEventTypePaymentRefundMocked
-			policy := "full_refund_before_registration_deadline"
-			idempotencyPrefix := "activity_leave_refund"
-			if lateCancellation {
-				eventType = ParticipantEventTypePaymentRefundDeniedMocked
-				policy = "no_refund_after_registration_deadline"
-				idempotencyPrefix = "activity_late_leave_no_refund"
-			}
-
-			paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
-				ActivityID:    activity.ID,
-				ParticipantID: participant.ID,
-				UserID:        participant.UserID,
-				EventType:     eventType,
-				ActorUserID:   &input.UserID,
-				PayloadJSON: mustJSON(map[string]any{
-					"activityId":    activity.ID.String(),
-					"participantId": participant.ID.String(),
-					"priceType":     string(activity.PriceType),
-					"priceAmount":   activity.PriceAmount,
-					"currency":      activity.Currency,
-					"policy":        policy,
-					"idempotencyKey": fmt.Sprintf(
-						"%s:%s:participant:%s",
-						idempotencyPrefix,
-						activity.ID,
-						participant.ID,
-					),
-				}),
-			})
-			if paymentEventErr == nil {
-				if err = txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
-					return fmt.Errorf("create mocked leave payment event: %w", err)
+		if isPaidActivity(activity) && participant.PaymentTransactionID != nil {
+			if participant.PaidAt != nil {
+				if lateCancellation {
+					paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
+						ActivityID:    activity.ID,
+						ParticipantID: participant.ID,
+						UserID:        participant.UserID,
+						EventType:     ParticipantEventTypePaymentRefundDenied,
+						ActorUserID:   &input.UserID,
+						PayloadJSON: mustJSON(map[string]any{
+							"activityId":                 activity.ID.String(),
+							"participantId":              participant.ID.String(),
+							"parentPaymentTransactionId": participant.PaymentTransactionID.String(),
+							"policy":                     "no_refund_after_registration_deadline",
+							"idempotencyKey": fmt.Sprintf(
+								"activity_late_leave_no_refund:%s:participant:%s",
+								activity.ID,
+								participant.ID,
+							),
+						}),
+					})
+					if paymentEventErr == nil {
+						if err = txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
+							return fmt.Errorf("create refund denied event: %w", err)
+						}
+					}
+				} else {
+					paymentTask = &participantPaymentTask{
+						Action:                     participantPaymentActionRefund,
+						ActivityID:                 activity.ID,
+						ParticipantID:              participant.ID,
+						UserID:                     participant.UserID,
+						ParentPaymentTransactionID: *participant.PaymentTransactionID,
+						ActorUserID:                &input.UserID,
+						IdempotencyKey: fmt.Sprintf(
+							"activity_leave_refund:%s:participant:%s",
+							activity.ID,
+							participant.ID,
+						),
+						EventType:      ParticipantEventTypePaymentRefundSucceeded,
+						Policy:         "full_refund_before_registration_deadline",
+						Reason:         cancelPolicy,
+						ErrorOnFailure: ErrPaymentRefundFailed,
+					}
 				}
-			}
-		} else if isPaidActivity(activity) && previousStatus == enum.ParticipantStatusPendingPayment {
-			paymentEvent, paymentEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
-				ActivityID:    activity.ID,
-				ParticipantID: participant.ID,
-				UserID:        participant.UserID,
-				EventType:     ParticipantEventTypePaymentAuthorizationCancelledMocked,
-				ActorUserID:   &input.UserID,
-				PayloadJSON: mustJSON(map[string]any{
-					"activityId":    activity.ID.String(),
-					"participantId": participant.ID.String(),
-					"policy":        "pending_payment_cancelled_before_capture",
-					"idempotencyKey": fmt.Sprintf(
-						"activity_leave_auth_cancel:%s:participant:%s",
+			} else {
+				paymentTask = &participantPaymentTask{
+					Action:                     participantPaymentActionVoid,
+					ActivityID:                 activity.ID,
+					ParticipantID:              participant.ID,
+					UserID:                     participant.UserID,
+					ParentPaymentTransactionID: *participant.PaymentTransactionID,
+					ActorUserID:                &input.UserID,
+					IdempotencyKey: fmt.Sprintf(
+						"activity_leave_auth_void:%s:participant:%s",
 						activity.ID,
 						participant.ID,
 					),
-				}),
-			})
-			if paymentEventErr == nil {
-				if err = txRepo.CreateParticipantEvent(ctx, paymentEvent); err != nil {
-					return fmt.Errorf("create mocked authorization cancel event: %w", err)
+					EventType:      ParticipantEventTypePaymentAuthorizationVoided,
+					Policy:         "authorization_voided_before_capture",
+					Reason:         cancelPolicy,
+					ErrorOnFailure: ErrPaymentVoidFailed,
 				}
 			}
 		}
@@ -476,6 +473,11 @@ func (u *JoinUseCase) LeaveActivity(ctx context.Context, input LeaveActivityInpu
 	})
 	if err != nil {
 		return nil, err
+	}
+	if paymentTask != nil {
+		if err = executeParticipantPaymentTask(ctx, u.repo, u.payment, *paymentTask); err != nil {
+			return nil, err
+		}
 	}
 
 	return updated, nil
