@@ -850,9 +850,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                               l10n.activityGoingTitle(participants.length),
                               style: const TextStyle(
                                 color: _DetailsColors.text,
-                                fontSize: 20,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: -0.03,
+                                letterSpacing: 0,
                               ),
                             ),
                           ),
@@ -888,10 +888,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                       .read<SessionProvider>()
                                       .profile,
                                 ),
-                                radius: 24,
+                                radius: 21,
                                 borderColor: _DetailsColors.sheet,
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -904,7 +904,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                       ),
                                       style: const TextStyle(
                                         color: _DetailsColors.text,
-                                        fontSize: 15,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -915,7 +915,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                       ),
                                       style: const TextStyle(
                                         color: _DetailsColors.muted,
-                                        fontSize: 13,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -1110,12 +1110,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
-                  final horizontalPadding = width < 360 ? 16.0 : 22.0;
+                  final horizontalPadding = width < 360 ? 14.0 : 18.0;
                   final heroHeight = width < 360
-                      ? 332.0
+                      ? 292.0
                       : width > 430
-                      ? 392.0
-                      : 368.0;
+                      ? 348.0
+                      : 326.0;
                   final compact = width < 360;
 
                   return RefreshIndicator(
@@ -1128,9 +1128,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                       ),
                       padding: EdgeInsets.fromLTRB(
                         horizontalPadding,
-                        12,
+                        10,
                         horizontalPadding,
-                        158 + MediaQuery.paddingOf(context).bottom,
+                        132 + MediaQuery.paddingOf(context).bottom,
                       ),
                       children: [
                         _DetailsTopBar(
@@ -1144,7 +1144,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             l10n.activityDetailsLinkCopied,
                           ),
                         ),
-                        SizedBox(height: compact ? 14 : 18),
+                        SizedBox(height: compact ? 12 : 14),
                         _DetailsHero(
                           height: heroHeight,
                           categorySlug: activity.categorySlug,
@@ -1158,14 +1158,14 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           ),
                           imageUrl: resolveActivityCoverUrl(activity),
                         ),
-                        SizedBox(height: compact ? 18 : 20),
+                        SizedBox(height: compact ? 14 : 16),
                         _HeadingSection(
                           title: activity.title,
                           description: activity.description,
                           compact: compact,
                         ),
                         if (lifecycleReason.isNotEmpty) ...[
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 14),
                           _LifecycleReasonCard(
                             title: lifecycleReasonTitle,
                             reason: lifecycleReason,
@@ -1173,7 +1173,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             accentColor: lifecycleReasonColor,
                           ),
                         ],
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         _HostCard(
                           hostName: hostName,
                           avatarUrl: hostAvatarUrl,
@@ -1203,13 +1203,13 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                             );
                           },
                         ),
-                        const SizedBox(height: 26),
+                        const SizedBox(height: 22),
                         _StatsGrid(
                           activity: activity,
                           l10n: l10n,
                           compact: compact,
                         ),
-                        const SizedBox(height: 26),
+                        const SizedBox(height: 22),
                         _ParticipantsSection(
                           l10n: l10n,
                           participants: activeParticipants,
@@ -1322,18 +1322,18 @@ class _DetailsResponsiveTextScope extends StatelessWidget {
 
     double widthScale;
     if (shortSide <= 320) {
-      widthScale = 0.9;
+      widthScale = 0.84;
     } else if (shortSide <= 360) {
-      widthScale = 0.95;
+      widthScale = 0.88;
     } else if (shortSide <= 390) {
-      widthScale = 0.98;
+      widthScale = 0.92;
     } else if (shortSide >= 430) {
-      widthScale = 1.04;
+      widthScale = 0.96;
     } else {
-      widthScale = 1;
+      widthScale = 0.94;
     }
 
-    final effectiveScale = (baseScale * widthScale).clamp(0.9, 1.16);
+    final effectiveScale = (baseScale * widthScale).clamp(0.84, 1.12);
 
     return MediaQuery(
       data: mediaQuery.copyWith(textScaler: TextScaler.linear(effectiveScale)),
@@ -1349,15 +1349,15 @@ double _detailsUiScale(BuildContext context) {
 
   double scale;
   if (shortSide <= 320) {
-    scale = 0.88;
+    scale = 0.82;
   } else if (shortSide <= 360) {
-    scale = 0.94;
+    scale = 0.86;
   } else if (shortSide <= 390) {
-    scale = 0.98;
+    scale = 0.9;
   } else if (shortSide >= 430) {
-    scale = 1.04;
+    scale = 0.96;
   } else {
-    scale = 1;
+    scale = 0.93;
   }
 
   if (height < 700) {
@@ -1366,7 +1366,7 @@ double _detailsUiScale(BuildContext context) {
     scale *= 1.02;
   }
 
-  return scale.clamp(0.86, 1.08);
+  return scale.clamp(0.8, 1.0);
 }
 
 double _detailsScaled(
@@ -1630,8 +1630,8 @@ class _PrivateActivityPasswordDialogState
                               ),
                               const SizedBox(height: 22),
                               Container(
-                                width: compact ? 76 : 84,
-                                height: compact ? 76 : 84,
+                                width: compact ? 64 : 70,
+                                height: compact ? 64 : 70,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: AppColors.accent.withValues(
@@ -1647,22 +1647,22 @@ class _PrivateActivityPasswordDialogState
                                 ),
                                 child: const Icon(
                                   Icons.lock_outline_rounded,
-                                  size: 34,
+                                  size: 28,
                                   color: AppColors.accent,
                                 ),
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 20),
                               Text(
                                 widget.l10n.activityPrivateJoinTitle,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: _DetailsColors.text,
-                                  fontSize: compact ? 28 : 32,
+                                  fontSize: compact ? 23 : 26,
                                   fontWeight: FontWeight.w700,
-                                  letterSpacing: -1.3,
+                                  letterSpacing: 0,
                                 ),
                               ),
-                              const SizedBox(height: 18),
+                              const SizedBox(height: 14),
                               ConstrainedBox(
                                 constraints: const BoxConstraints(
                                   maxWidth: 320,
@@ -1672,26 +1672,26 @@ class _PrivateActivityPasswordDialogState
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: const Color(0xFFB7B2BD),
-                                    fontSize: compact ? 16 : 18,
-                                    height: 1.45,
-                                    letterSpacing: -0.2,
+                                    fontSize: compact ? 14 : 15,
+                                    height: 1.4,
+                                    letterSpacing: 0,
                                   ),
                                 ),
                               ),
-                              SizedBox(height: compact ? 36 : 56),
+                              SizedBox(height: compact ? 26 : 34),
                               Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   widget.l10n.activityPrivateJoinPasswordLabel,
                                   style: const TextStyle(
                                     color: _DetailsColors.text,
-                                    fontSize: 17,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w500,
-                                    letterSpacing: -0.2,
+                                    letterSpacing: 0,
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 10),
                               DecoratedBox(
                                 decoration: BoxDecoration(
                                   color: const Color(0xC21F130A),
@@ -1724,7 +1724,7 @@ class _PrivateActivityPasswordDialogState
                                   enableSuggestions: false,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: compact ? 18 : 20,
+                                    fontSize: compact ? 16 : 17,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.2,
                                   ),
@@ -1736,13 +1736,13 @@ class _PrivateActivityPasswordDialogState
                                       color: Colors.white.withValues(
                                         alpha: 0.72,
                                       ),
-                                      fontSize: compact ? 17 : 18,
+                                      fontSize: compact ? 15 : 16,
                                       fontWeight: FontWeight.w500,
                                     ),
                                     border: InputBorder.none,
                                     contentPadding: EdgeInsets.symmetric(
                                       horizontal: 22,
-                                      vertical: compact ? 18 : 20,
+                                      vertical: compact ? 14 : 16,
                                     ),
                                     suffixIcon: IconButton(
                                       onPressed: _isSubmitting
@@ -1820,7 +1820,7 @@ class _PrivateActivityPasswordDialogState
                                     onTap: _isSubmitting ? null : _submit,
                                     child: SizedBox(
                                       width: double.infinity,
-                                      height: compact ? 64 : 70,
+                                      height: compact ? 54 : 58,
                                       child: Center(
                                         child: _isSubmitting
                                             ? const SizedBox(
@@ -1840,9 +1840,9 @@ class _PrivateActivityPasswordDialogState
                                                     .activityPrivateJoinSubmit,
                                                 style: TextStyle(
                                                   color: Colors.white,
-                                                  fontSize: compact ? 18 : 20,
+                                                  fontSize: compact ? 16 : 17,
                                                   fontWeight: FontWeight.w700,
-                                                  letterSpacing: -0.4,
+                                                  letterSpacing: 0,
                                                 ),
                                               ),
                                       ),
@@ -2015,10 +2015,10 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                   ),
                   child: SingleChildScrollView(
                     padding: EdgeInsets.fromLTRB(
-                      compact ? 18 : 22,
-                      16,
-                      compact ? 18 : 22,
-                      compact ? 20 : 24,
+                      compact ? 16 : 18,
+                      14,
+                      compact ? 16 : 18,
+                      compact ? 18 : 20,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -2037,8 +2037,8 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                         const SizedBox(height: 22),
                         Center(
                           child: Container(
-                            width: compact ? 66 : 72,
-                            height: compact ? 66 : 72,
+                            width: compact ? 58 : 62,
+                            height: compact ? 58 : 62,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: AppColors.accent.withValues(alpha: 0.12),
@@ -2049,24 +2049,24 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                             child: Icon(
                               widget.confirmIcon,
                               color: AppColors.accent,
-                              size: 30,
+                              size: 26,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         Center(
                           child: Text(
                             widget.title,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: _DetailsColors.text,
-                              fontSize: compact ? 25 : 28,
+                              fontSize: compact ? 21 : 23,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: -0.8,
+                              letterSpacing: 0,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 360),
@@ -2075,18 +2075,18 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: _DetailsColors.muted,
-                                fontSize: compact ? 15 : 16,
-                                height: 1.5,
+                                fontSize: compact ? 13.5 : 14,
+                                height: 1.42,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 22),
                         Text(
                           widget.reasonLabel,
                           style: const TextStyle(
                             color: _DetailsColors.text,
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -2110,7 +2110,7 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                             textCapitalization: TextCapitalization.sentences,
                             style: const TextStyle(
                               color: _DetailsColors.text,
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w500,
                               height: 1.4,
                             ),
@@ -2120,7 +2120,7 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
                                 color: _DetailsColors.muted.withValues(
                                   alpha: 0.72,
                                 ),
-                                fontSize: 15,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
                               border: InputBorder.none,
@@ -2232,8 +2232,8 @@ class _SheetActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final minHeight = _detailsScaled(context, 58, min: 52, max: 62);
-    final iconSize = _detailsScaled(context, 18, min: 16, max: 20);
+    final minHeight = _detailsScaled(context, 52, min: 48, max: 54);
+    final iconSize = _detailsScaled(context, 16, min: 15, max: 18);
 
     final backgroundColor = isPrimary
         ? AppColors.accent
@@ -2267,9 +2267,9 @@ class _SheetActionButton extends StatelessWidget {
                 label,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
+                  letterSpacing: 0,
                 ),
               ),
             ),
@@ -2324,7 +2324,7 @@ class _DetailsTopBar extends StatelessWidget {
                   color: _DetailsColors.text,
                   fontSize: titleFontSize,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: -0.03,
+                  letterSpacing: 0,
                 ),
               ),
               SizedBox(height: _detailsScaled(context, 4, min: 3, max: 5)),
@@ -2356,7 +2356,7 @@ class _DetailsTopBar extends StatelessWidget {
                         color: _DetailsColors.subtle,
                         fontSize: statusFontSize,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.9,
+                        letterSpacing: 0.6,
                       ),
                     ),
                   ),
@@ -2736,20 +2736,20 @@ class _HeadingSection extends StatelessWidget {
           title,
           style: TextStyle(
             color: _DetailsColors.text,
-            fontSize: compact ? 28 : 31,
+            fontSize: compact ? 24 : 27,
             fontWeight: FontWeight.w800,
-            height: 1.0,
-            letterSpacing: -1.4,
+            height: 1.08,
+            letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Text(
           description,
           style: TextStyle(
             color: _DetailsColors.muted,
-            fontSize: compact ? 15 : 17,
-            height: 1.55,
-            letterSpacing: -0.18,
+            fontSize: compact ? 14 : 15,
+            height: 1.48,
+            letterSpacing: 0,
           ),
         ),
       ],
@@ -2772,13 +2772,13 @@ class _LifecycleReasonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeSize = _detailsScaled(context, 42, min: 36, max: 46);
-    final iconSize = _detailsScaled(context, 20, min: 18, max: 22);
-    final gap = _detailsScaled(context, 14, min: 10, max: 16);
+    final badgeSize = _detailsScaled(context, 38, min: 34, max: 40);
+    final iconSize = _detailsScaled(context, 18, min: 16, max: 19);
+    final gap = _detailsScaled(context, 12, min: 9, max: 13);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -2813,20 +2813,20 @@ class _LifecycleReasonCard extends StatelessWidget {
                   title,
                   style: TextStyle(
                     color: accentColor,
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.18,
+                    letterSpacing: 0,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   reason,
                   style: const TextStyle(
                     color: _DetailsColors.text,
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    height: 1.5,
-                    letterSpacing: -0.12,
+                    height: 1.42,
+                    letterSpacing: 0,
                   ),
                 ),
               ],
@@ -2859,11 +2859,11 @@ class _HostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final avatarSize = _detailsScaled(context, 56, min: 48, max: 60);
-        final avatarIcon = _detailsScaled(context, 26, min: 22, max: 28);
-        final badgeSize = _detailsScaled(context, 22, min: 18, max: 24);
-        final buttonHeight = _detailsScaled(context, 46, min: 42, max: 48);
-        final gap = _detailsScaled(context, 14, min: 10, max: 16);
+        final avatarSize = _detailsScaled(context, 50, min: 44, max: 54);
+        final avatarIcon = _detailsScaled(context, 23, min: 20, max: 25);
+        final badgeSize = _detailsScaled(context, 20, min: 17, max: 21);
+        final buttonHeight = _detailsScaled(context, 42, min: 40, max: 44);
+        final gap = _detailsScaled(context, 12, min: 9, max: 14);
         final stackVertically = constraints.maxWidth < 380;
         final avatar = Stack(
           clipBehavior: Clip.none,
@@ -2892,7 +2892,7 @@ class _HostCard extends StatelessWidget {
                             color: Colors.white,
                             fontSize: avatarIcon * 0.72,
                             fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
+                            letterSpacing: 0,
                           ),
                         ),
                       )
@@ -2906,7 +2906,7 @@ class _HostCard extends StatelessWidget {
                               color: Colors.white,
                               fontSize: avatarIcon * 0.72,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: -0.4,
+                              letterSpacing: 0,
                             ),
                           ),
                         ),
@@ -2941,9 +2941,9 @@ class _HostCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: _DetailsColors.text,
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
+                letterSpacing: 0,
               ),
             ),
             if (subtitle.trim().isNotEmpty) ...[
@@ -2954,7 +2954,7 @@ class _HostCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.accent,
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   height: 1.35,
                 ),
@@ -2969,7 +2969,7 @@ class _HostCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             child: Ink(
               height: buttonHeight,
-              padding: const EdgeInsets.symmetric(horizontal: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 color: AppColors.accent.withValues(alpha: 0.22),
                 borderRadius: BorderRadius.circular(999),
@@ -2979,9 +2979,9 @@ class _HostCard extends StatelessWidget {
                   buttonLabel,
                   style: const TextStyle(
                     color: AppColors.accent,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.22,
+                    letterSpacing: 0,
                   ),
                 ),
               ),
@@ -2990,7 +2990,7 @@ class _HostCard extends StatelessWidget {
         );
 
         return Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -3099,8 +3099,8 @@ class _StatsGrid extends StatelessWidget {
       ),
     ];
 
-    final horizontalSpacing = compact ? 14.0 : 16.0;
-    final verticalSpacing = compact ? 10.0 : 12.0;
+    final horizontalSpacing = compact ? 10.0 : 12.0;
+    final verticalSpacing = compact ? 8.0 : 10.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -3159,7 +3159,7 @@ class _DetailsStatCard extends StatelessWidget {
     final dense = textScale > 1.1;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(16, dense ? 16 : 18, 16, dense ? 14 : 16),
+      padding: EdgeInsets.fromLTRB(14, dense ? 13 : 15, 14, dense ? 12 : 14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -3176,27 +3176,27 @@ class _DetailsStatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(item.icon, color: AppColors.accent, size: 24),
-          SizedBox(height: dense ? 18 : 22),
+          Icon(item.icon, color: AppColors.accent, size: 21),
+          SizedBox(height: dense ? 12 : 15),
           Text(
             item.label.toUpperCase(),
             style: const TextStyle(
               color: _DetailsColors.subtle,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: dense ? 6 : 8),
+          SizedBox(height: dense ? 5 : 6),
           Text(
             item.value,
             maxLines: dense ? 3 : 2,
             overflow: TextOverflow.fade,
             style: const TextStyle(
               color: _DetailsColors.text,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
               height: 1.32,
-              letterSpacing: -0.25,
+              letterSpacing: 0,
             ),
           ),
         ],
@@ -3254,7 +3254,7 @@ class _MeetingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mapHeight = _detailsScaled(context, 248, min: 208, max: 272);
+    final mapHeight = _detailsScaled(context, 220, min: 190, max: 236);
 
     final hasMeetingLink = (activity.meetingUrl ?? '').trim().isNotEmpty;
     final hasLocation =
@@ -3287,9 +3287,9 @@ class _MeetingSection extends StatelessWidget {
                     l10n.activityMeetingPoint,
                     style: const TextStyle(
                       color: _DetailsColors.text,
-                      fontSize: 19,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.25,
+                      letterSpacing: 0,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -3320,9 +3320,9 @@ class _MeetingSection extends StatelessWidget {
                     l10n.activityMeetingPoint,
                     style: const TextStyle(
                       color: _DetailsColors.text,
-                      fontSize: 19,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.25,
+                      letterSpacing: 0,
                     ),
                   ),
                 ),
@@ -3382,8 +3382,8 @@ class _MeetingSection extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 62,
-                              height: 62,
+                              width: 54,
+                              height: 54,
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.12),
                                 shape: BoxShape.circle,
@@ -3391,10 +3391,10 @@ class _MeetingSection extends StatelessWidget {
                               child: const Icon(
                                 Icons.lock_outline_rounded,
                                 color: Colors.white,
-                                size: 30,
+                                size: 26,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             Text(
                               l10n.activitySensitiveDetailsProtected,
                               textAlign: TextAlign.center,
@@ -3474,7 +3474,7 @@ class _MeetingSection extends StatelessWidget {
                           : l10n.notSpecified),
                 style: const TextStyle(
                   color: _DetailsColors.muted,
-                  fontSize: 15,
+                  fontSize: 14,
                   height: 1.4,
                 ),
               ),
@@ -3722,7 +3722,7 @@ class _MeetingLeaveAction extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         onTap: isBusy ? null : onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -3738,7 +3738,7 @@ class _MeetingLeaveAction extends StatelessWidget {
               else
                 Icon(
                   Icons.logout_rounded,
-                  size: 17,
+                  size: 16,
                   color: AppColors.accent.withValues(alpha: 0.9),
                 ),
               const SizedBox(width: 8),
@@ -3746,9 +3746,9 @@ class _MeetingLeaveAction extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: AppColors.accent.withValues(alpha: 0.94),
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: -0.18,
+                  letterSpacing: 0,
                 ),
               ),
             ],
@@ -3784,7 +3784,7 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
             border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -3800,7 +3800,7 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
                 else
                   Icon(
                     Icons.event_busy_rounded,
-                    size: 18,
+                    size: 16,
                     color: AppColors.accent.withValues(alpha: 0.94),
                   ),
                 const SizedBox(width: 8),
@@ -3808,9 +3808,9 @@ class _MeetingOwnerCancelAction extends StatelessWidget {
                   label,
                   style: TextStyle(
                     color: AppColors.accent.withValues(alpha: 0.96),
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.18,
+                    letterSpacing: 0,
                   ),
                 ),
               ],
@@ -3917,7 +3917,7 @@ class _MeetingOwnerTonalAction extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         onTap: isBusy ? null : onTap,
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(18),
@@ -3939,7 +3939,7 @@ class _MeetingOwnerTonalAction extends StatelessWidget {
               else
                 Icon(
                   icon,
-                  size: 18,
+                  size: 16,
                   color: AppColors.accent.withValues(alpha: 0.96),
                 ),
               const SizedBox(width: 8),
@@ -3949,9 +3949,9 @@ class _MeetingOwnerTonalAction extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: _DetailsColors.text.withValues(alpha: 0.96),
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.18,
+                    letterSpacing: 0,
                   ),
                 ),
               ),
@@ -4001,7 +4001,7 @@ class _MeetingOwnerCompleteAction extends StatelessWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -4017,7 +4017,7 @@ class _MeetingOwnerCompleteAction extends StatelessWidget {
                 else
                   const Icon(
                     Icons.task_alt_rounded,
-                    size: 18,
+                    size: 16,
                     color: AppColors.textPrimary,
                   ),
                 const SizedBox(width: 8),
@@ -4025,9 +4025,9 @@ class _MeetingOwnerCompleteAction extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.18,
+                    letterSpacing: 0,
                   ),
                 ),
               ],
@@ -4072,13 +4072,13 @@ class _MeetingOwnerQrAction extends StatelessWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.qr_code_2_rounded,
-                  size: 18,
+                  size: 16,
                   color: AppColors.textPrimary,
                 ),
                 const SizedBox(width: 8),
@@ -4086,9 +4086,9 @@ class _MeetingOwnerQrAction extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.18,
+                    letterSpacing: 0,
                   ),
                 ),
               ],
@@ -4123,8 +4123,8 @@ class _ParticipantsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rowHeight = _detailsScaled(context, 48, min: 42, max: 52);
-    final overlap = _detailsScaled(context, 30, min: 24, max: 32);
+    final rowHeight = _detailsScaled(context, 44, min: 40, max: 46);
+    final overlap = _detailsScaled(context, 26, min: 22, max: 28);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -4140,9 +4140,9 @@ class _ParticipantsSection extends StatelessWidget {
                     l10n.activityGoingTitle(participants.length),
                     style: const TextStyle(
                       color: _DetailsColors.text,
-                      fontSize: 19,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.25,
+                      letterSpacing: 0,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -4173,9 +4173,9 @@ class _ParticipantsSection extends StatelessWidget {
                     l10n.activityGoingTitle(participants.length),
                     style: const TextStyle(
                       color: _DetailsColors.text,
-                      fontSize: 19,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.25,
+                      letterSpacing: 0,
                     ),
                   ),
                 ),
@@ -4215,7 +4215,7 @@ class _ParticipantsSection extends StatelessWidget {
                               resolvedProfiles: resolvedProfiles,
                               currentProfile: currentProfile,
                             ),
-                            radius: 21,
+                            radius: 19,
                             borderColor: _DetailsColors.base,
                           ),
                         ),
@@ -4228,7 +4228,7 @@ class _ParticipantsSection extends StatelessWidget {
                   '+${participants.length - 6}',
                   style: const TextStyle(
                     color: _DetailsColors.muted,
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -4318,7 +4318,7 @@ class _ParticipantAvatar extends StatelessWidget {
                     color: Colors.white,
                     fontSize: radius * 0.62,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
+                    letterSpacing: 0,
                   ),
                 ),
               )
@@ -4332,7 +4332,7 @@ class _ParticipantAvatar extends StatelessWidget {
                       color: Colors.white,
                       fontSize: radius * 0.62,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
+                      letterSpacing: 0,
                     ),
                   ),
                 ),
@@ -4448,7 +4448,7 @@ class _DetailsActionBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(22, 14, 22, 14),
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -4475,7 +4475,7 @@ class _DetailsActionBar extends StatelessWidget {
                     labelColor: priceBlockLabelColor,
                     valueColor: priceBlockValueColor,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   if (secondaryAction == null)
                     SizedBox(
                       width: double.infinity,
@@ -4496,7 +4496,7 @@ class _DetailsActionBar extends StatelessWidget {
                                 pendingAction == secondaryAction.action,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         SizedBox(
                           width: double.infinity,
                           child: _FooterButton(
@@ -4519,7 +4519,7 @@ class _DetailsActionBar extends StatelessWidget {
                   labelColor: priceBlockLabelColor,
                   valueColor: priceBlockValueColor,
                 ),
-                const SizedBox(width: 18),
+                const SizedBox(width: 14),
                 Expanded(
                   child: secondaryAction == null
                       ? _FooterButton(
@@ -4537,7 +4537,7 @@ class _DetailsActionBar extends StatelessWidget {
                                     pendingAction == secondaryAction.action,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: _FooterButton(
                                 spec: primaryAction,
@@ -4574,7 +4574,7 @@ class _FooterPriceBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 96),
+      constraints: const BoxConstraints(minWidth: 84),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -4583,11 +4583,11 @@ class _FooterPriceBlock extends StatelessWidget {
             label.toUpperCase(),
             style: TextStyle(
               color: labelColor,
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
@@ -4596,10 +4596,10 @@ class _FooterPriceBlock extends StatelessWidget {
               maxLines: 1,
               style: TextStyle(
                 color: valueColor,
-                fontSize: 24,
+                fontSize: 20,
                 height: 1,
                 fontWeight: FontWeight.w900,
-                letterSpacing: -0.8,
+                letterSpacing: 0,
               ),
             ),
           ),
@@ -4635,8 +4635,8 @@ class _FooterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final minHeight = _detailsScaled(context, 62, min: 56, max: 66);
-    final iconSize = _detailsScaled(context, 20, min: 18, max: 22);
+    final minHeight = _detailsScaled(context, 54, min: 50, max: 56);
+    final iconSize = _detailsScaled(context, 18, min: 16, max: 19);
 
     final isPrimary = spec.style == _FooterButtonStyle.primary;
     final backgroundColor = isPrimary
@@ -4657,9 +4657,9 @@ class _FooterButton extends StatelessWidget {
           disabledBackgroundColor: backgroundColor,
           disabledForegroundColor: foreground,
           elevation: isPrimary ? 0 : 0,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
             side: BorderSide(color: borderColor),
           ),
         ),
@@ -4682,9 +4682,9 @@ class _FooterButton extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 17,
+                        fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.28,
+                        letterSpacing: 0,
                       ),
                     ),
                   ),
@@ -4712,9 +4712,9 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final horizontal = _detailsScaled(context, 16, min: 12, max: 18);
-    final vertical = _detailsScaled(context, 9, min: 7, max: 10);
-    final fontSize = _detailsScaled(context, 13, min: 12, max: 14);
+    final horizontal = _detailsScaled(context, 14, min: 10, max: 15);
+    final vertical = _detailsScaled(context, 7, min: 6, max: 8);
+    final fontSize = _detailsScaled(context, 12, min: 11, max: 12.5);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical),
@@ -4743,7 +4743,7 @@ class _StatusPill extends StatelessWidget {
             color: textColor,
             fontSize: fontSize,
             fontWeight: FontWeight.w800,
-            letterSpacing: 0.2,
+            letterSpacing: 0,
           ),
         ),
       ),
