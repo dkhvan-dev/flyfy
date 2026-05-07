@@ -44,6 +44,13 @@ type ChatTxRepository interface {
 	CreateMessage(ctx context.Context, msg *model.Message) error
 	UpdateMessage(ctx context.Context, msg *model.Message) error
 	DeleteMessage(ctx context.Context, messageID uuid.UUID) error
+	GetMessageReactionForUpdate(
+		ctx context.Context,
+		messageID uuid.UUID,
+		userID uuid.UUID,
+	) (*model.MessageReaction, error)
+	SetMessageReaction(ctx context.Context, reaction *model.MessageReaction) error
+	DeleteMessageReaction(ctx context.Context, messageID uuid.UUID, userID uuid.UUID) error
 	CreateConversationPin(ctx context.Context, pin *model.ConversationPin) error
 	DeleteConversationPin(ctx context.Context, conversationID, messageID uuid.UUID) (bool, error)
 	DeleteConversationPinsByMessageID(ctx context.Context, messageID uuid.UUID) (int64, error)
@@ -76,6 +83,11 @@ type ChatRepository interface {
 	GetConversationByActivityID(ctx context.Context, activityID uuid.UUID) (*model.Conversation, error)
 	GetMessageByID(ctx context.Context, messageID uuid.UUID) (*model.Message, error)
 	ListMessages(ctx context.Context, filter MessageFilter) ([]*model.Message, error)
+	ListMessageReactionSummaries(
+		ctx context.Context,
+		messageIDs []uuid.UUID,
+		actorUserID uuid.UUID,
+	) (map[uuid.UUID][]model.MessageReactionSummary, error)
 	ListParticipantsByConversationID(ctx context.Context, conversationID uuid.UUID) ([]*model.Participant, error)
 	GetParticipant(ctx context.Context, conversationID, userID uuid.UUID) (*model.Participant, error)
 	CountActiveParticipants(ctx context.Context, conversationID uuid.UUID) (int, error)

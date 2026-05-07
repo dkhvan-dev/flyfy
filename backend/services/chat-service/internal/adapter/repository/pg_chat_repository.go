@@ -147,6 +147,23 @@ func scanMessage(row pgx.Row) (*model.Message, error) {
 	return &m, nil
 }
 
+func scanMessageReaction(row pgx.Row) (*model.MessageReaction, error) {
+	var reaction model.MessageReaction
+	err := row.Scan(
+		&reaction.MessageID,
+		&reaction.UserID,
+		&reaction.Emoji,
+		&reaction.ReactedAt,
+	)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("scan message reaction: %w", err)
+	}
+	return &reaction, nil
+}
+
 func (r *PGChatRepository) GetMessageByID(ctx context.Context, messageID uuid.UUID) (*model.Message, error) {
 	row := r.pool.QueryRow(ctx,
 		`SELECT `+messageColumns+` FROM messages WHERE id = $1`, messageID)
@@ -225,6 +242,48 @@ func (r *PGChatRepository) GetMessageFileIDs(ctx context.Context, messageID uuid
 		ids = append(ids, id)
 	}
 	return ids, rows.Err()
+}
+
+func (r *PGChatRepository) ListMessageReactionSummaries(
+	ctx context.Context,
+	messageIDs []uuid.UUID,
+	actorUserID uuid.UUID,
+) (map[uuid.UUID][]model.MessageReactionSummary, error) {
+	result := make(map[uuid.UUID][]model.MessageReactionSummary, len(messageIDs))
+	if len(messageIDs) == 0 {
+		return result, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT
+			message_id,
+			emoji,
+			COUNT(*)::int,
+			BOOL_OR(user_id = $2) AS reacted_by_me
+		FROM message_reactions
+		WHERE message_id = ANY($1::uuid[])
+		GROUP BY message_id, emoji
+		ORDER BY message_id, COUNT(*) DESC, MAX(reacted_at) DESC, emoji
+	`, messageIDs, actorUserID)
+	if err != nil {
+		return nil, fmt.Errorf("list message reaction summaries: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var messageID uuid.UUID
+		var summary model.MessageReactionSummary
+		if err := rows.Scan(
+			&messageID,
+			&summary.Emoji,
+			&summary.Count,
+			&summary.ReactedByMe,
+		); err != nil {
+			return nil, fmt.Errorf("scan message reaction summary: %w", err)
+		}
+		result[messageID] = append(result[messageID], summary)
+	}
+	return result, rows.Err()
 }
 
 func (r *PGChatRepository) ListPinnedMessagesByConversationID(
@@ -451,6 +510,45 @@ func (tx *pgChatTxRepository) UpdateMessage(ctx context.Context, msg *model.Mess
 
 func (tx *pgChatTxRepository) DeleteMessage(ctx context.Context, messageID uuid.UUID) error {
 	_, err := tx.tx.Exec(ctx, `DELETE FROM messages WHERE id = $1`, messageID)
+	return err
+}
+
+func (tx *pgChatTxRepository) GetMessageReactionForUpdate(
+	ctx context.Context,
+	messageID uuid.UUID,
+	userID uuid.UUID,
+) (*model.MessageReaction, error) {
+	row := tx.tx.QueryRow(ctx, `
+		SELECT message_id, user_id, emoji, reacted_at
+		FROM message_reactions
+		WHERE message_id = $1 AND user_id = $2
+		FOR UPDATE
+	`, messageID, userID)
+	return scanMessageReaction(row)
+}
+
+func (tx *pgChatTxRepository) SetMessageReaction(
+	ctx context.Context,
+	reaction *model.MessageReaction,
+) error {
+	_, err := tx.tx.Exec(ctx, `
+		INSERT INTO message_reactions (message_id, user_id, emoji, reacted_at)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (message_id, user_id)
+		DO UPDATE SET emoji = EXCLUDED.emoji, reacted_at = EXCLUDED.reacted_at
+	`, reaction.MessageID, reaction.UserID, reaction.Emoji, reaction.ReactedAt)
+	return err
+}
+
+func (tx *pgChatTxRepository) DeleteMessageReaction(
+	ctx context.Context,
+	messageID uuid.UUID,
+	userID uuid.UUID,
+) error {
+	_, err := tx.tx.Exec(ctx, `
+		DELETE FROM message_reactions
+		WHERE message_id = $1 AND user_id = $2
+	`, messageID, userID)
 	return err
 }
 

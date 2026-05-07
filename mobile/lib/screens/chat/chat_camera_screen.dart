@@ -1,0 +1,847 @@
+import 'dart:async';
+
+import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
+
+import '../../core/ui/app_colors.dart';
+import '../../l10n/generated/app_localizations.dart';
+
+enum _ChatCameraMode { photo, video }
+
+class ChatCameraScreen extends StatefulWidget {
+  const ChatCameraScreen({
+    super.key,
+    this.maxVideoDuration = const Duration(minutes: 5),
+  });
+
+  final Duration maxVideoDuration;
+
+  @override
+  State<ChatCameraScreen> createState() => _ChatCameraScreenState();
+}
+
+class _ChatCameraScreenState extends State<ChatCameraScreen>
+    with WidgetsBindingObserver {
+  List<CameraDescription> _cameras = const [];
+  CameraDescription? _selectedCamera;
+  CameraController? _controller;
+  Timer? _recordingTimer;
+
+  _ChatCameraMode _mode = _ChatCameraMode.photo;
+  Duration _recordingDuration = Duration.zero;
+  double _minZoom = 1;
+  double _maxZoom = 1;
+  double _currentZoom = 1;
+  double _zoomOnScaleStart = 1;
+  double? _pendingZoomLevel;
+  bool _busy = false;
+  bool _loading = true;
+  bool _zoomUpdateInFlight = false;
+  bool _recording = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_loadCameras());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _recordingTimer?.cancel();
+    unawaited(_controller?.dispose());
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      unawaited(_releaseCameraForLifecycle());
+    } else if (state == AppLifecycleState.resumed) {
+      final camera = _selectedCamera;
+      if (camera != null) {
+        unawaited(_initializeCamera(camera));
+      }
+    }
+  }
+
+  Future<void> _loadCameras() async {
+    try {
+      final cameras = await availableCameras();
+      if (!mounted) return;
+      if (cameras.isEmpty) {
+        setState(() {
+          _cameras = const [];
+          _selectedCamera = null;
+          _loading = false;
+          _errorMessage = AppLocalizations.of(context)!.chatCameraUnavailable;
+        });
+        return;
+      }
+
+      final selected = _preferredCamera(cameras);
+      setState(() {
+        _cameras = cameras;
+        _selectedCamera = selected;
+      });
+      await _initializeCamera(selected);
+    } on CameraException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _errorMessage = _cameraExceptionMessage(context, e);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _errorMessage = AppLocalizations.of(context)!.chatCameraUnavailable;
+      });
+    }
+  }
+
+  CameraDescription _preferredCamera(List<CameraDescription> cameras) {
+    for (final camera in cameras) {
+      if (camera.lensDirection == CameraLensDirection.back) {
+        return camera;
+      }
+    }
+    return cameras.first;
+  }
+
+  Future<void> _initializeCamera(CameraDescription camera) async {
+    final oldController = _controller;
+    final controller = CameraController(
+      camera,
+      ResolutionPreset.high,
+      enableAudio: _mode == _ChatCameraMode.video,
+    );
+
+    setState(() {
+      _loading = true;
+      _busy = false;
+      _recording = false;
+      _recordingDuration = Duration.zero;
+      _errorMessage = null;
+      _controller = controller;
+      _selectedCamera = camera;
+    });
+
+    _recordingTimer?.cancel();
+    await oldController?.dispose();
+
+    try {
+      await controller.initialize();
+      await controller.setFlashMode(FlashMode.off);
+      final minZoom = await controller.getMinZoomLevel();
+      final maxZoom = await controller.getMaxZoomLevel();
+      final zoom = _currentZoom.clamp(minZoom, maxZoom).toDouble();
+      if (zoom != _currentZoom) {
+        await controller.setZoomLevel(zoom);
+      }
+      if (!mounted || _controller != controller) {
+        await controller.dispose();
+        return;
+      }
+      setState(() {
+        _minZoom = minZoom;
+        _maxZoom = maxZoom;
+        _currentZoom = zoom;
+        _zoomOnScaleStart = zoom;
+        _loading = false;
+      });
+    } on CameraException catch (e) {
+      await controller.dispose();
+      if (!mounted || _controller != controller) return;
+      setState(() {
+        _controller = null;
+        _loading = false;
+        _errorMessage = _cameraExceptionMessage(context, e);
+      });
+    } catch (_) {
+      await controller.dispose();
+      if (!mounted || _controller != controller) return;
+      setState(() {
+        _controller = null;
+        _loading = false;
+        _errorMessage = AppLocalizations.of(context)!.chatCameraCaptureFailed;
+      });
+    }
+  }
+
+  Future<void> _releaseCameraForLifecycle() async {
+    final controller = _controller;
+    _recordingTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _controller = null;
+        _recording = false;
+        _recordingDuration = Duration.zero;
+        _loading = true;
+      });
+    }
+    try {
+      if (controller?.value.isRecordingVideo ?? false) {
+        await controller!.stopVideoRecording();
+      }
+    } catch (_) {
+      // Discard lifecycle-interrupted recordings.
+    }
+    await controller?.dispose();
+  }
+
+  Future<void> _setMode(_ChatCameraMode mode) async {
+    if (_busy || _recording || _mode == mode) return;
+    setState(() => _mode = mode);
+
+    final camera = _selectedCamera;
+    if (camera != null) {
+      await _initializeCamera(camera);
+    }
+  }
+
+  void _handleScaleStart(ScaleStartDetails details) {
+    _zoomOnScaleStart = _currentZoom;
+  }
+
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    if (details.pointerCount < 2 || _maxZoom <= _minZoom) {
+      return;
+    }
+
+    final zoom = (_zoomOnScaleStart * details.scale)
+        .clamp(_minZoom, _maxZoom)
+        .toDouble();
+    if ((zoom - _currentZoom).abs() < 0.01) {
+      return;
+    }
+    unawaited(_setZoomLevel(zoom));
+  }
+
+  Future<void> _setZoomLevel(double zoom) async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    final clamped = zoom.clamp(_minZoom, _maxZoom).toDouble();
+    if (mounted) {
+      setState(() => _currentZoom = clamped);
+    }
+
+    _pendingZoomLevel = clamped;
+    if (_zoomUpdateInFlight) {
+      return;
+    }
+
+    _zoomUpdateInFlight = true;
+    try {
+      while (_pendingZoomLevel != null) {
+        final nextZoom = _pendingZoomLevel!;
+        _pendingZoomLevel = null;
+        final activeController = _controller;
+        if (activeController == null || !activeController.value.isInitialized) {
+          return;
+        }
+        await activeController.setZoomLevel(nextZoom);
+      }
+    } on CameraException {
+      // Some devices reject zoom changes while camera state is settling.
+    } finally {
+      _zoomUpdateInFlight = false;
+    }
+  }
+
+  Future<void> _flipCamera() async {
+    if (_busy || _recording || _cameras.length < 2) return;
+    final selected = _selectedCamera;
+    final currentIndex = selected == null ? -1 : _cameras.indexOf(selected);
+    final nextIndex = currentIndex < 0
+        ? 0
+        : (currentIndex + 1) % _cameras.length;
+    await _initializeCamera(_cameras[nextIndex]);
+  }
+
+  Future<void> _capture() async {
+    final controller = _controller;
+    if (_busy ||
+        controller == null ||
+        !controller.value.isInitialized ||
+        _loading) {
+      return;
+    }
+
+    if (_mode == _ChatCameraMode.video) {
+      if (_recording) {
+        await _stopVideoRecording();
+      } else {
+        await _startVideoRecording();
+      }
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      final file = await controller.takePicture();
+      if (!mounted) return;
+      Navigator.of(context).pop(file);
+    } on CameraException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _errorMessage = _cameraExceptionMessage(context, e);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _errorMessage = AppLocalizations.of(context)!.chatCameraCaptureFailed;
+      });
+    }
+  }
+
+  Future<void> _startVideoRecording() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    setState(() {
+      _busy = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await controller.prepareForVideoRecording();
+      await controller.startVideoRecording();
+      if (!mounted) return;
+
+      setState(() {
+        _busy = false;
+        _recording = true;
+        _recordingDuration = Duration.zero;
+      });
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        final next = _recordingDuration + const Duration(seconds: 1);
+        setState(() => _recordingDuration = next);
+        if (next >= widget.maxVideoDuration) {
+          unawaited(_stopVideoRecording());
+        }
+      });
+    } on CameraException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _recording = false;
+        _errorMessage = _cameraExceptionMessage(context, e);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _recording = false;
+        _errorMessage = AppLocalizations.of(context)!.chatCameraCaptureFailed;
+      });
+    }
+  }
+
+  Future<void> _stopVideoRecording() async {
+    final controller = _controller;
+    if (_busy ||
+        controller == null ||
+        !controller.value.isInitialized ||
+        !controller.value.isRecordingVideo) {
+      return;
+    }
+
+    _recordingTimer?.cancel();
+    setState(() => _busy = true);
+
+    try {
+      final file = await controller.stopVideoRecording();
+      if (!mounted) return;
+      Navigator.of(context).pop(file);
+    } on CameraException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _recording = false;
+        _recordingDuration = Duration.zero;
+        _errorMessage = _cameraExceptionMessage(context, e);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _recording = false;
+        _recordingDuration = Duration.zero;
+        _errorMessage = AppLocalizations.of(context)!.chatCameraCaptureFailed;
+      });
+    }
+  }
+
+  Future<void> _close() async {
+    final controller = _controller;
+    _recordingTimer?.cancel();
+    try {
+      if (controller?.value.isRecordingVideo ?? false) {
+        await controller!.stopVideoRecording();
+      }
+    } catch (_) {
+      // Best-effort cleanup before closing.
+    }
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  String _cameraExceptionMessage(BuildContext context, CameraException error) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (error.code) {
+      'CameraAccessDenied' ||
+      'CameraAccessDeniedWithoutPrompt' ||
+      'CameraAccessRestricted' ||
+      'AudioAccessDenied' ||
+      'AudioAccessDeniedWithoutPrompt' ||
+      'AudioAccessRestricted' => l10n.chatCameraPermissionDenied,
+      _ => l10n.chatCameraCaptureFailed,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = _controller;
+    final canFlip = _cameras.length > 1 && !_recording && !_busy;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child:
+                controller == null ||
+                    _loading ||
+                    !controller.value.isInitialized
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.accent),
+                  )
+                : GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onScaleStart: _handleScaleStart,
+                    onScaleUpdate: _handleScaleUpdate,
+                    child: _CameraPreviewCover(controller: controller),
+                  ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.52),
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.68),
+                    ],
+                    stops: const [0, 0.45, 1],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      _CameraIconButton(
+                        icon: Icons.close_rounded,
+                        label: l10n.chatCameraCloseButtonLabel,
+                        onPressed: _busy ? null : () => unawaited(_close()),
+                      ),
+                      const Spacer(),
+                      if (_recording)
+                        _RecordingBadge(
+                          label: l10n.chatCameraRecording,
+                          duration: _recordingDuration,
+                        ),
+                      const Spacer(),
+                      _CameraIconButton(
+                        icon: Icons.flip_camera_ios_rounded,
+                        label: l10n.chatCameraFlipButtonLabel,
+                        onPressed: canFlip
+                            ? () => unawaited(_flipCamera())
+                            : null,
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  if (_errorMessage != null) ...[
+                    _CameraErrorBanner(message: _errorMessage!),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_maxZoom > _minZoom &&
+                      _currentZoom > _minZoom + 0.05) ...[
+                    _ZoomBadge(zoom: _currentZoom),
+                    const SizedBox(height: 12),
+                  ],
+                  _CameraModeSwitch(
+                    mode: _mode,
+                    photoLabel: l10n.chatCameraPhotoMode,
+                    videoLabel: l10n.chatCameraVideoMode,
+                    enabled: !_busy && !_recording,
+                    onChanged: (mode) => unawaited(_setMode(mode)),
+                  ),
+                  const SizedBox(height: 18),
+                  _CaptureButton(
+                    recording: _recording,
+                    busy: _busy,
+                    videoMode: _mode == _ChatCameraMode.video,
+                    photoLabel: l10n.chatCameraCapturePhotoButtonLabel,
+                    recordLabel: l10n.chatCameraRecordVideoButtonLabel,
+                    stopLabel: l10n.chatCameraStopRecordingButtonLabel,
+                    onPressed: _loading ? null : () => unawaited(_capture()),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CameraPreviewCover extends StatelessWidget {
+  const _CameraPreviewCover({required this.controller});
+
+  final CameraController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaSize = MediaQuery.sizeOf(context);
+    final previewAspectRatio = controller.value.aspectRatio;
+    final screenAspectRatio = mediaSize.aspectRatio;
+    final scale = previewAspectRatio / screenAspectRatio;
+
+    return ClipRect(
+      child: Transform.scale(
+        scale: scale < 1 ? 1 / scale : scale,
+        child: Center(child: CameraPreview(controller)),
+      ),
+    );
+  }
+}
+
+class _CameraIconButton extends StatelessWidget {
+  const _CameraIconButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onPressed == null;
+    return Semantics(
+      button: true,
+      label: label,
+      enabled: !disabled,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onPressed,
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.black.withValues(alpha: 0.34),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: Icon(
+            icon,
+            color: Colors.white.withValues(alpha: disabled ? 0.36 : 0.95),
+            size: 22,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecordingBadge extends StatelessWidget {
+  const _RecordingBadge({required this.label, required this.duration});
+
+  final String label;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.fiber_manual_record,
+              color: Colors.white,
+              size: 12,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$label ${_formatRecordingDuration(duration)}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ZoomBadge extends StatelessWidget {
+  const _ZoomBadge({required this.zoom});
+
+  final double zoom;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.48),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        child: Text(
+          '${zoom.toStringAsFixed(1)}x',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CameraModeSwitch extends StatelessWidget {
+  const _CameraModeSwitch({
+    required this.mode,
+    required this.photoLabel,
+    required this.videoLabel,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final _ChatCameraMode mode;
+  final String photoLabel;
+  final String videoLabel;
+  final bool enabled;
+  final ValueChanged<_ChatCameraMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.36),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ModeChip(
+              label: photoLabel,
+              selected: mode == _ChatCameraMode.photo,
+              enabled: enabled,
+              onTap: () => onChanged(_ChatCameraMode.photo),
+            ),
+            _ModeChip(
+              label: videoLabel,
+              selected: mode == _ChatCameraMode.video,
+              enabled: enabled,
+              onTap: () => onChanged(_ChatCameraMode.video),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeChip extends StatelessWidget {
+  const _ModeChip({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: enabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected
+                ? Colors.black
+                : Colors.white.withValues(alpha: enabled ? 0.78 : 0.36),
+            fontSize: 14,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CaptureButton extends StatelessWidget {
+  const _CaptureButton({
+    required this.recording,
+    required this.busy,
+    required this.videoMode,
+    required this.photoLabel,
+    required this.recordLabel,
+    required this.stopLabel,
+    required this.onPressed,
+  });
+
+  final bool recording;
+  final bool busy;
+  final bool videoMode;
+  final String photoLabel;
+  final String recordLabel;
+  final String stopLabel;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = videoMode
+        ? recording
+              ? stopLabel
+              : recordLabel
+        : photoLabel;
+
+    return Semantics(
+      button: true,
+      label: label,
+      enabled: onPressed != null,
+      child: GestureDetector(
+        onTap: onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 5),
+            color: videoMode
+                ? Colors.red.withValues(alpha: recording ? 0.18 : 0.95)
+                : Colors.white.withValues(alpha: 0.18),
+          ),
+          child: Center(
+            child: busy
+                ? const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: Colors.white,
+                    ),
+                  )
+                : AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: recording ? 28 : 52,
+                    height: recording ? 28 : 52,
+                    decoration: BoxDecoration(
+                      color: videoMode ? Colors.red : Colors.white,
+                      borderRadius: BorderRadius.circular(recording ? 8 : 999),
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CameraErrorBanner extends StatelessWidget {
+  const _CameraErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.62),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _formatRecordingDuration(Duration duration) {
+  final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
+}

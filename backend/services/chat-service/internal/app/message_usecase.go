@@ -16,6 +16,17 @@ import (
 const maxMessageSize = 4096
 const maxFilesPerMessage = 10
 const editWindowHours = 24
+const maxReactionLength = 32
+
+var allowedReactionEmojis = map[string]struct{}{
+	"👍":  {},
+	"❤️": {},
+	"😂":  {},
+	"😮":  {},
+	"😢":  {},
+	"🙏":  {},
+	"🔥":  {},
+}
 
 type MessageUseCase struct {
 	repo             port.ChatRepository
@@ -56,6 +67,11 @@ type SendMessageInput struct {
 type DeleteMessageResult struct {
 	HardDeleted bool
 	DeletedAt   *time.Time
+}
+
+type ToggleMessageReactionResult struct {
+	MessageID uuid.UUID
+	Reactions []model.MessageReactionSummary
 }
 
 func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput) (*model.Message, error) {
@@ -336,6 +352,104 @@ func (u *MessageUseCase) DeleteMessage(
 	return result, nil
 }
 
+func (u *MessageUseCase) ToggleReaction(
+	ctx context.Context,
+	conversationID,
+	messageID,
+	actorUserID uuid.UUID,
+	emoji string,
+) (*ToggleMessageReactionResult, error) {
+	reactionEmoji := strings.TrimSpace(emoji)
+	if reactionEmoji == "" || len(reactionEmoji) > maxReactionLength {
+		return nil, ErrInvalidReaction
+	}
+	if _, ok := allowedReactionEmojis[reactionEmoji]; !ok {
+		return nil, ErrInvalidReaction
+	}
+
+	conv, err := u.repo.GetConversationByID(ctx, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	if conv == nil {
+		return nil, ErrConversationNotFound
+	}
+	conv, err = refreshActivityMessagingWindow(ctx, u.repo, u.activityResolver, conv, true)
+	if err != nil {
+		return nil, err
+	}
+	if conv.IsMessagingClosed(time.Now().UTC()) {
+		return nil, ErrConversationMessagingClosed
+	}
+
+	msg, err := u.repo.GetMessageByID(ctx, messageID)
+	if err != nil {
+		return nil, err
+	}
+	if msg == nil || msg.ConversationID != conversationID {
+		return nil, ErrMessageNotFound
+	}
+	if msg.DeletedAt != nil || msg.Type == "system" {
+		return nil, ErrInvalidReaction
+	}
+
+	participant, err := u.repo.GetParticipant(ctx, conversationID, actorUserID)
+	if err != nil {
+		return nil, err
+	}
+	if participant == nil || participant.LeftAt != nil {
+		return nil, ErrNotParticipant
+	}
+
+	now := time.Now().UTC()
+	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
+		current, err := txRepo.GetMessageReactionForUpdate(ctx, messageID, actorUserID)
+		if err != nil {
+			return err
+		}
+		if current != nil && current.Emoji == reactionEmoji {
+			return txRepo.DeleteMessageReaction(ctx, messageID, actorUserID)
+		}
+		return txRepo.SetMessageReaction(ctx, &model.MessageReaction{
+			MessageID: messageID,
+			UserID:    actorUserID,
+			Emoji:     reactionEmoji,
+			ReactedAt: now,
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	reactionsByMessage, err := u.repo.ListMessageReactionSummaries(
+		ctx,
+		[]uuid.UUID{messageID},
+		actorUserID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	reactions := reactionsByMessage[messageID]
+
+	go func() {
+		evt := event.New(
+			"message.reaction_updated",
+			conversationID,
+			event.MessageReactionUpdatedPayload{
+				MessageID:   messageID,
+				ActorUserID: actorUserID,
+				Reactions:   reactionSummariesForEvent(reactions),
+			},
+		)
+		_ = u.publisher.Publish(context.Background(), "chat.message.reaction_updated", evt)
+	}()
+
+	return &ToggleMessageReactionResult{
+		MessageID: messageID,
+		Reactions: reactions,
+	}, nil
+}
+
 func (u *MessageUseCase) ListMessages(ctx context.Context, conversationID, actorUserID uuid.UUID, limit int, cursor *uuid.UUID, direction string) ([]*model.Message, error) {
 	participant, err := u.repo.GetParticipant(ctx, conversationID, actorUserID)
 	if err != nil {
@@ -365,9 +479,35 @@ func (u *MessageUseCase) ListMessages(ctx context.Context, conversationID, actor
 	for _, msg := range msgs {
 		msg.FileIDs, _ = u.repo.GetMessageFileIDs(ctx, msg.ID)
 	}
+	if len(msgs) > 0 {
+		messageIDs := make([]uuid.UUID, 0, len(msgs))
+		for _, msg := range msgs {
+			messageIDs = append(messageIDs, msg.ID)
+		}
+		reactions, err := u.repo.ListMessageReactionSummaries(ctx, messageIDs, actorUserID)
+		if err != nil {
+			return nil, err
+		}
+		for _, msg := range msgs {
+			msg.Reactions = reactions[msg.ID]
+		}
+	}
 	enrichMessages(ctx, u.profileResolver, msgs)
 
 	return msgs, nil
+}
+
+func reactionSummariesForEvent(
+	reactions []model.MessageReactionSummary,
+) []event.MessageReactionInfo {
+	items := make([]event.MessageReactionInfo, 0, len(reactions))
+	for _, reaction := range reactions {
+		items = append(items, event.MessageReactionInfo{
+			Emoji: reaction.Emoji,
+			Count: reaction.Count,
+		})
+	}
+	return items
 }
 
 func (u *MessageUseCase) MarkRead(ctx context.Context, conversationID, actorUserID, lastReadMsgID uuid.UUID) error {

@@ -3234,6 +3234,81 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatAttachmentLocation => 'Локация';
 
   @override
+  String get chatAttachmentAudio => 'Аудио';
+
+  @override
+  String get chatAttachmentTakePhoto => 'Сделать фото';
+
+  @override
+  String get chatAttachmentTakeVideo => 'Снять видео';
+
+  @override
+  String get chatAttachmentChooseFromGallery => 'Выбрать из галереи';
+
+  @override
+  String get chatAttachmentCameraTitle => 'Камера';
+
+  @override
+  String get chatAttachmentAttachTitle => 'Вложение';
+
+  @override
+  String get chatAttachmentCancel => 'Отмена';
+
+  @override
+  String get chatAttachmentVideoTooLong =>
+      'Видео слишком длинное. Используйте ролик до 5 минут.';
+
+  @override
+  String get chatComposerCameraButtonLabel => 'Камера';
+
+  @override
+  String get chatComposerAttachButtonLabel => 'Прикрепить файл';
+
+  @override
+  String get chatComposerEmojiButtonLabel => 'Эмодзи и стикеры';
+
+  @override
+  String get chatComposerEmojiTab => 'Эмодзи';
+
+  @override
+  String get chatComposerStickerTab => 'Стикеры';
+
+  @override
+  String get chatCameraPhotoMode => 'Фото';
+
+  @override
+  String get chatCameraVideoMode => 'Видео';
+
+  @override
+  String get chatCameraRecording => 'REC';
+
+  @override
+  String get chatCameraPermissionDenied =>
+      'Для съемки медиа в чате нужен доступ к камере и микрофону.';
+
+  @override
+  String get chatCameraUnavailable => 'Камера недоступна на этом устройстве.';
+
+  @override
+  String get chatCameraCaptureFailed =>
+      'Не удалось снять медиа. Попробуйте еще раз.';
+
+  @override
+  String get chatCameraFlipButtonLabel => 'Переключить камеру';
+
+  @override
+  String get chatCameraCloseButtonLabel => 'Закрыть камеру';
+
+  @override
+  String get chatCameraCapturePhotoButtonLabel => 'Сделать фото';
+
+  @override
+  String get chatCameraRecordVideoButtonLabel => 'Записать видео';
+
+  @override
+  String get chatCameraStopRecordingButtonLabel => 'Остановить запись';
+
+  @override
   String get chatAttachmentUploading => 'Загрузка вложения...';
 
   @override
@@ -3290,6 +3365,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatVoiceRecording => 'Запись голосового сообщения';
 
   @override
+  String get chatVoiceRecordingLocked => 'Запись закреплена';
+
+  @override
+  String get chatVoicePreparingPreview => 'Готовим предпрослушивание...';
+
+  @override
+  String get chatVoicePreview => 'Предпрослушивание';
+
+  @override
+  String get chatVoiceSlideUpToLock => 'Смахните вверх, чтобы закрепить запись';
+
+  @override
   String get chatVoiceRecordPermissionDenied =>
       'Для записи голосовых сообщений нужен доступ к микрофону.';
 
@@ -3303,6 +3390,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get chatVoiceTooShort => 'Голосовое сообщение слишком короткое.';
+
+  @override
+  String get chatReactionSheetTitle => 'Реакция';
+
+  @override
+  String get chatReactionFailed =>
+      'Не удалось обновить реакцию. Попробуйте еще раз.';
 
   @override
   String get chatLoadFailed => 'Не удалось загрузить чат';

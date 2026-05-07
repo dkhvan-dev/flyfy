@@ -136,6 +136,19 @@ class ChatApi {
     );
   }
 
+  Future<List<MessageReactionVm>> toggleMessageReaction(
+    String conversationId,
+    String messageId,
+    String emoji,
+  ) async {
+    final response = await _apiClient.dio.post(
+      '/chat/conversations/$conversationId/messages/$messageId/reaction',
+      data: {'emoji': emoji},
+    );
+    final data = response.data as Map<String, dynamic>;
+    return _parseMessageReactions(data);
+  }
+
   Future<void> markRead(String conversationId, String lastReadMessageId) async {
     await _apiClient.dio.post(
       '/chat/conversations/$conversationId/read',
@@ -169,6 +182,15 @@ class ChatApi {
     return items
         .whereType<Map<String, dynamic>>()
         .map(PinnedMessageInfo.fromJson)
+        .toList(growable: false);
+  }
+
+  List<MessageReactionVm> _parseMessageReactions(Map<String, dynamic> json) {
+    final items = (json['reactions'] as List<dynamic>?) ?? const [];
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(MessageReactionVm.fromJson)
+        .where((reaction) => reaction.emoji.trim().isNotEmpty)
         .toList(growable: false);
   }
 }

@@ -20,6 +20,7 @@ var (
 	ErrDirectChatCannotLeave = errors.New("cannot leave a direct chat")
 	ErrMessageTooLong        = errors.New("message content exceeds 4KB limit")
 	ErrInvalidMessageType    = errors.New("invalid message type")
+	ErrInvalidReaction       = errors.New("invalid message reaction")
 	ErrMessageEditExpired    = errors.New("message can only be edited within 24 hours")
 	ErrMessageAlreadyDeleted = errors.New("message is already deleted")
 	ErrCannotPinInDirectChat = errors.New("cannot pin messages in direct chats")

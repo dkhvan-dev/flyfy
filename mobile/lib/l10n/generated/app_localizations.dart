@@ -5908,6 +5908,150 @@ abstract class AppLocalizations {
   /// **'Location'**
   String get chatAttachmentLocation;
 
+  /// No description provided for @chatAttachmentAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get chatAttachmentAudio;
+
+  /// No description provided for @chatAttachmentTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get chatAttachmentTakePhoto;
+
+  /// No description provided for @chatAttachmentTakeVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Take video'**
+  String get chatAttachmentTakeVideo;
+
+  /// No description provided for @chatAttachmentChooseFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get chatAttachmentChooseFromGallery;
+
+  /// No description provided for @chatAttachmentCameraTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get chatAttachmentCameraTitle;
+
+  /// No description provided for @chatAttachmentAttachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach'**
+  String get chatAttachmentAttachTitle;
+
+  /// No description provided for @chatAttachmentCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get chatAttachmentCancel;
+
+  /// No description provided for @chatAttachmentVideoTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Video is too long. Use a clip up to 5 minutes.'**
+  String get chatAttachmentVideoTooLong;
+
+  /// No description provided for @chatComposerCameraButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get chatComposerCameraButtonLabel;
+
+  /// No description provided for @chatComposerAttachButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach file'**
+  String get chatComposerAttachButtonLabel;
+
+  /// No description provided for @chatComposerEmojiButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji and stickers'**
+  String get chatComposerEmojiButtonLabel;
+
+  /// No description provided for @chatComposerEmojiTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji'**
+  String get chatComposerEmojiTab;
+
+  /// No description provided for @chatComposerStickerTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers'**
+  String get chatComposerStickerTab;
+
+  /// No description provided for @chatCameraPhotoMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get chatCameraPhotoMode;
+
+  /// No description provided for @chatCameraVideoMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get chatCameraVideoMode;
+
+  /// No description provided for @chatCameraRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'REC'**
+  String get chatCameraRecording;
+
+  /// No description provided for @chatCameraPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera and microphone access are required to capture chat media.'**
+  String get chatCameraPermissionDenied;
+
+  /// No description provided for @chatCameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera is unavailable on this device.'**
+  String get chatCameraUnavailable;
+
+  /// No description provided for @chatCameraCaptureFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not capture media. Please try again.'**
+  String get chatCameraCaptureFailed;
+
+  /// No description provided for @chatCameraFlipButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch camera'**
+  String get chatCameraFlipButtonLabel;
+
+  /// No description provided for @chatCameraCloseButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close camera'**
+  String get chatCameraCloseButtonLabel;
+
+  /// No description provided for @chatCameraCapturePhotoButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get chatCameraCapturePhotoButtonLabel;
+
+  /// No description provided for @chatCameraRecordVideoButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Record video'**
+  String get chatCameraRecordVideoButtonLabel;
+
+  /// No description provided for @chatCameraStopRecordingButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording'**
+  String get chatCameraStopRecordingButtonLabel;
+
   /// No description provided for @chatAttachmentUploading.
   ///
   /// In en, this message translates to:
@@ -6004,6 +6148,30 @@ abstract class AppLocalizations {
   /// **'Recording voice message'**
   String get chatVoiceRecording;
 
+  /// No description provided for @chatVoiceRecordingLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording locked'**
+  String get chatVoiceRecordingLocked;
+
+  /// No description provided for @chatVoicePreparingPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing voice preview...'**
+  String get chatVoicePreparingPreview;
+
+  /// No description provided for @chatVoicePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice preview'**
+  String get chatVoicePreview;
+
+  /// No description provided for @chatVoiceSlideUpToLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide up to lock recording'**
+  String get chatVoiceSlideUpToLock;
+
   /// No description provided for @chatVoiceRecordPermissionDenied.
   ///
   /// In en, this message translates to:
@@ -6027,6 +6195,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Voice message is too short.'**
   String get chatVoiceTooShort;
+
+  /// No description provided for @chatReactionSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reaction'**
+  String get chatReactionSheetTitle;
+
+  /// No description provided for @chatReactionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the reaction. Please try again.'**
+  String get chatReactionFailed;
 
   /// No description provided for @chatLoadFailed.
   ///

@@ -4,8 +4,10 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:open_filex/open_filex.dart';
@@ -24,6 +26,7 @@ import '../../features/chat/utils/chat_presence_status.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
+import 'chat_camera_screen.dart';
 import 'chat_image_viewer_screen.dart';
 import 'chat_participants_screen.dart';
 import 'chat_shared_content_screen.dart';
@@ -57,6 +60,8 @@ class _ChatScreenState extends State<ChatScreen> {
   int _pendingAttachmentSeq = 0;
   bool _attachmentUploading = false;
   bool _voiceRecording = false;
+  bool _voiceRecordingLocked = false;
+  bool _voicePressActive = false;
   bool _voiceStopping = false;
   DateTime? _voiceRecordingStartedAt;
   Duration _voiceRecordingDuration = Duration.zero;
@@ -186,6 +191,9 @@ class _ChatScreenState extends State<ChatScreen> {
         _pendingAttachments.clear();
         _replyToMessage = null;
       });
+      for (final attachment in attachments) {
+        unawaited(_deleteLocalAttachmentFile(attachment));
+      }
       context.read<ChatProvider>().markAsRead();
     } catch (e) {
       if (!mounted) return;
@@ -200,7 +208,92 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  // _pickAttachments dispatches to the right native picker based on `type`.
+  // The collected attachments are pushed onto _pendingAttachments and shown
+  // in the strip above the composer until the user hits send (or removes them).
   Future<void> _pickAttachments(_AttachmentPickType type) async {
+    if (_attachmentUploading) return;
+    if (!_canSendInActiveConversation()) {
+      _showChatClosedMessage();
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final attachments = <_PickedChatAttachment>[];
+
+      switch (type) {
+        case _AttachmentPickType.gallery:
+          // pickMultipleMedia uses the system PHPicker (iOS) / PhotoPicker
+          // (Android 13+) — no runtime permission needed.
+          final picker = ImagePicker();
+          final picked = await picker.pickMultipleMedia();
+          if (!mounted || picked.isEmpty) return;
+          for (final x in picked) {
+            final att = await _attachmentFromXFile(x, ++_pendingAttachmentSeq);
+            if (!mounted) return;
+            if (att == null) {
+              await _showAttachmentError(l10n.chatAttachmentUnsupported);
+              return;
+            }
+            if (att.bytes.lengthInBytes > _maxChatAttachmentBytes) {
+              await _showAttachmentError(l10n.chatAttachmentTooLarge);
+              return;
+            }
+            attachments.add(att);
+          }
+
+        case _AttachmentPickType.file:
+        case _AttachmentPickType.audio:
+          final result = await FilePicker.pickFiles(
+            allowMultiple: true,
+            withData: true,
+            type: type == _AttachmentPickType.audio
+                ? FileType.audio
+                : FileType.any,
+          );
+          if (!mounted || result == null || result.files.isEmpty) return;
+          for (final file in result.files) {
+            final att = await _attachmentFromFile(
+              file,
+              ++_pendingAttachmentSeq,
+            );
+            if (!mounted) return;
+            if (att == null) {
+              await _showAttachmentError(l10n.chatAttachmentUnsupported);
+              return;
+            }
+            if (att.bytes.lengthInBytes > _maxChatAttachmentBytes) {
+              await _showAttachmentError(l10n.chatAttachmentTooLarge);
+              return;
+            }
+            attachments.add(att);
+          }
+      }
+
+      if (!mounted || attachments.isEmpty) return;
+
+      // Final guard in case a picker implementation skips earlier checks.
+      for (final att in attachments) {
+        if (att.bytes.lengthInBytes > _maxChatAttachmentBytes) {
+          await _showAttachmentError(l10n.chatAttachmentTooLarge);
+          return;
+        }
+      }
+
+      setState(() => _pendingAttachments.addAll(attachments));
+      _focusNode.requestFocus();
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.chatAttachmentUploadFailed;
+      await _showAttachmentError(message);
+    }
+  }
+
+  Future<void> _captureCameraAttachment() async {
     if (_attachmentUploading) return;
     if (!_canSendInActiveConversation()) {
       _showChatClosedMessage();
@@ -211,44 +304,34 @@ class _ChatScreenState extends State<ChatScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     try {
-      final result = await FilePicker.pickFiles(
-        allowMultiple: true,
-        withData: true,
-        type: switch (type) {
-          _AttachmentPickType.media => FileType.media,
-          _AttachmentPickType.file => FileType.any,
-        },
+      final captured = await Navigator.of(context).push<XFile>(
+        MaterialPageRoute(
+          builder: (_) =>
+              const ChatCameraScreen(maxVideoDuration: Duration(minutes: 5)),
+        ),
       );
-      if (!mounted || result == null || result.files.isEmpty) return;
 
-      final attachments = <_PickedChatAttachment>[];
-      for (final file in result.files) {
-        final attachment = await _attachmentFromFile(
-          file,
-          ++_pendingAttachmentSeq,
-        );
-        if (!mounted) return;
+      if (!mounted || captured == null) return;
 
-        if (attachment == null) {
-          await _showAttachmentError(l10n.chatAttachmentUnsupported);
-          return;
-        }
-        if (attachment.bytes.lengthInBytes > _maxChatAttachmentBytes) {
-          await _showAttachmentError(l10n.chatAttachmentTooLarge);
-          return;
-        }
-        attachments.add(attachment);
+      final attachment = await _attachmentFromXFile(
+        captured,
+        ++_pendingAttachmentSeq,
+      );
+      if (!mounted) return;
+      if (attachment == null) {
+        await _showAttachmentError(l10n.chatAttachmentUnsupported);
+        return;
+      }
+      if (attachment.bytes.lengthInBytes > _maxChatAttachmentBytes) {
+        await _showAttachmentError(l10n.chatAttachmentTooLarge);
+        return;
       }
 
-      if (attachments.isEmpty) return;
-      setState(() => _pendingAttachments.addAll(attachments));
+      setState(() => _pendingAttachments.add(attachment));
       _focusNode.requestFocus();
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      final message = e is DioException
-          ? DioErrorMapper.toMessage(e)
-          : l10n.chatAttachmentUploadFailed;
-      await _showAttachmentError(message);
+      await _showAttachmentError(l10n.chatCameraCaptureFailed);
     }
   }
 
@@ -274,17 +357,77 @@ class _ChatScreenState extends State<ChatScreen> {
       name: name,
       bytes: bytes,
       contentType: contentType,
+      localPath: file.path,
+    );
+  }
+
+  // _attachmentFromXFile handles XFile from gallery and the chat camera.
+  // It falls back to the file's MIME type when the extension isn't in our
+  // allowlist (e.g. iOS may hand us a video file with no extension at all).
+  Future<_PickedChatAttachment?> _attachmentFromXFile(
+    XFile file,
+    int localId,
+  ) async {
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) return null;
+
+    var name = file.name.trim();
+    if (name.isEmpty || !name.contains('.')) {
+      // Synthesize a sensible filename for captured media so the server can
+      // detect the type even when the platform returns a bare temp path.
+      final mime = file.mimeType ?? '';
+      final ext = _extensionForMime(mime) ?? 'bin';
+      name = 'media_${DateTime.now().millisecondsSinceEpoch}.$ext';
+    }
+
+    final contentType =
+        _contentTypeForFileName(name) ??
+        file.mimeType ??
+        'application/octet-stream';
+
+    return _PickedChatAttachment(
+      localId: localId,
+      name: name,
+      bytes: bytes,
+      contentType: contentType,
+      localPath: file.path,
     );
   }
 
   void _removePendingAttachment(int localId) {
     if (_attachmentUploading) return;
+    final attachmentsToDelete = _pendingAttachments
+        .where(
+          (item) =>
+              item.localId == localId &&
+              item.deleteLocalFileOnRemove &&
+              (item.localPath?.trim().isNotEmpty ?? false),
+        )
+        .toList(growable: false);
     setState(() {
       _pendingAttachments.removeWhere((item) => item.localId == localId);
     });
+    for (final attachment in attachmentsToDelete) {
+      unawaited(_deleteLocalAttachmentFile(attachment));
+    }
   }
 
-  Future<void> _startVoiceRecording() async {
+  Future<void> _deleteLocalAttachmentFile(
+    _PickedChatAttachment attachment,
+  ) async {
+    final path = attachment.localPath?.trim() ?? '';
+    if (!attachment.deleteLocalFileOnRemove || path.isEmpty) return;
+    try {
+      await File(path).delete();
+    } catch (_) {
+      // Temp file may already be gone; cleanup is best-effort.
+    }
+  }
+
+  Future<void> _startVoiceRecording({
+    bool locked = false,
+    bool pressActive = false,
+  }) async {
     if (_voiceRecording || _voiceStopping || _attachmentUploading) return;
     if (!_canSendInActiveConversation()) {
       _showChatClosedMessage();
@@ -320,6 +463,8 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
       setState(() {
         _voiceRecording = true;
+        _voiceRecordingLocked = locked;
+        _voicePressActive = pressActive && !locked;
         _voiceStopping = false;
         _voiceRecordingStartedAt = DateTime.now();
         _voiceRecordingDuration = Duration.zero;
@@ -340,11 +485,19 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _lockVoiceRecording() {
+    if (!_voiceRecording || _voiceStopping || _voiceRecordingLocked) return;
+    setState(() {
+      _voiceRecordingLocked = true;
+      _voicePressActive = false;
+    });
+  }
+
   Future<void> _cancelVoiceRecording() async {
     await _resetVoiceRecording(cancelRecorder: true);
   }
 
-  Future<void> _sendVoiceRecording() async {
+  Future<void> _stopVoiceRecordingForPreview() async {
     if (!_voiceRecording || _voiceStopping) return;
     if (!_canSendInActiveConversation()) {
       _showChatClosedMessage();
@@ -353,7 +506,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     final l10n = AppLocalizations.of(context)!;
-    final replyToMessageId = _replyToMessage?.id;
     setState(() => _voiceStopping = true);
     _voiceRecordingTimer?.cancel();
 
@@ -366,6 +518,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
       setState(() {
         _voiceRecording = false;
+        _voiceRecordingLocked = false;
+        _voicePressActive = false;
         _voiceRecordingStartedAt = null;
         _voiceRecordingDuration = Duration.zero;
       });
@@ -387,46 +541,31 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       final bytes = await file.readAsBytes();
-      unawaited(file.delete().catchError((_) => file));
       if (bytes.lengthInBytes > _maxChatAttachmentBytes) {
+        unawaited(file.delete().catchError((_) => file));
         await _showAttachmentError(l10n.chatAttachmentTooLarge);
         return;
       }
 
-      setState(() => _attachmentUploading = true);
-      final upload = await _fileApi.createChatAttachmentUpload(
-        originalName:
+      if (!mounted) return;
+      final attachment = _PickedChatAttachment(
+        localId: ++_pendingAttachmentSeq,
+        name:
             'voice_${DateTime.now().millisecondsSinceEpoch}_${duration.inSeconds}s.m4a',
-        contentType: 'audio/mp4',
-        sizeBytes: bytes.lengthInBytes,
-      );
-      await _fileApi.uploadBinary(
-        upload: upload,
         bytes: bytes,
         contentType: 'audio/mp4',
+        localPath: path,
+        duration: duration,
+        deleteLocalFileOnRemove: true,
       );
-      await _fileApi.completeUpload(upload.fileId);
-
-      if (!mounted) return;
-      final sent = await context.read<ChatProvider>().sendMessage(
-        '',
-        type: 'file',
-        fileIds: [upload.fileId],
-        replyToMessageId: replyToMessageId,
-      );
-      if (sent && mounted) {
-        setState(() => _replyToMessage = null);
-        context.read<ChatProvider>().markAsRead();
-      }
+      setState(() => _pendingAttachments.add(attachment));
+      _focusNode.requestFocus();
     } catch (_) {
       if (!mounted) return;
       await _showAttachmentError(l10n.chatVoiceRecordFailed);
     } finally {
       if (mounted) {
-        setState(() {
-          _voiceStopping = false;
-          _attachmentUploading = false;
-        });
+        setState(() => _voiceStopping = false);
       }
     }
   }
@@ -446,6 +585,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!mounted) return;
     setState(() {
       _voiceRecording = false;
+      _voiceRecordingLocked = false;
+      _voicePressActive = false;
       _voiceStopping = false;
       _voiceRecordingStartedAt = null;
       _voiceRecordingDuration = Duration.zero;
@@ -561,8 +702,9 @@ class _ChatScreenState extends State<ChatScreen> {
         context.read<SessionProvider>().profile?.userId.trim() ?? '';
     final canDelete = message.senderUserId == currentUserId;
     final canManagePins = _canManagePins(conversation, currentUserId);
+    final canReact = conversation.canSendNow;
     final isPinned = _isMessagePinned(conversation, message.id);
-    if (!canDelete && !canManagePins) {
+    if (!canReact && !canDelete && !canManagePins) {
       return;
     }
 
@@ -579,6 +721,33 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (canReact) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n.chatReactionSheetTitle,
+                    style: TextStyle(
+                      fontSize: _scale(context, 13),
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white.withValues(alpha: 0.58),
+                    ),
+                  ),
+                ),
+                SizedBox(height: _scale(context, 12)),
+                _ReactionPickerRow(
+                  selectedEmoji: message.reactions
+                      .where((reaction) => reaction.reactedByMe)
+                      .firstOrNull
+                      ?.emoji,
+                  onSelected: (emoji) =>
+                      Navigator.pop(sheetContext, 'reaction:$emoji'),
+                ),
+                if (canManagePins || canDelete) ...[
+                  SizedBox(height: _scale(context, 12)),
+                  Divider(color: Colors.white.withValues(alpha: 0.08)),
+                  SizedBox(height: _scale(context, 4)),
+                ],
+              ],
               if (canManagePins)
                 ListTile(
                   leading: Icon(
@@ -620,6 +789,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (!mounted || action == null) return;
 
+    if (action.startsWith('reaction:')) {
+      final emoji = action.substring('reaction:'.length);
+      await _toggleMessageReaction(message.id, emoji);
+      return;
+    }
+
     if (action == 'pin' || action == 'unpin') {
       try {
         if (action == 'pin') {
@@ -659,6 +834,27 @@ class _ChatScreenState extends State<ChatScreen> {
       final messageText = e is DioException
           ? DioErrorMapper.toMessage(e)
           : l10n.chatDeleteFailed;
+      await showErrorDialog(context, title: l10n.error, message: messageText);
+    }
+  }
+
+  Future<void> _toggleMessageReaction(String messageId, String emoji) async {
+    if (!_canSendInActiveConversation()) {
+      _showChatClosedMessage();
+      return;
+    }
+
+    try {
+      await context.read<ChatProvider>().toggleMessageReaction(
+        messageId,
+        emoji,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      final messageText = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.chatReactionFailed;
       await showErrorDialog(context, title: l10n.error, message: messageText);
     }
   }
@@ -830,6 +1026,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   onReplyMessage: _selectReplyMessage,
                   onMessageLongPress: (message) =>
                       unawaited(_showMessageActions(message)),
+                  onReactionSelected: (message, emoji) =>
+                      unawaited(_toggleMessageReaction(message.id, emoji)),
                   onReplyPreviewTap: (messageId) =>
                       unawaited(_scrollToMessage(messageId)),
                 ),
@@ -843,17 +1041,24 @@ class _ChatScreenState extends State<ChatScreen> {
                   participants: conv.participants,
                   onSend: () => unawaited(_handleSend()),
                   onTyping: _handleTyping,
-                  onPickMedia: () =>
-                      _pickAttachments(_AttachmentPickType.media),
+                  onPickGallery: () =>
+                      _pickAttachments(_AttachmentPickType.gallery),
                   onPickFile: () => _pickAttachments(_AttachmentPickType.file),
+                  onPickAudio: () =>
+                      _pickAttachments(_AttachmentPickType.audio),
+                  onCameraCapture: () => unawaited(_captureCameraAttachment()),
                   onRemoveAttachment: _removePendingAttachment,
                   onCancelReply: _clearReplyMessage,
-                  onVoiceStart: _startVoiceRecording,
+                  onVoiceStart: () => _startVoiceRecording(pressActive: true),
+                  onVoiceStartLocked: () => _startVoiceRecording(locked: true),
+                  onVoiceLock: _lockVoiceRecording,
                   onVoiceCancel: _cancelVoiceRecording,
-                  onVoiceSend: _sendVoiceRecording,
+                  onVoiceStop: _stopVoiceRecordingForPreview,
                   sending: chat.sendingMessage,
                   attachmentUploading: _attachmentUploading,
                   voiceRecording: _voiceRecording,
+                  voiceRecordingLocked: _voiceRecordingLocked,
+                  voicePressActive: _voicePressActive,
                   voiceStopping: _voiceStopping,
                   voiceDuration: _voiceRecordingDuration,
                   messagingClosed: false,
@@ -866,7 +1071,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-enum _AttachmentPickType { media, file }
+// _AttachmentPickType drives _pickAttachments dispatch.
+//   - gallery: native multi-media picker (photos+videos), no runtime permission needed.
+//   - file: arbitrary file via FilePicker.
+//   - audio: audio file via FilePicker.
+enum _AttachmentPickType { gallery, file, audio }
 
 class _PickedChatAttachment {
   const _PickedChatAttachment({
@@ -874,15 +1083,22 @@ class _PickedChatAttachment {
     required this.name,
     required this.bytes,
     required this.contentType,
+    this.localPath,
+    this.duration,
+    this.deleteLocalFileOnRemove = false,
   });
 
   final int localId;
   final String name;
   final Uint8List bytes;
   final String contentType;
+  final String? localPath;
+  final Duration? duration;
+  final bool deleteLocalFileOnRemove;
 
   bool get isImage => contentType.startsWith('image/');
   bool get isVideo => contentType.startsWith('video/');
+  bool get isAudio => contentType.startsWith('audio/');
 
   String get extensionLabel {
     final dot = name.lastIndexOf('.');
@@ -899,6 +1115,28 @@ class _PickedChatAttachment {
 double _sw(BuildContext context) => MediaQuery.sizeOf(context).width;
 
 double _scale(BuildContext context, double base) => base * _sw(context) / 390;
+
+// _extensionForMime gives a sensible filename suffix when a picker returns a
+// file without an extension. Only types accepted in _contentTypeForFileName are
+// listed.
+String? _extensionForMime(String mime) {
+  return switch (mime.toLowerCase()) {
+    'image/jpeg' => 'jpg',
+    'image/png' => 'png',
+    'image/heic' => 'heic',
+    'image/heif' => 'heif',
+    'image/webp' => 'webp',
+    'video/mp4' => 'mp4',
+    'video/quicktime' => 'mov',
+    'video/webm' => 'webm',
+    'audio/mp4' || 'audio/aac' => 'm4a',
+    'audio/mpeg' => 'mp3',
+    'audio/wav' => 'wav',
+    'audio/ogg' => 'ogg',
+    'audio/opus' => 'opus',
+    _ => null,
+  };
+}
 
 String? _contentTypeForFileName(String fileName) {
   final dot = fileName.lastIndexOf('.');
@@ -1343,6 +1581,7 @@ class _MessageList extends StatelessWidget {
     required this.messageKeyForId,
     required this.onReplyMessage,
     required this.onMessageLongPress,
+    required this.onReactionSelected,
     required this.onReplyPreviewTap,
   });
 
@@ -1355,13 +1594,13 @@ class _MessageList extends StatelessWidget {
   final GlobalKey Function(String messageId) messageKeyForId;
   final ValueChanged<MessageVm> onReplyMessage;
   final ValueChanged<MessageVm> onMessageLongPress;
+  final void Function(MessageVm message, String emoji) onReactionSelected;
   final ValueChanged<String> onReplyPreviewTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final items = _buildItems(context, l10n);
-    final displayItems = items.reversed.toList(growable: false);
+    final displayItems = _buildItems(context, l10n);
     final gap = _scale(context, 28);
 
     return CustomScrollView(
@@ -1396,16 +1635,16 @@ class _MessageList extends StatelessWidget {
     final messagesById = <String, MessageVm>{
       for (final message in messages) message.id: message,
     };
+    DateTime? currentDate;
 
-    if (messagingClosed) {
-      items.add(
-        _ChatClosedTailNotice(text: l10n.chatActivityChatClosedHistoryNotice),
-      );
-    }
-
-    for (var i = 0; i < messages.length; i++) {
+    for (var i = messages.length - 1; i >= 0; i--) {
       final msg = messages[i];
-      final dateLabel = _dateLabelFor(msg.sentAt, l10n);
+      final msgDate = _dateOnly(msg.sentAt);
+
+      if (currentDate == null || currentDate != msgDate) {
+        currentDate = msgDate;
+        items.add(_DaySeparator(label: _dateLabelFor(msg.sentAt, l10n)));
+      }
 
       items.add(
         _MessageBubble(
@@ -1424,22 +1663,18 @@ class _MessageList extends StatelessWidget {
           onLongPress: msg.isSystem || msg.isDeleted
               ? null
               : () => onMessageLongPress(msg),
+          onReactionTap: (emoji) => onReactionSelected(msg, emoji),
           onReplyPreviewTap: msg.replyToMessageId == null
               ? null
               : () => onReplyPreviewTap(msg.replyToMessageId!),
           l10n: l10n,
         ),
       );
-
-      final nextMsg = i + 1 < messages.length ? messages[i + 1] : null;
-      if (nextMsg != null && dateLabel != _dateLabelFor(nextMsg.sentAt, l10n)) {
-        items.add(_DaySeparator(label: dateLabel));
-      }
     }
 
-    if (messages.isNotEmpty) {
+    if (messagingClosed) {
       items.add(
-        _DaySeparator(label: _dateLabelFor(messages.last.sentAt, l10n)),
+        _ChatClosedTailNotice(text: l10n.chatActivityChatClosedHistoryNotice),
       );
     }
 
@@ -1484,6 +1719,11 @@ class _MessageList extends StatelessWidget {
     if (diff == 0) return l10n.chatDateToday.toUpperCase();
     if (diff == 1) return l10n.chatDateYesterday.toUpperCase();
     return DateFormat.yMd(l10n.localeName).format(local);
+  }
+
+  DateTime _dateOnly(DateTime dt) {
+    final local = dt.toLocal();
+    return DateTime(local.year, local.month, local.day);
   }
 }
 
@@ -1909,6 +2149,152 @@ class _ReplySwipeBackground extends StatelessWidget {
   }
 }
 
+const _chatReactionChoices = <String>['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥'];
+
+class _ReactionPickerRow extends StatelessWidget {
+  const _ReactionPickerRow({
+    required this.selectedEmoji,
+    required this.onSelected,
+  });
+
+  final String? selectedEmoji;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          for (final emoji in _chatReactionChoices) ...[
+            _ReactionChoiceButton(
+              emoji: emoji,
+              selected: emoji == selectedEmoji,
+              onTap: () => onSelected(emoji),
+            ),
+            SizedBox(width: _scale(context, 8)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ReactionChoiceButton extends StatelessWidget {
+  const _ReactionChoiceButton({
+    required this.emoji,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: AppLocalizations.of(context)!.chatReactionSheetTitle,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: _scale(context, 46),
+          height: _scale(context, 46),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.07),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent.withValues(alpha: 0.55)
+                  : Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Center(
+            child: Text(emoji, style: TextStyle(fontSize: _scale(context, 24))),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageReactionStrip extends StatelessWidget {
+  const _MessageReactionStrip({
+    required this.reactions,
+    required this.onReactionTap,
+  });
+
+  final List<MessageReactionVm> reactions;
+  final ValueChanged<String> onReactionTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleReactions = reactions
+        .where(
+          (reaction) => reaction.count > 0 && reaction.emoji.trim().isNotEmpty,
+        )
+        .toList(growable: false);
+    if (visibleReactions.isEmpty) return const SizedBox.shrink();
+
+    return Wrap(
+      spacing: _scale(context, 6),
+      runSpacing: _scale(context, 6),
+      children: [
+        for (final reaction in visibleReactions)
+          GestureDetector(
+            onTap: () => onReactionTap(reaction.emoji),
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              padding: EdgeInsets.symmetric(
+                horizontal: _scale(context, 9),
+                vertical: _scale(context, 5),
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                color: reaction.reactedByMe
+                    ? AppColors.accent.withValues(alpha: 0.18)
+                    : const Color(0xB8412A18),
+                border: Border.all(
+                  color: reaction.reactedByMe
+                      ? AppColors.accent.withValues(alpha: 0.45)
+                      : Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    reaction.emoji,
+                    style: TextStyle(fontSize: _scale(context, 13)),
+                  ),
+                  SizedBox(width: _scale(context, 4)),
+                  Text(
+                    reaction.count.toString(),
+                    style: TextStyle(
+                      fontSize: _scale(context, 12),
+                      fontWeight: FontWeight.w800,
+                      color: reaction.reactedByMe
+                          ? AppColors.accent
+                          : Colors.white.withValues(alpha: 0.78),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.messageKey,
@@ -1922,6 +2308,7 @@ class _MessageBubble extends StatelessWidget {
     required this.repliedMessage,
     required this.onReply,
     required this.onLongPress,
+    required this.onReactionTap,
     required this.onReplyPreviewTap,
     required this.l10n,
   });
@@ -1937,6 +2324,7 @@ class _MessageBubble extends StatelessWidget {
   final MessageVm? repliedMessage;
   final VoidCallback onReply;
   final VoidCallback? onLongPress;
+  final ValueChanged<String> onReactionTap;
   final VoidCallback? onReplyPreviewTap;
   final AppLocalizations l10n;
 
@@ -2123,6 +2511,17 @@ class _MessageBubble extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (!isDeleted && message.reactions.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: _scale(context, 7),
+                      left: _scale(context, 4),
+                    ),
+                    child: _MessageReactionStrip(
+                      reactions: message.reactions,
+                      onReactionTap: onReactionTap,
+                    ),
+                  ),
                 if (message.isEdited && !isDeleted)
                   Padding(
                     padding: EdgeInsets.only(
@@ -3180,6 +3579,14 @@ class _PendingAttachmentChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (attachment.isAudio) {
+      return _PendingVoiceAttachmentChip(
+        attachment: attachment,
+        uploading: uploading,
+        onRemove: onRemove,
+      );
+    }
+
     final width = _scale(context, attachment.isImage ? 118 : 184);
 
     return Container(
@@ -3280,6 +3687,263 @@ class _PendingAttachmentChip extends StatelessWidget {
   }
 }
 
+class _PendingVoiceAttachmentChip extends StatefulWidget {
+  const _PendingVoiceAttachmentChip({
+    required this.attachment,
+    required this.uploading,
+    required this.onRemove,
+  });
+
+  final _PickedChatAttachment attachment;
+  final bool uploading;
+  final VoidCallback onRemove;
+
+  @override
+  State<_PendingVoiceAttachmentChip> createState() =>
+      _PendingVoiceAttachmentChipState();
+}
+
+class _PendingVoiceAttachmentChipState
+    extends State<_PendingVoiceAttachmentChip> {
+  final _player = AudioPlayer();
+  bool _preparing = false;
+  bool _ownsPreviewFile = false;
+  int _generation = 0;
+  String? _preparedPath;
+
+  @override
+  void dispose() {
+    _generation++;
+    unawaited(_player.dispose());
+    _deleteOwnedPreviewFile();
+    super.dispose();
+  }
+
+  Future<void> _toggle() async {
+    if (widget.uploading) return;
+
+    int? generation;
+    try {
+      final completed = _player.processingState == ProcessingState.completed;
+      if (_player.playing && !completed) {
+        await _player.pause();
+        return;
+      }
+
+      final path = await _previewPath();
+      if (path == null) return;
+
+      if (_preparedPath != path) {
+        generation = ++_generation;
+        setState(() => _preparing = true);
+        await _player.setFilePath(path);
+        if (!mounted || generation != _generation) return;
+        _preparedPath = path;
+        setState(() => _preparing = false);
+      }
+
+      if (_player.processingState == ProcessingState.completed) {
+        await _player.seek(Duration.zero);
+      }
+      if (!mounted) return;
+      unawaited(_player.play());
+    } catch (_) {
+      if (!mounted) return;
+      await showErrorDialog(
+        context,
+        title: AppLocalizations.of(context)!.error,
+        message: AppLocalizations.of(context)!.chatVoicePlaybackFailed,
+      );
+    } finally {
+      if (mounted &&
+          generation != null &&
+          generation == _generation &&
+          _preparing) {
+        setState(() => _preparing = false);
+      }
+    }
+  }
+
+  Future<String?> _previewPath() async {
+    final localPath = widget.attachment.localPath?.trim() ?? '';
+    if (localPath.isNotEmpty && await File(localPath).exists()) {
+      return localPath;
+    }
+
+    if (_preparedPath != null && await File(_preparedPath!).exists()) {
+      return _preparedPath;
+    }
+
+    final dir = await getTemporaryDirectory();
+    final dot = widget.attachment.name.lastIndexOf('.');
+    final ext = dot >= 0 ? widget.attachment.name.substring(dot + 1) : 'm4a';
+    final path =
+        '${dir.path}/flyfy_voice_preview_${widget.attachment.localId}.$ext';
+    await File(path).writeAsBytes(widget.attachment.bytes, flush: true);
+    _ownsPreviewFile = true;
+    return path;
+  }
+
+  void _deleteOwnedPreviewFile() {
+    final path = _preparedPath;
+    if (!_ownsPreviewFile || path == null) return;
+    unawaited(_deletePreviewFile(path));
+  }
+
+  Future<void> _deletePreviewFile(String path) async {
+    try {
+      await File(path).delete();
+    } catch (_) {
+      // Temp preview file may already be removed.
+    }
+  }
+
+  Future<void> _seekToFraction(double fraction, Duration duration) async {
+    if (duration.inMilliseconds <= 0 || _preparing) return;
+    final target = Duration(
+      milliseconds: (duration.inMilliseconds * fraction.clamp(0.0, 1.0))
+          .round(),
+    );
+    await _player.seek(target);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final width = _scale(context, 244);
+    final fallbackDuration = widget.attachment.duration ?? Duration.zero;
+
+    return Container(
+      width: width,
+      padding: EdgeInsets.all(_scale(context, 10)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(_scale(context, 20)),
+        color: const Color(0xD12D1A0D),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      child: Row(
+        children: [
+          StreamBuilder<PlayerState>(
+            stream: _player.playerStateStream,
+            builder: (context, snapshot) {
+              final processing = snapshot.data?.processingState;
+              final busy =
+                  _preparing ||
+                  widget.uploading ||
+                  processing == ProcessingState.loading ||
+                  processing == ProcessingState.buffering;
+              final playing =
+                  (snapshot.data?.playing ?? false) &&
+                  processing != ProcessingState.completed;
+
+              return GestureDetector(
+                onTap: busy ? null : _toggle,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: _scale(context, 42),
+                  height: _scale(context, 42),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.accent,
+                  ),
+                  child: Center(
+                    child: busy
+                        ? SizedBox(
+                            width: _scale(context, 17),
+                            height: _scale(context, 17),
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2.1,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            playing
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            size: _scale(context, 27),
+                            color: Colors.white,
+                          ),
+                  ),
+                ),
+              );
+            },
+          ),
+          SizedBox(width: _scale(context, 10)),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.chatVoicePreview,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: _scale(context, 12),
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: _scale(context, 8)),
+                StreamBuilder<Duration>(
+                  stream: _player.positionStream,
+                  builder: (context, snapshot) {
+                    final position = snapshot.data ?? Duration.zero;
+                    final duration = _player.duration ?? fallbackDuration;
+                    final progress = duration.inMilliseconds <= 0
+                        ? 0.0
+                        : (position.inMilliseconds / duration.inMilliseconds)
+                              .clamp(0.0, 1.0);
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _VoiceWaveform(
+                            progress: progress,
+                            enabled:
+                                duration.inMilliseconds > 0 &&
+                                !_preparing &&
+                                !widget.uploading,
+                            onSeekFraction: (fraction) =>
+                                _seekToFraction(fraction, duration),
+                          ),
+                        ),
+                        SizedBox(width: _scale(context, 8)),
+                        Text(
+                          _formatVoiceDuration(
+                            position == Duration.zero ? duration : position,
+                          ),
+                          style: TextStyle(
+                            fontSize: _scale(context, 11),
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white.withValues(alpha: 0.72),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: _scale(context, 8)),
+          GestureDetector(
+            onTap: widget.uploading ? null : widget.onRemove,
+            behavior: HitTestBehavior.opaque,
+            child: Icon(
+              Icons.close_rounded,
+              color: Colors.white.withValues(
+                alpha: widget.uploading ? 0.34 : 0.86,
+              ),
+              size: _scale(context, 21),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PendingAttachmentPreview extends StatelessWidget {
   const _PendingAttachmentPreview(this.attachment);
 
@@ -3319,15 +3983,17 @@ class _PendingAttachmentPreview extends StatelessWidget {
 class _VoiceRecordingBar extends StatelessWidget {
   const _VoiceRecordingBar({
     required this.duration,
+    required this.locked,
     required this.stopping,
     required this.onCancel,
-    required this.onSend,
+    required this.onStop,
   });
 
   final Duration duration;
+  final bool locked;
   final bool stopping;
   final VoidCallback onCancel;
-  final VoidCallback onSend;
+  final VoidCallback onStop;
 
   @override
   Widget build(BuildContext context) {
@@ -3371,7 +4037,9 @@ class _VoiceRecordingBar extends StatelessWidget {
                 Expanded(
                   child: Text(
                     stopping
-                        ? l10n.chatAttachmentUploading
+                        ? l10n.chatVoicePreparingPreview
+                        : locked
+                        ? l10n.chatVoiceRecordingLocked
                         : l10n.chatVoiceRecording,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -3397,7 +4065,7 @@ class _VoiceRecordingBar extends StatelessWidget {
         ),
         SizedBox(width: _scale(context, 10)),
         GestureDetector(
-          onTap: stopping ? null : onSend,
+          onTap: stopping ? null : onStop,
           behavior: HitTestBehavior.opaque,
           child: Container(
             width: btnSize,
@@ -3417,9 +4085,9 @@ class _VoiceRecordingBar extends StatelessWidget {
                       ),
                     )
                   : Icon(
-                      Icons.send_rounded,
+                      Icons.stop_rounded,
                       color: Colors.white,
-                      size: _scale(context, 22),
+                      size: _scale(context, 24),
                     ),
             ),
           ),
@@ -3456,6 +4124,267 @@ class _RecordingPulse extends StatelessWidget {
   }
 }
 
+class _ComposerActionButtonSurface extends StatelessWidget {
+  const _ComposerActionButtonSurface({
+    required this.size,
+    required this.color,
+    required this.disabled,
+    required this.busy,
+    required this.icon,
+    required this.iconSize,
+  });
+
+  final double size;
+  final Color color;
+  final bool disabled;
+  final bool busy;
+  final IconData icon;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.28),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Center(
+        child: busy
+            ? SizedBox(
+                width: _scale(context, 20),
+                height: _scale(context, 20),
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(
+                icon,
+                color: Colors.white.withValues(alpha: disabled ? 0.36 : 1),
+                size: iconSize,
+              ),
+      ),
+    );
+  }
+}
+
+class _VoiceGestureButton extends StatefulWidget {
+  const _VoiceGestureButton({
+    required this.size,
+    required this.disabled,
+    required this.busy,
+    required this.recording,
+    required this.onStart,
+    required this.onStartLocked,
+    required this.onLock,
+    required this.onStopForPreview,
+    required this.onCancel,
+  });
+
+  final double size;
+  final bool disabled;
+  final bool busy;
+  final bool recording;
+  final Future<void> Function() onStart;
+  final Future<void> Function() onStartLocked;
+  final VoidCallback onLock;
+  final VoidCallback onStopForPreview;
+  final VoidCallback onCancel;
+
+  @override
+  State<_VoiceGestureButton> createState() => _VoiceGestureButtonState();
+}
+
+class _VoiceGestureButtonState extends State<_VoiceGestureButton> {
+  static const _lockDistance = 74.0;
+
+  bool _pressing = false;
+  bool _locked = false;
+  bool _lockRequested = false;
+  bool _stopRequested = false;
+  bool _cancelRequested = false;
+  Future<void>? _startFuture;
+
+  @override
+  void didUpdateWidget(covariant _VoiceGestureButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.recording && !widget.recording && !_pressing) {
+      _resetPendingGestureState();
+    }
+  }
+
+  void _startHold() {
+    if (widget.disabled || widget.busy || _pressing) return;
+    setState(() {
+      _pressing = true;
+      _locked = false;
+      _lockRequested = false;
+      _stopRequested = false;
+      _cancelRequested = false;
+    });
+    _startFuture = widget.onStart();
+  }
+
+  void _lockHold() {
+    if (!_pressing || _lockRequested) return;
+    setState(() {
+      _locked = true;
+      _lockRequested = true;
+      _stopRequested = false;
+      _cancelRequested = false;
+    });
+    _runAfterStart(widget.onLock, shouldRun: () => _lockRequested);
+  }
+
+  void _finishHold() {
+    if (!_pressing) return;
+    setState(() {
+      _pressing = false;
+      _locked = false;
+      _stopRequested = !_lockRequested;
+    });
+    if (!_lockRequested) {
+      _runAfterStart(
+        widget.onStopForPreview,
+        shouldRun: () => _stopRequested && !_lockRequested,
+      );
+    }
+  }
+
+  void _cancelHold() {
+    if (!_pressing) return;
+    setState(() {
+      _pressing = false;
+      _locked = false;
+      _cancelRequested = !_lockRequested;
+    });
+    if (!_lockRequested) {
+      _runAfterStart(
+        widget.onCancel,
+        shouldRun: () => _cancelRequested && !_lockRequested,
+      );
+    }
+  }
+
+  void _runAfterStart(
+    VoidCallback action, {
+    required bool Function() shouldRun,
+  }) {
+    final startFuture = _startFuture;
+    if (startFuture == null) {
+      if (shouldRun()) action();
+      return;
+    }
+
+    unawaited(
+      startFuture.whenComplete(() {
+        if (!mounted || !shouldRun()) return;
+        action();
+      }),
+    );
+  }
+
+  void _resetPendingGestureState() {
+    _locked = false;
+    _lockRequested = false;
+    _stopRequested = false;
+    _cancelRequested = false;
+    _startFuture = null;
+    if (_pressing) {
+      _pressing = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = _pressing || widget.recording;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        if (_pressing && !_locked)
+          Positioned(
+            right: 0,
+            bottom: widget.size + _scale(context, 10),
+            child: _VoiceLockHint(),
+          ),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.disabled || widget.busy
+              ? null
+              : () => unawaited(widget.onStartLocked()),
+          onLongPressStart: (_) => _startHold(),
+          onLongPressMoveUpdate: (details) {
+            if (details.offsetFromOrigin.dy <= -_lockDistance) {
+              _lockHold();
+            }
+          },
+          onLongPressEnd: (_) => _finishHold(),
+          onLongPressCancel: _cancelHold,
+          child: _ComposerActionButtonSurface(
+            size: widget.size,
+            color: active ? Colors.red : AppColors.accent,
+            disabled: widget.disabled,
+            busy: widget.busy,
+            icon: Icons.mic_rounded,
+            iconSize: active ? 24 : 22,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _VoiceLockHint extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Semantics(
+      label: l10n.chatVoiceSlideUpToLock,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.58),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: _scale(context, 9),
+            vertical: _scale(context, 8),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.keyboard_arrow_up_rounded,
+                color: Colors.white.withValues(alpha: 0.86),
+                size: _scale(context, 18),
+              ),
+              Icon(
+                Icons.lock_open_rounded,
+                color: AppColors.accent,
+                size: _scale(context, 18),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ChatComposer extends StatelessWidget {
   const _ChatComposer({
     required this.controller,
@@ -3465,16 +4394,22 @@ class _ChatComposer extends StatelessWidget {
     required this.participants,
     required this.onSend,
     required this.onTyping,
-    required this.onPickMedia,
+    required this.onPickGallery,
     required this.onPickFile,
+    required this.onPickAudio,
+    required this.onCameraCapture,
     required this.onRemoveAttachment,
     required this.onCancelReply,
     required this.onVoiceStart,
+    required this.onVoiceStartLocked,
+    required this.onVoiceLock,
     required this.onVoiceCancel,
-    required this.onVoiceSend,
+    required this.onVoiceStop,
     required this.sending,
     required this.attachmentUploading,
     required this.voiceRecording,
+    required this.voiceRecordingLocked,
+    required this.voicePressActive,
     required this.voiceStopping,
     required this.voiceDuration,
     required this.messagingClosed,
@@ -3487,16 +4422,22 @@ class _ChatComposer extends StatelessWidget {
   final List<ParticipantInfo> participants;
   final VoidCallback onSend;
   final VoidCallback onTyping;
-  final VoidCallback onPickMedia;
+  final VoidCallback onPickGallery;
   final VoidCallback onPickFile;
+  final VoidCallback onPickAudio;
+  final VoidCallback onCameraCapture;
   final ValueChanged<int> onRemoveAttachment;
   final VoidCallback onCancelReply;
-  final VoidCallback onVoiceStart;
+  final Future<void> Function() onVoiceStart;
+  final Future<void> Function() onVoiceStartLocked;
+  final VoidCallback onVoiceLock;
   final VoidCallback onVoiceCancel;
-  final VoidCallback onVoiceSend;
+  final VoidCallback onVoiceStop;
   final bool sending;
   final bool attachmentUploading;
   final bool voiceRecording;
+  final bool voiceRecordingLocked;
+  final bool voicePressActive;
   final bool voiceStopping;
   final Duration voiceDuration;
   final bool messagingClosed;
@@ -3504,16 +4445,17 @@ class _ChatComposer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
-    final hz = _scale(context, 12);
-    final btnSize = _scale(context, 50);
+    final hz = _scale(context, 8);
+    final btnSize = _scale(context, 42).clamp(40.0, 44.0).toDouble();
+    final itemGap = _scale(context, 6);
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
         hz,
-        _scale(context, 12),
+        _scale(context, 8),
         hz,
-        _scale(context, 14) + mq.padding.bottom,
+        _scale(context, 10) + mq.padding.bottom,
       ),
       decoration: BoxDecoration(
         border: Border(
@@ -3549,61 +4491,34 @@ class _ChatComposer extends StatelessWidget {
             ),
             SizedBox(height: _scale(context, 10)),
           ],
-          if (voiceRecording) ...[
+          if (voiceRecording && !voicePressActive) ...[
             _VoiceRecordingBar(
               duration: voiceDuration,
+              locked: voiceRecordingLocked,
               stopping: voiceStopping,
               onCancel: onVoiceCancel,
-              onSend: onVoiceSend,
+              onStop: onVoiceStop,
             ),
           ] else
             Row(
               children: [
-                GestureDetector(
+                _ComposerCircleButton(
+                  size: btnSize,
+                  // Show the upload spinner on the paperclip — that is the
+                  // button users associate with file/gallery uploads.
+                  loading: attachmentUploading,
+                  icon: Icons.attach_file_rounded,
+                  semanticLabel: l10n.chatComposerAttachButtonLabel,
                   onTap: attachmentUploading || messagingClosed
                       ? null
-                      : () => _showAttachmentPicker(context, l10n),
-                  child: Container(
-                    width: btnSize,
-                    height: btnSize,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xD136230F),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.28),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: attachmentUploading
-                          ? SizedBox(
-                              width: _scale(context, 20),
-                              height: _scale(context, 20),
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: AppColors.accent,
-                              ),
-                            )
-                          : Text(
-                              '+',
-                              style: TextStyle(
-                                fontSize: _scale(context, 24),
-                                fontWeight: FontWeight.w300,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                    ),
-                  ),
+                      : () => _showAttachSheet(context, l10n),
                 ),
-                SizedBox(width: _scale(context, 10)),
+                SizedBox(width: itemGap),
                 Expanded(
                   child: Container(
-                    constraints: BoxConstraints(minHeight: btnSize),
+                    height: btnSize,
                     padding: EdgeInsets.symmetric(
-                      horizontal: _scale(context, 18),
+                      horizontal: _scale(context, 12),
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(999),
@@ -3621,43 +4536,52 @@ class _ChatComposer extends StatelessWidget {
                             onChanged: (_) => onTyping(),
                             onSubmitted: (_) => onSend(),
                             textInputAction: TextInputAction.send,
-                            maxLines: 4,
-                            minLines: 1,
+                            maxLines: 1,
                             textAlignVertical: TextAlignVertical.center,
                             enabled: !attachmentUploading && !messagingClosed,
-                            style: TextStyle(
-                              fontSize: _scale(context, 15),
-                              color: const Color(0xFFf5f3ef),
-                              letterSpacing: -0.3,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Color(0xFFf5f3ef),
+                              letterSpacing: 0,
                             ),
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: _scale(context, 14),
-                              ),
+                              contentPadding: EdgeInsets.zero,
                               hintText: messagingClosed
                                   ? l10n.chatComposerClosedHint
                                   : attachmentUploading
                                   ? l10n.chatAttachmentUploading
                                   : l10n.chatComposerHint,
                               hintStyle: TextStyle(
-                                fontSize: _scale(context, 15),
+                                fontSize: 15,
                                 color: Colors.white.withValues(alpha: 0.48),
-                                letterSpacing: -0.3,
+                                letterSpacing: 0,
                               ),
                             ),
                           ),
                         ),
-                        GestureDetector(
-                          onTap: messagingClosed
-                              ? null
-                              : () => focusNode.requestFocus(),
-                          child: Text(
-                            '☺',
-                            style: TextStyle(
-                              fontSize: _scale(context, 22),
-                              color: Colors.white.withValues(alpha: 0.72),
+                        Semantics(
+                          button: true,
+                          label: l10n.chatComposerEmojiButtonLabel,
+                          enabled: !messagingClosed && !attachmentUploading,
+                          child: GestureDetector(
+                            onTap: messagingClosed || attachmentUploading
+                                ? null
+                                : () => _showEmojiStickerSheet(
+                                    context: context,
+                                    l10n: l10n,
+                                    controller: controller,
+                                    onTyping: onTyping,
+                                  ),
+                            child: SizedBox(
+                              width: 30,
+                              height: 30,
+                              child: Icon(
+                                Icons.emoji_emotions_outlined,
+                                size: 22,
+                                color: Colors.white.withValues(alpha: 0.72),
+                              ),
                             ),
                           ),
                         ),
@@ -3665,7 +4589,29 @@ class _ChatComposer extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: _scale(context, 10)),
+                // Camera button stays one tap away when there is no draft,
+                // matching the compact WhatsApp composer rhythm.
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder: (context, value, _) {
+                    final hasDraft =
+                        value.text.trim().isNotEmpty ||
+                        pendingAttachments.isNotEmpty;
+                    if (hasDraft) return const SizedBox.shrink();
+                    return Padding(
+                      padding: EdgeInsets.only(left: itemGap),
+                      child: _ComposerCircleButton(
+                        size: btnSize,
+                        icon: Icons.camera_alt_rounded,
+                        semanticLabel: l10n.chatComposerCameraButtonLabel,
+                        onTap: attachmentUploading || messagingClosed
+                            ? null
+                            : onCameraCapture,
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(width: itemGap),
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
@@ -3676,49 +4622,29 @@ class _ChatComposer extends StatelessWidget {
                         sending || attachmentUploading || messagingClosed;
                     final showMic = !hasDraft;
 
+                    if (showMic) {
+                      return _VoiceGestureButton(
+                        size: btnSize,
+                        disabled: disabled,
+                        busy: sending || attachmentUploading,
+                        recording: voiceRecording && voicePressActive,
+                        onStart: onVoiceStart,
+                        onStartLocked: onVoiceStartLocked,
+                        onLock: onVoiceLock,
+                        onStopForPreview: onVoiceStop,
+                        onCancel: onVoiceCancel,
+                      );
+                    }
+
                     return GestureDetector(
-                      onTap: disabled
-                          ? null
-                          : showMic
-                          ? onVoiceStart
-                          : onSend,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        width: btnSize,
-                        height: btnSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: showMic
-                              ? AppColors.accent
-                              : const Color(0xFFff9d00),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.28),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: sending || attachmentUploading
-                              ? SizedBox(
-                                  width: _scale(context, 20),
-                                  height: _scale(context, 20),
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(
-                                  showMic
-                                      ? Icons.mic_rounded
-                                      : Icons.send_rounded,
-                                  color: Colors.white.withValues(
-                                    alpha: disabled ? 0.36 : 1,
-                                  ),
-                                  size: _scale(context, showMic ? 24 : 22),
-                                ),
-                        ),
+                      onTap: disabled ? null : onSend,
+                      child: _ComposerActionButtonSurface(
+                        size: btnSize,
+                        color: const Color(0xFFff9d00),
+                        disabled: disabled,
+                        busy: sending || attachmentUploading,
+                        icon: Icons.send_rounded,
+                        iconSize: 20,
                       ),
                     );
                   },
@@ -3730,48 +4656,420 @@ class _ChatComposer extends StatelessWidget {
     );
   }
 
-  void _showAttachmentPicker(BuildContext context, AppLocalizations l10n) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1d120b),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  // Paperclip sheet — gallery, file, audio.
+  void _showAttachSheet(BuildContext context, AppLocalizations l10n) {
+    final actions = <_ComposerSheetAction>[
+      _ComposerSheetAction(
+        icon: Icons.photo_library_rounded,
+        label: l10n.chatAttachmentPhotoVideo,
+        onSelected: onPickGallery,
       ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(
-                  Icons.photo_library_rounded,
-                  color: Color(0xFFff9800),
+      _ComposerSheetAction(
+        icon: Icons.insert_drive_file_rounded,
+        label: l10n.chatAttachmentFile,
+        onSelected: onPickFile,
+      ),
+      _ComposerSheetAction(
+        icon: Icons.audiotrack_rounded,
+        label: l10n.chatAttachmentAudio,
+        onSelected: onPickAudio,
+      ),
+    ];
+    _showAdaptiveAttachmentSheet(
+      context: context,
+      title: l10n.chatAttachmentAttachTitle,
+      cancelLabel: l10n.chatAttachmentCancel,
+      actions: actions,
+    );
+  }
+}
+
+// ── Composer sub-widgets / sheet helpers ─────────────────────────
+
+const _chatEmojiChoices = <String>[
+  '😀',
+  '😄',
+  '😂',
+  '😊',
+  '😍',
+  '😘',
+  '😎',
+  '🥳',
+  '😇',
+  '🙂',
+  '😉',
+  '🤔',
+  '😅',
+  '😭',
+  '😤',
+  '👍',
+  '🙏',
+  '👏',
+  '🔥',
+  '❤️',
+  '💛',
+  '✨',
+  '🎉',
+  '✅',
+  '👀',
+  '📍',
+  '🧭',
+  '✈️',
+  '🏔️',
+  '🏝️',
+  '🌅',
+  '🧳',
+];
+
+const _chatStickerChoices = <String>[
+  '✈️',
+  '🧳',
+  '🗺️',
+  '📍',
+  '🏔️',
+  '🏝️',
+  '🌅',
+  '🏕️',
+  '🚕',
+  '🚆',
+  '🛫',
+  '🎒',
+  '🔥',
+  '✨',
+  '🎉',
+  '❤️',
+];
+
+void _showEmojiStickerSheet({
+  required BuildContext context,
+  required AppLocalizations l10n,
+  required TextEditingController controller,
+  required VoidCallback onTyping,
+}) {
+  FocusScope.of(context).unfocus();
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: const Color(0xFF1d120b),
+    barrierColor: Colors.black.withValues(alpha: 0.35),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (sheetContext) {
+      final panelHeight = _scale(
+        sheetContext,
+        308,
+      ).clamp(284.0, 336.0).toDouble();
+
+      return SafeArea(
+        top: false,
+        child: DefaultTabController(
+          length: 2,
+          child: SizedBox(
+            height: panelHeight,
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
+                TabBar(
+                  indicatorColor: const Color(0xFFff9800),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white.withValues(alpha: 0.48),
+                  labelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
+                  tabs: [
+                    Tab(text: l10n.chatComposerEmojiTab),
+                    Tab(text: l10n.chatComposerStickerTab),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _EmojiStickerGrid(
+                        values: _chatEmojiChoices,
+                        large: false,
+                        onSelected: (value) {
+                          _insertComposerToken(controller, value);
+                          onTyping();
+                        },
+                      ),
+                      _EmojiStickerGrid(
+                        values: _chatStickerChoices,
+                        large: true,
+                        onSelected: (value) {
+                          _insertComposerToken(controller, '$value ');
+                          onTyping();
+                          Navigator.pop(sheetContext);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+void _insertComposerToken(TextEditingController controller, String value) {
+  final current = controller.value;
+  final text = current.text;
+  final selection = current.selection;
+  final start = selection.isValid
+      ? selection.start.clamp(0, text.length).toInt()
+      : text.length;
+  final end = selection.isValid
+      ? selection.end.clamp(0, text.length).toInt()
+      : text.length;
+  final normalizedStart = start <= end ? start : end;
+  final normalizedEnd = start <= end ? end : start;
+  final nextText = text.replaceRange(normalizedStart, normalizedEnd, value);
+  final nextOffset = normalizedStart + value.length;
+
+  controller.value = current.copyWith(
+    text: nextText,
+    selection: TextSelection.collapsed(offset: nextOffset),
+    composing: TextRange.empty,
+  );
+}
+
+class _EmojiStickerGrid extends StatelessWidget {
+  const _EmojiStickerGrid({
+    required this.values,
+    required this.large,
+    required this.onSelected,
+  });
+
+  final List<String> values;
+  final bool large;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rawColumns = (constraints.maxWidth / (large ? 72 : 44)).floor();
+        final columns = rawColumns.clamp(large ? 4 : 6, large ? 6 : 9).toInt();
+
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(12, 14, 12, 18),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: large ? 10 : 6,
+            crossAxisSpacing: large ? 10 : 4,
+          ),
+          itemCount: values.length,
+          itemBuilder: (context, index) {
+            final value = values[index];
+            return Semantics(
+              button: true,
+              label: value,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(large ? 14 : 999),
+                onTap: () => onSelected(value),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: large
+                        ? Colors.white.withValues(alpha: 0.07)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(large ? 14 : 999),
+                    border: large
+                        ? Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          )
+                        : null,
+                  ),
+                  child: Center(
+                    child: Text(
+                      value,
+                      style: TextStyle(fontSize: large ? 34 : 26, height: 1),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ComposerSheetAction {
+  const _ComposerSheetAction({
+    required this.icon,
+    required this.label,
+    required this.onSelected,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onSelected;
+}
+
+// _showAdaptiveAttachmentSheet picks the platform-native presentation:
+// Cupertino action sheet on iOS/macOS, custom Material bottom sheet (matching
+// the chat dark theme) on Android and other platforms.
+void _showAdaptiveAttachmentSheet({
+  required BuildContext context,
+  required String title,
+  required String cancelLabel,
+  required List<_ComposerSheetAction> actions,
+}) {
+  final platform = Theme.of(context).platform;
+  if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (sheetContext) => CupertinoActionSheet(
+        title: Text(title),
+        actions: [
+          for (final a in actions)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(sheetContext);
+                a.onSelected();
+              },
+              child: Text(a.label),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.pop(sheetContext),
+          child: Text(cancelLabel),
+        ),
+      ),
+    );
+    return;
+  }
+
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: const Color(0xFF1d120b),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ),
+            for (final a in actions)
+              ListTile(
+                leading: Icon(a.icon, color: const Color(0xFFff9800)),
                 title: Text(
-                  l10n.chatAttachmentPhotoVideo,
-                  style: const TextStyle(color: Colors.white),
+                  a.label,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  onPickMedia();
+                  a.onSelected();
                 },
               ),
-              ListTile(
-                leading: const Icon(
-                  Icons.insert_drive_file_rounded,
-                  color: Color(0xFFff9800),
-                ),
-                title: Text(
-                  l10n.chatAttachmentFile,
-                  style: const TextStyle(color: Colors.white),
-                ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  onPickFile();
-                },
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _ComposerCircleButton extends StatelessWidget {
+  const _ComposerCircleButton({
+    required this.size,
+    required this.icon,
+    required this.onTap,
+    required this.semanticLabel,
+    this.loading = false,
+  });
+
+  final double size;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final String semanticLabel;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onTap == null;
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      enabled: !disabled,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xD136230F),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
             ],
+          ),
+          child: Center(
+            child: loading
+                ? SizedBox(
+                    width: size * 0.4,
+                    height: size * 0.4,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppColors.accent,
+                    ),
+                  )
+                : Icon(
+                    icon,
+                    size: size * 0.45,
+                    color: Colors.white.withValues(
+                      alpha: disabled ? 0.36 : 0.9,
+                    ),
+                  ),
           ),
         ),
       ),

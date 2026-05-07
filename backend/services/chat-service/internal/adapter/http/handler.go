@@ -369,6 +369,19 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 			}
 			return
 		}
+		if len(parts) == 4 && parts[3] == "reaction" {
+			msgID, err := uuid.Parse(parts[2])
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "invalid message id")
+				return
+			}
+			if r.Method == http.MethodPost {
+				h.ReactToMessage(w, r, convID, msgID)
+				return
+			}
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
 	case "read":
 		if r.Method == http.MethodPost {
 			h.MarkRead(w, r, convID)
@@ -534,23 +547,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, dto.MessageResponse{
-		ID:                 msg.ID.String(),
-		SenderUserID:       msg.SenderUserID.String(),
-		SenderDisplayName:  msg.SenderDisplayName,
-		SenderAvatarFileID: msg.SenderAvatarFileID,
-		Type:               msg.Type,
-		Content:            msg.Content,
-		FileIDs:            msg.FileIDs,
-		ReplyToMessageID: func() *string {
-			if msg.ReplyToMessageID == nil {
-				return nil
-			}
-			s := msg.ReplyToMessageID.String()
-			return &s
-		}(),
-		SentAt: msg.SentAt.Format(time.RFC3339),
-	})
+	writeJSON(w, http.StatusCreated, messageResponseFromModel(msg))
 }
 
 func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request, convID uuid.UUID) {
@@ -588,29 +585,7 @@ func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request, convID uu
 
 	items := make([]dto.MessageResponse, 0, len(msgs))
 	for _, m := range msgs {
-		item := dto.MessageResponse{
-			ID:                 m.ID.String(),
-			SenderUserID:       m.SenderUserID.String(),
-			SenderDisplayName:  m.SenderDisplayName,
-			SenderAvatarFileID: m.SenderAvatarFileID,
-			Type:               m.Type,
-			Content:            m.Content,
-			FileIDs:            m.FileIDs,
-			SentAt:             m.SentAt.Format(time.RFC3339),
-		}
-		if m.ReplyToMessageID != nil {
-			s := m.ReplyToMessageID.String()
-			item.ReplyToMessageID = &s
-		}
-		if m.EditedAt != nil {
-			s := m.EditedAt.Format(time.RFC3339)
-			item.EditedAt = &s
-		}
-		if m.DeletedAt != nil {
-			s := m.DeletedAt.Format(time.RFC3339)
-			item.DeletedAt = &s
-		}
-		items = append(items, item)
+		items = append(items, messageResponseFromModel(m))
 	}
 
 	var nextCursor *string
@@ -641,12 +616,37 @@ func (h *Handler) EditMessage(w http.ResponseWriter, r *http.Request, convID, ms
 		return
 	}
 
-	writeJSON(w, http.StatusOK, dto.MessageResponse{
-		ID:           msg.ID.String(),
-		SenderUserID: msg.SenderUserID.String(),
-		Type:         msg.Type,
-		Content:      msg.Content,
-		SentAt:       msg.SentAt.Format(time.RFC3339),
+	writeJSON(w, http.StatusOK, messageResponseFromModel(msg))
+}
+
+func (h *Handler) ReactToMessage(w http.ResponseWriter, r *http.Request, convID, msgID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	var req dto.ReactMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	result, err := h.messageUC.ToggleReaction(
+		r.Context(),
+		convID,
+		msgID,
+		actorUserID,
+		req.Emoji,
+	)
+	if err != nil {
+		h.writeAppError(w, err, "toggle message reaction failed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.MessageReactionResponse{
+		MessageID: result.MessageID.String(),
+		Reactions: reactionInfosFromModel(result.Reactions),
 	})
 }
 
@@ -811,6 +811,47 @@ func (h *Handler) UnpinMessage(w http.ResponseWriter, r *http.Request, convID, m
 	})
 }
 
+func messageResponseFromModel(m *model.Message) dto.MessageResponse {
+	item := dto.MessageResponse{
+		ID:                 m.ID.String(),
+		SenderUserID:       m.SenderUserID.String(),
+		SenderDisplayName:  m.SenderDisplayName,
+		SenderAvatarFileID: m.SenderAvatarFileID,
+		Type:               m.Type,
+		Content:            m.Content,
+		FileIDs:            m.FileIDs,
+		Reactions:          reactionInfosFromModel(m.Reactions),
+		SentAt:             m.SentAt.Format(time.RFC3339),
+	}
+	if m.ReplyToMessageID != nil {
+		s := m.ReplyToMessageID.String()
+		item.ReplyToMessageID = &s
+	}
+	if m.EditedAt != nil {
+		s := m.EditedAt.Format(time.RFC3339)
+		item.EditedAt = &s
+	}
+	if m.DeletedAt != nil {
+		s := m.DeletedAt.Format(time.RFC3339)
+		item.DeletedAt = &s
+	}
+	return item
+}
+
+func reactionInfosFromModel(
+	reactions []model.MessageReactionSummary,
+) []dto.MessageReactionInfo {
+	items := make([]dto.MessageReactionInfo, 0, len(reactions))
+	for _, reaction := range reactions {
+		items = append(items, dto.MessageReactionInfo{
+			Emoji:       reaction.Emoji,
+			Count:       reaction.Count,
+			ReactedByMe: reaction.ReactedByMe,
+		})
+	}
+	return items
+}
+
 func participantInfosFromModel(participants []*model.Participant) []dto.ParticipantInfo {
 	items := make([]dto.ParticipantInfo, 0, len(participants))
 	for _, p := range participants {
@@ -871,6 +912,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrInvalidUserID),
 		errors.Is(err, app.ErrMessageTooLong),
 		errors.Is(err, app.ErrInvalidMessageType),
+		errors.Is(err, app.ErrInvalidReaction),
 		errors.Is(err, app.ErrTooManyFiles),
 		errors.Is(err, app.ErrDirectChatCannotLeave),
 		errors.Is(err, app.ErrCannotPinInDirectChat),

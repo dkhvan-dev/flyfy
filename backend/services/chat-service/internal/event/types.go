@@ -47,6 +47,17 @@ type MessageDeletedPayload struct {
 	HardDeleted bool       `json:"hardDeleted"`
 }
 
+type MessageReactionUpdatedPayload struct {
+	MessageID   uuid.UUID             `json:"messageId"`
+	ActorUserID uuid.UUID             `json:"actorUserId"`
+	Reactions   []MessageReactionInfo `json:"reactions"`
+}
+
+type MessageReactionInfo struct {
+	Emoji string `json:"emoji"`
+	Count int    `json:"count"`
+}
+
 type ReadUpdatedPayload struct {
 	UserID        uuid.UUID `json:"userId"`
 	LastReadMsgID uuid.UUID `json:"lastReadMsgId"`

@@ -9,6 +9,7 @@ class MessageVm {
   final String? replyToMessageId;
   final DateTime? editedAt;
   final DateTime? deletedAt;
+  final List<MessageReactionVm> reactions;
   final DateTime sentAt;
 
   const MessageVm({
@@ -22,6 +23,7 @@ class MessageVm {
     this.replyToMessageId,
     this.editedAt,
     this.deletedAt,
+    this.reactions = const [],
     required this.sentAt,
   });
 
@@ -39,6 +41,7 @@ class MessageVm {
     String? replyToMessageId,
     DateTime? editedAt,
     DateTime? deletedAt,
+    List<MessageReactionVm>? reactions,
   }) {
     return MessageVm(
       id: id,
@@ -51,6 +54,7 @@ class MessageVm {
       replyToMessageId: replyToMessageId ?? this.replyToMessageId,
       editedAt: editedAt ?? this.editedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      reactions: reactions ?? this.reactions,
       sentAt: sentAt,
     );
   }
@@ -63,7 +67,8 @@ class MessageVm {
       senderAvatarFileId: json['senderAvatarFileId'] as String?,
       type: json['type'] as String,
       content: json['content'] as String,
-      fileIds: (json['fileIds'] as List<dynamic>?)
+      fileIds:
+          (json['fileIds'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
@@ -74,7 +79,41 @@ class MessageVm {
       deletedAt: json['deletedAt'] != null
           ? DateTime.parse(json['deletedAt'] as String)
           : null,
+      reactions:
+          (json['reactions'] as List<dynamic>?)
+              ?.whereType<Map<String, dynamic>>()
+              .map(MessageReactionVm.fromJson)
+              .toList(growable: false) ??
+          const [],
       sentAt: DateTime.parse(json['sentAt'] as String),
+    );
+  }
+}
+
+class MessageReactionVm {
+  const MessageReactionVm({
+    required this.emoji,
+    required this.count,
+    required this.reactedByMe,
+  });
+
+  final String emoji;
+  final int count;
+  final bool reactedByMe;
+
+  MessageReactionVm copyWith({int? count, bool? reactedByMe}) {
+    return MessageReactionVm(
+      emoji: emoji,
+      count: count ?? this.count,
+      reactedByMe: reactedByMe ?? this.reactedByMe,
+    );
+  }
+
+  factory MessageReactionVm.fromJson(Map<String, dynamic> json) {
+    return MessageReactionVm(
+      emoji: json['emoji']?.toString() ?? '',
+      count: (json['count'] as num?)?.toInt() ?? 0,
+      reactedByMe: json['reactedByMe'] == true,
     );
   }
 }

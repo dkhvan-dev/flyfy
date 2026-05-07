@@ -3230,6 +3230,81 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatAttachmentLocation => 'Локация';
 
   @override
+  String get chatAttachmentAudio => 'Аудио';
+
+  @override
+  String get chatAttachmentTakePhoto => 'Фото түсіру';
+
+  @override
+  String get chatAttachmentTakeVideo => 'Видео түсіру';
+
+  @override
+  String get chatAttachmentChooseFromGallery => 'Галереядан таңдау';
+
+  @override
+  String get chatAttachmentCameraTitle => 'Камера';
+
+  @override
+  String get chatAttachmentAttachTitle => 'Тіркеме';
+
+  @override
+  String get chatAttachmentCancel => 'Бас тарту';
+
+  @override
+  String get chatAttachmentVideoTooLong =>
+      'Видео тым ұзақ. 5 минутқа дейінгі бейнені пайдаланыңыз.';
+
+  @override
+  String get chatComposerCameraButtonLabel => 'Камера';
+
+  @override
+  String get chatComposerAttachButtonLabel => 'Файл тіркеу';
+
+  @override
+  String get chatComposerEmojiButtonLabel => 'Эмодзи мен стикерлер';
+
+  @override
+  String get chatComposerEmojiTab => 'Эмодзи';
+
+  @override
+  String get chatComposerStickerTab => 'Стикерлер';
+
+  @override
+  String get chatCameraPhotoMode => 'Фото';
+
+  @override
+  String get chatCameraVideoMode => 'Видео';
+
+  @override
+  String get chatCameraRecording => 'REC';
+
+  @override
+  String get chatCameraPermissionDenied =>
+      'Чатта медиа түсіру үшін камера мен микрофонға рұқсат қажет.';
+
+  @override
+  String get chatCameraUnavailable => 'Бұл құрылғыда камера қолжетімді емес.';
+
+  @override
+  String get chatCameraCaptureFailed =>
+      'Медиа түсіру мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get chatCameraFlipButtonLabel => 'Камераны ауыстыру';
+
+  @override
+  String get chatCameraCloseButtonLabel => 'Камераны жабу';
+
+  @override
+  String get chatCameraCapturePhotoButtonLabel => 'Фото түсіру';
+
+  @override
+  String get chatCameraRecordVideoButtonLabel => 'Видео жазу';
+
+  @override
+  String get chatCameraStopRecordingButtonLabel => 'Жазуды тоқтату';
+
+  @override
   String get chatAttachmentUploading => 'Тіркеме жүктелуде...';
 
   @override
@@ -3286,6 +3361,18 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatVoiceRecording => 'Дауыстық хабар жазылуда';
 
   @override
+  String get chatVoiceRecordingLocked => 'Жазу бекітілді';
+
+  @override
+  String get chatVoicePreparingPreview => 'Алдын ала тыңдау дайындалуда...';
+
+  @override
+  String get chatVoicePreview => 'Алдын ала тыңдау';
+
+  @override
+  String get chatVoiceSlideUpToLock => 'Жазуды бекіту үшін жоғары сырғытыңыз';
+
+  @override
   String get chatVoiceRecordPermissionDenied =>
       'Дауыстық хабар жазу үшін микрофонға рұқсат қажет.';
 
@@ -3299,6 +3386,13 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get chatVoiceTooShort => 'Дауыстық хабар тым қысқа.';
+
+  @override
+  String get chatReactionSheetTitle => 'Реакция';
+
+  @override
+  String get chatReactionFailed =>
+      'Реакцияны жаңарту мүмкін болмады. Қайта көріңіз.';
 
   @override
   String get chatLoadFailed => 'Чатты жүктеу мүмкін болмады';

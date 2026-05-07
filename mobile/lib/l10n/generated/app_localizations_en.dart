@@ -3216,6 +3216,81 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatAttachmentLocation => 'Location';
 
   @override
+  String get chatAttachmentAudio => 'Audio';
+
+  @override
+  String get chatAttachmentTakePhoto => 'Take photo';
+
+  @override
+  String get chatAttachmentTakeVideo => 'Take video';
+
+  @override
+  String get chatAttachmentChooseFromGallery => 'Choose from gallery';
+
+  @override
+  String get chatAttachmentCameraTitle => 'Camera';
+
+  @override
+  String get chatAttachmentAttachTitle => 'Attach';
+
+  @override
+  String get chatAttachmentCancel => 'Cancel';
+
+  @override
+  String get chatAttachmentVideoTooLong =>
+      'Video is too long. Use a clip up to 5 minutes.';
+
+  @override
+  String get chatComposerCameraButtonLabel => 'Camera';
+
+  @override
+  String get chatComposerAttachButtonLabel => 'Attach file';
+
+  @override
+  String get chatComposerEmojiButtonLabel => 'Emoji and stickers';
+
+  @override
+  String get chatComposerEmojiTab => 'Emoji';
+
+  @override
+  String get chatComposerStickerTab => 'Stickers';
+
+  @override
+  String get chatCameraPhotoMode => 'Photo';
+
+  @override
+  String get chatCameraVideoMode => 'Video';
+
+  @override
+  String get chatCameraRecording => 'REC';
+
+  @override
+  String get chatCameraPermissionDenied =>
+      'Camera and microphone access are required to capture chat media.';
+
+  @override
+  String get chatCameraUnavailable => 'Camera is unavailable on this device.';
+
+  @override
+  String get chatCameraCaptureFailed =>
+      'Could not capture media. Please try again.';
+
+  @override
+  String get chatCameraFlipButtonLabel => 'Switch camera';
+
+  @override
+  String get chatCameraCloseButtonLabel => 'Close camera';
+
+  @override
+  String get chatCameraCapturePhotoButtonLabel => 'Take photo';
+
+  @override
+  String get chatCameraRecordVideoButtonLabel => 'Record video';
+
+  @override
+  String get chatCameraStopRecordingButtonLabel => 'Stop recording';
+
+  @override
   String get chatAttachmentUploading => 'Uploading attachment...';
 
   @override
@@ -3270,6 +3345,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatVoiceRecording => 'Recording voice message';
 
   @override
+  String get chatVoiceRecordingLocked => 'Recording locked';
+
+  @override
+  String get chatVoicePreparingPreview => 'Preparing voice preview...';
+
+  @override
+  String get chatVoicePreview => 'Voice preview';
+
+  @override
+  String get chatVoiceSlideUpToLock => 'Slide up to lock recording';
+
+  @override
   String get chatVoiceRecordPermissionDenied =>
       'Microphone access is required to record voice messages.';
 
@@ -3282,6 +3369,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatVoiceTooShort => 'Voice message is too short.';
+
+  @override
+  String get chatReactionSheetTitle => 'Reaction';
+
+  @override
+  String get chatReactionFailed =>
+      'Could not update the reaction. Please try again.';
 
   @override
   String get chatLoadFailed => 'Failed to load chat';

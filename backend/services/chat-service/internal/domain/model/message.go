@@ -18,6 +18,20 @@ type Message struct {
 
 	// Populated on read
 	FileIDs            []string
+	Reactions          []MessageReactionSummary
 	SenderDisplayName  string
 	SenderAvatarFileID *string
+}
+
+type MessageReaction struct {
+	MessageID uuid.UUID
+	UserID    uuid.UUID
+	Emoji     string
+	ReactedAt time.Time
+}
+
+type MessageReactionSummary struct {
+	Emoji       string
+	Count       int
+	ReactedByMe bool
 }

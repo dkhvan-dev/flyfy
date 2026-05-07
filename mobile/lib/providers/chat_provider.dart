@@ -227,6 +227,20 @@ class ChatProvider extends ChangeNotifier {
     return result;
   }
 
+  Future<void> toggleMessageReaction(String messageId, String emoji) async {
+    if (_activeConversation == null) {
+      throw StateError('No active conversation');
+    }
+
+    final reactions = await _chatApi.toggleMessageReaction(
+      _activeConversation!.id,
+      messageId,
+      emoji,
+    );
+    _updateMessageReactions(messageId, reactions);
+    notifyListeners();
+  }
+
   Future<void> pinMessage(String messageId) async {
     if (_activeConversation == null) {
       throw StateError('No active conversation');
@@ -302,6 +316,8 @@ class ChatProvider extends ChangeNotifier {
         _onMessageEdited(event);
       case 'message_deleted':
         _onMessageDeleted(event);
+      case 'message_reaction_updated':
+        _onMessageReactionUpdated(event);
       case 'read_updated':
         _onReadUpdated(event);
       case 'message_pinned':
@@ -382,6 +398,36 @@ class ChatProvider extends ChangeNotifier {
     unawaited(loadConversations());
   }
 
+  void _onMessageReactionUpdated(ChatEvent event) {
+    final messageId = event.payload['messageId'] as String?;
+    if (messageId == null || messageId.trim().isEmpty) {
+      return;
+    }
+
+    final existingReactions = _messages
+        .where((message) => message.id == messageId)
+        .firstOrNull
+        ?.reactions;
+    final reactedByMeByEmoji = <String, bool>{
+      for (final reaction in existingReactions ?? const <MessageReactionVm>[])
+        reaction.emoji: reaction.reactedByMe,
+    };
+
+    final items = (event.payload['reactions'] as List<dynamic>?) ?? const [];
+    final reactions = items
+        .whereType<Map<String, dynamic>>()
+        .map(MessageReactionVm.fromJson)
+        .where((reaction) => reaction.emoji.trim().isNotEmpty)
+        .map(
+          (reaction) => reaction.copyWith(
+            reactedByMe: reactedByMeByEmoji[reaction.emoji] ?? false,
+          ),
+        )
+        .toList(growable: false);
+
+    _updateMessageReactions(messageId, reactions);
+  }
+
   void _onReadUpdated(ChatEvent event) {
     final userId = event.payload['userId'] as String?;
     final lastReadMessageId =
@@ -435,6 +481,19 @@ class ChatProvider extends ChangeNotifier {
     _activeConversation = _activeConversation!.copyWith(
       pinnedMessages: pinnedMessages,
     );
+  }
+
+  void _updateMessageReactions(
+    String messageId,
+    List<MessageReactionVm> reactions,
+  ) {
+    _messages = _messages
+        .map(
+          (message) => message.id == messageId
+              ? message.copyWith(reactions: reactions)
+              : message,
+        )
+        .toList();
   }
 
   List<MessageVm> _uniqueMessages(List<MessageVm> items) {
