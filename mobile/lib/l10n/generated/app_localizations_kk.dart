@@ -1469,7 +1469,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get homeSearchHint => 'Бағыттарды, тұрғын орынды немесе көлікті іздеу';
+  String get homeSearchHint => 'Белсенділіктерді, орындарды, турларды іздеу...';
 
   @override
   String get homeTopDestinations => 'Үздік бағыттар';
@@ -1478,20 +1478,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeSeeAll => 'Барлығын көру';
 
   @override
-  String get homeRecommendedBlogs => 'Ұсынылатын блогтар';
-
-  @override
-  String get homeEditorialBadge => 'Редакция';
-
-  @override
-  String get homeStoryTitle => 'Орталық Азияның жасырын інжу-маржандары';
-
-  @override
-  String get homeStoryDescription =>
-      'Алматы маңындағы құпия соқпақтар мен мәдени бұрыштарды ашыңыз.';
-
-  @override
-  String get homeReadStory => 'Оқу';
+  String get homeTopStories => 'Үздік хикаялар';
 
   @override
   String get homeFeaturedStays => 'Ұсынылған тұру орындары';
@@ -1507,6 +1494,47 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get homeMoreButton => 'Көбірек';
+
+  @override
+  String get homeServiceActivities => 'Белсенділіктер';
+
+  @override
+  String get homeServiceStories => 'Хикаялар';
+
+  @override
+  String get homeServiceAttractions => 'Орындар';
+
+  @override
+  String get homeServiceStays => 'Тұру';
+
+  @override
+  String get homeServiceDelivery => 'Жеткізу';
+
+  @override
+  String get homeServiceTaxi => 'Такси';
+
+  @override
+  String get homePromoExclusive => 'Эксклюзив';
+
+  @override
+  String get homePromoAdventure => 'Шытырман';
+
+  @override
+  String get homePromoYachtTitle => 'Yacht Parties';
+
+  @override
+  String get homePromoYachtDescription =>
+      'Толқын үстіндегі сәнді демалыс, арнайы іріктелген...';
+
+  @override
+  String get homePromoMountainTitle => 'Тау турлары';
+
+  @override
+  String get homePromoMountainDescription =>
+      'Жергілікті сарапшылармен көркем маршруттар...';
+
+  @override
+  String get homePromoExplore => 'Ашу';
 
   @override
   String get homeDestinationCharynTitle => 'Шарын шатқалы';

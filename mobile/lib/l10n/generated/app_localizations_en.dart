@@ -1462,29 +1462,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeSearchHint => 'Search destinations, stays or cars';
+  String get homeSearchHint => 'Search activities, attractions, tours...';
 
   @override
   String get homeTopDestinations => 'Top Destinations';
 
   @override
-  String get homeSeeAll => 'See all';
+  String get homeSeeAll => 'See All';
 
   @override
-  String get homeRecommendedBlogs => 'Recommended Blogs';
-
-  @override
-  String get homeEditorialBadge => 'Editorial';
-
-  @override
-  String get homeStoryTitle => 'Hidden Gems of Central Asia';
-
-  @override
-  String get homeStoryDescription =>
-      'Discover secret trails and cultural corners across Almaty\'s adventurous side.';
-
-  @override
-  String get homeReadStory => 'Read';
+  String get homeTopStories => 'Top Stories';
 
   @override
   String get homeFeaturedStays => 'Featured Stays';
@@ -1500,6 +1487,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeMoreButton => 'More';
+
+  @override
+  String get homeServiceActivities => 'Activities';
+
+  @override
+  String get homeServiceStories => 'Stories';
+
+  @override
+  String get homeServiceAttractions => 'Attractions';
+
+  @override
+  String get homeServiceStays => 'Stays';
+
+  @override
+  String get homeServiceDelivery => 'Delivery';
+
+  @override
+  String get homeServiceTaxi => 'Taxi';
+
+  @override
+  String get homePromoExclusive => 'Exclusive';
+
+  @override
+  String get homePromoAdventure => 'Adventure';
+
+  @override
+  String get homePromoYachtTitle => 'Yacht Parties';
+
+  @override
+  String get homePromoYachtDescription =>
+      'Experience luxury on the waves with our curated...';
+
+  @override
+  String get homePromoMountainTitle => 'Mountain Tours';
+
+  @override
+  String get homePromoMountainDescription =>
+      'Scale scenic routes with local experts...';
+
+  @override
+  String get homePromoExplore => 'Explore';
 
   @override
   String get homeDestinationCharynTitle => 'Charyn Canyon';

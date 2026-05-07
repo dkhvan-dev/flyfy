@@ -1459,7 +1459,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get homeSearchHint => 'Искать направления, жилье или авто';
+  String get homeSearchHint => 'Искать активности, места, туры...';
 
   @override
   String get homeTopDestinations => 'Топ направления';
@@ -1468,20 +1468,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeSeeAll => 'Смотреть все';
 
   @override
-  String get homeRecommendedBlogs => 'Рекомендованные блоги';
-
-  @override
-  String get homeEditorialBadge => 'Редакция';
-
-  @override
-  String get homeStoryTitle => 'Скрытые жемчужины Центральной Азии';
-
-  @override
-  String get homeStoryDescription =>
-      'Откройте секретные тропы и культурные уголки вокруг Алматы.';
-
-  @override
-  String get homeReadStory => 'Читать';
+  String get homeTopStories => 'Топ историй';
 
   @override
   String get homeFeaturedStays => 'Рекомендуемое жилье';
@@ -1497,6 +1484,47 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeMoreButton => 'Ещё';
+
+  @override
+  String get homeServiceActivities => 'Активности';
+
+  @override
+  String get homeServiceStories => 'Истории';
+
+  @override
+  String get homeServiceAttractions => 'Места';
+
+  @override
+  String get homeServiceStays => 'Жилье';
+
+  @override
+  String get homeServiceDelivery => 'Доставка';
+
+  @override
+  String get homeServiceTaxi => 'Такси';
+
+  @override
+  String get homePromoExclusive => 'Эксклюзив';
+
+  @override
+  String get homePromoAdventure => 'Приключения';
+
+  @override
+  String get homePromoYachtTitle => 'Yacht Parties';
+
+  @override
+  String get homePromoYachtDescription =>
+      'Роскошный отдых на воде в авторском формате...';
+
+  @override
+  String get homePromoMountainTitle => 'Горные туры';
+
+  @override
+  String get homePromoMountainDescription =>
+      'Маршруты с живописными видами и локальными экспертами...';
+
+  @override
+  String get homePromoExplore => 'Открыть';
 
   @override
   String get homeDestinationCharynTitle => 'Чарынский каньон';

@@ -6,13 +6,19 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/file_api.dart';
+import '../../core/network/story_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
+import '../../features/attractions/attraction_ui.dart';
+import '../../features/attractions/data/attraction_api.dart';
+import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
+import '../../features/stories/models/story_vm.dart';
+import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -29,9 +35,19 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GuideApi _guideApi = GuideApi();
+  final AttractionApi _attractionApi = AttractionApi();
+  final StoryApi _storyApi = StoryApi();
   String? _requestedHostedActivitiesForUserId;
   String? _requestedJoinedActivitiesForUserId;
+  String? _requestedTopAttractionsLocale;
   String? _guideBadgeUserId;
+  List<AttractionVm> _topAttractions = const [];
+  List<StoryVm> _topStories = const [];
+  bool _topAttractionsLoading = true;
+  bool _topAttractionsLoadFailed = false;
+  bool _topStoriesLoading = true;
+  bool _topStoriesLoadFailed = false;
+  bool _topStoriesRequestStarted = false;
   bool _showGuideBadge = false;
 
   static const Map<String, Map<String, String>> _localizedCountryNames = {
@@ -43,20 +59,15 @@ class _HomeScreenState extends State<HomeScreen> {
     'Astana': {'en': 'Astana', 'ru': 'Астана', 'kk': 'Астана'},
   };
 
-  static const _destinationCharynImageUrl =
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80';
-  static const _destinationLakeImageUrl =
-      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=900&q=80';
-  static const _destinationKolsaiImageUrl =
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80';
-
-  static const _storyImageUrl =
-      'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=900&q=80';
+  static const _promoYachtImageUrl =
+      'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=900&q=80';
+  static const _promoMountainImageUrl =
+      'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80';
 
   static const _featuredStaysImageUrl =
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1000&q=80';
+      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=700&q=80';
   static const _carRentalsImageUrl =
-      'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=1000&q=80';
+      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=700&q=80';
 
   @override
   void initState() {
@@ -73,6 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
           provider.joinedItems.isEmpty) {
         provider.loadJoinedActivities();
       }
+      _loadTopAttractions();
+      _loadTopStories();
     });
   }
 
@@ -161,16 +174,22 @@ class _HomeScreenState extends State<HomeScreen> {
     context.push('/stories');
   }
 
-  void _openNotifications() {
-    context.push('/notifications');
-  }
+  void _openStoryDetails(StoryVm story) {
+    final slug = story.slug.trim();
+    if (slug.isEmpty) {
+      _openStories();
+      return;
+    }
 
-  void _openStubRoute(String path) {
-    context.push(path);
+    context.push('/stories/${Uri.encodeComponent(slug)}', extra: story);
   }
 
   void _openAttractions() {
     context.push('/attractions');
+  }
+
+  void _openAttractionDetails(AttractionVm attraction) {
+    context.push('/attractions/${attraction.id}', extra: attraction);
   }
 
   void _openActivityDetails(String activityId) {
@@ -195,28 +214,10 @@ class _HomeScreenState extends State<HomeScreen> {
         provider.refreshJoinedActivities(),
       ]);
     }
-  }
-
-  List<_DestinationCardData> _buildDestinations(AppLocalizations l10n) {
-    return [
-      _DestinationCardData(
-        title: l10n.homeDestinationCharynTitle,
-        subtitle: l10n.homeDestinationCharynSubtitle,
-        imageUrl: _destinationCharynImageUrl,
-      ),
-      _DestinationCardData(
-        title: l10n.homeDestinationLakeTitle,
-        subtitle: l10n.homeDestinationLakeSubtitle,
-        imageUrl: _destinationLakeImageUrl,
-        compact: true,
-      ),
-      _DestinationCardData(
-        title: l10n.homeDestinationKolsaiTitle,
-        subtitle: l10n.homeDestinationKolsaiSubtitle,
-        imageUrl: _destinationKolsaiImageUrl,
-        compact: true,
-      ),
-    ];
+    await Future.wait<void>([
+      _loadTopAttractions(force: true),
+      _loadTopStories(force: true),
+    ]);
   }
 
   List<_FeatureEntryData> _buildFeatureEntries(AppLocalizations l10n) {
@@ -224,14 +225,101 @@ class _HomeScreenState extends State<HomeScreen> {
       _FeatureEntryData(
         title: l10n.homeFeaturedStays,
         imageUrl: _featuredStaysImageUrl,
-        route: '/featured-stays',
+        icon: Icons.bed_rounded,
+        isEnabled: false,
       ),
       _FeatureEntryData(
         title: l10n.homeCarRentals,
         imageUrl: _carRentalsImageUrl,
-        route: '/car-rentals',
+        icon: Icons.directions_car_filled_rounded,
+        isEnabled: false,
       ),
     ];
+  }
+
+  List<_PromoCardData> _buildPromoCards(AppLocalizations l10n) {
+    return [
+      _PromoCardData(
+        eyebrow: l10n.homePromoExclusive,
+        title: l10n.homePromoYachtTitle,
+        description: l10n.homePromoYachtDescription,
+        buttonLabel: l10n.homePromoExplore,
+        imageUrl: _promoYachtImageUrl,
+      ),
+      _PromoCardData(
+        eyebrow: l10n.homePromoAdventure,
+        title: l10n.homePromoMountainTitle,
+        description: l10n.homePromoMountainDescription,
+        buttonLabel: l10n.homePromoExplore,
+        imageUrl: _promoMountainImageUrl,
+      ),
+    ];
+  }
+
+  Future<void> _loadTopAttractions({bool force = false}) async {
+    if (!mounted) return;
+
+    final locale = Localizations.localeOf(context).languageCode;
+    if (!force &&
+        _requestedTopAttractionsLocale == locale &&
+        (_topAttractions.isNotEmpty || _topAttractionsLoading)) {
+      return;
+    }
+
+    _requestedTopAttractionsLocale = locale;
+    setState(() {
+      _topAttractionsLoading = _topAttractions.isEmpty;
+      _topAttractionsLoadFailed = false;
+    });
+
+    try {
+      final result = await _attractionApi.getAttractions(
+        sort: 'rating',
+        locale: locale,
+        limit: 10,
+      );
+      if (!mounted || _requestedTopAttractionsLocale != locale) return;
+      setState(() {
+        _topAttractions = result.items.take(10).toList(growable: false);
+        _topAttractionsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted || _requestedTopAttractionsLocale != locale) return;
+      setState(() {
+        _topAttractionsLoading = false;
+        _topAttractionsLoadFailed = true;
+      });
+    }
+  }
+
+  Future<void> _loadTopStories({bool force = false}) async {
+    if (!mounted) return;
+    if (!force &&
+        _topStoriesRequestStarted &&
+        (_topStories.isNotEmpty || _topStoriesLoading)) {
+      return;
+    }
+
+    _topStoriesRequestStarted = true;
+    setState(() {
+      _topStoriesLoading = _topStories.isEmpty;
+      _topStoriesLoadFailed = false;
+    });
+
+    try {
+      final stories = await _storyApi.listStories(sort: 'popular', limit: 5);
+      if (!mounted) return;
+      setState(() {
+        _topStories = stories.take(5).toList(growable: false);
+        _topStoriesLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _topStoriesLoading = false;
+        _topStoriesLoadFailed = true;
+      });
+    }
   }
 
   void _openDrawer() {
@@ -447,7 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontSize: isCompact ? 14 : 18,
                                 height: 0.98,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: -1.1,
+                                letterSpacing: 0,
                               ),
                             ),
                             SizedBox(height: isCompact ? 28 : 34),
@@ -571,8 +659,8 @@ class _HomeScreenState extends State<HomeScreen> {
       (profile?.timezone ?? '').trim(),
       languageCode,
     );
-    final destinations = _buildDestinations(l10n);
     final featureEntries = _buildFeatureEntries(l10n);
+    final promos = _buildPromoCards(l10n);
     final locationTitle = locationCity.isNotEmpty
         ? locationCity
         : location.split(',').last.trim();
@@ -600,27 +688,53 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     _ensureGuideBadgeState(currentUserId);
+    if (_requestedTopAttractionsLocale != languageCode &&
+        !_topAttractionsLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _loadTopAttractions(force: true);
+      });
+    }
 
     final quickActions = [
       _QuickActionData(
-        title: 'Yandex Go',
+        title: l10n.homeServiceActivities,
+        icon: Icons.hiking_rounded,
+        onTap: _openActivities,
+      ),
+      _QuickActionData(
+        title: l10n.serviceTours,
+        icon: Icons.travel_explore_rounded,
+      ),
+      _QuickActionData(
+        title: l10n.serviceGuides,
+        icon: Icons.flag_rounded,
+      ),
+      _QuickActionData(
+        title: l10n.homeServiceStories,
+        icon: Icons.article_rounded,
+        onTap: _openStories,
+      ),
+      _QuickActionData(
+        title: l10n.homeServiceAttractions,
+        icon: Icons.account_balance_rounded,
+        onTap: _openAttractions,
+      ),
+      _QuickActionData(
+        title: l10n.homeServiceStays,
+        icon: Icons.bed_rounded,
+      ),
+      _QuickActionData(
+        title: l10n.serviceTransport,
+        icon: Icons.directions_car_filled_rounded,
+      ),
+      _QuickActionData(
+        title: l10n.homeServiceDelivery,
+        icon: Icons.delivery_dining_rounded,
+      ),
+      _QuickActionData(
+        title: l10n.homeServiceTaxi,
         icon: Icons.local_taxi_rounded,
-        onTap: () => _openStubRoute('/yandex-go'),
-      ),
-      _QuickActionData(
-        title: 'Glovo',
-        icon: Icons.restaurant_rounded,
-        onTap: () => _openStubRoute('/glovo'),
-      ),
-      _QuickActionData(
-        title: 'Wolt',
-        icon: Icons.shopping_bag_rounded,
-        onTap: () => _openStubRoute('/wolt'),
-      ),
-      _QuickActionData(
-        title: l10n.homeMoreButton,
-        icon: Icons.more_horiz_rounded,
-        onTap: () => _openStubRoute('/more-services'),
       ),
     ];
 
@@ -654,11 +768,11 @@ class _HomeScreenState extends State<HomeScreen> {
         onHomeTap: () => context.go('/'),
         onQrTap: () => context.push('/qr'),
         onMapTap: () => context.push('/map'),
-        onServicesTap: () => context.push('/services'),
+        onServicesTap: () {},
         onChatsTap: () => context.push('/chats'),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(color: Color(0xFF191008)),
+        decoration: const BoxDecoration(color: Color(0xFF21180D)),
         child: Stack(
           children: [
             Positioned.fill(
@@ -668,7 +782,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0xFF20140C), Color(0xFF191008)],
+                      colors: [Color(0xFF21180D), Color(0xFF21180D)],
                     ),
                   ),
                 ),
@@ -686,8 +800,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       center: const Alignment(0, -0.55),
                       radius: 1.0,
                       colors: [
-                        AppColors.accent.withValues(alpha: 0.13),
-                        AppColors.accent.withValues(alpha: 0.03),
+                        AppColors.accent.withValues(alpha: 0.08),
+                        AppColors.accent.withValues(alpha: 0.02),
                         Colors.transparent,
                       ],
                       stops: const [0, 0.36, 1],
@@ -704,7 +818,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     location: locationTitle,
                     currentLocationLabel: l10n.homeCurrentLocationLabel,
                     onMenuTap: _openDrawer,
-                    onNotificationsTap: _openNotifications,
+                    onNotificationsTap: () {},
                   ),
                   Expanded(
                     child: RefreshIndicator(
@@ -713,7 +827,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final isCompact = constraints.maxWidth < 375;
-                          final horizontalPadding = isCompact ? 14.0 : 15.0;
+                          final horizontalPadding = isCompact ? 13.0 : 16.0;
 
                           return CustomScrollView(
                             physics: const AlwaysScrollableScrollPhysics(
@@ -723,9 +837,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               SliverPadding(
                                 padding: EdgeInsets.fromLTRB(
                                   horizontalPadding,
-                                  14,
+                                  isCompact ? 24 : 29,
                                   horizontalPadding,
-                                  28,
+                                  32,
                                 ),
                                 sliver: SliverToBoxAdapter(
                                   child: Column(
@@ -736,13 +850,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                         hint: l10n.homeSearchHint,
                                         onTap: _openActivities,
                                       ),
-                                      const SizedBox(height: 26),
-                                      _SectionHeader(
-                                        title: l10n.homeExploreServices,
-                                      ),
-                                      const SizedBox(height: 14),
+                                      SizedBox(height: isCompact ? 30 : 36),
                                       _QuickActionsGrid(actions: quickActions),
-                                      const SizedBox(height: 26),
+                                      SizedBox(height: isCompact ? 38 : 52),
+                                      _PromoCarousel(
+                                        promos: promos,
+                                        onTap: _openActivities,
+                                      ),
+                                      SizedBox(height: isCompact ? 20 : 24),
                                       _SectionHeader(
                                         title: l10n.homeTopDestinations,
                                         actionLabel: l10n.homeSeeAll,
@@ -750,31 +865,34 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       const SizedBox(height: 14),
                                       _TopDestinationsRow(
-                                        destinations: destinations,
-                                        onTap: _openAttractions,
+                                        attractions: _topAttractions,
+                                        isLoading: _topAttractionsLoading,
+                                        hasError: _topAttractionsLoadFailed,
+                                        onAttractionTap: _openAttractionDetails,
+                                        onRetry: () =>
+                                            _loadTopAttractions(force: true),
                                       ),
-                                      const SizedBox(height: 26),
+                                      SizedBox(height: isCompact ? 30 : 34),
                                       _SectionHeader(
-                                        title: l10n.homeRecommendedBlogs,
+                                        title: l10n.homeTopStories,
                                         actionLabel: l10n.homeSeeAll,
                                         onActionTap: _openStories,
                                       ),
                                       const SizedBox(height: 14),
-                                      _StoryCard(
-                                        badge: l10n.homeEditorialBadge,
-                                        title: l10n.homeStoryTitle,
-                                        description: l10n.homeStoryDescription,
-                                        buttonLabel: l10n.homeReadStory,
-                                        imageUrl: _storyImageUrl,
-                                        onTap: _openStories,
+                                      _TopStoriesCarousel(
+                                        stories: _topStories,
+                                        isLoading: _topStoriesLoading,
+                                        hasError: _topStoriesLoadFailed,
+                                        onStoryTap: _openStoryDetails,
+                                        onRetry: () =>
+                                            _loadTopStories(force: true),
+                                        onEmptyTap: _openStories,
                                       ),
                                       const SizedBox(height: 14),
                                       _FeatureEntriesGrid(
                                         entries: featureEntries,
-                                        onEntryTap: (entry) =>
-                                            _openStubRoute(entry.route),
                                       ),
-                                      const SizedBox(height: 26),
+                                      SizedBox(height: isCompact ? 30 : 34),
                                       _SectionHeader(
                                         title: l10n.homeRecommendedActivities,
                                         actionLabel: l10n.homeSeeAll,
@@ -976,43 +1094,41 @@ class _SearchBar extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        child: Ink(
-          height: 54,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF382110), Color(0xFF311C0D)],
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: isCompact ? 50 : 55),
+          child: Ink(
+            padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 18),
+            decoration: BoxDecoration(
+              color: const Color(0xFF43280D),
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.02),
+                  blurRadius: 0,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.white.withValues(alpha: 0.02),
-                blurRadius: 0,
-                spreadRadius: 1,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(Icons.search_rounded, color: AppColors.accent, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  hint,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Color(0xFF927C67),
-                    fontSize: isCompact ? 15 : 16,
-                    fontWeight: FontWeight.w500,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.search_rounded, color: AppColors.accent, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    hint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Color(0xFF927C67),
+                      fontSize: isCompact ? 15 : 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1045,7 +1161,7 @@ class _SectionHeader extends StatelessWidget {
               fontSize: isCompact ? 19 : 20,
               height: 1.1,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
+              letterSpacing: 0,
             ),
           ),
         ),
@@ -1080,67 +1196,90 @@ class _QuickActionsGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 375;
-        final gap = isCompact ? 10.0 : 12.0;
-        final tileWidth = (constraints.maxWidth - gap * 3) / 4;
-        final boxHeight = tileWidth.clamp(62.0, 74.0);
+        final gap = isCompact ? 12.0 : 24.0;
+        final tileWidth = (constraints.maxWidth - gap * 2) / 3;
+        final iconSize = isCompact ? 26.0 : 31.0;
+        final iconLabelGap = isCompact ? 7.0 : 9.0;
+        final verticalPadding = isCompact ? 10.0 : 12.0;
+        final minContentHeight =
+            iconSize + iconLabelGap + 13 + verticalPadding * 2;
+        final visualHeight = tileWidth * (isCompact ? 0.82 : 0.76);
+        final tileHeight =
+            visualHeight < minContentHeight ? minContentHeight : visualHeight;
 
         return GridView.builder(
           shrinkWrap: true,
           itemCount: actions.length,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            mainAxisSpacing: gap,
+            crossAxisCount: 3,
+            mainAxisSpacing: isCompact ? 18 : 26,
             crossAxisSpacing: gap,
-            childAspectRatio: tileWidth / (boxHeight + 28),
+            mainAxisExtent: tileHeight,
           ),
           itemBuilder: (context, index) {
             final action = actions[index];
+            final isEnabled = action.onTap != null;
+            final foregroundColor =
+                isEnabled ? AppColors.accent : const Color(0xFF8E8A84);
+            final textColor =
+                isEnabled ? const Color(0xFFF2E5D7) : const Color(0xFFB1AAA2);
+            final backgroundColor =
+                isEnabled ? const Color(0xFF43280D) : const Color(0xFF3D3935);
+
             return Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: action.onTap,
                 borderRadius: BorderRadius.circular(16),
-                child: Column(
-                  children: [
-                    Ink(
-                      width: double.infinity,
-                      height: boxHeight,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0xFF38220F), Color(0xFF2A180B)],
+                splashColor: isEnabled
+                    ? AppColors.accent.withValues(alpha: 0.10)
+                    : Colors.transparent,
+                highlightColor: Colors.transparent,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isEnabled
+                          ? Colors.transparent
+                          : Colors.white.withValues(alpha: 0.04),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 6 : 8,
+                      vertical: verticalPadding,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          action.icon,
+                          color: foregroundColor,
+                          size: iconSize,
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.28),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
+                        SizedBox(height: iconLabelGap),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              action.title,
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: textColor,
+                                fontSize: isCompact ? 11 : 12,
+                                height: 1,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
                           ),
-                        ],
-                      ),
-                      child: Icon(
-                        action.icon,
-                        color: AppColors.accent,
-                        size: isCompact ? 24 : 26,
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      action.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: const Color(0xFFF2E5D7),
-                        fontSize: isCompact ? 12 : 13,
-                        height: 1.15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             );
@@ -1151,105 +1290,187 @@ class _QuickActionsGrid extends StatelessWidget {
   }
 }
 
-class _DestinationCard extends StatelessWidget {
-  const _DestinationCard({
-    required this.data,
-    required this.onTap,
-    this.width,
-    this.height,
-  });
+class _PromoCarousel extends StatelessWidget {
+  const _PromoCarousel({required this.promos, required this.onTap});
 
-  final _DestinationCardData data;
+  final List<_PromoCardData> promos;
   final VoidCallback onTap;
-  final double? width;
-  final double? height;
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final scale = (screenWidth / 393).clamp(0.86, 1.06);
-    final resolvedWidth =
-        width ?? (data.compact ? 168.0 * scale : 238.0 * scale);
-    final resolvedHeight = height ?? 318.0 * scale;
-    final isCompact = screenWidth < 375;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewportWidth = constraints.maxWidth;
+        final isCompact = viewportWidth < 375;
+        final textScale = _homeTextScaleFactor(context);
+        final cardWidth = viewportWidth * (isCompact ? 0.86 : 0.84);
+        final visualHeight = cardWidth * 0.63;
+        final minContentHeight = (isCompact ? 190.0 : 204.0) * textScale;
+        final cardHeight =
+            visualHeight < minContentHeight ? minContentHeight : visualHeight;
 
-    return SizedBox(
-      width: resolvedWidth,
-      height: resolvedHeight,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(28),
-          child: Ink(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              color: const Color(0xFF2F1B0D),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.28),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: Column(
+            children: [
+              SizedBox(
+                height: cardHeight,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  clipBehavior: Clip.none,
+                  itemCount: promos.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    return SizedBox(
+                      width: cardWidth,
+                      child: _PromoCard(data: promos[index], onTap: onTap),
+                    );
+                  },
                 ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _NetworkCardImage(imageUrl: data.imageUrl),
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.55),
-                          ],
-                          stops: const [0.35, 1],
-                        ),
-                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PromoCard extends StatelessWidget {
+  const _PromoCard({required this.data, required this.onTap});
+
+  final _PromoCardData data;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 375;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.22),
+                blurRadius: 35,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _NetworkCardImage(imageUrl: data.imageUrl),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        const Color(0xFF1C150C).withValues(alpha: 0.90),
+                        const Color(0xFF1C150C).withValues(alpha: 0.38),
+                        const Color(0xFF1C150C).withValues(alpha: 0.05),
+                      ],
+                      stops: const [0, 0.48, 1],
                     ),
                   ),
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 16,
+                ),
+                FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: 0.66,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 20 : 24,
+                      vertical: isCompact ? 22 : 28,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        Text(
+                          data.eyebrow,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.accent,
+                            fontSize: isCompact ? 9 : 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         Text(
                           data.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: isCompact ? 16 : 17,
+                            color: const Color(0xFFFFFBF6),
+                            fontSize: isCompact ? 20 : 22,
                             height: 1.08,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 7),
                         Text(
-                          data.subtitle,
-                          maxLines: 1,
+                          data.description,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFFFB648),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.78),
+                            fontSize: isCompact ? 12 : 13,
+                            height: 1.32,
                           ),
                         ),
+                        const SizedBox(height: 14),
+                        _HomePrimaryPill(label: data.buttonLabel),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomePrimaryPill extends StatelessWidget {
+  const _HomePrimaryPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 375;
+
+    return Container(
+      constraints: BoxConstraints(minHeight: isCompact ? 34 : 36),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.accent,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: isCompact ? 13 : 14,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
@@ -1257,38 +1478,238 @@ class _DestinationCard extends StatelessWidget {
 }
 
 class _TopDestinationsRow extends StatelessWidget {
-  const _TopDestinationsRow({required this.destinations, required this.onTap});
+  const _TopDestinationsRow({
+    required this.attractions,
+    required this.isLoading,
+    required this.hasError,
+    required this.onAttractionTap,
+    required this.onRetry,
+  });
 
-  final List<_DestinationCardData> destinations;
+  final List<AttractionVm> attractions;
+  final bool isLoading;
+  final bool hasError;
+  final ValueChanged<AttractionVm> onAttractionTap;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 375;
+        final textScale = _homeTextScaleFactor(context);
+        final gap = isCompact ? 14.0 : 18.0;
+        final cardWidth = (constraints.maxWidth * (isCompact ? 0.46 : 0.43))
+            .clamp(142.0, 180.0)
+            .toDouble();
+        final imageHeight = cardWidth / 0.74;
+        final infoHeight = (isCompact ? 78.0 : 82.0) * textScale;
+        final cardHeight = imageHeight + infoHeight;
+
+        if (isLoading && attractions.isEmpty) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: SizedBox(
+              height: cardHeight,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                clipBehavior: Clip.none,
+                itemCount: 5,
+                separatorBuilder: (_, __) => SizedBox(width: gap),
+                itemBuilder: (_, __) => SizedBox(
+                  width: cardWidth,
+                  child: const _TopDestinationLoadingCard(),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (hasError && attractions.isEmpty) {
+          return _TopDestinationMessage(
+            icon: Icons.cloud_off_rounded,
+            message: l10n.attractionsLoadFailed,
+            actionLabel: l10n.retryButton,
+            onActionTap: onRetry,
+          );
+        }
+
+        if (attractions.isEmpty) {
+          return _TopDestinationMessage(
+            icon: Icons.landscape_rounded,
+            message: l10n.attractionsNoResults,
+            actionLabel: l10n.homeSeeAll,
+            onActionTap: onRetry,
+          );
+        }
+
+        final items = attractions.take(10).toList(growable: false);
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: SizedBox(
+            height: cardHeight,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              clipBehavior: Clip.none,
+              itemCount: items.length,
+              separatorBuilder: (_, __) => SizedBox(width: gap),
+              itemBuilder: (context, index) {
+                final attraction = items[index];
+                return SizedBox(
+                  width: cardWidth,
+                  child: _TopDestinationAttractionCard(
+                    attraction: attraction,
+                    onTap: () => onAttractionTap(attraction),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TopDestinationAttractionCard extends StatelessWidget {
+  const _TopDestinationAttractionCard({
+    required this.attraction,
+    required this.onTap,
+  });
+
+  final AttractionVm attraction;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final scale = (screenWidth / 393).clamp(0.86, 1.06);
-    final regularWidth = 238.0 * scale;
-    final compactWidth = 168.0 * scale;
-    final cardHeight = 318.0 * scale;
+    final l10n = AppLocalizations.of(context)!;
+    final isCompact = MediaQuery.sizeOf(context).width < 375;
+    final titleFontSize = isCompact ? 16.0 : 17.0;
+    final titleLineHeight = 1.16;
+    final titleStyle = TextStyle(
+      color: const Color(0xFFF7F2EA),
+      fontSize: titleFontSize,
+      height: titleLineHeight,
+      fontWeight: FontWeight.w900,
+    );
+    final titleBlockHeight = titleFontSize * titleLineHeight * 2.5 + 4;
+    final coverMedia = attraction.coverMedia;
+    final coverUrl = _resolveHomeAttractionImageUrl(coverMedia);
+    final categoryLabel = _homeAttractionCategoryLabel(l10n, attraction);
 
-    return SizedBox(
-      height: cardHeight,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        clipBehavior: Clip.none,
-        child: Row(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (var index = 0; index < destinations.length; index++) ...[
-              _DestinationCard(
-                data: destinations[index],
-                onTap: onTap,
-                width: destinations[index].compact
-                    ? compactWidth
-                    : regularWidth,
-                height: cardHeight,
+            AspectRatio(
+              aspectRatio: 0.74,
+              child: Ink(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.24),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (coverUrl == null)
+                        const _AttractionCardImagePlaceholder()
+                      else
+                        _AttractionCardNetworkImage(
+                          imageUrl: coverUrl,
+                          logicalWidth: MediaQuery.sizeOf(context).width * 0.5,
+                        ),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.58),
+                            ],
+                            stops: const [0.48, 1],
+                          ),
+                        ),
+                      ),
+                      const Positioned(
+                        top: 9,
+                        right: 9,
+                        child: _DestinationBookmarkBadge(),
+                      ),
+                      if (categoryLabel != null)
+                        Positioned(
+                          left: 16,
+                          bottom: 15,
+                          child: _DestinationTag(label: categoryLabel),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-              if (index != destinations.length - 1) const SizedBox(width: 14),
-            ],
+            ),
+            const SizedBox(height: 13),
+            SizedBox(
+              height: titleBlockHeight,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Text(
+                  attraction.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: titleStyle,
+                  strutStyle: StrutStyle(
+                    fontSize: titleFontSize,
+                    height: titleLineHeight,
+                    forceStrutHeight: true,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    formatAttractionPriceLabel(context, l10n, attraction),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xFFA79D93),
+                      fontSize: isCompact ? 12 : 13,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '★ ${attraction.rating.toStringAsFixed(1)}',
+                  style: TextStyle(
+                    color: AppColors.accent,
+                    fontSize: isCompact ? 13 : 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -1296,181 +1717,606 @@ class _TopDestinationsRow extends StatelessWidget {
   }
 }
 
-class _StoryCard extends StatelessWidget {
-  const _StoryCard({
-    required this.badge,
-    required this.title,
-    required this.description,
-    required this.buttonLabel,
+class _DestinationBookmarkBadge extends StatelessWidget {
+  const _DestinationBookmarkBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFF1B2D32).withValues(alpha: 0.70),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: const SizedBox(
+        width: 38,
+        height: 38,
+        child: Icon(
+          Icons.bookmark_border_rounded,
+          color: Colors.white,
+          size: 23,
+        ),
+      ),
+    );
+  }
+}
+
+class _DestinationTag extends StatelessWidget {
+  const _DestinationTag({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.58),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        child: Text(
+          label.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Color(0xFFFFE5BC),
+            fontSize: 10,
+            height: 1,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AttractionCardNetworkImage extends StatelessWidget {
+  const _AttractionCardNetworkImage({
     required this.imageUrl,
+    required this.logicalWidth,
+  });
+
+  final String imageUrl;
+  final double logicalWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      imageUrl,
+      headers: attractionImageRequestHeaders(imageUrl),
+      fit: BoxFit.cover,
+      cacheWidth: attractionImageTargetWidth(
+        context,
+        logicalWidth,
+        minWidth: 360,
+        maxWidth: 720,
+      ),
+      filterQuality: FilterQuality.medium,
+      gaplessPlayback: true,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return const _AttractionCardImagePlaceholder();
+      },
+      errorBuilder: (_, __, ___) => const _AttractionCardImagePlaceholder(),
+    );
+  }
+}
+
+class _AttractionCardImagePlaceholder extends StatelessWidget {
+  const _AttractionCardImagePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05)),
+      child: const Center(
+        child: Icon(
+          Icons.landscape_rounded,
+          color: AppColors.textCaption,
+          size: 40,
+        ),
+      ),
+    );
+  }
+}
+
+class _TopDestinationLoadingCard extends StatelessWidget {
+  const _TopDestinationLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AspectRatio(
+          aspectRatio: 0.74,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+        const SizedBox(height: 13),
+        const _SkeletonLine(width: double.infinity),
+        const SizedBox(height: 8),
+        const _SkeletonLine(width: 92),
+      ],
+    );
+  }
+}
+
+class _TopDestinationMessage extends StatelessWidget {
+  const _TopDestinationMessage({
+    required this.icon,
+    required this.message,
+    required this.actionLabel,
+    required this.onActionTap,
+  });
+
+  final IconData icon;
+  final String message;
+  final String actionLabel;
+  final VoidCallback onActionTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.textCaption, size: 28),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  height: 1.35,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: onActionTap,
+              child: Text(
+                actionLabel,
+                style: const TextStyle(
+                  color: AppColors.accent,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TopStoriesCarousel extends StatelessWidget {
+  const _TopStoriesCarousel({
+    required this.stories,
+    required this.isLoading,
+    required this.hasError,
+    required this.onStoryTap,
+    required this.onRetry,
+    required this.onEmptyTap,
+  });
+
+  final List<StoryVm> stories;
+  final bool isLoading;
+  final bool hasError;
+  final ValueChanged<StoryVm> onStoryTap;
+  final VoidCallback onRetry;
+  final VoidCallback onEmptyTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 375;
+        final textScale = _homeTextScaleFactor(context);
+        final gap = isCompact ? 14.0 : 18.0;
+        final cardWidth = (constraints.maxWidth * (isCompact ? 0.78 : 0.70))
+            .clamp(238.0, 304.0)
+            .toDouble();
+        final imageHeight = (cardWidth * 0.60).clamp(142.0, 184.0).toDouble();
+        final loadingCardHeight =
+            imageHeight + (isCompact ? 166.0 : 170.0) * textScale;
+
+        if (isLoading && stories.isEmpty) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: SizedBox(
+              height: loadingCardHeight,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                clipBehavior: Clip.none,
+                itemCount: 5,
+                separatorBuilder: (_, __) => SizedBox(width: gap),
+                itemBuilder: (_, __) => SizedBox(
+                  width: cardWidth,
+                  child: _TopStoryLoadingCard(imageHeight: imageHeight),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (hasError && stories.isEmpty) {
+          return _TopDestinationMessage(
+            icon: Icons.cloud_off_rounded,
+            message: l10n.storyLoadFailed,
+            actionLabel: l10n.retryButton,
+            onActionTap: onRetry,
+          );
+        }
+
+        if (stories.isEmpty) {
+          return _TopDestinationMessage(
+            icon: Icons.auto_stories_rounded,
+            message: l10n.storyEmptyTitle,
+            actionLabel: l10n.homeSeeAll,
+            onActionTap: onEmptyTap,
+          );
+        }
+
+        final items = stories.take(5).toList(growable: false);
+        final cardHeight = _homeStoryCardHeight(
+          context: context,
+          l10n: l10n,
+          stories: items,
+          cardWidth: cardWidth,
+          imageHeight: imageHeight,
+          isCompact: isCompact,
+          textScale: textScale,
+        );
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: SizedBox(
+            height: cardHeight,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              clipBehavior: Clip.none,
+              itemCount: items.length,
+              separatorBuilder: (_, __) => SizedBox(width: gap),
+              itemBuilder: (context, index) {
+                final story = items[index];
+                return SizedBox(
+                  width: cardWidth,
+                  height: cardHeight,
+                  child: _TopStoryCard(
+                    story: story,
+                    imageHeight: imageHeight,
+                    onTap: () => onStoryTap(story),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TopStoryCard extends StatelessWidget {
+  const _TopStoryCard({
+    required this.story,
+    required this.imageHeight,
     required this.onTap,
   });
 
-  final String badge;
-  final String title;
-  final String description;
-  final String buttonLabel;
-  final String imageUrl;
+  final StoryVm story;
+  final double imageHeight;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isCompact = screenWidth < 390;
-    final isVeryCompact = screenWidth < 360;
-    final minCardHeight = isVeryCompact ? 238.0 : (isCompact ? 224.0 : 210.0);
-    final contentPadding = EdgeInsets.fromLTRB(
-      isCompact ? 18 : 18,
-      isCompact ? 18 : 18,
-      isCompact ? 16 : 18,
-      isCompact ? 16 : 16,
+    final l10n = AppLocalizations.of(context)!;
+    final isCompact = MediaQuery.sizeOf(context).width < 375;
+    final textScale = _homeTextScaleFactor(context);
+    final titleFontSize = isCompact ? 16.0 : 17.0;
+    final titleLineHeight = 1.14;
+    final excerptFontSize = isCompact ? 12.0 : 12.5;
+    final excerptLineHeight = 1.34;
+    final titleStyle = TextStyle(
+      color: const Color(0xFFFFFAF4),
+      fontSize: titleFontSize,
+      height: titleLineHeight,
+      fontWeight: FontWeight.w900,
     );
+    final excerptStyle = TextStyle(
+      color: const Color(0xFFCDB9A5),
+      fontSize: excerptFontSize,
+      height: excerptLineHeight,
+      fontWeight: FontWeight.w500,
+    );
+    final tagLabel = _homeStoryTagLabel(l10n, story);
+    final excerpt = _truncateHomeStoryExcerpt(
+      story.excerpt.trim().isNotEmpty ? story.excerpt.trim() : tagLabel,
+    );
+    final avatarSize = (isCompact ? 24.0 : 26.0) * textScale.clamp(1.0, 1.18);
 
-    return IntrinsicHeight(
-      child: Container(
-        constraints: BoxConstraints(minHeight: minCardHeight),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF2B190D), Color(0xFF22140B)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.28),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF2B190D), Color(0xFF21140B)],
             ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 23,
-              child: Padding(
-                padding: contentPadding,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: isCompact ? 28 : 30,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Center(
-                            child: Text(
-                              badge,
-                              style: TextStyle(
-                                color: Color(0xFFFFF7EC),
-                                fontSize: isCompact ? 10 : 11,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: isCompact ? 14 : 16),
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Color(0xFFF5EFE8),
-                            fontSize: isCompact ? 17 : 18,
-                            height: 1.1,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        SizedBox(height: isCompact ? 10 : 12),
-                        Text(
-                          description,
-                          maxLines: isVeryCompact ? 4 : 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Color(0xFFD2BCAA),
-                            fontSize: isCompact ? 14 : 15,
-                            height: isCompact ? 1.38 : 1.45,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: isCompact ? 14 : 18),
-                    SizedBox(
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: onTap,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: const Color(0xFFFFF6EB),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isCompact ? 18 : 20,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          buttonLabel,
-                          style: TextStyle(
-                            fontSize: isCompact ? 15 : 16,
-                            fontWeight: FontWeight.w800,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: imageHeight,
+                  width: double.infinity,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      StoryCoverImage(url: story.coverUrl),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.08),
+                              Colors.black.withValues(alpha: 0.62),
+                            ],
+                            stops: const [0.42, 1],
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        left: 12,
+                        right: 12,
+                        bottom: 12,
+                        child: _TopStoryTag(label: tagLabel),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isCompact ? 14 : 16,
+                      isCompact ? 13 : 14,
+                      isCompact ? 14 : 16,
+                      isCompact ? 12 : 14,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          story.title,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: titleStyle,
+                          strutStyle: StrutStyle(
+                            fontSize: titleFontSize,
+                            height: titleLineHeight,
+                            forceStrutHeight: true,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          excerpt,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: excerptStyle,
+                          strutStyle: StrutStyle(
+                            fontSize: excerptFontSize,
+                            height: excerptLineHeight,
+                            forceStrutHeight: true,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Spacer(),
+                        Row(
+                          children: [
+                            StoryAvatar(
+                              label: story.author.initials,
+                              imageUrl: story.author.avatarUrl,
+                              size: avatarSize,
+                              borderColor: AppColors.accent.withValues(
+                                alpha: 0.30,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                story.author.preferredName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: const Color(0xFFD9C8B8),
+                                  fontSize: isCompact ? 11.5 : 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.remove_red_eye_outlined,
+                              color: AppColors.accent,
+                              size: isCompact ? 15 : 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              formatStoryCountCompact(story.stats.views),
+                              style: TextStyle(
+                                color: AppColors.accent,
+                                fontSize: isCompact ? 11.5 : 12,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              flex: 17,
-              child: ClipPath(
-                clipper: _StoryImageClipper(),
-                child: _NetworkCardImage(
-                  imageUrl: imageUrl,
-                  overlay: Colors.black.withValues(alpha: 0.05),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TopStoryTag extends StatelessWidget {
+  const _TopStoryTag({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xD01F1710),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.auto_stories_rounded,
+              color: Colors.white,
+              size: 13,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TopStoryLoadingCard extends StatelessWidget {
+  const _TopStoryLoadingCard({required this.imageHeight});
+
+  final double imageHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: imageHeight,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+          ),
+          const Expanded(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SkeletonLine(width: double.infinity),
+                  SizedBox(height: 10),
+                  _SkeletonLine(width: 180),
+                  SizedBox(height: 14),
+                  _SkeletonLine(width: double.infinity),
+                  SizedBox(height: 10),
+                  _SkeletonLine(width: 150),
+                  Spacer(),
+                  Row(
+                    children: [
+                      _SkeletonLine(width: 92),
+                      Spacer(),
+                      _SkeletonLine(width: 42),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _FeatureEntriesGrid extends StatelessWidget {
-  const _FeatureEntriesGrid({required this.entries, required this.onEntryTap});
+  const _FeatureEntriesGrid({required this.entries});
 
   final List<_FeatureEntryData> entries;
-  final ValueChanged<_FeatureEntryData> onEntryTap;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 375;
-        final gap = isCompact ? 10.0 : 12.0;
+        final gap = isCompact ? 14.0 : 19.0;
 
         return Row(
           children: [
             for (var index = 0; index < entries.length; index++) ...[
               Expanded(
-                child: _TravelEntryCard(
-                  data: entries[index],
-                  onTap: () => onEntryTap(entries[index]),
-                ),
+                child: _TravelEntryCard(data: entries[index]),
               ),
               if (index != entries.length - 1) SizedBox(width: gap),
             ],
@@ -1482,41 +2328,47 @@ class _FeatureEntriesGrid extends StatelessWidget {
 }
 
 class _TravelEntryCard extends StatelessWidget {
-  const _TravelEntryCard({required this.data, required this.onTap});
+  const _TravelEntryCard({required this.data});
 
   final _FeatureEntryData data;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final isCompact = MediaQuery.sizeOf(context).width < 375;
+    final foreground = data.isEnabled ? Colors.white : const Color(0xFFE0DDD8);
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          height: isCompact ? 108 : 112,
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C190D),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.24),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: AspectRatio(
+          aspectRatio: isCompact ? 1.28 : 1.34,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(26),
             child: Stack(
               fit: StackFit.expand,
               children: [
                 _NetworkCardImage(
                   imageUrl: data.imageUrl,
-                  overlay: Colors.black.withValues(alpha: 0.12),
+                  overlay: Colors.black.withValues(alpha: 0.18),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: data.isEnabled
+                          ? Colors.transparent
+                          : const Color(0xFF6E6B66).withValues(alpha: 0.42),
+                    ),
+                  ),
                 ),
                 Positioned.fill(
                   child: DecoratedBox(
@@ -1525,29 +2377,42 @@ class _TravelEntryCard extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withValues(alpha: 0.08),
-                          Colors.black.withValues(alpha: 0.38),
+                          Colors.black.withValues(alpha: 0.10),
+                          Colors.black.withValues(alpha: 0.62),
                         ],
                       ),
                     ),
                   ),
                 ),
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: Text(
-                      data.title,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: isCompact ? 15 : 16,
-                        fontWeight: FontWeight.w800,
-                      ),
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 10 : 14,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          data.icon,
+                          color: foreground,
+                          size: isCompact ? 28 : 32,
+                        ),
+                        const SizedBox(height: 7),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            data.title,
+                            maxLines: 1,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: foreground,
+                              fontSize: isCompact ? 16 : 18,
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -1584,15 +2449,12 @@ class _RecommendedActivitiesSection extends StatelessWidget {
       hostedItems: provider.myItems,
       currentUserId: currentUserId,
     );
-    final isLoadingPublic =
-        provider.state == ActivitiesState.loading ||
+    final isLoadingPublic = provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
-    final isLoadingHosted =
-        currentUserId.isNotEmpty &&
+    final isLoadingHosted = currentUserId.isNotEmpty &&
         (provider.myState == ActivitiesState.loading ||
             provider.myState == ActivitiesState.initial);
-    final hasLoadError =
-        provider.state == ActivitiesState.error ||
+    final hasLoadError = provider.state == ActivitiesState.error ||
         (currentUserId.isNotEmpty && provider.myState == ActivitiesState.error);
 
     if (recommendedItems.isEmpty && (isLoadingPublic || isLoadingHosted)) {
@@ -1753,100 +2615,142 @@ class _RecommendedActivityCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 360;
+    final buttonLabel =
+        isJoined ? l10n.activityDetailsJoinedBadge : l10n.activityJoinSession;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final thumbWidth = (constraints.maxWidth * 0.24).clamp(76.0, 96.0);
+        final thumbHeight = thumbWidth * 0.80;
+        final buttonWidth = (constraints.maxWidth * 0.28).clamp(92.0, 126.0);
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _ActivityThumb(
+                    item: item,
+                    width: thumbWidth,
+                    height: thumbHeight,
+                    imageUrl: resolveActivityCoverUrl(item),
+                  ),
+                  SizedBox(width: isCompact ? 12 : 18),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: const Color(0xFFFFF7EF),
+                            fontSize: isCompact ? 17 : 19,
+                            height: 1.12,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          '${_categoryLabel()} • ${_durationLabel(l10n)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: const Color(0xFFAFA5BA),
+                            fontSize: isCompact ? 13 : 14,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            Text(
+                              item.isFree ? l10n.freeLabel : item.priceLabel,
+                              style: TextStyle(
+                                color: const Color(0xFFFF9F1A),
+                                fontSize: isCompact ? 19 : 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            Text(
+                              l10n.createPricePerPersonHint,
+                              style: TextStyle(
+                                color: const Color(0xFFAFA5BA),
+                                fontSize: isCompact ? 12 : 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: isCompact ? 8 : 12),
+                  SizedBox(
+                    width: buttonWidth,
+                    child: _ActivityJoinButton(
+                      label: buttonLabel,
+                      onTap: onTap,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ActivityJoinButton extends StatelessWidget {
+  const _ActivityJoinButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 360;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _ActivityThumb(
-                item: item,
-                imageUrl: resolveActivityCoverUrl(item),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: const Color(0xFFFFF7EF),
-                              fontSize: isCompact ? 15 : 16,
-                              height: 1.2,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ],
+        borderRadius: BorderRadius.circular(999),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: isCompact ? 34 : 40),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: AppColors.accent,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 10 : 14),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isCompact ? 14 : 16,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
                     ),
-                    const SizedBox(height: 5),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${_categoryLabel()} • ${_durationLabel(l10n)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: const Color(0xFFB8A48F),
-                              fontSize: isCompact ? 13 : 14,
-                            ),
-                          ),
-                        ),
-                        if (isJoined) ...[
-                          const SizedBox(width: 8),
-                          _HomeActivityStatusPill(
-                            label: l10n.activityDetailsJoinedBadge,
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 7),
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        Text(
-                          item.isFree ? l10n.freeLabel : item.priceLabel,
-                          style: const TextStyle(
-                            color: Color(0xFFFF9F1A),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Text(
-                          l10n.createPricePerPersonHint,
-                          style: const TextStyle(
-                            color: Color(0xFFD6C4AF),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 10),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: AppColors.accent,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1855,9 +2759,16 @@ class _RecommendedActivityCard extends StatelessWidget {
 }
 
 class _ActivityThumb extends StatelessWidget {
-  const _ActivityThumb({required this.item, this.imageUrl});
+  const _ActivityThumb({
+    required this.item,
+    required this.width,
+    required this.height,
+    this.imageUrl,
+  });
 
   final ActivityListItemVm item;
+  final double width;
+  final double height;
   final String? imageUrl;
 
   @override
@@ -1866,10 +2777,10 @@ class _ActivityThumb extends StatelessWidget {
     final art = _homeCardArtForItem(item);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(height / 2),
       child: SizedBox(
-        width: 88,
-        height: 88,
+        width: width,
+        height: height,
         child: normalizedImageUrl.isNotEmpty
             ? _NetworkCardImage(imageUrl: normalizedImageUrl)
             : _HomeDecorativeActivityThumb(spec: art),
@@ -1932,32 +2843,6 @@ class _HomeDecorativeActivityThumb extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HomeActivityStatusPill extends StatelessWidget {
-  const _HomeActivityStatusPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: AppColors.accent,
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-        ),
       ),
     );
   }
@@ -2076,21 +2961,6 @@ _HomeCardArtSpec _homeCardArtForItem(ActivityListItemVm item) {
     );
   }
   return fromCategory;
-}
-
-class _StoryImageClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..moveTo(size.width * 0.28, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
 class _RecommendedLoadingCard extends StatelessWidget {
@@ -2212,9 +3082,8 @@ class _HomeSideDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = _HomeDrawerLayout.of(context);
-    final profileTitle = isLoggedIn
-        ? profile?.preferredName ?? 'FlyFy'
-        : 'FlyFy';
+    final profileTitle =
+        isLoggedIn ? profile?.preferredName ?? 'FlyFy' : 'FlyFy';
     final profileSubtitle = isLoggedIn ? location : l10n.homeSubtitle;
     final avatarText = profile?.initials ?? 'F';
     final avatarUrl = resolvePublicFileContentUrl(
@@ -2380,7 +3249,9 @@ class _HomeSideDrawer extends StatelessWidget {
                                                       : Image.network(
                                                           avatarUrl,
                                                           fit: BoxFit.cover,
-                                                          errorBuilder: (_, __, ___) => Center(
+                                                          errorBuilder:
+                                                              (_, __, ___) =>
+                                                                  Center(
                                                             child: Text(
                                                               avatarText,
                                                               style: TextStyle(
@@ -2410,15 +3281,13 @@ class _HomeSideDrawer extends StatelessWidget {
                                                   shape: BoxShape.circle,
                                                   gradient:
                                                       const LinearGradient(
-                                                        begin:
-                                                            Alignment.topCenter,
-                                                        end: Alignment
-                                                            .bottomCenter,
-                                                        colors: [
-                                                          Color(0xFFFFB347),
-                                                          Color(0xFFF98C06),
-                                                        ],
-                                                      ),
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Color(0xFFFFB347),
+                                                      Color(0xFFF98C06),
+                                                    ],
+                                                  ),
                                                   border: Border.all(
                                                     color: const Color(
                                                       0xFF2B170C,
@@ -2445,9 +3314,9 @@ class _HomeSideDrawer extends StatelessWidget {
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
-                                                  ),
+                                                horizontal: 10,
+                                                vertical: 6,
+                                              ),
                                               decoration: BoxDecoration(
                                                 color: AppColors.accent
                                                     .withValues(alpha: 0.18),
@@ -2612,7 +3481,7 @@ class _HomeSideDrawer extends StatelessWidget {
                                             color: AppColors.accent,
                                             fontSize: layout.brandTitleSize,
                                             fontWeight: FontWeight.w800,
-                                            letterSpacing: -0.5,
+                                            letterSpacing: 0,
                                           ),
                                         ),
                                         const SizedBox(height: 6),
@@ -2638,9 +3507,8 @@ class _HomeSideDrawer extends StatelessWidget {
                                         ? Icons.logout_rounded
                                         : Icons.login_rounded,
                                     isAccent: !isLoggedIn,
-                                    onTap: isLoggedIn
-                                        ? onLogoutTap
-                                        : onLoginTap,
+                                    onTap:
+                                        isLoggedIn ? onLogoutTap : onLoginTap,
                                   ),
                                 ],
                               ),
@@ -2836,26 +3704,26 @@ class _DrawerMenuItem extends StatelessWidget {
                       ],
                     )
                   : matchesPreferencePalette
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.03),
-                        AppColors.accent.withValues(alpha: 0.07),
-                      ],
-                    )
-                  : null,
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.03),
+                            AppColors.accent.withValues(alpha: 0.07),
+                          ],
+                        )
+                      : null,
               color: isActive
                   ? null
                   : matchesPreferencePalette
-                  ? null
-                  : Colors.white.withValues(alpha: 0.02),
+                      ? null
+                      : Colors.white.withValues(alpha: 0.02),
               border: Border.all(
                 color: isActive
                     ? AppColors.accent.withValues(alpha: 0.20)
                     : matchesPreferencePalette
-                    ? AppColors.accent.withValues(alpha: 0.20)
-                    : Colors.transparent,
+                        ? AppColors.accent.withValues(alpha: 0.20)
+                        : Colors.transparent,
               ),
             ),
             child: Row(
@@ -2875,18 +3743,19 @@ class _DrawerMenuItem extends StatelessWidget {
                     color: isActive
                         ? null
                         : matchesPreferencePalette
-                        ? AppColors.accent.withValues(alpha: 0.12)
-                        : Colors.white.withValues(alpha: 0.04),
+                            ? AppColors.accent.withValues(alpha: 0.12)
+                            : Colors.white.withValues(alpha: 0.04),
                   ),
-                  child: iconWidget ?? Icon(
-                    icon,
-                    color: isActive
-                        ? Colors.white
-                        : matchesPreferencePalette
-                        ? AppColors.accent
-                        : foregroundColor,
-                    size: layout.iconBoxSize * 0.48,
-                  ),
+                  child: iconWidget ??
+                      Icon(
+                        icon,
+                        color: isActive
+                            ? Colors.white
+                            : matchesPreferencePalette
+                                ? AppColors.accent
+                                : foregroundColor,
+                        size: layout.iconBoxSize * 0.48,
+                      ),
                 ),
                 SizedBox(width: layout.profileGap),
                 Expanded(
@@ -2900,8 +3769,8 @@ class _DrawerMenuItem extends StatelessWidget {
                       fontWeight: isActive
                           ? FontWeight.w700
                           : matchesPreferencePalette
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                       height: 1.2,
                     ),
                   ),
@@ -3073,38 +3942,42 @@ class _FeatureEntryData {
   const _FeatureEntryData({
     required this.title,
     required this.imageUrl,
-    required this.route,
+    required this.icon,
+    this.isEnabled = false,
   });
 
   final String title;
   final String imageUrl;
-  final String route;
+  final IconData icon;
+  final bool isEnabled;
 }
 
 class _QuickActionData {
   const _QuickActionData({
     required this.title,
     required this.icon,
-    required this.onTap,
+    this.onTap,
   });
 
   final String title;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 }
 
-class _DestinationCardData {
-  const _DestinationCardData({
+class _PromoCardData {
+  const _PromoCardData({
+    required this.eyebrow,
     required this.title,
-    required this.subtitle,
+    required this.description,
+    required this.buttonLabel,
     required this.imageUrl,
-    this.compact = false,
   });
 
+  final String eyebrow;
   final String title;
-  final String subtitle;
+  final String description;
+  final String buttonLabel;
   final String imageUrl;
-  final bool compact;
 }
 
 class _LanguageOption {
@@ -3119,6 +3992,156 @@ const List<_LanguageOption> _languageOptions = [
   _LanguageOption(code: 'en', label: 'English'),
   _LanguageOption(code: 'kk', label: 'Қазақша'),
 ];
+
+double _homeTextScaleFactor(BuildContext context) {
+  final bodySize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14.0;
+  final scale = MediaQuery.textScalerOf(context).scale(bodySize) / bodySize;
+  return scale.clamp(1.0, 1.6).toDouble();
+}
+
+String? _resolveHomeAttractionImageUrl(AttractionMediaVm? media) {
+  if (media == null) return null;
+
+  final fileUrl = resolveAttractionMediaUrl(media)?.trim() ?? '';
+  if (fileUrl.isNotEmpty) return fileUrl;
+
+  final externalUrl = media.externalUrl.trim();
+  if (externalUrl.isNotEmpty) return externalUrl;
+
+  final sourceUrl = media.sourceUrl.trim();
+  if (sourceUrl.isNotEmpty) return sourceUrl;
+
+  return null;
+}
+
+String? _homeAttractionCategoryLabel(
+  AppLocalizations l10n,
+  AttractionVm attraction,
+) {
+  switch (attraction.category.toUpperCase()) {
+    case 'PARKS':
+      return l10n.attractionFilterCategoryParks;
+    case 'MUSEUMS':
+      return l10n.attractionFilterCategoryMuseums;
+    case 'NATURE':
+      return l10n.attractionFilterCategoryNature;
+    case 'HISTORY':
+      return l10n.attractionFilterCategoryHistory;
+    case 'ADVENTURE':
+      return l10n.attractionFilterCategoryAdventure;
+    default:
+      for (final tag in attraction.tags) {
+        final normalizedTag = tag.trim();
+        if (normalizedTag.isNotEmpty) return normalizedTag;
+      }
+      return null;
+  }
+}
+
+String _homeStoryTagLabel(AppLocalizations l10n, StoryVm story) {
+  final placeName = (story.placeName ?? '').trim();
+  if (placeName.isNotEmpty) return placeName;
+
+  return formatStoryCategory(l10n, story.category);
+}
+
+double _homeStoryCardHeight({
+  required BuildContext context,
+  required AppLocalizations l10n,
+  required List<StoryVm> stories,
+  required double cardWidth,
+  required double imageHeight,
+  required bool isCompact,
+  required double textScale,
+}) {
+  final titleFontSize = isCompact ? 16.0 : 17.0;
+  final titleLineHeight = 1.14;
+  final excerptFontSize = isCompact ? 12.0 : 12.5;
+  final excerptLineHeight = 1.34;
+  final horizontalPadding = isCompact ? 14.0 : 16.0;
+  final textWidth = cardWidth - horizontalPadding * 2;
+  final avatarSize = (isCompact ? 24.0 : 26.0) * textScale.clamp(1.0, 1.18);
+  final titleStyle = TextStyle(
+    fontSize: titleFontSize,
+    height: titleLineHeight,
+    fontWeight: FontWeight.w900,
+  );
+  final excerptStyle = TextStyle(
+    fontSize: excerptFontSize,
+    height: excerptLineHeight,
+    fontWeight: FontWeight.w500,
+  );
+  final textDirection = Directionality.of(context);
+  var contentBodyHeight = 0.0;
+
+  for (final story in stories) {
+    final tagLabel = _homeStoryTagLabel(l10n, story);
+    final excerpt = _truncateHomeStoryExcerpt(
+      story.excerpt.trim().isNotEmpty ? story.excerpt.trim() : tagLabel,
+    );
+    final titleHeight = _measureHomeStoryTextHeight(
+      text: story.title,
+      style: titleStyle,
+      strutStyle: StrutStyle(
+        fontSize: titleFontSize,
+        height: titleLineHeight,
+        forceStrutHeight: true,
+      ),
+      maxWidth: textWidth,
+      maxLines: 3,
+      textDirection: textDirection,
+      textScale: textScale,
+    );
+    final excerptHeight = _measureHomeStoryTextHeight(
+      text: excerpt,
+      style: excerptStyle,
+      strutStyle: StrutStyle(
+        fontSize: excerptFontSize,
+        height: excerptLineHeight,
+        forceStrutHeight: true,
+      ),
+      maxWidth: textWidth,
+      maxLines: 2,
+      textDirection: textDirection,
+      textScale: textScale,
+    );
+    final bodyHeight = titleHeight + 8 + excerptHeight + 10 + avatarSize;
+    if (bodyHeight > contentBodyHeight) {
+      contentBodyHeight = bodyHeight;
+    }
+  }
+
+  final verticalPadding = (isCompact ? 13.0 : 14.0) + (isCompact ? 12.0 : 14.0);
+  return imageHeight + verticalPadding + contentBodyHeight + 4;
+}
+
+double _measureHomeStoryTextHeight({
+  required String text,
+  required TextStyle style,
+  required StrutStyle strutStyle,
+  required double maxWidth,
+  required int maxLines,
+  required TextDirection textDirection,
+  required double textScale,
+}) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    maxLines: maxLines,
+    textDirection: textDirection,
+    strutStyle: strutStyle,
+    textScaler: TextScaler.linear(textScale),
+  )..layout(maxWidth: maxWidth);
+
+  return painter.height;
+}
+
+String _truncateHomeStoryExcerpt(String value) {
+  const maxLength = 100;
+  final normalized = value.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (normalized.length <= maxLength) return normalized;
+
+  return '${normalized.substring(0, maxLength).trimRight()}...';
+}
 
 List<ActivityListItemVm> _mergeHomeRecommendedItems({
   required List<ActivityListItemVm> publicItems,

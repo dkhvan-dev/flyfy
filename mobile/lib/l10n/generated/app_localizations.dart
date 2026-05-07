@@ -2731,7 +2731,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search destinations, stays or cars'**
+  /// **'Search activities, attractions, tours...'**
   String get homeSearchHint;
 
   /// No description provided for @homeTopDestinations.
@@ -2743,38 +2743,14 @@ abstract class AppLocalizations {
   /// No description provided for @homeSeeAll.
   ///
   /// In en, this message translates to:
-  /// **'See all'**
+  /// **'See All'**
   String get homeSeeAll;
 
-  /// No description provided for @homeRecommendedBlogs.
+  /// No description provided for @homeTopStories.
   ///
   /// In en, this message translates to:
-  /// **'Recommended Blogs'**
-  String get homeRecommendedBlogs;
-
-  /// No description provided for @homeEditorialBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'Editorial'**
-  String get homeEditorialBadge;
-
-  /// No description provided for @homeStoryTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Hidden Gems of Central Asia'**
-  String get homeStoryTitle;
-
-  /// No description provided for @homeStoryDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Discover secret trails and cultural corners across Almaty\'s adventurous side.'**
-  String get homeStoryDescription;
-
-  /// No description provided for @homeReadStory.
-  ///
-  /// In en, this message translates to:
-  /// **'Read'**
-  String get homeReadStory;
+  /// **'Top Stories'**
+  String get homeTopStories;
 
   /// No description provided for @homeFeaturedStays.
   ///
@@ -2805,6 +2781,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More'**
   String get homeMoreButton;
+
+  /// No description provided for @homeServiceActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get homeServiceActivities;
+
+  /// No description provided for @homeServiceStories.
+  ///
+  /// In en, this message translates to:
+  /// **'Stories'**
+  String get homeServiceStories;
+
+  /// No description provided for @homeServiceAttractions.
+  ///
+  /// In en, this message translates to:
+  /// **'Attractions'**
+  String get homeServiceAttractions;
+
+  /// No description provided for @homeServiceStays.
+  ///
+  /// In en, this message translates to:
+  /// **'Stays'**
+  String get homeServiceStays;
+
+  /// No description provided for @homeServiceDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get homeServiceDelivery;
+
+  /// No description provided for @homeServiceTaxi.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxi'**
+  String get homeServiceTaxi;
+
+  /// No description provided for @homePromoExclusive.
+  ///
+  /// In en, this message translates to:
+  /// **'Exclusive'**
+  String get homePromoExclusive;
+
+  /// No description provided for @homePromoAdventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Adventure'**
+  String get homePromoAdventure;
+
+  /// No description provided for @homePromoYachtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Yacht Parties'**
+  String get homePromoYachtTitle;
+
+  /// No description provided for @homePromoYachtDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Experience luxury on the waves with our curated...'**
+  String get homePromoYachtDescription;
+
+  /// No description provided for @homePromoMountainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mountain Tours'**
+  String get homePromoMountainTitle;
+
+  /// No description provided for @homePromoMountainDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scale scenic routes with local experts...'**
+  String get homePromoMountainDescription;
+
+  /// No description provided for @homePromoExplore.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore'**
+  String get homePromoExplore;
 
   /// No description provided for @homeDestinationCharynTitle.
   ///
