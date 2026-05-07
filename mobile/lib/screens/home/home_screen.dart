@@ -2444,20 +2444,16 @@ class _RecommendedActivitiesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final recommendedItems = _mergeHomeRecommendedItems(
+    final recommendedItems = _filterHomeRecommendedItems(
       publicItems: provider.items,
-      hostedItems: provider.myItems,
       currentUserId: currentUserId,
     );
-    final isLoadingPublic = provider.state == ActivitiesState.loading ||
+    final isLoadingPublic =
+        provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
-    final isLoadingHosted = currentUserId.isNotEmpty &&
-        (provider.myState == ActivitiesState.loading ||
-            provider.myState == ActivitiesState.initial);
-    final hasLoadError = provider.state == ActivitiesState.error ||
-        (currentUserId.isNotEmpty && provider.myState == ActivitiesState.error);
+    final hasLoadError = provider.state == ActivitiesState.error;
 
-    if (recommendedItems.isEmpty && (isLoadingPublic || isLoadingHosted)) {
+    if (recommendedItems.isEmpty && isLoadingPublic) {
       return Column(
         children: List.generate(
           3,
@@ -2481,9 +2477,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              provider.errorMessage ??
-                  provider.myErrorMessage ??
-                  l10n.activitiesLoadFailed,
+              provider.errorMessage ?? l10n.activitiesLoadFailed,
               style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 14,
@@ -2680,14 +2674,15 @@ class _RecommendedActivityCard extends StatelessWidget {
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            Text(
-                              l10n.createPricePerPersonHint,
-                              style: TextStyle(
-                                color: const Color(0xFFAFA5BA),
-                                fontSize: isCompact ? 12 : 13,
-                                fontWeight: FontWeight.w500,
+                            if (!item.isFree)
+                              Text(
+                                l10n.createPricePerPersonHint,
+                                style: TextStyle(
+                                  color: const Color(0xFFAFA5BA),
+                                  fontSize: isCompact ? 12 : 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ],
@@ -4143,28 +4138,15 @@ String _truncateHomeStoryExcerpt(String value) {
   return '${normalized.substring(0, maxLength).trimRight()}...';
 }
 
-List<ActivityListItemVm> _mergeHomeRecommendedItems({
+List<ActivityListItemVm> _filterHomeRecommendedItems({
   required List<ActivityListItemVm> publicItems,
-  required List<ActivityListItemVm> hostedItems,
   required String? currentUserId,
 }) {
   final itemsById = <String, ActivityListItemVm>{};
+  final normalizedUserId = (currentUserId ?? '').trim();
 
   for (final item in publicItems) {
-    if (_isHomePublishedActivity(item.status)) {
-      itemsById[item.id] = item;
-    }
-  }
-
-  final normalizedUserId = (currentUserId ?? '').trim();
-  if (normalizedUserId.isNotEmpty) {
-    for (final item in hostedItems) {
-      if (item.hostUserId != normalizedUserId) {
-        continue;
-      }
-      if (!_isHomePublishedActivity(item.status)) {
-        continue;
-      }
+    if (_isHomeRecommendedActivity(item, normalizedUserId)) {
       itemsById[item.id] = item;
     }
   }
@@ -4174,12 +4156,23 @@ List<ActivityListItemVm> _mergeHomeRecommendedItems({
   return merged;
 }
 
-bool _isHomePublishedActivity(String status) {
+bool _isHomeRecommendedActivity(ActivityListItemVm item, String currentUserId) {
+  if (currentUserId.isNotEmpty && item.hostUserId.trim() == currentUserId) {
+    return false;
+  }
+  if (!_isHomeRegistrationOpenStatus(item.status)) {
+    return false;
+  }
+
+  final now = DateTime.now().toUtc();
+  final closesAt = (item.registrationDeadline ?? item.startAt).toUtc();
+  return now.isBefore(closesAt);
+}
+
+bool _isHomeRegistrationOpenStatus(String status) {
   switch (status.toUpperCase()) {
     case 'PUBLISHED':
     case 'ENROLLMENT_OPEN':
-    case 'FULL':
-    case 'STARTED':
       return true;
     default:
       return false;
