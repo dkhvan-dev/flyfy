@@ -130,6 +130,20 @@ class FileApi {
     );
   }
 
+  Future<FileUploadRequestVm> createChatStickerUpload({
+    required String originalName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    return _createUploadRequest(
+      originalName: originalName,
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      purpose: 'CHAT_STICKER',
+      visibility: 'PROTECTED',
+    );
+  }
+
   Future<FileUploadRequestVm> _createUploadRequest({
     required String originalName,
     required String contentType,
@@ -210,6 +224,46 @@ class FileApi {
 
     final response = await _apiClient.dio.get('/files/$trimmed');
     return FileMetadataVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<FileBindingVm> bindFile({
+    required String fileId,
+    required String ownerType,
+    required String ownerId,
+    required String purpose,
+    bool isPrimary = false,
+  }) async {
+    final trimmedFileId = fileId.trim();
+    if (trimmedFileId.isEmpty) {
+      throw ArgumentError.value(fileId, 'fileId', 'File id is required');
+    }
+
+    final response = await _apiClient.dio.post(
+      '/files/$trimmedFileId/bindings',
+      data: {
+        'ownerType': ownerType,
+        'ownerId': ownerId,
+        'purpose': purpose,
+        'isPrimary': isPrimary,
+      },
+    );
+    return FileBindingVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<FileBindingVm>> listMyFileBindings({
+    required String purpose,
+    int limit = 100,
+  }) async {
+    final response = await _apiClient.dio.get(
+      '/files/my-bindings',
+      queryParameters: {'purpose': purpose, 'limit': limit},
+    );
+    final data = response.data as Map<String, dynamic>;
+    final items = (data['bindings'] as List<dynamic>?) ?? const [];
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(FileBindingVm.fromJson)
+        .toList(growable: false);
   }
 
   String? publicContentUrl(String fileId) {
@@ -314,6 +368,38 @@ class FileMetadataVm {
       detectedContentType: json['detectedContentType']?.toString(),
       extension: json['extension']?.toString(),
       sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class FileBindingVm {
+  const FileBindingVm({
+    required this.id,
+    required this.fileId,
+    required this.ownerType,
+    required this.ownerId,
+    required this.purpose,
+    required this.isPrimary,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String fileId;
+  final String ownerType;
+  final String ownerId;
+  final String purpose;
+  final bool isPrimary;
+  final DateTime? createdAt;
+
+  factory FileBindingVm.fromJson(Map<String, dynamic> json) {
+    return FileBindingVm(
+      id: json['id']?.toString() ?? '',
+      fileId: json['fileId']?.toString() ?? '',
+      ownerType: json['ownerType']?.toString() ?? '',
+      ownerId: json['ownerId']?.toString() ?? '',
+      purpose: json['purpose']?.toString() ?? '',
+      isPrimary: json['isPrimary'] == true,
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
     );
   }
 }

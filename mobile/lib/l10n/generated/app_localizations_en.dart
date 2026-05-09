@@ -3266,6 +3266,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatComposerStickerTab => 'Stickers';
 
   @override
+  String get chatStickerMessage => 'Sticker';
+
+  @override
+  String get chatStickerCreateAction => 'Create';
+
+  @override
+  String get chatStickerCreated => 'Sticker added';
+
+  @override
+  String get chatStickerCreateFailed =>
+      'Failed to create the sticker. Please try again.';
+
+  @override
+  String get chatStickerSendFailed =>
+      'Failed to send the sticker. Please try again.';
+
+  @override
+  String get chatStickerLoadFailed => 'Could not load your stickers.';
+
+  @override
+  String get chatStickerUnsupported =>
+      'Use a JPG, PNG, or WebP image for stickers.';
+
+  @override
+  String get chatStickerTooLarge =>
+      'Sticker image is too large. Use an image up to 5 MB.';
+
+  @override
   String get chatCameraPhotoMode => 'Photo';
 
   @override

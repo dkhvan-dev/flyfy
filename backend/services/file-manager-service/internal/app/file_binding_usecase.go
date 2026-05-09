@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -35,6 +36,13 @@ type BindFileInput struct {
 	Purpose         string
 	IsPrimary       bool
 	CreatedByUserID *string
+}
+
+type ListFileBindingsInput struct {
+	OwnerType string
+	OwnerID   string
+	Purpose   string
+	Limit     int
 }
 
 func (u *FileBindingUseCase) BindFile(ctx context.Context, input BindFileInput) (*model.FileBinding, error) {
@@ -91,13 +99,43 @@ func (u *FileBindingUseCase) BindFile(ctx context.Context, input BindFileInput) 
 
 	err = u.bindings.CreateWithPrimarySwitchTx(ctx, binding)
 	if err != nil {
-		if err == repository.ErrConflict {
+		if errors.Is(err, repository.ErrConflict) {
+			existing, findErr := u.findExistingLiveBinding(ctx, binding)
+			if findErr != nil {
+				return nil, findErr
+			}
+			if existing != nil {
+				return existing, nil
+			}
 			return nil, ErrIdempotencyConflict
 		}
 		return nil, fmt.Errorf("create binding: %w", err)
 	}
 
 	return binding, nil
+}
+
+func (u *FileBindingUseCase) findExistingLiveBinding(
+	ctx context.Context,
+	binding *model.FileBinding,
+) (*model.FileBinding, error) {
+	bindings, err := u.bindings.ListByFileID(ctx, binding.FileID)
+	if err != nil {
+		return nil, fmt.Errorf("list existing file bindings: %w", err)
+	}
+
+	for _, existing := range bindings {
+		if existing == nil || existing.IsDeleted {
+			continue
+		}
+		if existing.OwnerType == binding.OwnerType &&
+			existing.OwnerID == binding.OwnerID &&
+			existing.Purpose == binding.Purpose {
+			return existing, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (u *FileBindingUseCase) ListByFileID(ctx context.Context, fileID uuid.UUID) ([]*model.FileBinding, error) {
@@ -114,4 +152,34 @@ func (u *FileBindingUseCase) ListByFileID(ctx context.Context, fileID uuid.UUID)
 	}
 
 	return u.bindings.ListByFileID(ctx, fileID)
+}
+
+func (u *FileBindingUseCase) ListByOwnerAndPurpose(
+	ctx context.Context,
+	input ListFileBindingsInput,
+) ([]*model.FileBinding, error) {
+	ownerType := enum.OwnerType(strings.TrimSpace(input.OwnerType))
+	if !ownerType.IsValid() {
+		return nil, ErrForbiddenOwnerType
+	}
+
+	ownerID, err := uuid.Parse(strings.TrimSpace(input.OwnerID))
+	if err != nil {
+		return nil, ErrInvalidOwnerID
+	}
+
+	purpose := enum.FilePurpose(strings.TrimSpace(input.Purpose))
+	if !purpose.IsValid() {
+		return nil, ErrForbiddenPurpose
+	}
+
+	limit := input.Limit
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	return u.bindings.ListByOwnerAndPurpose(ctx, ownerType, ownerID, purpose, limit)
 }

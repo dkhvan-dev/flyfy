@@ -6004,6 +6004,54 @@ abstract class AppLocalizations {
   /// **'Stickers'**
   String get chatComposerStickerTab;
 
+  /// No description provided for @chatStickerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticker'**
+  String get chatStickerMessage;
+
+  /// No description provided for @chatStickerCreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get chatStickerCreateAction;
+
+  /// No description provided for @chatStickerCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticker added'**
+  String get chatStickerCreated;
+
+  /// No description provided for @chatStickerCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create the sticker. Please try again.'**
+  String get chatStickerCreateFailed;
+
+  /// No description provided for @chatStickerSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send the sticker. Please try again.'**
+  String get chatStickerSendFailed;
+
+  /// No description provided for @chatStickerLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your stickers.'**
+  String get chatStickerLoadFailed;
+
+  /// No description provided for @chatStickerUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a JPG, PNG, or WebP image for stickers.'**
+  String get chatStickerUnsupported;
+
+  /// No description provided for @chatStickerTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Sticker image is too large. Use an image up to 5 MB.'**
+  String get chatStickerTooLarge;
+
   /// No description provided for @chatCameraPhotoMode.
   ///
   /// In en, this message translates to:

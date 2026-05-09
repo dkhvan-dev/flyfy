@@ -20,6 +20,8 @@ var (
 	ErrDirectChatCannotLeave = errors.New("cannot leave a direct chat")
 	ErrMessageTooLong        = errors.New("message content exceeds 4KB limit")
 	ErrInvalidMessageType    = errors.New("invalid message type")
+	ErrInvalidStickerID      = errors.New("invalid sticker id")
+	ErrStickerNotAvailable   = errors.New("sticker is not available")
 	ErrInvalidReaction       = errors.New("invalid message reaction")
 	ErrMessageEditExpired    = errors.New("message can only be edited within 24 hours")
 	ErrMessageAlreadyDeleted = errors.New("message is already deleted")

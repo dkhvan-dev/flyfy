@@ -31,6 +31,8 @@ type MessageSentPayload struct {
 	Type               string     `json:"type"`
 	Content            string     `json:"content"`
 	FileIDs            []string   `json:"fileIds,omitempty"`
+	StickerID          *uuid.UUID `json:"stickerId,omitempty"`
+	StickerFileID      *string    `json:"stickerFileId,omitempty"`
 	ReplyToMessageID   *uuid.UUID `json:"replyToMessageId,omitempty"`
 	SentAt             time.Time  `json:"sentAt"`
 }
@@ -81,13 +83,15 @@ type MessagePinnedPayload struct {
 }
 
 type PinnedMessageInfo struct {
-	MessageID          uuid.UUID `json:"id"`
-	SenderUserID       uuid.UUID `json:"senderUserId"`
-	SenderDisplayName  string    `json:"senderDisplayName"`
-	SenderAvatarFileID *string   `json:"senderAvatarFileId,omitempty"`
-	Type               string    `json:"type"`
-	Content            string    `json:"content"`
-	FileIDs            []string  `json:"fileIds,omitempty"`
-	SentAt             time.Time `json:"sentAt"`
-	PinnedAt           time.Time `json:"pinnedAt"`
+	MessageID          uuid.UUID  `json:"id"`
+	SenderUserID       uuid.UUID  `json:"senderUserId"`
+	SenderDisplayName  string     `json:"senderDisplayName"`
+	SenderAvatarFileID *string    `json:"senderAvatarFileId,omitempty"`
+	Type               string     `json:"type"`
+	Content            string     `json:"content"`
+	FileIDs            []string   `json:"fileIds,omitempty"`
+	StickerID          *uuid.UUID `json:"stickerId,omitempty"`
+	StickerFileID      *string    `json:"stickerFileId,omitempty"`
+	SentAt             time.Time  `json:"sentAt"`
+	PinnedAt           time.Time  `json:"pinnedAt"`
 }

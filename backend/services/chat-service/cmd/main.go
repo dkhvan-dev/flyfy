@@ -13,6 +13,7 @@ import (
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/http"
 	natsadapter "github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/nats"
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/repository"
+	stickeradapter "github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/sticker"
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/adapter/ws"
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/chat-service/internal/config"
@@ -89,8 +90,19 @@ func main() {
 
 	// Repository & use cases
 	repo := repository.NewPGChatRepository(pool)
+	stickerResolver := stickeradapter.NewClient(
+		cfg.StickerService.HTTPURL,
+		cfg.StickerService.EffectiveInternalServiceToken(cfg.Security.InternalServiceToken),
+		&http.Client{Timeout: cfg.StickerService.Timeout},
+	)
 	conversationUC := app.NewConversationUseCase(repo, publisher, actorResolver, activityResolver)
-	messageUC := app.NewMessageUseCase(repo, publisher, actorResolver, activityResolver)
+	messageUC := app.NewMessageUseCaseWithStickerResolver(
+		repo,
+		publisher,
+		actorResolver,
+		stickerResolver,
+		activityResolver,
+	)
 
 	// WebSocket hub
 	hub := ws.NewHub()

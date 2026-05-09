@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sethvargo/go-envconfig"
@@ -19,6 +20,7 @@ type Config struct {
 	Redis           RedisConfig
 	UserService     UserServiceConfig
 	ActivityService ActivityServiceConfig
+	StickerService  StickerServiceConfig
 }
 
 type AppConfig struct {
@@ -109,6 +111,19 @@ type UserServiceConfig struct {
 
 type ActivityServiceConfig struct {
 	GRPCAddress string `env:"ACTIVITY_SERVICE_GRPC_ADDR, default=activity-service:9096"`
+}
+
+type StickerServiceConfig struct {
+	HTTPURL              string        `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
+	Timeout              time.Duration `env:"STICKER_SERVICE_TIMEOUT, default=5s"`
+	InternalServiceToken string        `env:"STICKER_SERVICE_INTERNAL_SERVICE_TOKEN"`
+}
+
+func (s StickerServiceConfig) EffectiveInternalServiceToken(fallback string) string {
+	if strings.TrimSpace(s.InternalServiceToken) != "" {
+		return strings.TrimSpace(s.InternalServiceToken)
+	}
+	return strings.TrimSpace(fallback)
 }
 
 func Load(ctx context.Context) (*Config, error) {

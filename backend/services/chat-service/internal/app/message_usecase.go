@@ -18,6 +18,12 @@ const maxFilesPerMessage = 10
 const editWindowHours = 24
 const maxReactionLength = 32
 
+const (
+	messageTypeText    = "text"
+	messageTypeFile    = "file"
+	messageTypeSticker = "sticker"
+)
+
 var allowedReactionEmojis = map[string]struct{}{
 	"👍":  {},
 	"❤️": {},
@@ -33,12 +39,33 @@ type MessageUseCase struct {
 	publisher        port.EventPublisher
 	profileResolver  port.UserProfileResolver
 	activityResolver port.ActivityLifecycleResolver
+	stickerResolver  port.StickerResolver
 }
 
 func NewMessageUseCase(
 	repo port.ChatRepository,
 	publisher port.EventPublisher,
 	profileResolver port.UserProfileResolver,
+	activityResolver ...port.ActivityLifecycleResolver,
+) *MessageUseCase {
+	return newMessageUseCase(repo, publisher, profileResolver, nil, activityResolver...)
+}
+
+func NewMessageUseCaseWithStickerResolver(
+	repo port.ChatRepository,
+	publisher port.EventPublisher,
+	profileResolver port.UserProfileResolver,
+	stickerResolver port.StickerResolver,
+	activityResolver ...port.ActivityLifecycleResolver,
+) *MessageUseCase {
+	return newMessageUseCase(repo, publisher, profileResolver, stickerResolver, activityResolver...)
+}
+
+func newMessageUseCase(
+	repo port.ChatRepository,
+	publisher port.EventPublisher,
+	profileResolver port.UserProfileResolver,
+	stickerResolver port.StickerResolver,
 	activityResolver ...port.ActivityLifecycleResolver,
 ) *MessageUseCase {
 	var resolver port.ActivityLifecycleResolver
@@ -51,17 +78,20 @@ func NewMessageUseCase(
 		publisher:        publisher,
 		profileResolver:  profileResolver,
 		activityResolver: resolver,
+		stickerResolver:  stickerResolver,
 	}
 }
 
 type SendMessageInput struct {
-	ConversationID    uuid.UUID
-	SenderUserID      uuid.UUID
-	SenderDisplayName string
-	Type              string
-	Content           string
-	FileIDs           []string
-	ReplyToMessageID  *uuid.UUID
+	ConversationID      uuid.UUID
+	SenderUserID        uuid.UUID
+	StickerAccessUserID *uuid.UUID
+	SenderDisplayName   string
+	Type                string
+	Content             string
+	FileIDs             []string
+	StickerID           *uuid.UUID
+	ReplyToMessageID    *uuid.UUID
 }
 
 type DeleteMessageResult struct {
@@ -75,17 +105,55 @@ type ToggleMessageReactionResult struct {
 }
 
 func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput) (*model.Message, error) {
-	messageType := strings.TrimSpace(input.Type)
+	messageType := strings.ToLower(strings.TrimSpace(input.Type))
 	if messageType == "" {
-		messageType = "text"
+		messageType = messageTypeText
 	}
-	if messageType != "text" && messageType != "file" {
+
+	fileIDs := normalizeMessageFileIDs(input.FileIDs)
+	stickerID := input.StickerID
+	if stickerID != nil {
+		messageType = messageTypeSticker
+	}
+	if messageType == messageTypeText && len(fileIDs) > 0 {
+		messageType = messageTypeFile
+	}
+	if messageType != messageTypeText && messageType != messageTypeFile && messageType != messageTypeSticker {
 		return nil, ErrInvalidMessageType
+	}
+	var stickerFileID *string
+	if messageType == messageTypeSticker {
+		if stickerID == nil && len(fileIDs) == 1 {
+			parsed, err := uuid.Parse(fileIDs[0])
+			if err != nil || parsed == uuid.Nil {
+				return nil, ErrInvalidStickerID
+			}
+			stickerID = &parsed
+		}
+		if stickerID == nil || *stickerID == uuid.Nil {
+			return nil, ErrInvalidStickerID
+		}
+		if u.stickerResolver == nil {
+			return nil, ErrStickerNotAvailable
+		}
+
+		stickerAccessUserID := input.SenderUserID
+		if input.StickerAccessUserID != nil && *input.StickerAccessUserID != uuid.Nil {
+			stickerAccessUserID = *input.StickerAccessUserID
+		}
+		sticker, err := u.stickerResolver.ValidateSend(ctx, stickerAccessUserID, *stickerID)
+		if err != nil || sticker == nil || sticker.FileID == uuid.Nil {
+			return nil, ErrStickerNotAvailable
+		}
+		stickerID = &sticker.StickerID
+		fileID := sticker.FileID.String()
+		stickerFileID = &fileID
+		fileIDs = nil
 	}
 	if len(input.Content) > maxMessageSize {
 		return nil, ErrMessageTooLong
 	}
-	if len(input.FileIDs) > maxFilesPerMessage {
+	if len(fileIDs) > maxFilesPerMessage {
 		return nil, ErrTooManyFiles
 	}
 
@@ -120,6 +188,8 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		SenderUserID:     input.SenderUserID,
 		Type:             messageType,
 		Content:          input.Content,
+		StickerID:        stickerID,
+		StickerFileID:    stickerFileID,
 		ReplyToMessageID: input.ReplyToMessageID,
 		SentAt:           now,
 	}
@@ -129,8 +199,8 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 			return err
 		}
 
-		if len(input.FileIDs) > 0 {
-			if err := txRepo.CreateMessageFiles(ctx, msg.ID, input.FileIDs); err != nil {
+		if len(fileIDs) > 0 {
+			if err := txRepo.CreateMessageFiles(ctx, msg.ID, fileIDs); err != nil {
 				return err
 			}
 		}
@@ -146,7 +216,7 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		return nil, err
 	}
 
-	msg.FileIDs = input.FileIDs
+	msg.FileIDs = fileIDs
 	msg.SenderDisplayName = input.SenderDisplayName
 	enrichMessages(ctx, u.profileResolver, []*model.Message{msg})
 
@@ -158,7 +228,9 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 			SenderAvatarFileID: msg.SenderAvatarFileID,
 			Type:               msg.Type,
 			Content:            msg.Content,
-			FileIDs:            input.FileIDs,
+			FileIDs:            fileIDs,
+			StickerID:          msg.StickerID,
+			StickerFileID:      msg.StickerFileID,
 			ReplyToMessageID:   input.ReplyToMessageID,
 			SentAt:             msg.SentAt,
 		})
@@ -168,6 +240,27 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	}()
 
 	return msg, nil
+}
+
+func normalizeMessageFileIDs(fileIDs []string) []string {
+	if len(fileIDs) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(fileIDs))
+	normalized := make([]string, 0, len(fileIDs))
+	for _, raw := range fileIDs {
+		fileID := strings.TrimSpace(raw)
+		if fileID == "" {
+			continue
+		}
+		if _, ok := seen[fileID]; ok {
+			continue
+		}
+		seen[fileID] = struct{}{}
+		normalized = append(normalized, fileID)
+	}
+	return normalized
 }
 
 func (u *MessageUseCase) EditMessage(ctx context.Context, conversationID, messageID, actorUserID uuid.UUID, newContent string) (*model.Message, error) {

@@ -9,8 +9,8 @@ import '../features/chat/models/message_vm.dart';
 
 class ChatProvider extends ChangeNotifier {
   ChatProvider({ChatApi? chatApi, ChatWsService? wsService})
-    : _chatApi = chatApi ?? ChatApi(),
-      _wsService = wsService ?? ChatWsService();
+      : _chatApi = chatApi ?? ChatApi(),
+        _wsService = wsService ?? ChatWsService();
 
   final ChatApi _chatApi;
   final ChatWsService _wsService;
@@ -156,16 +156,27 @@ class ChatProvider extends ChangeNotifier {
     String content, {
     String type = 'text',
     List<String>? fileIds,
+    String? stickerId,
     String? replyToMessageId,
   }) async {
-    final normalizedFileIds =
-        fileIds
+    final normalizedFileIds = fileIds
             ?.map((id) => id.trim())
             .where((id) => id.isNotEmpty)
             .toList(growable: false) ??
         const <String>[];
+    final normalizedType = type.trim().isEmpty ? 'text' : type.trim();
+    final normalizedStickerId = stickerId?.trim() ?? '';
+    final effectiveType = normalizedFileIds.isEmpty
+        ? normalizedStickerId.isNotEmpty
+            ? 'sticker'
+            : normalizedType
+        : normalizedType == 'text'
+            ? 'file'
+            : normalizedType;
     if (_activeConversation == null ||
-        (content.trim().isEmpty && normalizedFileIds.isEmpty)) {
+        (content.trim().isEmpty &&
+            normalizedFileIds.isEmpty &&
+            normalizedStickerId.isEmpty)) {
       return false;
     }
     if (!_activeConversation!.canSendNow) {
@@ -179,8 +190,9 @@ class ChatProvider extends ChangeNotifier {
       final msg = await _chatApi.sendMessage(
         _activeConversation!.id,
         content: content.trim(),
-        type: normalizedFileIds.isEmpty ? type : 'file',
+        type: effectiveType,
         fileIds: normalizedFileIds,
+        stickerId: normalizedStickerId.isEmpty ? null : normalizedStickerId,
         replyToMessageId: replyToMessageId,
       );
       _messages = _uniqueMessages([msg, ..._messages]);
@@ -204,9 +216,8 @@ class ChatProvider extends ChangeNotifier {
       messageId,
     );
     if (result.hardDeleted) {
-      _messages = _messages
-          .where((message) => message.id != messageId)
-          .toList();
+      _messages =
+          _messages.where((message) => message.id != messageId).toList();
     } else {
       final deletedAt = result.deletedAt ?? DateTime.now().toUtc();
       _messages = _messages
@@ -430,9 +441,8 @@ class ChatProvider extends ChangeNotifier {
 
   void _onReadUpdated(ChatEvent event) {
     final userId = event.payload['userId'] as String?;
-    final lastReadMessageId =
-        (event.payload['lastReadMsgId'] ?? event.payload['lastReadMessageId'])
-            as String?;
+    final lastReadMessageId = (event.payload['lastReadMsgId'] ??
+        event.payload['lastReadMessageId']) as String?;
     if (userId == null || lastReadMessageId == null) {
       return;
     }

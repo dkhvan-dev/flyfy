@@ -41,12 +41,16 @@ type ConversationListItem struct {
 }
 
 type LastMessagePreview struct {
-	ID                string  `json:"id"`
-	SenderUserID      string  `json:"senderUserId"`
-	SenderDisplayName string  `json:"senderDisplayName"`
-	ContentPreview    string  `json:"contentPreview"`
-	DeletedAt         *string `json:"deletedAt,omitempty"`
-	SentAt            string  `json:"sentAt"`
+	ID                string   `json:"id"`
+	SenderUserID      string   `json:"senderUserId"`
+	SenderDisplayName string   `json:"senderDisplayName"`
+	Type              string   `json:"type"`
+	ContentPreview    string   `json:"contentPreview"`
+	FileIDs           []string `json:"fileIds,omitempty"`
+	StickerID         *string  `json:"stickerId,omitempty"`
+	StickerFileID     *string  `json:"stickerFileId,omitempty"`
+	DeletedAt         *string  `json:"deletedAt,omitempty"`
+	SentAt            string   `json:"sentAt"`
 }
 
 type ConversationDetail struct {
@@ -84,6 +88,8 @@ type PinnedMessageInfo struct {
 	Type               string   `json:"type"`
 	Content            string   `json:"content"`
 	FileIDs            []string `json:"fileIds,omitempty"`
+	StickerID          *string  `json:"stickerId,omitempty"`
+	StickerFileID      *string  `json:"stickerFileId,omitempty"`
 	SentAt             string   `json:"sentAt"`
 	PinnedAt           string   `json:"pinnedAt"`
 }

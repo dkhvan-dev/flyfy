@@ -99,6 +99,7 @@ class ChatApi {
     required String content,
     String type = 'text',
     List<String>? fileIds,
+    String? stickerId,
     String? replyToMessageId,
   }) async {
     final response = await _apiClient.dio.post(
@@ -107,6 +108,7 @@ class ChatApi {
         'content': content,
         'type': type,
         if (fileIds != null && fileIds.isNotEmpty) 'fileIds': fileIds,
+        if ((stickerId ?? '').trim().isNotEmpty) 'stickerId': stickerId!.trim(),
         if (replyToMessageId != null) 'replyToMessageId': replyToMessageId,
       },
     );

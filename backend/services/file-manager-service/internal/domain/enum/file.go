@@ -46,6 +46,7 @@ const (
 	FilePurposeAttractionMedia       FilePurpose = "ATTRACTION_MEDIA"
 	FilePurposeAttractionReviewMedia FilePurpose = "ATTRACTION_REVIEW_MEDIA"
 	FilePurposeChatAttachment        FilePurpose = "CHAT_ATTACHMENT"
+	FilePurposeChatSticker           FilePurpose = "CHAT_STICKER"
 	FilePurposeGenericDocument       FilePurpose = "GENERIC_DOCUMENT"
 )
 
@@ -58,6 +59,7 @@ func (p FilePurpose) IsValid() bool {
 		FilePurposeAttractionMedia,
 		FilePurposeAttractionReviewMedia,
 		FilePurposeChatAttachment,
+		FilePurposeChatSticker,
 		FilePurposeGenericDocument:
 		return true
 	default:

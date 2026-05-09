@@ -14,6 +14,7 @@ type FileBindingRepository interface {
 	GetPrimaryByOwnerAndPurpose(ctx context.Context, ownerType enum.OwnerType, ownerID uuid.UUID, purpose enum.FilePurpose) (*model.FileBinding, error)
 	SoftDeletePrimaryByOwnerAndPurpose(ctx context.Context, ownerType enum.OwnerType, ownerID uuid.UUID, purpose enum.FilePurpose) error
 	ListByFileID(ctx context.Context, fileID uuid.UUID) ([]*model.FileBinding, error)
+	ListByOwnerAndPurpose(ctx context.Context, ownerType enum.OwnerType, ownerID uuid.UUID, purpose enum.FilePurpose, limit int) ([]*model.FileBinding, error)
 
 	CreateWithPrimarySwitchTx(
 		ctx context.Context,

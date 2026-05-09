@@ -24,6 +24,7 @@ import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/session_provider.dart';
+import '../common/app_side_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -744,7 +745,7 @@ class _HomeScreenState extends State<HomeScreen> {
       drawerEnableOpenDragGesture: true,
       drawerEdgeDragWidth: 28,
       drawerScrimColor: Colors.black.withValues(alpha: 0.42),
-      drawer: _HomeSideDrawer(
+      drawer: AppSideDrawer(
         l10n: l10n,
         isLoggedIn: isLoggedIn,
         showGuideBadge: _showGuideBadge,
@@ -753,6 +754,7 @@ class _HomeScreenState extends State<HomeScreen> {
         languageLabel: _resolveLanguageLabel(
           context.watch<LocaleProvider>().locale.languageCode,
         ),
+        activeItem: AppDrawerActiveItem.none,
         onProfileTap: () => _runDrawerAction(_openProfile),
         onLanguageTap: () => _runDrawerAction(_showLanguageSheet),
         onHomeTap: () => _runDrawerAction(() => context.go('/')),

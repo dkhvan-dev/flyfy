@@ -35,6 +35,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	attractionLimit := 180
 	chatLimit := 300
 	paymentLimit := 180
+	stickerLimit := 180
 
 	return []RoutePolicy{
 		{
@@ -130,6 +131,23 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "payment",
 			RateLimitPerMinute: &paymentLimit,
 			RewritePrefix:      "/v1/payments",
+		},
+		{
+			Name:               "default-sticker-packs",
+			Prefix:             apiPrefix + "/sticker-packs/default",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "sticker",
+			RateLimitPerMinute: &stickerLimit,
+			RewritePrefix:      "/v1/sticker-packs/default",
+			Cacheable:          true,
+		},
+		{
+			Name:               "sticker-packs",
+			Prefix:             apiPrefix + "/sticker-packs",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "sticker",
+			RateLimitPerMinute: &stickerLimit,
+			RewritePrefix:      "/v1/sticker-packs",
 		},
 		{
 			Name:               "public-stories",

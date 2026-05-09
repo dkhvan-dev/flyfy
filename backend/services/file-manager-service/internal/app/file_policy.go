@@ -94,6 +94,15 @@ func DefaultUploadPolicies(globalMaxSize int64) UploadPolicies {
 				"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 			),
 		},
+		enum.FilePurposeChatSticker: {
+			MaxSizeBytes: 5 * 1024 * 1024,
+			AllowedExtensions: setOf(
+				"jpg", "jpeg", "png", "webp",
+			),
+			AllowedContentTypes: setOf(
+				"image/jpeg", "image/png", "image/webp",
+			),
+		},
 		enum.FilePurposeGenericDocument: {
 			MaxSizeBytes: minNonZero(globalMaxSize, 25*1024*1024),
 			AllowedExtensions: setOf(

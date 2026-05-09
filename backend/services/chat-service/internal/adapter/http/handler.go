@@ -132,7 +132,11 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 				ID:                c.LastMessage.ID.String(),
 				SenderUserID:      c.LastMessage.SenderUserID.String(),
 				SenderDisplayName: c.LastMessage.SenderDisplayName,
+				Type:              c.LastMessage.Type,
 				ContentPreview:    preview,
+				FileIDs:           append([]string(nil), c.LastMessage.FileIDs...),
+				StickerID:         uuidPtrToString(c.LastMessage.StickerID),
+				StickerFileID:     c.LastMessage.StickerFileID,
 				SentAt:            c.LastMessage.SentAt.Format(time.RFC3339),
 			}
 			if c.LastMessage.DeletedAt != nil {
@@ -533,14 +537,35 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request, convID uui
 			replyTo = &parsed
 		}
 	}
+	var stickerID *uuid.UUID
+	var stickerAccessUserID *uuid.UUID
+	if req.StickerID != nil && strings.TrimSpace(*req.StickerID) != "" {
+		parsed, err := uuid.Parse(strings.TrimSpace(*req.StickerID))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid sticker id")
+			return
+		}
+		stickerID = &parsed
+
+		if gatewayUserID := UserIDFromContext(r.Context()); gatewayUserID != "" {
+			parsedGatewayUserID, err := uuid.Parse(gatewayUserID)
+			if err != nil || parsedGatewayUserID == uuid.Nil {
+				writeError(w, http.StatusUnauthorized, "invalid authenticated user")
+				return
+			}
+			stickerAccessUserID = &parsedGatewayUserID
+		}
+	}
 
 	msg, err := h.messageUC.SendMessage(r.Context(), app.SendMessageInput{
-		ConversationID:   convID,
-		SenderUserID:     actorUserID,
-		Type:             req.Type,
-		Content:          req.Content,
-		FileIDs:          req.FileIDs,
-		ReplyToMessageID: replyTo,
+		ConversationID:      convID,
+		SenderUserID:        actorUserID,
+		StickerAccessUserID: stickerAccessUserID,
+		Type:                req.Type,
+		Content:             req.Content,
+		FileIDs:             req.FileIDs,
+		StickerID:           stickerID,
+		ReplyToMessageID:    replyTo,
 	})
 	if err != nil {
 		h.writeAppError(w, err, "send message failed")
@@ -820,6 +845,8 @@ func messageResponseFromModel(m *model.Message) dto.MessageResponse {
 		Type:               m.Type,
 		Content:            m.Content,
 		FileIDs:            m.FileIDs,
+		StickerID:          uuidPtrToString(m.StickerID),
+		StickerFileID:      m.StickerFileID,
 		Reactions:          reactionInfosFromModel(m.Reactions),
 		SentAt:             m.SentAt.Format(time.RFC3339),
 	}
@@ -897,6 +924,8 @@ func pinnedMessageInfosFromModel(
 			Type:               pin.Message.Type,
 			Content:            pin.Message.Content,
 			FileIDs:            append([]string(nil), pin.Message.FileIDs...),
+			StickerID:          uuidPtrToString(pin.Message.StickerID),
+			StickerFileID:      pin.Message.StickerFileID,
 			SentAt:             pin.Message.SentAt.Format(time.RFC3339),
 			PinnedAt:           pin.PinnedAt.Format(time.RFC3339),
 		})
@@ -912,6 +941,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrInvalidUserID),
 		errors.Is(err, app.ErrMessageTooLong),
 		errors.Is(err, app.ErrInvalidMessageType),
+		errors.Is(err, app.ErrInvalidStickerID),
 		errors.Is(err, app.ErrInvalidReaction),
 		errors.Is(err, app.ErrTooManyFiles),
 		errors.Is(err, app.ErrDirectChatCannotLeave),
@@ -932,6 +962,9 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrConversationMessagingClosed):
 		writeError(w, http.StatusForbidden, err.Error())
 
+	case errors.Is(err, app.ErrStickerNotAvailable):
+		writeError(w, http.StatusForbidden, err.Error())
+
 	case errors.Is(err, app.ErrConversationFull):
 		writeError(w, http.StatusConflict, err.Error())
 
@@ -939,6 +972,14 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		log.Error().Err(err).Msg(fallback)
 		writeError(w, http.StatusInternalServerError, "internal error")
 	}
+}
+
+func uuidPtrToString(value *uuid.UUID) *string {
+	if value == nil {
+		return nil
+	}
+	str := value.String()
+	return &str
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {

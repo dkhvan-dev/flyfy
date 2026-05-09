@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,11 +18,29 @@ import (
 )
 
 type Handler struct {
-	useCase        *app.FileUseCase
-	bindingUseCase *app.FileBindingUseCase
+	useCase        fileUseCase
+	bindingUseCase bindingUseCase
 }
 
-func NewHandler(useCase *app.FileUseCase, bindingUseCase *app.FileBindingUseCase) *Handler {
+type fileUseCase interface {
+	CreateUploadRequest(context.Context, app.CreateUploadRequestInput) (*app.CreateUploadRequestOutput, error)
+	CompleteUpload(context.Context, uuid.UUID) (*app.CompleteUploadOutput, error)
+	MaxUploadSizeBytes() int64
+	UploadBinary(context.Context, uuid.UUID, string, []byte) error
+	GetFile(context.Context, uuid.UUID) (*model.File, error)
+	CreateDownloadURL(context.Context, uuid.UUID) (string, time.Time, error)
+	OpenContent(context.Context, uuid.UUID) (io.ReadCloser, string, error)
+	OpenPublicContent(context.Context, uuid.UUID) (io.ReadCloser, string, error)
+	SoftDelete(context.Context, uuid.UUID) error
+}
+
+type bindingUseCase interface {
+	BindFile(context.Context, app.BindFileInput) (*model.FileBinding, error)
+	ListByFileID(context.Context, uuid.UUID) ([]*model.FileBinding, error)
+	ListByOwnerAndPurpose(context.Context, app.ListFileBindingsInput) ([]*model.FileBinding, error)
+}
+
+func NewHandler(useCase fileUseCase, bindingUseCase bindingUseCase) *Handler {
 	return &Handler{
 		useCase:        useCase,
 		bindingUseCase: bindingUseCase,
@@ -31,6 +50,8 @@ func NewHandler(useCase *app.FileUseCase, bindingUseCase *app.FileBindingUseCase
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/files/upload-requests", h.CreateUploadRequest)
 	mux.HandleFunc("GET /v1/public/files/", h.handlePublicFileActions)
+	mux.HandleFunc("GET /v1/files/my-bindings", h.ListMyBindings)
+	mux.HandleFunc("POST /v1/internal/files/", h.handleInternalFileActions)
 	mux.HandleFunc("POST /v1/files/", h.handleFileActions)
 	mux.HandleFunc("GET /v1/files/", h.handleFileActions)
 	mux.HandleFunc("PUT /v1/files/", h.handleFileActions)
@@ -165,6 +186,29 @@ func (h *Handler) handlePublicFileActions(w http.ResponseWriter, r *http.Request
 
 	if r.Method == http.MethodGet && len(parts) == 2 && parts[1] == "content" {
 		h.GetPublicContent(w, r, fileID)
+		return
+	}
+
+	writeError(w, http.StatusNotFound, "not found")
+}
+
+func (h *Handler) handleInternalFileActions(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/v1/internal/files/")
+	path = strings.Trim(path, "/")
+	if path == "" {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	parts := strings.Split(path, "/")
+	fileID, err := uuid.Parse(parts[0])
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid file id")
+		return
+	}
+
+	if r.Method == http.MethodPost && len(parts) == 2 && parts[1] == "bindings" {
+		h.BindFileInternal(w, r, fileID)
 		return
 	}
 
@@ -417,6 +461,19 @@ func userIDFromContext(ctx context.Context) *string {
 }
 
 func (h *Handler) BindFile(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
+	h.bindFile(w, r, fileID, true)
+}
+
+func (h *Handler) BindFileInternal(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
+	if !InternalCallFromContext(r.Context()) {
+		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		return
+	}
+
+	h.bindFile(w, r, fileID, false)
+}
+
+func (h *Handler) bindFile(w http.ResponseWriter, r *http.Request, fileID uuid.UUID, enforceUserOwner bool) {
 	var req dto.BindFileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -424,6 +481,13 @@ func (h *Handler) BindFile(w http.ResponseWriter, r *http.Request, fileID uuid.U
 	}
 
 	createdByUserID := userIDFromContext(r.Context())
+	if enforceUserOwner && strings.EqualFold(strings.TrimSpace(req.OwnerType), "USER") {
+		currentUserID := strings.TrimSpace(UserIDFromContext(r.Context()))
+		if currentUserID == "" || strings.TrimSpace(req.OwnerID) != currentUserID {
+			writeError(w, http.StatusForbidden, "cannot bind file to another user")
+			return
+		}
+	}
 
 	binding, err := h.bindingUseCase.BindFile(r.Context(), app.BindFileInput{
 		FileID:          fileID,
@@ -487,6 +551,57 @@ func (h *Handler) ListBindings(w http.ResponseWriter, r *http.Request, fileID uu
 			writeError(w, http.StatusBadRequest, err.Error())
 		case errors.Is(err, app.ErrFileNotFound):
 			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to list bindings")
+		}
+		return
+	}
+
+	resp := make([]dto.FileBindingResponse, 0, len(items))
+	for _, item := range items {
+		resp = append(resp, toFileBindingResponse(item))
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"bindings": resp,
+	})
+}
+
+func (h *Handler) ListMyBindings(w http.ResponseWriter, r *http.Request) {
+	userID := strings.TrimSpace(UserIDFromContext(r.Context()))
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "missing authenticated user context")
+		return
+	}
+
+	purpose := strings.TrimSpace(r.URL.Query().Get("purpose"))
+	if purpose == "" {
+		writeError(w, http.StatusBadRequest, "purpose is required")
+		return
+	}
+
+	limit := 100
+	if rawLimit := strings.TrimSpace(r.URL.Query().Get("limit")); rawLimit != "" {
+		parsed, err := strconv.Atoi(rawLimit)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid limit")
+			return
+		}
+		limit = parsed
+	}
+
+	items, err := h.bindingUseCase.ListByOwnerAndPurpose(r.Context(), app.ListFileBindingsInput{
+		OwnerType: "USER",
+		OwnerID:   userID,
+		Purpose:   purpose,
+		Limit:     limit,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidOwnerID),
+			errors.Is(err, app.ErrForbiddenOwnerType),
+			errors.Is(err, app.ErrForbiddenPurpose):
+			writeError(w, http.StatusBadRequest, err.Error())
 		default:
 			writeError(w, http.StatusInternalServerError, "failed to list bindings")
 		}

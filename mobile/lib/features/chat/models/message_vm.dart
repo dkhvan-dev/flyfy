@@ -6,6 +6,8 @@ class MessageVm {
   final String type;
   final String content;
   final List<String> fileIds;
+  final String? stickerId;
+  final String? stickerFileId;
   final String? replyToMessageId;
   final DateTime? editedAt;
   final DateTime? deletedAt;
@@ -20,6 +22,8 @@ class MessageVm {
     required this.type,
     required this.content,
     this.fileIds = const [],
+    this.stickerId,
+    this.stickerFileId,
     this.replyToMessageId,
     this.editedAt,
     this.deletedAt,
@@ -31,6 +35,13 @@ class MessageVm {
   bool get isEdited => editedAt != null;
   bool get hasFiles => fileIds.isNotEmpty;
   bool get isSystem => type == 'system';
+  bool get isSticker => type == 'sticker' && stickerImageFileId != null;
+  String? get stickerImageFileId {
+    final normalized = stickerFileId?.trim() ?? '';
+    if (normalized.isNotEmpty) return normalized;
+    if (type == 'sticker' && fileIds.length == 1) return fileIds.first;
+    return null;
+  }
 
   MessageVm copyWith({
     String? senderDisplayName,
@@ -38,6 +49,8 @@ class MessageVm {
     String? type,
     String? content,
     List<String>? fileIds,
+    String? stickerId,
+    String? stickerFileId,
     String? replyToMessageId,
     DateTime? editedAt,
     DateTime? deletedAt,
@@ -51,6 +64,8 @@ class MessageVm {
       type: type ?? this.type,
       content: content ?? this.content,
       fileIds: fileIds ?? this.fileIds,
+      stickerId: stickerId ?? this.stickerId,
+      stickerFileId: stickerFileId ?? this.stickerFileId,
       replyToMessageId: replyToMessageId ?? this.replyToMessageId,
       editedAt: editedAt ?? this.editedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -67,11 +82,12 @@ class MessageVm {
       senderAvatarFileId: json['senderAvatarFileId'] as String?,
       type: json['type'] as String,
       content: json['content'] as String,
-      fileIds:
-          (json['fileIds'] as List<dynamic>?)
+      fileIds: (json['fileIds'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      stickerId: json['stickerId']?.toString(),
+      stickerFileId: json['stickerFileId']?.toString(),
       replyToMessageId: json['replyToMessageId'] as String?,
       editedAt: json['editedAt'] != null
           ? DateTime.parse(json['editedAt'] as String)
@@ -79,8 +95,7 @@ class MessageVm {
       deletedAt: json['deletedAt'] != null
           ? DateTime.parse(json['deletedAt'] as String)
           : null,
-      reactions:
-          (json['reactions'] as List<dynamic>?)
+      reactions: (json['reactions'] as List<dynamic>?)
               ?.whereType<Map<String, dynamic>>()
               .map(MessageReactionVm.fromJson)
               .toList(growable: false) ??

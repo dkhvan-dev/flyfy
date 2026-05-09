@@ -25,6 +25,7 @@ type ProxyHandler struct {
 	referenceProxy   *httputil.ReverseProxy
 	attractionProxy  *httputil.ReverseProxy
 	paymentProxy     *httputil.ReverseProxy
+	stickerProxy     *httputil.ReverseProxy
 }
 
 func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHandler, error) {
@@ -78,6 +79,11 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		return nil, err
 	}
 
+	stickerProxy, err := newSingleHostProxy("sticker", cfg.Downstreams.StickerService)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ProxyHandler{
 		cfg:              cfg,
 		readiness:        readiness,
@@ -91,6 +97,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		referenceProxy:   referenceProxy,
 		attractionProxy:  attractionProxy,
 		paymentProxy:     paymentProxy,
+		stickerProxy:     stickerProxy,
 	}, nil
 }
 
@@ -169,6 +176,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.attractionProxy
 	case "payment":
 		return h.paymentProxy
+	case "sticker":
+		return h.stickerProxy
 	default:
 		return nil
 	}

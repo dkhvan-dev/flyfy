@@ -9,7 +9,7 @@ import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/locale_provider.dart';
 
-enum AppDrawerActiveItem { home, activities, myActivities, myStories }
+enum AppDrawerActiveItem { none, myActivities, myStories }
 
 const Map<String, Map<String, String>> _localizedCountryNames = {
   'KZ': {'en': 'Kazakhstan', 'ru': 'Казахстан', 'kk': 'Қазақстан'},
@@ -626,15 +626,6 @@ class AppSideDrawer extends StatelessWidget {
                             SizedBox(height: layout.menuGap),
                             _DrawerMenuItem(
                               layout: layout,
-                              label: l10n.homeNavHome,
-                              icon: Icons.home_rounded,
-                              isActive: activeItem == AppDrawerActiveItem.home,
-                              usePreferencePalette: true,
-                              onTap: onHomeTap,
-                            ),
-                            SizedBox(height: layout.menuGap),
-                            _DrawerMenuItem(
-                              layout: layout,
                               label: l10n.myActivitiesTitle,
                               icon: Icons.event_note_rounded,
                               isActive:
@@ -655,15 +646,6 @@ class AppSideDrawer extends StatelessWidget {
                               onTap: onMyStoriesTap,
                             ),
                             SizedBox(height: layout.menuGap),
-                            _DrawerMenuItem(
-                              layout: layout,
-                              label: l10n.activitiesEntryTitle,
-                              icon: Icons.explore_rounded,
-                              isActive:
-                                  activeItem == AppDrawerActiveItem.activities,
-                              usePreferencePalette: true,
-                              onTap: onActivitiesTap,
-                            ),
                           ],
                         ),
                       ),

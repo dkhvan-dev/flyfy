@@ -3280,6 +3280,34 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatComposerStickerTab => 'Стикерлер';
 
   @override
+  String get chatStickerMessage => 'Стикер';
+
+  @override
+  String get chatStickerCreateAction => 'Жасау';
+
+  @override
+  String get chatStickerCreated => 'Стикер қосылды';
+
+  @override
+  String get chatStickerCreateFailed =>
+      'Стикер жасау мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get chatStickerSendFailed =>
+      'Стикерді жіберу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get chatStickerLoadFailed => 'Стикерлеріңізді жүктеу мүмкін болмады.';
+
+  @override
+  String get chatStickerUnsupported =>
+      'Стикерлер үшін JPG, PNG немесе WebP кескінін пайдаланыңыз.';
+
+  @override
+  String get chatStickerTooLarge =>
+      'Стикер кескіні тым үлкен. 5 МБ-қа дейінгі файлды пайдаланыңыз.';
+
+  @override
   String get chatCameraPhotoMode => 'Фото';
 
   @override

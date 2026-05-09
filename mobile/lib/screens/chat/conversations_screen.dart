@@ -340,7 +340,12 @@ class _ConversationTile extends StatelessWidget {
     if (message.senderDisplayName.trim().toLowerCase() == 'system') {
       return message.contentPreview;
     }
-    return '${message.senderDisplayName}: ${message.contentPreview}';
+    final preview = message.isSticker
+        ? l10n.chatStickerMessage
+        : message.contentPreview.trim().isEmpty && message.hasFiles
+        ? l10n.chatAttachmentFile
+        : message.contentPreview;
+    return '${message.senderDisplayName}: $preview';
   }
 
   String _displayTitle(AppLocalizations l10n) {

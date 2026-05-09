@@ -409,7 +409,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
         languageLabel: resolveDrawerLanguageLabel(
           Localizations.localeOf(context).languageCode,
         ),
-        activeItem: AppDrawerActiveItem.home,
+        activeItem: AppDrawerActiveItem.none,
         onProfileTap: () =>
             _runDrawerAction(() async => context.push('/profile')),
         onLanguageTap: () => _runDrawerAction(_showLanguageSheet),

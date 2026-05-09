@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"crypto/subtle"
 	"net/http"
 	"strings"
@@ -48,6 +47,10 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := strings.TrimSpace(r.Header.Get(userIDHeader))
 		roles := splitCSV(strings.TrimSpace(r.Header.Get(rolesHeader)))
+		internalToken := strings.TrimSpace(r.Header.Get("X-Internal-Service-Token"))
+		isInternalCall := internalToken != "" &&
+			cfg.Security.InternalServiceToken != "" &&
+			subtle.ConstantTimeCompare([]byte(internalToken), []byte(cfg.Security.InternalServiceToken)) == 1
 
 		ctx := r.Context()
 		if userID != "" {
@@ -56,9 +59,12 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 		if len(roles) > 0 {
 			ctx = withUserRoles(ctx, roles)
 		}
+		if isInternalCall {
+			ctx = withInternalCall(ctx)
+		}
 
 		if cfg.Security.RequireAuthenticatedWrites && isWriteMethod(r.Method) {
-			if userID == "" {
+			if userID == "" && !isInternalCall {
 				writeError(w, http.StatusUnauthorized, "missing authenticated user context")
 				return
 			}
@@ -111,7 +117,7 @@ func requireInternalToken(cfg *config.Config, next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKey("internal_call"), true)))
+		next.ServeHTTP(w, r.WithContext(withInternalCall(r.Context())))
 	})
 }
 

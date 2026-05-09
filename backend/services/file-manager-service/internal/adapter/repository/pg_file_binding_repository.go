@@ -262,3 +262,68 @@ func (r *PGFileBindingRepository) ListByFileID(ctx context.Context, fileID uuid.
 
 	return result, rows.Err()
 }
+
+func (r *PGFileBindingRepository) ListByOwnerAndPurpose(
+	ctx context.Context,
+	ownerType enum.OwnerType,
+	ownerID uuid.UUID,
+	purpose enum.FilePurpose,
+	limit int,
+) ([]*model.FileBinding, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+
+	const query = `
+		SELECT
+			id, file_id, owner_type, owner_id, purpose, is_primary,
+			is_deleted, deleted_at, created_by_user_id, created_at, updated_at
+		FROM file_bindings
+		WHERE owner_type = $1
+		  AND owner_id = $2
+		  AND purpose = $3
+		  AND is_deleted = FALSE
+		ORDER BY created_at DESC
+		LIMIT $4
+	`
+
+	rows, err := r.pool.Query(ctx, query, string(ownerType), ownerID, string(purpose), limit)
+	if err != nil {
+		return nil, fmt.Errorf("query file bindings by owner: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*model.FileBinding
+	for rows.Next() {
+		var (
+			binding         model.FileBinding
+			ownerTypeRaw    string
+			purposeRaw      string
+			createdByUserID *uuid.UUID
+		)
+
+		if err = rows.Scan(
+			&binding.ID,
+			&binding.FileID,
+			&ownerTypeRaw,
+			&binding.OwnerID,
+			&purposeRaw,
+			&binding.IsPrimary,
+			&binding.IsDeleted,
+			&binding.DeletedAt,
+			&createdByUserID,
+			&binding.CreatedAt,
+			&binding.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan file binding by owner: %w", err)
+		}
+
+		binding.OwnerType = enum.OwnerType(ownerTypeRaw)
+		binding.Purpose = enum.FilePurpose(purposeRaw)
+		binding.CreatedByUserID = createdByUserID
+
+		result = append(result, &binding)
+	}
+
+	return result, rows.Err()
+}

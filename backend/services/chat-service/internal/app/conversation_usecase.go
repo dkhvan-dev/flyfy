@@ -459,6 +459,7 @@ func (u *ConversationUseCase) ListConversations(ctx context.Context, actorUserID
 
 		conv.LastMessage, _ = u.repo.GetLastMessage(ctx, conv.ID)
 		if conv.LastMessage != nil {
+			conv.LastMessage.FileIDs, _ = u.repo.GetMessageFileIDs(ctx, conv.LastMessage.ID)
 			enrichMessages(ctx, u.profileResolver, []*model.Message{conv.LastMessage})
 		}
 		conv.UnreadCount, _ = u.repo.GetUnreadCount(ctx, conv.ID, actorUserID)

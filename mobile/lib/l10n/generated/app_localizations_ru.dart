@@ -3284,6 +3284,34 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatComposerStickerTab => 'Стикеры';
 
   @override
+  String get chatStickerMessage => 'Стикер';
+
+  @override
+  String get chatStickerCreateAction => 'Создать';
+
+  @override
+  String get chatStickerCreated => 'Стикер добавлен';
+
+  @override
+  String get chatStickerCreateFailed =>
+      'Не удалось создать стикер. Попробуйте еще раз.';
+
+  @override
+  String get chatStickerSendFailed =>
+      'Не удалось отправить стикер. Попробуйте еще раз.';
+
+  @override
+  String get chatStickerLoadFailed => 'Не удалось загрузить ваши стикеры.';
+
+  @override
+  String get chatStickerUnsupported =>
+      'Для стикеров используйте изображение JPG, PNG или WebP.';
+
+  @override
+  String get chatStickerTooLarge =>
+      'Изображение стикера слишком большое. Используйте файл до 5 МБ.';
+
+  @override
   String get chatCameraPhotoMode => 'Фото';
 
   @override

@@ -89,8 +89,7 @@ class ConversationVm {
       title: json['title'] as String?,
       avatarFileId: json['avatarFileId'] as String?,
       activityId: json['activityId'] as String?,
-      participants:
-          (json['participants'] as List<dynamic>?)
+      participants: (json['participants'] as List<dynamic>?)
               ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -115,7 +114,11 @@ class LastMessagePreview {
   final String id;
   final String senderUserId;
   final String senderDisplayName;
+  final String type;
   final String contentPreview;
+  final List<String> fileIds;
+  final String? stickerId;
+  final String? stickerFileId;
   final DateTime? deletedAt;
   final DateTime sentAt;
 
@@ -123,19 +126,35 @@ class LastMessagePreview {
     required this.id,
     required this.senderUserId,
     required this.senderDisplayName,
+    required this.type,
     required this.contentPreview,
+    this.fileIds = const [],
+    this.stickerId,
+    this.stickerFileId,
     this.deletedAt,
     required this.sentAt,
   });
 
   bool get isDeleted => deletedAt != null;
+  bool get isSticker =>
+      type == 'sticker' &&
+      ((stickerFileId?.trim().isNotEmpty ?? false) || fileIds.length == 1);
+  bool get hasFiles => fileIds.isNotEmpty;
 
   factory LastMessagePreview.fromJson(Map<String, dynamic> json) {
     return LastMessagePreview(
       id: json['id'] as String,
       senderUserId: json['senderUserId'] as String,
       senderDisplayName: json['senderDisplayName'] as String,
+      type: json['type']?.toString() ?? 'text',
       contentPreview: json['contentPreview'] as String,
+      fileIds: (json['fileIds'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .where((id) => id.trim().isNotEmpty)
+              .toList(growable: false) ??
+          const [],
+      stickerId: json['stickerId']?.toString(),
+      stickerFileId: json['stickerFileId']?.toString(),
       deletedAt: _parseDateTimeOrNull(json['deletedAt']),
       sentAt: DateTime.parse(json['sentAt'] as String),
     );
@@ -227,13 +246,11 @@ class ConversationDetail {
       avatarFileId: json['avatarFileId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       activityId: json['activityId'] as String?,
-      participants:
-          (json['participants'] as List<dynamic>?)
+      participants: (json['participants'] as List<dynamic>?)
               ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      pinnedMessages:
-          (json['pinnedMessages'] as List<dynamic>?)
+      pinnedMessages: (json['pinnedMessages'] as List<dynamic>?)
               ?.map(
                 (e) => PinnedMessageInfo.fromJson(e as Map<String, dynamic>),
               )
@@ -312,6 +329,8 @@ class PinnedMessageInfo {
   final String type;
   final String content;
   final List<String> fileIds;
+  final String? stickerId;
+  final String? stickerFileId;
   final DateTime sentAt;
   final DateTime pinnedAt;
 
@@ -323,6 +342,8 @@ class PinnedMessageInfo {
     required this.type,
     required this.content,
     this.fileIds = const [],
+    this.stickerId,
+    this.stickerFileId,
     required this.sentAt,
     required this.pinnedAt,
   });
@@ -335,11 +356,12 @@ class PinnedMessageInfo {
       senderAvatarFileId: json['senderAvatarFileId'] as String?,
       type: (json['type'] as String?) ?? 'text',
       content: json['content'] as String,
-      fileIds:
-          (json['fileIds'] as List<dynamic>?)
+      fileIds: (json['fileIds'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      stickerId: json['stickerId']?.toString(),
+      stickerFileId: json['stickerFileId']?.toString(),
       sentAt: DateTime.parse(json['sentAt'] as String),
       pinnedAt: DateTime.parse(json['pinnedAt'] as String),
     );

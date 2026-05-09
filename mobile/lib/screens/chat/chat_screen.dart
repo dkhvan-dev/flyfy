@@ -18,10 +18,12 @@ import 'package:record/record.dart';
 import '../../core/files/chat_file_cache.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
+import '../../core/network/sticker_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
+import '../../features/chat/models/sticker_pack_vm.dart';
 import '../../features/chat/utils/chat_presence_status.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
@@ -33,7 +35,7 @@ import 'chat_shared_content_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, this.conversationId, this.activityId})
-    : assert(conversationId != null || activityId != null);
+      : assert(conversationId != null || activityId != null);
 
   final String? conversationId;
   final String? activityId;
@@ -44,8 +46,10 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   static const _maxChatAttachmentBytes = 25 * 1024 * 1024;
+  static const _maxChatStickerBytes = 5 * 1024 * 1024;
 
   final _fileApi = FileApi();
+  final _stickerApi = StickerApi();
   final _voiceRecorder = AudioRecorder();
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
@@ -68,6 +72,12 @@ class _ChatScreenState extends State<ChatScreen> {
   MessageVm? _replyToMessage;
   String? _highlightedMessageId;
   int _pinnedMessageIndex = 0;
+  _ComposerPanel _activeComposerPanel = _ComposerPanel.none;
+  List<StickerPackVm> _stickerPacks = const [];
+  bool _stickersLoading = false;
+  bool _stickersLoadFailed = false;
+  bool _stickerCreating = false;
+  int _activeStickerPackIndex = 0;
 
   @override
   void initState() {
@@ -76,12 +86,14 @@ class _ChatScreenState extends State<ChatScreen> {
       _openConversation();
     });
     _scrollController.addListener(_onScroll);
+    _focusNode.addListener(_handleComposerFocusChanged);
   }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _focusNode.removeListener(_handleComposerFocusChanged);
     _focusNode.dispose();
     _typingDebounce?.cancel();
     _messagingWindowTimer?.cancel();
@@ -89,6 +101,13 @@ class _ChatScreenState extends State<ChatScreen> {
     _voiceRecordingTimer?.cancel();
     unawaited(_disposeVoiceRecorder());
     super.dispose();
+  }
+
+  void _handleComposerFocusChanged() {
+    if (!_focusNode.hasFocus || _activeComposerPanel == _ComposerPanel.none) {
+      return;
+    }
+    setState(() => _activeComposerPanel = _ComposerPanel.none);
   }
 
   Future<void> _disposeVoiceRecorder() async {
@@ -178,11 +197,11 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
 
       final sent = await context.read<ChatProvider>().sendMessage(
-        text,
-        type: fileIds.isEmpty ? 'text' : 'file',
-        fileIds: fileIds,
-        replyToMessageId: replyToMessageId,
-      );
+            text,
+            type: fileIds.isEmpty ? 'text' : 'file',
+            fileIds: fileIds,
+            replyToMessageId: replyToMessageId,
+          );
 
       if (!mounted || !sent) return;
 
@@ -219,6 +238,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     FocusScope.of(context).unfocus();
+    _hideComposerPanel();
     final l10n = AppLocalizations.of(context)!;
     try {
       final attachments = <_PickedChatAttachment>[];
@@ -301,6 +321,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     FocusScope.of(context).unfocus();
+    _hideComposerPanel();
     final l10n = AppLocalizations.of(context)!;
 
     try {
@@ -340,8 +361,7 @@ class _ChatScreenState extends State<ChatScreen> {
     int localId,
   ) async {
     final name = file.name.trim();
-    final bytes =
-        file.bytes ??
+    final bytes = file.bytes ??
         (file.path == null ? null : await File(file.path!).readAsBytes());
     if (name.isEmpty || bytes == null || bytes.isEmpty) {
       return null;
@@ -380,8 +400,7 @@ class _ChatScreenState extends State<ChatScreen> {
       name = 'media_${DateTime.now().millisecondsSinceEpoch}.$ext';
     }
 
-    final contentType =
-        _contentTypeForFileName(name) ??
+    final contentType = _contentTypeForFileName(name) ??
         file.mimeType ??
         'application/octet-stream';
 
@@ -435,6 +454,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     FocusScope.of(context).unfocus();
+    _hideComposerPanel();
     final l10n = AppLocalizations.of(context)!;
 
     try {
@@ -644,6 +664,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _selectReplyMessage(MessageVm message) {
     if (message.isSystem || message.isDeleted) return;
+    _hideComposerPanel();
     setState(() => _replyToMessage = message);
     _focusNode.requestFocus();
   }
@@ -651,6 +672,166 @@ class _ChatScreenState extends State<ChatScreen> {
   void _clearReplyMessage() {
     if (_replyToMessage == null) return;
     setState(() => _replyToMessage = null);
+  }
+
+  void _setComposerPanel(_ComposerPanel panel) {
+    if (_activeComposerPanel == panel) return;
+
+    if (panel != _ComposerPanel.none) {
+      FocusScope.of(context).unfocus();
+      if (panel == _ComposerPanel.stickers) {
+        unawaited(_loadStickerPacks());
+      }
+    }
+
+    setState(() => _activeComposerPanel = panel);
+  }
+
+  void _hideComposerPanel() {
+    if (_activeComposerPanel == _ComposerPanel.none) return;
+    setState(() => _activeComposerPanel = _ComposerPanel.none);
+  }
+
+  void _handleEmojiSelected(String emoji) {
+    _insertComposerToken(_messageController, emoji);
+    _handleTyping();
+  }
+
+  Future<void> _loadStickerPacks({bool force = false}) async {
+    if (_stickersLoading) return;
+    if (!force && _stickerPacks.isNotEmpty) return;
+
+    setState(() {
+      _stickersLoading = true;
+      _stickersLoadFailed = false;
+    });
+
+    try {
+      final packs = await _stickerApi.listMyPacks();
+
+      if (!mounted) return;
+      setState(() {
+        _stickerPacks = packs;
+        if (_activeStickerPackIndex >= _stickerPacks.length) {
+          _activeStickerPackIndex = 0;
+        }
+        _stickersLoadFailed = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _stickersLoadFailed = true);
+    } finally {
+      if (mounted) {
+        setState(() => _stickersLoading = false);
+      }
+    }
+  }
+
+  Future<void> _createStickerFromGallery() async {
+    if (_stickerCreating || _attachmentUploading) return;
+    if (!_canSendInActiveConversation()) {
+      _showChatClosedMessage();
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 92,
+      );
+      if (!mounted || picked == null) return;
+
+      final attachment = await _attachmentFromXFile(
+        picked,
+        ++_pendingAttachmentSeq,
+      );
+      if (!mounted) return;
+      if (attachment == null ||
+          !_isStickerContentType(attachment.contentType)) {
+        await _showAttachmentError(l10n.chatStickerUnsupported);
+        return;
+      }
+      if (attachment.bytes.lengthInBytes > _maxChatStickerBytes) {
+        await _showAttachmentError(l10n.chatStickerTooLarge);
+        return;
+      }
+
+      setState(() => _stickerCreating = true);
+
+      final customPack = await _stickerApi.ensureCustomPack();
+      final upload = await _stickerApi.createUploadRequest(
+        packId: customPack.id,
+        originalName: attachment.name,
+        contentType: attachment.contentType,
+        sizeBytes: attachment.bytes.lengthInBytes,
+      );
+      await _stickerApi.uploadBinary(
+        upload: upload,
+        bytes: attachment.bytes,
+        contentType: attachment.contentType,
+      );
+      await _stickerApi.completeFileUpload(upload.fileId);
+      await _stickerApi.finalizeUpload(
+        packId: customPack.id,
+        uploadSessionId: upload.uploadSessionId,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _activeComposerPanel = _ComposerPanel.stickers;
+      });
+      await _loadStickerPacks(force: true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.chatStickerCreated),
+          backgroundColor: const Color(0xFF3a2415),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.chatStickerCreateFailed;
+      await _showAttachmentError(message);
+    } finally {
+      if (mounted) {
+        setState(() => _stickerCreating = false);
+      }
+    }
+  }
+
+  Future<void> _sendSticker(StickerVm sticker) async {
+    final stickerId = sticker.id.trim();
+    if (stickerId.isEmpty || _attachmentUploading) return;
+    if (!_canSendInActiveConversation()) {
+      _showChatClosedMessage();
+      return;
+    }
+
+    final sent = await context.read<ChatProvider>().sendMessage(
+          '',
+          type: 'sticker',
+          stickerId: stickerId,
+        );
+    if (!mounted) return;
+    if (sent) {
+      context.read<ChatProvider>().markAsRead();
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    await showErrorDialog(
+      context,
+      title: l10n.error,
+      message: l10n.chatStickerSendFailed,
+    );
   }
 
   bool _canManagePins(ConversationDetail conversation, String currentUserId) {
@@ -807,8 +988,8 @@ class _ChatScreenState extends State<ChatScreen> {
         final messageText = e is DioException
             ? DioErrorMapper.toMessage(e)
             : action == 'pin'
-            ? l10n.chatPinFailed
-            : l10n.chatUnpinFailed;
+                ? l10n.chatPinFailed
+                : l10n.chatUnpinFailed;
         await showErrorDialog(context, title: l10n.error, message: messageText);
       }
       return;
@@ -818,8 +999,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       final result = await context.read<ChatProvider>().deleteMessage(
-        message.id,
-      );
+            message.id,
+          );
       if (!mounted) return;
       setState(() {
         if (_replyToMessage?.id == message.id) {
@@ -846,9 +1027,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       await context.read<ChatProvider>().toggleMessageReaction(
-        messageId,
-        emoji,
-      );
+            messageId,
+            emoji,
+          );
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -911,8 +1092,8 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
     }
 
-    final targetRenderObject = _messageItemKeys[messageId]?.currentContext
-        ?.findRenderObject();
+    final targetRenderObject =
+        _messageItemKeys[messageId]?.currentContext?.findRenderObject();
     if (targetRenderObject == null ||
         !mounted ||
         !_scrollController.hasClients) {
@@ -1054,6 +1235,21 @@ class _ChatScreenState extends State<ChatScreen> {
                   onVoiceLock: _lockVoiceRecording,
                   onVoiceCancel: _cancelVoiceRecording,
                   onVoiceStop: _stopVoiceRecordingForPreview,
+                  activePanel: _activeComposerPanel,
+                  stickerPacks: _stickerPacks,
+                  activeStickerPackIndex: _activeStickerPackIndex,
+                  stickersLoading: _stickersLoading,
+                  stickersLoadFailed: _stickersLoadFailed,
+                  stickerCreating: _stickerCreating,
+                  onPanelChanged: _setComposerPanel,
+                  onEmojiSelected: _handleEmojiSelected,
+                  onStickerPackSelected: (index) =>
+                      setState(() => _activeStickerPackIndex = index),
+                  onStickerSelected: (sticker) =>
+                      unawaited(_sendSticker(sticker)),
+                  onCreateSticker: () => unawaited(_createStickerFromGallery()),
+                  onRetryStickers: () =>
+                      unawaited(_loadStickerPacks(force: true)),
                   sending: chat.sendingMessage,
                   attachmentUploading: _attachmentUploading,
                   voiceRecording: _voiceRecording,
@@ -1076,6 +1272,8 @@ class _ChatScreenState extends State<ChatScreen> {
 //   - file: arbitrary file via FilePicker.
 //   - audio: audio file via FilePicker.
 enum _AttachmentPickType { gallery, file, audio }
+
+enum _ComposerPanel { none, emoji, stickers }
 
 class _PickedChatAttachment {
   const _PickedChatAttachment({
@@ -1170,6 +1368,13 @@ String? _contentTypeForFileName(String fileName) {
     'docx' =>
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     _ => null,
+  };
+}
+
+bool _isStickerContentType(String contentType) {
+  return switch (contentType.trim().toLowerCase()) {
+    'image/jpeg' || 'image/png' || 'image/webp' => true,
+    _ => false,
   };
 }
 
@@ -1881,6 +2086,9 @@ String _messagePreviewText(MessageVm message, AppLocalizations l10n) {
   if (message.isDeleted) {
     return l10n.chatMessageDeleted;
   }
+  if (message.isSticker) {
+    return l10n.chatStickerMessage;
+  }
 
   final content = _singleLinePreview(message.content);
   if (content.isNotEmpty) {
@@ -1899,6 +2107,8 @@ MessageVm _pinnedMessageAsMessageVm(PinnedMessageInfo pinned) {
     type: pinned.type,
     content: pinned.content,
     fileIds: pinned.fileIds,
+    stickerId: pinned.stickerId,
+    stickerFileId: pinned.stickerFileId,
     sentAt: pinned.sentAt,
   );
 }
@@ -2330,11 +2540,11 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final senderParticipant = participants
-        .where((p) => p.userId == message.senderUserId)
-        .firstOrNull;
+    final senderParticipant =
+        participants.where((p) => p.userId == message.senderUserId).firstOrNull;
     final senderName = _senderNameForMessage(message, participants, l10n);
     final isDeleted = message.isDeleted;
+    final isSticker = message.isSticker;
 
     if (message.isSystem) {
       return _SystemMessageDivider(text: _systemMessageText(senderName, l10n));
@@ -2415,28 +2625,37 @@ class _MessageBubble extends StatelessWidget {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 260),
                   curve: Curves.easeOutCubic,
-                  width: double.infinity,
-                  padding: EdgeInsets.all(_scale(context, 20)),
+                  width: isSticker
+                      ? _scale(context, 184).clamp(156.0, 216.0).toDouble()
+                      : double.infinity,
+                  padding: EdgeInsets.all(isSticker ? 0 : _scale(context, 20)),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(_scale(context, 22)),
-                    gradient: isDeleted
-                        ? LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              const Color(0xA334271D),
-                              const Color(0xD1261C15),
-                            ],
-                          )
-                        : const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0xA34D2D13), Color(0xD13C210D)],
-                          ),
+                    borderRadius: BorderRadius.circular(
+                      _scale(context, isSticker ? 24 : 22),
+                    ),
+                    color: isSticker ? Colors.transparent : null,
+                    gradient: isSticker
+                        ? null
+                        : isDeleted
+                            ? LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  const Color(0xA334271D),
+                                  const Color(0xD1261C15),
+                                ],
+                              )
+                            : const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Color(0xA34D2D13), Color(0xD13C210D)],
+                              ),
                     border: Border.all(
                       color: isHighlighted
                           ? AppColors.accent.withValues(alpha: 0.72)
-                          : Colors.white.withValues(alpha: 0.05),
+                          : isSticker
+                              ? Colors.transparent
+                              : Colors.white.withValues(alpha: 0.05),
                       width: isHighlighted ? 1.4 : 1,
                     ),
                     boxShadow: isHighlighted
@@ -2465,8 +2684,7 @@ class _MessageBubble extends StatelessWidget {
                                     l10n,
                                   ),
                             preview: _ReplyPreviewText(
-                              message:
-                                  repliedMessage ??
+                              message: repliedMessage ??
                                   MessageVm(
                                     id: message.replyToMessageId!,
                                     senderUserId: '',
@@ -2482,7 +2700,11 @@ class _MessageBubble extends StatelessWidget {
                             onTap: onReplyPreviewTap,
                           ),
                         ),
-                      if (!isDeleted && message.fileIds.isNotEmpty)
+                      if (!isDeleted && isSticker)
+                        _StickerMessageAttachment(
+                          fileId: message.stickerImageFileId!,
+                        )
+                      else if (!isDeleted && message.fileIds.isNotEmpty)
                         _MessageAttachments(fileIds: message.fileIds),
                       if (!isDeleted &&
                           message.fileIds.isNotEmpty &&
@@ -2659,6 +2881,105 @@ class _SystemMessageDivider extends StatelessWidget {
 
 // ── Attachments ─────────────────────────────────────────────────
 
+class _StickerMessageAttachment extends StatefulWidget {
+  const _StickerMessageAttachment({required this.fileId});
+
+  final String fileId;
+
+  @override
+  State<_StickerMessageAttachment> createState() =>
+      _StickerMessageAttachmentState();
+}
+
+class _StickerMessageAttachmentState extends State<_StickerMessageAttachment> {
+  Future<void> _openSticker() async {
+    final bytes = await _StickerImageCache.bytesFor(widget.fileId);
+    if (!mounted || bytes == null || bytes.isEmpty) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ChatImageViewerScreen(imageBytes: bytes),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => unawaited(_openSticker()),
+      behavior: HitTestBehavior.opaque,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: _StickerImage(fileId: widget.fileId, fit: BoxFit.contain),
+      ),
+    );
+  }
+}
+
+class _StickerImage extends StatelessWidget {
+  const _StickerImage({required this.fileId, required this.fit});
+
+  final String fileId;
+  final BoxFit fit;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Uint8List?>(
+      future: _StickerImageCache.bytesFor(fileId),
+      builder: (context, snapshot) {
+        final bytes = snapshot.data;
+        if (bytes == null || bytes.isEmpty) {
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(_scale(context, 18)),
+              color: Colors.white.withValues(alpha: 0.06),
+            ),
+            child: Center(
+              child: snapshot.connectionState == ConnectionState.waiting
+                  ? SizedBox(
+                      width: _scale(context, 22),
+                      height: _scale(context, 22),
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.accent,
+                      ),
+                    )
+                  : Icon(
+                      Icons.image_not_supported_outlined,
+                      size: _scale(context, 26),
+                      color: Colors.white.withValues(alpha: 0.42),
+                    ),
+            ),
+          );
+        }
+
+        return Image.memory(bytes, fit: fit, gaplessPlayback: true);
+      },
+    );
+  }
+}
+
+class _StickerImageCache {
+  static final FileApi _fileApi = FileApi();
+  static final Map<String, Future<Uint8List?>> _bytesFutures = {};
+
+  static Future<Uint8List?> bytesFor(String fileId) {
+    final normalizedFileId = fileId.trim();
+    if (normalizedFileId.isEmpty) {
+      return Future<Uint8List?>.value(null);
+    }
+
+    return _bytesFutures.putIfAbsent(normalizedFileId, () async {
+      try {
+        final content = await _fileApi.downloadContent(normalizedFileId);
+        return content.bytes.isEmpty ? null : content.bytes;
+      } catch (_) {
+        return null;
+      }
+    });
+  }
+}
+
 class _MessageAttachments extends StatefulWidget {
   const _MessageAttachments({required this.fileIds});
 
@@ -2822,8 +3143,7 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
     return FutureBuilder<List<_ChatAttachmentViewData>>(
       future: _future,
       builder: (context, snapshot) {
-        final items =
-            snapshot.data ??
+        final items = snapshot.data ??
             widget.fileIds
                 .map(
                   (fileId) => _ChatAttachmentViewData(
@@ -3016,8 +3336,8 @@ class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
   Future<void> _seekToFraction(double fraction, Duration duration) async {
     if (duration.inMilliseconds <= 0 || _preparing) return;
     final target = Duration(
-      milliseconds: (duration.inMilliseconds * fraction.clamp(0.0, 1.0))
-          .round(),
+      milliseconds:
+          (duration.inMilliseconds * fraction.clamp(0.0, 1.0)).round(),
     );
     await _player.seek(target);
   }
@@ -3039,12 +3359,10 @@ class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
             stream: _player.playerStateStream,
             builder: (context, snapshot) {
               final processing = snapshot.data?.processingState;
-              final busy =
-                  _preparing ||
+              final busy = _preparing ||
                   processing == ProcessingState.loading ||
                   processing == ProcessingState.buffering;
-              final playing =
-                  (snapshot.data?.playing ?? false) &&
+              final playing = (snapshot.data?.playing ?? false) &&
                   processing != ProcessingState.completed;
 
               return GestureDetector(
@@ -3103,7 +3421,7 @@ class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
                     final progress = duration.inMilliseconds <= 0
                         ? 0.0
                         : (position.inMilliseconds / duration.inMilliseconds)
-                              .clamp(0.0, 1.0);
+                            .clamp(0.0, 1.0);
 
                     return Row(
                       children: [
@@ -3169,15 +3487,12 @@ class _VoiceWaveform extends StatelessWidget {
 
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTapDown: enabled
-              ? (details) => seekAt(details.localPosition)
-              : null,
-          onHorizontalDragStart: enabled
-              ? (details) => seekAt(details.localPosition)
-              : null,
-          onHorizontalDragUpdate: enabled
-              ? (details) => seekAt(details.localPosition)
-              : null,
+          onTapDown:
+              enabled ? (details) => seekAt(details.localPosition) : null,
+          onHorizontalDragStart:
+              enabled ? (details) => seekAt(details.localPosition) : null,
+          onHorizontalDragUpdate:
+              enabled ? (details) => seekAt(details.localPosition) : null,
           child: SizedBox(
             height: _scale(context, 28),
             child: Row(
@@ -3801,8 +4116,8 @@ class _PendingVoiceAttachmentChipState
   Future<void> _seekToFraction(double fraction, Duration duration) async {
     if (duration.inMilliseconds <= 0 || _preparing) return;
     final target = Duration(
-      milliseconds: (duration.inMilliseconds * fraction.clamp(0.0, 1.0))
-          .round(),
+      milliseconds:
+          (duration.inMilliseconds * fraction.clamp(0.0, 1.0)).round(),
     );
     await _player.seek(target);
   }
@@ -3827,13 +4142,11 @@ class _PendingVoiceAttachmentChipState
             stream: _player.playerStateStream,
             builder: (context, snapshot) {
               final processing = snapshot.data?.processingState;
-              final busy =
-                  _preparing ||
+              final busy = _preparing ||
                   widget.uploading ||
                   processing == ProcessingState.loading ||
                   processing == ProcessingState.buffering;
-              final playing =
-                  (snapshot.data?.playing ?? false) &&
+              final playing = (snapshot.data?.playing ?? false) &&
                   processing != ProcessingState.completed;
 
               return GestureDetector(
@@ -3893,15 +4206,14 @@ class _PendingVoiceAttachmentChipState
                     final progress = duration.inMilliseconds <= 0
                         ? 0.0
                         : (position.inMilliseconds / duration.inMilliseconds)
-                              .clamp(0.0, 1.0);
+                            .clamp(0.0, 1.0);
 
                     return Row(
                       children: [
                         Expanded(
                           child: _VoiceWaveform(
                             progress: progress,
-                            enabled:
-                                duration.inMilliseconds > 0 &&
+                            enabled: duration.inMilliseconds > 0 &&
                                 !_preparing &&
                                 !widget.uploading,
                             onSeekFraction: (fraction) =>
@@ -4039,8 +4351,8 @@ class _VoiceRecordingBar extends StatelessWidget {
                     stopping
                         ? l10n.chatVoicePreparingPreview
                         : locked
-                        ? l10n.chatVoiceRecordingLocked
-                        : l10n.chatVoiceRecording,
+                            ? l10n.chatVoiceRecordingLocked
+                            : l10n.chatVoiceRecording,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -4405,6 +4717,18 @@ class _ChatComposer extends StatelessWidget {
     required this.onVoiceLock,
     required this.onVoiceCancel,
     required this.onVoiceStop,
+    required this.activePanel,
+    required this.stickerPacks,
+    required this.activeStickerPackIndex,
+    required this.stickersLoading,
+    required this.stickersLoadFailed,
+    required this.stickerCreating,
+    required this.onPanelChanged,
+    required this.onEmojiSelected,
+    required this.onStickerPackSelected,
+    required this.onStickerSelected,
+    required this.onCreateSticker,
+    required this.onRetryStickers,
     required this.sending,
     required this.attachmentUploading,
     required this.voiceRecording,
@@ -4433,6 +4757,18 @@ class _ChatComposer extends StatelessWidget {
   final VoidCallback onVoiceLock;
   final VoidCallback onVoiceCancel;
   final VoidCallback onVoiceStop;
+  final _ComposerPanel activePanel;
+  final List<StickerPackVm> stickerPacks;
+  final int activeStickerPackIndex;
+  final bool stickersLoading;
+  final bool stickersLoadFailed;
+  final bool stickerCreating;
+  final ValueChanged<_ComposerPanel> onPanelChanged;
+  final ValueChanged<String> onEmojiSelected;
+  final ValueChanged<int> onStickerPackSelected;
+  final ValueChanged<StickerVm> onStickerSelected;
+  final VoidCallback onCreateSticker;
+  final VoidCallback onRetryStickers;
   final bool sending;
   final bool attachmentUploading;
   final bool voiceRecording;
@@ -4511,7 +4847,10 @@ class _ChatComposer extends StatelessWidget {
                   semanticLabel: l10n.chatComposerAttachButtonLabel,
                   onTap: attachmentUploading || messagingClosed
                       ? null
-                      : () => _showAttachSheet(context, l10n),
+                      : () {
+                          onPanelChanged(_ComposerPanel.none);
+                          _showAttachSheet(context, l10n);
+                        },
                 ),
                 SizedBox(width: itemGap),
                 Expanded(
@@ -4533,6 +4872,7 @@ class _ChatComposer extends StatelessWidget {
                           child: TextField(
                             controller: controller,
                             focusNode: focusNode,
+                            onTap: () => onPanelChanged(_ComposerPanel.none),
                             onChanged: (_) => onTyping(),
                             onSubmitted: (_) => onSend(),
                             textInputAction: TextInputAction.send,
@@ -4551,8 +4891,8 @@ class _ChatComposer extends StatelessWidget {
                               hintText: messagingClosed
                                   ? l10n.chatComposerClosedHint
                                   : attachmentUploading
-                                  ? l10n.chatAttachmentUploading
-                                  : l10n.chatComposerHint,
+                                      ? l10n.chatAttachmentUploading
+                                      : l10n.chatComposerHint,
                               hintStyle: TextStyle(
                                 fontSize: 15,
                                 color: Colors.white.withValues(alpha: 0.48),
@@ -4568,12 +4908,13 @@ class _ChatComposer extends StatelessWidget {
                           child: GestureDetector(
                             onTap: messagingClosed || attachmentUploading
                                 ? null
-                                : () => _showEmojiStickerSheet(
-                                    context: context,
-                                    l10n: l10n,
-                                    controller: controller,
-                                    onTyping: onTyping,
-                                  ),
+                                : () {
+                                    final nextPanel =
+                                        activePanel == _ComposerPanel.none
+                                            ? _ComposerPanel.emoji
+                                            : _ComposerPanel.none;
+                                    onPanelChanged(nextPanel);
+                                  },
                             child: SizedBox(
                               width: 30,
                               height: 30,
@@ -4594,8 +4935,7 @@ class _ChatComposer extends StatelessWidget {
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
-                    final hasDraft =
-                        value.text.trim().isNotEmpty ||
+                    final hasDraft = value.text.trim().isNotEmpty ||
                         pendingAttachments.isNotEmpty;
                     if (hasDraft) return const SizedBox.shrink();
                     return Padding(
@@ -4615,8 +4955,7 @@ class _ChatComposer extends StatelessWidget {
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
-                    final hasDraft =
-                        value.text.trim().isNotEmpty ||
+                    final hasDraft = value.text.trim().isNotEmpty ||
                         pendingAttachments.isNotEmpty;
                     final disabled =
                         sending || attachmentUploading || messagingClosed;
@@ -4651,6 +4990,23 @@ class _ChatComposer extends StatelessWidget {
                 ),
               ],
             ),
+          if (activePanel != _ComposerPanel.none) ...[
+            SizedBox(height: _scale(context, 10)),
+            _InlineEmojiStickerPanel(
+              activePanel: activePanel,
+              stickerPacks: stickerPacks,
+              activeStickerPackIndex: activeStickerPackIndex,
+              stickersLoading: stickersLoading,
+              stickersLoadFailed: stickersLoadFailed,
+              stickerCreating: stickerCreating,
+              onPanelChanged: onPanelChanged,
+              onEmojiSelected: onEmojiSelected,
+              onStickerPackSelected: onStickerPackSelected,
+              onStickerSelected: onStickerSelected,
+              onCreateSticker: onCreateSticker,
+              onRetryStickers: onRetryStickers,
+            ),
+          ],
         ],
       ),
     );
@@ -4721,113 +5077,6 @@ const _chatEmojiChoices = <String>[
   '🧳',
 ];
 
-const _chatStickerChoices = <String>[
-  '✈️',
-  '🧳',
-  '🗺️',
-  '📍',
-  '🏔️',
-  '🏝️',
-  '🌅',
-  '🏕️',
-  '🚕',
-  '🚆',
-  '🛫',
-  '🎒',
-  '🔥',
-  '✨',
-  '🎉',
-  '❤️',
-];
-
-void _showEmojiStickerSheet({
-  required BuildContext context,
-  required AppLocalizations l10n,
-  required TextEditingController controller,
-  required VoidCallback onTyping,
-}) {
-  FocusScope.of(context).unfocus();
-  showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: const Color(0xFF1d120b),
-    barrierColor: Colors.black.withValues(alpha: 0.35),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (sheetContext) {
-      final panelHeight = _scale(
-        sheetContext,
-        308,
-      ).clamp(284.0, 336.0).toDouble();
-
-      return SafeArea(
-        top: false,
-        child: DefaultTabController(
-          length: 2,
-          child: SizedBox(
-            height: panelHeight,
-            child: Column(
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                TabBar(
-                  indicatorColor: const Color(0xFFff9800),
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white.withValues(alpha: 0.48),
-                  labelStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0,
-                  ),
-                  tabs: [
-                    Tab(text: l10n.chatComposerEmojiTab),
-                    Tab(text: l10n.chatComposerStickerTab),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _EmojiStickerGrid(
-                        values: _chatEmojiChoices,
-                        large: false,
-                        onSelected: (value) {
-                          _insertComposerToken(controller, value);
-                          onTyping();
-                        },
-                      ),
-                      _EmojiStickerGrid(
-                        values: _chatStickerChoices,
-                        large: true,
-                        onSelected: (value) {
-                          _insertComposerToken(controller, '$value ');
-                          onTyping();
-                          Navigator.pop(sheetContext);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  );
-}
-
 void _insertComposerToken(TextEditingController controller, String value) {
   final current = controller.value;
   final text = current.text;
@@ -4850,57 +5099,183 @@ void _insertComposerToken(TextEditingController controller, String value) {
   );
 }
 
-class _EmojiStickerGrid extends StatelessWidget {
-  const _EmojiStickerGrid({
-    required this.values,
-    required this.large,
-    required this.onSelected,
+class _InlineEmojiStickerPanel extends StatelessWidget {
+  const _InlineEmojiStickerPanel({
+    required this.activePanel,
+    required this.stickerPacks,
+    required this.activeStickerPackIndex,
+    required this.stickersLoading,
+    required this.stickersLoadFailed,
+    required this.stickerCreating,
+    required this.onPanelChanged,
+    required this.onEmojiSelected,
+    required this.onStickerPackSelected,
+    required this.onStickerSelected,
+    required this.onCreateSticker,
+    required this.onRetryStickers,
   });
 
-  final List<String> values;
-  final bool large;
+  final _ComposerPanel activePanel;
+  final List<StickerPackVm> stickerPacks;
+  final int activeStickerPackIndex;
+  final bool stickersLoading;
+  final bool stickersLoadFailed;
+  final bool stickerCreating;
+  final ValueChanged<_ComposerPanel> onPanelChanged;
+  final ValueChanged<String> onEmojiSelected;
+  final ValueChanged<int> onStickerPackSelected;
+  final ValueChanged<StickerVm> onStickerSelected;
+  final VoidCallback onCreateSticker;
+  final VoidCallback onRetryStickers;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final panelHeight = _scale(context, 286).clamp(250.0, 318.0).toDouble();
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      height: panelHeight,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(_scale(context, 18)),
+        color: const Color(0xFF1d120b),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              _scale(context, 12),
+              _scale(context, 10),
+              _scale(context, 12),
+              _scale(context, 8),
+            ),
+            child: Row(
+              children: [
+                _ComposerPanelTabButton(
+                  label: l10n.chatComposerEmojiTab,
+                  selected: activePanel == _ComposerPanel.emoji,
+                  onTap: () => onPanelChanged(_ComposerPanel.emoji),
+                ),
+                SizedBox(width: _scale(context, 8)),
+                _ComposerPanelTabButton(
+                  label: l10n.chatComposerStickerTab,
+                  selected: activePanel == _ComposerPanel.stickers,
+                  onTap: () => onPanelChanged(_ComposerPanel.stickers),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: activePanel == _ComposerPanel.emoji
+                ? _EmojiGrid(onSelected: onEmojiSelected)
+                : _StickerGrid(
+                    packs: stickerPacks,
+                    activePackIndex: activeStickerPackIndex,
+                    loading: stickersLoading,
+                    loadFailed: stickersLoadFailed,
+                    creating: stickerCreating,
+                    onCreateSticker: onCreateSticker,
+                    onRetry: onRetryStickers,
+                    onPackSelected: onStickerPackSelected,
+                    onStickerSelected: onStickerSelected,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ComposerPanelTabButton extends StatelessWidget {
+  const _ComposerPanelTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: _scale(context, 38),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.06),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent.withValues(alpha: 0.42)
+                  : Colors.white.withValues(alpha: 0.06),
+            ),
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: _scale(context, 13),
+              fontWeight: FontWeight.w800,
+              color: selected
+                  ? const Color(0xFFffd08a)
+                  : Colors.white.withValues(alpha: 0.64),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmojiGrid extends StatelessWidget {
+  const _EmojiGrid({required this.onSelected});
+
   final ValueChanged<String> onSelected;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final rawColumns = (constraints.maxWidth / (large ? 72 : 44)).floor();
-        final columns = rawColumns.clamp(large ? 4 : 6, large ? 6 : 9).toInt();
+        final rawColumns = (constraints.maxWidth / 44).floor();
+        final columns = rawColumns.clamp(6, 9).toInt();
 
         return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 14, 12, 18),
+          padding: EdgeInsets.fromLTRB(
+            _scale(context, 12),
+            _scale(context, 6),
+            _scale(context, 12),
+            _scale(context, 16),
+          ),
+          physics: const BouncingScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
-            mainAxisSpacing: large ? 10 : 6,
-            crossAxisSpacing: large ? 10 : 4,
+            mainAxisSpacing: _scale(context, 6),
+            crossAxisSpacing: _scale(context, 4),
           ),
-          itemCount: values.length,
+          itemCount: _chatEmojiChoices.length,
           itemBuilder: (context, index) {
-            final value = values[index];
+            final value = _chatEmojiChoices[index];
             return Semantics(
               button: true,
               label: value,
               child: InkWell(
-                borderRadius: BorderRadius.circular(large ? 14 : 999),
+                borderRadius: BorderRadius.circular(999),
                 onTap: () => onSelected(value),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: large
-                        ? Colors.white.withValues(alpha: 0.07)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(large ? 14 : 999),
-                    border: large
-                        ? Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
-                          )
-                        : null,
-                  ),
-                  child: Center(
-                    child: Text(
-                      value,
-                      style: TextStyle(fontSize: large ? 34 : 26, height: 1),
-                    ),
+                child: Center(
+                  child: Text(
+                    value,
+                    style: TextStyle(fontSize: _scale(context, 26), height: 1),
                   ),
                 ),
               ),
@@ -4908,6 +5283,314 @@ class _EmojiStickerGrid extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _StickerGrid extends StatelessWidget {
+  const _StickerGrid({
+    required this.packs,
+    required this.activePackIndex,
+    required this.loading,
+    required this.loadFailed,
+    required this.creating,
+    required this.onCreateSticker,
+    required this.onRetry,
+    required this.onPackSelected,
+    required this.onStickerSelected,
+  });
+
+  final List<StickerPackVm> packs;
+  final int activePackIndex;
+  final bool loading;
+  final bool loadFailed;
+  final bool creating;
+  final VoidCallback onCreateSticker;
+  final VoidCallback onRetry;
+  final ValueChanged<int> onPackSelected;
+  final ValueChanged<StickerVm> onStickerSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (loading && packs.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      );
+    }
+
+    if (loadFailed && packs.isEmpty) {
+      return _StickerPanelMessage(
+        icon: Icons.cloud_off_rounded,
+        title: l10n.chatStickerLoadFailed,
+        actionLabel: l10n.retryButton,
+        onAction: onRetry,
+      );
+    }
+
+    final safeIndex =
+        packs.isEmpty ? 0 : activePackIndex.clamp(0, packs.length - 1).toInt();
+    final activePack = packs.isEmpty ? null : packs[safeIndex];
+    final stickers = activePack?.stickers ?? const <StickerVm>[];
+
+    return Column(
+      children: [
+        if (packs.isNotEmpty)
+          SizedBox(
+            height: _scale(context, 42),
+            child: ListView.separated(
+              padding: EdgeInsets.symmetric(horizontal: _scale(context, 12)),
+              scrollDirection: Axis.horizontal,
+              itemCount: packs.length,
+              separatorBuilder: (_, _) => SizedBox(width: _scale(context, 8)),
+              itemBuilder: (context, index) {
+                final pack = packs[index];
+                final selected = index == safeIndex;
+                return _StickerPackChip(
+                  title: pack.titleFor(
+                    Localizations.localeOf(context).languageCode,
+                  ),
+                  selected: selected,
+                  onTap: () => onPackSelected(index),
+                );
+              },
+            ),
+          ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final rawColumns = (constraints.maxWidth / 82).floor();
+              final columns = rawColumns.clamp(4, 6).toInt();
+              final itemCount = stickers.length + 1;
+
+              return GridView.builder(
+                padding: EdgeInsets.fromLTRB(
+                  _scale(context, 12),
+                  _scale(context, 8),
+                  _scale(context, 12),
+                  _scale(context, 16),
+                ),
+                physics: const BouncingScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisSpacing: _scale(context, 10),
+                  crossAxisSpacing: _scale(context, 10),
+                ),
+                itemCount: itemCount,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _CreateStickerButton(
+                      loading: creating,
+                      onTap: creating ? null : onCreateSticker,
+                    );
+                  }
+
+                  final sticker = stickers[index - 1];
+                  return _StickerPickerButton(
+                    sticker: sticker,
+                    onTap: () => onStickerSelected(sticker),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StickerPackChip extends StatelessWidget {
+  const _StickerPackChip({
+    required this.title,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: title,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          alignment: Alignment.center,
+          padding: EdgeInsets.symmetric(horizontal: _scale(context, 12)),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.06),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent.withValues(alpha: 0.42)
+                  : Colors.white.withValues(alpha: 0.06),
+            ),
+          ),
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: _scale(context, 12),
+              fontWeight: FontWeight.w800,
+              color: selected
+                  ? const Color(0xFFffd08a)
+                  : Colors.white.withValues(alpha: 0.68),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreateStickerButton extends StatelessWidget {
+  const _CreateStickerButton({required this.loading, required this.onTap});
+
+  final bool loading;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Semantics(
+      button: true,
+      label: l10n.chatStickerCreateAction,
+      enabled: onTap != null,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_scale(context, 16)),
+            color: AppColors.accent.withValues(alpha: 0.13),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.32)),
+          ),
+          child: Center(
+            child: loading
+                ? SizedBox(
+                    width: _scale(context, 22),
+                    height: _scale(context, 22),
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.accent,
+                    ),
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.add_photo_alternate_rounded,
+                        size: _scale(context, 26),
+                        color: AppColors.accent,
+                      ),
+                      SizedBox(height: _scale(context, 4)),
+                      Text(
+                        l10n.chatStickerCreateAction,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: _scale(context, 10),
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFffd08a),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StickerPickerButton extends StatelessWidget {
+  const _StickerPickerButton({required this.sticker, required this.onTap});
+
+  final StickerVm sticker;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: AppLocalizations.of(context)!.chatStickerMessage,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_scale(context, 16)),
+            color: Colors.white.withValues(alpha: 0.07),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(_scale(context, 8)),
+            child: _StickerImage(fileId: sticker.fileId, fit: BoxFit.contain),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StickerPanelMessage extends StatelessWidget {
+  const _StickerPanelMessage({
+    required this.icon,
+    required this.title,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: _scale(context, 24)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: _scale(context, 30),
+              color: Colors.white.withValues(alpha: 0.42),
+            ),
+            SizedBox(height: _scale(context, 10)),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: _scale(context, 13),
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.68),
+              ),
+            ),
+            SizedBox(height: _scale(context, 12)),
+            TextButton(
+              onPressed: onAction,
+              child: Text(
+                actionLabel,
+                style: const TextStyle(color: AppColors.accent),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

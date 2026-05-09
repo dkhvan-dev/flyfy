@@ -4,6 +4,7 @@ type SendMessageRequest struct {
 	Content          string   `json:"content"`
 	Type             string   `json:"type"`
 	FileIDs          []string `json:"fileIds"`
+	StickerID        *string  `json:"stickerId,omitempty"`
 	ReplyToMessageID *string  `json:"replyToMessageId"`
 }
 
@@ -27,6 +28,8 @@ type MessageResponse struct {
 	Type               string                `json:"type"`
 	Content            string                `json:"content"`
 	FileIDs            []string              `json:"fileIds,omitempty"`
+	StickerID          *string               `json:"stickerId,omitempty"`
+	StickerFileID      *string               `json:"stickerFileId,omitempty"`
 	ReplyToMessageID   *string               `json:"replyToMessageId,omitempty"`
 	EditedAt           *string               `json:"editedAt,omitempty"`
 	DeletedAt          *string               `json:"deletedAt,omitempty"`

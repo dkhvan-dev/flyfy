@@ -45,8 +45,8 @@ func (r *PGChatRepository) WithTx(ctx context.Context, fn func(repo port.ChatTxR
 
 const conversationColumns = `id, type, title, avatar_file_id, activity_id, pinned_message_id, messaging_available_until, created_at, last_activity_at`
 const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
-const messageColumns = `id, conversation_id, sender_user_id, type, content, reply_to_message_id, edited_at, deleted_at, sent_at`
-const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.type, m.content, m.reply_to_message_id, m.edited_at, m.deleted_at, m.sent_at`
+const messageColumns = `id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, reply_to_message_id, edited_at, deleted_at, sent_at`
+const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.reply_to_message_id, m.edited_at, m.deleted_at, m.sent_at`
 
 func scanConversation(row pgx.Row) (*model.Conversation, error) {
 	var c model.Conversation
@@ -136,6 +136,7 @@ func scanMessage(row pgx.Row) (*model.Message, error) {
 	var m model.Message
 	err := row.Scan(
 		&m.ID, &m.ConversationID, &m.SenderUserID, &m.Type, &m.Content,
+		&m.StickerID, &m.StickerFileID,
 		&m.ReplyToMessageID, &m.EditedAt, &m.DeletedAt, &m.SentAt,
 	)
 	if err == pgx.ErrNoRows {
@@ -209,6 +210,7 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 		var m model.Message
 		if err := rows.Scan(
 			&m.ID, &m.ConversationID, &m.SenderUserID, &m.Type, &m.Content,
+			&m.StickerID, &m.StickerFileID,
 			&m.ReplyToMessageID, &m.EditedAt, &m.DeletedAt, &m.SentAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan message row: %w", err)
@@ -325,6 +327,8 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 			&pin.Message.SenderUserID,
 			&pin.Message.Type,
 			&pin.Message.Content,
+			&pin.Message.StickerID,
+			&pin.Message.StickerFileID,
 			&pin.Message.ReplyToMessageID,
 			&pin.Message.EditedAt,
 			&pin.Message.DeletedAt,
@@ -494,10 +498,10 @@ func (tx *pgChatTxRepository) UpdateParticipant(ctx context.Context, p *model.Pa
 
 func (tx *pgChatTxRepository) CreateMessage(ctx context.Context, msg *model.Message) error {
 	_, err := tx.tx.Exec(ctx, `
-		INSERT INTO messages (id, conversation_id, sender_user_id, type, content, reply_to_message_id, edited_at, deleted_at, sent_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO messages (id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, reply_to_message_id, edited_at, deleted_at, sent_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`, msg.ID, msg.ConversationID, msg.SenderUserID, msg.Type, msg.Content,
-		msg.ReplyToMessageID, msg.EditedAt, msg.DeletedAt, msg.SentAt)
+		msg.StickerID, msg.StickerFileID, msg.ReplyToMessageID, msg.EditedAt, msg.DeletedAt, msg.SentAt)
 	return err
 }
 

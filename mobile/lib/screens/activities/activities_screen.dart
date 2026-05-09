@@ -421,7 +421,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         languageLabel: resolveDrawerLanguageLabel(
           Localizations.localeOf(context).languageCode,
         ),
-        activeItem: AppDrawerActiveItem.activities,
+        activeItem: AppDrawerActiveItem.none,
         onProfileTap: () => _runDrawerAction(() async => _openProfile()),
         onLanguageTap: () => _runDrawerAction(_showLanguageSheet),
         onHomeTap: () => _runDrawerAction(() async => context.go('/')),
