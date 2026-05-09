@@ -1,8 +1,6 @@
 package dto
 
-type PublishActivityRequest struct {
-	ReviewRequired *bool `json:"reviewRequired,omitempty"`
-}
+type PublishActivityRequest struct{}
 
 type DuplicateActivityRequest struct {
 	StartAt              string `json:"startAt"`

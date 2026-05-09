@@ -336,7 +336,6 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		Description:                    req.Description,
 		Format:                         enum.ActivityFormat(strings.TrimSpace(req.Format)),
 		Visibility:                     enum.ActivityVisibility(strings.TrimSpace(req.Visibility)),
-		JoinMode:                       enum.ActivityJoinMode(strings.TrimSpace(req.JoinMode)),
 		CategorySlug:                   req.CategorySlug,
 		Tags:                           req.Tags,
 		LanguageCode:                   req.LanguageCode,
@@ -361,7 +360,6 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		MeetingURL:                     req.MeetingURL,
 		CoverFileID:                    coverFileID,
 		VisibilityPassword:             req.VisibilityPassword,
-		ReviewRequired:                 valueOrDefaultBool(req.ReviewRequired, false),
 	}
 
 	item, err := h.activityUC.CreateActivity(r.Context(), input)
@@ -544,12 +542,6 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		visibility = &v
 	}
 
-	var joinMode *enum.ActivityJoinMode
-	if req.JoinMode != nil {
-		v := enum.ActivityJoinMode(strings.TrimSpace(*req.JoinMode))
-		joinMode = &v
-	}
-
 	var capacityType *enum.ActivityCapacityType
 	if req.CapacityType != nil {
 		v := enum.ActivityCapacityType(strings.TrimSpace(*req.CapacityType))
@@ -568,7 +560,6 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		Title:                          req.Title,
 		Description:                    req.Description,
 		Visibility:                     visibility,
-		JoinMode:                       joinMode,
 		CategorySlug:                   req.CategorySlug,
 		Tags:                           req.Tags,
 		HasTags:                        req.HasTags,
@@ -630,14 +621,10 @@ func (h *Handler) PublishActivity(w http.ResponseWriter, r *http.Request, activi
 		return
 	}
 
-	var req dto.PublishActivityRequest
-	_ = json.NewDecoder(r.Body).Decode(&req)
-
 	item, err := h.activityUC.PublishActivity(
 		r.Context(),
 		activityID,
 		actorUserID,
-		valueOrDefaultBool(req.ReviewRequired, false),
 	)
 	if err != nil {
 		h.writeAppError(w, err, "failed to publish activity")
@@ -1237,7 +1224,6 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, model.ErrActivityCannotBePublished),
 		errors.Is(err, model.ErrCriticalFieldsLocked),
 		errors.Is(err, app.ErrBlockedURLDetected),
-		errors.Is(err, app.ErrSuspiciousURLRequiresReview),
 		errors.Is(err, app.ErrActivityCreationRateLimited):
 		writeError(w, http.StatusBadRequest, err.Error())
 

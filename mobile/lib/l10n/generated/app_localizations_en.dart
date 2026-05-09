@@ -1039,9 +1039,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityStatusDraft => 'Draft';
 
   @override
-  String get activityStatusReviewRequired => 'Under review';
-
-  @override
   String get activityStatusPublished => 'Published';
 
   @override
@@ -2280,30 +2277,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Leave blank to keep the current password';
 
   @override
-  String get createJoinModeSection => 'JOIN MODE';
-
-  @override
-  String get createJoinModeAuto => 'Auto approve';
-
-  @override
-  String get createJoinModeManual => 'Manual approve';
-
-  @override
-  String get createJoinApprovalTitle => 'Join Approval';
-
-  @override
-  String get createJoinModeAutomaticShort => 'Automatic';
-
-  @override
-  String get createJoinModeManualShort => 'Manual';
-
-  @override
-  String get createJoinModePickerTitle => 'Choose approval mode';
-
-  @override
-  String get createJoinModeApply => 'Apply';
-
-  @override
   String get createCapacitySection => 'CAPACITY';
 
   @override
@@ -2339,7 +2312,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createMinParticipantsValidation =>
-      'Please enter a minimum of at least 1 participant';
+      'Please enter a minimum of at least 2 participants';
 
   @override
   String get createMinExceedsMaxValidation => 'Minimum cannot exceed maximum';
@@ -2352,9 +2325,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createPricePaid => 'Paid';
-
-  @override
-  String get createPriceDeposit => 'Deposit';
 
   @override
   String get createPricingModelTitle => 'Pricing Model';
@@ -2562,9 +2532,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myActivitiesRecreateButton => 'Recreate';
 
   @override
-  String get myActivitiesRestrictedButton => 'Edit Restricted';
-
-  @override
   String get myActivitiesOpenButton => 'Open Activity';
 
   @override
@@ -2611,10 +2578,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activitiesSearchHint => 'Search activities, hosts, or cities';
 
   @override
+  String get activitiesFiltersTitle => 'Filters';
+
+  @override
+  String get activitiesSortDate => 'Date';
+
+  @override
+  String get activitiesSortPrice => 'Price';
+
+  @override
   String get activitiesFilterCategory => 'Category';
 
   @override
   String get activitiesFilterDate => 'Date';
+
+  @override
+  String get activitiesFilterStartDatePlaceholder => '15.05.2026';
+
+  @override
+  String get activitiesFilterEndDatePlaceholder => '22.05.2026';
 
   @override
   String get activitiesFilterPricing => 'Pricing';

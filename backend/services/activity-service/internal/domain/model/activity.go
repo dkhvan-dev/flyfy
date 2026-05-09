@@ -43,7 +43,10 @@ var (
 	ErrCriticalFieldsLocked              = errors.New("critical activity fields are locked after publication")
 )
 
-const maxLimitedActivityParticipants = 100
+const (
+	minActivityParticipants        = 2
+	maxLimitedActivityParticipants = 100
+)
 
 type Activity struct {
 	ID               uuid.UUID
@@ -112,7 +115,6 @@ type NewActivityParams struct {
 	Description  string
 	Format       enum.ActivityFormat
 	Visibility   enum.ActivityVisibility
-	JoinMode     enum.ActivityJoinMode
 	CategorySlug string
 	LanguageCode string
 	Timezone     string
@@ -146,6 +148,7 @@ type NewActivityParams struct {
 
 func NewActivity(params NewActivityParams) (*Activity, error) {
 	now := time.Now().UTC()
+	publishedAt := now
 
 	item := &Activity{
 		ID:               uuid.New(),
@@ -156,10 +159,10 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 		Description: strings.TrimSpace(params.Description),
 
 		Format:           params.Format,
-		Status:           enum.ActivityStatusDraft,
+		Status:           enum.ActivityStatusEnrollmentOpen,
 		Visibility:       params.Visibility,
-		JoinMode:         params.JoinMode,
-		ModerationStatus: enum.ActivityModerationStatusNotRequired,
+		JoinMode:         enum.ActivityJoinModeAutoApprove,
+		ModerationStatus: enum.ActivityModerationStatusApproved,
 
 		CategorySlug: strings.TrimSpace(params.CategorySlug),
 		LanguageCode: strings.TrimSpace(params.LanguageCode),
@@ -191,6 +194,7 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 		VisibilityPasswordHash: NormalizeOptionalString(
 			params.VisibilityPasswordHash,
 		),
+		PublishedAt: &publishedAt,
 
 		Revision:  1,
 		CreatedAt: now,
@@ -396,7 +400,7 @@ func (a *Activity) validateCapacity() error {
 		return ErrInvalidCapacityType
 	}
 
-	if a.MinParticipants != nil && *a.MinParticipants < 1 {
+	if a.MinParticipants != nil && *a.MinParticipants < minActivityParticipants {
 		return ErrInvalidCapacity
 	}
 	if a.MinParticipants != nil && a.MaxParticipants != nil && *a.MinParticipants > *a.MaxParticipants {
@@ -449,29 +453,22 @@ func (a *Activity) validateLocation() error {
 }
 
 func (a *Activity) CanBePublished(now time.Time) error {
-	if a.Status != enum.ActivityStatusDraft &&
-		a.Status != enum.ActivityStatusReviewRequired &&
-		a.Status != enum.ActivityStatusCancelled &&
+	if a.Status != enum.ActivityStatusCancelled &&
 		a.Status != enum.ActivityStatusArchived {
 		return ErrActivityCannotBePublished
 	}
 	return a.ValidateForCreate(now)
 }
 
-func (a *Activity) Publish(now time.Time, reviewRequired bool) error {
+func (a *Activity) Publish(now time.Time) error {
 	if err := a.CanBePublished(now); err != nil {
 		return err
 	}
 
-	if reviewRequired {
-		a.Status = enum.ActivityStatusReviewRequired
-		a.ModerationStatus = enum.ActivityModerationStatusPendingReview
-	} else {
-		a.Status = enum.ActivityStatusEnrollmentOpen
-		a.ModerationStatus = enum.ActivityModerationStatusApproved
-		ts := now.UTC()
-		a.PublishedAt = &ts
-	}
+	a.Status = enum.ActivityStatusEnrollmentOpen
+	a.ModerationStatus = enum.ActivityModerationStatusApproved
+	ts := now.UTC()
+	a.PublishedAt = &ts
 
 	a.CancellationReason = nil
 	a.CancellationSource = nil
@@ -486,27 +483,18 @@ func (a *Activity) Publish(now time.Time, reviewRequired bool) error {
 }
 
 func (a *Activity) ApproveModeration(now time.Time) error {
-	if a.ModerationStatus != enum.ActivityModerationStatusPendingReview {
-		return ErrActivityCannotBePublished
+	if a.ModerationStatus == enum.ActivityModerationStatusApproved {
+		return nil
 	}
-
-	ts := now.UTC()
-	a.ModerationStatus = enum.ActivityModerationStatusApproved
-	a.Status = enum.ActivityStatusEnrollmentOpen
-	a.PublishedAt = &ts
-	a.Revision++
-	a.UpdatedAt = ts
-
-	return nil
+	return ErrActivityCannotBePublished
 }
 
 func (a *Activity) RejectModeration(now time.Time) error {
-	if a.ModerationStatus != enum.ActivityModerationStatusPendingReview {
-		return ErrActivityCannotBePublished
+	if a.ModerationStatus == enum.ActivityModerationStatusRejected {
+		return nil
 	}
 
 	a.ModerationStatus = enum.ActivityModerationStatusRejected
-	a.Status = enum.ActivityStatusDraft
 	a.Revision++
 	a.UpdatedAt = now.UTC()
 

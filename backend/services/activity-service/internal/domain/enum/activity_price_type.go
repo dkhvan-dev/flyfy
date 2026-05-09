@@ -16,3 +16,12 @@ func (v ActivityPriceType) IsValid() bool {
 		return false
 	}
 }
+
+func (v ActivityPriceType) IsUserSelectable() bool {
+	switch v {
+	case ActivityPriceTypeFree, ActivityPriceTypePaid:
+		return true
+	default:
+		return false
+	}
+}

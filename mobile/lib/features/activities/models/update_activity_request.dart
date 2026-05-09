@@ -3,7 +3,6 @@ class UpdateActivityRequest {
     this.title,
     this.description,
     this.visibility,
-    this.joinMode,
     this.categorySlug,
     this.tags,
     this.languageCode,
@@ -43,7 +42,6 @@ class UpdateActivityRequest {
   final String? title;
   final String? description;
   final String? visibility;
-  final String? joinMode;
   final String? categorySlug;
   final List<String>? tags;
   final String? languageCode;
@@ -88,7 +86,6 @@ class UpdateActivityRequest {
       if (title != null) 'title': title,
       if (description != null) 'description': description,
       if (visibility != null) 'visibility': visibility,
-      if (joinMode != null) 'joinMode': joinMode,
       if (categorySlug != null) 'categorySlug': categorySlug,
       if (tags != null) ...{'tags': tags, 'hasTags': true},
       if (languageCode != null) 'languageCode': languageCode,

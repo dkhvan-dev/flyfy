@@ -1040,9 +1040,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityStatusDraft => 'Черновик';
 
   @override
-  String get activityStatusReviewRequired => 'На проверке';
-
-  @override
   String get activityStatusPublished => 'Опубликовано';
 
   @override
@@ -2282,30 +2279,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Оставьте поле пустым, чтобы сохранить текущий пароль';
 
   @override
-  String get createJoinModeSection => 'РЕЖИМ ЗАПИСИ';
-
-  @override
-  String get createJoinModeAuto => 'Автоматическое одобрение';
-
-  @override
-  String get createJoinModeManual => 'Ручное одобрение';
-
-  @override
-  String get createJoinApprovalTitle => 'Подтверждение участия';
-
-  @override
-  String get createJoinModeAutomaticShort => 'Автоматически';
-
-  @override
-  String get createJoinModeManualShort => 'Вручную';
-
-  @override
-  String get createJoinModePickerTitle => 'Выберите режим подтверждения';
-
-  @override
-  String get createJoinModeApply => 'Применить';
-
-  @override
   String get createCapacitySection => 'КОЛИЧЕСТВО МЕСТ';
 
   @override
@@ -2341,7 +2314,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createMinParticipantsValidation =>
-      'Укажите минимум не меньше 1 участника';
+      'Укажите минимум не меньше 2 участников';
 
   @override
   String get createMinExceedsMaxValidation =>
@@ -2355,9 +2328,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createPricePaid => 'Платно';
-
-  @override
-  String get createPriceDeposit => 'Депозит';
 
   @override
   String get createPricingModelTitle => 'Модель оплаты';
@@ -2565,9 +2535,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myActivitiesRecreateButton => 'Повторить';
 
   @override
-  String get myActivitiesRestrictedButton => 'Редактирование ограничено';
-
-  @override
   String get myActivitiesOpenButton => 'Открыть активность';
 
   @override
@@ -2615,10 +2582,25 @@ class AppLocalizationsRu extends AppLocalizations {
       'Поиск активностей, организаторов, городов';
 
   @override
+  String get activitiesFiltersTitle => 'Фильтры';
+
+  @override
+  String get activitiesSortDate => 'Дата';
+
+  @override
+  String get activitiesSortPrice => 'Цена';
+
+  @override
   String get activitiesFilterCategory => 'Категория';
 
   @override
   String get activitiesFilterDate => 'Дата';
+
+  @override
+  String get activitiesFilterStartDatePlaceholder => '15.05.2026';
+
+  @override
+  String get activitiesFilterEndDatePlaceholder => '22.05.2026';
 
   @override
   String get activitiesFilterPricing => 'Стоимость';

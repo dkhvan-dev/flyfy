@@ -319,6 +319,54 @@ func TestUpdateActivityRejectsUnsupportedCategory(t *testing.T) {
 	}
 }
 
+func TestCreateActivityRejectsDepositPriceType(t *testing.T) {
+	t.Parallel()
+
+	uc := NewActivityUseCase(&activityRepoStub{})
+	input := validCreateActivityInput()
+	input.PriceType = enum.ActivityPriceTypeDeposit
+
+	_, err := uc.CreateActivity(context.Background(), input)
+	if !errors.Is(err, model.ErrInvalidPriceType) {
+		t.Fatalf("CreateActivity() error = %v, want %v", err, model.ErrInvalidPriceType)
+	}
+}
+
+func TestUpdateActivityRejectsDepositPriceType(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	var updated bool
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			return validActivity(t, activityID, actorUserID), nil
+		},
+		updateActivity: func(ctx context.Context, item *model.Activity) error {
+			updated = true
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	priceType := enum.ActivityPriceTypeDeposit
+
+	_, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID: actorUserID,
+		ActivityID:  activityID,
+		PriceType:   &priceType,
+	})
+	if !errors.Is(err, model.ErrInvalidPriceType) {
+		t.Fatalf("UpdateActivity() error = %v, want %v", err, model.ErrInvalidPriceType)
+	}
+	if updated {
+		t.Fatal("UpdateActivity() persisted activity with deposit price type")
+	}
+}
+
 func TestCreateActivityDefaultsRegistrationDeadlineToOneHourBeforeStart(t *testing.T) {
 	t.Parallel()
 
@@ -348,6 +396,38 @@ func TestCreateActivityDefaultsRegistrationDeadlineToOneHourBeforeStart(t *testi
 			createdItem.RegistrationDeadline,
 			wantDeadline,
 		)
+	}
+}
+
+func TestCreateActivityPublishesByDefault(t *testing.T) {
+	t.Parallel()
+
+	var createdItem *model.Activity
+	repo := &activityRepoStub{
+		createActivity: func(ctx context.Context, item *model.Activity) error {
+			createdItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	input := validCreateActivityInput()
+
+	item, err := uc.CreateActivity(context.Background(), input)
+	if err != nil {
+		t.Fatalf("CreateActivity() error = %v", err)
+	}
+	if item == nil || createdItem == nil {
+		t.Fatal("CreateActivity() did not persist activity")
+	}
+	if createdItem.Status != enum.ActivityStatusEnrollmentOpen {
+		t.Fatalf("CreateActivity() status = %s, want %s", createdItem.Status, enum.ActivityStatusEnrollmentOpen)
+	}
+	if createdItem.ModerationStatus != enum.ActivityModerationStatusApproved {
+		t.Fatalf("CreateActivity() moderation status = %s, want %s", createdItem.ModerationStatus, enum.ActivityModerationStatusApproved)
+	}
+	if createdItem.PublishedAt == nil {
+		t.Fatal("CreateActivity() publishedAt is nil")
 	}
 }
 
@@ -1046,7 +1126,6 @@ func validCreateActivityInput() CreateActivityInput {
 		Description:  "Guided morning practice with breathing and stretching.",
 		Format:       enum.ActivityFormatOnline,
 		Visibility:   enum.ActivityVisibilityPublic,
-		JoinMode:     enum.ActivityJoinModeAutoApprove,
 		CategorySlug: "health-wellness",
 		LanguageCode: "en",
 		Timezone:     "Asia/Almaty",
@@ -1070,7 +1149,6 @@ func validActivity(t *testing.T, activityID uuid.UUID, actorUserID uuid.UUID) *m
 		Description:                    input.Description,
 		Format:                         input.Format,
 		Visibility:                     input.Visibility,
-		JoinMode:                       input.JoinMode,
 		CategorySlug:                   input.CategorySlug,
 		LanguageCode:                   input.LanguageCode,
 		Timezone:                       input.Timezone,

@@ -12,7 +12,7 @@ final class AppConfig {
       return _normalize(_baseUrlFromDefine);
     }
 
-    const String testUrl = "https://interested-character-frequencies-farmers.trycloudflare.com/api/v1";
+    const String testUrl = "https://automobile-parish-capital-into.trycloudflare.com/api/v1";
 
     if (kIsWeb) {
       return testUrl;

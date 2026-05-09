@@ -122,10 +122,7 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			return fmt.Errorf("count occupied slots for update: %w", err)
 		}
 
-		status := enum.ParticipantStatusRequested
-		if activity.JoinMode == enum.ActivityJoinModeAutoApprove {
-			status = enum.ParticipantStatusApproved
-		}
+		status := enum.ParticipantStatusApproved
 		if status == enum.ParticipantStatusApproved && isPaidActivity(activity) {
 			if err = ensurePaymentGateway(u.payment); err != nil {
 				return err

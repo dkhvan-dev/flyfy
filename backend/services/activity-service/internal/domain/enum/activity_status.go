@@ -3,8 +3,6 @@ package enum
 type ActivityStatus string
 
 const (
-	ActivityStatusDraft               ActivityStatus = "DRAFT"
-	ActivityStatusReviewRequired      ActivityStatus = "REVIEW_REQUIRED"
 	ActivityStatusPublished           ActivityStatus = "PUBLISHED"
 	ActivityStatusEnrollmentOpen      ActivityStatus = "ENROLLMENT_OPEN"
 	ActivityStatusFull                ActivityStatus = "FULL"
@@ -19,9 +17,7 @@ const (
 
 func (v ActivityStatus) IsValid() bool {
 	switch v {
-	case ActivityStatusDraft,
-		ActivityStatusReviewRequired,
-		ActivityStatusPublished,
+	case ActivityStatusPublished,
 		ActivityStatusEnrollmentOpen,
 		ActivityStatusFull,
 		ActivityStatusRegistrationClosed,

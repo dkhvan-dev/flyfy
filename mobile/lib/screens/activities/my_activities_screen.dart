@@ -10,11 +10,13 @@ import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
+import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
+import '../../providers/session_provider.dart';
 
 enum _MyActivitiesTab { hosted, attended }
 
@@ -26,12 +28,10 @@ class MyActivitiesScreen extends StatefulWidget {
 }
 
 class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
-  static const int _pageSize = 6;
+  static const int _pageSize = 8;
 
   static const List<String> _hostedFilterOrder = <String>[
-    'DRAFT',
     'PUBLISHED',
-    'REVIEW_REQUIRED',
     'COMPLETED',
     'CANCELLED',
   ];
@@ -62,6 +62,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<ActivityProvider>();
+      provider.loadActivityCategories();
       provider.loadMyActivities();
       provider.loadJoinedActivities();
     });
@@ -174,10 +175,31 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
         : provider.joinedErrorMessage;
   }
 
-  List<ActivityListItemVm> _activeItems(ActivityProvider provider) {
-    return _activeTab == _MyActivitiesTab.hosted
-        ? provider.myItems
-        : provider.joinedItems;
+  List<ActivityListItemVm> _activeItems(
+    ActivityProvider provider, {
+    required String currentUserId,
+  }) {
+    if (_activeTab == _MyActivitiesTab.hosted) {
+      return provider.myItems;
+    }
+
+    final normalizedCurrentUserId = currentUserId.trim();
+    final hostedActivityIds = provider.myItems
+        .map((item) => item.id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    return provider.joinedItems
+        .where((item) {
+          final itemId = item.id.trim();
+          if (itemId.isNotEmpty && hostedActivityIds.contains(itemId)) {
+            return false;
+          }
+
+          return normalizedCurrentUserId.isEmpty ||
+              item.hostUserId.trim() != normalizedCurrentUserId;
+        })
+        .toList(growable: false);
   }
 
   int get _activePage {
@@ -225,8 +247,12 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     return _filters.onlyAllowedStatuses(_statusOrderForTab(tab).toSet());
   }
 
-  List<ActivityListItemVm> _filterItems(List<ActivityListItemVm> items) {
-    final activeFilters = _filtersForTab(_activeTab);
+  List<ActivityListItemVm> _filterItems(
+    List<ActivityListItemVm> items, {
+    _MyActivitiesFilters? filters,
+  }) {
+    final activeFilters = (filters ?? _filtersForTab(_activeTab))
+        .onlyAllowedStatuses(_statusOrderForTab(_activeTab).toSet());
     final normalizedQuery = _searchQuery.trim().toLowerCase();
 
     return items.where((item) {
@@ -316,12 +342,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
   String _statusLabel(String key, AppLocalizations l10n) {
     switch (key) {
-      case 'DRAFT':
-        return l10n.activityStatusDraft;
       case 'PUBLISHED':
         return l10n.activityStatusPublished;
-      case 'REVIEW_REQUIRED':
-        return l10n.activityStatusReviewRequired;
       case 'COMPLETED':
         return l10n.activityStatusCompleted;
       case 'CANCELLED':
@@ -329,6 +351,23 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
       default:
         return key;
     }
+  }
+
+  String _activityCategoryLabel(
+    ActivityListItemVm item,
+    Map<String, String> categoryLabelsBySlug,
+  ) {
+    final slug = _normalizeCategorySlug(item.categorySlug);
+    if (slug.isEmpty) {
+      return '';
+    }
+
+    final localized = (categoryLabelsBySlug[slug] ?? '').trim();
+    if (localized.isNotEmpty) {
+      return localized;
+    }
+
+    return ActivityCategoryVm.humanizeSlug(slug);
   }
 
   Future<void> _openFilters(
@@ -346,6 +385,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
           l10n: l10n,
           initialFilters: _filters.onlyAllowedStatuses(availableStatuses),
           statusOptions: _buildStatusOptions(l10n, items),
+          previewCountBuilder: (filters) =>
+              _filterItems(items, filters: filters).length,
         );
       },
     );
@@ -371,6 +412,9 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     final l10n = AppLocalizations.of(context)!;
     final layout = _MyActivitiesAdaptiveLayout.of(context);
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
+    final currentUserId = context.select<SessionProvider, String>(
+      (session) => session.profile?.userId.trim() ?? '',
+    );
 
     return Scaffold(
       backgroundColor: _MyActivitiesPalette.background,
@@ -398,8 +442,19 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
           bottom: false,
           child: Consumer<ActivityProvider>(
             builder: (context, provider, _) {
-              final items = _activeItems(provider);
+              final items = _activeItems(
+                provider,
+                currentUserId: currentUserId,
+              );
               final state = _activeState(provider);
+              final locale = Localizations.localeOf(context);
+              final localeName = locale.toString();
+              final categoryLabelsBySlug = {
+                for (final category in provider.categoryItems)
+                  if (category.slug.trim().isNotEmpty)
+                    _normalizeCategorySlug(category.slug): category
+                        .localizedName(locale.languageCode),
+              };
               final filteredItems = _filterItems(items);
               final paginatedItems = paginateItems(
                 filteredItems,
@@ -440,6 +495,10 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                           controller: _searchController,
                           focusNode: _searchFocusNode,
                           hintText: l10n.activitiesSearchHint,
+                          filterActiveCount: _filtersForTab(
+                            _activeTab,
+                          ).activeCount,
+                          onFilterTap: () => _openFilters(l10n, items),
                         ),
                         SizedBox(height: layout.topSectionSpacing),
                         _MyActivitiesTabSwitcher(
@@ -447,12 +506,6 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                           hostedLabel: l10n.myActivitiesTitle,
                           attendedLabel: l10n.myActivitiesAttendedTab,
                           onChanged: (tab) => setState(() => _activeTab = tab),
-                        ),
-                        SizedBox(height: layout.sectionSpacing),
-                        _MyActivitiesFilterButton(
-                          label: l10n.myActivitiesFilterButton,
-                          activeCount: _filtersForTab(_activeTab).activeCount,
-                          onTap: () => _openFilters(l10n, items),
                         ),
                         SizedBox(height: layout.cardSpacing),
                         if (isInitialLoading) ...[
@@ -496,9 +549,11 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                             _MyActivitiesCard(
                               item: paginatedItems.items[i],
                               tab: _activeTab,
-                              localeName: Localizations.localeOf(
-                                context,
-                              ).toString(),
+                              localeName: localeName,
+                              categoryLabel: _activityCategoryLabel(
+                                paginatedItems.items[i],
+                                categoryLabelsBySlug,
+                              ),
                               onPrimaryTap: () {
                                 if (_activeTab == _MyActivitiesTab.attended) {
                                   _openDetails(paginatedItems.items[i]);
@@ -507,13 +562,6 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
                                 final status = paginatedItems.items[i].status
                                     .toUpperCase();
-                                if (status == 'DRAFT') {
-                                  _openEdit(paginatedItems.items[i]);
-                                  return;
-                                }
-                                if (status == 'REVIEW_REQUIRED') {
-                                  return;
-                                }
                                 if (status == 'COMPLETED' ||
                                     status == 'CANCELLED' ||
                                     status == 'ARCHIVED') {
@@ -534,23 +582,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                                       _showComingSoon();
                                     }
                                   : null,
-                              onTertiaryTap:
-                                  _activeTab == _MyActivitiesTab.hosted &&
-                                      paginatedItems.items[i].status
-                                              .toUpperCase() ==
-                                          'DRAFT'
-                                  ? _showComingSoon
-                                  : null,
-                              onCardTap: () {
-                                if (_activeTab == _MyActivitiesTab.hosted &&
-                                    paginatedItems.items[i].status
-                                            .toUpperCase() ==
-                                        'DRAFT') {
-                                  _openEdit(paginatedItems.items[i]);
-                                  return;
-                                }
-                                _openDetails(paginatedItems.items[i]);
-                              },
+                              onCardTap: () =>
+                                  _openDetails(paginatedItems.items[i]),
                             ),
                             if (i != paginatedItems.items.length - 1)
                               SizedBox(height: layout.cardSpacing),
@@ -612,6 +645,37 @@ class _FilterStatusOption {
   final int count;
 }
 
+class _MyActivityMetaData {
+  const _MyActivityMetaData({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+}
+
+String _normalizeCategorySlug(String raw) => raw.trim().toLowerCase();
+
+IconData _activityFormatIcon(String format) {
+  switch (format.toUpperCase()) {
+    case 'ONLINE':
+      return Icons.videocam_outlined;
+    case 'HYBRID':
+      return Icons.devices_outlined;
+    default:
+      return Icons.location_on_outlined;
+  }
+}
+
+IconData _activityCategoryIcon(ActivityListItemVm item) {
+  switch (item.format.toUpperCase()) {
+    case 'ONLINE':
+      return Icons.videocam_rounded;
+    case 'HYBRID':
+      return Icons.devices_rounded;
+    default:
+      return Icons.travel_explore_rounded;
+  }
+}
+
 abstract final class _MyActivitiesPalette {
   static const Color backgroundTop = Color(0xFF170D08);
   static const Color background = Color(0xFF120A05);
@@ -622,8 +686,6 @@ abstract final class _MyActivitiesPalette {
   static const Color accent = Color(0xFFFF9800);
   static const Color text = Color(0xFFFFF4E5);
   static const Color textMuted = Color(0xFFB9A88F);
-  static const Color badgeDraft = Color(0xFF3B4D67);
-  static const Color badgeReview = Color(0x33BCA35A);
   static const Color badgeCompleted = Color(0xFF245C3D);
   static const Color badgeCancelled = Color(0xFF5B2C26);
 }
@@ -647,8 +709,6 @@ class _MyActivitiesAdaptiveLayout {
   bool get isCompact => screenWidth < 360 || textScale > 1.1;
   bool get isLargePhone => screenWidth >= 430;
   bool get isWideMobile => screenWidth >= 600;
-  bool get stretchFilterButton => screenWidth < 380;
-  bool get stackSheetActions => screenWidth < 360 || textScale > 1.15;
 
   double get horizontalPadding => isCompact
       ? 16
@@ -656,13 +716,13 @@ class _MyActivitiesAdaptiveLayout {
       ? 24
       : 20;
   double get topPadding => isCompact ? 12 : 14;
-  double get topSectionSpacing => isCompact ? 14 : 16;
-  double get sectionSpacing => isCompact ? 16 : 18;
-  double get cardSpacing => isCompact ? 18 : 22;
-  double get listBottomPadding => isCompact ? 136 : 148;
-  double get maxContentWidth => isWideMobile ? 620 : double.infinity;
+  double get topSectionSpacing => isCompact ? 12 : 14;
+  double get sectionSpacing => isCompact ? 14 : 16;
+  double get cardSpacing => isCompact ? 14 : 16;
+  double get listBottomPadding => isCompact ? 118 : 130;
+  double get maxContentWidth => isWideMobile ? 460 : double.infinity;
   double get topBarTitleSize => isCompact ? 18 : 20;
-  double get segmentHeight => isCompact ? 44 : 46;
+  double get segmentHeight => isCompact ? 40 : 42;
   double get segmentFontSize => isCompact ? 13 : 15;
   double get navLabelSize => isCompact ? 10.5 : 12;
   double get navIconSize => isCompact ? 20 : 22;
@@ -709,14 +769,20 @@ class _MyActivitiesSearchField extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.hintText,
+    required this.filterActiveCount,
+    required this.onFilterTap,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final String hintText;
+  final int filterActiveCount;
+  final VoidCallback onFilterTap;
 
   @override
   Widget build(BuildContext context) {
+    final filterActive = filterActiveCount > 0;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
@@ -758,14 +824,16 @@ class _MyActivitiesSearchField extends StatelessWidget {
             padding: EdgeInsets.only(left: 12, right: 10),
             child: Icon(
               Icons.search_rounded,
-              color: Color(0x88FFF0E0),
+              color: AppColors.accent,
               size: 20,
             ),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 0),
-          suffixIcon: controller.text.isEmpty
-              ? null
-              : IconButton(
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (controller.text.isNotEmpty)
+                IconButton(
                   onPressed: controller.clear,
                   splashRadius: 20,
                   icon: const Icon(
@@ -773,6 +841,56 @@ class _MyActivitiesSearchField extends StatelessWidget {
                     color: Color(0x88FFF0E0),
                   ),
                 ),
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      tooltip: AppLocalizations.of(
+                        context,
+                      )!.myActivitiesFilterTitle,
+                      onPressed: onFilterTap,
+                      splashRadius: 20,
+                      icon: Icon(
+                        Icons.tune_rounded,
+                        color: AppColors.accent,
+                        size: 20,
+                      ),
+                    ),
+                    if (filterActive)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: _MyActivitiesPalette.accent,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(width: 1.4),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$filterActiveCount',
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 10,
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          suffixIconConstraints: const BoxConstraints(minWidth: 0),
         ),
       ),
     );
@@ -890,127 +1008,25 @@ class _SegmentButton extends StatelessWidget {
   }
 }
 
-class _MyActivitiesFilterButton extends StatelessWidget {
-  const _MyActivitiesFilterButton({
-    required this.label,
-    required this.activeCount,
-    required this.onTap,
-  });
-
-  final String label;
-  final int activeCount;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final layout = _MyActivitiesAdaptiveLayout.of(context);
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SizedBox(
-        width: layout.stretchFilterButton ? double.infinity : null,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: onTap,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: layout.isCompact ? 18 : 22,
-                vertical: layout.isCompact ? 14 : 15,
-              ),
-              decoration: BoxDecoration(
-                color: _MyActivitiesPalette.accent.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: _MyActivitiesPalette.accent.withValues(alpha: 0.22),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: layout.stretchFilterButton
-                    ? MainAxisSize.max
-                    : MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.tune_rounded,
-                    size: 18,
-                    color: _MyActivitiesPalette.accent,
-                  ),
-                  const SizedBox(width: 10),
-                  if (layout.stretchFilterButton)
-                    Expanded(
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          color: _MyActivitiesPalette.accent,
-                          fontSize: layout.isCompact ? 15 : 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    )
-                  else
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: _MyActivitiesPalette.accent,
-                        fontSize: layout.isCompact ? 15 : 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  if (activeCount > 0) ...[
-                    const SizedBox(width: 10),
-                    Container(
-                      constraints: const BoxConstraints(minWidth: 24),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _MyActivitiesPalette.accent,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '$activeCount',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF231100),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _MyActivitiesCard extends StatelessWidget {
   const _MyActivitiesCard({
     required this.item,
     required this.tab,
     required this.localeName,
+    required this.categoryLabel,
     required this.onPrimaryTap,
     required this.onCardTap,
     this.onSecondaryTap,
-    this.onTertiaryTap,
   });
 
   final ActivityListItemVm item;
   final _MyActivitiesTab tab;
   final String localeName;
+  final String categoryLabel;
   final VoidCallback onPrimaryTap;
   final VoidCallback onCardTap;
   final VoidCallback? onSecondaryTap;
-  final VoidCallback? onTertiaryTap;
 
-  bool get _isDraft => item.status.toUpperCase() == 'DRAFT';
-  bool get _isReviewRequired => item.status.toUpperCase() == 'REVIEW_REQUIRED';
   bool get _isHostedReadOnly =>
       tab == _MyActivitiesTab.hosted &&
       const {
@@ -1022,17 +1038,36 @@ class _MyActivitiesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final subtitle = l10n.myActivitiesLastUpdated(
-      DateFormat('dd MMM yyyy', localeName).format(item.startAt),
-    );
-    final formattedDate = DateFormat('dd MMM', localeName).format(item.startAt);
+    final dateText = DateFormat.MMMd(
+      localeName,
+    ).add_Hm().format(item.startAt.toLocal());
+    final locationText = item.shortLocation.isNotEmpty
+        ? item.shortLocation
+        : formatActivityDisplayStatus(item, l10n);
+    final normalizedCategoryLabel = categoryLabel.trim();
+    final metaItems = <_MyActivityMetaData>[
+      _MyActivityMetaData(icon: Icons.place_outlined, label: locationText),
+      _MyActivityMetaData(
+        icon: _activityFormatIcon(item.format),
+        label: formatActivityFormat(item.format, l10n),
+      ),
+      _MyActivityMetaData(icon: Icons.schedule_outlined, label: dateText),
+      _MyActivityMetaData(
+        icon: Icons.groups_2_outlined,
+        label: item.maxParticipants == null
+            ? l10n.activityUnlimitedSpots
+            : l10n.activityPeopleMax(item.maxParticipants!),
+      ),
+    ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compactCard = constraints.maxWidth < 380;
-        final stackPrimaryActions = constraints.maxWidth < 430;
-        final radius = compactCard ? 28.0 : 34.0;
-        final contentPadding = compactCard ? 16.0 : 20.0;
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final compactCard = constraints.maxWidth < 340 || textScale > 1.1;
+        final stackPrimaryActions =
+            constraints.maxWidth < 330 || textScale > 1.18;
+        final radius = compactCard ? 22.0 : 26.0;
+        final contentPadding = compactCard ? 12.0 : 14.0;
 
         return Material(
           color: Colors.transparent,
@@ -1069,91 +1104,123 @@ class _MyActivitiesCard extends StatelessWidget {
                   Padding(
                     padding: EdgeInsets.fromLTRB(
                       contentPadding,
-                      compactCard ? 16 : 18,
+                      compactCard ? 12 : 14,
                       contentPadding,
-                      compactCard ? 16 : 18,
+                      compactCard ? 12 : 14,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (normalizedCategoryLabel.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              Container(
+                                width: compactCard ? 32 : 34,
+                                height: compactCard ? 32 : 34,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _MyActivitiesPalette.accent.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                  ),
+                                ),
+                                child: Icon(
+                                  _activityCategoryIcon(item),
+                                  color: _MyActivitiesPalette.accent,
+                                  size: compactCard ? 16 : 18,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      normalizedCategoryLabel.toUpperCase(),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: const Color(0xFFFFB64D),
+                                        fontSize: compactCard ? 10 : 11,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      locationText,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: const Color(0xFFEEDFD2),
+                                        fontSize: compactCard ? 12 : 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: compactCard ? 10 : 12),
+                        ],
                         if (compactCard) ...[
                           Text(
                             item.title,
-                            maxLines: 3,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: _MyActivitiesPalette.text,
-                              fontSize: 20,
+                              fontSize: 17,
                               height: 1.1,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.5,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          _PriceBlock(
-                            value: item.isFree
-                                ? l10n.freeLabel
-                                : item.priceLabel,
-                            note: item.isFree
-                                ? l10n.myActivitiesPriceNoteFree
-                                : l10n.createPricePerPersonHint,
-                            alignStart: true,
-                          ),
                         ] else
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  item.title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: _MyActivitiesPalette.text,
-                                    fontSize: 22,
-                                    height: 1.08,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.6,
+                          Text(
+                            item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: _MyActivitiesPalette.text,
+                              fontSize: 19,
+                              height: 1.08,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.6,
+                            ),
+                          ),
+                        SizedBox(height: compactCard ? 6 : 7),
+                        LayoutBuilder(
+                          builder: (context, metaConstraints) {
+                            final gap = compactCard ? 8.0 : 10.0;
+                            final columns = metaConstraints.maxWidth < 320
+                                ? 1
+                                : 2;
+                            final itemWidth =
+                                (metaConstraints.maxWidth -
+                                    gap * (columns - 1)) /
+                                columns;
+
+                            return Wrap(
+                              spacing: gap,
+                              runSpacing: compactCard ? 8 : 10,
+                              children: [
+                                for (final meta in metaItems)
+                                  SizedBox(
+                                    width: itemWidth,
+                                    child: _MetaItem(
+                                      icon: meta.icon,
+                                      label: meta.label,
+                                    ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              _PriceBlock(
-                                value: item.isFree
-                                    ? l10n.freeLabel
-                                    : item.priceLabel,
-                                note: item.isFree
-                                    ? l10n.myActivitiesPriceNoteFree
-                                    : l10n.createPricePerPersonHint,
-                              ),
-                            ],
-                          ),
-                        SizedBox(height: compactCard ? 8 : 10),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            color: _MyActivitiesPalette.textMuted,
-                            fontSize: compactCard ? 14 : 15,
-                          ),
+                              ],
+                            );
+                          },
                         ),
-                        SizedBox(height: compactCard ? 14 : 16),
-                        Wrap(
-                          spacing: compactCard ? 16 : 20,
-                          runSpacing: 10,
-                          children: [
-                            _MetaItem(
-                              icon: Icons.calendar_today_rounded,
-                              label: formattedDate,
-                            ),
-                            _MetaItem(
-                              icon: Icons.place_rounded,
-                              label: item.shortLocation.isNotEmpty
-                                  ? item.shortLocation
-                                  : formatActivityFormat(item.format, l10n),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: compactCard ? 16 : 18),
+                        SizedBox(height: compactCard ? 10 : 12),
                         _buildActions(
                           context,
                           l10n,
@@ -1188,38 +1255,6 @@ class _MyActivitiesCard extends StatelessWidget {
       );
     }
 
-    if (_isReviewRequired) {
-      return SizedBox(
-        width: double.infinity,
-        child: _CardActionButton(
-          label: l10n.myActivitiesRestrictedButton,
-          icon: Icons.lock_outline_rounded,
-          onTap: null,
-          variant: _CardActionVariant.disabled,
-        ),
-      );
-    }
-
-    if (_isDraft) {
-      return Row(
-        children: [
-          Expanded(
-            child: _CardActionButton(
-              label: l10n.myActivitiesContinueButton,
-              icon: Icons.edit_outlined,
-              onTap: onPrimaryTap,
-              variant: _CardActionVariant.primary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          _IconOnlyActionButton(
-            icon: Icons.delete_outline_rounded,
-            onTap: onTertiaryTap,
-          ),
-        ],
-      );
-    }
-
     if (_isHostedReadOnly) {
       if (stackPrimaryActions) {
         return Column(
@@ -1233,7 +1268,7 @@ class _MyActivitiesCard extends StatelessWidget {
                 variant: _CardActionVariant.primary,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               child: _CardActionButton(
@@ -1257,7 +1292,7 @@ class _MyActivitiesCard extends StatelessWidget {
               variant: _CardActionVariant.primary,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: _CardActionButton(
               label: l10n.myActivitiesRecreateButton,
@@ -1282,7 +1317,7 @@ class _MyActivitiesCard extends StatelessWidget {
               variant: _CardActionVariant.primary,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: _CardActionButton(
@@ -1306,7 +1341,7 @@ class _MyActivitiesCard extends StatelessWidget {
             variant: _CardActionVariant.primary,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: _CardActionButton(
             label: l10n.myActivitiesRecreateButton,
@@ -1327,12 +1362,16 @@ class _ActivityCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final status = item.status.toUpperCase();
     final badge = _statusBadgeStyle(status);
+    final statusText = formatActivityDisplayStatus(item, l10n);
+    final priceText = item.isFree ? l10n.createPriceFree : item.priceLabel;
     final imageUrl = resolveActivityCoverUrl(item)?.trim() ?? '';
+    final badgeMaxWidth = MediaQuery.sizeOf(context).width * 0.42;
 
     return AspectRatio(
-      aspectRatio: 1.38,
+      aspectRatio: 1.55,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -1357,24 +1396,49 @@ class _ActivityCover extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 14,
-            left: 14,
+            top: 12,
+            left: 12,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              constraints: BoxConstraints(maxWidth: badgeMaxWidth),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 color: badge.background,
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
-                formatActivityDisplayStatus(
-                  item,
-                  AppLocalizations.of(context)!,
-                ),
+                statusText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: badge.foreground,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.4,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Container(
+              constraints: BoxConstraints(maxWidth: badgeMaxWidth),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xCC46362A),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                priceText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: item.isFree
+                      ? AppColors.success
+                      : _MyActivitiesPalette.accent,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.1,
                 ),
               ),
             ),
@@ -1386,16 +1450,6 @@ class _ActivityCover extends StatelessWidget {
 
   _StatusBadgeStyle _statusBadgeStyle(String status) {
     switch (status) {
-      case 'DRAFT':
-        return const _StatusBadgeStyle(
-          background: _MyActivitiesPalette.badgeDraft,
-          foreground: AppColors.textPrimary,
-        );
-      case 'REVIEW_REQUIRED':
-        return const _StatusBadgeStyle(
-          background: _MyActivitiesPalette.badgeReview,
-          foreground: AppColors.textPrimary,
-        );
       case 'COMPLETED':
         return const _StatusBadgeStyle(
           background: _MyActivitiesPalette.badgeCompleted,
@@ -1444,7 +1498,7 @@ class _ActivityCoverFallback extends StatelessWidget {
         Center(
           child: Icon(
             _coverIcon(item),
-            size: 62,
+            size: 54,
             color: Colors.white.withValues(alpha: 0.22),
           ),
         ),
@@ -1481,58 +1535,6 @@ class _ActivityCoverFallback extends StatelessWidget {
   }
 }
 
-class _PriceBlock extends StatelessWidget {
-  const _PriceBlock({
-    required this.value,
-    required this.note,
-    this.alignStart = false,
-  });
-
-  final String value;
-  final String note;
-  final bool alignStart;
-
-  @override
-  Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 360;
-
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: alignStart ? 220 : 112),
-      child: Column(
-        crossAxisAlignment: alignStart
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.end,
-        children: [
-          Text(
-            value,
-            textAlign: alignStart ? TextAlign.left : TextAlign.right,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: _MyActivitiesPalette.accent,
-              fontSize: compact ? 17 : 18,
-              height: 1,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            note,
-            textAlign: alignStart ? TextAlign.left : TextAlign.right,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: _MyActivitiesPalette.textMuted,
-              fontSize: compact ? 11 : 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _MetaItem extends StatelessWidget {
   const _MetaItem({required this.icon, required this.label});
 
@@ -1544,19 +1546,18 @@ class _MetaItem extends StatelessWidget {
     final compact = MediaQuery.sizeOf(context).width < 360;
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: _MyActivitiesPalette.textMuted),
-        const SizedBox(width: 8),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: compact ? 170 : 210),
+        Icon(icon, size: 16, color: _MyActivitiesPalette.textMuted),
+        const SizedBox(width: 6),
+        Expanded(
           child: Text(
             label,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: _MyActivitiesPalette.textMuted,
-              fontSize: compact ? 14 : 15,
+              fontSize: compact ? 12 : 13,
+              height: 1.25,
             ),
           ),
         ),
@@ -1599,12 +1600,12 @@ class _CardActionButton extends StatelessWidget {
       _CardActionVariant.disabled => const Color(0xFF9A856F),
     };
 
+    final buttonHeight = compact ? 42.0 : 46.0;
+
     return SizedBox(
-      height: compact ? 54 : 58,
-      child: FilledButton.icon(
+      height: buttonHeight,
+      child: FilledButton(
         onPressed: onTap,
-        icon: Icon(icon, size: compact ? 17 : 18),
-        label: Text(label),
         style: FilledButton.styleFrom(
           backgroundColor: backgroundColor,
           foregroundColor: foregroundColor,
@@ -1614,43 +1615,24 @@ class _CardActionButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
           ),
           elevation: 0,
-          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10),
           textStyle: TextStyle(
-            fontSize: compact ? 15 : 17,
+            fontSize: compact ? 12 : 13,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.2,
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _IconOnlyActionButton extends StatelessWidget {
-  const _IconOnlyActionButton({required this.icon, this.onTap});
-
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 360;
-
-    return SizedBox(
-      width: compact ? 52 : 56,
-      height: compact ? 54 : 58,
-      child: FilledButton(
-        onPressed: onTap,
-        style: FilledButton.styleFrom(
-          backgroundColor: _MyActivitiesPalette.accent.withValues(alpha: 0.08),
-          foregroundColor: const Color(0xFFF0DFC8),
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Icon(icon, size: compact ? 14 : 15),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ],
         ),
-        child: Icon(icon, size: compact ? 20 : 22),
       ),
     );
   }
@@ -1852,11 +1834,13 @@ class _MyActivitiesFilterSheet extends StatefulWidget {
     required this.l10n,
     required this.initialFilters,
     required this.statusOptions,
+    required this.previewCountBuilder,
   });
 
   final AppLocalizations l10n;
   final _MyActivitiesFilters initialFilters;
   final List<_FilterStatusOption> statusOptions;
+  final int Function(_MyActivitiesFilters filters) previewCountBuilder;
 
   @override
   State<_MyActivitiesFilterSheet> createState() =>
@@ -2022,244 +2006,383 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
     );
   }
 
+  void _clearDraftFilters() {
+    setState(() {
+      _selectedStatuses.clear();
+      _startDateController.clear();
+      _endDateController.clear();
+      _startDate = null;
+      _endDate = null;
+      _startDateError = null;
+      _endDateError = null;
+    });
+  }
+
+  _MyActivitiesFilters _draftFilters() {
+    return _MyActivitiesFilters(
+      statuses: Set<String>.from(_selectedStatuses),
+      startDate: _startDate,
+      endDate: _endDate,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final layout = _MyActivitiesAdaptiveLayout.of(context);
     final maxHeight = MediaQuery.sizeOf(context).height * 0.82;
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final horizontalPadding = layout.isCompact ? 16.0 : 20.0;
+    final previewCount = widget.previewCountBuilder(_draftFilters());
 
-    return Container(
-      decoration: const BoxDecoration(color: Colors.transparent),
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.only(bottom: keyboardInset),
-        child: Container(
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(color: Colors.transparent),
+        child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
-          padding: EdgeInsets.only(
-            left: layout.isCompact ? 18 : 22,
-            right: layout.isCompact ? 18 : 22,
-            top: layout.isCompact ? 14 : 16,
-            bottom: 18 + safeBottomInset,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                _MyActivitiesPalette.surfaceSoft,
-                _MyActivitiesPalette.surface,
-              ],
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF2B1808).withValues(alpha: 0.99),
+                  const Color(0xFF201208),
+                ],
+              ),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(layout.isCompact ? 24 : 28),
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
             ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(34)),
-            border: Border.all(
-              color: _MyActivitiesPalette.accent.withValues(alpha: 0.22),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 56,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _MyActivitiesPalette.accent.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(999),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _MyActivitiesFilterSheetHeader(
+                    title: widget.l10n.myActivitiesFilterTitle,
+                    clearLabel: widget.l10n.myActivitiesFilterClear,
+                    onClear: _clearDraftFilters,
                   ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                widget.l10n.myActivitiesFilterTitle,
-                style: TextStyle(
-                  color: _MyActivitiesPalette.text,
-                  fontSize: layout.isCompact ? 24 : 28,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.6,
-                ),
-              ),
-              SizedBox(height: layout.isCompact ? 16 : 20),
-              Expanded(
-                child: Scrollbar(
-                  controller: _sheetScrollController,
-                  child: SingleChildScrollView(
-                    controller: _sheetScrollController,
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.l10n.myActivitiesFilterDateRange,
-                          style: const TextStyle(
-                            color: _MyActivitiesPalette.accent,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
-                          ),
+                  Expanded(
+                    child: Scrollbar(
+                      controller: _sheetScrollController,
+                      child: SingleChildScrollView(
+                        controller: _sheetScrollController,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
                         ),
-                        const SizedBox(height: 16),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final useColumn = constraints.maxWidth < 520;
-                            final children = [
-                              _FilterDateField(
-                                label: widget.l10n.myActivitiesFilterStartDate,
-                                controller: _startDateController,
-                                focusNode: _startDateFocusNode,
-                                hintText: widget
-                                    .l10n
-                                    .myActivitiesFilterDatePlaceholder,
-                                errorText: _startDateError,
-                                onChanged: (_) => _handleDateChanged(),
-                                onSubmitted: (_) =>
-                                    _endDateFocusNode.requestFocus(),
-                                onClear: _startDateController.text.isEmpty
-                                    ? null
-                                    : () => _clearDate(isStart: true),
-                                textInputAction: TextInputAction.next,
-                              ),
-                              _FilterDateField(
-                                label: widget.l10n.myActivitiesFilterEndDate,
-                                controller: _endDateController,
-                                focusNode: _endDateFocusNode,
-                                hintText: widget
-                                    .l10n
-                                    .myActivitiesFilterDatePlaceholder,
-                                errorText: _endDateError,
-                                onChanged: (_) => _handleDateChanged(),
-                                onSubmitted: (_) => _applyFilters(),
-                                onClear: _endDateController.text.isEmpty
-                                    ? null
-                                    : () => _clearDate(isStart: false),
-                                textInputAction: TextInputAction.done,
-                              ),
-                            ];
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          layout.isCompact ? 14 : 18,
+                          horizontalPadding,
+                          0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _FilterSheetSectionTitle(
+                              icon: Icons.calendar_month_outlined,
+                              label: widget.l10n.myActivitiesFilterDateRange,
+                            ),
+                            const SizedBox(height: 10),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final useColumn = constraints.maxWidth < 390;
+                                final children = [
+                                  _FilterDateField(
+                                    label:
+                                        widget.l10n.myActivitiesFilterStartDate,
+                                    controller: _startDateController,
+                                    focusNode: _startDateFocusNode,
+                                    hintText: widget
+                                        .l10n
+                                        .activitiesFilterStartDatePlaceholder,
+                                    errorText: _startDateError,
+                                    onChanged: (_) => _handleDateChanged(),
+                                    onSubmitted: (_) =>
+                                        _endDateFocusNode.requestFocus(),
+                                    onClear: _startDateController.text.isEmpty
+                                        ? null
+                                        : () => _clearDate(isStart: true),
+                                    textInputAction: TextInputAction.next,
+                                  ),
+                                  _FilterDateField(
+                                    label:
+                                        widget.l10n.myActivitiesFilterEndDate,
+                                    controller: _endDateController,
+                                    focusNode: _endDateFocusNode,
+                                    hintText: widget
+                                        .l10n
+                                        .activitiesFilterEndDatePlaceholder,
+                                    errorText: _endDateError,
+                                    onChanged: (_) => _handleDateChanged(),
+                                    onSubmitted: (_) => _applyFilters(),
+                                    onClear: _endDateController.text.isEmpty
+                                        ? null
+                                        : () => _clearDate(isStart: false),
+                                    textInputAction: TextInputAction.done,
+                                  ),
+                                ];
 
-                            if (useColumn) {
-                              return Column(
-                                children: [
-                                  children[0],
-                                  const SizedBox(height: 16),
-                                  children[1],
-                                ],
-                              );
-                            }
-
-                            return Row(
-                              children: [
-                                Expanded(child: children[0]),
-                                const SizedBox(width: 16),
-                                Expanded(child: children[1]),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          widget.l10n.myActivitiesFilterDateHint,
-                          style: const TextStyle(
-                            color: _MyActivitiesPalette.textMuted,
-                            fontSize: 13,
-                            height: 1.35,
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        Text(
-                          widget.l10n.myActivitiesFilterStatus,
-                          style: const TextStyle(
-                            color: _MyActivitiesPalette.accent,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        for (final option in widget.statusOptions) ...[
-                          _FilterStatusRow(
-                            label: option.label,
-                            count: option.count,
-                            selected: _selectedStatuses.contains(option.key),
-                            onTap: () {
-                              setState(() {
-                                if (_selectedStatuses.contains(option.key)) {
-                                  _selectedStatuses.remove(option.key);
-                                } else {
-                                  _selectedStatuses.add(option.key);
+                                if (useColumn) {
+                                  return Column(
+                                    children: [
+                                      children[0],
+                                      const SizedBox(height: 10),
+                                      children[1],
+                                    ],
+                                  );
                                 }
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-                      ],
+
+                                return Row(
+                                  children: [
+                                    Expanded(child: children[0]),
+                                    const SizedBox(width: 10),
+                                    Expanded(child: children[1]),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            _FilterSheetSectionTitle(
+                              icon: Icons.fact_check_outlined,
+                              label: widget.l10n.myActivitiesFilterStatus,
+                            ),
+                            const SizedBox(height: 10),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final useSingleColumn =
+                                    constraints.maxWidth < 370 ||
+                                    MediaQuery.textScalerOf(context).scale(1) >
+                                        1.08;
+                                final spacing = layout.isCompact ? 8.0 : 10.0;
+                                final columns = useSingleColumn ? 1 : 2;
+                                final itemWidth =
+                                    (constraints.maxWidth -
+                                        spacing * (columns - 1)) /
+                                    columns;
+
+                                return Wrap(
+                                  spacing: spacing,
+                                  runSpacing: spacing,
+                                  children: [
+                                    for (final option in widget.statusOptions)
+                                      SizedBox(
+                                        width: itemWidth,
+                                        child: _FilterStatusChip(
+                                          label: option.label,
+                                          count: option.count,
+                                          selected: _selectedStatuses.contains(
+                                            option.key,
+                                          ),
+                                          onTap: () {
+                                            setState(() {
+                                              if (_selectedStatuses.contains(
+                                                option.key,
+                                              )) {
+                                                _selectedStatuses.remove(
+                                                  option.key,
+                                                );
+                                              } else {
+                                                _selectedStatuses.add(
+                                                  option.key,
+                                                );
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              SizedBox(height: layout.isCompact ? 10 : 12),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (layout.stackSheetActions) {
-                    return Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: _SheetActionButton(
-                            label: widget.l10n.myActivitiesFilterApply,
-                            variant: _CardActionVariant.primary,
-                            onTap: _applyFilters,
+                  Container(
+                    margin: EdgeInsets.only(top: layout.isCompact ? 10 : 12),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      layout.isCompact ? 10 : 12,
+                      horizontalPadding,
+                      14 + safeBottomInset,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color: _MyActivitiesPalette.accent.withValues(
+                            alpha: 0.09,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: _SheetActionButton(
-                            label: widget.l10n.myActivitiesFilterClear,
-                            variant: _CardActionVariant.secondary,
-                            onTap: () => Navigator.of(
-                              context,
-                            ).pop(const _MyActivitiesFilters()),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: _SheetActionButton(
-                          label: widget.l10n.myActivitiesFilterClear,
-                          variant: _CardActionVariant.secondary,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pop(const _MyActivitiesFilters()),
-                        ),
                       ),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        flex: 2,
-                        child: _SheetActionButton(
-                          label: widget.l10n.myActivitiesFilterApply,
-                          variant: _CardActionVariant.primary,
-                          onTap: _applyFilters,
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                      color: Colors.black.withValues(alpha: 0.06),
+                    ),
+                    child: _MyActivitiesFilterPrimaryButton(
+                      label: widget.l10n.activitiesShowResults(previewCount),
+                      onTap: _applyFilters,
+                      minHeight: layout.isCompact ? 50 : 56,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MyActivitiesFilterSheetHeader extends StatelessWidget {
+  const _MyActivitiesFilterSheetHeader({
+    required this.title,
+    required this.clearLabel,
+    required this.onClear,
+  });
+
+  final String title;
+  final String clearLabel;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final layout = _MyActivitiesAdaptiveLayout.of(context);
+
+    return Container(
+      height: layout.isCompact ? 44 : 46,
+      padding: EdgeInsets.symmetric(horizontal: layout.isCompact ? 16 : 18),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF3B260D))),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: layout.isCompact ? 74 : 86,
+            ),
+            child: Text(
+              title.toUpperCase(),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: layout.isCompact ? 14 : 16,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onClear,
+              style: TextButton.styleFrom(
+                foregroundColor: _MyActivitiesPalette.accent,
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                clearLabel.toUpperCase(),
+                style: TextStyle(
+                  fontSize: layout.isCompact ? 11 : 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MyActivitiesFilterPrimaryButton extends StatelessWidget {
+  const _MyActivitiesFilterPrimaryButton({
+    required this.label,
+    required this.onTap,
+    required this.minHeight,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final double minHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final layout = _MyActivitiesAdaptiveLayout.of(context);
+
+    return FilledButton(
+      onPressed: onTap,
+      style: FilledButton.styleFrom(
+        backgroundColor: _MyActivitiesPalette.accent,
+        foregroundColor: AppColors.textPrimary,
+        minimumSize: Size(0, minHeight),
+        padding: EdgeInsets.symmetric(horizontal: layout.isCompact ? 16 : 22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        textStyle: TextStyle(
+          fontSize: layout.isCompact ? 15 : 17,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      child: Text(
+        label,
+        maxLines: 2,
+        textAlign: TextAlign.center,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+class _FilterSheetSectionTitle extends StatelessWidget {
+  const _FilterSheetSectionTitle({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _MyActivitiesPalette.accent.withValues(alpha: 0.10),
+            border: Border.all(
+              color: _MyActivitiesPalette.accent.withValues(alpha: 0.18),
+            ),
+          ),
+          child: Icon(icon, size: 16, color: _MyActivitiesPalette.accent),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _MyActivitiesPalette.text,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -2302,10 +2425,11 @@ class _FilterDateField extends StatelessWidget {
           label,
           style: TextStyle(
             color: _MyActivitiesPalette.text,
-            fontSize: compact ? 15 : 16,
+            fontSize: compact ? 12 : 13,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 7),
         TextField(
           controller: controller,
           focusNode: focusNode,
@@ -2317,7 +2441,7 @@ class _FilterDateField extends StatelessWidget {
           inputFormatters: const [_DateTextInputFormatter()],
           style: const TextStyle(
             color: _MyActivitiesPalette.text,
-            fontSize: 19,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.2,
             fontFeatures: [FontFeature.tabularFigures()],
@@ -2326,7 +2450,7 @@ class _FilterDateField extends StatelessWidget {
             hintText: hintText,
             hintStyle: const TextStyle(
               color: Color(0xFFB8B0AA),
-              fontSize: 19,
+              fontSize: 16,
               fontWeight: FontWeight.w400,
               letterSpacing: 0.2,
               fontFeatures: [FontFeature.tabularFigures()],
@@ -2336,8 +2460,8 @@ class _FilterDateField extends StatelessWidget {
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.02),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 22,
+              horizontal: 15,
+              vertical: 14,
             ),
             suffixIcon: hasValue
                 ? IconButton(
@@ -2350,8 +2474,8 @@ class _FilterDateField extends StatelessWidget {
                   )
                 : null,
             suffixIconConstraints: const BoxConstraints(
-              minWidth: 48,
-              minHeight: 48,
+              minWidth: 40,
+              minHeight: 40,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(999),
@@ -2433,8 +2557,8 @@ class _DateTextInputFormatter extends TextInputFormatter {
   }
 }
 
-class _FilterStatusRow extends StatelessWidget {
-  const _FilterStatusRow({
+class _FilterStatusChip extends StatelessWidget {
+  const _FilterStatusChip({
     required this.label,
     required this.count,
     required this.selected,
@@ -2449,23 +2573,35 @@ class _FilterStatusRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
+    final foreground = selected
+        ? const Color(0xFFFFFAF2)
+        : _MyActivitiesPalette.text;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Ink(
+          height: compact ? 54 : 58,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: _MyActivitiesPalette.accent.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(999),
+            color: selected
+                ? _MyActivitiesPalette.accent.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.025),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected
+                  ? _MyActivitiesPalette.accent
+                  : _MyActivitiesPalette.accent.withValues(alpha: 0.14),
+              width: selected ? 1.4 : 1,
+            ),
           ),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: selected
@@ -2473,31 +2609,33 @@ class _FilterStatusRow extends StatelessWidget {
                       : Colors.transparent,
                   border: Border.all(
                     color: _MyActivitiesPalette.accent.withValues(alpha: 0.56),
-                    width: 2,
+                    width: 1.5,
                   ),
                 ),
                 child: selected
-                    ? const Icon(Icons.check_rounded, color: Colors.white)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      )
                     : null,
               ),
-              const SizedBox(width: 18),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: _MyActivitiesPalette.text,
-                    fontSize: compact ? 18 : 20,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.2,
+                    color: foreground,
+                    fontSize: compact ? 13 : 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Container(
-                constraints: const BoxConstraints(minWidth: 44),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                constraints: const BoxConstraints(minWidth: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _MyActivitiesPalette.accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(999),
@@ -2507,41 +2645,14 @@ class _FilterStatusRow extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: _MyActivitiesPalette.accent,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SheetActionButton extends StatelessWidget {
-  const _SheetActionButton({
-    required this.label,
-    required this.variant,
-    required this.onTap,
-  });
-
-  final String label;
-  final _CardActionVariant variant;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 66,
-      child: _CardActionButton(
-        label: label,
-        icon: variant == _CardActionVariant.primary
-            ? Icons.done_rounded
-            : Icons.clear_rounded,
-        onTap: onTap,
-        variant: variant,
       ),
     );
   }

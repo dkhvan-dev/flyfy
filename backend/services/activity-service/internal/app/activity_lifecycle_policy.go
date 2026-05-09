@@ -10,6 +10,7 @@ import (
 const (
 	CancellationReasonMinParticipantsNotMet = "MIN_PARTICIPANTS_NOT_MET"
 	CancellationReasonHostCancelled         = "HOST_CANCELLED"
+	CancellationReasonModerationRejected    = "MODERATION_REJECTED"
 
 	ParticipantCancelReasonActivityCancelled = "ACTIVITY_CANCELLED"
 	ParticipantCancelReasonLateCancellation  = "LATE_CANCELLATION"

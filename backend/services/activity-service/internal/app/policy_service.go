@@ -56,7 +56,7 @@ func (s *PolicyService) ValidateURLs(ctx context.Context, urls ...*string) error
 				case model.BlockedURLPatternActionBlock:
 					return ErrBlockedURLDetected
 				case model.BlockedURLPatternActionReview:
-					return ErrSuspiciousURLRequiresReview
+					continue
 				}
 			}
 		}

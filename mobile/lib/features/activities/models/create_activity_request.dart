@@ -4,7 +4,6 @@ class CreateActivityRequest {
     required this.description,
     required this.format,
     required this.visibility,
-    required this.joinMode,
     required this.categorySlug,
     required this.languageCode,
     required this.timezone,
@@ -32,7 +31,6 @@ class CreateActivityRequest {
   final String description;
   final String format;
   final String visibility;
-  final String joinMode;
   final String categorySlug;
   final List<String> tags;
   final String languageCode;
@@ -61,7 +59,6 @@ class CreateActivityRequest {
       'description': description,
       'format': format,
       'visibility': visibility,
-      'joinMode': joinMode,
       'categorySlug': categorySlug,
       'tags': tags,
       'languageCode': languageCode,

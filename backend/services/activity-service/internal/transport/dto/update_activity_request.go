@@ -4,7 +4,6 @@ type UpdateActivityRequest struct {
 	Title        *string  `json:"title,omitempty"`
 	Description  *string  `json:"description,omitempty"`
 	Visibility   *string  `json:"visibility,omitempty"`
-	JoinMode     *string  `json:"joinMode,omitempty"`
 	CategorySlug *string  `json:"categorySlug,omitempty"`
 	Tags         []string `json:"tags,omitempty"`
 	HasTags      bool     `json:"hasTags,omitempty"`

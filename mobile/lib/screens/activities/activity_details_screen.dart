@@ -5076,8 +5076,6 @@ Color _activityStatusColor(String status) {
       return _DetailsColors.success;
     case 'FULL':
       return const Color(0xFFF7B955);
-    case 'REVIEW_REQUIRED':
-      return const Color(0xFFF6A63D);
     case 'DRAFT':
       return const Color(0xFF8C8582);
     case 'COMPLETED':

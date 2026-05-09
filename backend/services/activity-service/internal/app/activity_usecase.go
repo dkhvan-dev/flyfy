@@ -106,7 +106,6 @@ type CreateActivityInput struct {
 	Description  string
 	Format       enum.ActivityFormat
 	Visibility   enum.ActivityVisibility
-	JoinMode     enum.ActivityJoinMode
 	CategorySlug string
 	Tags         []string
 	LanguageCode string
@@ -137,8 +136,6 @@ type CreateActivityInput struct {
 	CoverFileID *uuid.UUID
 
 	VisibilityPassword *string
-
-	ReviewRequired bool
 }
 
 type UpdateActivityInput struct {
@@ -148,7 +145,6 @@ type UpdateActivityInput struct {
 	Title        *string
 	Description  *string
 	Visibility   *enum.ActivityVisibility
-	JoinMode     *enum.ActivityJoinMode
 	CategorySlug *string
 	Tags         []string
 	HasTags      bool
@@ -207,6 +203,10 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 	}
 	input.CategorySlug = categorySlug
 
+	if !input.PriceType.IsUserSelectable() {
+		return nil, model.ErrInvalidPriceType
+	}
+
 	if err := u.policy.CheckCreateRateLimit(ctx, input.HostUserID); err != nil {
 		return nil, err
 	}
@@ -241,7 +241,6 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		Description:                    input.Description,
 		Format:                         input.Format,
 		Visibility:                     input.Visibility,
-		JoinMode:                       input.JoinMode,
 		CategorySlug:                   input.CategorySlug,
 		LanguageCode:                   input.LanguageCode,
 		Timezone:                       input.Timezone,
@@ -268,11 +267,6 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	if input.ReviewRequired {
-		item.ModerationStatus = enum.ActivityModerationStatusPendingReview
-		item.Status = enum.ActivityStatusReviewRequired
 	}
 
 	if err = u.repo.CreateActivity(ctx, item); err != nil {
@@ -976,7 +970,6 @@ func (u *ActivityUseCase) PublishActivity(
 	ctx context.Context,
 	activityID uuid.UUID,
 	actorUserID uuid.UUID,
-	reviewRequired bool,
 ) (*model.Activity, error) {
 	item, err := u.GetActivityByID(ctx, activityID)
 	if err != nil {
@@ -989,7 +982,7 @@ func (u *ActivityUseCase) PublishActivity(
 		return nil, ErrActivityAlreadyPublished
 	}
 
-	if err = item.Publish(time.Now().UTC(), reviewRequired); err != nil {
+	if err = item.Publish(time.Now().UTC()); err != nil {
 		return nil, err
 	}
 
@@ -997,14 +990,9 @@ func (u *ActivityUseCase) PublishActivity(
 		return nil, fmt.Errorf("update activity on publish: %w", err)
 	}
 
-	eventType := enum.ActivityEventTypePublished
-	if reviewRequired {
-		eventType = enum.ActivityEventTypeSubmittedForReview
-	}
-
 	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
 		ActivityID:  item.ID,
-		EventType:   eventType,
+		EventType:   enum.ActivityEventTypePublished,
 		ActorUserID: &actorUserID,
 		PayloadJSON: mustJSON(map[string]any{
 			"status":           string(item.Status),
@@ -1049,7 +1037,6 @@ func (u *ActivityUseCase) DuplicateActivity(
 		Description:                    source.Description,
 		Format:                         source.Format,
 		Visibility:                     source.Visibility,
-		JoinMode:                       source.JoinMode,
 		CategorySlug:                   categorySlug,
 		LanguageCode:                   source.LanguageCode,
 		Timezone:                       source.Timezone,
@@ -1360,6 +1347,9 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	if item.HostUserID != input.ActorUserID {
 		return nil, ErrInvalidActorUserID
 	}
+	if input.PriceType != nil && !input.PriceType.IsUserSelectable() {
+		return nil, model.ErrInvalidPriceType
+	}
 
 	beforePriceType := item.PriceType
 	beforePriceAmount := item.PriceAmount
@@ -1374,9 +1364,6 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	}
 	if input.Visibility != nil {
 		item.Visibility = *input.Visibility
-	}
-	if input.JoinMode != nil {
-		item.JoinMode = *input.JoinMode
 	}
 	if input.CategorySlug != nil {
 		categorySlug, categoryErr := model.NormalizeAndValidateActivityCategorySlug(*input.CategorySlug)
@@ -1571,26 +1558,22 @@ func (u *ActivityUseCase) validateUpdateRules(
 ) error {
 	now := time.Now().UTC()
 
-	if item.Status != enum.ActivityStatusDraft && item.Status != enum.ActivityStatusReviewRequired {
-		if startAtChanged && !item.StartAt.After(now.Add(1*time.Hour)) {
-			return model.ErrActivityTooSoon
-		}
-		if item.Format != enum.ActivityFormatOnline && locationSnapshot(item) != beforeLocationSnapshot {
-			return ErrCriticalFieldsUpdateForbidden
-		}
+	if startAtChanged && !item.StartAt.After(now.Add(1*time.Hour)) {
+		return model.ErrActivityTooSoon
+	}
+	if item.Format != enum.ActivityFormatOnline && locationSnapshot(item) != beforeLocationSnapshot {
+		return ErrCriticalFieldsUpdateForbidden
 	}
 
 	skipStartTimeCheck := !startAtChanged
 	skipDurationCheck := !startAtChanged && !endAtChanged
 	if err := item.Validate(now, skipStartTimeCheck, skipDurationCheck); err != nil {
-		if item.Status != enum.ActivityStatusDraft && item.Status != enum.ActivityStatusReviewRequired {
-			switch {
-			case errors.Is(err, model.ErrInvalidOfflineLocation),
-				errors.Is(err, model.ErrInvalidMeetingURL),
-				errors.Is(err, model.ErrInvalidActivityTimeRange),
-				errors.Is(err, model.ErrInvalidRegistrationDeadline):
-				return ErrCriticalFieldsUpdateForbidden
-			}
+		switch {
+		case errors.Is(err, model.ErrInvalidOfflineLocation),
+			errors.Is(err, model.ErrInvalidMeetingURL),
+			errors.Is(err, model.ErrInvalidActivityTimeRange),
+			errors.Is(err, model.ErrInvalidRegistrationDeadline):
+			return ErrCriticalFieldsUpdateForbidden
 		}
 		return err
 	}
@@ -1641,32 +1624,10 @@ func (u *ActivityUseCase) ApproveModeration(
 	if moderatorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
 	}
-	if item.ModerationStatus != enum.ActivityModerationStatusPendingReview {
-		return nil, ErrModerationStateInvalid
+	if item.ModerationStatus == enum.ActivityModerationStatusApproved {
+		return item, nil
 	}
-
-	if err = item.ApproveModeration(time.Now().UTC()); err != nil {
-		return nil, err
-	}
-
-	if err = u.repo.UpdateActivity(ctx, item); err != nil {
-		return nil, fmt.Errorf("approve moderation: %w", err)
-	}
-
-	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
-		ActivityID:  item.ID,
-		EventType:   enum.ActivityEventTypeModerationApproved,
-		ActorUserID: &moderatorUserID,
-		PayloadJSON: mustJSON(map[string]any{
-			"status":           string(item.Status),
-			"moderationStatus": string(item.ModerationStatus),
-		}),
-	})
-	if eventErr == nil {
-		_ = u.repo.CreateActivityEvent(ctx, event)
-	}
-
-	return item, nil
+	return nil, ErrModerationStateInvalid
 }
 
 func (u *ActivityUseCase) RejectModeration(
@@ -1674,39 +1635,84 @@ func (u *ActivityUseCase) RejectModeration(
 	activityID uuid.UUID,
 	moderatorUserID uuid.UUID,
 ) (*model.Activity, error) {
-	item, err := u.GetActivityByID(ctx, activityID)
-	if err != nil {
-		return nil, err
-	}
 	if moderatorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
 	}
-	if item.ModerationStatus != enum.ActivityModerationStatusPendingReview {
-		return nil, ErrModerationStateInvalid
-	}
 
-	if err = item.RejectModeration(time.Now().UTC()); err != nil {
+	var updated *model.Activity
+	paymentTasks := make([]participantPaymentTask, 0)
+
+	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
+		item, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
+		if err != nil {
+			return fmt.Errorf("get activity by id for moderation rejection: %w", err)
+		}
+		if item == nil {
+			return ErrActivityNotFound
+		}
+		if item.ModerationStatus == enum.ActivityModerationStatusRejected {
+			updated = item
+			return nil
+		}
+		if item.Status.IsTerminal() {
+			return ErrActivityNotCancellable
+		}
+
+		if err = item.RejectModeration(time.Now().UTC()); err != nil {
+			return err
+		}
+
+		participants, err := txRepo.ListParticipantsByActivityIDForUpdate(ctx, item.ID)
+		if err != nil {
+			return fmt.Errorf("list participants for moderation rejection: %w", err)
+		}
+
+		if err = u.cancelActivityInTx(
+			ctx,
+			txRepo,
+			item,
+			&moderatorUserID,
+			enum.ActivityCancellationSourceAdmin,
+			CancellationReasonModerationRejected,
+			"moderation_rejected",
+			time.Now().UTC(),
+			participants,
+			&paymentTasks,
+			map[string]any{
+				"moderationStatus": string(item.ModerationStatus),
+			},
+		); err != nil {
+			return err
+		}
+
+		updated = item
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	if err = u.repo.UpdateActivity(ctx, item); err != nil {
-		return nil, fmt.Errorf("reject moderation: %w", err)
-	}
-
 	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
-		ActivityID:  item.ID,
+		ActivityID:  updated.ID,
 		EventType:   enum.ActivityEventTypeModerationRejected,
 		ActorUserID: &moderatorUserID,
 		PayloadJSON: mustJSON(map[string]any{
-			"status":           string(item.Status),
-			"moderationStatus": string(item.ModerationStatus),
+			"status":           string(updated.Status),
+			"moderationStatus": string(updated.ModerationStatus),
 		}),
 	})
 	if eventErr == nil {
 		_ = u.repo.CreateActivityEvent(ctx, event)
 	}
 
-	return item, nil
+	u.syncActivityChat(ctx, updated)
+	for _, task := range paymentTasks {
+		if err = executeParticipantPaymentTask(ctx, u.repo, u.payment, task); err != nil {
+			return nil, err
+		}
+	}
+
+	return updated, nil
 }
 
 func (u *ActivityUseCase) ListHostedActivities(
@@ -1760,7 +1766,15 @@ func (u *ActivityUseCase) ListJoinedActivities(
 		return nil, fmt.Errorf("list joined activities: %w", err)
 	}
 
-	return u.normalizeLifecycleList(ctx, items)
+	joinedItems := items[:0]
+	for _, item := range items {
+		if item == nil || item.HostUserID == userID {
+			continue
+		}
+		joinedItems = append(joinedItems, item)
+	}
+
+	return u.normalizeLifecycleList(ctx, joinedItems)
 }
 
 func (u *ActivityUseCase) validateCoverMediaFile(ctx context.Context, fileID *uuid.UUID) error {

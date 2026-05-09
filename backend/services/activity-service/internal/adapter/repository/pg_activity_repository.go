@@ -1398,6 +1398,7 @@ func (r *PGActivityRepository) ListJoinedActivitiesByUserID(
 		FROM activities a
 		INNER JOIN activity_participants ap ON ap.activity_id = a.id
 		WHERE ap.user_id = $1
+		  AND a.host_user_id <> $1
 		  AND ap.status IN (
 		    'REQUESTED',
 		    'APPROVED',

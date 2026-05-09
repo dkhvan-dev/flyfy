@@ -59,6 +59,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   static const double _stepBackSwipeMinVelocity = 700;
   static const int _maxCoverUploadBytes = 20 * 1024 * 1024;
   static const int _lateMonthCarryoverDays = 3;
+  static const int _minActivityParticipants = 2;
   static const int _maxLimitedParticipants = 100;
 
   // — Step 1: Basic —
@@ -85,16 +86,17 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   // — Step 3: Participation —
   String _capacityType = 'UNLIMITED';
-  int _minParticipants = 1;
+  int _minParticipants = _minActivityParticipants;
   int _maxParticipants = 15;
-  String _joinMode = 'AUTO_APPROVE';
   String _visibility = 'PUBLIC';
   bool _visibilityPasswordChanged = false;
   String _priceType = 'FREE';
   final _visibilityPasswordCtrl = TextEditingController();
   final _priceAmountCtrl = TextEditingController();
   final _currencyCtrl = TextEditingController(text: 'KZT');
-  final _minParticipantsCtrl = TextEditingController(text: '1');
+  final _minParticipantsCtrl = TextEditingController(
+    text: '$_minActivityParticipants',
+  );
   final _maxParticipantsCtrl = TextEditingController(text: '15');
 
   // — Meeting point / location —
@@ -168,14 +170,15 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       _timezone = a.timezone;
       _capacityType = a.capacityType.toUpperCase();
       if (a.minParticipants != null) {
-        _minParticipants = a.minParticipants!;
+        _minParticipants = a.minParticipants! < _minActivityParticipants
+            ? _minActivityParticipants
+            : a.minParticipants!;
       }
       if (a.maxParticipants != null) {
         _maxParticipants = a.maxParticipants!;
       }
-      _joinMode = a.joinMode.toUpperCase();
       _visibility = a.visibility.toUpperCase();
-      _priceType = a.priceType.toUpperCase();
+      _priceType = _normalizePriceType(a.priceType);
       if (a.priceAmount != null) {
         _priceAmountCtrl.text = a.priceAmount! % 1 == 0
             ? a.priceAmount!.toStringAsFixed(0)
@@ -628,9 +631,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       _minParticipantsErrorText = null;
       _maxParticipantsErrorText = null;
       if (!value) {
-        if (_minParticipants <= 0) {
-          _minParticipants = 1;
-          _minParticipantsCtrl.text = '1';
+        if (_minParticipants < _minActivityParticipants) {
+          _minParticipants = _minActivityParticipants;
+          _minParticipantsCtrl.text = '$_minActivityParticipants';
         }
         if (_maxParticipants <= 0) {
           _maxParticipants = 15;
@@ -678,9 +681,20 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   void _setPriceType(String value) {
     setState(() {
-      _priceType = value;
+      _priceType = _normalizePriceType(value);
       _priceAmountErrorText = null;
     });
+  }
+
+  String _normalizePriceType(String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'PAID':
+      case 'DEPOSIT':
+        return 'PAID';
+      case 'FREE':
+      default:
+        return 'FREE';
+    }
   }
 
   DateTime _defaultStartAt() {
@@ -1030,7 +1044,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           }
         }
         if (_capacityType == 'LIMITED') {
-          if (_minParticipants < 1) {
+          if (_minParticipants < _minActivityParticipants) {
             minParticipantsError = l10n.createMinParticipantsValidation;
           }
           if (_maxParticipants <= 0 ||
@@ -1274,7 +1288,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       description: _descriptionCtrl.text.trim(),
       format: _format,
       visibility: _visibility,
-      joinMode: _joinMode,
       categorySlug: _selectedCategorySlug!,
       tags: _parsedTags,
       languageCode: _languageCode,
@@ -1358,7 +1371,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       title: _titleCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
       visibility: _visibility,
-      joinMode: _joinMode,
       categorySlug: _didCategoryChange ? _selectedCategorySlug : null,
       tags: _parsedTags,
       languageCode: _languageCode,
@@ -1465,29 +1477,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     });
   }
 
-  Future<void> _openJoinModePicker(AppLocalizations l10n) async {
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return _CategoryPickerSheet(
-          title: l10n.createJoinModePickerTitle,
-          actionLabel: l10n.createJoinModeApply,
-          items: {
-            'AUTO_APPROVE': l10n.createJoinModeAutomaticShort,
-            'MANUAL_APPROVE': l10n.createJoinModeManualShort,
-          },
-          initialValue: _joinMode,
-          iconForSlug: _joinModeIconForValue,
-        );
-      },
-    );
-
-    if (!mounted || selected == null) return;
-    setState(() => _joinMode = selected);
-  }
-
   Future<void> _openVisibilityPicker(AppLocalizations l10n) async {
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -1524,16 +1513,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         return Icons.palette_rounded;
       default:
         return Icons.local_activity_rounded;
-    }
-  }
-
-  IconData _joinModeIconForValue(String value) {
-    switch (value) {
-      case 'MANUAL_APPROVE':
-        return Icons.person_search_outlined;
-      case 'AUTO_APPROVE':
-      default:
-        return Icons.bolt_rounded;
     }
   }
 
@@ -2137,18 +2116,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         ],
         SizedBox(height: sectionGap),
         _Step3Section(
-          icon: Icons.shield_outlined,
-          title: l10n.createJoinApprovalTitle,
-          child: _CategorySelectorField(
-            value: _joinMode == 'MANUAL_APPROVE'
-                ? l10n.createJoinModeManualShort
-                : l10n.createJoinModeAutomaticShort,
-            isPlaceholder: false,
-            onTap: () => _openJoinModePicker(l10n),
-          ),
-        ),
-        SizedBox(height: sectionGap),
-        _Step3Section(
           icon: Icons.payments_outlined,
           title: l10n.createPricingModelTitle,
           child: Column(
@@ -2169,14 +2136,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                       label: l10n.createPricePaid,
                       isSelected: _priceType == 'PAID',
                       onTap: () => _setPriceType('PAID'),
-                    ),
-                  ),
-                  SizedBox(width: priceChipGap),
-                  Expanded(
-                    child: _Step3ChoiceChip(
-                      label: l10n.createPriceDeposit,
-                      isSelected: _priceType == 'DEPOSIT',
-                      onTap: () => _setPriceType('DEPOSIT'),
                     ),
                   ),
                 ],
@@ -2229,9 +2188,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         _Step3LimitField(
                           label: l10n.createParticipantsMinShort,
                           controller: isUnlimited ? null : _minParticipantsCtrl,
-                          placeholder: '1',
+                          placeholder: '$_minActivityParticipants',
                           readOnly: isUnlimited,
-                          readOnlyValue: '1',
+                          readOnlyValue: '$_minActivityParticipants',
                           onChanged: _handleMinParticipantsChanged,
                           errorText: _minParticipantsErrorText,
                         ),
@@ -2255,9 +2214,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                             controller: isUnlimited
                                 ? null
                                 : _minParticipantsCtrl,
-                            placeholder: '1',
+                            placeholder: '$_minActivityParticipants',
                             readOnly: isUnlimited,
-                            readOnlyValue: '1',
+                            readOnlyValue: '$_minActivityParticipants',
                             onChanged: _handleMinParticipantsChanged,
                             errorText: _minParticipantsErrorText,
                           ),
@@ -3061,10 +3020,29 @@ class _DateTimeInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
+    final rawSelectionOffset = newValue.selection.isValid
+        ? newValue.selection.extentOffset
+        : newValue.text.length;
+    final selectionOffset = rawSelectionOffset < 0
+        ? 0
+        : rawSelectionOffset > newValue.text.length
+        ? newValue.text.length
+        : rawSelectionOffset;
+    final selectionDigitCount = _countDigitsBeforeOffset(
+      newValue.text,
+      selectionOffset,
+    );
+    final selectionFollowsSeparator =
+        selectionOffset > 0 &&
+        !_isDigit(newValue.text.codeUnitAt(selectionOffset - 1));
+
     final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     final trimmed = digits.length > _maxDigits
         ? digits.substring(0, _maxDigits)
         : digits;
+    final clampedSelectionDigitCount = selectionDigitCount > trimmed.length
+        ? trimmed.length
+        : selectionDigitCount;
     final buffer = StringBuffer();
     for (var i = 0; i < trimmed.length; i++) {
       if (i == 2 || i == 4) {
@@ -3080,9 +3058,57 @@ class _DateTimeInputFormatter extends TextInputFormatter {
     final text = buffer.toString();
     return TextEditingValue(
       text: text,
-      selection: TextSelection.collapsed(offset: text.length),
+      selection: TextSelection.collapsed(
+        offset: _selectionOffsetForDigitCount(
+          text,
+          clampedSelectionDigitCount,
+          preferAfterSeparator: selectionFollowsSeparator,
+        ),
+      ),
+      composing: TextRange.empty,
     );
   }
+
+  static int _countDigitsBeforeOffset(String value, int offset) {
+    var count = 0;
+    for (var i = 0; i < offset; i++) {
+      if (_isDigit(value.codeUnitAt(i))) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  static int _selectionOffsetForDigitCount(
+    String value,
+    int digitCount, {
+    required bool preferAfterSeparator,
+  }) {
+    if (digitCount <= 0) {
+      return 0;
+    }
+
+    var count = 0;
+    for (var i = 0; i < value.length; i++) {
+      if (!_isDigit(value.codeUnitAt(i))) {
+        continue;
+      }
+      count++;
+      if (count == digitCount) {
+        var offset = i + 1;
+        if (preferAfterSeparator) {
+          while (offset < value.length && !_isDigit(value.codeUnitAt(offset))) {
+            offset++;
+          }
+        }
+        return offset;
+      }
+    }
+
+    return value.length;
+  }
+
+  static bool _isDigit(int codeUnit) => codeUnit >= 0x30 && codeUnit <= 0x39;
 }
 
 class _Step3Section extends StatelessWidget {

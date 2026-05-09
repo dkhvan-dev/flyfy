@@ -1948,12 +1948,6 @@ abstract class AppLocalizations {
   /// **'Draft'**
   String get activityStatusDraft;
 
-  /// No description provided for @activityStatusReviewRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Under review'**
-  String get activityStatusReviewRequired;
-
   /// No description provided for @activityStatusPublished.
   ///
   /// In en, this message translates to:
@@ -4264,54 +4258,6 @@ abstract class AppLocalizations {
   /// **'Leave blank to keep the current password'**
   String get createVisibilityPasswordEditHint;
 
-  /// No description provided for @createJoinModeSection.
-  ///
-  /// In en, this message translates to:
-  /// **'JOIN MODE'**
-  String get createJoinModeSection;
-
-  /// No description provided for @createJoinModeAuto.
-  ///
-  /// In en, this message translates to:
-  /// **'Auto approve'**
-  String get createJoinModeAuto;
-
-  /// No description provided for @createJoinModeManual.
-  ///
-  /// In en, this message translates to:
-  /// **'Manual approve'**
-  String get createJoinModeManual;
-
-  /// No description provided for @createJoinApprovalTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Join Approval'**
-  String get createJoinApprovalTitle;
-
-  /// No description provided for @createJoinModeAutomaticShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic'**
-  String get createJoinModeAutomaticShort;
-
-  /// No description provided for @createJoinModeManualShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Manual'**
-  String get createJoinModeManualShort;
-
-  /// No description provided for @createJoinModePickerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose approval mode'**
-  String get createJoinModePickerTitle;
-
-  /// No description provided for @createJoinModeApply.
-  ///
-  /// In en, this message translates to:
-  /// **'Apply'**
-  String get createJoinModeApply;
-
   /// No description provided for @createCapacitySection.
   ///
   /// In en, this message translates to:
@@ -4381,7 +4327,7 @@ abstract class AppLocalizations {
   /// No description provided for @createMinParticipantsValidation.
   ///
   /// In en, this message translates to:
-  /// **'Please enter a minimum of at least 1 participant'**
+  /// **'Please enter a minimum of at least 2 participants'**
   String get createMinParticipantsValidation;
 
   /// No description provided for @createMinExceedsMaxValidation.
@@ -4407,12 +4353,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paid'**
   String get createPricePaid;
-
-  /// No description provided for @createPriceDeposit.
-  ///
-  /// In en, this message translates to:
-  /// **'Deposit'**
-  String get createPriceDeposit;
 
   /// No description provided for @createPricingModelTitle.
   ///
@@ -4798,12 +4738,6 @@ abstract class AppLocalizations {
   /// **'Recreate'**
   String get myActivitiesRecreateButton;
 
-  /// No description provided for @myActivitiesRestrictedButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit Restricted'**
-  String get myActivitiesRestrictedButton;
-
   /// No description provided for @myActivitiesOpenButton.
   ///
   /// In en, this message translates to:
@@ -4888,6 +4822,24 @@ abstract class AppLocalizations {
   /// **'Search activities, hosts, or cities'**
   String get activitiesSearchHint;
 
+  /// No description provided for @activitiesFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get activitiesFiltersTitle;
+
+  /// No description provided for @activitiesSortDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get activitiesSortDate;
+
+  /// No description provided for @activitiesSortPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get activitiesSortPrice;
+
   /// No description provided for @activitiesFilterCategory.
   ///
   /// In en, this message translates to:
@@ -4899,6 +4851,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Date'**
   String get activitiesFilterDate;
+
+  /// No description provided for @activitiesFilterStartDatePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'15.05.2026'**
+  String get activitiesFilterStartDatePlaceholder;
+
+  /// No description provided for @activitiesFilterEndDatePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'22.05.2026'**
+  String get activitiesFilterEndDatePlaceholder;
 
   /// No description provided for @activitiesFilterPricing.
   ///

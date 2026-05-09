@@ -5,8 +5,6 @@ String formatActivityStatus(String value, AppLocalizations l10n) {
   switch (value.toUpperCase()) {
     case 'DRAFT':
       return l10n.activityStatusDraft;
-    case 'REVIEW_REQUIRED':
-      return l10n.activityStatusReviewRequired;
     case 'PUBLISHED':
       return l10n.activityStatusPublished;
     case 'ENROLLMENT_OPEN':

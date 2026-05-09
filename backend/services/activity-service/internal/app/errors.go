@@ -34,14 +34,12 @@ var (
 	ErrParticipantStateInvalid     = errors.New("participant state is invalid for this action")
 	ErrActivityLeaveClosed         = errors.New("activity cannot be left after it has started")
 
-	ErrModerationReviewRequired = errors.New("moderation review is required")
-	ErrModerationStateInvalid   = errors.New("activity moderation state is invalid")
+	ErrModerationStateInvalid = errors.New("activity moderation state is invalid")
 
 	ErrCriticalFieldsUpdateForbidden = errors.New("critical fields cannot be changed after publication")
 	ErrPriceChangeForbidden          = errors.New("price change is forbidden")
 
 	ErrBlockedURLDetected          = errors.New("blocked url detected")
-	ErrSuspiciousURLRequiresReview = errors.New("suspicious url requires review")
 	ErrActivityCreationRateLimited = errors.New("activity creation rate limited")
 
 	ErrActivityMediaFileNotFound   = errors.New("activity media file not found")

@@ -31,12 +31,42 @@ func TestNewActivityAllowsMaxParticipantsAtLimit(t *testing.T) {
 	}
 }
 
+func TestNewActivityDefaultsToEnrollmentOpen(t *testing.T) {
+	maxParticipants := 15
+
+	item, err := NewActivity(newValidActivityParams(maxParticipants))
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if item.Status != enum.ActivityStatusEnrollmentOpen {
+		t.Fatalf("expected status %s, got %s", enum.ActivityStatusEnrollmentOpen, item.Status)
+	}
+	if item.ModerationStatus != enum.ActivityModerationStatusApproved {
+		t.Fatalf("expected moderation status %s, got %s", enum.ActivityModerationStatusApproved, item.ModerationStatus)
+	}
+	if item.PublishedAt == nil {
+		t.Fatal("expected publishedAt to be set")
+	}
+}
+
+func TestNewActivityRejectsMinParticipantsBelowTwo(t *testing.T) {
+	maxParticipants := 15
+	minParticipants := 1
+	params := newValidActivityParams(maxParticipants)
+	params.MinParticipants = &minParticipants
+
+	_, err := NewActivity(params)
+	if !errors.Is(err, ErrInvalidCapacity) {
+		t.Fatalf("expected ErrInvalidCapacity, got %v", err)
+	}
+}
+
 func newValidActivityParams(maxParticipants int) NewActivityParams {
 	now := time.Now().UTC()
 	startAt := now.Add(2 * time.Hour)
 	endAt := startAt.Add(2 * time.Hour)
 	registrationDeadline := startAt.Add(-30 * time.Minute)
-	minParticipants := 1
+	minParticipants := 2
 
 	return NewActivityParams{
 		HostUserID:                uuid.New(),
@@ -44,7 +74,6 @@ func newValidActivityParams(maxParticipants int) NewActivityParams {
 		Description:               "A valid activity description for capacity validation.",
 		Format:                    enum.ActivityFormatOffline,
 		Visibility:                enum.ActivityVisibilityPublic,
-		JoinMode:                  enum.ActivityJoinModeAutoApprove,
 		CategorySlug:              "health-wellness",
 		LanguageCode:              "ru",
 		Timezone:                  "Asia/Almaty",

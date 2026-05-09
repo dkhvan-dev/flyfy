@@ -5,7 +5,6 @@ type ActivityEventType string
 const (
 	ActivityEventTypeCreated               ActivityEventType = "CREATED"
 	ActivityEventTypeUpdated               ActivityEventType = "UPDATED"
-	ActivityEventTypeSubmittedForReview    ActivityEventType = "SUBMITTED_FOR_REVIEW"
 	ActivityEventTypeModerationApproved    ActivityEventType = "MODERATION_APPROVED"
 	ActivityEventTypeModerationRejected    ActivityEventType = "MODERATION_REJECTED"
 	ActivityEventTypePublished             ActivityEventType = "PUBLISHED"
@@ -27,7 +26,6 @@ func (v ActivityEventType) IsValid() bool {
 	switch v {
 	case ActivityEventTypeCreated,
 		ActivityEventTypeUpdated,
-		ActivityEventTypeSubmittedForReview,
 		ActivityEventTypeModerationApproved,
 		ActivityEventTypeModerationRejected,
 		ActivityEventTypePublished,

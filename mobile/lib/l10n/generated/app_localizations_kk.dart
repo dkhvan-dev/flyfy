@@ -1044,9 +1044,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityStatusDraft => 'Нобай';
 
   @override
-  String get activityStatusReviewRequired => 'Тексеруде';
-
-  @override
   String get activityStatusPublished => 'Жарияланған';
 
   @override
@@ -2289,30 +2286,6 @@ class AppLocalizationsKk extends AppLocalizations {
       'Ағымдағы құпиясөзді сақтау үшін өрісті бос қалдырыңыз';
 
   @override
-  String get createJoinModeSection => 'ҚОСЫЛУ РЕЖИМІ';
-
-  @override
-  String get createJoinModeAuto => 'Автоматты мақұлдау';
-
-  @override
-  String get createJoinModeManual => 'Қолмен мақұлдау';
-
-  @override
-  String get createJoinApprovalTitle => 'Қатысуды мақұлдау';
-
-  @override
-  String get createJoinModeAutomaticShort => 'Автоматты';
-
-  @override
-  String get createJoinModeManualShort => 'Қолмен';
-
-  @override
-  String get createJoinModePickerTitle => 'Мақұлдау режимін таңдаңыз';
-
-  @override
-  String get createJoinModeApply => 'Қолдану';
-
-  @override
   String get createCapacitySection => 'ОРЫН САНЫ';
 
   @override
@@ -2348,7 +2321,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createMinParticipantsValidation =>
-      'Кемінде 1 қатысушыдан тұратын минимумды енгізіңіз';
+      'Кемінде 2 қатысушыдан тұратын минимумды енгізіңіз';
 
   @override
   String get createMinExceedsMaxValidation =>
@@ -2362,9 +2335,6 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createPricePaid => 'Ақылы';
-
-  @override
-  String get createPriceDeposit => 'Депозит';
 
   @override
   String get createPricingModelTitle => 'Баға моделі';
@@ -2577,9 +2547,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myActivitiesRecreateButton => 'Қайта жасау';
 
   @override
-  String get myActivitiesRestrictedButton => 'Өңдеу шектелген';
-
-  @override
   String get myActivitiesOpenButton => 'Белсенділікті ашу';
 
   @override
@@ -2627,10 +2594,25 @@ class AppLocalizationsKk extends AppLocalizations {
       'Белсенділіктер, ұйымдастырушылар, қалалар іздеу';
 
   @override
+  String get activitiesFiltersTitle => 'Сүзгілер';
+
+  @override
+  String get activitiesSortDate => 'Күні';
+
+  @override
+  String get activitiesSortPrice => 'Бағасы';
+
+  @override
   String get activitiesFilterCategory => 'Санат';
 
   @override
   String get activitiesFilterDate => 'Күні';
+
+  @override
+  String get activitiesFilterStartDatePlaceholder => '15.05.2026';
+
+  @override
+  String get activitiesFilterEndDatePlaceholder => '22.05.2026';
 
   @override
   String get activitiesFilterPricing => 'Құны';

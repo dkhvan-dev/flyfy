@@ -5,7 +5,6 @@ type CreateActivityRequest struct {
 	Description  string   `json:"description"`
 	Format       string   `json:"format"`
 	Visibility   string   `json:"visibility"`
-	JoinMode     string   `json:"joinMode"`
 	CategorySlug string   `json:"categorySlug"`
 	Tags         []string `json:"tags"`
 	LanguageCode string   `json:"languageCode"`
@@ -37,6 +36,4 @@ type CreateActivityRequest struct {
 	CoverFileID *string  `json:"coverFileId,omitempty"`
 
 	VisibilityPassword *string `json:"visibilityPassword,omitempty"`
-
-	ReviewRequired *bool `json:"reviewRequired,omitempty"`
 }

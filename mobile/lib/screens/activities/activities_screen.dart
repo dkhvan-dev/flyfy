@@ -32,6 +32,8 @@ class ActivitiesScreen extends StatefulWidget {
   State<ActivitiesScreen> createState() => _ActivitiesScreenState();
 }
 
+enum _ActivitySortField { date, price }
+
 class _ActivitiesScreenState extends State<ActivitiesScreen> {
   static const int _discoverPageSize = 8;
 
@@ -50,6 +52,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   String? _guideBadgeUserId;
   bool _showGuideBadge = false;
   int _currentPage = 1;
+  _ActivitySortField _sortField = _ActivitySortField.date;
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -88,6 +92,18 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     }
     setState(() {
       _searchQuery = nextQuery;
+      _currentPage = 1;
+    });
+  }
+
+  void _handleSortTap(_ActivitySortField field) {
+    setState(() {
+      if (_sortField == field) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortField = field;
+        _sortAscending = true;
+      }
       _currentPage = 1;
     });
   }
@@ -293,32 +309,34 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     });
   }
 
-  Future<void> _openCategoryFilter(
+  Future<void> _openDiscoverFilters(
     BuildContext context,
     List<_DiscoverCategoryOption> categoryOptions,
     List<ActivityListItemVm> items,
+    String? currentCountryCode,
+    String? fallbackCurrencyCode,
+    Map<String, String> categoryLabelsBySlug,
   ) async {
-    final result = await showModalBottomSheet<Set<String>>(
+    FocusScope.of(context).unfocus();
+
+    final result = await showModalBottomSheet<_DiscoverFilters>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return _CategoryFilterSheet(
+        return _DiscoverFiltersSheet(
           l10n: AppLocalizations.of(sheetContext)!,
-          initialSelectedSlugs: _filters.categorySlugs,
-          options: categoryOptions,
-          previewCountBuilder: (selectedSlugs) {
-            final draftFilters = _filters.copyWith(
-              categorySlugs: selectedSlugs,
-            );
+          initialFilters: _filters,
+          categoryOptions: categoryOptions,
+          items: items,
+          currentCountryCode: currentCountryCode,
+          fallbackCurrencyCode: fallbackCurrencyCode,
+          previewCountBuilder: (draftFilters) {
             return _applyDiscoverFilters(
               items,
               filters: draftFilters,
               searchQuery: _searchQuery,
-              categoryLabelsBySlug: {
-                for (final option in categoryOptions)
-                  option.slug: option.label.toLowerCase(),
-              },
+              categoryLabelsBySlug: categoryLabelsBySlug,
             ).length;
           },
         );
@@ -330,42 +348,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     }
 
     setState(() {
-      _filters = _filters.copyWith(categorySlugs: result);
-      _currentPage = 1;
-    });
-  }
-
-  Future<void> _openPriceFilter(
-    BuildContext context,
-    List<ActivityListItemVm> items,
-    String? currentCountryCode,
-    String? fallbackCurrencyCode,
-  ) async {
-    final result = await showModalBottomSheet<_PriceRangeFilter>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return _PriceFilterSheet(
-          l10n: AppLocalizations.of(sheetContext)!,
-          items: items,
-          currentCountryCode: currentCountryCode,
-          fallbackCurrencyCode: fallbackCurrencyCode,
-          initialMinPrice: _filters.minPrice,
-          initialMaxPrice: _filters.maxPrice,
-        );
-      },
-    );
-
-    if (!mounted || result == null) {
-      return;
-    }
-
-    setState(() {
-      _filters = _filters.copyWith(
-        minPrice: result.minPrice,
-        maxPrice: result.maxPrice,
-      );
+      _filters = result;
       _currentPage = 1;
     });
   }
@@ -400,56 +383,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     } catch (_) {
       // Keep profile country when passive geolocation is unavailable.
     }
-  }
-
-  Future<void> _openDateFilter(BuildContext context) async {
-    final result = await showModalBottomSheet<_DateRangeFilter>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return _DateFilterSheet(
-          l10n: AppLocalizations.of(sheetContext)!,
-          initialStartDate: _filters.startDate,
-          initialEndDate: _filters.endDate,
-        );
-      },
-    );
-
-    if (!mounted || result == null) {
-      return;
-    }
-
-    setState(() {
-      _filters = _filters.copyWith(
-        startDate: result.startDate,
-        endDate: result.endDate,
-      );
-      _currentPage = 1;
-    });
-  }
-
-  Future<void> _openVisibilityFilter(BuildContext context) async {
-    final result = await showModalBottomSheet<Set<String>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return _VisibilityFilterSheet(
-          l10n: AppLocalizations.of(sheetContext)!,
-          initialVisibilities: _filters.visibilities,
-        );
-      },
-    );
-
-    if (!mounted || result == null) {
-      return;
-    }
-
-    setState(() {
-      _filters = _filters.copyWith(visibilities: result);
-      _currentPage = 1;
-    });
   }
 
   @override
@@ -531,15 +464,15 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                   for (final option in categoryOptions)
                     option.slug: option.label.toLowerCase(),
                 };
-                final currentPriceFilterCurrency = filterCurrencyLabel(
-                  countryCode: currentPriceFilterCountryCode,
-                  currency: normalizeActivityCurrencyCode(profile?.currency),
-                );
-                final filteredItems = _applyDiscoverFilters(
-                  discoverItems,
-                  filters: _filters,
-                  searchQuery: _searchQuery,
-                  categoryLabelsBySlug: categoryLabelsBySlug,
+                final filteredItems = _sortDiscoverItems(
+                  _applyDiscoverFilters(
+                    discoverItems,
+                    filters: _filters,
+                    searchQuery: _searchQuery,
+                    categoryLabelsBySlug: categoryLabelsBySlug,
+                  ),
+                  sortField: _sortField,
+                  sortAscending: _sortAscending,
                 );
                 final paginatedItems = paginateItems(
                   filteredItems,
@@ -581,31 +514,26 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     controller: _searchController,
                                     focusNode: _searchFocusNode,
                                     hintText: l10n.activitiesSearchHint,
-                                  ),
-                                  SizedBox(height: layout.filterGap),
-                                  _DiscoverFilterRow(
-                                    l10n: l10n,
-                                    filters: _filters,
-                                    priceCurrencyLabel:
-                                        currentPriceFilterCurrency,
-                                    selectedCategoryCount:
-                                        _filters.categorySlugs.length,
-                                    onCategoryTap: () => _openCategoryFilter(
+                                    filtersActive: _filters.hasAnyValue,
+                                    activeFilterCount:
+                                        _filters.activeGroupCount,
+                                    onFilterTap: () => _openDiscoverFilters(
                                       context,
                                       categoryOptions,
-                                      discoverItems,
-                                    ),
-                                    onDateTap: () => _openDateFilter(context),
-                                    onPriceTap: () => _openPriceFilter(
-                                      context,
                                       discoverItems,
                                       currentPriceFilterCountryCode,
                                       normalizeActivityCurrencyCode(
                                         profile?.currency,
                                       ),
+                                      categoryLabelsBySlug,
                                     ),
-                                    onVisibilityTap: () =>
-                                        _openVisibilityFilter(context),
+                                  ),
+                                  SizedBox(height: layout.filterGap),
+                                  _DiscoverSortBar(
+                                    l10n: l10n,
+                                    sortField: _sortField,
+                                    sortAscending: _sortAscending,
+                                    onSortTap: _handleSortTap,
                                   ),
                                   SizedBox(
                                     height: _activitiesScaled(
@@ -1080,11 +1008,17 @@ class _DiscoverSearchField extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.hintText,
+    required this.filtersActive,
+    required this.activeFilterCount,
+    required this.onFilterTap,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final String hintText;
+  final bool filtersActive;
+  final int activeFilterCount;
+  final VoidCallback onFilterTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1140,14 +1074,16 @@ class _DiscoverSearchField extends StatelessWidget {
             ),
             child: Icon(
               Icons.search_rounded,
-              color: Color(0x88FFF0E0),
+              color: AppColors.accent,
               size: iconSize,
             ),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 0),
-          suffixIcon: controller.text.isEmpty
-              ? null
-              : IconButton(
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (controller.text.isNotEmpty)
+                IconButton(
                   onPressed: controller.clear,
                   splashRadius: 20,
                   icon: const Icon(
@@ -1155,217 +1091,195 @@ class _DiscoverSearchField extends StatelessWidget {
                     color: Color(0x88FFF0E0),
                   ),
                 ),
+              Padding(
+                padding: EdgeInsets.only(
+                  right: _activitiesScaled(context, 6, min: 4, max: 8),
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      tooltip: AppLocalizations.of(
+                        context,
+                      )!.activitiesFiltersTitle,
+                      onPressed: onFilterTap,
+                      splashRadius: 20,
+                      icon: Icon(
+                        Icons.tune_rounded,
+                        color: AppColors.accent,
+                        size: iconSize,
+                      ),
+                    ),
+                    if (activeFilterCount > 0)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: AppColors.accent,
+                              width: 1.4,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            activeFilterCount.toString(),
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 10,
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          suffixIconConstraints: const BoxConstraints(minWidth: 0),
         ),
       ),
     );
   }
 }
 
-class _DiscoverFilterRow extends StatelessWidget {
-  const _DiscoverFilterRow({
+class _DiscoverSortBar extends StatelessWidget {
+  const _DiscoverSortBar({
     required this.l10n,
-    required this.filters,
-    required this.priceCurrencyLabel,
-    required this.selectedCategoryCount,
-    required this.onCategoryTap,
-    required this.onDateTap,
-    required this.onPriceTap,
-    required this.onVisibilityTap,
+    required this.sortField,
+    required this.sortAscending,
+    required this.onSortTap,
   });
 
   final AppLocalizations l10n;
-  final _DiscoverFilters filters;
-  final String priceCurrencyLabel;
-  final int selectedCategoryCount;
-  final VoidCallback onCategoryTap;
-  final VoidCallback onDateTap;
-  final VoidCallback onPriceTap;
-  final VoidCallback onVisibilityTap;
+  final _ActivitySortField sortField;
+  final bool sortAscending;
+  final ValueChanged<_ActivitySortField> onSortTap;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          _DiscoverFilterChip(
-            icon: Icons.dashboard_customize_outlined,
-            label: selectedCategoryCount == 0
-                ? l10n.activitiesFilterCategory
-                : '${l10n.activitiesFilterCategory} · $selectedCategoryCount',
-            active: filters.categorySlugs.isNotEmpty,
-            onTap: onCategoryTap,
+    final gap = _activitiesScaled(context, 10, min: 8, max: 10);
+
+    return Row(
+      children: [
+        Expanded(
+          child: _DiscoverSortButton(
+            label: l10n.activitiesSortDate,
+            leadingIcon: Icons.calendar_month_outlined,
+            active: sortField == _ActivitySortField.date,
+            ascending: sortAscending,
+            onTap: () => onSortTap(_ActivitySortField.date),
           ),
-          const SizedBox(width: 10),
-          _DiscoverFilterChip(
-            icon: Icons.calendar_month_outlined,
-            label: _dateChipLabel(context, l10n),
-            active: filters.hasDateRange,
-            onTap: onDateTap,
+        ),
+        SizedBox(width: gap),
+        Expanded(
+          child: _DiscoverSortButton(
+            label: l10n.activitiesSortPrice,
+            leadingIcon: Icons.payments_outlined,
+            active: sortField == _ActivitySortField.price,
+            ascending: sortAscending,
+            onTap: () => onSortTap(_ActivitySortField.price),
           ),
-          const SizedBox(width: 10),
-          _DiscoverFilterChip(
-            icon: Icons.payments_outlined,
-            label: _priceChipLabel(),
-            active: filters.hasPriceRange,
-            onTap: onPriceTap,
-          ),
-          const SizedBox(width: 10),
-          _DiscoverFilterChip(
-            icon: Icons.public_rounded,
-            label: _visibilityChipLabel(),
-            active: filters.hasVisibilityFilter,
-            onTap: onVisibilityTap,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
-  }
-
-  String _priceChipLabel() {
-    if (!filters.hasPriceRange) {
-      return l10n.activitiesFilterPricing;
-    }
-
-    if (filters.minPrice == 0 && filters.maxPrice == 0) {
-      return l10n.createPriceFree;
-    }
-
-    final minText = filters.minPrice?.toStringAsFixed(0);
-    final maxText = filters.maxPrice?.toStringAsFixed(0);
-    if (minText != null && maxText != null) {
-      return '$priceCurrencyLabel $minText-$maxText';
-    }
-    if (minText != null) {
-      return '$priceCurrencyLabel $minText+';
-    }
-    if (maxText != null) {
-      return '$priceCurrencyLabel 0-$maxText';
-    }
-    return l10n.activitiesFilterPricing;
-  }
-
-  String _dateChipLabel(BuildContext context, AppLocalizations l10n) {
-    if (!filters.hasDateRange) {
-      return l10n.activitiesFilterDate;
-    }
-
-    final locale = Localizations.localeOf(context).toString();
-    final formatter = DateFormat('dd MMM', locale);
-    final start = filters.startDate == null
-        ? null
-        : formatter.format(filters.startDate!);
-    final end = filters.endDate == null
-        ? null
-        : formatter.format(filters.endDate!);
-
-    if (start != null && end != null) {
-      return '$start-$end';
-    }
-    return start ?? end ?? l10n.activitiesFilterDate;
-  }
-
-  String _visibilityChipLabel() {
-    if (!filters.hasVisibilityFilter) {
-      return l10n.activitiesFilterVisibility;
-    }
-
-    if (filters.visibilities.length == 1) {
-      final value = filters.visibilities.first;
-      return value == 'PRIVATE'
-          ? l10n.createVisibilityPrivate
-          : l10n.createVisibilityPublic;
-    }
-
-    return l10n.activitiesFilterVisibility;
   }
 }
 
-class _DiscoverFilterChip extends StatelessWidget {
-  const _DiscoverFilterChip({
-    required this.icon,
+class _DiscoverSortButton extends StatelessWidget {
+  const _DiscoverSortButton({
     required this.label,
+    required this.leadingIcon,
     required this.active,
+    required this.ascending,
     required this.onTap,
   });
 
-  final IconData icon;
   final String label;
+  final IconData leadingIcon;
   final bool active;
+  final bool ascending;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final chipPaddingHorizontal = _activitiesScaled(
-      context,
-      14,
-      min: 12,
-      max: 16,
-    );
-    final chipPaddingVertical = _activitiesScaled(context, 9, min: 8, max: 10);
+    final foreground = active ? AppColors.textPrimary : const Color(0xFFF3DFCA);
+    final fontSize = _activitiesScaled(context, 14, min: 12, max: 14);
     final iconSize = _activitiesScaled(context, 16, min: 14, max: 16);
-    final fontSize = _activitiesScaled(context, 14, min: 13, max: 14);
-    final arrowSize = _activitiesScaled(context, 18, min: 16, max: 18);
-    final foreground = active
-        ? const Color(0xFF241204)
-        : const Color(0xFFF3DFCA);
+    final arrowIcon = active
+        ? (ascending
+              ? Icons.arrow_upward_rounded
+              : Icons.arrow_downward_rounded)
+        : Icons.unfold_more_rounded;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Ink(
-          padding: EdgeInsets.symmetric(
-            horizontal: chipPaddingHorizontal,
-            vertical: chipPaddingVertical,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            gradient: active
-                ? const LinearGradient(
-                    colors: [Color(0xFFFFAB2D), Color(0xFFFF9800)],
-                  )
-                : LinearGradient(
-                    colors: [
-                      Colors.white.withValues(alpha: 0.03),
-                      Colors.white.withValues(alpha: 0.02),
-                    ],
-                  ),
-            border: active
-                ? null
-                : Border.all(color: AppColors.accent.withValues(alpha: 0.12)),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: AppColors.accent.withValues(alpha: 0.24),
-                      blurRadius: 22,
-                      offset: const Offset(0, 10),
+    return Semantics(
+      button: true,
+      selected: active,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Ink(
+            height: _activitiesScaled(context, 42, min: 38, max: 44),
+            padding: EdgeInsets.symmetric(
+              horizontal: _activitiesScaled(context, 14, min: 10, max: 14),
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              gradient: active
+                  ? const LinearGradient(
+                      colors: [Color(0xFFFFAB2D), Color(0xFFFF9800)],
+                    )
+                  : LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.03),
+                        Colors.white.withValues(alpha: 0.02),
+                      ],
                     ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: iconSize, color: foreground),
-              SizedBox(width: _activitiesScaled(context, 8, min: 6, max: 8)),
-              Text(
-                label,
-                style: TextStyle(
-                  color: foreground,
-                  fontSize: fontSize,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              border: active
+                  ? null
+                  : Border.all(color: AppColors.accent.withValues(alpha: 0.12)),
+              boxShadow: active
+                  ? [
+                      BoxShadow(
+                        color: AppColors.accent.withValues(alpha: 0.20),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(leadingIcon, size: iconSize, color: foreground),
+                SizedBox(width: _activitiesScaled(context, 7, min: 5, max: 7)),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: fontSize,
+                      fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-              SizedBox(width: _activitiesScaled(context, 4, min: 3, max: 4)),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: arrowSize,
-                color: foreground,
-              ),
-            ],
+                SizedBox(width: _activitiesScaled(context, 6, min: 4, max: 6)),
+                Icon(arrowIcon, size: iconSize, color: foreground),
+              ],
+            ),
           ),
         ),
       ),
@@ -1994,517 +1908,223 @@ class _ActivitiesEmptyView extends StatelessWidget {
   }
 }
 
-class _CategoryFilterSheet extends StatefulWidget {
-  const _CategoryFilterSheet({
+class _DiscoverFiltersSheet extends StatefulWidget {
+  const _DiscoverFiltersSheet({
     required this.l10n,
-    required this.initialSelectedSlugs,
-    required this.options,
+    required this.initialFilters,
+    required this.categoryOptions,
+    required this.items,
+    required this.currentCountryCode,
+    required this.fallbackCurrencyCode,
     required this.previewCountBuilder,
   });
 
   final AppLocalizations l10n;
-  final Set<String> initialSelectedSlugs;
-  final List<_DiscoverCategoryOption> options;
-  final int Function(Set<String> selectedSlugs) previewCountBuilder;
-
-  @override
-  State<_CategoryFilterSheet> createState() => _CategoryFilterSheetState();
-}
-
-class _CategoryFilterSheetState extends State<_CategoryFilterSheet> {
-  late Set<String> _selectedSlugs;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedSlugs = Set<String>.from(widget.initialSelectedSlugs);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final safeBottomInset = MediaQuery.paddingOf(context).bottom;
-    final count = widget.previewCountBuilder(_selectedSlugs);
-    final titleSize = _activitiesScaled(context, 30, min: 24, max: 30);
-    final footerGap = _activitiesScaled(context, 14, min: 10, max: 16);
-    final compactActions =
-        MediaQuery.sizeOf(context).width < 360 ||
-        MediaQuery.textScalerOf(context).scale(1) > 1.02;
-
-    return _ActivitiesResponsiveTextScope(
-      child: FractionallySizedBox(
-        heightFactor: 0.95,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.only(
-              top: _activitiesScaled(context, 18, min: 12, max: 18),
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF271609).withValues(alpha: 0.98),
-                    const Color(0xFF1B0E05).withValues(alpha: 0.985),
-                  ],
-                ),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(
-                    _activitiesScaled(context, 36, min: 28, max: 36),
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.36),
-                    blurRadius: 40,
-                    offset: const Offset(0, -12),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: _activitiesScaled(context, 84, min: 62, max: 84),
-                      height: _activitiesScaled(context, 10, min: 6, max: 10),
-                      margin: EdgeInsets.only(
-                        top: _activitiesScaled(context, 14, min: 10, max: 14),
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      _activitiesScaled(context, 18, min: 16, max: 20),
-                      _activitiesScaled(context, 20, min: 16, max: 20),
-                      _activitiesScaled(context, 18, min: 16, max: 20),
-                      0,
-                    ),
-                    child: Text(
-                      widget.l10n.activitiesFiltersCategoriesTitle,
-                      style: TextStyle(
-                        color: const Color(0xFFFFFAF5),
-                        fontSize: titleSize,
-                        height: 1.05,
-                        letterSpacing: -0.8,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.fromLTRB(
-                        _activitiesScaled(context, 18, min: 16, max: 20),
-                        _activitiesScaled(context, 22, min: 16, max: 22),
-                        _activitiesScaled(context, 18, min: 16, max: 20),
-                        0,
-                      ),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final textScale = MediaQuery.textScalerOf(
-                            context,
-                          ).scale(1);
-                          final useSingleColumn =
-                              constraints.maxWidth < 360 || textScale > 1.05;
-                          final spacing = _activitiesScaled(
-                            context,
-                            18,
-                            min: 12,
-                            max: 18,
-                          );
-                          final gridDelegate =
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: useSingleColumn ? 1 : 2,
-                                mainAxisSpacing: spacing,
-                                crossAxisSpacing: spacing,
-                                mainAxisExtent: _activitiesScaled(
-                                  context,
-                                  useSingleColumn ? 152 : 178,
-                                  min: useSingleColumn ? 136 : 158,
-                                  max: useSingleColumn ? 168 : 188,
-                                ),
-                              );
-
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: widget.options.length,
-                            gridDelegate: gridDelegate,
-                            itemBuilder: (context, index) {
-                              final option = widget.options[index];
-                              final selected = _selectedSlugs.contains(
-                                option.slug,
-                              );
-
-                              return _CategoryOptionCard(
-                                option: option,
-                                selected: selected,
-                                subtitle: widget.l10n.activitiesResultsCount(
-                                  option.count,
-                                ),
-                                onTap: () {
-                                  setState(() {
-                                    if (selected) {
-                                      _selectedSlugs.remove(option.slug);
-                                    } else {
-                                      _selectedSlugs.add(option.slug);
-                                    }
-                                  });
-                                },
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      _activitiesScaled(context, 18, min: 16, max: 20),
-                      _activitiesScaled(context, 10, min: 8, max: 12),
-                      _activitiesScaled(context, 18, min: 16, max: 20),
-                      8,
-                    ),
-                    child: Container(
-                      padding: EdgeInsets.fromLTRB(
-                        2,
-                        _activitiesScaled(context, 18, min: 14, max: 18),
-                        2,
-                        2,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.08),
-                          ),
-                        ),
-                      ),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final useColumn =
-                              compactActions || constraints.maxWidth < 340;
-                          final label = Text(
-                            widget.l10n.activitiesFiltersSelectedCategories,
-                            style: TextStyle(
-                              color: const Color(0x80FFF7EF),
-                              fontSize: _activitiesScaled(
-                                context,
-                                15,
-                                min: 13,
-                                max: 15,
-                              ),
-                            ),
-                          );
-                          final value = Text(
-                            _selectedSummary(widget.options),
-                            textAlign: useColumn
-                                ? TextAlign.left
-                                : TextAlign.right,
-                            style: TextStyle(
-                              color: AppColors.accent,
-                              fontSize: _activitiesScaled(
-                                context,
-                                16,
-                                min: 14,
-                                max: 16,
-                              ),
-                              height: 1.2,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          );
-
-                          if (useColumn) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                label,
-                                SizedBox(height: footerGap),
-                                value,
-                              ],
-                            );
-                          }
-
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(child: label),
-                              SizedBox(width: footerGap),
-                              Expanded(child: value),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      _activitiesScaled(context, 18, min: 16, max: 20),
-                      6,
-                      _activitiesScaled(context, 18, min: 16, max: 20),
-                      18 + safeBottomInset,
-                    ),
-                    child: compactActions
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(context).pop(<String>{}),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: const Color(0xB3FFF7EF),
-                                  minimumSize: Size(
-                                    0,
-                                    _activitiesScaled(
-                                      context,
-                                      56,
-                                      min: 50,
-                                      max: 64,
-                                    ),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                ),
-                                child: Text(
-                                  widget.l10n.myActivitiesFilterClear,
-                                ),
-                              ),
-                              SizedBox(height: footerGap),
-                              _PrimaryPillButton(
-                                label: widget.l10n.activitiesShowResults(count),
-                                onTap: () =>
-                                    Navigator.of(context).pop(_selectedSlugs),
-                                minHeight: _activitiesScaled(
-                                  context,
-                                  72,
-                                  min: 58,
-                                  max: 72,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              Expanded(
-                                child: TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(<String>{}),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xB3FFF7EF),
-                                    minimumSize: Size(
-                                      0,
-                                      _activitiesScaled(
-                                        context,
-                                        64,
-                                        min: 54,
-                                        max: 64,
-                                      ),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    widget.l10n.myActivitiesFilterClear,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: footerGap),
-                              Expanded(
-                                flex: 2,
-                                child: _PrimaryPillButton(
-                                  label: widget.l10n.activitiesShowResults(
-                                    count,
-                                  ),
-                                  onTap: () =>
-                                      Navigator.of(context).pop(_selectedSlugs),
-                                  minHeight: _activitiesScaled(
-                                    context,
-                                    72,
-                                    min: 58,
-                                    max: 72,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _selectedSummary(List<_DiscoverCategoryOption> options) {
-    if (_selectedSlugs.isEmpty) {
-      return widget.l10n.activitiesAllCategories;
-    }
-
-    final labels = options
-        .where((option) => _selectedSlugs.contains(option.slug))
-        .map((option) => option.label)
-        .toList();
-    return labels.join(', ');
-  }
-}
-
-class _CategoryOptionCard extends StatelessWidget {
-  const _CategoryOptionCard({
-    required this.option,
-    required this.selected,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final _DiscoverCategoryOption option;
-  final bool selected;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final iconWrap = _activitiesScaled(context, 40, min: 34, max: 40);
-    final titleSize = _activitiesScaled(context, 16, min: 14, max: 16);
-    final subtitleSize = _activitiesScaled(context, 13, min: 12, max: 13);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          padding: EdgeInsets.all(
-            _activitiesScaled(context, 18, min: 14, max: 18),
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: selected
-                  ? AppColors.accent
-                  : Colors.white.withValues(alpha: 0.08),
-              width: selected ? 2.6 : 1.0,
-            ),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: selected
-                  ? [
-                      option.colors.first.withValues(alpha: 0.88),
-                      option.colors.last.withValues(alpha: 0.98),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.03),
-                      Colors.white.withValues(alpha: 0.015),
-                    ],
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: iconWrap,
-                height: iconWrap,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  color: selected
-                      ? Colors.black.withValues(alpha: 0.16)
-                      : Colors.white.withValues(alpha: 0.04),
-                ),
-                child: Icon(
-                  option.icon,
-                  color: selected
-                      ? AppColors.accent
-                      : Colors.white.withValues(alpha: 0.86),
-                ),
-              ),
-              const Spacer(),
-              Text(
-                option.label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Color(0xFFFFFAF5),
-                  fontSize: titleSize,
-                  height: 1.1,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: _activitiesScaled(context, 6, min: 4, max: 6)),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected
-                      ? const Color(0xFFFFC56A)
-                      : const Color(0x8FFFF7EF),
-                  fontSize: subtitleSize,
-                  height: 1.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PriceFilterSheet extends StatefulWidget {
-  const _PriceFilterSheet({
-    required this.l10n,
-    required this.items,
-    required this.currentCountryCode,
-    required this.fallbackCurrencyCode,
-    this.initialMinPrice,
-    this.initialMaxPrice,
-  });
-
-  final AppLocalizations l10n;
+  final _DiscoverFilters initialFilters;
+  final List<_DiscoverCategoryOption> categoryOptions;
   final List<ActivityListItemVm> items;
   final String? currentCountryCode;
   final String? fallbackCurrencyCode;
-  final double? initialMinPrice;
-  final double? initialMaxPrice;
+  final int Function(_DiscoverFilters filters) previewCountBuilder;
 
   @override
-  State<_PriceFilterSheet> createState() => _PriceFilterSheetState();
+  State<_DiscoverFiltersSheet> createState() => _DiscoverFiltersSheetState();
 }
 
-class _PriceFilterSheetState extends State<_PriceFilterSheet> {
-  late final TextEditingController _minController;
-  late final TextEditingController _maxController;
+class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
+  late final TextEditingController _minPriceController;
+  late final TextEditingController _maxPriceController;
+  late final TextEditingController _startDateController;
+  late final TextEditingController _endDateController;
+  late Set<String> _selectedSlugs;
+  late Set<String> _selectedVisibilities;
+  String? _startError;
+  String? _endError;
+  bool _controllerUpdateInProgress = false;
 
   @override
   void initState() {
     super.initState();
-    _minController = TextEditingController(
-      text: widget.initialMinPrice?.toStringAsFixed(0) ?? '',
-    );
-    _maxController = TextEditingController(
-      text: widget.initialMaxPrice?.toStringAsFixed(0) ?? '',
-    );
+    final initial = widget.initialFilters;
+    _selectedSlugs = Set<String>.from(initial.categorySlugs);
+    _selectedVisibilities = Set<String>.from(initial.visibilities);
+    _minPriceController = TextEditingController(
+      text: initial.minPrice?.toStringAsFixed(0) ?? '',
+    )..addListener(_handleFieldChanged);
+    _maxPriceController = TextEditingController(
+      text: initial.maxPrice?.toStringAsFixed(0) ?? '',
+    )..addListener(_handleFieldChanged);
+    _startDateController = TextEditingController(
+      text: initial.startDate == null ? '' : _formatDate(initial.startDate!),
+    )..addListener(_handleFieldChanged);
+    _endDateController = TextEditingController(
+      text: initial.endDate == null ? '' : _formatDate(initial.endDate!),
+    )..addListener(_handleFieldChanged);
   }
 
   @override
   void dispose() {
-    _minController.dispose();
-    _maxController.dispose();
+    _minPriceController.dispose();
+    _maxPriceController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
     super.dispose();
+  }
+
+  void _handleFieldChanged() {
+    if (mounted && !_controllerUpdateInProgress) {
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
+    final draftFilters = _draftFilters();
+    final count = widget.previewCountBuilder(draftFilters);
+
+    return _RangeSheetScaffold(
+      title: widget.l10n.activitiesFiltersTitle,
+      maxHeightFactor: 0.9,
+      footerPadding: 18 + safeBottomInset,
+      applyLabel: widget.l10n.activitiesShowResults(count),
+      onClear: _clearAll,
+      onApply: _handleApply,
+      l10n: widget.l10n,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCategorySection(context),
+          _FilterSectionDivider(),
+          _buildDateSection(context),
+          _FilterSectionDivider(),
+          _buildPriceSection(context),
+          _FilterSectionDivider(),
+          _buildVisibilitySection(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategorySection(BuildContext context) {
+    if (widget.categoryOptions.isEmpty) {
+      return _FilterSection(
+        icon: Icons.dashboard_customize_outlined,
+        title: widget.l10n.activitiesFilterCategory,
+        child: Text(
+          widget.l10n.activitiesAllCategories,
+          style: TextStyle(
+            color: const Color(0xB3FFF0E0),
+            fontSize: _activitiesScaled(context, 14, min: 13, max: 15),
+          ),
+        ),
+      );
+    }
+
+    return _FilterSection(
+      icon: Icons.dashboard_customize_outlined,
+      title: widget.l10n.activitiesFilterCategory,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textScale = MediaQuery.textScalerOf(context).scale(1);
+          final spacing = _activitiesScaled(context, 8, min: 6, max: 10);
+          final columns = constraints.maxWidth < 340 || textScale > 1.08
+              ? 1
+              : 2;
+          final itemWidth =
+              (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+          return Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: [
+              for (final option in widget.categoryOptions)
+                SizedBox(
+                  width: itemWidth,
+                  child: _CategoryFilterPill(
+                    option: option,
+                    selected: _selectedSlugs.contains(option.slug),
+                    countLabel: widget.l10n.activitiesResultsCount(
+                      option.count,
+                    ),
+                    onTap: () {
+                      final selected = _selectedSlugs.contains(option.slug);
+                      setState(() {
+                        if (selected) {
+                          _selectedSlugs.remove(option.slug);
+                        } else {
+                          _selectedSlugs.add(option.slug);
+                        }
+                      });
+                    },
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDateSection(BuildContext context) {
+    final presets = _buildDatePresets(widget.l10n);
+
+    return _FilterSection(
+      icon: Icons.calendar_month_outlined,
+      title: widget.l10n.activitiesFilterDate,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildResponsiveFieldPair(
+            context,
+            first: _RangeTextField(
+              label: widget.l10n.myActivitiesFilterStartDate,
+              controller: _startDateController,
+              prefix: '',
+              hintText: widget.l10n.activitiesFilterStartDatePlaceholder,
+              keyboardType: TextInputType.number,
+              inputFormatters: const [_DateTextInputFormatter()],
+              errorText: _startError,
+            ),
+            second: _RangeTextField(
+              label: widget.l10n.myActivitiesFilterEndDate,
+              controller: _endDateController,
+              prefix: '',
+              hintText: widget.l10n.activitiesFilterEndDatePlaceholder,
+              keyboardType: TextInputType.number,
+              inputFormatters: const [_DateTextInputFormatter()],
+              errorText: _endError,
+            ),
+          ),
+          SizedBox(height: _activitiesScaled(context, 12, min: 10, max: 14)),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final preset in presets)
+                _PresetChip(
+                  label: preset.label,
+                  onTap: () {
+                    setState(() {
+                      _updateControllers(() {
+                        _startDateController.text = _formatDate(
+                          preset.startDate,
+                        );
+                        _endDateController.text = _formatDate(preset.endDate);
+                      });
+                      _startError = null;
+                      _endError = null;
+                    });
+                  },
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceSection(BuildContext context) {
     final currencyCode = _resolvePriceFilterCurrencyCode(
       currentCountryCode: widget.currentCountryCode,
       fallbackCurrencyCode: widget.fallbackCurrencyCode,
@@ -2520,88 +2140,34 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
       l10n: widget.l10n,
     );
 
-    return _RangeSheetScaffold(
-      title: widget.l10n.activitiesFiltersPriceRangeTitle,
-      maxHeightFactor: 0.6,
-      footerPadding: 18 + safeBottomInset,
-      onClear: () => Navigator.of(context).pop(const _PriceRangeFilter()),
-      onApply: () {
-        Navigator.of(context).pop(
-          _PriceRangeFilter(
-            minPrice: _parseNumeric(_minController.text),
-            maxPrice: _parseNumeric(_maxController.text),
-          ),
-        );
-      },
-      l10n: widget.l10n,
+    return _FilterSection(
+      icon: Icons.payments_outlined,
+      title: widget.l10n.activitiesFilterPricing,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final useColumn =
-                  constraints.maxWidth < 360 ||
-                  MediaQuery.textScalerOf(context).scale(1) > 1.02;
-              if (useColumn) {
-                return Column(
-                  children: [
-                    _RangeTextField(
-                      label: widget.l10n.activitiesFilterMinPrice,
-                      controller: _minController,
-                      prefix: currencyLabel,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: const [_DecimalTextInputFormatter()],
-                    ),
-                    SizedBox(
-                      height: _activitiesScaled(context, 14, min: 12, max: 16),
-                    ),
-                    _RangeTextField(
-                      label: widget.l10n.activitiesFilterMaxPrice,
-                      controller: _maxController,
-                      prefix: currencyLabel,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: const [_DecimalTextInputFormatter()],
-                    ),
-                  ],
-                );
-              }
-
-              return Row(
-                children: [
-                  Expanded(
-                    child: _RangeTextField(
-                      label: widget.l10n.activitiesFilterMinPrice,
-                      controller: _minController,
-                      prefix: currencyLabel,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: const [_DecimalTextInputFormatter()],
-                    ),
-                  ),
-                  SizedBox(
-                    width: _activitiesScaled(context, 14, min: 10, max: 14),
-                  ),
-                  Expanded(
-                    child: _RangeTextField(
-                      label: widget.l10n.activitiesFilterMaxPrice,
-                      controller: _maxController,
-                      prefix: currencyLabel,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: const [_DecimalTextInputFormatter()],
-                    ),
-                  ),
-                ],
-              );
-            },
+          _buildResponsiveFieldPair(
+            context,
+            first: _RangeTextField(
+              label: widget.l10n.activitiesFilterMinPrice,
+              controller: _minPriceController,
+              prefix: currencyLabel,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: const [_DecimalTextInputFormatter()],
+            ),
+            second: _RangeTextField(
+              label: widget.l10n.activitiesFilterMaxPrice,
+              controller: _maxPriceController,
+              prefix: currencyLabel,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: const [_DecimalTextInputFormatter()],
+            ),
           ),
-          SizedBox(height: _activitiesScaled(context, 22, min: 16, max: 24)),
+          SizedBox(height: _activitiesScaled(context, 12, min: 10, max: 14)),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -2611,160 +2177,14 @@ class _PriceFilterSheetState extends State<_PriceFilterSheet> {
                   label: preset.label,
                   onTap: () {
                     setState(() {
-                      _minController.text = preset.minPrice == null
-                          ? ''
-                          : preset.minPrice!.toStringAsFixed(0);
-                      _maxController.text = preset.maxPrice == null
-                          ? ''
-                          : preset.maxPrice!.toStringAsFixed(0);
-                    });
-                  },
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DateFilterSheet extends StatefulWidget {
-  const _DateFilterSheet({
-    required this.l10n,
-    this.initialStartDate,
-    this.initialEndDate,
-  });
-
-  final AppLocalizations l10n;
-  final DateTime? initialStartDate;
-  final DateTime? initialEndDate;
-
-  @override
-  State<_DateFilterSheet> createState() => _DateFilterSheetState();
-}
-
-class _DateFilterSheetState extends State<_DateFilterSheet> {
-  late final TextEditingController _startController;
-  late final TextEditingController _endController;
-
-  String? _startError;
-  String? _endError;
-
-  @override
-  void initState() {
-    super.initState();
-    _startController = TextEditingController(
-      text: widget.initialStartDate == null
-          ? ''
-          : _formatDate(widget.initialStartDate!),
-    );
-    _endController = TextEditingController(
-      text: widget.initialEndDate == null
-          ? ''
-          : _formatDate(widget.initialEndDate!),
-    );
-  }
-
-  @override
-  void dispose() {
-    _startController.dispose();
-    _endController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final safeBottomInset = MediaQuery.paddingOf(context).bottom;
-    final presets = _buildDatePresets(widget.l10n);
-
-    return _RangeSheetScaffold(
-      title: widget.l10n.myActivitiesFilterDateRange,
-      maxHeightFactor: 0.6,
-      footerPadding: 18 + safeBottomInset,
-      onClear: () => Navigator.of(context).pop(const _DateRangeFilter()),
-      onApply: _handleApply,
-      l10n: widget.l10n,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final useColumn =
-                  constraints.maxWidth < 360 ||
-                  MediaQuery.textScalerOf(context).scale(1) > 1.02;
-              if (useColumn) {
-                return Column(
-                  children: [
-                    _RangeTextField(
-                      label: widget.l10n.myActivitiesFilterStartDate,
-                      controller: _startController,
-                      prefix: '',
-                      hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: const [_DateTextInputFormatter()],
-                      errorText: _startError,
-                    ),
-                    SizedBox(
-                      height: _activitiesScaled(context, 14, min: 12, max: 16),
-                    ),
-                    _RangeTextField(
-                      label: widget.l10n.myActivitiesFilterEndDate,
-                      controller: _endController,
-                      prefix: '',
-                      hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: const [_DateTextInputFormatter()],
-                      errorText: _endError,
-                    ),
-                  ],
-                );
-              }
-
-              return Row(
-                children: [
-                  Expanded(
-                    child: _RangeTextField(
-                      label: widget.l10n.myActivitiesFilterStartDate,
-                      controller: _startController,
-                      prefix: '',
-                      hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: const [_DateTextInputFormatter()],
-                      errorText: _startError,
-                    ),
-                  ),
-                  SizedBox(
-                    width: _activitiesScaled(context, 14, min: 10, max: 14),
-                  ),
-                  Expanded(
-                    child: _RangeTextField(
-                      label: widget.l10n.myActivitiesFilterEndDate,
-                      controller: _endController,
-                      prefix: '',
-                      hintText: widget.l10n.myActivitiesFilterDatePlaceholder,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: const [_DateTextInputFormatter()],
-                      errorText: _endError,
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-          SizedBox(height: _activitiesScaled(context, 22, min: 16, max: 24)),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final preset in presets)
-                _PresetChip(
-                  label: preset.label,
-                  onTap: () {
-                    setState(() {
-                      _startController.text = _formatDate(preset.startDate);
-                      _endController.text = _formatDate(preset.endDate);
-                      _startError = null;
-                      _endError = null;
+                      _updateControllers(() {
+                        _minPriceController.text = preset.minPrice == null
+                            ? ''
+                            : preset.minPrice!.toStringAsFixed(0);
+                        _maxPriceController.text = preset.maxPrice == null
+                            ? ''
+                            : preset.maxPrice!.toStringAsFixed(0);
+                      });
                     });
                   },
                 ),
@@ -2775,82 +2195,15 @@ class _DateFilterSheetState extends State<_DateFilterSheet> {
     );
   }
 
-  void _handleApply() {
-    final startDate = _parseDate(_startController.text);
-    final endDate = _parseDate(_endController.text);
-
-    setState(() {
-      _startError = _dateError(
-        _startController.text,
-        startDate,
-        widget.l10n.myActivitiesFilterInvalidDate,
-      );
-      _endError = _dateError(
-        _endController.text,
-        endDate,
-        widget.l10n.myActivitiesFilterInvalidDate,
-      );
-
-      if (_startError == null &&
-          _endError == null &&
-          startDate != null &&
-          endDate != null &&
-          endDate.isBefore(startDate)) {
-        _endError = widget.l10n.myActivitiesFilterInvalidRange;
-      }
-    });
-
-    if (_startError != null || _endError != null) {
-      return;
-    }
-
-    Navigator.of(
-      context,
-    ).pop(_DateRangeFilter(startDate: startDate, endDate: endDate));
-  }
-
-  String _formatDate(DateTime value) => DateFormat('dd.MM.yyyy').format(value);
-}
-
-class _VisibilityFilterSheet extends StatefulWidget {
-  const _VisibilityFilterSheet({
-    required this.l10n,
-    required this.initialVisibilities,
-  });
-
-  final AppLocalizations l10n;
-  final Set<String> initialVisibilities;
-
-  @override
-  State<_VisibilityFilterSheet> createState() => _VisibilityFilterSheetState();
-}
-
-class _VisibilityFilterSheetState extends State<_VisibilityFilterSheet> {
-  late Set<String> _selectedVisibilities;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedVisibilities = Set<String>.from(widget.initialVisibilities);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final safeBottomInset = MediaQuery.paddingOf(context).bottom;
-
-    return _RangeSheetScaffold(
-      title: widget.l10n.activitiesFiltersVisibilityTitle,
-      maxHeightFactor: 0.5,
-      footerPadding: 18 + safeBottomInset,
-      onClear: () => Navigator.of(context).pop(<String>{}),
-      onApply: () {
-        final normalized = _normalizeVisibilitySelection(_selectedVisibilities);
-        Navigator.of(context).pop(normalized);
-      },
-      l10n: widget.l10n,
+  Widget _buildVisibilitySection(BuildContext context) {
+    return _FilterSection(
+      icon: Icons.public_rounded,
+      title: widget.l10n.activitiesFilterVisibility,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useColumn = constraints.maxWidth < 360;
+          final useColumn =
+              constraints.maxWidth < 360 ||
+              MediaQuery.textScalerOf(context).scale(1) > 1.04;
           final options = [
             _VisibilityOptionCard(
               label: widget.l10n.createVisibilityPublic,
@@ -2886,6 +2239,37 @@ class _VisibilityFilterSheetState extends State<_VisibilityFilterSheet> {
     );
   }
 
+  Widget _buildResponsiveFieldPair(
+    BuildContext context, {
+    required Widget first,
+    required Widget second,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useColumn =
+            constraints.maxWidth < 360 ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.02;
+        if (useColumn) {
+          return Column(
+            children: [
+              first,
+              SizedBox(height: _activitiesScaled(context, 10, min: 8, max: 12)),
+              second,
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: first),
+            SizedBox(width: _activitiesScaled(context, 10, min: 8, max: 12)),
+            Expanded(child: second),
+          ],
+        );
+      },
+    );
+  }
+
   void _toggleVisibility(String value) {
     setState(() {
       if (_selectedVisibilities.contains(value)) {
@@ -2894,6 +2278,201 @@ class _VisibilityFilterSheetState extends State<_VisibilityFilterSheet> {
         _selectedVisibilities.add(value);
       }
     });
+  }
+
+  void _clearAll() {
+    setState(() {
+      _selectedSlugs.clear();
+      _selectedVisibilities.clear();
+      _updateControllers(() {
+        _minPriceController.clear();
+        _maxPriceController.clear();
+        _startDateController.clear();
+        _endDateController.clear();
+      });
+      _startError = null;
+      _endError = null;
+    });
+  }
+
+  void _updateControllers(VoidCallback update) {
+    _controllerUpdateInProgress = true;
+    try {
+      update();
+    } finally {
+      _controllerUpdateInProgress = false;
+    }
+  }
+
+  void _handleApply() {
+    final startDate = _parseDate(_startDateController.text);
+    final endDate = _parseDate(_endDateController.text);
+
+    setState(() {
+      _startError = _dateError(
+        _startDateController.text,
+        startDate,
+        widget.l10n.myActivitiesFilterInvalidDate,
+      );
+      _endError = _dateError(
+        _endDateController.text,
+        endDate,
+        widget.l10n.myActivitiesFilterInvalidDate,
+      );
+
+      if (_startError == null &&
+          _endError == null &&
+          startDate != null &&
+          endDate != null &&
+          endDate.isBefore(startDate)) {
+        _endError = widget.l10n.myActivitiesFilterInvalidRange;
+      }
+    });
+
+    if (_startError != null || _endError != null) {
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _DiscoverFilters(
+        categorySlugs: Set<String>.unmodifiable(_selectedSlugs),
+        visibilities: Set<String>.unmodifiable(
+          _normalizeVisibilitySelection(_selectedVisibilities),
+        ),
+        startDate: startDate,
+        endDate: endDate,
+        minPrice: _parseNumeric(_minPriceController.text),
+        maxPrice: _parseNumeric(_maxPriceController.text),
+      ),
+    );
+  }
+
+  _DiscoverFilters _draftFilters() {
+    return _DiscoverFilters(
+      categorySlugs: _selectedSlugs,
+      visibilities: _normalizeVisibilitySelection(_selectedVisibilities),
+      startDate: _parseDate(_startDateController.text),
+      endDate: _parseDate(_endDateController.text),
+      minPrice: _parseNumeric(_minPriceController.text),
+      maxPrice: _parseNumeric(_maxPriceController.text),
+    );
+  }
+
+  String _formatDate(DateTime value) => DateFormat('dd.MM.yyyy').format(value);
+}
+
+class _CategoryFilterPill extends StatelessWidget {
+  const _CategoryFilterPill({
+    required this.option,
+    required this.selected,
+    required this.countLabel,
+    required this.onTap,
+  });
+
+  final _DiscoverCategoryOption option;
+  final bool selected;
+  final String countLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconWrap = _activitiesScaled(context, 34, min: 30, max: 34);
+    final titleSize = _activitiesScaled(context, 13, min: 12, max: 14);
+    final countSize = _activitiesScaled(context, 11, min: 10, max: 11);
+    final foreground = selected
+        ? const Color(0xFFFFFAF5)
+        : const Color(0xE6FFF0E0);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          height: _activitiesScaled(context, 58, min: 52, max: 60),
+          padding: EdgeInsets.symmetric(
+            horizontal: _activitiesScaled(context, 12, min: 10, max: 12),
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent
+                  : Colors.white.withValues(alpha: 0.08),
+              width: selected ? 1.5 : 1.0,
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: selected
+                  ? [
+                      option.colors.first.withValues(alpha: 0.42),
+                      option.colors.last.withValues(alpha: 0.24),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.03),
+                      Colors.white.withValues(alpha: 0.015),
+                    ],
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: iconWrap,
+                height: iconWrap,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: selected
+                      ? AppColors.accent.withValues(alpha: 0.16)
+                      : Colors.white.withValues(alpha: 0.04),
+                ),
+                child: Icon(
+                  option.icon,
+                  size: _activitiesScaled(context, 17, min: 15, max: 17),
+                  color: selected ? AppColors.accent : foreground,
+                ),
+              ),
+              SizedBox(width: _activitiesScaled(context, 10, min: 8, max: 10)),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      option.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: foreground,
+                        fontSize: titleSize,
+                        height: 1.1,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(
+                      height: _activitiesScaled(context, 3, min: 2, max: 4),
+                    ),
+                    Text(
+                      countLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: selected
+                            ? const Color(0xFFFFC56A)
+                            : const Color(0x8FFFF7EF),
+                        fontSize: countSize,
+                        height: 1.1,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -2914,21 +2493,23 @@ class _VisibilityOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconWrap = _activitiesScaled(context, 42, min: 36, max: 42);
-    final titleSize = _activitiesScaled(context, 16, min: 14, max: 16);
-    final bodySize = _activitiesScaled(context, 13, min: 12, max: 13);
+    final iconWrap = _activitiesScaled(context, 36, min: 32, max: 36);
+    final titleSize = _activitiesScaled(context, 14, min: 13, max: 15);
+    final bodySize = _activitiesScaled(context, 12, min: 11, max: 12);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         child: Ink(
-          padding: EdgeInsets.all(
-            _activitiesScaled(context, 18, min: 14, max: 18),
+          height: _activitiesScaled(context, 76, min: 68, max: 78),
+          padding: EdgeInsets.symmetric(
+            horizontal: _activitiesScaled(context, 14, min: 12, max: 14),
+            vertical: _activitiesScaled(context, 12, min: 10, max: 12),
           ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(18),
             gradient: selected
                 ? LinearGradient(
                     begin: Alignment.topLeft,
@@ -2953,8 +2534,8 @@ class _VisibilityOptionCard extends StatelessWidget {
               width: selected ? 1.5 : 1,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 width: iconWrap,
@@ -2967,38 +2548,195 @@ class _VisibilityOptionCard extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
+                  size: _activitiesScaled(context, 18, min: 16, max: 18),
                   color: selected ? Colors.white : AppColors.accent,
                 ),
               ),
-              SizedBox(
-                height: _activitiesScaled(context, 16, min: 12, max: 16),
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected
-                      ? const Color(0xFFFFF9F0)
-                      : const Color(0xE6F0E2D2),
-                  fontSize: titleSize,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: _activitiesScaled(context, 8, min: 6, max: 8)),
-              Text(
-                description,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected
-                      ? Colors.white.withValues(alpha: 0.82)
-                      : const Color(0xB3FFF0E0),
-                  fontSize: bodySize,
-                  height: 1.35,
+              SizedBox(width: _activitiesScaled(context, 10, min: 8, max: 10)),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: selected
+                            ? const Color(0xFFFFF9F0)
+                            : const Color(0xE6F0E2D2),
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(
+                      height: _activitiesScaled(context, 4, min: 3, max: 5),
+                    ),
+                    Text(
+                      description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: selected
+                            ? Colors.white.withValues(alpha: 0.78)
+                            : const Color(0xA8FFF0E0),
+                        fontSize: bodySize,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FilterSection extends StatelessWidget {
+  const _FilterSection({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconWrap = _activitiesScaled(context, 30, min: 28, max: 32);
+    final titleSize = _activitiesScaled(context, 14, min: 13, max: 15);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: iconWrap,
+              height: iconWrap,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.accent.withValues(alpha: 0.10),
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.18),
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: AppColors.accent,
+                size: _activitiesScaled(context, 15, min: 14, max: 16),
+              ),
+            ),
+            SizedBox(width: _activitiesScaled(context, 8, min: 7, max: 10)),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: _activitiesScaled(context, 10, min: 8, max: 12)),
+        child,
+      ],
+    );
+  }
+}
+
+class _FilterSectionDivider extends StatelessWidget {
+  const _FilterSectionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        vertical: _activitiesScaled(context, 18, min: 14, max: 20),
+      ),
+      child: Divider(
+        height: 1,
+        thickness: 1,
+        color: Colors.white.withValues(alpha: 0.08),
+      ),
+    );
+  }
+}
+
+class _FilterSheetHeader extends StatelessWidget {
+  const _FilterSheetHeader({
+    required this.title,
+    required this.clearLabel,
+    required this.onClear,
+  });
+
+  final String title;
+  final String clearLabel;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final horizontalPadding = _activitiesScaled(context, 18, min: 16, max: 24);
+    final titleSize = _activitiesScaled(context, 16, min: 14, max: 17);
+    final clearSize = _activitiesScaled(context, 12, min: 11, max: 12);
+
+    return Container(
+      height: _activitiesScaled(context, 46, min: 44, max: 50),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF3B260D))),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: _activitiesScaled(context, 86, min: 74, max: 96),
+            ),
+            child: Text(
+              title.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: titleSize,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onClear,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                clearLabel.toUpperCase(),
+                style: TextStyle(
+                  fontSize: clearSize,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -3013,6 +2751,7 @@ class _RangeSheetScaffold extends StatelessWidget {
     required this.footerPadding,
     required this.l10n,
     this.maxHeightFactor = 0.82,
+    this.applyLabel,
   });
 
   final String title;
@@ -3022,16 +2761,12 @@ class _RangeSheetScaffold extends StatelessWidget {
   final double footerPadding;
   final AppLocalizations l10n;
   final double maxHeightFactor;
+  final String? applyLabel;
 
   @override
   Widget build(BuildContext context) {
     final maxHeight = MediaQuery.sizeOf(context).height * maxHeightFactor;
-    final titleSize = _activitiesScaled(context, 24, min: 20, max: 24);
-    final horizontalPadding = _activitiesScaled(context, 24, min: 16, max: 24);
-    final verticalGap = _activitiesScaled(context, 14, min: 10, max: 16);
-    final compactActions =
-        MediaQuery.sizeOf(context).width < 360 ||
-        MediaQuery.textScalerOf(context).scale(1) > 1.02;
+    final horizontalPadding = _activitiesScaled(context, 20, min: 16, max: 22);
 
     return _ActivitiesResponsiveTextScope(
       child: AnimatedPadding(
@@ -3066,43 +2801,17 @@ class _RangeSheetScaffold extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(
-                      child: Container(
-                        width: _activitiesScaled(context, 52, min: 42, max: 52),
-                        height: _activitiesScaled(context, 6, min: 5, max: 6),
-                        margin: EdgeInsets.only(
-                          top: _activitiesScaled(context, 10, min: 8, max: 10),
-                          bottom: _activitiesScaled(context, 8, min: 6, max: 8),
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          color: AppColors.accent.withValues(alpha: 0.35),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        _activitiesScaled(context, 12, min: 10, max: 12),
-                        horizontalPadding,
-                        0,
-                      ),
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          color: const Color(0xFFFFF8F1),
-                          fontSize: titleSize,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
+                    _FilterSheetHeader(
+                      title: title,
+                      clearLabel: l10n.myActivitiesFilterClear,
+                      onClear: onClear,
                     ),
                     Expanded(
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
                         padding: EdgeInsets.fromLTRB(
                           horizontalPadding,
-                          _activitiesScaled(context, 26, min: 18, max: 26),
+                          _activitiesScaled(context, 18, min: 14, max: 20),
                           horizontalPadding,
                           0,
                         ),
@@ -3111,11 +2820,11 @@ class _RangeSheetScaffold extends StatelessWidget {
                     ),
                     Container(
                       margin: EdgeInsets.only(
-                        top: _activitiesScaled(context, 20, min: 14, max: 20),
+                        top: _activitiesScaled(context, 12, min: 10, max: 14),
                       ),
                       padding: EdgeInsets.fromLTRB(
                         horizontalPadding,
-                        _activitiesScaled(context, 16, min: 12, max: 16),
+                        _activitiesScaled(context, 12, min: 10, max: 14),
                         horizontalPadding,
                         footerPadding,
                       ),
@@ -3127,81 +2836,16 @@ class _RangeSheetScaffold extends StatelessWidget {
                         ),
                         color: Colors.black.withValues(alpha: 0.06),
                       ),
-                      child: compactActions
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                TextButton(
-                                  onPressed: onClear,
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xBDFFF0E0),
-                                    minimumSize: Size(
-                                      0,
-                                      _activitiesScaled(
-                                        context,
-                                        56,
-                                        min: 50,
-                                        max: 58,
-                                      ),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                  ),
-                                  child: Text(l10n.myActivitiesFilterClear),
-                                ),
-                                SizedBox(height: verticalGap),
-                                _PrimaryPillButton(
-                                  label: l10n.myActivitiesFilterApply,
-                                  onTap: onApply,
-                                  minHeight: _activitiesScaled(
-                                    context,
-                                    62,
-                                    min: 54,
-                                    max: 64,
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Row(
-                              children: [
-                                Expanded(
-                                  child: TextButton(
-                                    onPressed: onClear,
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: const Color(0xBDFFF0E0),
-                                      minimumSize: Size(
-                                        0,
-                                        _activitiesScaled(
-                                          context,
-                                          56,
-                                          min: 50,
-                                          max: 58,
-                                        ),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                    ),
-                                    child: Text(l10n.myActivitiesFilterClear),
-                                  ),
-                                ),
-                                SizedBox(width: verticalGap),
-                                Expanded(
-                                  flex: 2,
-                                  child: _PrimaryPillButton(
-                                    label: l10n.myActivitiesFilterApply,
-                                    onTap: onApply,
-                                    minHeight: _activitiesScaled(
-                                      context,
-                                      62,
-                                      min: 54,
-                                      max: 64,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                      child: _PrimaryPillButton(
+                        label: applyLabel ?? l10n.myActivitiesFilterApply,
+                        onTap: onApply,
+                        minHeight: _activitiesScaled(
+                          context,
+                          56,
+                          min: 50,
+                          max: 58,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -3236,19 +2880,23 @@ class _RangeTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showPrefix = prefix.isNotEmpty;
-    final labelSize = _activitiesScaled(context, 14, min: 13, max: 14);
-    final fieldFontSize = _activitiesScaled(context, 18, min: 16, max: 18);
-    final verticalPadding = _activitiesScaled(context, 18, min: 14, max: 18);
-    final horizontalPadding = _activitiesScaled(context, 16, min: 14, max: 16);
+    final labelSize = _activitiesScaled(context, 12, min: 11, max: 13);
+    final fieldFontSize = _activitiesScaled(context, 16, min: 14, max: 16);
+    final verticalPadding = _activitiesScaled(context, 13, min: 11, max: 14);
+    final horizontalPadding = _activitiesScaled(context, 14, min: 12, max: 14);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(color: const Color(0xA1FFF0E0), fontSize: labelSize),
+          style: TextStyle(
+            color: const Color(0xA1FFF0E0),
+            fontSize: labelSize,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        SizedBox(height: _activitiesScaled(context, 10, min: 8, max: 10)),
+        SizedBox(height: _activitiesScaled(context, 7, min: 6, max: 8)),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
@@ -3262,6 +2910,7 @@ class _RangeTextField extends StatelessWidget {
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
           decoration: InputDecoration(
+            isDense: true,
             hintText: hintText,
             hintStyle: TextStyle(
               color: Color(0x75FFF0E0),
@@ -3279,7 +2928,7 @@ class _RangeTextField extends StatelessWidget {
             prefixIcon: showPrefix
                 ? Padding(
                     padding: EdgeInsets.only(
-                      left: _activitiesScaled(context, 14, min: 12, max: 14),
+                      left: _activitiesScaled(context, 12, min: 10, max: 12),
                       right: _activitiesScaled(context, 2, min: 2, max: 4),
                     ),
                     child: Center(
@@ -3297,27 +2946,27 @@ class _RangeTextField extends StatelessWidget {
                 : null,
             prefixIconConstraints: const BoxConstraints(minWidth: 0),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
                 color: AppColors.accent.withValues(alpha: 0.22),
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
                 color: AppColors.accent.withValues(alpha: 0.22),
               ),
             ),
             focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(18)),
+              borderRadius: BorderRadius.all(Radius.circular(16)),
               borderSide: BorderSide(color: AppColors.accent, width: 1.4),
             ),
             errorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(18)),
+              borderRadius: BorderRadius.all(Radius.circular(16)),
               borderSide: BorderSide(color: Color(0xFFE28A7E), width: 1.2),
             ),
             focusedErrorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(18)),
+              borderRadius: BorderRadius.all(Radius.circular(16)),
               borderSide: BorderSide(color: Color(0xFFE28A7E), width: 1.4),
             ),
           ),
@@ -3335,9 +2984,9 @@ class _PresetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final horizontal = _activitiesScaled(context, 18, min: 14, max: 18);
-    final vertical = _activitiesScaled(context, 11, min: 9, max: 11);
-    final fontSize = _activitiesScaled(context, 14, min: 13, max: 14);
+    final horizontal = _activitiesScaled(context, 14, min: 12, max: 15);
+    final vertical = _activitiesScaled(context, 8, min: 7, max: 9);
+    final fontSize = _activitiesScaled(context, 12, min: 11, max: 13);
 
     return Material(
       color: Colors.transparent,
@@ -3444,6 +3093,11 @@ class _DiscoverFilters {
   bool get hasDateRange => startDate != null || endDate != null;
   bool get hasPriceRange => minPrice != null || maxPrice != null;
   bool get hasVisibilityFilter => visibilities.isNotEmpty;
+  int get activeGroupCount =>
+      (categorySlugs.isNotEmpty ? 1 : 0) +
+      (hasDateRange ? 1 : 0) +
+      (hasPriceRange ? 1 : 0) +
+      (hasVisibilityFilter ? 1 : 0);
   bool get hasAnyValue =>
       categorySlugs.isNotEmpty ||
       hasVisibilityFilter ||
@@ -3551,20 +3205,6 @@ class _ActivitiesAdaptiveLayout {
   double get titleSize => scaled(isCompact ? 20 : 22, min: 18, max: 22);
   double get ctaHeight => scaled(isCompact ? 48 : 52, min: 46, max: 54);
   double get coverAspectRatio => isCompact ? 1.46 : 1.55;
-}
-
-class _PriceRangeFilter {
-  const _PriceRangeFilter({this.minPrice, this.maxPrice});
-
-  final double? minPrice;
-  final double? maxPrice;
-}
-
-class _DateRangeFilter {
-  const _DateRangeFilter({this.startDate, this.endDate});
-
-  final DateTime? startDate;
-  final DateTime? endDate;
 }
 
 class _PricePreset {
@@ -3882,8 +3522,27 @@ List<ActivityListItemVm> _applyDiscoverFilters(
     return haystack.contains(normalizedQuery);
   }).toList();
 
-  filtered.sort((a, b) => a.startAt.compareTo(b.startAt));
   return filtered;
+}
+
+List<ActivityListItemVm> _sortDiscoverItems(
+  List<ActivityListItemVm> items, {
+  required _ActivitySortField sortField,
+  required bool sortAscending,
+}) {
+  final sorted = List<ActivityListItemVm>.from(items);
+  sorted.sort((a, b) {
+    final primaryCompare = switch (sortField) {
+      _ActivitySortField.date => a.startAt.compareTo(b.startAt),
+      _ActivitySortField.price => _numericPrice(a).compareTo(_numericPrice(b)),
+    };
+
+    final compare = primaryCompare == 0
+        ? a.startAt.compareTo(b.startAt)
+        : primaryCompare;
+    return sortAscending ? compare : -compare;
+  });
+  return sorted;
 }
 
 _CardArtSpec _categoryVisual(String slug) {
