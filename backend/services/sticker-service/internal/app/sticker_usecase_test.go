@@ -264,32 +264,319 @@ func TestValidateSendAcceptsActiveDefaultSticker(t *testing.T) {
 	}
 }
 
+func TestListOfficialCatalogReturnsLocalizedGroupsAndActivePacks(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	thumbnailID := uuid.New()
+	repo := newFakeStickerRepository(t)
+	repo.catalogVersion = 7
+	repo.groups = []*model.StickerGroup{
+		{
+			ID:           groupID,
+			Slug:         "travel",
+			Title:        map[string]string{"en": "Travel", "ru": "Путешествия"},
+			DisplayOrder: 1,
+			Status:       enum.PackStatusActive,
+		},
+	}
+	repo.groupPacks[groupID] = []*model.StickerPack{
+		mustPack(t, model.NewStickerPackParams{
+			GroupID:         &groupID,
+			Slug:            "travel-basics",
+			Type:            enum.PackTypeSystem,
+			Visibility:      enum.PackVisibilityPublic,
+			Status:          enum.PackStatusActive,
+			IsOfficial:      true,
+			Version:         3,
+			ThumbnailFileID: &thumbnailID,
+			Title:           map[string]string{"en": "Travel Basics", "ru": "Путешествие"},
+		}),
+	}
+	useCase := NewStickerUseCase(repo, &fakeFileManagerClient{})
+
+	catalog, err := useCase.ListOfficialCatalog(ctx, ListOfficialCatalogInput{Locale: "en"})
+
+	if err != nil {
+		t.Fatalf("ListOfficialCatalog error: %v", err)
+	}
+	if catalog.Version != 7 {
+		t.Fatalf("expected catalog version 7, got %d", catalog.Version)
+	}
+	if len(catalog.Groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(catalog.Groups))
+	}
+	if catalog.Groups[0].Slug != "travel" || catalog.Groups[0].Title != "Travel" {
+		t.Fatalf("unexpected group: %+v", catalog.Groups[0])
+	}
+	if len(catalog.Groups[0].Packs) != 1 {
+		t.Fatalf("expected 1 pack, got %d", len(catalog.Groups[0].Packs))
+	}
+	if catalog.Groups[0].Packs[0].Slug != "travel-basics" ||
+		catalog.Groups[0].Packs[0].Title != "Travel Basics" ||
+		catalog.Groups[0].Packs[0].Version != 3 ||
+		catalog.Groups[0].Packs[0].ThumbnailFileID != thumbnailID {
+		t.Fatalf("unexpected pack: %+v", catalog.Groups[0].Packs[0])
+	}
+}
+
+func TestListPackStickersReturnsExpandedAssetMetadata(t *testing.T) {
+	ctx := context.Background()
+	actorID := uuid.New()
+	fallbackID := uuid.New()
+	pack := mustPack(t, model.NewStickerPackParams{
+		Slug:       "travel-basics",
+		Type:       enum.PackTypeSystem,
+		Visibility: enum.PackVisibilityPublic,
+		Status:     enum.PackStatusActive,
+		IsOfficial: true,
+		Title:      map[string]string{"en": "Travel Basics"},
+	})
+	sticker := mustSticker(t, model.NewStickerParams{
+		PackID:         pack.ID,
+		Slug:           "boarding-pass",
+		FileID:         uuid.New(),
+		FallbackFileID: &fallbackID,
+		Emoji:          ptrString("✈️"),
+		Keywords:       []string{"flight"},
+		Status:         enum.StickerStatusActive,
+		ContentType:    "image/png",
+		Width:          512,
+		Height:         512,
+		DurationMS:     1200,
+		SizeBytes:      42000,
+	})
+	repo := newFakeStickerRepository(t)
+	repo.packs[pack.ID] = pack
+	repo.packStickers[pack.ID] = []*model.Sticker{sticker}
+	useCase := NewStickerUseCase(repo, &fakeFileManagerClient{})
+
+	result, err := useCase.ListPackStickers(ctx, ListPackStickersInput{
+		UserID: actorID.String(),
+		PackID: pack.ID.String(),
+		Limit:  20,
+	})
+
+	if err != nil {
+		t.Fatalf("ListPackStickers error: %v", err)
+	}
+	if len(result.Stickers) != 1 {
+		t.Fatalf("expected 1 sticker, got %d", len(result.Stickers))
+	}
+	got := result.Stickers[0]
+	if got.Slug != "boarding-pass" ||
+		got.FallbackFileID != fallbackID ||
+		got.ContentType != "image/png" ||
+		got.Width != 512 ||
+		got.Height != 512 ||
+		got.DurationMS != 1200 {
+		t.Fatalf("unexpected sticker metadata: %+v", got)
+	}
+}
+
+func TestSearchOfficialStickersMatchesQuery(t *testing.T) {
+	ctx := context.Background()
+	actorID := uuid.New()
+	sticker := mustSticker(t, model.NewStickerParams{
+		PackID:      uuid.New(),
+		Slug:        "coffee-break",
+		FileID:      uuid.New(),
+		Emoji:       ptrString("☕"),
+		Keywords:    []string{"coffee"},
+		Status:      enum.StickerStatusActive,
+		ContentType: "image/png",
+		Width:       512,
+		Height:      512,
+		DurationMS:  1000,
+		SizeBytes:   32000,
+	})
+	repo := newFakeStickerRepository(t)
+	repo.searchStickers = []*model.Sticker{sticker}
+	useCase := NewStickerUseCase(repo, &fakeFileManagerClient{})
+
+	result, err := useCase.SearchOfficialStickers(ctx, SearchOfficialStickersInput{
+		UserID: actorID.String(),
+		Query:  "coffee",
+		Locale: "en",
+		Limit:  20,
+	})
+
+	if err != nil {
+		t.Fatalf("SearchOfficialStickers error: %v", err)
+	}
+	if len(result.Stickers) != 1 || result.Stickers[0].Slug != "coffee-break" {
+		t.Fatalf("unexpected search result: %+v", result.Stickers)
+	}
+}
+
+func TestValidateSendReturnsStickerPayloadWithFallbackMetadata(t *testing.T) {
+	ctx := context.Background()
+	actorID := uuid.New()
+	fallbackID := uuid.New()
+	previewID := uuid.New()
+	repo := newFakeStickerRepository(t)
+	pack := mustPack(t, model.NewStickerPackParams{
+		Slug:       "flyfy-default",
+		Type:       enum.PackTypeSystem,
+		Visibility: enum.PackVisibilityPublic,
+		Status:     enum.PackStatusActive,
+		Title:      map[string]string{"en": "FlyFy"},
+	})
+	sticker := mustSticker(t, model.NewStickerParams{
+		PackID:         pack.ID,
+		Slug:           "boarding-pass",
+		FileID:         uuid.New(),
+		FallbackFileID: &fallbackID,
+		PreviewFileID:  &previewID,
+		Status:         enum.StickerStatusActive,
+		ContentType:    "application/json",
+		Width:          512,
+		Height:         512,
+		DurationMS:     1800,
+		SizeBytes:      42000,
+		Checksum:       "sha256:test",
+	})
+	repo.packs[pack.ID] = pack
+	repo.stickers[sticker.ID] = sticker
+	useCase := NewStickerUseCase(repo, &fakeFileManagerClient{})
+
+	result, err := useCase.ValidateSend(ctx, ValidateStickerSendInput{
+		SenderUserID: actorID.String(),
+		StickerID:    sticker.ID.String(),
+	})
+
+	if err != nil {
+		t.Fatalf("ValidateSend error: %v", err)
+	}
+	if result.Slug != "boarding-pass" ||
+		result.FallbackFileID != fallbackID ||
+		result.PreviewFileID == nil ||
+		*result.PreviewFileID != previewID ||
+		result.ContentType != "application/json" ||
+		result.Width != 512 ||
+		result.Height != 512 ||
+		result.DurationMS != 1800 {
+		t.Fatalf("unexpected validate result: %+v", result)
+	}
+}
+
+func TestValidateSendRecordsRecentStickerUsage(t *testing.T) {
+	ctx := context.Background()
+	actorID := uuid.New()
+	repo := newFakeStickerRepository(t)
+	pack := mustPack(t, model.NewStickerPackParams{
+		Slug:       "flyfy-default",
+		Type:       enum.PackTypeSystem,
+		Visibility: enum.PackVisibilityPublic,
+		Status:     enum.PackStatusActive,
+		Title:      map[string]string{"en": "FlyFy"},
+	})
+	sticker := mustSticker(t, model.NewStickerParams{
+		PackID: pack.ID,
+		FileID: uuid.New(),
+		Status: enum.StickerStatusActive,
+	})
+	repo.packs[pack.ID] = pack
+	repo.stickers[sticker.ID] = sticker
+	useCase := NewStickerUseCase(repo, &fakeFileManagerClient{})
+
+	_, err := useCase.ValidateSend(ctx, ValidateStickerSendInput{
+		SenderUserID: actorID.String(),
+		StickerID:    sticker.ID.String(),
+	})
+
+	if err != nil {
+		t.Fatalf("ValidateSend error: %v", err)
+	}
+	if repo.recordedRecentUserID != actorID || repo.recordedRecentStickerID != sticker.ID {
+		t.Fatalf(
+			"recent usage = user %s sticker %s, want user %s sticker %s",
+			repo.recordedRecentUserID,
+			repo.recordedRecentStickerID,
+			actorID,
+			sticker.ID,
+		)
+	}
+}
+
 type fakeStickerRepository struct {
-	t            *testing.T
-	packs        map[uuid.UUID]*model.StickerPack
-	stickers     map[uuid.UUID]*model.Sticker
-	defaultPacks []*model.StickerPackWithStickers
-	userPacks    map[uuid.UUID][]*model.StickerPackWithStickers
-	customPacks  map[uuid.UUID]*model.StickerPack
-	sessions     map[uuid.UUID]*model.UploadSession
-	installed    map[uuid.UUID]map[uuid.UUID]bool
+	t                       *testing.T
+	packs                   map[uuid.UUID]*model.StickerPack
+	stickers                map[uuid.UUID]*model.Sticker
+	defaultPacks            []*model.StickerPackWithStickers
+	groups                  []*model.StickerGroup
+	groupPacks              map[uuid.UUID][]*model.StickerPack
+	packStickers            map[uuid.UUID][]*model.Sticker
+	searchStickers          []*model.Sticker
+	recentStickers          []*model.Sticker
+	recordedRecentUserID    uuid.UUID
+	recordedRecentStickerID uuid.UUID
+	userPacks               map[uuid.UUID][]*model.StickerPackWithStickers
+	customPacks             map[uuid.UUID]*model.StickerPack
+	sessions                map[uuid.UUID]*model.UploadSession
+	installed               map[uuid.UUID]map[uuid.UUID]bool
+	catalogVersion          int64
 }
 
 func newFakeStickerRepository(t *testing.T) *fakeStickerRepository {
 	t.Helper()
 	return &fakeStickerRepository{
-		t:           t,
-		packs:       map[uuid.UUID]*model.StickerPack{},
-		stickers:    map[uuid.UUID]*model.Sticker{},
-		userPacks:   map[uuid.UUID][]*model.StickerPackWithStickers{},
-		customPacks: map[uuid.UUID]*model.StickerPack{},
-		sessions:    map[uuid.UUID]*model.UploadSession{},
-		installed:   map[uuid.UUID]map[uuid.UUID]bool{},
+		t:            t,
+		packs:        map[uuid.UUID]*model.StickerPack{},
+		stickers:     map[uuid.UUID]*model.Sticker{},
+		groupPacks:   map[uuid.UUID][]*model.StickerPack{},
+		packStickers: map[uuid.UUID][]*model.Sticker{},
+		userPacks:    map[uuid.UUID][]*model.StickerPackWithStickers{},
+		customPacks:  map[uuid.UUID]*model.StickerPack{},
+		sessions:     map[uuid.UUID]*model.UploadSession{},
+		installed:    map[uuid.UUID]map[uuid.UUID]bool{},
 	}
 }
 
 func (r *fakeStickerRepository) ListDefaultPacks(context.Context) ([]*model.StickerPackWithStickers, error) {
 	return r.defaultPacks, nil
+}
+
+func (r *fakeStickerRepository) ListOfficialGroups(context.Context) ([]*model.StickerGroup, error) {
+	return r.groups, nil
+}
+
+func (r *fakeStickerRepository) ListActivePacksByGroup(_ context.Context, groupID uuid.UUID) ([]*model.StickerPack, error) {
+	return r.groupPacks[groupID], nil
+}
+
+func (r *fakeStickerRepository) CatalogVersion(context.Context) (port.CatalogVersion, error) {
+	return port.CatalogVersion{Version: r.catalogVersion, UpdatedAt: time.Now().UTC()}, nil
+}
+
+func (r *fakeStickerRepository) ListActiveStickersByPack(
+	_ context.Context,
+	packID uuid.UUID,
+	_, _ int,
+) ([]*model.Sticker, error) {
+	return r.packStickers[packID], nil
+}
+
+func (r *fakeStickerRepository) SearchOfficialStickers(
+	context.Context,
+	string,
+	int,
+	int,
+) ([]*model.Sticker, error) {
+	return r.searchStickers, nil
+}
+
+func (r *fakeStickerRepository) RecordStickerUsage(_ context.Context, userID uuid.UUID, stickerID uuid.UUID) error {
+	r.recordedRecentUserID = userID
+	r.recordedRecentStickerID = stickerID
+	return nil
+}
+
+func (r *fakeStickerRepository) ListRecentStickers(
+	_ context.Context,
+	_ uuid.UUID,
+	_ int,
+) ([]*model.Sticker, error) {
+	return r.recentStickers, nil
 }
 
 func (r *fakeStickerRepository) ListUserPacks(_ context.Context, userID uuid.UUID) ([]*model.StickerPackWithStickers, error) {
@@ -428,6 +715,10 @@ func mustSticker(t testing.TB, params model.NewStickerParams) *model.Sticker {
 		t.Fatalf("NewSticker error: %v", err)
 	}
 	return sticker
+}
+
+func ptrString(value string) *string {
+	return &value
 }
 
 func mustUploadSession(t testing.TB, params model.NewUploadSessionParams) *model.UploadSession {

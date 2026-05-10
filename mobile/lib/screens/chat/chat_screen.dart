@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -19,15 +19,18 @@ import '../../core/files/chat_file_cache.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/sticker_api.dart';
+import '../../core/platform/clipboard_media_service.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
 import '../../features/chat/models/sticker_pack_vm.dart';
 import '../../features/chat/utils/chat_presence_status.dart';
+import '../../features/chat/utils/sticker_pack_ordering.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../providers/sticker_catalog_provider.dart';
 import 'chat_camera_screen.dart';
 import 'chat_image_viewer_screen.dart';
 import 'chat_participants_screen.dart';
@@ -35,7 +38,7 @@ import 'chat_shared_content_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, this.conversationId, this.activityId})
-      : assert(conversationId != null || activityId != null);
+    : assert(conversationId != null || activityId != null);
 
   final String? conversationId;
   final String? activityId;
@@ -47,9 +50,12 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   static const _maxChatAttachmentBytes = 25 * 1024 * 1024;
   static const _maxChatStickerBytes = 5 * 1024 * 1024;
+  static const _stickerImageWarmupLimit = 180;
+  static const _stickerImageWarmupConcurrency = 6;
 
   final _fileApi = FileApi();
   final _stickerApi = StickerApi();
+  final _clipboardMediaService = ClipboardMediaService();
   final _voiceRecorder = AudioRecorder();
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
@@ -78,6 +84,9 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _stickersLoadFailed = false;
   bool _stickerCreating = false;
   int _activeStickerPackIndex = 0;
+  String? _stickerWarmLocale;
+  StickerPackVm? _customStickerPack;
+  Future<StickerPackVm>? _customStickerPackLoad;
 
   @override
   void initState() {
@@ -101,6 +110,15 @@ class _ChatScreenState extends State<ChatScreen> {
     _voiceRecordingTimer?.cancel();
     unawaited(_disposeVoiceRecorder());
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context).languageCode;
+    if (_stickerWarmLocale == locale) return;
+    _stickerWarmLocale = locale;
+    unawaited(_warmUpStickerPicker(locale));
   }
 
   void _handleComposerFocusChanged() {
@@ -197,11 +215,11 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
 
       final sent = await context.read<ChatProvider>().sendMessage(
-            text,
-            type: fileIds.isEmpty ? 'text' : 'file',
-            fileIds: fileIds,
-            replyToMessageId: replyToMessageId,
-          );
+        text,
+        type: fileIds.isEmpty ? 'text' : 'file',
+        fileIds: fileIds,
+        replyToMessageId: replyToMessageId,
+      );
 
       if (!mounted || !sent) return;
 
@@ -361,7 +379,8 @@ class _ChatScreenState extends State<ChatScreen> {
     int localId,
   ) async {
     final name = file.name.trim();
-    final bytes = file.bytes ??
+    final bytes =
+        file.bytes ??
         (file.path == null ? null : await File(file.path!).readAsBytes());
     if (name.isEmpty || bytes == null || bytes.isEmpty) {
       return null;
@@ -400,7 +419,8 @@ class _ChatScreenState extends State<ChatScreen> {
       name = 'media_${DateTime.now().millisecondsSinceEpoch}.$ext';
     }
 
-    final contentType = _contentTypeForFileName(name) ??
+    final contentType =
+        _contentTypeForFileName(name) ??
         file.mimeType ??
         'application/octet-stream';
 
@@ -411,6 +431,229 @@ class _ChatScreenState extends State<ChatScreen> {
       contentType: contentType,
       localPath: file.path,
     );
+  }
+
+  _PickedChatAttachment? _attachmentFromClipboardImage(
+    ClipboardMediaItem item,
+    int localId,
+  ) {
+    if (!item.isImage || item.bytes.isEmpty) {
+      return null;
+    }
+    final contentType = item.contentType.trim().toLowerCase();
+    final ext = _extensionForMime(contentType) ?? 'png';
+    var name = item.name.trim();
+    if (name.isEmpty || !name.contains('.')) {
+      name = 'clipboard_${DateTime.now().millisecondsSinceEpoch}.$ext';
+    }
+
+    return _PickedChatAttachment(
+      localId: localId,
+      name: name,
+      bytes: item.bytes,
+      contentType: contentType,
+    );
+  }
+
+  Future<void> _handlePasteRequested() async {
+    if (_attachmentUploading || !_canSendInActiveConversation()) {
+      if (!_canSendInActiveConversation()) {
+        _showChatClosedMessage();
+      }
+      return;
+    }
+
+    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    if ((text ?? '').isNotEmpty) {
+      _insertComposerToken(_messageController, text!);
+      _handleTyping();
+      return;
+    }
+
+    await _handlePasteImageRequested();
+  }
+
+  Future<void> _handlePasteImageRequested() async {
+    if (_attachmentUploading || _stickerCreating) return;
+    if (!_canSendInActiveConversation()) {
+      _showChatClosedMessage();
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final item = await _clipboardMediaService.readImage();
+      if (!mounted) return;
+      if (item == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.chatClipboardEmpty),
+            backgroundColor: const Color(0xFF3a2415),
+          ),
+        );
+        return;
+      }
+
+      final attachment = _attachmentFromClipboardImage(
+        item,
+        ++_pendingAttachmentSeq,
+      );
+      if (attachment == null) {
+        await _showAttachmentError(l10n.chatAttachmentUnsupported);
+        return;
+      }
+      if (attachment.bytes.lengthInBytes > _maxChatAttachmentBytes) {
+        await _showAttachmentError(l10n.chatAttachmentTooLarge);
+        return;
+      }
+
+      await _showPastedImageConfirmation(attachment);
+    } catch (_) {
+      if (!mounted) return;
+      await _showAttachmentError(l10n.chatAttachmentUploadFailed);
+    }
+  }
+
+  Future<void> _showPastedImageConfirmation(
+    _PickedChatAttachment attachment,
+  ) async {
+    if (!mounted) return;
+    final action = await showModalBottomSheet<_PastedImageAction>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      builder: (sheetContext) {
+        return _PastedImagePreviewSheet(attachment: attachment);
+      },
+    );
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _PastedImageAction.sendImage:
+        setState(() => _pendingAttachments.add(attachment));
+        await _handleSend();
+      case _PastedImageAction.sendSticker:
+        await _createAndSendStickerFromAttachment(attachment);
+    }
+  }
+
+  Future<void> _createAndSendStickerFromAttachment(
+    _PickedChatAttachment attachment,
+  ) async {
+    if (_stickerCreating || _attachmentUploading) return;
+    final sticker = await _createCustomSticker(attachment);
+    if (sticker != null) {
+      await _sendSticker(sticker);
+    }
+  }
+
+  Future<StickerVm?> _createCustomSticker(
+    _PickedChatAttachment attachment,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!_isStickerContentType(attachment.contentType)) {
+      await _showAttachmentError(l10n.chatStickerUnsupported);
+      return null;
+    }
+    if (attachment.bytes.lengthInBytes > _maxChatStickerBytes) {
+      await _showAttachmentError(l10n.chatStickerTooLarge);
+      return null;
+    }
+
+    try {
+      setState(() => _stickerCreating = true);
+
+      final customPack = await _ensureCustomStickerPack();
+      final upload = await _stickerApi.createUploadRequest(
+        packId: customPack.id,
+        originalName: attachment.name,
+        contentType: attachment.contentType,
+        sizeBytes: attachment.bytes.lengthInBytes,
+      );
+      await _stickerApi.uploadBinary(
+        upload: upload,
+        bytes: attachment.bytes,
+        contentType: attachment.contentType,
+      );
+      await _stickerApi.completeFileUpload(upload.fileId);
+      final sticker = await _stickerApi.finalizeUpload(
+        packId: customPack.id,
+        uploadSessionId: upload.uploadSessionId,
+      );
+
+      if (!mounted) return null;
+      _upsertCustomSticker(customPack, sticker);
+      unawaited(_precacheStickerImages([sticker]));
+      return sticker;
+    } catch (e) {
+      if (!mounted) return null;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.chatStickerCreateFailed;
+      await _showAttachmentError(message);
+      return null;
+    } finally {
+      if (mounted) {
+        setState(() => _stickerCreating = false);
+      }
+    }
+  }
+
+  Future<StickerPackVm> _ensureCustomStickerPack() {
+    final existing = _customStickerPack;
+    if (existing != null) {
+      return Future.value(existing);
+    }
+
+    final pending = _customStickerPackLoad;
+    if (pending != null) {
+      return pending;
+    }
+
+    final load = _stickerApi
+        .ensureCustomPack()
+        .then((pack) {
+          _customStickerPack = pack;
+          return pack;
+        })
+        .whenComplete(() {
+          _customStickerPackLoad = null;
+        });
+    _customStickerPackLoad = load;
+    return load;
+  }
+
+  void _upsertCustomSticker(StickerPackVm customPack, StickerVm sticker) {
+    final existingPack = _customStickerPack?.id == customPack.id
+        ? _customStickerPack!
+        : customPack;
+    final updatedPack = existingPack.copyWith(
+      stickers: [
+        sticker,
+        ...existingPack.stickers.where((item) => item.id != sticker.id),
+      ],
+    );
+    _customStickerPack = updatedPack;
+
+    final packs = _stickerPacks.toList(growable: true);
+    final index = packs.indexWhere((pack) => pack.id == updatedPack.id);
+    if (index >= 0) {
+      packs[index] = updatedPack;
+    } else {
+      packs.insert(0, updatedPack);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _stickerPacks = orderStickerPacksForComposer(
+        myPacks: [updatedPack],
+        officialPacks: packs
+            .where((pack) => pack.id != updatedPack.id)
+            .toList(growable: false),
+      );
+      _activeStickerPackIndex = 0;
+    });
   }
 
   void _removePendingAttachment(int localId) {
@@ -679,9 +922,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (panel != _ComposerPanel.none) {
       FocusScope.of(context).unfocus();
-      if (panel == _ComposerPanel.stickers) {
-        unawaited(_loadStickerPacks());
-      }
+      unawaited(
+        _warmUpStickerPicker(Localizations.localeOf(context).languageCode),
+      );
     }
 
     setState(() => _activeComposerPanel = panel);
@@ -697,17 +940,95 @@ class _ChatScreenState extends State<ChatScreen> {
     _handleTyping();
   }
 
-  Future<void> _loadStickerPacks({bool force = false}) async {
+  Future<void> _warmUpStickerPicker(String locale) async {
+    await _loadStickerPacks(locale: locale, force: false, silent: true);
+    if (!mounted) return;
+    await _precacheStickerImages(_prioritizedStickerWarmupList(_stickerPacks));
+  }
+
+  Future<void> _precacheStickerImages(
+    List<StickerVm> stickers, {
+    int limit = _stickerImageWarmupLimit,
+  }) async {
+    if (stickers.isEmpty) return;
+    await _StickerImageCache.preload(
+      stickers.map((sticker) => sticker.fileId),
+      limit: limit,
+      concurrency: _stickerImageWarmupConcurrency,
+    );
+  }
+
+  List<StickerVm> _prioritizedStickerWarmupList(List<StickerPackVm> packs) {
+    if (packs.isEmpty) return const [];
+
+    final safeIndex = _activeStickerPackIndex
+        .clamp(0, packs.length - 1)
+        .toInt();
+    final orderedPacks = [
+      packs[safeIndex],
+      for (var index = 0; index < packs.length; index += 1)
+        if (index != safeIndex) packs[index],
+    ];
+
+    return orderedPacks
+        .expand((pack) => pack.stickers)
+        .where((sticker) => sticker.fileId.trim().isNotEmpty)
+        .toList(growable: false);
+  }
+
+  void _handleStickerPackSelected(int index) {
+    if (index < 0 || index >= _stickerPacks.length) return;
+    setState(() => _activeStickerPackIndex = index);
+
+    final selected = _stickerPacks[index];
+    final next = index + 1 < _stickerPacks.length
+        ? _stickerPacks[index + 1]
+        : null;
+    unawaited(
+      _precacheStickerImages([
+        ...selected.stickers,
+        if (next != null) ...next.stickers,
+      ], limit: 80),
+    );
+  }
+
+  Future<void> _loadStickerPacks({
+    String? locale,
+    bool force = false,
+    bool silent = false,
+  }) async {
     if (_stickersLoading) return;
     if (!force && _stickerPacks.isNotEmpty) return;
 
-    setState(() {
+    if (!silent) {
+      setState(() {
+        _stickersLoading = true;
+        _stickersLoadFailed = false;
+      });
+    } else {
       _stickersLoading = true;
       _stickersLoadFailed = false;
-    });
+    }
 
     try {
-      final packs = await _stickerApi.listMyPacks();
+      final catalogProvider = context.read<StickerCatalogProvider>();
+      final activeLocale =
+          locale ?? Localizations.localeOf(context).languageCode;
+      final catalogLoad = catalogProvider.loadCatalog(
+        locale: activeLocale,
+        preloadAllPacks: true,
+      );
+      final myPacksLoad = _stickerApi.listMyPacks().catchError(
+        (_) => const <StickerPackVm>[],
+      );
+
+      await catalogLoad;
+
+      final officialPacks = catalogProvider.groups
+          .expand((group) => group.packs)
+          .toList(growable: false);
+      final myPacks = await myPacksLoad;
+      final packs = _mergeStickerPacks(myPacks, officialPacks);
 
       if (!mounted) return;
       setState(() {
@@ -717,14 +1038,43 @@ class _ChatScreenState extends State<ChatScreen> {
         }
         _stickersLoadFailed = false;
       });
+      unawaited(_precacheStickerImages(_prioritizedStickerWarmupList(packs)));
     } catch (_) {
       if (!mounted) return;
-      setState(() => _stickersLoadFailed = true);
+      if (!silent) {
+        setState(() => _stickersLoadFailed = true);
+      } else {
+        _stickersLoadFailed = true;
+      }
     } finally {
       if (mounted) {
-        setState(() => _stickersLoading = false);
+        if (!silent) {
+          setState(() => _stickersLoading = false);
+        } else {
+          _stickersLoading = false;
+        }
       }
     }
+  }
+
+  List<StickerPackVm> _mergeStickerPacks(
+    List<StickerPackVm> myPacks,
+    List<StickerPackVm> officialPacks,
+  ) {
+    _customStickerPack = _firstCustomStickerPack(myPacks) ?? _customStickerPack;
+    return orderStickerPacksForComposer(
+      myPacks: myPacks,
+      officialPacks: officialPacks,
+    );
+  }
+
+  StickerPackVm? _firstCustomStickerPack(List<StickerPackVm> packs) {
+    for (final pack in packs) {
+      if (isCustomStickerPack(pack)) {
+        return pack;
+      }
+    }
+    return null;
   }
 
   Future<void> _createStickerFromGallery() async {
@@ -762,38 +1112,11 @@ class _ChatScreenState extends State<ChatScreen> {
         return;
       }
 
-      setState(() => _stickerCreating = true);
-
-      final customPack = await _stickerApi.ensureCustomPack();
-      final upload = await _stickerApi.createUploadRequest(
-        packId: customPack.id,
-        originalName: attachment.name,
-        contentType: attachment.contentType,
-        sizeBytes: attachment.bytes.lengthInBytes,
-      );
-      await _stickerApi.uploadBinary(
-        upload: upload,
-        bytes: attachment.bytes,
-        contentType: attachment.contentType,
-      );
-      await _stickerApi.completeFileUpload(upload.fileId);
-      await _stickerApi.finalizeUpload(
-        packId: customPack.id,
-        uploadSessionId: upload.uploadSessionId,
-      );
-
-      if (!mounted) return;
+      final sticker = await _createCustomSticker(attachment);
+      if (!mounted || sticker == null) return;
       setState(() {
         _activeComposerPanel = _ComposerPanel.stickers;
       });
-      await _loadStickerPacks(force: true);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.chatStickerCreated),
-          backgroundColor: const Color(0xFF3a2415),
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
       final message = e is DioException
@@ -807,23 +1130,23 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _sendSticker(StickerVm sticker) async {
+  Future<bool> _sendSticker(StickerVm sticker) async {
     final stickerId = sticker.id.trim();
-    if (stickerId.isEmpty || _attachmentUploading) return;
+    if (stickerId.isEmpty || _attachmentUploading) return false;
     if (!_canSendInActiveConversation()) {
       _showChatClosedMessage();
-      return;
+      return false;
     }
 
-    final sent = await context.read<ChatProvider>().sendMessage(
-          '',
-          type: 'sticker',
-          stickerId: stickerId,
-        );
-    if (!mounted) return;
+    final sent = await context.read<ChatProvider>().sendSticker(
+      sticker: sticker,
+      replyToMessageId: _replyToMessage?.id,
+    );
+    if (!mounted) return false;
     if (sent) {
+      setState(() => _replyToMessage = null);
       context.read<ChatProvider>().markAsRead();
-      return;
+      return true;
     }
 
     final l10n = AppLocalizations.of(context)!;
@@ -832,6 +1155,7 @@ class _ChatScreenState extends State<ChatScreen> {
       title: l10n.error,
       message: l10n.chatStickerSendFailed,
     );
+    return false;
   }
 
   bool _canManagePins(ConversationDetail conversation, String currentUserId) {
@@ -988,8 +1312,8 @@ class _ChatScreenState extends State<ChatScreen> {
         final messageText = e is DioException
             ? DioErrorMapper.toMessage(e)
             : action == 'pin'
-                ? l10n.chatPinFailed
-                : l10n.chatUnpinFailed;
+            ? l10n.chatPinFailed
+            : l10n.chatUnpinFailed;
         await showErrorDialog(context, title: l10n.error, message: messageText);
       }
       return;
@@ -999,8 +1323,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       final result = await context.read<ChatProvider>().deleteMessage(
-            message.id,
-          );
+        message.id,
+      );
       if (!mounted) return;
       setState(() {
         if (_replyToMessage?.id == message.id) {
@@ -1027,9 +1351,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       await context.read<ChatProvider>().toggleMessageReaction(
-            messageId,
-            emoji,
-          );
+        messageId,
+        emoji,
+      );
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -1092,8 +1416,8 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
     }
 
-    final targetRenderObject =
-        _messageItemKeys[messageId]?.currentContext?.findRenderObject();
+    final targetRenderObject = _messageItemKeys[messageId]?.currentContext
+        ?.findRenderObject();
     if (targetRenderObject == null ||
         !mounted ||
         !_scrollController.hasClients) {
@@ -1243,8 +1567,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   stickerCreating: _stickerCreating,
                   onPanelChanged: _setComposerPanel,
                   onEmojiSelected: _handleEmojiSelected,
-                  onStickerPackSelected: (index) =>
-                      setState(() => _activeStickerPackIndex = index),
+                  onPasteRequested: () => unawaited(_handlePasteRequested()),
+                  onPasteImageRequested: () =>
+                      unawaited(_handlePasteImageRequested()),
+                  onStickerPackSelected: _handleStickerPackSelected,
                   onStickerSelected: (sticker) =>
                       unawaited(_sendSticker(sticker)),
                   onCreateSticker: () => unawaited(_createStickerFromGallery()),
@@ -1274,6 +1600,8 @@ class _ChatScreenState extends State<ChatScreen> {
 enum _AttachmentPickType { gallery, file, audio }
 
 enum _ComposerPanel { none, emoji, stickers }
+
+enum _PastedImageAction { sendImage, sendSticker }
 
 class _PickedChatAttachment {
   const _PickedChatAttachment({
@@ -1319,6 +1647,7 @@ double _scale(BuildContext context, double base) => base * _sw(context) / 390;
 // listed.
 String? _extensionForMime(String mime) {
   return switch (mime.toLowerCase()) {
+    'image/gif' => 'gif',
     'image/jpeg' => 'jpg',
     'image/png' => 'png',
     'image/heic' => 'heic',
@@ -1342,6 +1671,7 @@ String? _contentTypeForFileName(String fileName) {
 
   final ext = fileName.substring(dot + 1).toLowerCase();
   return switch (ext) {
+    'gif' => 'image/gif',
     'jpg' || 'jpeg' => 'image/jpeg',
     'png' => 'image/png',
     'webp' => 'image/webp',
@@ -1373,7 +1703,7 @@ String? _contentTypeForFileName(String fileName) {
 
 bool _isStickerContentType(String contentType) {
   return switch (contentType.trim().toLowerCase()) {
-    'image/jpeg' || 'image/png' || 'image/webp' => true,
+    'image/gif' || 'image/jpeg' || 'image/png' || 'image/webp' => true,
     _ => false,
   };
 }
@@ -2540,8 +2870,9 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final senderParticipant =
-        participants.where((p) => p.userId == message.senderUserId).firstOrNull;
+    final senderParticipant = participants
+        .where((p) => p.userId == message.senderUserId)
+        .firstOrNull;
     final senderName = _senderNameForMessage(message, participants, l10n);
     final isDeleted = message.isDeleted;
     final isSticker = message.isSticker;
@@ -2637,25 +2968,25 @@ class _MessageBubble extends StatelessWidget {
                     gradient: isSticker
                         ? null
                         : isDeleted
-                            ? LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  const Color(0xA334271D),
-                                  const Color(0xD1261C15),
-                                ],
-                              )
-                            : const LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Color(0xA34D2D13), Color(0xD13C210D)],
-                              ),
+                        ? LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              const Color(0xA334271D),
+                              const Color(0xD1261C15),
+                            ],
+                          )
+                        : const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xA34D2D13), Color(0xD13C210D)],
+                          ),
                     border: Border.all(
                       color: isHighlighted
                           ? AppColors.accent.withValues(alpha: 0.72)
                           : isSticker
-                              ? Colors.transparent
-                              : Colors.white.withValues(alpha: 0.05),
+                          ? Colors.transparent
+                          : Colors.white.withValues(alpha: 0.05),
                       width: isHighlighted ? 1.4 : 1,
                     ),
                     boxShadow: isHighlighted
@@ -2684,7 +3015,8 @@ class _MessageBubble extends StatelessWidget {
                                     l10n,
                                   ),
                             preview: _ReplyPreviewText(
-                              message: repliedMessage ??
+                              message:
+                                  repliedMessage ??
                                   MessageVm(
                                     id: message.replyToMessageId!,
                                     senderUserId: '',
@@ -2969,14 +3301,56 @@ class _StickerImageCache {
       return Future<Uint8List?>.value(null);
     }
 
-    return _bytesFutures.putIfAbsent(normalizedFileId, () async {
+    final cached = _bytesFutures[normalizedFileId];
+    if (cached != null) return cached;
+
+    final load = () async {
       try {
         final content = await _fileApi.downloadContent(normalizedFileId);
-        return content.bytes.isEmpty ? null : content.bytes;
+        if (content.bytes.isEmpty) {
+          _bytesFutures.remove(normalizedFileId);
+          return null;
+        }
+        return content.bytes;
       } catch (_) {
+        _bytesFutures.remove(normalizedFileId);
         return null;
       }
-    });
+    }();
+    _bytesFutures[normalizedFileId] = load;
+    return load;
+  }
+
+  static Future<void> preload(
+    Iterable<String> fileIds, {
+    required int limit,
+    required int concurrency,
+  }) async {
+    final normalized = <String>[];
+    final seen = <String>{};
+    for (final fileId in fileIds) {
+      final id = fileId.trim();
+      if (id.isEmpty || !seen.add(id)) continue;
+      normalized.add(id);
+      if (normalized.length >= limit) break;
+    }
+    if (normalized.isEmpty) return;
+
+    var nextIndex = 0;
+    final safeConcurrency = concurrency < 1 ? 1 : concurrency;
+    final workerCount = normalized.length < safeConcurrency
+        ? normalized.length
+        : safeConcurrency;
+
+    await Future.wait(
+      List.generate(workerCount, (_) async {
+        while (nextIndex < normalized.length) {
+          final fileId = normalized[nextIndex];
+          nextIndex += 1;
+          await bytesFor(fileId);
+        }
+      }),
+    );
   }
 }
 
@@ -3143,7 +3517,8 @@ class _MessageAttachmentsState extends State<_MessageAttachments> {
     return FutureBuilder<List<_ChatAttachmentViewData>>(
       future: _future,
       builder: (context, snapshot) {
-        final items = snapshot.data ??
+        final items =
+            snapshot.data ??
             widget.fileIds
                 .map(
                   (fileId) => _ChatAttachmentViewData(
@@ -3336,8 +3711,8 @@ class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
   Future<void> _seekToFraction(double fraction, Duration duration) async {
     if (duration.inMilliseconds <= 0 || _preparing) return;
     final target = Duration(
-      milliseconds:
-          (duration.inMilliseconds * fraction.clamp(0.0, 1.0)).round(),
+      milliseconds: (duration.inMilliseconds * fraction.clamp(0.0, 1.0))
+          .round(),
     );
     await _player.seek(target);
   }
@@ -3359,10 +3734,12 @@ class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
             stream: _player.playerStateStream,
             builder: (context, snapshot) {
               final processing = snapshot.data?.processingState;
-              final busy = _preparing ||
+              final busy =
+                  _preparing ||
                   processing == ProcessingState.loading ||
                   processing == ProcessingState.buffering;
-              final playing = (snapshot.data?.playing ?? false) &&
+              final playing =
+                  (snapshot.data?.playing ?? false) &&
                   processing != ProcessingState.completed;
 
               return GestureDetector(
@@ -3421,7 +3798,7 @@ class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
                     final progress = duration.inMilliseconds <= 0
                         ? 0.0
                         : (position.inMilliseconds / duration.inMilliseconds)
-                            .clamp(0.0, 1.0);
+                              .clamp(0.0, 1.0);
 
                     return Row(
                       children: [
@@ -3487,12 +3864,15 @@ class _VoiceWaveform extends StatelessWidget {
 
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTapDown:
-              enabled ? (details) => seekAt(details.localPosition) : null,
-          onHorizontalDragStart:
-              enabled ? (details) => seekAt(details.localPosition) : null,
-          onHorizontalDragUpdate:
-              enabled ? (details) => seekAt(details.localPosition) : null,
+          onTapDown: enabled
+              ? (details) => seekAt(details.localPosition)
+              : null,
+          onHorizontalDragStart: enabled
+              ? (details) => seekAt(details.localPosition)
+              : null,
+          onHorizontalDragUpdate: enabled
+              ? (details) => seekAt(details.localPosition)
+              : null,
           child: SizedBox(
             height: _scale(context, 28),
             child: Row(
@@ -3881,6 +4261,166 @@ class _PendingAttachmentsStrip extends StatelessWidget {
   }
 }
 
+class _PastedImagePreviewSheet extends StatelessWidget {
+  const _PastedImagePreviewSheet({required this.attachment});
+
+  final _PickedChatAttachment attachment;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bottom = MediaQuery.of(context).padding.bottom;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          _scale(context, 18),
+          _scale(context, 12),
+          _scale(context, 18),
+          _scale(context, 18) + bottom,
+        ),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1d120b),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            SizedBox(height: _scale(context, 16)),
+            Text(
+              l10n.chatPasteImagePreviewTitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: const Color(0xFFf5f3ef),
+                fontSize: _scale(context, 18),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            SizedBox(height: _scale(context, 12)),
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.42,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_scale(context, 20)),
+                color: const Color(0xFF2a1a10),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.memory(
+                attachment.bytes,
+                fit: BoxFit.contain,
+                gaplessPlayback: true,
+              ),
+            ),
+            SizedBox(height: _scale(context, 10)),
+            Text(
+              '${attachment.name} · ${_formatAttachmentSize(attachment.bytes.lengthInBytes)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.62),
+                fontSize: _scale(context, 12),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: _scale(context, 16)),
+            Row(
+              children: [
+                Expanded(
+                  child: _PastePreviewActionButton(
+                    icon: Icons.image_rounded,
+                    label: l10n.chatPasteSendImage,
+                    onTap: () =>
+                        Navigator.of(context).pop(_PastedImageAction.sendImage),
+                  ),
+                ),
+                SizedBox(width: _scale(context, 10)),
+                Expanded(
+                  child: _PastePreviewActionButton(
+                    icon: Icons.sticky_note_2_rounded,
+                    label: l10n.chatPasteSendSticker,
+                    emphasized: true,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pop(_PastedImageAction.sendSticker),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PastePreviewActionButton extends StatelessWidget {
+  const _PastePreviewActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.emphasized = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = emphasized
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.08);
+    final fg = emphasized ? Colors.white : const Color(0xFFf5f3ef);
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: _scale(context, 48),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(_scale(context, 16)),
+          color: bg,
+          border: emphasized
+              ? null
+              : Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: _scale(context, 19), color: fg),
+            SizedBox(width: _scale(context, 7)),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: fg,
+                  fontSize: _scale(context, 13),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PendingAttachmentChip extends StatelessWidget {
   const _PendingAttachmentChip({
     required this.attachment,
@@ -4116,8 +4656,8 @@ class _PendingVoiceAttachmentChipState
   Future<void> _seekToFraction(double fraction, Duration duration) async {
     if (duration.inMilliseconds <= 0 || _preparing) return;
     final target = Duration(
-      milliseconds:
-          (duration.inMilliseconds * fraction.clamp(0.0, 1.0)).round(),
+      milliseconds: (duration.inMilliseconds * fraction.clamp(0.0, 1.0))
+          .round(),
     );
     await _player.seek(target);
   }
@@ -4142,11 +4682,13 @@ class _PendingVoiceAttachmentChipState
             stream: _player.playerStateStream,
             builder: (context, snapshot) {
               final processing = snapshot.data?.processingState;
-              final busy = _preparing ||
+              final busy =
+                  _preparing ||
                   widget.uploading ||
                   processing == ProcessingState.loading ||
                   processing == ProcessingState.buffering;
-              final playing = (snapshot.data?.playing ?? false) &&
+              final playing =
+                  (snapshot.data?.playing ?? false) &&
                   processing != ProcessingState.completed;
 
               return GestureDetector(
@@ -4206,14 +4748,15 @@ class _PendingVoiceAttachmentChipState
                     final progress = duration.inMilliseconds <= 0
                         ? 0.0
                         : (position.inMilliseconds / duration.inMilliseconds)
-                            .clamp(0.0, 1.0);
+                              .clamp(0.0, 1.0);
 
                     return Row(
                       children: [
                         Expanded(
                           child: _VoiceWaveform(
                             progress: progress,
-                            enabled: duration.inMilliseconds > 0 &&
+                            enabled:
+                                duration.inMilliseconds > 0 &&
                                 !_preparing &&
                                 !widget.uploading,
                             onSeekFraction: (fraction) =>
@@ -4351,8 +4894,8 @@ class _VoiceRecordingBar extends StatelessWidget {
                     stopping
                         ? l10n.chatVoicePreparingPreview
                         : locked
-                            ? l10n.chatVoiceRecordingLocked
-                            : l10n.chatVoiceRecording,
+                        ? l10n.chatVoiceRecordingLocked
+                        : l10n.chatVoiceRecording,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -4725,6 +5268,8 @@ class _ChatComposer extends StatelessWidget {
     required this.stickerCreating,
     required this.onPanelChanged,
     required this.onEmojiSelected,
+    required this.onPasteRequested,
+    required this.onPasteImageRequested,
     required this.onStickerPackSelected,
     required this.onStickerSelected,
     required this.onCreateSticker,
@@ -4765,6 +5310,8 @@ class _ChatComposer extends StatelessWidget {
   final bool stickerCreating;
   final ValueChanged<_ComposerPanel> onPanelChanged;
   final ValueChanged<String> onEmojiSelected;
+  final VoidCallback onPasteRequested;
+  final VoidCallback onPasteImageRequested;
   final ValueChanged<int> onStickerPackSelected;
   final ValueChanged<StickerVm> onStickerSelected;
   final VoidCallback onCreateSticker;
@@ -4875,6 +5422,39 @@ class _ChatComposer extends StatelessWidget {
                             onTap: () => onPanelChanged(_ComposerPanel.none),
                             onChanged: (_) => onTyping(),
                             onSubmitted: (_) => onSend(),
+                            contextMenuBuilder: (context, editableTextState) {
+                              final items = editableTextState
+                                  .contextMenuButtonItems
+                                  .where(
+                                    (item) =>
+                                        item.type !=
+                                        ContextMenuButtonType.paste,
+                                  )
+                                  .toList(growable: true);
+                              items.insert(
+                                0,
+                                ContextMenuButtonItem(
+                                  label: l10n.chatComposerPaste,
+                                  onPressed: () {
+                                    ContextMenuController.removeAny();
+                                    onPasteRequested();
+                                  },
+                                ),
+                              );
+                              items.add(
+                                ContextMenuButtonItem(
+                                  label: l10n.chatComposerPasteImage,
+                                  onPressed: () {
+                                    ContextMenuController.removeAny();
+                                    onPasteImageRequested();
+                                  },
+                                ),
+                              );
+                              return AdaptiveTextSelectionToolbar.buttonItems(
+                                anchors: editableTextState.contextMenuAnchors,
+                                buttonItems: items,
+                              );
+                            },
                             textInputAction: TextInputAction.send,
                             maxLines: 1,
                             textAlignVertical: TextAlignVertical.center,
@@ -4891,8 +5471,8 @@ class _ChatComposer extends StatelessWidget {
                               hintText: messagingClosed
                                   ? l10n.chatComposerClosedHint
                                   : attachmentUploading
-                                      ? l10n.chatAttachmentUploading
-                                      : l10n.chatComposerHint,
+                                  ? l10n.chatAttachmentUploading
+                                  : l10n.chatComposerHint,
                               hintStyle: TextStyle(
                                 fontSize: 15,
                                 color: Colors.white.withValues(alpha: 0.48),
@@ -4911,8 +5491,8 @@ class _ChatComposer extends StatelessWidget {
                                 : () {
                                     final nextPanel =
                                         activePanel == _ComposerPanel.none
-                                            ? _ComposerPanel.emoji
-                                            : _ComposerPanel.none;
+                                        ? _ComposerPanel.emoji
+                                        : _ComposerPanel.none;
                                     onPanelChanged(nextPanel);
                                   },
                             child: SizedBox(
@@ -4935,7 +5515,8 @@ class _ChatComposer extends StatelessWidget {
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
-                    final hasDraft = value.text.trim().isNotEmpty ||
+                    final hasDraft =
+                        value.text.trim().isNotEmpty ||
                         pendingAttachments.isNotEmpty;
                     if (hasDraft) return const SizedBox.shrink();
                     return Padding(
@@ -4955,7 +5536,8 @@ class _ChatComposer extends StatelessWidget {
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
-                    final hasDraft = value.text.trim().isNotEmpty ||
+                    final hasDraft =
+                        value.text.trim().isNotEmpty ||
                         pendingAttachments.isNotEmpty;
                     final disabled =
                         sending || attachmentUploading || messagingClosed;
@@ -5329,8 +5911,9 @@ class _StickerGrid extends StatelessWidget {
       );
     }
 
-    final safeIndex =
-        packs.isEmpty ? 0 : activePackIndex.clamp(0, packs.length - 1).toInt();
+    final safeIndex = packs.isEmpty
+        ? 0
+        : activePackIndex.clamp(0, packs.length - 1).toInt();
     final activePack = packs.isEmpty ? null : packs[safeIndex];
     final stickers = activePack?.stickers ?? const <StickerVm>[];
 

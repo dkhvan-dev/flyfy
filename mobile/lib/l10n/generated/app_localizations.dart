@@ -6040,6 +6040,84 @@ abstract class AppLocalizations {
   /// **'Could not load your stickers.'**
   String get chatStickerLoadFailed;
 
+  /// No description provided for @chatComposerPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get chatComposerPaste;
+
+  /// No description provided for @chatComposerPasteImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste image'**
+  String get chatComposerPasteImage;
+
+  /// No description provided for @chatClipboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to paste'**
+  String get chatClipboardEmpty;
+
+  /// No description provided for @chatPasteImagePreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send pasted image'**
+  String get chatPasteImagePreviewTitle;
+
+  /// No description provided for @chatPasteSendImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send image'**
+  String get chatPasteSendImage;
+
+  /// No description provided for @chatPasteSendSticker.
+  ///
+  /// In en, this message translates to:
+  /// **'Add as sticker'**
+  String get chatPasteSendSticker;
+
+  /// No description provided for @stickersTabRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get stickersTabRecent;
+
+  /// No description provided for @stickersSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search stickers'**
+  String get stickersSearchHint;
+
+  /// No description provided for @stickersEmptyRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent stickers yet'**
+  String get stickersEmptyRecent;
+
+  /// No description provided for @stickersEmptySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'No stickers found'**
+  String get stickersEmptySearch;
+
+  /// No description provided for @stickersLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load stickers'**
+  String get stickersLoadFailed;
+
+  /// No description provided for @stickersRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get stickersRetry;
+
+  /// No description provided for @stickersOpenPicker.
+  ///
+  /// In en, this message translates to:
+  /// **'Open stickers'**
+  String get stickersOpenPicker;
+
   /// No description provided for @chatStickerUnsupported.
   ///
   /// In en, this message translates to:

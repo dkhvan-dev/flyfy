@@ -3300,6 +3300,45 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatStickerLoadFailed => 'Стикерлеріңізді жүктеу мүмкін болмады.';
 
   @override
+  String get chatComposerPaste => 'Қою';
+
+  @override
+  String get chatComposerPasteImage => 'Суретті қою';
+
+  @override
+  String get chatClipboardEmpty => 'Қоюға болатын дерек жоқ';
+
+  @override
+  String get chatPasteImagePreviewTitle => 'Қойылған суретті жіберу';
+
+  @override
+  String get chatPasteSendImage => 'Сурет жіберу';
+
+  @override
+  String get chatPasteSendSticker => 'Стикер ретінде қосу';
+
+  @override
+  String get stickersTabRecent => 'Жуырдағы';
+
+  @override
+  String get stickersSearchHint => 'Стикерлерді іздеу';
+
+  @override
+  String get stickersEmptyRecent => 'Жуырдағы стикерлер әлі жоқ';
+
+  @override
+  String get stickersEmptySearch => 'Стикерлер табылмады';
+
+  @override
+  String get stickersLoadFailed => 'Стикерлерді жүктеу мүмкін болмады';
+
+  @override
+  String get stickersRetry => 'Қайталау';
+
+  @override
+  String get stickersOpenPicker => 'Стикерлерді ашу';
+
+  @override
   String get chatStickerUnsupported =>
       'Стикерлер үшін JPG, PNG немесе WebP кескінін пайдаланыңыз.';
 

@@ -3304,6 +3304,45 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatStickerLoadFailed => 'Не удалось загрузить ваши стикеры.';
 
   @override
+  String get chatComposerPaste => 'Вставить';
+
+  @override
+  String get chatComposerPasteImage => 'Вставить изображение';
+
+  @override
+  String get chatClipboardEmpty => 'В буфере обмена нет данных для вставки';
+
+  @override
+  String get chatPasteImagePreviewTitle => 'Отправить вставленное изображение';
+
+  @override
+  String get chatPasteSendImage => 'Отправить фото';
+
+  @override
+  String get chatPasteSendSticker => 'Добавить как стикер';
+
+  @override
+  String get stickersTabRecent => 'Недавние';
+
+  @override
+  String get stickersSearchHint => 'Поиск стикеров';
+
+  @override
+  String get stickersEmptyRecent => 'Недавних стикеров пока нет';
+
+  @override
+  String get stickersEmptySearch => 'Стикеры не найдены';
+
+  @override
+  String get stickersLoadFailed => 'Не удалось загрузить стикеры';
+
+  @override
+  String get stickersRetry => 'Повторить';
+
+  @override
+  String get stickersOpenPicker => 'Открыть стикеры';
+
+  @override
   String get chatStickerUnsupported =>
       'Для стикеров используйте изображение JPG, PNG или WebP.';
 

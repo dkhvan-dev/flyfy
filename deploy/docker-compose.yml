@@ -484,6 +484,11 @@ services:
     ports:
       - "8083:8083"
       - "9093:9093"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       APP_ENV: development
       HTTP_PORT: 8083
@@ -750,6 +755,8 @@ services:
         condition: service_started
       activity-service:
         condition: service_started
+      sticker-service:
+        condition: service_started
     ports:
       - "8088:8088"
       - "9097:9097"
@@ -788,6 +795,9 @@ services:
 
       USER_SERVICE_GRPC_ADDR: dns:///user-service:9094
       ACTIVITY_SERVICE_GRPC_ADDR: dns:///activity-service:9096
+      STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
+      STICKER_SERVICE_TIMEOUT: 5s
+      STICKER_SERVICE_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -877,6 +887,51 @@ services:
     entrypoint: ["/bin/sh", "/usr/local/bin/010_payment_service_migrate.sh"]
     depends_on:
       payment-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Sticker Service PostgreSQL
+  # ============================================
+  sticker-postgres:
+    image: postgres:17-alpine
+    container_name: sticker-postgres
+    environment:
+      POSTGRES_DB: sticker_service_db
+      POSTGRES_USER: sticker_service
+      POSTGRES_PASSWORD: sticker_secret_dev
+    ports:
+      - "5443:5432"
+    volumes:
+      - sticker_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/011_sticker_service.sh:/docker-entrypoint-initdb.d/011_sticker_service.sh
+      - ../backend/services/sticker-service/migrations:/migrations/sticker-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sticker_service -d sticker_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  sticker-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: sticker-postgres-migrator
+    environment:
+      PGHOST: sticker-postgres
+      PGPORT: 5432
+      POSTGRES_DB: sticker_service_db
+      POSTGRES_USER: sticker_service
+      POSTGRES_PASSWORD: sticker_secret_dev
+    volumes:
+      - ./init-scripts/011_sticker_service_migrate.sh:/usr/local/bin/011_sticker_service_migrate.sh:ro
+      - ../backend/services/sticker-service/migrations:/migrations/sticker-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/011_sticker_service_migrate.sh"]
+    depends_on:
+      sticker-postgres:
         condition: service_healthy
     restart: "no"
     networks:
@@ -981,6 +1036,101 @@ services:
       - flyfy-network
 
   # ============================================
+  # Sticker Service
+  # ============================================
+  sticker-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/sticker-service/Dockerfile
+    container_name: sticker-service
+    depends_on:
+      sticker-postgres:
+        condition: service_healthy
+      sticker-postgres-migrator:
+        condition: service_completed_successfully
+      file-manager-service:
+        condition: service_started
+    ports:
+      - "8092:8092"
+    environment:
+      APP_NAME: sticker-service
+      APP_ENV: development
+
+      HTTP_PORT: 8092
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 30s
+      HTTP_IDLE_TIMEOUT: 120s
+
+      DB_HOST: sticker-postgres
+      DB_PORT: 5432
+      DB_NAME: sticker_service_db
+      DB_USER: sticker_service
+      DB_PASSWORD: sticker_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 20
+      DB_MIN_CONNS: 2
+      DB_MAX_CONN_IDLE: 5m
+      DB_MAX_CONN_LIFETIME: 1h
+
+      LOG_LEVEL: debug
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+
+      FILE_MANAGER_BASE_URL: http://file-manager-service:8083
+      FILE_MANAGER_TIMEOUT: 5s
+      FILE_MANAGER_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+
+      POST_MODERATION_ENABLED: "true"
+      STICKER_UPLOAD_SESSION_TTL: 15m
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  sticker-default-stickers-seeder:
+    build:
+      context: ..
+      dockerfile: ./backend/services/sticker-service/Dockerfile
+    container_name: sticker-default-stickers-seeder
+    depends_on:
+      sticker-postgres:
+        condition: service_healthy
+      sticker-postgres-migrator:
+        condition: service_completed_successfully
+      file-manager-service:
+        condition: service_healthy
+    environment:
+      APP_NAME: sticker-default-stickers-seeder
+      APP_ENV: development
+
+      DB_HOST: sticker-postgres
+      DB_PORT: 5432
+      DB_NAME: sticker_service_db
+      DB_USER: sticker_service
+      DB_PASSWORD: sticker_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 5
+      DB_MIN_CONNS: 1
+      DB_MAX_CONN_IDLE: 5m
+      DB_MAX_CONN_LIFETIME: 1h
+
+      LOG_LEVEL: info
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      FILE_MANAGER_BASE_URL: http://file-manager-service:8083
+      FILE_MANAGER_TIMEOUT: 10s
+      FILE_MANAGER_INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      POST_MODERATION_ENABLED: "false"
+      STICKER_UPLOAD_SESSION_TTL: 15m
+    entrypoint: ["/app/seed-default-stickers"]
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Reference Service
   # ============================================
   reference-service:
@@ -1027,6 +1177,8 @@ services:
         condition: service_started
       chat-service:
         condition: service_started
+      sticker-service:
+        condition: service_started
       reference-service:
         condition: service_started
       attraction-service:
@@ -1061,6 +1213,7 @@ services:
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
       STORIES_SERVICE_HTTP_URL: http://stories-service:8087
       CHAT_SERVICE_HTTP_URL: http://chat-service:8088
+      STICKER_SERVICE_HTTP_URL: http://sticker-service:8092
       REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
       ATTRACTION_SERVICE_HTTP_URL: http://attraction-service:8090
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
@@ -1105,4 +1258,5 @@ volumes:
   nats_data:
   attraction_postgres_data:
   payment_postgres_data:
+  sticker_postgres_data:
   token_service_keys:

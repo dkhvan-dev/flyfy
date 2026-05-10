@@ -22,15 +22,20 @@ var (
 
 type StickerPack struct {
 	ID              uuid.UUID
+	GroupID         *uuid.UUID
 	Slug            string
 	Type            enum.PackType
 	Visibility      enum.PackVisibility
 	Status          enum.PackStatus
+	IsOfficial      bool
+	Version         int
 	OwnerUserID     *uuid.UUID
 	Title           map[string]string
 	Description     map[string]string
 	CoverStickerID  *uuid.UUID
+	ThumbnailFileID *uuid.UUID
 	SortOrder       int
+	PublishedAt     *time.Time
 	CreatedByUserID *uuid.UUID
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
@@ -42,31 +47,45 @@ type StickerPackWithStickers struct {
 }
 
 type NewStickerPackParams struct {
+	GroupID         *uuid.UUID
 	Slug            string
 	Type            enum.PackType
 	Visibility      enum.PackVisibility
 	Status          enum.PackStatus
+	IsOfficial      bool
+	Version         int
 	OwnerUserID     *uuid.UUID
 	Title           map[string]string
 	Description     map[string]string
 	CoverStickerID  *uuid.UUID
+	ThumbnailFileID *uuid.UUID
 	SortOrder       int
+	PublishedAt     *time.Time
 	CreatedByUserID *uuid.UUID
 }
 
 func NewStickerPack(params NewStickerPackParams) (*StickerPack, error) {
 	now := time.Now().UTC()
+	version := params.Version
+	if version <= 0 {
+		version = 1
+	}
 	pack := &StickerPack{
 		ID:              uuid.New(),
+		GroupID:         params.GroupID,
 		Slug:            strings.TrimSpace(params.Slug),
 		Type:            params.Type,
 		Visibility:      params.Visibility,
 		Status:          params.Status,
+		IsOfficial:      params.IsOfficial,
+		Version:         version,
 		OwnerUserID:     params.OwnerUserID,
 		Title:           normalizeLocalizedText(params.Title),
 		Description:     normalizeLocalizedText(params.Description),
 		CoverStickerID:  params.CoverStickerID,
+		ThumbnailFileID: params.ThumbnailFileID,
 		SortOrder:       params.SortOrder,
+		PublishedAt:     params.PublishedAt,
 		CreatedByUserID: params.CreatedByUserID,
 		CreatedAt:       now,
 		UpdatedAt:       now,

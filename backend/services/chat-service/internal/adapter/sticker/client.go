@@ -40,8 +40,8 @@ func (c *Client) ValidateSend(
 ) (*port.StickerMetadata, error) {
 	body := bytes.NewBuffer(nil)
 	if err := json.NewEncoder(body).Encode(validateSendRequest{
-		SenderUserID: senderUserID.String(),
-		StickerID:    stickerID.String(),
+		UserID:    senderUserID.String(),
+		StickerID: stickerID.String(),
 	}); err != nil {
 		return nil, fmt.Errorf("encode sticker validation request: %w", err)
 	}
@@ -49,7 +49,7 @@ func (c *Client) ValidateSend(
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.baseURL+"/v1/internal/stickers/validate-send",
+		c.baseURL+"/internal/v1/stickers/validate-send",
 		body,
 	)
 	if err != nil {
@@ -88,12 +88,35 @@ func (c *Client) ValidateSend(
 	if err != nil {
 		return nil, fmt.Errorf("sticker-service returned invalid file id: %w", err)
 	}
+	fallbackFileID := fileID
+	if strings.TrimSpace(payload.FallbackFileID) != "" {
+		fallbackFileID, err = uuid.Parse(strings.TrimSpace(payload.FallbackFileID))
+		if err != nil {
+			return nil, fmt.Errorf("sticker-service returned invalid fallback file id: %w", err)
+		}
+	}
+	var previewFileID *uuid.UUID
+	if strings.TrimSpace(payload.PreviewFileID) != "" {
+		parsed, err := uuid.Parse(strings.TrimSpace(payload.PreviewFileID))
+		if err != nil {
+			return nil, fmt.Errorf("sticker-service returned invalid preview file id: %w", err)
+		}
+		previewFileID = &parsed
+	}
 
 	return &port.StickerMetadata{
-		StickerID: parsedStickerID,
-		PackID:    packID,
-		FileID:    fileID,
-		Status:    payload.Status,
+		StickerID:      parsedStickerID,
+		PackID:         packID,
+		PackSlug:       payload.PackSlug,
+		Slug:           payload.Slug,
+		FileID:         fileID,
+		FallbackFileID: fallbackFileID,
+		PreviewFileID:  previewFileID,
+		ContentType:    payload.ContentType,
+		Width:          payload.Width,
+		Height:         payload.Height,
+		DurationMS:     payload.DurationMS,
+		Status:         payload.Status,
 	}, nil
 }
 
@@ -114,13 +137,21 @@ func readErrorMessage(body io.Reader) string {
 }
 
 type validateSendRequest struct {
-	SenderUserID string `json:"senderUserId"`
-	StickerID    string `json:"stickerId"`
+	UserID    string `json:"userId"`
+	StickerID string `json:"stickerId"`
 }
 
 type validateSendResponse struct {
-	StickerID string `json:"stickerId"`
-	PackID    string `json:"packId"`
-	FileID    string `json:"fileId"`
-	Status    string `json:"status"`
+	StickerID      string `json:"stickerId"`
+	PackID         string `json:"packId"`
+	PackSlug       string `json:"packSlug"`
+	Slug           string `json:"slug"`
+	FileID         string `json:"fileId"`
+	FallbackFileID string `json:"fallbackFileId"`
+	PreviewFileID  string `json:"previewFileId"`
+	ContentType    string `json:"contentType"`
+	Width          int    `json:"width"`
+	Height         int    `json:"height"`
+	DurationMS     int    `json:"durationMs"`
+	Status         string `json:"status"`
 }

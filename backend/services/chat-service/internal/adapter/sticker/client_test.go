@@ -17,9 +17,11 @@ func TestValidateSendCallsStickerServiceInternalEndpoint(t *testing.T) {
 	stickerID := uuid.New()
 	packID := uuid.New()
 	fileID := uuid.New()
+	fallbackID := uuid.New()
+	previewID := uuid.New()
 
 	transport := roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		if r.Method != http.MethodPost || r.URL.Path != "/v1/internal/stickers/validate-send" {
+		if r.Method != http.MethodPost || r.URL.Path != "/internal/v1/stickers/validate-send" {
 			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
 		}
 		if got := r.Header.Get("X-Internal-Service-Token"); got != "internal-token" {
@@ -30,15 +32,23 @@ func TestValidateSendCallsStickerServiceInternalEndpoint(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Fatalf("decode request: %v", err)
 		}
-		if req["senderUserId"] != senderID.String() || req["stickerId"] != stickerID.String() {
+		if req["userId"] != senderID.String() || req["stickerId"] != stickerID.String() {
 			t.Fatalf("unexpected request body: %+v", req)
 		}
 
-		return jsonResponse(http.StatusOK, map[string]string{
-			"stickerId": stickerID.String(),
-			"packId":    packID.String(),
-			"fileId":    fileID.String(),
-			"status":    "ACTIVE",
+		return jsonResponse(http.StatusOK, map[string]any{
+			"stickerId":      stickerID.String(),
+			"packId":         packID.String(),
+			"packSlug":       "flyfy-travel-basics",
+			"slug":           "boarding-pass",
+			"fileId":         fileID.String(),
+			"fallbackFileId": fallbackID.String(),
+			"previewFileId":  previewID.String(),
+			"contentType":    "application/json",
+			"width":          512,
+			"height":         512,
+			"durationMs":     1800,
+			"status":         "ACTIVE",
 		}), nil
 	})
 
@@ -50,6 +60,17 @@ func TestValidateSendCallsStickerServiceInternalEndpoint(t *testing.T) {
 	}
 	if result.StickerID != stickerID || result.PackID != packID || result.FileID != fileID {
 		t.Fatalf("unexpected result: %+v", result)
+	}
+	if result.PackSlug != "flyfy-travel-basics" ||
+		result.Slug != "boarding-pass" ||
+		result.FallbackFileID != fallbackID ||
+		result.PreviewFileID == nil ||
+		*result.PreviewFileID != previewID ||
+		result.ContentType != "application/json" ||
+		result.Width != 512 ||
+		result.Height != 512 ||
+		result.DurationMS != 1800 {
+		t.Fatalf("unexpected sticker payload metadata: %+v", result)
 	}
 }
 

@@ -6,6 +6,7 @@ import '../core/network/chat_api.dart';
 import '../core/network/chat_ws_service.dart';
 import '../features/chat/models/conversation_vm.dart';
 import '../features/chat/models/message_vm.dart';
+import '../features/chat/models/sticker_pack_vm.dart';
 
 class ChatProvider extends ChangeNotifier {
   ChatProvider({ChatApi? chatApi, ChatWsService? wsService})
@@ -204,6 +205,18 @@ class ChatProvider extends ChangeNotifier {
       _sendingMessage = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> sendSticker({
+    required StickerVm sticker,
+    String? replyToMessageId,
+  }) {
+    return sendMessage(
+      '',
+      type: 'sticker',
+      stickerId: sticker.id,
+      replyToMessageId: replyToMessageId,
+    );
   }
 
   Future<DeleteMessageResultVm> deleteMessage(String messageId) async {

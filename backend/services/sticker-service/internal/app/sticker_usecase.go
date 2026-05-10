@@ -96,14 +96,214 @@ type ValidateStickerSendInput struct {
 }
 
 type ValidateStickerSendOutput struct {
-	StickerID uuid.UUID
-	PackID    uuid.UUID
-	FileID    uuid.UUID
-	Status    string
+	StickerID      uuid.UUID
+	PackID         uuid.UUID
+	Slug           string
+	FileID         uuid.UUID
+	FallbackFileID uuid.UUID
+	PreviewFileID  *uuid.UUID
+	ContentType    string
+	Width          int
+	Height         int
+	DurationMS     int
+	Status         string
 }
 
 func (u *StickerUseCase) ListDefaultPacks(ctx context.Context) ([]*model.StickerPackWithStickers, error) {
 	return u.repo.ListDefaultPacks(ctx)
+}
+
+type ListOfficialCatalogInput struct {
+	Locale string
+}
+
+type OfficialCatalogOutput struct {
+	Version int64
+	Groups  []StickerGroupOutput
+}
+
+type StickerGroupOutput struct {
+	ID    uuid.UUID
+	Slug  string
+	Title string
+	Packs []StickerPackOutput
+}
+
+type StickerPackOutput struct {
+	ID              uuid.UUID
+	Slug            string
+	Title           string
+	Description     string
+	Version         int
+	ThumbnailFileID uuid.UUID
+}
+
+type ListPackStickersInput struct {
+	UserID string
+	PackID string
+	Limit  int
+	Offset int
+}
+
+type SearchOfficialStickersInput struct {
+	UserID string
+	Query  string
+	Locale string
+	Limit  int
+	Offset int
+}
+
+type ListRecentStickersInput struct {
+	UserID string
+	Limit  int
+}
+
+type StickerListOutput struct {
+	Stickers []StickerOutput
+}
+
+type StickerOutput struct {
+	ID             uuid.UUID
+	PackID         uuid.UUID
+	Slug           string
+	FileID         uuid.UUID
+	FallbackFileID uuid.UUID
+	PreviewFileID  *uuid.UUID
+	Emoji          *string
+	Keywords       []string
+	Status         string
+	ContentType    string
+	Width          int
+	Height         int
+	DurationMS     int
+	SortOrder      int
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+func (u *StickerUseCase) ListOfficialCatalog(
+	ctx context.Context,
+	input ListOfficialCatalogInput,
+) (*OfficialCatalogOutput, error) {
+	version, err := u.repo.CatalogVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	groups, err := u.repo.ListOfficialGroups(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	output := &OfficialCatalogOutput{
+		Version: version.Version,
+		Groups:  make([]StickerGroupOutput, 0, len(groups)),
+	}
+	for _, group := range groups {
+		if group == nil {
+			continue
+		}
+		packs, err := u.repo.ListActivePacksByGroup(ctx, group.ID)
+		if err != nil {
+			return nil, err
+		}
+		groupOutput := StickerGroupOutput{
+			ID:    group.ID,
+			Slug:  group.Slug,
+			Title: localizedText(group.Title, input.Locale),
+			Packs: make([]StickerPackOutput, 0, len(packs)),
+		}
+		for _, pack := range packs {
+			if pack == nil {
+				continue
+			}
+			groupOutput.Packs = append(groupOutput.Packs, mapPackOutput(pack, input.Locale))
+		}
+		output.Groups = append(output.Groups, groupOutput)
+	}
+
+	return output, nil
+}
+
+func (u *StickerUseCase) ListPackStickers(
+	ctx context.Context,
+	input ListPackStickersInput,
+) (*StickerListOutput, error) {
+	if _, err := parseUUID(input.UserID, ErrInvalidUserID); err != nil {
+		return nil, err
+	}
+	packID, err := parseUUID(input.PackID, ErrInvalidPackID)
+	if err != nil {
+		return nil, err
+	}
+
+	pack, err := u.repo.GetPackByID(ctx, packID)
+	if err != nil {
+		return nil, err
+	}
+	if pack == nil || pack.Status != enum.PackStatusActive {
+		return nil, ErrPackNotFound
+	}
+	if pack.Type != enum.PackTypeSystem || pack.Visibility != enum.PackVisibilityPublic {
+		return nil, ErrPackNotFound
+	}
+
+	stickers, err := u.repo.ListActiveStickersByPack(
+		ctx,
+		packID,
+		normalizeLimit(input.Limit, 50, 100),
+		normalizeOffset(input.Offset),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &StickerListOutput{Stickers: mapStickerOutputs(stickers)}, nil
+}
+
+func (u *StickerUseCase) SearchOfficialStickers(
+	ctx context.Context,
+	input SearchOfficialStickersInput,
+) (*StickerListOutput, error) {
+	if _, err := parseUUID(input.UserID, ErrInvalidUserID); err != nil {
+		return nil, err
+	}
+
+	query := strings.TrimSpace(input.Query)
+	if query == "" {
+		return &StickerListOutput{Stickers: []StickerOutput{}}, nil
+	}
+
+	stickers, err := u.repo.SearchOfficialStickers(
+		ctx,
+		query,
+		normalizeLimit(input.Limit, 50, 100),
+		normalizeOffset(input.Offset),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &StickerListOutput{Stickers: mapStickerOutputs(stickers)}, nil
+}
+
+func (u *StickerUseCase) ListRecentStickers(
+	ctx context.Context,
+	input ListRecentStickersInput,
+) (*StickerListOutput, error) {
+	userID, err := parseUUID(input.UserID, ErrInvalidUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	stickers, err := u.repo.ListRecentStickers(
+		ctx,
+		userID,
+		normalizeLimit(input.Limit, 40, 100),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &StickerListOutput{Stickers: mapStickerOutputs(stickers)}, nil
 }
 
 func (u *StickerUseCase) ListMyPacks(ctx context.Context, userID string) ([]*model.StickerPackWithStickers, error) {
@@ -360,13 +560,112 @@ func (u *StickerUseCase) ValidateSend(
 	if !allowed {
 		return nil, ErrStickerNotAccessible
 	}
+	if err = u.repo.RecordStickerUsage(ctx, userID, stickerID); err != nil {
+		return nil, err
+	}
 
 	return &ValidateStickerSendOutput{
-		StickerID: sticker.ID,
-		PackID:    sticker.PackID,
-		FileID:    sticker.FileID,
-		Status:    string(sticker.Status),
+		StickerID:      sticker.ID,
+		PackID:         sticker.PackID,
+		Slug:           sticker.Slug,
+		FileID:         sticker.FileID,
+		FallbackFileID: valueOrNilUUID(sticker.FallbackFileID),
+		PreviewFileID:  sticker.PreviewFileID,
+		ContentType:    sticker.ContentType,
+		Width:          sticker.Width,
+		Height:         sticker.Height,
+		DurationMS:     sticker.DurationMS,
+		Status:         string(sticker.Status),
 	}, nil
+}
+
+func mapPackOutput(pack *model.StickerPack, locale string) StickerPackOutput {
+	var thumbnailID uuid.UUID
+	if pack.ThumbnailFileID != nil {
+		thumbnailID = *pack.ThumbnailFileID
+	}
+	return StickerPackOutput{
+		ID:              pack.ID,
+		Slug:            pack.Slug,
+		Title:           localizedText(pack.Title, locale),
+		Description:     localizedText(pack.Description, locale),
+		Version:         pack.Version,
+		ThumbnailFileID: thumbnailID,
+	}
+}
+
+func mapStickerOutputs(stickers []*model.Sticker) []StickerOutput {
+	output := make([]StickerOutput, 0, len(stickers))
+	for _, sticker := range stickers {
+		if sticker == nil {
+			continue
+		}
+		output = append(output, mapStickerOutput(sticker))
+	}
+	return output
+}
+
+func mapStickerOutput(sticker *model.Sticker) StickerOutput {
+	return StickerOutput{
+		ID:             sticker.ID,
+		PackID:         sticker.PackID,
+		Slug:           sticker.Slug,
+		FileID:         sticker.FileID,
+		FallbackFileID: valueOrNilUUID(sticker.FallbackFileID),
+		PreviewFileID:  sticker.PreviewFileID,
+		Emoji:          sticker.Emoji,
+		Keywords:       sticker.Keywords,
+		Status:         string(sticker.Status),
+		ContentType:    sticker.ContentType,
+		Width:          sticker.Width,
+		Height:         sticker.Height,
+		DurationMS:     sticker.DurationMS,
+		SortOrder:      sticker.SortOrder,
+		CreatedAt:      sticker.CreatedAt,
+		UpdatedAt:      sticker.UpdatedAt,
+	}
+}
+
+func localizedText(values map[string]string, locale string) string {
+	locale = strings.ToLower(strings.TrimSpace(locale))
+	if locale != "" {
+		if value := strings.TrimSpace(values[locale]); value != "" {
+			return value
+		}
+	}
+	if value := strings.TrimSpace(values["en"]); value != "" {
+		return value
+	}
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func valueOrNilUUID(value *uuid.UUID) uuid.UUID {
+	if value == nil {
+		return uuid.Nil
+	}
+	return *value
+}
+
+func normalizeLimit(value, fallback, max int) int {
+	if value <= 0 {
+		return fallback
+	}
+	if value > max {
+		return max
+	}
+	return value
+}
+
+func normalizeOffset(value int) int {
+	if value < 0 {
+		return 0
+	}
+	return value
 }
 
 func userCanCreateStickerInPack(userID uuid.UUID, pack *model.StickerPack) bool {
@@ -388,7 +687,7 @@ func userCanInstallPack(userID uuid.UUID, pack *model.StickerPack) bool {
 
 func isStickerContentType(contentType string) bool {
 	switch strings.ToLower(strings.TrimSpace(contentType)) {
-	case "image/jpeg", "image/png", "image/webp":
+	case "image/gif", "image/jpeg", "image/png", "image/webp":
 		return true
 	default:
 		return false

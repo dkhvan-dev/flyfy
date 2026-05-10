@@ -122,6 +122,7 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		return nil, ErrInvalidMessageType
 	}
 	var stickerFileID *string
+	var stickerPayload *model.StickerPayload
 	if messageType == messageTypeSticker {
 		if stickerID == nil && len(fileIDs) == 1 {
 			parsed, err := uuid.Parse(fileIDs[0])
@@ -147,7 +148,30 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		}
 		stickerID = &sticker.StickerID
 		fileID := sticker.FileID.String()
-		stickerFileID = &fileID
+		fallbackFileID := sticker.FallbackFileID
+		if fallbackFileID == uuid.Nil {
+			fallbackFileID = sticker.FileID
+		}
+		displayFileID := fallbackFileID.String()
+		stickerFileID = &displayFileID
+		var previewFileID *string
+		if sticker.PreviewFileID != nil && *sticker.PreviewFileID != uuid.Nil {
+			value := sticker.PreviewFileID.String()
+			previewFileID = &value
+		}
+		stickerPayload = &model.StickerPayload{
+			ID:             sticker.StickerID,
+			PackID:         sticker.PackID,
+			PackSlug:       sticker.PackSlug,
+			Slug:           sticker.Slug,
+			FileID:         fileID,
+			FallbackFileID: fallbackFileID.String(),
+			PreviewFileID:  previewFileID,
+			ContentType:    sticker.ContentType,
+			Width:          sticker.Width,
+			Height:         sticker.Height,
+			DurationMS:     sticker.DurationMS,
+		}
 		fileIDs = nil
 	}
 	if len(input.Content) > maxMessageSize {
@@ -190,6 +214,7 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 		Content:          input.Content,
 		StickerID:        stickerID,
 		StickerFileID:    stickerFileID,
+		StickerPayload:   stickerPayload,
 		ReplyToMessageID: input.ReplyToMessageID,
 		SentAt:           now,
 	}

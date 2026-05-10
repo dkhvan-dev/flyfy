@@ -21,14 +21,24 @@ func TestSendStickerMessageValidatesStickerAndStoresStickerPayload(t *testing.T)
 	stickerID := uuid.New()
 	packID := uuid.New()
 	fileID := uuid.New()
+	fallbackID := uuid.New()
+	previewID := uuid.New()
 
 	repo := newFakeMessageRepo(conversationID, senderID)
 	stickers := &fakeStickerResolver{
 		result: &port.StickerMetadata{
-			StickerID: stickerID,
-			PackID:    packID,
-			FileID:    fileID,
-			Status:    "ACTIVE",
+			StickerID:      stickerID,
+			PackID:         packID,
+			PackSlug:       "flyfy-travel-basics",
+			Slug:           "boarding-pass",
+			FileID:         fileID,
+			FallbackFileID: fallbackID,
+			PreviewFileID:  &previewID,
+			ContentType:    "application/json",
+			Width:          512,
+			Height:         512,
+			DurationMS:     1800,
+			Status:         "ACTIVE",
 		},
 	}
 	useCase := NewMessageUseCaseWithStickerResolver(repo, &fakeEventPublisher{}, nil, stickers)
@@ -53,13 +63,31 @@ func TestSendStickerMessageValidatesStickerAndStoresStickerPayload(t *testing.T)
 	if msg.StickerID == nil || *msg.StickerID != stickerID {
 		t.Fatalf("StickerID = %v, want %s", msg.StickerID, stickerID)
 	}
-	if msg.StickerFileID == nil || *msg.StickerFileID != fileID.String() {
-		t.Fatalf("StickerFileID = %v, want %s", msg.StickerFileID, fileID)
+	if msg.StickerFileID == nil || *msg.StickerFileID != fallbackID.String() {
+		t.Fatalf("StickerFileID = %v, want %s", msg.StickerFileID, fallbackID)
+	}
+	if msg.StickerPayload == nil {
+		t.Fatal("expected sticker payload")
+	}
+	if msg.StickerPayload.PackID != packID ||
+		msg.StickerPayload.PackSlug != "flyfy-travel-basics" ||
+		msg.StickerPayload.Slug != "boarding-pass" ||
+		msg.StickerPayload.FallbackFileID != fallbackID.String() ||
+		msg.StickerPayload.PreviewFileID == nil ||
+		*msg.StickerPayload.PreviewFileID != previewID.String() ||
+		msg.StickerPayload.ContentType != "application/json" ||
+		msg.StickerPayload.Width != 512 ||
+		msg.StickerPayload.Height != 512 ||
+		msg.StickerPayload.DurationMS != 1800 {
+		t.Fatalf("unexpected sticker payload: %+v", msg.StickerPayload)
 	}
 	if len(msg.FileIDs) != 0 {
 		t.Fatalf("sticker messages must not persist attachment fileIds: %+v", msg.FileIDs)
 	}
-	if repo.createdMessage == nil || repo.createdMessage.StickerID == nil || *repo.createdMessage.StickerID != stickerID {
+	if repo.createdMessage == nil ||
+		repo.createdMessage.StickerID == nil ||
+		*repo.createdMessage.StickerID != stickerID ||
+		repo.createdMessage.StickerPayload == nil {
 		t.Fatalf("repository did not receive sticker metadata: %+v", repo.createdMessage)
 	}
 }

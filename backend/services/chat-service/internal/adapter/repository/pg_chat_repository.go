@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -45,8 +46,8 @@ func (r *PGChatRepository) WithTx(ctx context.Context, fn func(repo port.ChatTxR
 
 const conversationColumns = `id, type, title, avatar_file_id, activity_id, pinned_message_id, messaging_available_until, created_at, last_activity_at`
 const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
-const messageColumns = `id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, reply_to_message_id, edited_at, deleted_at, sent_at`
-const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.reply_to_message_id, m.edited_at, m.deleted_at, m.sent_at`
+const messageColumns = `id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, edited_at, deleted_at, sent_at`
+const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.sticker_payload, m.reply_to_message_id, m.edited_at, m.deleted_at, m.sent_at`
 
 func scanConversation(row pgx.Row) (*model.Conversation, error) {
 	var c model.Conversation
@@ -134,9 +135,10 @@ func (r *PGChatRepository) ListConversationsByUserID(ctx context.Context, filter
 
 func scanMessage(row pgx.Row) (*model.Message, error) {
 	var m model.Message
+	var stickerPayload []byte
 	err := row.Scan(
 		&m.ID, &m.ConversationID, &m.SenderUserID, &m.Type, &m.Content,
-		&m.StickerID, &m.StickerFileID,
+		&m.StickerID, &m.StickerFileID, &stickerPayload,
 		&m.ReplyToMessageID, &m.EditedAt, &m.DeletedAt, &m.SentAt,
 	)
 	if err == pgx.ErrNoRows {
@@ -145,6 +147,7 @@ func scanMessage(row pgx.Row) (*model.Message, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scan message: %w", err)
 	}
+	m.StickerPayload = decodeStickerPayload(stickerPayload)
 	return &m, nil
 }
 
@@ -163,6 +166,28 @@ func scanMessageReaction(row pgx.Row) (*model.MessageReaction, error) {
 		return nil, fmt.Errorf("scan message reaction: %w", err)
 	}
 	return &reaction, nil
+}
+
+func stickerPayloadJSON(payload *model.StickerPayload) any {
+	if payload == nil {
+		return nil
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return nil
+	}
+	return data
+}
+
+func decodeStickerPayload(data []byte) *model.StickerPayload {
+	if len(data) == 0 {
+		return nil
+	}
+	var payload model.StickerPayload
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return nil
+	}
+	return &payload
 }
 
 func (r *PGChatRepository) GetMessageByID(ctx context.Context, messageID uuid.UUID) (*model.Message, error) {
@@ -208,13 +233,15 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 	var msgs []*model.Message
 	for rows.Next() {
 		var m model.Message
+		var stickerPayload []byte
 		if err := rows.Scan(
 			&m.ID, &m.ConversationID, &m.SenderUserID, &m.Type, &m.Content,
-			&m.StickerID, &m.StickerFileID,
+			&m.StickerID, &m.StickerFileID, &stickerPayload,
 			&m.ReplyToMessageID, &m.EditedAt, &m.DeletedAt, &m.SentAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan message row: %w", err)
 		}
+		m.StickerPayload = decodeStickerPayload(stickerPayload)
 		msgs = append(msgs, &m)
 	}
 	return msgs, rows.Err()
@@ -316,6 +343,7 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 	var pins []*model.ConversationPin
 	for rows.Next() {
 		pin := &model.ConversationPin{Message: &model.Message{}}
+		var stickerPayload []byte
 		if err := rows.Scan(
 			&pin.ID,
 			&pin.ConversationID,
@@ -329,6 +357,7 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 			&pin.Message.Content,
 			&pin.Message.StickerID,
 			&pin.Message.StickerFileID,
+			&stickerPayload,
 			&pin.Message.ReplyToMessageID,
 			&pin.Message.EditedAt,
 			&pin.Message.DeletedAt,
@@ -336,6 +365,7 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 		); err != nil {
 			return nil, fmt.Errorf("scan pinned message: %w", err)
 		}
+		pin.Message.StickerPayload = decodeStickerPayload(stickerPayload)
 		pins = append(pins, pin)
 	}
 	return pins, rows.Err()
@@ -498,10 +528,10 @@ func (tx *pgChatTxRepository) UpdateParticipant(ctx context.Context, p *model.Pa
 
 func (tx *pgChatTxRepository) CreateMessage(ctx context.Context, msg *model.Message) error {
 	_, err := tx.tx.Exec(ctx, `
-		INSERT INTO messages (id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, reply_to_message_id, edited_at, deleted_at, sent_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO messages (id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, edited_at, deleted_at, sent_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`, msg.ID, msg.ConversationID, msg.SenderUserID, msg.Type, msg.Content,
-		msg.StickerID, msg.StickerFileID, msg.ReplyToMessageID, msg.EditedAt, msg.DeletedAt, msg.SentAt)
+		msg.StickerID, msg.StickerFileID, stickerPayloadJSON(msg.StickerPayload), msg.ReplyToMessageID, msg.EditedAt, msg.DeletedAt, msg.SentAt)
 	return err
 }
 

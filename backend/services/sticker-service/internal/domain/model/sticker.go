@@ -15,27 +15,58 @@ var (
 	ErrInvalidStickerPackID = errors.New("invalid sticker pack id")
 	ErrInvalidStickerFileID = errors.New("invalid sticker file id")
 	ErrInvalidStickerStatus = errors.New("invalid sticker status")
+	ErrInvalidStickerAsset  = errors.New("invalid sticker asset metadata")
 )
 
 type Sticker struct {
 	ID              uuid.UUID
 	PackID          uuid.UUID
+	Slug            string
 	FileID          uuid.UUID
+	FallbackFileID  *uuid.UUID
+	PreviewFileID   *uuid.UUID
 	Emoji           *string
 	Keywords        []string
 	Status          enum.StickerStatus
+	ContentType     string
+	Width           int
+	Height          int
+	DurationMS      int
+	SizeBytes       int64
+	Checksum        string
 	SortOrder       int
 	CreatedByUserID *uuid.UUID
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
 
+type StickerAssetMetadata struct {
+	AnimationFileID uuid.UUID
+	FallbackFileID  uuid.UUID
+	PreviewFileID   *uuid.UUID
+	ContentType     string
+	Width           int
+	Height          int
+	DurationMS      int
+	SizeBytes       int64
+	Checksum        string
+}
+
 type NewStickerParams struct {
 	PackID          uuid.UUID
+	Slug            string
 	FileID          uuid.UUID
+	FallbackFileID  *uuid.UUID
+	PreviewFileID   *uuid.UUID
 	Emoji           *string
 	Keywords        []string
 	Status          enum.StickerStatus
+	ContentType     string
+	Width           int
+	Height          int
+	DurationMS      int
+	SizeBytes       int64
+	Checksum        string
 	SortOrder       int
 	CreatedByUserID *uuid.UUID
 }
@@ -45,10 +76,19 @@ func NewSticker(params NewStickerParams) (*Sticker, error) {
 	sticker := &Sticker{
 		ID:              uuid.New(),
 		PackID:          params.PackID,
+		Slug:            strings.TrimSpace(params.Slug),
 		FileID:          params.FileID,
+		FallbackFileID:  params.FallbackFileID,
+		PreviewFileID:   params.PreviewFileID,
 		Emoji:           normalizeOptionalString(params.Emoji),
 		Keywords:        normalizeStringSlice(params.Keywords),
 		Status:          params.Status,
+		ContentType:     strings.TrimSpace(params.ContentType),
+		Width:           params.Width,
+		Height:          params.Height,
+		DurationMS:      params.DurationMS,
+		SizeBytes:       params.SizeBytes,
+		Checksum:        strings.TrimSpace(params.Checksum),
 		SortOrder:       params.SortOrder,
 		CreatedByUserID: params.CreatedByUserID,
 		CreatedAt:       now,
@@ -74,6 +114,35 @@ func (s *Sticker) Validate() error {
 	}
 	if !s.Status.IsValid() {
 		return ErrInvalidStickerStatus
+	}
+	return nil
+}
+
+func CanSendSticker(pack StickerPack, sticker Sticker) bool {
+	return pack.Status == enum.PackStatusActive &&
+		pack.Visibility == enum.PackVisibilityPublic &&
+		sticker.Status == enum.StickerStatusActive &&
+		sticker.PackID == pack.ID
+}
+
+func (m StickerAssetMetadata) Validate() error {
+	if m.AnimationFileID == uuid.Nil {
+		return ErrInvalidStickerAsset
+	}
+	if m.FallbackFileID == uuid.Nil {
+		return ErrInvalidStickerAsset
+	}
+	if strings.TrimSpace(m.ContentType) == "" {
+		return ErrInvalidStickerAsset
+	}
+	if m.Width <= 0 || m.Height <= 0 {
+		return ErrInvalidStickerAsset
+	}
+	if m.DurationMS <= 0 || m.DurationMS > 3000 {
+		return ErrInvalidStickerAsset
+	}
+	if m.SizeBytes <= 0 {
+		return ErrInvalidStickerAsset
 	}
 	return nil
 }

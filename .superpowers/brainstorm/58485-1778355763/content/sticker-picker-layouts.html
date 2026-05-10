@@ -1,0 +1,93 @@
+<h2>Sticker picker direction</h2>
+<p class="subtitle">Choose the interaction model for FlyFy sticker packs in chat. The assets are original FlyFy-style packs, grouped like Telegram, and available to every user.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:360px;border-radius:18px;background:#f7f8fb;border:1px solid #dfe4ee;overflow:hidden;display:flex;flex-direction:column">
+        <div style="height:48px;background:#ffffff;border-bottom:1px solid #e8ecf3;display:flex;align-items:center;gap:10px;padding:0 14px">
+          <div style="width:30px;height:30px;border-radius:50%;background:#2f80ed"></div>
+          <div style="height:10px;width:120px;background:#bac5d5;border-radius:999px"></div>
+        </div>
+        <div style="flex:1;padding:14px;display:flex;flex-direction:column;gap:10px">
+          <div style="align-self:flex-start;width:150px;height:34px;border-radius:16px;background:#ffffff;border:1px solid #e3e8f1"></div>
+          <div style="align-self:flex-end;width:130px;height:34px;border-radius:16px;background:#dcecff"></div>
+          <div style="align-self:flex-start;width:78px;height:78px;border-radius:22px;background:linear-gradient(135deg,#7bc6ff,#f7d774);display:flex;align-items:center;justify-content:center;color:#21304d;font-weight:700">TRIP</div>
+        </div>
+        <div style="background:#ffffff;border-top:1px solid #e1e6ef;padding:10px 12px 14px">
+          <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+            <div style="width:28px;height:28px;border-radius:8px;background:#eef3fb"></div>
+            <div style="width:28px;height:28px;border-radius:8px;background:#2f80ed"></div>
+            <div style="width:28px;height:28px;border-radius:8px;background:#eef3fb"></div>
+            <div style="width:28px;height:28px;border-radius:8px;background:#eef3fb"></div>
+            <div style="flex:1"></div>
+            <div style="width:58px;height:28px;border-radius:999px;background:#eef3fb"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+            <div style="aspect-ratio:1;border-radius:16px;background:#fff0c9"></div>
+            <div style="aspect-ratio:1;border-radius:16px;background:#d7f3e6"></div>
+            <div style="aspect-ratio:1;border-radius:16px;background:#e4dcff"></div>
+            <div style="aspect-ratio:1;border-radius:16px;background:#ffd9d9"></div>
+            <div style="aspect-ratio:1;border-radius:16px;background:#d7ecff"></div>
+            <div style="aspect-ratio:1;border-radius:16px;background:#ffe5c8"></div>
+            <div style="aspect-ratio:1;border-radius:16px;background:#dff4ff"></div>
+            <div style="aspect-ratio:1;border-radius:16px;background:#e8f0d2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Telegram-like bottom picker</h3>
+      <p>Recommended. Sticker button opens a bottom panel with recent stickers, pack tabs, grouped grid, search, loading/empty/error states.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:360px;border-radius:18px;background:#f7f8fb;border:1px solid #dfe4ee;overflow:hidden;display:flex;flex-direction:column">
+        <div style="height:54px;background:#ffffff;border-bottom:1px solid #e8ecf3;display:flex;align-items:center;padding:0 16px">
+          <div style="height:12px;width:150px;background:#2f80ed;border-radius:999px"></div>
+        </div>
+        <div style="padding:14px;display:grid;gap:12px">
+          <div style="height:38px;border-radius:12px;background:#ffffff;border:1px solid #e1e6ef"></div>
+          <div style="height:72px;border-radius:14px;background:linear-gradient(135deg,#d7ecff,#fff0c9)"></div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+            <div style="height:92px;border-radius:14px;background:#ffffff;border:1px solid #e1e6ef"></div>
+            <div style="height:92px;border-radius:14px;background:#ffffff;border:1px solid #e1e6ef"></div>
+            <div style="height:92px;border-radius:14px;background:#ffffff;border:1px solid #e1e6ef"></div>
+            <div style="height:92px;border-radius:14px;background:#ffffff;border:1px solid #e1e6ef"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Full sticker hub</h3>
+      <p>Good for browsing many packs and editorial discovery, but slower inside an active chat and heavier for MVP.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:360px;border-radius:18px;background:#f7f8fb;border:1px solid #dfe4ee;overflow:hidden;display:flex;flex-direction:column">
+        <div style="height:48px;background:#ffffff;border-bottom:1px solid #e8ecf3;display:flex;align-items:center;padding:0 14px">
+          <div style="height:10px;width:120px;background:#bac5d5;border-radius:999px"></div>
+        </div>
+        <div style="flex:1;padding:14px"></div>
+        <div style="background:#ffffff;border-top:1px solid #e1e6ef;padding:10px 12px 14px">
+          <div style="height:42px;border-radius:16px;background:#f0f4fa;margin-bottom:10px"></div>
+          <div style="display:flex;gap:8px;overflow:hidden">
+            <div style="width:54px;height:54px;flex:0 0 auto;border-radius:14px;background:#fff0c9"></div>
+            <div style="width:54px;height:54px;flex:0 0 auto;border-radius:14px;background:#d7f3e6"></div>
+            <div style="width:54px;height:54px;flex:0 0 auto;border-radius:14px;background:#e4dcff"></div>
+            <div style="width:54px;height:54px;flex:0 0 auto;border-radius:14px;background:#ffd9d9"></div>
+            <div style="width:54px;height:54px;flex:0 0 auto;border-radius:14px;background:#d7ecff"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Lightweight inline row</h3>
+      <p>Fast to build and compact, but weak for grouped packs, search, and a Telegram-like feeling.</p>
+    </div>
+  </div>
+</div>

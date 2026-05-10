@@ -3286,6 +3286,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatStickerLoadFailed => 'Could not load your stickers.';
 
   @override
+  String get chatComposerPaste => 'Paste';
+
+  @override
+  String get chatComposerPasteImage => 'Paste image';
+
+  @override
+  String get chatClipboardEmpty => 'Nothing to paste';
+
+  @override
+  String get chatPasteImagePreviewTitle => 'Send pasted image';
+
+  @override
+  String get chatPasteSendImage => 'Send image';
+
+  @override
+  String get chatPasteSendSticker => 'Add as sticker';
+
+  @override
+  String get stickersTabRecent => 'Recent';
+
+  @override
+  String get stickersSearchHint => 'Search stickers';
+
+  @override
+  String get stickersEmptyRecent => 'No recent stickers yet';
+
+  @override
+  String get stickersEmptySearch => 'No stickers found';
+
+  @override
+  String get stickersLoadFailed => 'Could not load stickers';
+
+  @override
+  String get stickersRetry => 'Retry';
+
+  @override
+  String get stickersOpenPicker => 'Open stickers';
+
+  @override
   String get chatStickerUnsupported =>
       'Use a JPG, PNG, or WebP image for stickers.';
 

@@ -142,6 +142,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Cacheable:          true,
 		},
 		{
+			Name:               "stickers",
+			Prefix:             apiPrefix + "/stickers",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "sticker",
+			RateLimitPerMinute: &stickerLimit,
+			RewritePrefix:      "/v1/stickers",
+		},
+		{
 			Name:               "sticker-packs",
 			Prefix:             apiPrefix + "/sticker-packs",
 			AuthMode:           RouteAuthAuthenticated,
