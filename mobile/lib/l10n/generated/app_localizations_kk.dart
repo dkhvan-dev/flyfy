@@ -2827,6 +2827,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storySearchHint => 'Хикаяларды, авторларды немесе орындарды іздеу';
 
   @override
+  String get storyFiltersTitle => 'Сүзгілер';
+
+  @override
   String get storyFilterCategory => 'Санат';
 
   @override

@@ -2810,6 +2810,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storySearchHint => 'Search stories, authors, or places';
 
   @override
+  String get storyFiltersTitle => 'Filters';
+
+  @override
   String get storyFilterCategory => 'Category';
 
   @override

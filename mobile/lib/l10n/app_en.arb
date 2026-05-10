@@ -1007,6 +1007,7 @@
   "storiesNavLabel": "Stories",
   "storiesActivitiesNavLabel": "Activities",
   "storySearchHint": "Search stories, authors, or places",
+  "storyFiltersTitle": "Filters",
   "storyFilterCategory": "Category",
   "storyFilterCountry": "Country",
   "storyFilterAll": "All",

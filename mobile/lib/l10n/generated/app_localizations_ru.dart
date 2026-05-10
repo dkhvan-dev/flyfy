@@ -2817,6 +2817,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storySearchHint => 'Поиск историй, авторов или мест';
 
   @override
+  String get storyFiltersTitle => 'Фильтры';
+
+  @override
   String get storyFilterCategory => 'Категория';
 
   @override

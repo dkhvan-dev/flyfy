@@ -58,3 +58,30 @@ func TestNormalizeListInputMapsSelectedCountryToCountryCodeFilter(t *testing.T) 
 		t.Fatalf("filter.PlaceQuery = %q, want empty", filter.PlaceQuery)
 	}
 }
+
+func TestNormalizeListInputPreservesStorySortDirection(t *testing.T) {
+	tests := map[string]string{
+		"latest_asc":    "latest_asc",
+		"latest_desc":   "latest_desc",
+		"popular_asc":   "popular_asc",
+		"popular_desc":  "popular_desc",
+		"discussed_asc": "discussed_asc",
+		"discussed":     "discussed_desc",
+		"":              "latest_desc",
+	}
+
+	for input, expected := range tests {
+		t.Run(input, func(t *testing.T) {
+			filter, err := (&StoryUseCase{}).normalizeListInput(
+				ListStoriesInput{Sort: input},
+				nil,
+			)
+			if err != nil {
+				t.Fatalf("normalizeListInput returned error: %v", err)
+			}
+			if filter.Sort != expected {
+				t.Fatalf("filter.Sort = %q, want %q", filter.Sort, expected)
+			}
+		})
+	}
+}

@@ -674,14 +674,20 @@ func (u *StoryUseCase) normalizeListInput(input ListStoriesInput, viewerUserID *
 	}
 
 	switch strings.ToLower(strings.TrimSpace(input.Sort)) {
-	case "", "latest":
-		filter.Sort = "latest"
-	case "popular":
-		filter.Sort = "popular"
-	case "discussed":
-		filter.Sort = "discussed"
+	case "", "latest", "latest_desc":
+		filter.Sort = "latest_desc"
+	case "latest_asc":
+		filter.Sort = "latest_asc"
+	case "popular", "popular_desc":
+		filter.Sort = "popular_desc"
+	case "popular_asc":
+		filter.Sort = "popular_asc"
+	case "discussed", "discussed_desc":
+		filter.Sort = "discussed_desc"
+	case "discussed_asc":
+		filter.Sort = "discussed_asc"
 	default:
-		filter.Sort = "latest"
+		filter.Sort = "latest_desc"
 	}
 
 	filter.Categories = make([]enum.StoryCategory, 0, len(input.Category))

@@ -5212,6 +5212,12 @@ abstract class AppLocalizations {
   /// **'Search stories, authors, or places'**
   String get storySearchHint;
 
+  /// No description provided for @storyFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get storyFiltersTitle;
+
   /// No description provided for @storyFilterCategory.
   ///
   /// In en, this message translates to:

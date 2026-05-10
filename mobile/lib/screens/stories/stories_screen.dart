@@ -20,6 +20,19 @@ import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
 import '../common/app_side_drawer.dart';
 
+enum _StorySortDirection { asc, desc }
+
+extension _StorySortDirectionX on _StorySortDirection {
+  String get querySuffix {
+    switch (this) {
+      case _StorySortDirection.asc:
+        return 'asc';
+      case _StorySortDirection.desc:
+        return 'desc';
+    }
+  }
+}
+
 class StoriesScreen extends StatefulWidget {
   const StoriesScreen({super.key, this.myOnly = false});
 
@@ -50,6 +63,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
   String? _selectedCategory;
   ReferenceCountry? _selectedPlace;
   String _sort = 'latest';
+  _StorySortDirection _sortDirection = _StorySortDirection.desc;
+
+  String get _sortQueryParam => '${_sort}_${_sortDirection.querySuffix}';
 
   @override
   void initState() {
@@ -117,7 +133,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                   ? null
                   : <String>[_selectedCategory!],
               place: _selectedPlace?.code,
-              sort: _sort,
+              sort: _sortQueryParam,
               limit: _pageSize,
               offset: (normalizedPage - 1) * _pageSize,
             )
@@ -127,7 +143,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                   ? null
                   : <String>[_selectedCategory!],
               place: _selectedPlace?.code,
-              sort: _sort,
+              sort: _sortQueryParam,
               limit: _pageSize,
               offset: (normalizedPage - 1) * _pageSize,
             );
@@ -166,81 +182,40 @@ class _StoriesScreenState extends State<StoriesScreen> {
     }
   }
 
-  Future<void> _showCategorySheet() async {
-    final l10n = AppLocalizations.of(context)!;
-    final options = <String?>[
-      null,
-      'JOURNAL',
-      'GUIDE',
-      'PHOTO_ESSAY',
-      'CULINARY',
-    ];
-
-    final selected = await showModalBottomSheet<_StoryCategoryFilterResult>(
+  Future<void> _openFilters() async {
+    FocusScope.of(context).unfocus();
+    final selected = await showModalBottomSheet<_StoryFiltersResult>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) {
-        return _StoryCategoryFilterSheet(
-          title: l10n.storyFilterCategory,
-          options: options,
+        return _StoryFiltersSheet(
           initialCategory: _selectedCategory,
+          initialPlace: _selectedPlace,
           previewCount: _totalStories,
-          formatCategory: (option) => option == null
-              ? l10n.storyFilterAll
-              : formatStoryCategory(l10n, option),
-          previewCountLoader: (category) => _loadStoriesPreviewCount(
+          previewCountLoader: ({required category, required place}) =>
+              _loadStoriesPreviewCount(
             category: category,
-            place: _selectedPlace,
-          ),
-        );
-      },
-    );
-
-    if (!mounted ||
-        selected == null ||
-        selected.category == _selectedCategory) {
-      return;
-    }
-    setState(() {
-      _selectedCategory = selected.category;
-    });
-    await _loadStories(showLoader: false, page: 1);
-  }
-
-  Future<void> _showPlaceSheet() async {
-    final l10n = AppLocalizations.of(context)!;
-
-    final selected = await showModalBottomSheet<_StoryCountryFilterResult>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return _CountrySearchSheet(
-          title: l10n.storyFilterCountry,
-          initialCountry: _selectedPlace,
-          previewCount: _totalStories,
-          previewCountLoader: (place) => _loadStoriesPreviewCount(
-            category: _selectedCategory,
             place: place,
           ),
         );
       },
     );
 
-    if (!mounted) return;
-    if (selected == null) {
+    if (!mounted || selected == null) {
       return;
     }
-    if (selected.country == null) {
-      setState(() => _selectedPlace = null);
-      await _loadStories(showLoader: false, page: 1);
+    final categoryChanged = selected.category != _selectedCategory;
+    final placeChanged = selected.place?.code != _selectedPlace?.code;
+    if (!categoryChanged && !placeChanged) {
       return;
     }
-    if (selected.country!.code != (_selectedPlace?.code ?? '')) {
-      setState(() => _selectedPlace = selected.country);
-      await _loadStories(showLoader: false, page: 1);
-    }
+    setState(() {
+      _selectedCategory = selected.category;
+      _selectedPlace = selected.place;
+    });
+    await _loadStories(showLoader: false, page: 1);
   }
 
   Future<int> _loadStoriesPreviewCount({
@@ -255,20 +230,36 @@ class _StoriesScreenState extends State<StoriesScreen> {
             search: _searchQuery,
             categories: categories,
             place: place?.code,
-            sort: _sort,
+            sort: _sortQueryParam,
             limit: 1,
           )
         : await _api.listStoriesPage(
             search: _searchQuery,
             categories: categories,
             place: place?.code,
-            sort: _sort,
+            sort: _sortQueryParam,
             limit: 1,
           );
     return page.total;
   }
 
   Future<void> _refresh() => _loadStories(showLoader: false);
+
+  void _handleSortSelected(String value) {
+    if (_sort == value) {
+      setState(() {
+        _sortDirection = _sortDirection == _StorySortDirection.asc
+            ? _StorySortDirection.desc
+            : _StorySortDirection.asc;
+      });
+    } else {
+      setState(() {
+        _sort = value;
+        _sortDirection = _StorySortDirection.desc;
+      });
+    }
+    _loadStories(showLoader: false, page: 1);
+  }
 
   Future<void> _handlePageChanged(int page) async {
     if (page == _currentPage || _isLoading || _isRefreshing) {
@@ -508,33 +499,16 @@ class _StoriesScreenState extends State<StoriesScreen> {
                             _StoriesSearchBar(
                               controller: _searchController,
                               hint: l10n.storySearchHint,
-                            ),
-                            SizedBox(height: adaptive.scale(16)),
-                            _StoriesFilterRow(
-                              categoryLabel: _selectedCategory == null
-                                  ? l10n.storyFilterCategory
-                                  : formatStoryCategory(
-                                      l10n,
-                                      _selectedCategory!,
-                                    ),
-                              placeLabel: _selectedPlace?.name ??
-                                  l10n.storyFilterCountry,
-                              placeActive: _selectedPlace != null,
-                              onCategoryTap: _showCategorySheet,
-                              onPlaceTap: _showPlaceSheet,
+                              filterTooltip: l10n.storyFiltersTitle,
+                              hasActiveFilters: _selectedCategory != null ||
+                                  _selectedPlace != null,
+                              onFilterTap: _openFilters,
                             ),
                             SizedBox(height: adaptive.scale(18)),
                             _StoriesSortRow(
                               selectedSort: _sort,
-                              onSortSelected: (value) {
-                                if (_sort == value) {
-                                  return;
-                                }
-                                setState(() {
-                                  _sort = value;
-                                });
-                                _loadStories(showLoader: false, page: 1);
-                              },
+                              sortDirection: _sortDirection,
+                              onSortSelected: _handleSortSelected,
                             ),
                             SizedBox(height: adaptive.scale(18)),
                             if (_isLoading)
@@ -595,10 +569,19 @@ class _StoriesScreenState extends State<StoriesScreen> {
 }
 
 class _StoriesSearchBar extends StatelessWidget {
-  const _StoriesSearchBar({required this.controller, required this.hint});
+  const _StoriesSearchBar({
+    required this.controller,
+    required this.hint,
+    required this.filterTooltip,
+    required this.hasActiveFilters,
+    required this.onFilterTap,
+  });
 
   final TextEditingController controller;
   final String hint;
+  final String filterTooltip;
+  final bool hasActiveFilters;
+  final VoidCallback onFilterTap;
 
   @override
   Widget build(BuildContext context) {
@@ -645,59 +628,56 @@ class _StoriesSearchBar extends StatelessWidget {
               ),
             ),
           ),
-          if (controller.text.trim().isNotEmpty)
-            IconButton(
-              onPressed: controller.clear,
-              icon: Icon(
-                Icons.close_rounded,
-                color: StoryPalette.textMuted,
-                size: adaptive.scale(18),
-              ),
-            )
-          else
-            SizedBox(width: adaptive.scale(18)),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              if (value.text.trim().isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return IconButton(
+                onPressed: controller.clear,
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: StoryPalette.textMuted,
+                  size: adaptive.scale(18),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: filterTooltip,
+            onPressed: onFilterTap,
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  Icons.tune_rounded,
+                  color: AppColors.accent,
+                  size: adaptive.scale(21),
+                ),
+                if (hasActiveFilters)
+                  Positioned(
+                    right: -1,
+                    top: -1,
+                    child: Container(
+                      width: adaptive.scale(7, minFactor: 0.9),
+                      height: adaptive.scale(7, minFactor: 0.9),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF2A180D),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(width: adaptive.scale(6)),
         ],
       ),
-    );
-  }
-}
-
-class _StoriesFilterRow extends StatelessWidget {
-  const _StoriesFilterRow({
-    required this.categoryLabel,
-    required this.placeLabel,
-    required this.onCategoryTap,
-    required this.onPlaceTap,
-    this.placeActive = false,
-  });
-
-  final String categoryLabel;
-  final String placeLabel;
-  final VoidCallback onCategoryTap;
-  final VoidCallback onPlaceTap;
-  final bool placeActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final adaptive = StoryAdaptive.of(context);
-
-    return Wrap(
-      spacing: adaptive.scale(12),
-      runSpacing: adaptive.scale(12),
-      children: [
-        _StoriesFilterChip(
-          label: categoryLabel,
-          icon: Icons.category_outlined,
-          active: true,
-          onTap: onCategoryTap,
-        ),
-        _StoriesFilterChip(
-          label: placeLabel,
-          icon: Icons.public_rounded,
-          active: placeActive,
-          onTap: onPlaceTap,
-        ),
-      ],
     );
   }
 }
@@ -705,10 +685,12 @@ class _StoriesFilterRow extends StatelessWidget {
 class _StoriesSortRow extends StatelessWidget {
   const _StoriesSortRow({
     required this.selectedSort,
+    required this.sortDirection,
     required this.onSortSelected,
   });
 
   final String selectedSort;
+  final _StorySortDirection sortDirection;
   final ValueChanged<String> onSortSelected;
 
   @override
@@ -720,6 +702,9 @@ class _StoriesSortRow extends StatelessWidget {
       ('popular', l10n.storySortViews),
       ('discussed', l10n.storySortComments),
     ];
+    final directionIcon = sortDirection == _StorySortDirection.asc
+        ? Icons.arrow_upward_rounded
+        : Icons.arrow_downward_rounded;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -739,16 +724,30 @@ class _StoriesSortRow extends StatelessWidget {
           for (final item in items) ...[
             GestureDetector(
               onTap: () => onSortSelected(item.$1),
-              child: Text(
-                item.$2,
-                style: TextStyle(
-                  color: selectedSort == item.$1
-                      ? AppColors.accent
-                      : const Color(0xFFA98D74),
-                  fontSize: adaptive.scale(12),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4,
-                ),
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.$2,
+                    style: TextStyle(
+                      color: selectedSort == item.$1
+                          ? AppColors.accent
+                          : const Color(0xFFA98D74),
+                      fontSize: adaptive.scale(12),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.4,
+                    ),
+                  ),
+                  if (selectedSort == item.$1) ...[
+                    SizedBox(width: adaptive.scale(5, minFactor: 0.72)),
+                    Icon(
+                      directionIcon,
+                      color: AppColors.accent,
+                      size: adaptive.scale(14, minFactor: 0.82),
+                    ),
+                  ],
+                ],
               ),
             ),
             SizedBox(width: adaptive.scale(22)),
@@ -1060,109 +1059,52 @@ class _StoriesEmptyState extends StatelessWidget {
   }
 }
 
-class _StoriesFilterChip extends StatelessWidget {
-  const _StoriesFilterChip({
-    required this.label,
-    required this.icon,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final adaptive = StoryAdaptive.of(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(adaptive.radius(999)),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: adaptive.scale(18),
-            vertical: adaptive.scale(12),
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(adaptive.radius(999)),
-            border: Border.all(
-              color: active
-                  ? AppColors.accent
-                  : AppColors.accent.withValues(alpha: 0.25),
-            ),
-            color: active ? AppColors.accent : Colors.transparent,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                color: active ? Colors.white : const Color(0xFFF4E8DA),
-                size: adaptive.scale(15),
-              ),
-              SizedBox(width: adaptive.scale(8)),
-              Text(
-                label,
-                style: TextStyle(
-                  color: active ? Colors.white : const Color(0xFFF4E8DA),
-                  fontSize: adaptive.scale(15),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(width: adaptive.scale(8)),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: active ? Colors.white : const Color(0xFFF4E8DA),
-                size: adaptive.scale(16),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StoryCategoryFilterResult {
-  const _StoryCategoryFilterResult(this.category);
+class _StoryFiltersResult {
+  const _StoryFiltersResult({required this.category, required this.place});
 
   final String? category;
+  final ReferenceCountry? place;
 }
 
-class _StoryCountryFilterResult {
-  const _StoryCountryFilterResult(this.country);
+typedef _StoryFiltersPreviewCountLoader = Future<int> Function({
+  required String? category,
+  required ReferenceCountry? place,
+});
 
-  final ReferenceCountry? country;
-}
-
-class _StoryCategoryFilterSheet extends StatefulWidget {
-  const _StoryCategoryFilterSheet({
-    required this.title,
-    required this.options,
+class _StoryFiltersSheet extends StatefulWidget {
+  const _StoryFiltersSheet({
     required this.initialCategory,
+    required this.initialPlace,
     required this.previewCount,
-    required this.formatCategory,
     required this.previewCountLoader,
   });
 
-  final String title;
-  final List<String?> options;
   final String? initialCategory;
+  final ReferenceCountry? initialPlace;
   final int previewCount;
-  final String Function(String? category) formatCategory;
-  final Future<int> Function(String? category) previewCountLoader;
+  final _StoryFiltersPreviewCountLoader previewCountLoader;
 
   @override
-  State<_StoryCategoryFilterSheet> createState() =>
-      _StoryCategoryFilterSheetState();
+  State<_StoryFiltersSheet> createState() => _StoryFiltersSheetState();
 }
 
-class _StoryCategoryFilterSheetState extends State<_StoryCategoryFilterSheet> {
+class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
+  static const _categoryOptions = <String?>[
+    null,
+    'JOURNAL',
+    'GUIDE',
+    'PHOTO_ESSAY',
+    'CULINARY',
+  ];
+
+  final _countrySearchController = TextEditingController();
+  final _api = ReferenceApi();
+  Timer? _countrySearchDebounce;
+  List<ReferenceCountry> _countryResults = const [];
   String? _selectedCategory;
+  ReferenceCountry? _selectedPlace;
   late int _previewCount;
+  bool _isCountryLoading = false;
   bool _isPreviewLoading = false;
   int _previewRequestId = 0;
 
@@ -1170,8 +1112,20 @@ class _StoryCategoryFilterSheetState extends State<_StoryCategoryFilterSheet> {
   void initState() {
     super.initState();
     _selectedCategory = widget.initialCategory;
+    _selectedPlace = widget.initialPlace;
     _previewCount = widget.previewCount;
+    _countrySearchController.addListener(_onCountrySearchChanged);
+    _loadCountries();
     _loadPreviewCount();
+  }
+
+  @override
+  void dispose() {
+    _countrySearchDebounce?.cancel();
+    _countrySearchController
+      ..removeListener(_onCountrySearchChanged)
+      ..dispose();
+    super.dispose();
   }
 
   void _selectCategory(String? category) {
@@ -1182,11 +1136,33 @@ class _StoryCategoryFilterSheetState extends State<_StoryCategoryFilterSheet> {
     _loadPreviewCount();
   }
 
+  void _selectPlace(ReferenceCountry? place) {
+    if (_selectedPlace?.code == place?.code) {
+      return;
+    }
+    setState(() => _selectedPlace = place);
+    _loadPreviewCount();
+  }
+
+  void _clearAll() {
+    _countrySearchController.clear();
+    _countrySearchDebounce?.cancel();
+    setState(() {
+      _selectedCategory = null;
+      _selectedPlace = null;
+    });
+    _loadCountries();
+    _loadPreviewCount();
+  }
+
   Future<void> _loadPreviewCount() async {
     final requestId = ++_previewRequestId;
     setState(() => _isPreviewLoading = true);
     try {
-      final count = await widget.previewCountLoader(_selectedCategory);
+      final count = await widget.previewCountLoader(
+        category: _selectedCategory,
+        place: _selectedPlace,
+      );
       if (!mounted || requestId != _previewRequestId) {
         return;
       }
@@ -1201,29 +1177,112 @@ class _StoryCategoryFilterSheetState extends State<_StoryCategoryFilterSheet> {
     }
   }
 
+  void _onCountrySearchChanged() {
+    _countrySearchDebounce?.cancel();
+    _countrySearchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _loadCountries(_countrySearchController.text.trim());
+    });
+  }
+
+  Future<void> _loadCountries([String query = '']) async {
+    setState(() => _isCountryLoading = true);
+    try {
+      final lang = Localizations.localeOf(context).languageCode;
+      final results = query.isEmpty
+          ? await _api.listCountries(lang: lang)
+          : await _api.searchCountries(query, lang: lang, limit: 30);
+      if (mounted) {
+        setState(() {
+          _countryResults = results;
+          _isCountryLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isCountryLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
     final l10n = AppLocalizations.of(context)!;
 
     return _FilterSheet(
-      title: widget.title,
+      title: l10n.storyFiltersTitle,
       clearLabel: l10n.myActivitiesFilterClear,
       applyLabel: l10n.storiesShowResults(_previewCount),
-      onClear: () => _selectCategory(null),
+      onClear: _clearAll,
       onApply: () {
-        Navigator.of(
-          context,
-        ).pop(_StoryCategoryFilterResult(_selectedCategory));
+        Navigator.of(context).pop(
+          _StoryFiltersResult(
+            category: _selectedCategory,
+            place: _selectedPlace,
+          ),
+        );
       },
       isApplyLoading: _isPreviewLoading,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final option in widget.options)
+          _FilterSectionTitle(label: l10n.storyFilterCategory),
+          SizedBox(height: adaptive.scale(8)),
+          for (final option in _categoryOptions)
             _FilterOptionTile(
-              label: widget.formatCategory(option),
+              label: option == null
+                  ? l10n.storyFilterAll
+                  : formatStoryCategory(l10n, option),
               selected: _selectedCategory == option,
               onTap: () => _selectCategory(option),
+            ),
+          SizedBox(height: adaptive.scale(18)),
+          _FilterSectionTitle(label: l10n.storyFilterCountry),
+          SizedBox(height: adaptive.scale(12)),
+          _FilterSearchField(
+            controller: _countrySearchController,
+            hintText: l10n.storyCountryHint,
+          ),
+          SizedBox(height: adaptive.scale(8)),
+          _FilterOptionTile(
+            label: l10n.storyFilterAll,
+            selected: _selectedPlace == null,
+            onTap: () => _selectPlace(null),
+          ),
+          if (_isCountryLoading)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: adaptive.scale(18)),
+              child: const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ),
+            )
+          else
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.34,
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                itemCount: _countryResults.length,
+                itemBuilder: (context, index) {
+                  final country = _countryResults[index];
+                  return _FilterOptionTile(
+                    label: country.name,
+                    selected: country.code == _selectedPlace?.code,
+                    onTap: () => _selectPlace(country),
+                  );
+                },
+              ),
             ),
         ],
       ),
@@ -1388,214 +1447,70 @@ class _FilterOptionTile extends StatelessWidget {
   }
 }
 
-class _CountrySearchSheet extends StatefulWidget {
-  const _CountrySearchSheet({
-    required this.title,
-    required this.initialCountry,
-    required this.previewCount,
-    required this.previewCountLoader,
-  });
+class _FilterSectionTitle extends StatelessWidget {
+  const _FilterSectionTitle({required this.label});
 
-  final String title;
-  final ReferenceCountry? initialCountry;
-  final int previewCount;
-  final Future<int> Function(ReferenceCountry? country) previewCountLoader;
-
-  @override
-  State<_CountrySearchSheet> createState() => _CountrySearchSheetState();
-}
-
-class _CountrySearchSheetState extends State<_CountrySearchSheet> {
-  final _searchController = TextEditingController();
-  final _api = ReferenceApi();
-  Timer? _debounce;
-  List<ReferenceCountry> _results = const [];
-  ReferenceCountry? _selectedCountry;
-  late int _previewCount;
-  bool _isLoading = false;
-  bool _isPreviewLoading = false;
-  int _previewRequestId = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedCountry = widget.initialCountry;
-    _previewCount = widget.previewCount;
-    _searchController.addListener(_onSearchChanged);
-    _loadInitial();
-    _loadPreviewCount();
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _searchController
-      ..removeListener(_onSearchChanged)
-      ..dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadInitial() async {
-    setState(() => _isLoading = true);
-    try {
-      final lang = Localizations.localeOf(context).languageCode;
-      final results = await _api.listCountries(lang: lang);
-      if (mounted) {
-        setState(() {
-          _results = results;
-          _isLoading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _onSearchChanged() {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      _search(_searchController.text.trim());
-    });
-  }
-
-  Future<void> _search(String query) async {
-    if (query.isEmpty) {
-      await _loadInitial();
-      return;
-    }
-    setState(() => _isLoading = true);
-    try {
-      final lang = Localizations.localeOf(context).languageCode;
-      final results = await _api.searchCountries(query, lang: lang, limit: 30);
-      if (mounted) {
-        setState(() {
-          _results = results;
-          _isLoading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _selectCountry(ReferenceCountry? country) {
-    if (_selectedCountry?.code == country?.code) {
-      return;
-    }
-    setState(() => _selectedCountry = country);
-    _loadPreviewCount();
-  }
-
-  Future<void> _loadPreviewCount() async {
-    final requestId = ++_previewRequestId;
-    setState(() => _isPreviewLoading = true);
-    try {
-      final count = await widget.previewCountLoader(_selectedCountry);
-      if (!mounted || requestId != _previewRequestId) {
-        return;
-      }
-      setState(() {
-        _previewCount = count;
-        _isPreviewLoading = false;
-      });
-    } catch (_) {
-      if (mounted && requestId == _previewRequestId) {
-        setState(() => _isPreviewLoading = false);
-      }
-    }
-  }
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    final l10n = AppLocalizations.of(context)!;
+    return Text(
+      label.toUpperCase(),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: StoryPalette.textMuted,
+        fontSize: adaptive.scale(12),
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+}
 
-    return _FilterSheet(
-      title: widget.title,
-      clearLabel: l10n.myActivitiesFilterClear,
-      applyLabel: l10n.storiesShowResults(_previewCount),
-      onClear: () => _selectCountry(null),
-      onApply: () {
-        Navigator.of(context).pop(_StoryCountryFilterResult(_selectedCountry));
-      },
-      isApplyLoading: _isPreviewLoading,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+class _FilterSearchField extends StatelessWidget {
+  const _FilterSearchField({required this.controller, required this.hintText});
+
+  final TextEditingController controller;
+  final String hintText;
+
+  @override
+  Widget build(BuildContext context) {
+    final adaptive = StoryAdaptive.of(context);
+    return Container(
+      constraints: BoxConstraints(minHeight: adaptive.scale(44)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A180D),
+        borderRadius: BorderRadius.circular(adaptive.radius(999)),
+      ),
+      child: Row(
         children: [
-          Container(
-            height: adaptive.scale(44),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2A180D),
-              borderRadius: BorderRadius.circular(adaptive.radius(999)),
-            ),
-            child: Row(
-              children: [
-                SizedBox(width: adaptive.scale(14)),
-                Icon(
-                  Icons.search_rounded,
-                  color: AppColors.accent,
-                  size: adaptive.scale(18),
+          SizedBox(width: adaptive.scale(14)),
+          Icon(
+            Icons.search_rounded,
+            color: AppColors.accent,
+            size: adaptive.scale(18),
+          ),
+          SizedBox(width: adaptive.scale(8)),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              style: TextStyle(
+                color: StoryPalette.textSoft,
+                fontSize: adaptive.scale(14),
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: hintText,
+                hintStyle: TextStyle(
+                  color: StoryPalette.textMuted,
+                  fontSize: adaptive.scale(14),
                 ),
-                SizedBox(width: adaptive.scale(8)),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    autofocus: true,
-                    style: TextStyle(
-                      color: StoryPalette.textSoft,
-                      fontSize: adaptive.scale(14),
-                    ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: l10n.storyCountryHint,
-                      hintStyle: TextStyle(
-                        color: StoryPalette.textMuted,
-                        fontSize: adaptive.scale(14),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: adaptive.scale(14)),
-              ],
+              ),
             ),
           ),
-          SizedBox(height: adaptive.scale(8)),
-          _FilterOptionTile(
-            label: l10n.storyFilterAll,
-            selected: _selectedCountry == null,
-            onTap: () => _selectCountry(null),
-          ),
-          if (_isLoading)
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: adaptive.scale(18)),
-              child: const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.accent,
-                ),
-              ),
-            )
-          else
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.35,
-              ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: _results.length,
-                itemBuilder: (context, index) {
-                  final country = _results[index];
-                  return _FilterOptionTile(
-                    label: country.name,
-                    selected: country.code == _selectedCountry?.code,
-                    onTap: () => _selectCountry(country),
-                  );
-                },
-              ),
-            ),
+          SizedBox(width: adaptive.scale(14)),
         ],
       ),
     );

@@ -424,21 +424,7 @@ func (r *PGAttractionRepository) ListAttractions(ctx context.Context, filter mod
 	}
 
 	// Order
-	orderBy := "a.created_at DESC"
-	switch filter.Sort {
-	case "price_asc":
-		orderBy = "a.price_amount ASC NULLS LAST, a.created_at DESC"
-	case "price_desc":
-		orderBy = "a.price_amount DESC NULLS LAST, a.created_at DESC"
-	case "duration_asc":
-		orderBy = "a.duration_value ASC NULLS LAST, a.created_at DESC"
-	case "duration_desc":
-		orderBy = "a.duration_value DESC NULLS LAST, a.created_at DESC"
-	case "rating":
-		orderBy = "a.rating DESC, a.review_count DESC, a.created_at DESC"
-	case "latest":
-		orderBy = "a.created_at DESC"
-	}
+	orderBy := attractionListOrderBy(filter.Sort)
 
 	// Pagination
 	if filter.Limit <= 0 {
@@ -510,6 +496,29 @@ func (r *PGAttractionRepository) ListAttractions(ctx context.Context, filter mod
 	}
 
 	return items, total, nil
+}
+
+func attractionListOrderBy(sort string) string {
+	const durationInHours = "CASE WHEN a.duration_unit = 'DAYS' THEN a.duration_value * 24 ELSE a.duration_value END"
+
+	switch sort {
+	case "price_asc":
+		return "a.price_amount ASC NULLS LAST, a.created_at DESC"
+	case "price_desc":
+		return "a.price_amount DESC NULLS LAST, a.created_at DESC"
+	case "duration_asc":
+		return durationInHours + " ASC NULLS LAST, a.created_at DESC"
+	case "duration_desc":
+		return durationInHours + " DESC NULLS LAST, a.created_at DESC"
+	case "rating", "rating_desc":
+		return "a.rating DESC, a.review_count DESC, a.created_at DESC"
+	case "rating_asc":
+		return "a.rating ASC, a.review_count DESC, a.created_at DESC"
+	case "latest":
+		return "a.created_at DESC"
+	default:
+		return "a.created_at DESC"
+	}
 }
 
 // ---------------------------------------------------------------------------

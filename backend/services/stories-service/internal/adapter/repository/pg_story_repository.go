@@ -243,13 +243,7 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 		clauses = append(clauses, fmt.Sprintf("UPPER(COALESCE(place_country_code, '')) = $%d", len(args)))
 	}
 
-	orderBy := "published_at DESC NULLS LAST, created_at DESC"
-	switch filter.Sort {
-	case "popular":
-		orderBy = "view_count DESC, published_at DESC NULLS LAST, created_at DESC"
-	case "discussed":
-		orderBy = "comment_count DESC, published_at DESC NULLS LAST, created_at DESC"
-	}
+	orderBy := storyListOrderBy(filter.Sort)
 
 	if filter.Limit <= 0 {
 		filter.Limit = 20
@@ -289,6 +283,25 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 	}
 
 	return items, rows.Err()
+}
+
+func storyListOrderBy(sort string) string {
+	switch sort {
+	case "latest_asc":
+		return "published_at ASC NULLS LAST, created_at ASC"
+	case "popular", "popular_desc":
+		return "view_count DESC, published_at DESC NULLS LAST, created_at DESC"
+	case "popular_asc":
+		return "view_count ASC, published_at ASC NULLS LAST, created_at ASC"
+	case "discussed", "discussed_desc":
+		return "comment_count DESC, published_at DESC NULLS LAST, created_at DESC"
+	case "discussed_asc":
+		return "comment_count ASC, published_at ASC NULLS LAST, created_at ASC"
+	case "latest", "latest_desc":
+		return "published_at DESC NULLS LAST, created_at DESC"
+	default:
+		return "published_at DESC NULLS LAST, created_at DESC"
+	}
 }
 
 func (r *PGStoryRepository) LikeStory(ctx context.Context, storyID uuid.UUID, userID uuid.UUID) (bool, int, error) {

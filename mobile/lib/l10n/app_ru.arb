@@ -1007,6 +1007,7 @@
   "storiesNavLabel": "Истории",
   "storiesActivitiesNavLabel": "Активности",
   "storySearchHint": "Поиск историй, авторов или мест",
+  "storyFiltersTitle": "Фильтры",
   "storyFilterCategory": "Категория",
   "storyFilterCountry": "Страна",
   "storyFilterAll": "Все",
