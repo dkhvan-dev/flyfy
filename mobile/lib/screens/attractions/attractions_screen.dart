@@ -14,6 +14,56 @@ import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'attractions_filter_sheet.dart';
 
+enum _AttractionSortField { rating, duration, price }
+
+enum _AttractionSortDirection { asc, desc }
+
+extension _AttractionSortFieldX on _AttractionSortField {
+  String label(AppLocalizations l10n) {
+    switch (this) {
+      case _AttractionSortField.rating:
+        return l10n.attractionsSortRating;
+      case _AttractionSortField.duration:
+        return l10n.attractionsSortDuration;
+      case _AttractionSortField.price:
+        return l10n.attractionsSortPrice;
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case _AttractionSortField.rating:
+        return Icons.star_rounded;
+      case _AttractionSortField.duration:
+        return Icons.schedule_rounded;
+      case _AttractionSortField.price:
+        return Icons.payments_rounded;
+    }
+  }
+
+  _AttractionSortDirection get defaultDirection {
+    switch (this) {
+      case _AttractionSortField.rating:
+        return _AttractionSortDirection.desc;
+      case _AttractionSortField.duration:
+      case _AttractionSortField.price:
+        return _AttractionSortDirection.asc;
+    }
+  }
+
+  String queryParam(_AttractionSortDirection direction) {
+    final suffix = direction == _AttractionSortDirection.asc ? 'asc' : 'desc';
+    switch (this) {
+      case _AttractionSortField.rating:
+        return 'rating_$suffix';
+      case _AttractionSortField.duration:
+        return 'duration_$suffix';
+      case _AttractionSortField.price:
+        return 'price_$suffix';
+    }
+  }
+}
+
 class AttractionsScreen extends StatefulWidget {
   const AttractionsScreen({super.key});
 
@@ -35,11 +85,15 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   Timer? _searchDebounce;
   int _currentPage = 1;
   int _totalAttractions = 0;
+  _AttractionSortField _sortField = _AttractionSortField.rating;
+  _AttractionSortDirection _sortDirection = _AttractionSortDirection.desc;
 
   int get _totalPages {
     final pages = (_totalAttractions / _pageSize).ceil();
     return pages < 1 ? 1 : pages;
   }
+
+  String get _sortQueryParam => _sortField.queryParam(_sortDirection);
 
   @override
   void initState() {
@@ -86,7 +140,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
         durationMin: _filters.durationMin,
         durationMax: _filters.durationMax,
         durationUnit: _filters.durationUnit,
-        sort: 'rating',
+        sort: _sortQueryParam,
         locale: locale,
         limit: _pageSize,
         offset: (normalizedPage - 1) * _pageSize,
@@ -122,6 +176,21 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     );
     if (result == null || !mounted) return;
     setState(() => _filters = result);
+    _loadAttractions(page: 1);
+  }
+
+  void _handleSortSelected(_AttractionSortField field) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      if (_sortField == field) {
+        _sortDirection = _sortDirection == _AttractionSortDirection.asc
+            ? _AttractionSortDirection.desc
+            : _AttractionSortDirection.asc;
+      } else {
+        _sortField = field;
+        _sortDirection = field.defaultDirection;
+      }
+    });
     _loadAttractions(page: 1);
   }
 
@@ -306,32 +375,19 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 padX,
-                a.scale(44),
+                a.scale(28, minFactor: 0.72),
                 padX,
-                a.scale(28),
+                a.scale(24, minFactor: 0.72),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    l10n.attractionsCuratedListEyebrow.toUpperCase(),
-                    style: TextStyle(
-                      color: AppColors.accent,
-                      fontSize: a.scale(13),
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2.4,
-                    ),
-                  ),
-                  SizedBox(height: a.scale(8)),
-                  Text(
-                    l10n.attractionsRecommendedTitle,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: a.scale(35, minFactor: 0.86),
-                      fontWeight: FontWeight.w900,
-                      height: 1.0,
-                      letterSpacing: -1.0,
-                    ),
+                  _AttractionSortBar(
+                    l10n: l10n,
+                    adaptive: a,
+                    selectedField: _sortField,
+                    direction: _sortDirection,
+                    onFieldSelected: _handleSortSelected,
                   ),
                 ],
               ),
@@ -409,6 +465,158 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
 
   double _discoverImageHeight(double cardWidth) {
     return (cardWidth * 1.33).clamp(200.0, 230.0);
+  }
+}
+
+class _AttractionSortBar extends StatelessWidget {
+  const _AttractionSortBar({
+    required this.l10n,
+    required this.adaptive,
+    required this.selectedField,
+    required this.direction,
+    required this.onFieldSelected,
+  });
+
+  final AppLocalizations l10n;
+  final AttractionAdaptive adaptive;
+  final _AttractionSortField selectedField;
+  final _AttractionSortDirection direction;
+  final ValueChanged<_AttractionSortField> onFieldSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final fields = _AttractionSortField.values;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 340;
+        final labelStyle = TextStyle(
+          color: const Color(0xFFE3D4C2).withValues(alpha: 0.78),
+          fontSize: adaptive.scale(13, minFactor: 0.86),
+          fontWeight: FontWeight.w800,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.attractionsSortLabel, style: labelStyle),
+            SizedBox(height: adaptive.scale(10, minFactor: 0.72)),
+            Wrap(
+              spacing: adaptive.scale(8, minFactor: 0.72),
+              runSpacing: adaptive.scale(8, minFactor: 0.72),
+              children: [
+                for (final field in fields)
+                  SizedBox(
+                    width: isNarrow
+                        ? constraints.maxWidth
+                        : (constraints.maxWidth -
+                                adaptive.scale(16, minFactor: 0.72)) /
+                            3,
+                    child: _AttractionSortChip(
+                      label: field.label(l10n),
+                      fieldIcon: field.icon,
+                      adaptive: adaptive,
+                      direction: selectedField == field
+                          ? direction
+                          : field.defaultDirection,
+                      isSelected: selectedField == field,
+                      onTap: () => onFieldSelected(field),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AttractionSortChip extends StatelessWidget {
+  const _AttractionSortChip({
+    required this.label,
+    required this.fieldIcon,
+    required this.adaptive,
+    required this.direction,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData fieldIcon;
+  final AttractionAdaptive adaptive;
+  final _AttractionSortDirection direction;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final backgroundColor = isSelected
+        ? AppColors.accent.withValues(alpha: 0.18)
+        : Colors.white.withValues(alpha: 0.055);
+    final borderColor = isSelected
+        ? AppColors.accent.withValues(alpha: 0.58)
+        : Colors.white.withValues(alpha: 0.08);
+    final foregroundColor =
+        isSelected ? const Color(0xFFFFD08A) : const Color(0xFFE7D7C5);
+    final directionIcon = direction == _AttractionSortDirection.asc
+        ? Icons.arrow_upward_rounded
+        : Icons.arrow_downward_rounded;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: adaptive.scale(46, minFactor: 0.92),
+          ),
+          child: Ink(
+            padding: EdgeInsets.symmetric(
+              horizontal: adaptive.scale(12, minFactor: 0.84),
+              vertical: adaptive.scale(9, minFactor: 0.84),
+            ),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: borderColor),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  fieldIcon,
+                  color: foregroundColor,
+                  size: adaptive.scale(17, minFactor: 0.88),
+                ),
+                SizedBox(width: adaptive.scale(6, minFactor: 0.72)),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foregroundColor,
+                      fontSize: adaptive.scale(13, minFactor: 0.9),
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                SizedBox(width: adaptive.scale(4, minFactor: 0.72)),
+                Icon(
+                  directionIcon,
+                  color: foregroundColor,
+                  size: adaptive.scale(17, minFactor: 0.88),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

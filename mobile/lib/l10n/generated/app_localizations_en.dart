@@ -1612,12 +1612,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attractionsLoadFailed => 'Failed to load attractions';
 
   @override
-  String get attractionsRecommendedTitle => 'Recommended';
-
-  @override
-  String get attractionsCuratedListEyebrow => 'Curated list';
-
-  @override
   String get attractionsSeeAll => 'See all';
 
   @override
@@ -1625,6 +1619,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attractionsFiltersTitle => 'Filters';
+
+  @override
+  String get attractionsSortLabel => 'Sort by';
+
+  @override
+  String get attractionsSortRating => 'Rating';
+
+  @override
+  String get attractionsSortDuration => 'Duration';
+
+  @override
+  String get attractionsSortPrice => 'Price';
 
   @override
   String get attractionFilterClearAll => 'Clear all';

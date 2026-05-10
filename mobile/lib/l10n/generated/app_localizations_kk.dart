@@ -1620,12 +1620,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get attractionsLoadFailed => 'Көрікті жерлерді жүктеу сәтсіз аяқталды';
 
   @override
-  String get attractionsRecommendedTitle => 'Ұсынылады';
-
-  @override
-  String get attractionsCuratedListEyebrow => 'Таңдаулылар';
-
-  @override
   String get attractionsSeeAll => 'Барлығын көру';
 
   @override
@@ -1633,6 +1627,18 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get attractionsFiltersTitle => 'Сүзгілер';
+
+  @override
+  String get attractionsSortLabel => 'Сұрыптау';
+
+  @override
+  String get attractionsSortRating => 'Рейтинг';
+
+  @override
+  String get attractionsSortDuration => 'Ұзақтығы';
+
+  @override
+  String get attractionsSortPrice => 'Баға';
 
   @override
   String get attractionFilterClearAll => 'Барлығын тазалау';

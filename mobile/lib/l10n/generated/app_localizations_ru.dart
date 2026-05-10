@@ -1610,12 +1610,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось загрузить достопримечательности';
 
   @override
-  String get attractionsRecommendedTitle => 'Рекомендовано';
-
-  @override
-  String get attractionsCuratedListEyebrow => 'Подборка';
-
-  @override
   String get attractionsSeeAll => 'Смотреть все';
 
   @override
@@ -1623,6 +1617,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get attractionsFiltersTitle => 'Фильтры';
+
+  @override
+  String get attractionsSortLabel => 'Сортировать по';
+
+  @override
+  String get attractionsSortRating => 'Рейтинг';
+
+  @override
+  String get attractionsSortDuration => 'Длительность';
+
+  @override
+  String get attractionsSortPrice => 'Цена';
 
   @override
   String get attractionFilterClearAll => 'Очистить всё';

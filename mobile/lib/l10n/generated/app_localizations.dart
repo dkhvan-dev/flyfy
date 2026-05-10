@@ -3010,18 +3010,6 @@ abstract class AppLocalizations {
   /// **'Failed to load attractions'**
   String get attractionsLoadFailed;
 
-  /// No description provided for @attractionsRecommendedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended'**
-  String get attractionsRecommendedTitle;
-
-  /// No description provided for @attractionsCuratedListEyebrow.
-  ///
-  /// In en, this message translates to:
-  /// **'Curated list'**
-  String get attractionsCuratedListEyebrow;
-
   /// No description provided for @attractionsSeeAll.
   ///
   /// In en, this message translates to:
@@ -3039,6 +3027,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filters'**
   String get attractionsFiltersTitle;
+
+  /// No description provided for @attractionsSortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get attractionsSortLabel;
+
+  /// No description provided for @attractionsSortRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get attractionsSortRating;
+
+  /// No description provided for @attractionsSortDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get attractionsSortDuration;
+
+  /// No description provided for @attractionsSortPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get attractionsSortPrice;
 
   /// No description provided for @attractionFilterClearAll.
   ///
