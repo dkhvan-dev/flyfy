@@ -787,6 +787,36 @@
   "tourDetailsLoadFailed": "Турды жүктеу мүмкін болмады",
   "tourDetailsBookingComingSoon": "Турды брондау жақында қолжетімді болады.",
   "tourDetailsGuideChatComingSoon": "Гидпен чат жақында қолжетімді болады.",
+  "tourBookingTitle": "Турды брондау",
+  "tourBookingSchedule": "Кесте",
+  "tourBookingChange": "Өзгерту",
+  "tourBookingDate": "Күні",
+  "tourBookingTimeSlot": "Уақыт",
+  "tourBookingTravelers": "Саяхатшылар",
+  "tourBookingAdults": "Ересектер",
+  "tourBookingChildren": "Балалар",
+  "tourBookingSummary": "Қорытынды",
+  "tourBookingAdultSummary": "Ересектер ({count} × {price})",
+  "@tourBookingAdultSummary": {
+    "placeholders": {
+      "count": {},
+      "price": {}
+    }
+  },
+  "tourBookingChildrenSummary": "Балалар ({count} × {price})",
+  "@tourBookingChildrenSummary": {
+    "placeholders": {
+      "count": {},
+      "price": {}
+    }
+  },
+  "tourBookingServiceFeeSummary": "Қызмет ақысы (5%)",
+  "tourBookingTotalPrice": "Жалпы баға",
+  "tourBookingConfirmPay": "Растау және төлеу",
+  "tourBookingSecurePayment": "Қауіпсіз төлем FlyFy арқылы өңделеді",
+  "tourBookingSubmitted": "Брондау сұрауы дайын. Онлайн төлем жақында қосылады.",
+  "tourBookingLoadFailed": "Тур брондауын жүктеу мүмкін болмады",
+  "tourBookingPerPerson": "/ адам",
   "tourDetailsNoDescription": "Гид жақында әсердің толық сипаттамасын қосады.",
   "createTourTitle": "Тур құру",
   "createTourSubmit": "Жариялау",

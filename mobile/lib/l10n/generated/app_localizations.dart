@@ -4162,6 +4162,114 @@ abstract class AppLocalizations {
   /// **'Guide chat will be available soon.'**
   String get tourDetailsGuideChatComingSoon;
 
+  /// No description provided for @tourBookingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking Tour'**
+  String get tourBookingTitle;
+
+  /// No description provided for @tourBookingSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get tourBookingSchedule;
+
+  /// No description provided for @tourBookingChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get tourBookingChange;
+
+  /// No description provided for @tourBookingDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get tourBookingDate;
+
+  /// No description provided for @tourBookingTimeSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Slot'**
+  String get tourBookingTimeSlot;
+
+  /// No description provided for @tourBookingTravelers.
+  ///
+  /// In en, this message translates to:
+  /// **'Travelers'**
+  String get tourBookingTravelers;
+
+  /// No description provided for @tourBookingAdults.
+  ///
+  /// In en, this message translates to:
+  /// **'Adults'**
+  String get tourBookingAdults;
+
+  /// No description provided for @tourBookingChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Children'**
+  String get tourBookingChildren;
+
+  /// No description provided for @tourBookingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get tourBookingSummary;
+
+  /// No description provided for @tourBookingAdultSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Adult ({count} x {price})'**
+  String tourBookingAdultSummary(Object count, Object price);
+
+  /// No description provided for @tourBookingChildrenSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Children ({count} x {price})'**
+  String tourBookingChildrenSummary(Object count, Object price);
+
+  /// No description provided for @tourBookingServiceFeeSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Service fee (5%)'**
+  String get tourBookingServiceFeeSummary;
+
+  /// No description provided for @tourBookingTotalPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Price'**
+  String get tourBookingTotalPrice;
+
+  /// No description provided for @tourBookingConfirmPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm & Pay'**
+  String get tourBookingConfirmPay;
+
+  /// No description provided for @tourBookingSecurePayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure payment processed by FlyFy'**
+  String get tourBookingSecurePayment;
+
+  /// No description provided for @tourBookingSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking request is ready. Online payment will be connected soon.'**
+  String get tourBookingSubmitted;
+
+  /// No description provided for @tourBookingLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load tour booking'**
+  String get tourBookingLoadFailed;
+
+  /// No description provided for @tourBookingPerPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'/ person'**
+  String get tourBookingPerPerson;
+
   /// No description provided for @tourDetailsNoDescription.
   ///
   /// In en, this message translates to:

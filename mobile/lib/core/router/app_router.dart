@@ -25,6 +25,7 @@ import '../../screens/activities/activity_payment_screen.dart';
 import '../../screens/activities/create_activity_screen.dart';
 import '../../screens/activities/my_activities_screen.dart';
 import '../../screens/tours/create_tour_screen.dart';
+import '../../screens/tours/tour_booking_screen.dart';
 import '../../screens/tours/tour_select_location_screen.dart';
 import '../../screens/tours/tour_details_screen.dart';
 import '../../screens/tours/tours_screen.dart';
@@ -283,6 +284,20 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/tours/:tourId/booking',
+          builder: (context, state) {
+            final tourId = state.pathParameters['tourId'] ?? '';
+            final args = state.extra is TourBookingRouteArgs
+                ? state.extra! as TourBookingRouteArgs
+                : null;
+            final initialTour = args?.tour ??
+                (state.extra is TourVm ? state.extra! as TourVm : null);
+            return _withAndroidBackSwipe(
+              TourBookingScreen(tourId: tourId, initialTour: initialTour),
+            );
+          },
+        ),
+        GoRoute(
           path: '/tours/:tourId',
           builder: (context, state) {
             final tourId = state.pathParameters['tourId'] ?? '';
@@ -429,6 +444,10 @@ class AppRouter {
     }
 
     if (location.startsWith('/tours/create')) {
+      return false;
+    }
+
+    if (location.startsWith('/tours/') && location.endsWith('/booking')) {
       return false;
     }
 

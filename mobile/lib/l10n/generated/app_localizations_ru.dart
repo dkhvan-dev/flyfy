@@ -2225,6 +2225,65 @@ class AppLocalizationsRu extends AppLocalizations {
       'Чат с гидом скоро будет доступен.';
 
   @override
+  String get tourBookingTitle => 'Бронирование тура';
+
+  @override
+  String get tourBookingSchedule => 'Расписание';
+
+  @override
+  String get tourBookingChange => 'Изменить';
+
+  @override
+  String get tourBookingDate => 'Дата';
+
+  @override
+  String get tourBookingTimeSlot => 'Время';
+
+  @override
+  String get tourBookingTravelers => 'Путешественники';
+
+  @override
+  String get tourBookingAdults => 'Взрослые';
+
+  @override
+  String get tourBookingChildren => 'Дети';
+
+  @override
+  String get tourBookingSummary => 'Итог';
+
+  @override
+  String tourBookingAdultSummary(Object count, Object price) {
+    return 'Взрослые ($count × $price)';
+  }
+
+  @override
+  String tourBookingChildrenSummary(Object count, Object price) {
+    return 'Дети ($count × $price)';
+  }
+
+  @override
+  String get tourBookingServiceFeeSummary => 'Сервисный сбор (5%)';
+
+  @override
+  String get tourBookingTotalPrice => 'Итоговая стоимость';
+
+  @override
+  String get tourBookingConfirmPay => 'Подтвердить и оплатить';
+
+  @override
+  String get tourBookingSecurePayment => 'Безопасная оплата через FlyFy';
+
+  @override
+  String get tourBookingSubmitted =>
+      'Заявка на бронирование готова. Онлайн-оплата будет подключена скоро.';
+
+  @override
+  String get tourBookingLoadFailed => 'Не удалось загрузить бронирование тура';
+
+  @override
+  String get tourBookingPerPerson => '/ чел.';
+
+  @override
   String get tourDetailsNoDescription =>
       'Гид скоро добавит подробное описание впечатления.';
 

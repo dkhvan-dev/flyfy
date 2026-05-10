@@ -84,4 +84,22 @@ void main() {
     expect(source, contains('if (showBookingAction)'));
     expect(source, contains('class _TourCheckoutBar'));
   });
+
+  test('tour details opens booking screen from booking CTA', () async {
+    final source =
+        await File('lib/screens/tours/tour_details_screen.dart').readAsString();
+
+    expect(source, contains('_openBooking'));
+    expect(source, contains('TourBookingRouteArgs'));
+    expect(
+      source,
+      contains("'/tours/\${Uri.encodeComponent(tour.id)}/booking'"),
+    );
+    expect(source, contains('onBookTap: () => _openBooking(tour)'));
+    expect(
+      source,
+      isNot(contains(
+          'onBookTap: () => _showSoon(l10n.tourDetailsBookingComingSoon)')),
+    );
+  });
 }

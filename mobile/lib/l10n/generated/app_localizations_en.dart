@@ -2222,6 +2222,65 @@ class AppLocalizationsEn extends AppLocalizations {
       'Guide chat will be available soon.';
 
   @override
+  String get tourBookingTitle => 'Booking Tour';
+
+  @override
+  String get tourBookingSchedule => 'Schedule';
+
+  @override
+  String get tourBookingChange => 'Change';
+
+  @override
+  String get tourBookingDate => 'Date';
+
+  @override
+  String get tourBookingTimeSlot => 'Time Slot';
+
+  @override
+  String get tourBookingTravelers => 'Travelers';
+
+  @override
+  String get tourBookingAdults => 'Adults';
+
+  @override
+  String get tourBookingChildren => 'Children';
+
+  @override
+  String get tourBookingSummary => 'Summary';
+
+  @override
+  String tourBookingAdultSummary(Object count, Object price) {
+    return 'Adult ($count x $price)';
+  }
+
+  @override
+  String tourBookingChildrenSummary(Object count, Object price) {
+    return 'Children ($count x $price)';
+  }
+
+  @override
+  String get tourBookingServiceFeeSummary => 'Service fee (5%)';
+
+  @override
+  String get tourBookingTotalPrice => 'Total Price';
+
+  @override
+  String get tourBookingConfirmPay => 'Confirm & Pay';
+
+  @override
+  String get tourBookingSecurePayment => 'Secure payment processed by FlyFy';
+
+  @override
+  String get tourBookingSubmitted =>
+      'Booking request is ready. Online payment will be connected soon.';
+
+  @override
+  String get tourBookingLoadFailed => 'Failed to load tour booking';
+
+  @override
+  String get tourBookingPerPerson => '/ person';
+
+  @override
   String get tourDetailsNoDescription =>
       'Your guide will share the detailed experience soon.';
 

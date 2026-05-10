@@ -16,6 +16,7 @@ import '../../features/tours/tour_localization.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/tour_provider.dart';
+import 'tour_booking_screen.dart';
 
 class TourDetailsScreen extends StatefulWidget {
   const TourDetailsScreen({
@@ -133,6 +134,16 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
         extra: _resolvedProfiles[guideUserId]);
   }
 
+  void _openBooking(TourVm tour) {
+    final tourId = tour.id.trim();
+    if (tourId.isEmpty) return;
+
+    context.push(
+      '/tours/${Uri.encodeComponent(tour.id)}/booking',
+      extra: TourBookingRouteArgs(tour: tour),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -195,7 +206,7 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
             onNotificationsTap: () => context.push('/notifications'),
             onGuideProfileTap: () =>
                 _openGuideProfile(guideUserId, isAuthor: isAuthor),
-            onBookTap: () => _showSoon(l10n.tourDetailsBookingComingSoon),
+            onBookTap: () => _openBooking(tour),
             onMessageGuideTap: () =>
                 _showSoon(l10n.tourDetailsGuideChatComingSoon),
           );

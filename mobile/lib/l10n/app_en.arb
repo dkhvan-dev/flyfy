@@ -787,6 +787,36 @@
   "tourDetailsLoadFailed": "Failed to load tour",
   "tourDetailsBookingComingSoon": "Tour booking will be available soon.",
   "tourDetailsGuideChatComingSoon": "Guide chat will be available soon.",
+  "tourBookingTitle": "Booking Tour",
+  "tourBookingSchedule": "Schedule",
+  "tourBookingChange": "Change",
+  "tourBookingDate": "Date",
+  "tourBookingTimeSlot": "Time Slot",
+  "tourBookingTravelers": "Travelers",
+  "tourBookingAdults": "Adults",
+  "tourBookingChildren": "Children",
+  "tourBookingSummary": "Summary",
+  "tourBookingAdultSummary": "Adult ({count} x {price})",
+  "@tourBookingAdultSummary": {
+    "placeholders": {
+      "count": {},
+      "price": {}
+    }
+  },
+  "tourBookingChildrenSummary": "Children ({count} x {price})",
+  "@tourBookingChildrenSummary": {
+    "placeholders": {
+      "count": {},
+      "price": {}
+    }
+  },
+  "tourBookingServiceFeeSummary": "Service fee (5%)",
+  "tourBookingTotalPrice": "Total Price",
+  "tourBookingConfirmPay": "Confirm & Pay",
+  "tourBookingSecurePayment": "Secure payment processed by FlyFy",
+  "tourBookingSubmitted": "Booking request is ready. Online payment will be connected soon.",
+  "tourBookingLoadFailed": "Failed to load tour booking",
+  "tourBookingPerPerson": "/ person",
   "tourDetailsNoDescription": "Your guide will share the detailed experience soon.",
   "createTourTitle": "Create Tour",
   "createTourSubmit": "Publish",

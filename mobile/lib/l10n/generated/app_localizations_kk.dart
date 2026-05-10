@@ -2233,6 +2233,65 @@ class AppLocalizationsKk extends AppLocalizations {
       'Гидпен чат жақында қолжетімді болады.';
 
   @override
+  String get tourBookingTitle => 'Турды брондау';
+
+  @override
+  String get tourBookingSchedule => 'Кесте';
+
+  @override
+  String get tourBookingChange => 'Өзгерту';
+
+  @override
+  String get tourBookingDate => 'Күні';
+
+  @override
+  String get tourBookingTimeSlot => 'Уақыт';
+
+  @override
+  String get tourBookingTravelers => 'Саяхатшылар';
+
+  @override
+  String get tourBookingAdults => 'Ересектер';
+
+  @override
+  String get tourBookingChildren => 'Балалар';
+
+  @override
+  String get tourBookingSummary => 'Қорытынды';
+
+  @override
+  String tourBookingAdultSummary(Object count, Object price) {
+    return 'Ересектер ($count × $price)';
+  }
+
+  @override
+  String tourBookingChildrenSummary(Object count, Object price) {
+    return 'Балалар ($count × $price)';
+  }
+
+  @override
+  String get tourBookingServiceFeeSummary => 'Қызмет ақысы (5%)';
+
+  @override
+  String get tourBookingTotalPrice => 'Жалпы баға';
+
+  @override
+  String get tourBookingConfirmPay => 'Растау және төлеу';
+
+  @override
+  String get tourBookingSecurePayment => 'Қауіпсіз төлем FlyFy арқылы өңделеді';
+
+  @override
+  String get tourBookingSubmitted =>
+      'Брондау сұрауы дайын. Онлайн төлем жақында қосылады.';
+
+  @override
+  String get tourBookingLoadFailed => 'Тур брондауын жүктеу мүмкін болмады';
+
+  @override
+  String get tourBookingPerPerson => '/ адам';
+
+  @override
   String get tourDetailsNoDescription =>
       'Гид жақында әсердің толық сипаттамасын қосады.';
 

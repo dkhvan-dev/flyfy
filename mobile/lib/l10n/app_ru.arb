@@ -787,6 +787,36 @@
   "tourDetailsLoadFailed": "Не удалось загрузить тур",
   "tourDetailsBookingComingSoon": "Бронирование тура скоро будет доступно.",
   "tourDetailsGuideChatComingSoon": "Чат с гидом скоро будет доступен.",
+  "tourBookingTitle": "Бронирование тура",
+  "tourBookingSchedule": "Расписание",
+  "tourBookingChange": "Изменить",
+  "tourBookingDate": "Дата",
+  "tourBookingTimeSlot": "Время",
+  "tourBookingTravelers": "Путешественники",
+  "tourBookingAdults": "Взрослые",
+  "tourBookingChildren": "Дети",
+  "tourBookingSummary": "Итог",
+  "tourBookingAdultSummary": "Взрослые ({count} × {price})",
+  "@tourBookingAdultSummary": {
+    "placeholders": {
+      "count": {},
+      "price": {}
+    }
+  },
+  "tourBookingChildrenSummary": "Дети ({count} × {price})",
+  "@tourBookingChildrenSummary": {
+    "placeholders": {
+      "count": {},
+      "price": {}
+    }
+  },
+  "tourBookingServiceFeeSummary": "Сервисный сбор (5%)",
+  "tourBookingTotalPrice": "Итоговая стоимость",
+  "tourBookingConfirmPay": "Подтвердить и оплатить",
+  "tourBookingSecurePayment": "Безопасная оплата через FlyFy",
+  "tourBookingSubmitted": "Заявка на бронирование готова. Онлайн-оплата будет подключена скоро.",
+  "tourBookingLoadFailed": "Не удалось загрузить бронирование тура",
+  "tourBookingPerPerson": "/ чел.",
   "tourDetailsNoDescription": "Гид скоро добавит подробное описание впечатления.",
   "createTourTitle": "Создать тур",
   "createTourSubmit": "Опубликовать",
