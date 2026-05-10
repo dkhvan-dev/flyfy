@@ -35,17 +35,19 @@ class StoryApi {
     final data = response.data as Map<String, dynamic>? ?? const {};
     final rawItems = data['items'];
     if (rawItems is! List) {
-      return const StoryListPage(items: [], hasMore: false);
+      return const StoryListPage(items: [], hasMore: false, total: 0);
     }
     final items = rawItems
         .whereType<Map<String, dynamic>>()
         .map(StoryVm.fromJson)
         .toList(growable: false);
     final hasMore = items.length > pageLimit;
+    final total = int.tryParse(data['total']?.toString() ?? '') ?? items.length;
 
     return StoryListPage(
       items: hasMore ? items.take(pageLimit).toList(growable: false) : items,
       hasMore: hasMore,
+      total: total,
     );
   }
 
@@ -97,17 +99,19 @@ class StoryApi {
     final data = response.data as Map<String, dynamic>? ?? const {};
     final rawItems = data['items'];
     if (rawItems is! List) {
-      return const StoryListPage(items: [], hasMore: false);
+      return const StoryListPage(items: [], hasMore: false, total: 0);
     }
     final items = rawItems
         .whereType<Map<String, dynamic>>()
         .map(StoryVm.fromJson)
         .toList(growable: false);
     final hasMore = items.length > pageLimit;
+    final total = int.tryParse(data['total']?.toString() ?? '') ?? items.length;
 
     return StoryListPage(
       items: hasMore ? items.take(pageLimit).toList(growable: false) : items,
       hasMore: hasMore,
+      total: total,
     );
   }
 
@@ -264,8 +268,13 @@ class StoryApi {
 }
 
 class StoryListPage {
-  const StoryListPage({required this.items, required this.hasMore});
+  const StoryListPage({
+    required this.items,
+    required this.hasMore,
+    required this.total,
+  });
 
   final List<StoryVm> items;
   final bool hasMore;
+  final int total;
 }

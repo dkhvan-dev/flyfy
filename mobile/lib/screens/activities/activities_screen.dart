@@ -9,6 +9,7 @@ import '../../core/device/device_context_service.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
+import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
 import '../../features/activities/activity_currency.dart';
@@ -395,8 +396,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     final isLoggedIn = auth.state == AuthState.authenticated;
     final profile = session.profile;
     final currentUserId = (profile?.userId ?? '').trim();
-    final currentPriceFilterCountryCode =
-        _priceFilterCountryCode ??
+    final currentPriceFilterCountryCode = _priceFilterCountryCode ??
         normalizeActivityCountryCode(profile?.countryCode);
     final location = resolveDrawerLocation(
       profile,
@@ -625,8 +625,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   0,
                                 ),
                                 child: ErrorView(
-                                  message:
-                                      provider.errorMessage ??
+                                  message: provider.errorMessage ??
                                       l10n.activitiesLoadFailed,
                                   onRetry: () async {
                                     await provider.loadActivities();
@@ -687,8 +686,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   final categorySlug = _normalizeSlug(
                                     item.categorySlug,
                                   );
-                                  final categoryLabel =
-                                      categoryOptions
+                                  final categoryLabel = categoryOptions
                                           .cast<_DiscoverCategoryOption?>()
                                           .firstWhere(
                                             (option) =>
@@ -704,8 +702,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     item: item,
                                     layout: layout,
                                     categoryLabel: categoryLabel,
-                                    isOwner:
-                                        currentUserId.isNotEmpty &&
+                                    isOwner: currentUserId.isNotEmpty &&
                                         currentUserId == item.hostUserId,
                                     onOpenDetails: () =>
                                         _openActivityDetails(context, item.id),
@@ -1101,7 +1098,8 @@ class _DiscoverSearchField extends StatelessWidget {
                     IconButton(
                       tooltip: AppLocalizations.of(
                         context,
-                      )!.activitiesFiltersTitle,
+                      )!
+                          .activitiesFiltersTitle,
                       onPressed: onFilterTap,
                       splashRadius: 20,
                       icon: Icon(
@@ -1217,8 +1215,8 @@ class _DiscoverSortButton extends StatelessWidget {
     final iconSize = _activitiesScaled(context, 16, min: 14, max: 16);
     final arrowIcon = active
         ? (ascending
-              ? Icons.arrow_upward_rounded
-              : Icons.arrow_downward_rounded)
+            ? Icons.arrow_upward_rounded
+            : Icons.arrow_downward_rounded)
         : Icons.unfold_more_rounded;
 
     return Semantics(
@@ -1300,8 +1298,7 @@ class _FiltersSummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact =
-        MediaQuery.sizeOf(context).width < 360 ||
+    final compact = MediaQuery.sizeOf(context).width < 360 ||
         MediaQuery.textScalerOf(context).scale(1) > 1.02;
 
     final summaryText = Text(
@@ -1629,7 +1626,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                         final columns = compactMeta ? 1 : 2;
                         final itemWidth =
                             (constraints.maxWidth - gap * (columns - 1)) /
-                            columns;
+                                columns;
 
                         return Wrap(
                           spacing: gap,
@@ -2028,9 +2025,8 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
         builder: (context, constraints) {
           final textScale = MediaQuery.textScalerOf(context).scale(1);
           final spacing = _activitiesScaled(context, 8, min: 6, max: 10);
-          final columns = constraints.maxWidth < 340 || textScale > 1.08
-              ? 1
-              : 2;
+          final columns =
+              constraints.maxWidth < 340 || textScale > 1.08 ? 1 : 2;
           final itemWidth =
               (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -2201,8 +2197,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
       title: widget.l10n.activitiesFilterVisibility,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useColumn =
-              constraints.maxWidth < 360 ||
+          final useColumn = constraints.maxWidth < 360 ||
               MediaQuery.textScalerOf(context).scale(1) > 1.04;
           final options = [
             _VisibilityOptionCard(
@@ -2246,8 +2241,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useColumn =
-            constraints.maxWidth < 360 ||
+        final useColumn = constraints.maxWidth < 360 ||
             MediaQuery.textScalerOf(context).scale(1) > 1.02;
         if (useColumn) {
           return Column(
@@ -2379,9 +2373,8 @@ class _CategoryFilterPill extends StatelessWidget {
     final iconWrap = _activitiesScaled(context, 34, min: 30, max: 34);
     final titleSize = _activitiesScaled(context, 13, min: 12, max: 14);
     final countSize = _activitiesScaled(context, 11, min: 10, max: 11);
-    final foreground = selected
-        ? const Color(0xFFFFFAF5)
-        : const Color(0xE6FFF0E0);
+    final foreground =
+        selected ? const Color(0xFFFFFAF5) : const Color(0xE6FFF0E0);
 
     return Material(
       color: Colors.transparent,
@@ -2686,58 +2679,14 @@ class _FilterSheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPadding = _activitiesScaled(context, 18, min: 16, max: 24);
-    final titleSize = _activitiesScaled(context, 16, min: 14, max: 17);
-    final clearSize = _activitiesScaled(context, 12, min: 11, max: 12);
-
-    return Container(
+    return AppFilterSheetHeader(
+      title: title,
+      clearLabel: clearLabel,
+      onClear: onClear,
       height: _activitiesScaled(context, 46, min: 44, max: 50),
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF3B260D))),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: _activitiesScaled(context, 86, min: 74, max: 96),
-            ),
-            child: Text(
-              title.toUpperCase(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: titleSize,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.2,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: onClear,
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.accent,
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(0, 32),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                clearLabel.toUpperCase(),
-                style: TextStyle(
-                  fontSize: clearSize,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.4,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      horizontalPadding: _activitiesScaled(context, 18, min: 16, max: 24),
+      titleFontSize: _activitiesScaled(context, 16, min: 14, max: 17),
+      clearFontSize: _activitiesScaled(context, 12, min: 11, max: 12),
     );
   }
 }
@@ -2836,7 +2785,7 @@ class _RangeSheetScaffold extends StatelessWidget {
                         ),
                         color: Colors.black.withValues(alpha: 0.06),
                       ),
-                      child: _PrimaryPillButton(
+                      child: AppFilterApplyButton(
                         label: applyLabel ?? l10n.myActivitiesFilterApply,
                         onTap: onApply,
                         minHeight: _activitiesScaled(
@@ -2844,6 +2793,12 @@ class _RangeSheetScaffold extends StatelessWidget {
                           56,
                           min: 50,
                           max: 58,
+                        ),
+                        fontSize: _activitiesScaled(
+                          context,
+                          17,
+                          min: 15,
+                          max: 17,
                         ),
                       ),
                     ),
@@ -3119,12 +3074,10 @@ class _DiscoverFilters {
           ? this.startDate
           : startDate as DateTime?,
       endDate: identical(endDate, _unset) ? this.endDate : endDate as DateTime?,
-      minPrice: identical(minPrice, _unset)
-          ? this.minPrice
-          : minPrice as double?,
-      maxPrice: identical(maxPrice, _unset)
-          ? this.maxPrice
-          : maxPrice as double?,
+      minPrice:
+          identical(minPrice, _unset) ? this.minPrice : minPrice as double?,
+      maxPrice:
+          identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
     );
   }
 }
@@ -3270,9 +3223,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-              .substring(0, newValue.selection.end)
-              .replaceAll(RegExp(r'[^0-9]'), '')
-              .length;
+            .substring(0, newValue.selection.end)
+            .replaceAll(RegExp(r'[^0-9]'), '')
+            .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;
@@ -3429,8 +3382,7 @@ List<_DiscoverCategoryOption> _buildCategoryOptions(
     options.add(
       _DiscoverCategoryOption(
         slug: slug,
-        label:
-            matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
+        label: matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
                 true
             ? matchedCategory!.localizedName(languageCode)
             : ActivityCategoryVm.humanizeSlug(slug),
@@ -3537,9 +3489,8 @@ List<ActivityListItemVm> _sortDiscoverItems(
       _ActivitySortField.price => _numericPrice(a).compareTo(_numericPrice(b)),
     };
 
-    final compare = primaryCompare == 0
-        ? a.startAt.compareTo(b.startAt)
-        : primaryCompare;
+    final compare =
+        primaryCompare == 0 ? a.startAt.compareTo(b.startAt) : primaryCompare;
     return sortAscending ? compare : -compare;
   });
   return sorted;
@@ -3671,8 +3622,7 @@ String _resolvePriceFilterCurrencyCode({
 }) {
   return filterCurrencyCode(
     countryCode: currentCountryCode,
-    currency:
-        normalizeActivityCurrencyCode(fallbackCurrencyCode) ??
+    currency: normalizeActivityCurrencyCode(fallbackCurrencyCode) ??
         _dominantCurrencyCode(items),
   );
 }

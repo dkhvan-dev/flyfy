@@ -262,7 +262,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
           children: [
             Icon(
               Icons.search_rounded,
-              color: const Color(0xFFC7B49F),
+              color: AppColors.accent,
               size: a.scale(28),
             ),
             SizedBox(width: a.scale(20, minFactor: 0.7)),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/filter_sheet_chrome.dart';
 import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -378,55 +379,14 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
     AttractionAdaptive adaptive,
     double padX,
   ) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: padX),
+    return AppFilterSheetHeader(
+      title: l10n.attractionsFiltersTitle,
+      clearLabel: l10n.attractionFilterClear,
+      onClear: _clearAll,
       height: adaptive.scale(50, minFactor: 0.9),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF3B260D))),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.close_rounded, color: Color(0xFFD6BDAB)),
-            onPressed: () => Navigator.of(context).pop(),
-            tooltip: MaterialLocalizations.of(context).closeButtonLabel,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                l10n.attractionsFiltersTitle.toUpperCase(),
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: adaptive.scale(17),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.2,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: _clearAll,
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.accent,
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              l10n.attractionFilterClearAll.toUpperCase(),
-              style: TextStyle(
-                fontSize: adaptive.scale(12),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.8,
-              ),
-            ),
-          ),
-        ],
-      ),
+      horizontalPadding: padX,
+      titleFontSize: adaptive.scale(17),
+      clearFontSize: adaptive.scale(12),
     );
   }
 
@@ -686,38 +646,13 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
           ),
         ],
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_stageResult()),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(adaptive.radius(14)),
-            ),
-            minimumSize: Size.fromHeight(adaptive.scale(51)),
-            padding: EdgeInsets.zero,
-          ),
-          child: _previewLoading
-              ? SizedBox(
-                  width: adaptive.scale(22),
-                  height: adaptive.scale(22),
-                  child: const CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(
-                  l10n.attractionFilterShowSpots(_previewCount).toUpperCase(),
-                  style: TextStyle(
-                    fontSize: adaptive.scale(14),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.6,
-                  ),
-                ),
-        ),
+      child: AppFilterApplyButton(
+        label: l10n.attractionFilterShowSpots(_previewCount),
+        onTap: () => Navigator.of(context).pop(_stageResult()),
+        minHeight: adaptive.scale(51),
+        fontSize: adaptive.scale(14),
+        borderRadius: adaptive.radius(999),
+        isLoading: _previewLoading,
       ),
     );
   }

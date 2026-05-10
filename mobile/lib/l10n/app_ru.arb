@@ -1008,6 +1008,12 @@
   "storyFilterCategory": "Категория",
   "storyFilterCountry": "Страна",
   "storyFilterAll": "Все",
+  "storiesShowResults": "Показать {count, plural, =0{0 историй} one{{count} историю} few{{count} истории} many{{count} историй} other{{count} истории}}",
+  "@storiesShowResults": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "storySortLabel": "Сортировать",
   "storySortDate": "Дата",
   "storySortViews": "Просмотры",

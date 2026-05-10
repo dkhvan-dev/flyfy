@@ -2813,6 +2813,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyFilterAll => 'All';
 
   @override
+  String storiesShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stories',
+      one: '1 story',
+      zero: '0 stories',
+    );
+    return 'Show $_temp0';
+  }
+
+  @override
   String get storySortLabel => 'Sort by';
 
   @override

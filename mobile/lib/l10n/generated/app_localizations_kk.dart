@@ -2830,6 +2830,18 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyFilterAll => 'Барлығы';
 
   @override
+  String storiesShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count хикаяны',
+      one: '1 хикаяны',
+      zero: '0 хикаяны',
+    );
+    return '$_temp0 көрсету';
+  }
+
+  @override
   String get storySortLabel => 'Сұрыптау';
 
   @override

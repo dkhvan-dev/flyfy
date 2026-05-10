@@ -10,6 +10,7 @@ import '../../core/network/reference_api.dart';
 import '../../core/network/story_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../features/stories/story_ui.dart';
@@ -41,6 +42,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
   bool _isRefreshing = false;
   String? _errorMessage;
   int _currentPage = 1;
+  int _totalStories = 0;
   bool _hasNextPage = false;
 
   String _searchQuery = '';
@@ -126,6 +128,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
       }
       setState(() {
         _stories = storiesPage.items;
+        _totalStories = storiesPage.total;
         _currentPage = storiesPage.items.isEmpty && normalizedPage > 1
             ? 1
             : normalizedPage;
@@ -164,34 +167,34 @@ class _StoriesScreenState extends State<StoriesScreen> {
       'CULINARY',
     ];
 
-    final selected = await showModalBottomSheet<String?>(
+    final selected = await showModalBottomSheet<_StoryCategoryFilterResult>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
-        return _FilterSheet(
+        return _StoryCategoryFilterSheet(
           title: l10n.storyFilterCategory,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final option in options)
-                _FilterOptionTile(
-                  label: option == null
-                      ? l10n.storyFilterAll
-                      : formatStoryCategory(l10n, option),
-                  selected: _selectedCategory == option,
-                  onTap: () => Navigator.of(context).pop(option),
-                ),
-            ],
+          options: options,
+          initialCategory: _selectedCategory,
+          previewCount: _totalStories,
+          formatCategory: (option) => option == null
+              ? l10n.storyFilterAll
+              : formatStoryCategory(l10n, option),
+          previewCountLoader: (category) => _loadStoriesPreviewCount(
+            category: category,
+            place: _selectedPlace,
           ),
         );
       },
     );
 
-    if (!mounted || selected == _selectedCategory) {
+    if (!mounted ||
+        selected == null ||
+        selected.category == _selectedCategory) {
       return;
     }
     setState(() {
-      _selectedCategory = selected;
+      _selectedCategory = selected.category;
     });
     await _loadStories(showLoader: false, page: 1);
   }
@@ -199,31 +202,61 @@ class _StoriesScreenState extends State<StoriesScreen> {
   Future<void> _showPlaceSheet() async {
     final l10n = AppLocalizations.of(context)!;
 
-    final selected = await showModalBottomSheet<ReferenceCountry?>(
+    final selected = await showModalBottomSheet<_StoryCountryFilterResult>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
         return _CountrySearchSheet(
           title: l10n.storyFilterCountry,
-          currentCode: _selectedPlace?.code,
+          initialCountry: _selectedPlace,
+          previewCount: _totalStories,
+          previewCountLoader: (place) => _loadStoriesPreviewCount(
+            category: _selectedCategory,
+            place: place,
+          ),
         );
       },
     );
 
-    // null return means dismissed without change; 'clear' sentinel
-    // is handled inside the sheet by returning a code-empty country.
     if (!mounted) return;
-    if (selected != null && selected.code.isEmpty) {
-      // "All" was selected — clear the filter.
+    if (selected == null) {
+      return;
+    }
+    if (selected.country == null) {
       setState(() => _selectedPlace = null);
       await _loadStories(showLoader: false, page: 1);
       return;
     }
-    if (selected != null && selected.code != (_selectedPlace?.code ?? '')) {
-      setState(() => _selectedPlace = selected);
+    if (selected.country!.code != (_selectedPlace?.code ?? '')) {
+      setState(() => _selectedPlace = selected.country);
       await _loadStories(showLoader: false, page: 1);
     }
+  }
+
+  Future<int> _loadStoriesPreviewCount({
+    required String? category,
+    required ReferenceCountry? place,
+  }) async {
+    final trimmedCategory = category?.trim() ?? '';
+    final categories =
+        trimmedCategory.isEmpty ? null : <String>[trimmedCategory];
+    final page = widget.myOnly
+        ? await _api.listMyStoriesPage(
+            search: _searchQuery,
+            categories: categories,
+            place: place?.code,
+            sort: _sort,
+            limit: 1,
+          )
+        : await _api.listStoriesPage(
+            search: _searchQuery,
+            categories: categories,
+            place: place?.code,
+            sort: _sort,
+            limit: 1,
+          );
+    return page.total;
   }
 
   Future<void> _refresh() => _loadStories(showLoader: false);
@@ -264,9 +297,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
       return;
     }
     setState(() {
-      final next = _stories
-          .where((item) => item.id != story.id)
-          .toList(growable: true);
+      final next =
+          _stories.where((item) => item.id != story.id).toList(growable: true);
       next.insert(0, story);
       next.sort((a, b) => b.sortDate.compareTo(a.sortDate));
       _stories = next;
@@ -483,8 +515,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                                       l10n,
                                       _selectedCategory!,
                                     ),
-                              placeLabel:
-                                  _selectedPlace?.name ??
+                              placeLabel: _selectedPlace?.name ??
                                   l10n.storyFilterCountry,
                               placeActive: _selectedPlace != null,
                               onCategoryTap: _showCategorySheet,
@@ -636,7 +667,7 @@ class _StoriesSearchBar extends StatelessWidget {
           SizedBox(width: adaptive.scale(18)),
           Icon(
             Icons.search_rounded,
-            color: StoryPalette.textMuted,
+            color: AppColors.accent,
             size: adaptive.scale(20),
           ),
           SizedBox(width: adaptive.scale(10)),
@@ -1171,61 +1202,208 @@ class _StoriesFilterChip extends StatelessWidget {
   }
 }
 
-class _FilterSheet extends StatelessWidget {
-  const _FilterSheet({required this.title, required this.child});
+class _StoryCategoryFilterResult {
+  const _StoryCategoryFilterResult(this.category);
+
+  final String? category;
+}
+
+class _StoryCountryFilterResult {
+  const _StoryCountryFilterResult(this.country);
+
+  final ReferenceCountry? country;
+}
+
+class _StoryCategoryFilterSheet extends StatefulWidget {
+  const _StoryCategoryFilterSheet({
+    required this.title,
+    required this.options,
+    required this.initialCategory,
+    required this.previewCount,
+    required this.formatCategory,
+    required this.previewCountLoader,
+  });
 
   final String title;
+  final List<String?> options;
+  final String? initialCategory;
+  final int previewCount;
+  final String Function(String? category) formatCategory;
+  final Future<int> Function(String? category) previewCountLoader;
+
+  @override
+  State<_StoryCategoryFilterSheet> createState() =>
+      _StoryCategoryFilterSheetState();
+}
+
+class _StoryCategoryFilterSheetState extends State<_StoryCategoryFilterSheet> {
+  String? _selectedCategory;
+  late int _previewCount;
+  bool _isPreviewLoading = false;
+  int _previewRequestId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategory = widget.initialCategory;
+    _previewCount = widget.previewCount;
+    _loadPreviewCount();
+  }
+
+  void _selectCategory(String? category) {
+    if (_selectedCategory == category) {
+      return;
+    }
+    setState(() => _selectedCategory = category);
+    _loadPreviewCount();
+  }
+
+  Future<void> _loadPreviewCount() async {
+    final requestId = ++_previewRequestId;
+    setState(() => _isPreviewLoading = true);
+    try {
+      final count = await widget.previewCountLoader(_selectedCategory);
+      if (!mounted || requestId != _previewRequestId) {
+        return;
+      }
+      setState(() {
+        _previewCount = count;
+        _isPreviewLoading = false;
+      });
+    } catch (_) {
+      if (mounted && requestId == _previewRequestId) {
+        setState(() => _isPreviewLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return _FilterSheet(
+      title: widget.title,
+      clearLabel: l10n.myActivitiesFilterClear,
+      applyLabel: l10n.storiesShowResults(_previewCount),
+      onClear: () => _selectCategory(null),
+      onApply: () {
+        Navigator.of(
+          context,
+        ).pop(_StoryCategoryFilterResult(_selectedCategory));
+      },
+      isApplyLoading: _isPreviewLoading,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final option in widget.options)
+            _FilterOptionTile(
+              label: widget.formatCategory(option),
+              selected: _selectedCategory == option,
+              onTap: () => _selectCategory(option),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterSheet extends StatelessWidget {
+  const _FilterSheet({
+    required this.title,
+    required this.clearLabel,
+    required this.applyLabel,
+    required this.onClear,
+    required this.onApply,
+    required this.child,
+    this.isApplyLoading = false,
+  });
+
+  final String title;
+  final String clearLabel;
+  final String applyLabel;
+  final VoidCallback onClear;
+  final VoidCallback onApply;
   final Widget child;
+  final bool isApplyLoading;
 
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: adaptive.scale(12),
-          right: adaptive.scale(12),
-          bottom: adaptive.scale(12),
-        ),
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final safeBottomInset = MediaQuery.paddingOf(context).bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.82;
+    final horizontalPadding = adaptive.scale(18);
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: const Color(0xFF211207),
-            borderRadius: BorderRadius.circular(adaptive.radius(28)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          ),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              adaptive.scale(18),
-              adaptive.scale(18),
-              adaptive.scale(18),
-              adaptive.scale(22),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF2B1808), Color(0xFF201208)],
             ),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(adaptive.radius(28)),
+            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+          ),
+          child: SafeArea(
+            top: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: adaptive.scale(46),
-                    height: adaptive.scale(5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(adaptive.radius(999)),
+                AppFilterSheetHeader(
+                  title: title,
+                  clearLabel: clearLabel,
+                  onClear: onClear,
+                  height: adaptive.scale(46),
+                  horizontalPadding: horizontalPadding,
+                  titleFontSize: adaptive.scale(16),
+                  clearFontSize: adaptive.scale(12),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      adaptive.scale(14),
+                      horizontalPadding,
+                      0,
                     ),
+                    child: child,
                   ),
                 ),
-                SizedBox(height: adaptive.scale(18)),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: StoryPalette.text,
-                    fontSize: adaptive.scale(18),
-                    fontWeight: FontWeight.w800,
+                Container(
+                  width: double.infinity,
+                  margin: EdgeInsets.only(top: adaptive.scale(10)),
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    adaptive.scale(10),
+                    horizontalPadding,
+                    adaptive.scale(14) + safeBottomInset,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: AppColors.accent.withValues(alpha: 0.09),
+                      ),
+                    ),
+                    color: Colors.black.withValues(alpha: 0.06),
+                  ),
+                  child: AppFilterApplyButton(
+                    label: applyLabel,
+                    onTap: onApply,
+                    minHeight: adaptive.scale(52),
+                    fontSize: adaptive.scale(15),
+                    isLoading: isApplyLoading,
                   ),
                 ),
-                SizedBox(height: adaptive.scale(12)),
-                child,
               ],
             ),
           ),
@@ -1287,10 +1465,17 @@ class _FilterOptionTile extends StatelessWidget {
 }
 
 class _CountrySearchSheet extends StatefulWidget {
-  const _CountrySearchSheet({required this.title, this.currentCode});
+  const _CountrySearchSheet({
+    required this.title,
+    required this.initialCountry,
+    required this.previewCount,
+    required this.previewCountLoader,
+  });
 
   final String title;
-  final String? currentCode;
+  final ReferenceCountry? initialCountry;
+  final int previewCount;
+  final Future<int> Function(ReferenceCountry? country) previewCountLoader;
 
   @override
   State<_CountrySearchSheet> createState() => _CountrySearchSheetState();
@@ -1301,13 +1486,20 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
   final _api = ReferenceApi();
   Timer? _debounce;
   List<ReferenceCountry> _results = const [];
+  ReferenceCountry? _selectedCountry;
+  late int _previewCount;
   bool _isLoading = false;
+  bool _isPreviewLoading = false;
+  int _previewRequestId = 0;
 
   @override
   void initState() {
     super.initState();
+    _selectedCountry = widget.initialCountry;
+    _previewCount = widget.previewCount;
     _searchController.addListener(_onSearchChanged);
     _loadInitial();
+    _loadPreviewCount();
   }
 
   @override
@@ -1363,97 +1555,124 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
     }
   }
 
+  void _selectCountry(ReferenceCountry? country) {
+    if (_selectedCountry?.code == country?.code) {
+      return;
+    }
+    setState(() => _selectedCountry = country);
+    _loadPreviewCount();
+  }
+
+  Future<void> _loadPreviewCount() async {
+    final requestId = ++_previewRequestId;
+    setState(() => _isPreviewLoading = true);
+    try {
+      final count = await widget.previewCountLoader(_selectedCountry);
+      if (!mounted || requestId != _previewRequestId) {
+        return;
+      }
+      setState(() {
+        _previewCount = count;
+        _isPreviewLoading = false;
+      });
+    } catch (_) {
+      if (mounted && requestId == _previewRequestId) {
+        setState(() => _isPreviewLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final adaptive = StoryAdaptive.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: _FilterSheet(
-        title: widget.title,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              height: adaptive.scale(44),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2A180D),
-                borderRadius: BorderRadius.circular(adaptive.radius(999)),
-              ),
-              child: Row(
-                children: [
-                  SizedBox(width: adaptive.scale(14)),
-                  Icon(
-                    Icons.search_rounded,
-                    color: StoryPalette.textMuted,
-                    size: adaptive.scale(18),
-                  ),
-                  SizedBox(width: adaptive.scale(8)),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      style: TextStyle(
-                        color: StoryPalette.textSoft,
+    return _FilterSheet(
+      title: widget.title,
+      clearLabel: l10n.myActivitiesFilterClear,
+      applyLabel: l10n.storiesShowResults(_previewCount),
+      onClear: () => _selectCountry(null),
+      onApply: () {
+        Navigator.of(context).pop(_StoryCountryFilterResult(_selectedCountry));
+      },
+      isApplyLoading: _isPreviewLoading,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: adaptive.scale(44),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A180D),
+              borderRadius: BorderRadius.circular(adaptive.radius(999)),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: adaptive.scale(14)),
+                Icon(
+                  Icons.search_rounded,
+                  color: AppColors.accent,
+                  size: adaptive.scale(18),
+                ),
+                SizedBox(width: adaptive.scale(8)),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    style: TextStyle(
+                      color: StoryPalette.textSoft,
+                      fontSize: adaptive.scale(14),
+                    ),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: l10n.storyCountryHint,
+                      hintStyle: TextStyle(
+                        color: StoryPalette.textMuted,
                         fontSize: adaptive.scale(14),
-                      ),
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        hintText: l10n.storyCountryHint,
-                        hintStyle: TextStyle(
-                          color: StoryPalette.textMuted,
-                          fontSize: adaptive.scale(14),
-                        ),
                       ),
                     ),
                   ),
-                  SizedBox(width: adaptive.scale(14)),
-                ],
-              ),
-            ),
-            SizedBox(height: adaptive.scale(8)),
-            _FilterOptionTile(
-              label: l10n.storyFilterAll,
-              selected: widget.currentCode == null,
-              onTap: () => Navigator.of(
-                context,
-              ).pop(ReferenceCountry(code: '', name: '')),
-            ),
-            if (_isLoading)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: adaptive.scale(18)),
-                child: const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.accent,
-                  ),
                 ),
-              )
-            else
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.35,
-                ),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _results.length,
-                  itemBuilder: (context, index) {
-                    final country = _results[index];
-                    return _FilterOptionTile(
-                      label: country.name,
-                      selected: country.code == widget.currentCode,
-                      onTap: () => Navigator.of(context).pop(country),
-                    );
-                  },
+                SizedBox(width: adaptive.scale(14)),
+              ],
+            ),
+          ),
+          SizedBox(height: adaptive.scale(8)),
+          _FilterOptionTile(
+            label: l10n.storyFilterAll,
+            selected: _selectedCountry == null,
+            onTap: () => _selectCountry(null),
+          ),
+          if (_isLoading)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: adaptive.scale(18)),
+              child: const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.accent,
                 ),
               ),
-          ],
-        ),
+            )
+          else
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.35,
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _results.length,
+                itemBuilder: (context, index) {
+                  final country = _results[index];
+                  return _FilterOptionTile(
+                    label: country.name,
+                    selected: country.code == _selectedCountry?.code,
+                    onTap: () => _selectCountry(country),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

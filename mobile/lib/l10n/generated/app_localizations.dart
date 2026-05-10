@@ -5218,6 +5218,12 @@ abstract class AppLocalizations {
   /// **'All'**
   String get storyFilterAll;
 
+  /// No description provided for @storiesShowResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count, plural, =0{0 stories} =1{1 story} other{{count} stories}}'**
+  String storiesShowResults(num count);
+
   /// No description provided for @storySortLabel.
   ///
   /// In en, this message translates to:

@@ -2820,6 +2820,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storyFilterAll => 'Все';
 
   @override
+  String storiesShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count истории',
+      many: '$count историй',
+      few: '$count истории',
+      one: '$count историю',
+      zero: '0 историй',
+    );
+    return 'Показать $_temp0';
+  }
+
+  @override
   String get storySortLabel => 'Сортировать';
 
   @override
