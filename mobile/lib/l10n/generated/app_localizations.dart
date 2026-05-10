@@ -3790,6 +3790,12 @@ abstract class AppLocalizations {
   /// **'Change'**
   String get change;
 
+  /// No description provided for @select.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get select;
+
   /// No description provided for @confirm.
   ///
   /// In en, this message translates to:
@@ -3838,6 +3844,12 @@ abstract class AppLocalizations {
   /// **'Search tours and experiences'**
   String get toursSearchHint;
 
+  /// No description provided for @toursSortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get toursSortLabel;
+
   /// No description provided for @toursSortPopular.
   ///
   /// In en, this message translates to:
@@ -3855,6 +3867,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Affordable'**
   String get toursSortAffordable;
+
+  /// No description provided for @toursFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get toursFiltersTitle;
+
+  /// No description provided for @toursFiltersClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get toursFiltersClear;
+
+  /// No description provided for @toursFiltersShowResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count, plural, =0{0 tours} =1{1 tour} other{{count} tours}}'**
+  String toursFiltersShowResults(num count);
+
+  /// No description provided for @toursFilterCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get toursFilterCategories;
+
+  /// No description provided for @toursFilterPriceRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Price Range'**
+  String get toursFilterPriceRange;
+
+  /// No description provided for @toursFilterBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get toursFilterBudget;
+
+  /// No description provided for @toursFilterPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get toursFilterPremium;
+
+  /// No description provided for @toursFilterDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get toursFilterDuration;
+
+  /// No description provided for @toursFilterShortDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Short (< 3h)'**
+  String get toursFilterShortDuration;
+
+  /// No description provided for @toursFilterHalfDayDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Half Day (3–6h)'**
+  String get toursFilterHalfDayDuration;
+
+  /// No description provided for @toursFilterFullDayDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Day (6h+)'**
+  String get toursFilterFullDayDuration;
+
+  /// No description provided for @toursFilterMultiDayDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-day'**
+  String get toursFilterMultiDayDuration;
+
+  /// No description provided for @toursFilterLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get toursFilterLanguage;
 
   /// No description provided for @toursLoadFailed.
   ///
@@ -3952,6 +4042,36 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get tourDetailsLanguage;
 
+  /// No description provided for @tourLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get tourLanguageEnglish;
+
+  /// No description provided for @tourLanguageRussian.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get tourLanguageRussian;
+
+  /// No description provided for @tourLanguageKazakh.
+  ///
+  /// In en, this message translates to:
+  /// **'Kazakh'**
+  String get tourLanguageKazakh;
+
+  /// No description provided for @tourLanguageFrench.
+  ///
+  /// In en, this message translates to:
+  /// **'French'**
+  String get tourLanguageFrench;
+
+  /// No description provided for @tourLanguageJapanese.
+  ///
+  /// In en, this message translates to:
+  /// **'Japanese'**
+  String get tourLanguageJapanese;
+
   /// No description provided for @tourDetailsExperience.
   ///
   /// In en, this message translates to:
@@ -3973,7 +4093,7 @@ abstract class AppLocalizations {
   /// No description provided for @tourDetailsGuideName.
   ///
   /// In en, this message translates to:
-  /// **'FlyFy Guide'**
+  /// **'Guide'**
   String get tourDetailsGuideName;
 
   /// No description provided for @tourDetailsGuideSubtitle.
@@ -4057,13 +4177,13 @@ abstract class AppLocalizations {
   /// No description provided for @createTourSubmit.
   ///
   /// In en, this message translates to:
-  /// **'Submit for Review'**
+  /// **'Publish'**
   String get createTourSubmit;
 
   /// No description provided for @createTourSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Tour submitted successfully'**
+  /// **'Tour published successfully'**
   String get createTourSuccess;
 
   /// No description provided for @createTourFailed.
@@ -4071,6 +4191,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to create tour'**
   String get createTourFailed;
+
+  /// No description provided for @createTourCoverSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Tour Cover'**
+  String get createTourCoverSection;
+
+  /// No description provided for @createTourCoverUploadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Tour Image'**
+  String get createTourCoverUploadTitle;
+
+  /// No description provided for @createTourCoverChangeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Tour Image'**
+  String get createTourCoverChangeAction;
+
+  /// No description provided for @createTourCoverUploadHint.
+  ///
+  /// In en, this message translates to:
+  /// **'JPG, PNG or WEBP. If you selected an attraction, its photo will be used unless you upload your own.'**
+  String get createTourCoverUploadHint;
 
   /// No description provided for @createTourSelectedLandmark.
   ///
@@ -4095,6 +4239,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select or enter a landmark'**
   String get createTourLandmarkValidation;
+
+  /// No description provided for @createTourCountryValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a country first'**
+  String get createTourCountryValidation;
+
+  /// No description provided for @createTourSelectCountryFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a country first'**
+  String get createTourSelectCountryFirst;
+
+  /// No description provided for @createTourManualLocationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can enter a custom location or choose an attraction from this country.'**
+  String get createTourManualLocationHint;
+
+  /// No description provided for @createTourLocationLockedByAttraction.
+  ///
+  /// In en, this message translates to:
+  /// **'This location comes from the attraction catalog. Change the attraction to edit it.'**
+  String get createTourLocationLockedByAttraction;
+
+  /// No description provided for @tourSelectLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Attraction'**
+  String get tourSelectLocationTitle;
+
+  /// No description provided for @tourSelectLocationCountrySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Country'**
+  String get tourSelectLocationCountrySection;
+
+  /// No description provided for @tourSelectLocationCountrySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search countries...'**
+  String get tourSelectLocationCountrySearchHint;
+
+  /// No description provided for @tourCountryKazakhstan.
+  ///
+  /// In en, this message translates to:
+  /// **'Kazakhstan'**
+  String get tourCountryKazakhstan;
+
+  /// No description provided for @tourCountryFrance.
+  ///
+  /// In en, this message translates to:
+  /// **'France'**
+  String get tourCountryFrance;
+
+  /// No description provided for @tourCountryJapan.
+  ///
+  /// In en, this message translates to:
+  /// **'Japan'**
+  String get tourCountryJapan;
+
+  /// No description provided for @tourCountryItaly.
+  ///
+  /// In en, this message translates to:
+  /// **'Italy'**
+  String get tourCountryItaly;
+
+  /// No description provided for @tourSelectLocationAttractionSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Attraction'**
+  String get tourSelectLocationAttractionSection;
+
+  /// No description provided for @tourSelectLocationAttractionSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search attractions...'**
+  String get tourSelectLocationAttractionSearchHint;
+
+  /// No description provided for @tourSelectLocationSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get tourSelectLocationSelected;
+
+  /// No description provided for @tourSelectLocationPageCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'PAGE {current} OF {total}'**
+  String tourSelectLocationPageCaption(Object current, Object total);
 
   /// No description provided for @createTourCategorization.
   ///
@@ -4204,6 +4438,18 @@ abstract class AppLocalizations {
   /// **'Add at least one tour language'**
   String get createTourLanguagesValidation;
 
+  /// No description provided for @createTourLanguagesPickerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select up to {count} languages'**
+  String createTourLanguagesPickerHint(Object count);
+
+  /// No description provided for @createTourLanguagesLimitValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'You can select up to {count} languages'**
+  String createTourLanguagesLimitValidation(Object count);
+
   /// No description provided for @createTourVisibilityTitle.
   ///
   /// In en, this message translates to:
@@ -4288,6 +4534,36 @@ abstract class AppLocalizations {
   /// **'Enter a currency code'**
   String get createTourCurrencyValidation;
 
+  /// No description provided for @createCurrencyKzt.
+  ///
+  /// In en, this message translates to:
+  /// **'tenge'**
+  String get createCurrencyKzt;
+
+  /// No description provided for @createCurrencyUsd.
+  ///
+  /// In en, this message translates to:
+  /// **'US dollar'**
+  String get createCurrencyUsd;
+
+  /// No description provided for @createCurrencyEur.
+  ///
+  /// In en, this message translates to:
+  /// **'euro'**
+  String get createCurrencyEur;
+
+  /// No description provided for @createCurrencyRub.
+  ///
+  /// In en, this message translates to:
+  /// **'ruble'**
+  String get createCurrencyRub;
+
+  /// No description provided for @createCurrencyGbp.
+  ///
+  /// In en, this message translates to:
+  /// **'pound sterling'**
+  String get createCurrencyGbp;
+
   /// No description provided for @createTourIncludedItemsLabel.
   ///
   /// In en, this message translates to:
@@ -4299,6 +4575,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Comma-separated: Private SUV, picnic, tickets'**
   String get createTourIncludedItemsHint;
+
+  /// No description provided for @createTourIncludedItemsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add exact items such as transport, meals, entrance tickets, or gear'**
+  String get createTourIncludedItemsEmpty;
+
+  /// No description provided for @createTourIncludedItemsEditorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What is included'**
+  String get createTourIncludedItemsEditorTitle;
+
+  /// No description provided for @createTourIncludedItemsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add item'**
+  String get createTourIncludedItemsAdd;
+
+  /// No description provided for @createTourIncludedItemsRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove item'**
+  String get createTourIncludedItemsRemove;
+
+  /// No description provided for @createTourIncludedItemsTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get createTourIncludedItemsTypeLabel;
+
+  /// No description provided for @createTourIncludedItemsValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What exactly is included'**
+  String get createTourIncludedItemsValueLabel;
+
+  /// No description provided for @createTourIncludedItemsValueHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Private SUV transfer'**
+  String get createTourIncludedItemsValueHint;
+
+  /// No description provided for @createTourIncludedItemsValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in every included item or remove empty rows'**
+  String get createTourIncludedItemsValidation;
+
+  /// No description provided for @createTourIncludedTypeTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get createTourIncludedTypeTransport;
+
+  /// No description provided for @createTourIncludedTypeFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Meals'**
+  String get createTourIncludedTypeFood;
+
+  /// No description provided for @createTourIncludedTypeTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'Tickets'**
+  String get createTourIncludedTypeTickets;
+
+  /// No description provided for @createTourIncludedTypeEquipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get createTourIncludedTypeEquipment;
+
+  /// No description provided for @createTourIncludedTypeGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide'**
+  String get createTourIncludedTypeGuide;
+
+  /// No description provided for @createTourIncludedTypePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get createTourIncludedTypePhoto;
+
+  /// No description provided for @createTourIncludedTypeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get createTourIncludedTypeOther;
 
   /// No description provided for @createTourStartOffsetLabel.
   ///

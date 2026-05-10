@@ -21,6 +21,10 @@ void main() {
             tour: _tour,
             onBookTap: () {},
             onMessageGuideTap: () {},
+            guideName: 'Aruzhan Guide',
+            guideAvatarFallbackText: 'AG',
+            showMessageGuide: true,
+            showBookingAction: true,
           ),
         ),
       ),
@@ -29,9 +33,41 @@ void main() {
     expect(find.text('Almaty Mountain Escape'), findsWidgets);
     expect(find.text('A private alpine route through Shymbulak and Medeu.'),
         findsOneWidget);
+    expect(find.text('English', findRichText: true), findsOneWidget);
+    expect(find.text('Aruzhan Guide'), findsOneWidget);
+    expect(find.text('Message Guide'), findsOneWidget);
     expect(find.text('Private SUV'), findsOneWidget);
     expect(find.text('Hotel departure'), findsOneWidget);
     expect(find.text('Book'), findsOneWidget);
+  });
+
+  testWidgets('hides guide message action for author view', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TourDetailsContent(
+            tour: _tour,
+            onBookTap: () {},
+            onMessageGuideTap: () {},
+            guideName: 'Aruzhan Guide',
+            guideAvatarFallbackText: 'AG',
+            showMessageGuide: false,
+            showBookingAction: false,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Aruzhan Guide'), findsOneWidget);
+    expect(find.text('Message Guide'), findsNothing);
+    expect(find.text('Book'), findsNothing);
   });
 }
 

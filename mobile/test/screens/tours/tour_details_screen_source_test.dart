@@ -29,7 +29,8 @@ void main() {
     expect(routerSource, contains("path: '/tours/:tourId'"));
     expect(routerSource, contains('TourDetailsScreen'));
     expect(routerSource, contains("location.startsWith('/tours/')"));
-    expect(routerSource, contains("location != '/tours/create'"));
+    expect(routerSource, contains("location.startsWith('/tours/create')"));
+    expect(routerSource, contains('return false;'));
   });
 
   test('tours list opens details with cached tour as route extra', () async {
@@ -39,5 +40,48 @@ void main() {
     expect(listSource, contains("_openTourDetails"));
     expect(listSource, contains("context.push('/tours/"));
     expect(listSource, contains('extra: tour'));
+  });
+
+  test('tour details displays localized language names instead of codes',
+      () async {
+    final source =
+        await File('lib/screens/tours/tour_details_screen.dart').readAsString();
+    final localizationSource =
+        await File('lib/features/tours/tour_localization.dart').readAsString();
+
+    expect(source, contains('_formatLanguageLabels'));
+    expect(localizationSource, contains('localizedTourLanguageLabel'));
+    expect(localizationSource, contains('tourLanguageEnglish'));
+    expect(localizationSource, contains('tourLanguageRussian'));
+    expect(localizationSource, contains('tourLanguageKazakh'));
+    expect(source, isNot(contains("join(', ').toUpperCase()")));
+  });
+
+  test('tour details resolves guide profile and hides guide chat for author',
+      () async {
+    final source =
+        await File('lib/screens/tours/tour_details_screen.dart').readAsString();
+
+    expect(source, contains('ProfileApi'));
+    expect(source, contains('UserProfileVm'));
+    expect(source, contains('_resolveGuideProfile'));
+    expect(source, contains('tour.guideUserId'));
+    expect(source, contains("context.push('/users/\$guideUserId/profile'"));
+    expect(source, contains('showMessageGuide: !isAuthor'));
+    expect(source, contains('showMessageGuide'));
+    expect(source, isNot(contains('l10n.tourDetailsGuideName,')));
+  });
+
+  test('tour details resolves cover file id and hides booking for author',
+      () async {
+    final source =
+        await File('lib/screens/tours/tour_details_screen.dart').readAsString();
+
+    expect(
+        source, contains("import '../../features/tours/tour_cover_url.dart';"));
+    expect(source, contains('resolveTourCoverUrl(tour)'));
+    expect(source, contains('showBookingAction: !isAuthor'));
+    expect(source, contains('if (showBookingAction)'));
+    expect(source, contains('class _TourCheckoutBar'));
   });
 }

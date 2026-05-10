@@ -5,10 +5,16 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
+import '../../features/profile/data/profile_api.dart';
+import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/tours/models/tour_vm.dart';
+import '../../features/tours/tour_cover_url.dart';
+import '../../features/tours/tour_localization.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/session_provider.dart';
 import '../../providers/tour_provider.dart';
 
 class TourDetailsScreen extends StatefulWidget {
@@ -26,6 +32,10 @@ class TourDetailsScreen extends StatefulWidget {
 }
 
 class _TourDetailsScreenState extends State<TourDetailsScreen> {
+  final ProfileApi _profileApi = ProfileApi();
+  Map<String, UserProfileVm> _resolvedProfiles = const {};
+  String? _resolvingGuideUserId;
+
   @override
   void initState() {
     super.initState();
@@ -64,9 +74,69 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
       );
   }
 
+  void _scheduleResolveGuideProfile(
+    String guideUserId,
+    UserProfileVm? currentProfile,
+    bool canFetch,
+  ) {
+    if (guideUserId.isEmpty) {
+      return;
+    }
+
+    final currentUserId = (currentProfile?.userId ?? '').trim();
+    if (currentUserId == guideUserId) {
+      return;
+    }
+
+    if (!canFetch ||
+        _resolvedProfiles.containsKey(guideUserId) ||
+        _resolvingGuideUserId == guideUserId) {
+      return;
+    }
+
+    _resolvingGuideUserId = guideUserId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resolveGuideProfile(guideUserId);
+    });
+  }
+
+  Future<void> _resolveGuideProfile(String guideUserId) async {
+    try {
+      final profile = await _profileApi.getUserById(guideUserId);
+      if (!mounted) return;
+      setState(() {
+        _resolvedProfiles = {
+          ..._resolvedProfiles,
+          guideUserId: profile,
+        };
+        _resolvingGuideUserId = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _resolvingGuideUserId = null);
+    }
+  }
+
+  void _openGuideProfile(String guideUserId, {required bool isAuthor}) {
+    final l10n = AppLocalizations.of(context)!;
+    if (isAuthor) {
+      context.push('/profile');
+      return;
+    }
+    if (guideUserId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.profileNotAvailable)),
+      );
+      return;
+    }
+    context.push('/users/$guideUserId/profile',
+        extra: _resolvedProfiles[guideUserId]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final session = context.watch<SessionProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1209),
@@ -96,10 +166,35 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
             return const _TourDetailsLoading();
           }
 
+          final guideUserId = (tour.guideUserId ?? '').trim();
+          final currentUserId = (session.profile?.userId ?? '').trim();
+          final isAuthor =
+              guideUserId.isNotEmpty && currentUserId == guideUserId;
+          _scheduleResolveGuideProfile(
+            guideUserId,
+            session.profile,
+            session.isAuthenticated,
+          );
+          final guideProfile =
+              isAuthor ? session.profile : _resolvedProfiles[guideUserId];
+          final guideName = _resolveTourGuideName(
+            guideUserId,
+            guideProfile,
+            l10n,
+          );
+          final guideAvatarUrl = _resolveTourGuideAvatarUrl(guideProfile);
+
           return TourDetailsContent(
             tour: tour,
+            guideName: guideName,
+            guideAvatarUrl: guideAvatarUrl,
+            guideAvatarFallbackText: _displayInitials(guideName),
+            showMessageGuide: !isAuthor,
+            showBookingAction: !isAuthor,
             onBackTap: _goBack,
             onNotificationsTap: () => context.push('/notifications'),
+            onGuideProfileTap: () =>
+                _openGuideProfile(guideUserId, isAuthor: isAuthor),
             onBookTap: () => _showSoon(l10n.tourDetailsBookingComingSoon),
             onMessageGuideTap: () =>
                 _showSoon(l10n.tourDetailsGuideChatComingSoon),
@@ -116,6 +211,12 @@ class TourDetailsContent extends StatelessWidget {
     required this.tour,
     required this.onBookTap,
     required this.onMessageGuideTap,
+    this.guideName,
+    this.guideAvatarUrl,
+    this.guideAvatarFallbackText = 'FG',
+    this.showMessageGuide = true,
+    this.showBookingAction = true,
+    this.onGuideProfileTap,
     this.onBackTap,
     this.onNotificationsTap,
   });
@@ -123,12 +224,22 @@ class TourDetailsContent extends StatelessWidget {
   final TourVm tour;
   final VoidCallback onBookTap;
   final VoidCallback onMessageGuideTap;
+  final String? guideName;
+  final String? guideAvatarUrl;
+  final String guideAvatarFallbackText;
+  final bool showMessageGuide;
+  final bool showBookingAction;
+  final VoidCallback? onGuideProfileTap;
   final VoidCallback? onBackTap;
   final VoidCallback? onNotificationsTap;
 
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final l10n = AppLocalizations.of(context)!;
+    final resolvedGuideName = guideName ?? l10n.tourDetailsGuideName;
+    final scrollBottomPadding =
+        (showBookingAction ? 116.0 : 24.0) + bottomPadding;
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -156,7 +267,7 @@ class TourDetailsContent extends StatelessWidget {
               children: [
                 Positioned.fill(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.only(bottom: 116 + bottomPadding),
+                    padding: EdgeInsets.only(bottom: scrollBottomPadding),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -172,6 +283,12 @@ class TourDetailsContent extends StatelessWidget {
                               const SizedBox(height: 44),
                               _TourGuideAndMapSection(
                                 tour: tour,
+                                guideName: resolvedGuideName,
+                                guideAvatarUrl: guideAvatarUrl,
+                                guideAvatarFallbackText:
+                                    guideAvatarFallbackText,
+                                showMessageGuide: showMessageGuide,
+                                onGuideProfileTap: onGuideProfileTap,
                                 onMessageGuideTap: onMessageGuideTap,
                               ),
                               const SizedBox(height: 44),
@@ -183,12 +300,13 @@ class TourDetailsContent extends StatelessWidget {
                     ),
                   ),
                 ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: _TourCheckoutBar(tour: tour, onBookTap: onBookTap),
-                ),
+                if (showBookingAction)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _TourCheckoutBar(tour: tour, onBookTap: onBookTap),
+                  ),
               ],
             ),
           ),
@@ -299,7 +417,7 @@ class _TourHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = tour.coverImageUrl?.trim() ?? '';
+    final imageUrl = resolveTourCoverUrl(tour)?.trim() ?? '';
     final label = _categoryLabel(context, tour.categorySlug);
 
     return SizedBox(
@@ -507,9 +625,7 @@ class _TourStatsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final language = tour.languageCodes.isEmpty
-        ? '-'
-        : tour.languageCodes.take(2).join(', ').toUpperCase();
+    final language = _formatLanguageLabels(l10n, tour.languageCodes);
     final cards = [
       _TourStatData(
         label: l10n.tourDetailsPrice,
@@ -636,8 +752,7 @@ class _TourExperienceSection extends StatelessWidget {
         : tour.summary.trim().isNotEmpty
             ? tour.summary.trim()
             : l10n.tourDetailsNoDescription;
-    final features =
-        tour.includedItems.isNotEmpty ? tour.includedItems : tour.tags;
+    final features = _resolveTourIncludedFeatures(tour);
 
     return _TourSection(
       title: l10n.tourDetailsExperience,
@@ -668,7 +783,7 @@ class _TourExperienceSection extends StatelessWidget {
             Column(
               children: [
                 for (var index = 0; index < features.length; index++) ...[
-                  _TourFeatureCard(label: features[index], index: index),
+                  _TourFeatureCard(feature: features[index]),
                   if (index != features.length - 1) const SizedBox(height: 14),
                 ],
               ],
@@ -681,20 +796,12 @@ class _TourExperienceSection extends StatelessWidget {
 }
 
 class _TourFeatureCard extends StatelessWidget {
-  const _TourFeatureCard({required this.label, required this.index});
+  const _TourFeatureCard({required this.feature});
 
-  final String label;
-  final int index;
+  final _TourIncludedFeature feature;
 
   @override
   Widget build(BuildContext context) {
-    final icons = [
-      Icons.hiking_rounded,
-      Icons.restaurant_rounded,
-      Icons.directions_car_filled_rounded,
-      Icons.photo_camera_rounded,
-    ];
-
     return Container(
       constraints: const BoxConstraints(minHeight: 82),
       padding: const EdgeInsets.all(18),
@@ -712,7 +819,7 @@ class _TourFeatureCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              icons[index % icons.length],
+              _includedFeatureIcon(feature),
               color: AppColors.accent,
               size: 19,
             ),
@@ -720,7 +827,7 @@ class _TourFeatureCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              label,
+              feature.label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -737,18 +844,196 @@ class _TourFeatureCard extends StatelessWidget {
   }
 }
 
+enum _TourIncludedFeatureType {
+  transport,
+  food,
+  tickets,
+  equipment,
+  guide,
+  photo,
+  other,
+}
+
+class _TourIncludedFeature {
+  const _TourIncludedFeature({
+    required this.type,
+    required this.label,
+  });
+
+  final _TourIncludedFeatureType type;
+  final String label;
+}
+
+List<_TourIncludedFeature> _resolveTourIncludedFeatures(TourVm tour) {
+  final source = tour.includedItems.isNotEmpty ? tour.includedItems : tour.tags;
+  return source
+      .map(_parseTourIncludedFeature)
+      .where((feature) => feature.label.isNotEmpty)
+      .toList(growable: false);
+}
+
+_TourIncludedFeature _parseTourIncludedFeature(String rawValue) {
+  final value = rawValue.trim();
+  if (value.isEmpty) {
+    return const _TourIncludedFeature(
+      type: _TourIncludedFeatureType.other,
+      label: '',
+    );
+  }
+
+  final separatorIndex = value.indexOf(':');
+  if (separatorIndex > 0) {
+    final prefix = value.substring(0, separatorIndex).trim().toLowerCase();
+    final label = value.substring(separatorIndex + 1).trim();
+    final type = _includedFeatureTypeFromPrefix(prefix);
+    if (type != null && label.isNotEmpty) {
+      return _TourIncludedFeature(type: type, label: label);
+    }
+  }
+
+  return _TourIncludedFeature(
+    type: _guessIncludedFeatureType(value),
+    label: value,
+  );
+}
+
+_TourIncludedFeatureType? _includedFeatureTypeFromPrefix(String prefix) {
+  return switch (prefix) {
+    'transport' => _TourIncludedFeatureType.transport,
+    'food' || 'meal' || 'meals' => _TourIncludedFeatureType.food,
+    'tickets' || 'ticket' => _TourIncludedFeatureType.tickets,
+    'equipment' || 'gear' => _TourIncludedFeatureType.equipment,
+    'guide' => _TourIncludedFeatureType.guide,
+    'photo' || 'photos' => _TourIncludedFeatureType.photo,
+    'other' => _TourIncludedFeatureType.other,
+    _ => null,
+  };
+}
+
+_TourIncludedFeatureType _guessIncludedFeatureType(String label) {
+  final normalized = label.toLowerCase();
+  if (normalized.contains('car') ||
+      normalized.contains('suv') ||
+      normalized.contains('transfer') ||
+      normalized.contains('transport') ||
+      normalized.contains('авто') ||
+      normalized.contains('трансфер') ||
+      normalized.contains('көлік')) {
+    return _TourIncludedFeatureType.transport;
+  }
+  if (normalized.contains('food') ||
+      normalized.contains('meal') ||
+      normalized.contains('lunch') ||
+      normalized.contains('picnic') ||
+      normalized.contains('еда') ||
+      normalized.contains('обед') ||
+      normalized.contains('тамақ')) {
+    return _TourIncludedFeatureType.food;
+  }
+  if (normalized.contains('ticket') ||
+      normalized.contains('entry') ||
+      normalized.contains('билет') ||
+      normalized.contains('кіру')) {
+    return _TourIncludedFeatureType.tickets;
+  }
+  if (normalized.contains('gear') ||
+      normalized.contains('equipment') ||
+      normalized.contains('снаряж') ||
+      normalized.contains('жабдық')) {
+    return _TourIncludedFeatureType.equipment;
+  }
+  if (normalized.contains('photo') ||
+      normalized.contains('фото') ||
+      normalized.contains('сурет')) {
+    return _TourIncludedFeatureType.photo;
+  }
+  if (normalized.contains('guide') ||
+      normalized.contains('гид') ||
+      normalized.contains('нұсқаушы')) {
+    return _TourIncludedFeatureType.guide;
+  }
+  return _TourIncludedFeatureType.other;
+}
+
+IconData _includedFeatureIcon(_TourIncludedFeature feature) {
+  return switch (feature.type) {
+    _TourIncludedFeatureType.transport => Icons.directions_car_filled_rounded,
+    _TourIncludedFeatureType.food => Icons.restaurant_rounded,
+    _TourIncludedFeatureType.tickets => Icons.confirmation_number_rounded,
+    _TourIncludedFeatureType.equipment => Icons.backpack_rounded,
+    _TourIncludedFeatureType.guide => Icons.person_pin_circle_rounded,
+    _TourIncludedFeatureType.photo => Icons.photo_camera_rounded,
+    _TourIncludedFeatureType.other => Icons.check_circle_rounded,
+  };
+}
+
 class _TourGuideAndMapSection extends StatelessWidget {
   const _TourGuideAndMapSection({
     required this.tour,
+    required this.guideName,
+    required this.guideAvatarFallbackText,
+    required this.showMessageGuide,
     required this.onMessageGuideTap,
+    this.guideAvatarUrl,
+    this.onGuideProfileTap,
   });
 
   final TourVm tour;
+  final String guideName;
+  final String? guideAvatarUrl;
+  final String guideAvatarFallbackText;
+  final bool showMessageGuide;
   final VoidCallback onMessageGuideTap;
+  final VoidCallback? onGuideProfileTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final guideHeader = Row(
+      children: [
+        _GuideAvatar(
+          imageUrl: guideAvatarUrl,
+          fallbackText: guideAvatarFallbackText,
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                guideName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  height: 1.05,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l10n.tourDetailsGuideSubtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.accent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (onGuideProfileTap != null) ...[
+          const SizedBox(width: 8),
+          const Icon(
+            Icons.chevron_right_rounded,
+            color: Color(0xFFCAB9A5),
+          ),
+        ],
+      ],
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -773,40 +1058,16 @@ class _TourGuideAndMapSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              Row(
-                children: [
-                  const _GuideAvatar(),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.tourDetailsGuideName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            height: 1.05,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.tourDetailsGuideSubtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.accent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onGuideProfileTap,
+                  borderRadius: BorderRadius.circular(18),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: guideHeader,
                   ),
-                ],
+                ),
               ),
               const SizedBox(height: 20),
               Text(
@@ -818,27 +1079,30 @@ class _TourGuideAndMapSection extends StatelessWidget {
                   fontStyle: FontStyle.italic,
                 ),
               ),
-              const SizedBox(height: 20),
-              OutlinedButton(
-                onPressed: onMessageGuideTap,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  side: BorderSide(
-                      color: AppColors.accent.withValues(alpha: 0.55)),
-                  minimumSize: const Size.fromHeight(42),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
+              if (showMessageGuide) ...[
+                const SizedBox(height: 20),
+                OutlinedButton(
+                  onPressed: onMessageGuideTap,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: BorderSide(
+                      color: AppColors.accent.withValues(alpha: 0.55),
+                    ),
+                    minimumSize: const Size.fromHeight(42),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: Text(
+                    l10n.tourDetailsMessageGuide,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
                   ),
                 ),
-                child: Text(
-                  l10n.tourDetailsMessageGuide.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
+              ],
             ],
           ),
         ),
@@ -850,7 +1114,13 @@ class _TourGuideAndMapSection extends StatelessWidget {
 }
 
 class _GuideAvatar extends StatelessWidget {
-  const _GuideAvatar();
+  const _GuideAvatar({
+    required this.fallbackText,
+    this.imageUrl,
+  });
+
+  final String? imageUrl;
+  final String fallbackText;
 
   @override
   Widget build(BuildContext context) {
@@ -867,7 +1137,33 @@ class _GuideAvatar extends StatelessWidget {
           colors: [Color(0xFF0E2423), Color(0xFF52311E), Color(0xFF100C08)],
         ),
       ),
-      child: const Icon(Icons.person_rounded, color: Color(0xFFCAB9A5)),
+      child: ClipOval(
+        child: (imageUrl ?? '').trim().isEmpty
+            ? Center(
+                child: Text(
+                  fallbackText,
+                  style: const TextStyle(
+                    color: Color(0xFFFFE3B8),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              )
+            : Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Center(
+                  child: Text(
+                    fallbackText,
+                    style: const TextStyle(
+                      color: Color(0xFFFFE3B8),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+      ),
     );
   }
 }
@@ -1297,18 +1593,55 @@ String _formatPrice(BuildContext context, TourVm tour) {
   }
 }
 
+String _formatLanguageLabels(
+  AppLocalizations l10n,
+  List<String> languageCodes,
+) {
+  return formatLocalizedTourLanguages(l10n, languageCodes);
+}
+
+String _resolveTourGuideName(
+  String guideUserId,
+  UserProfileVm? profile,
+  AppLocalizations l10n,
+) {
+  if (profile != null && profile.userId == guideUserId) {
+    return profile.preferredName;
+  }
+  return l10n.tourDetailsGuideName;
+}
+
+String? _resolveTourGuideAvatarUrl(UserProfileVm? profile) {
+  final avatarFileId = (profile?.avatarFileId ?? '').trim();
+  return resolvePublicFileContentUrl(avatarFileId);
+}
+
+String _displayInitials(String value, {String fallback = 'FG'}) {
+  final parts = value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList(growable: false);
+  if (parts.isEmpty) {
+    return fallback;
+  }
+  if (parts.length >= 2) {
+    return (parts.first[0] + parts.last[0]).toUpperCase();
+  }
+  final normalized = parts.first.replaceAll(
+    RegExp(r'[^A-Za-zА-Яа-яӘәҒғҚқҢңӨөҰұҮүҺһІі0-9]'),
+    '',
+  );
+  if (normalized.length >= 2) {
+    return normalized.substring(0, 2).toUpperCase();
+  }
+  if (normalized.isNotEmpty) {
+    return normalized[0].toUpperCase();
+  }
+  return fallback;
+}
+
 String _categoryLabel(BuildContext context, String? categorySlug) {
   final l10n = AppLocalizations.of(context)!;
-  switch (categorySlug?.toLowerCase()) {
-    case 'adventure':
-      return l10n.createTourCategoryAdventure;
-    case 'cultural':
-      return l10n.createTourCategoryCultural;
-    case 'culinary':
-      return l10n.createTourCategoryCulinary;
-    case 'wellness':
-      return l10n.createTourCategoryWellness;
-    default:
-      return l10n.serviceTours;
-  }
+  return localizedTourCategoryLabel(l10n, categorySlug);
 }

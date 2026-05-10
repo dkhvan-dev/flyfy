@@ -162,6 +162,7 @@ class TourProvider extends ChangeNotifier {
       final created = await _tourApi.createTour(request);
       final published = await _tourApi.publishTour(created.id);
       _lastCreatedTour = published;
+      _upsertPublishedTour(published);
       _actionState = TourActionState.success;
       return published;
     } on DioException catch (e) {
@@ -182,5 +183,28 @@ class TourProvider extends ChangeNotifier {
       if (tour.id == tourId) return tour;
     }
     return null;
+  }
+
+  void _upsertPublishedTour(TourVm tour) {
+    final tourId = tour.id.trim();
+    if (tourId.isEmpty) return;
+
+    final status = tour.status.trim().toUpperCase();
+    final visibility = tour.visibility.trim().toUpperCase();
+    if (status != 'PUBLISHED' || visibility != 'PUBLIC') {
+      return;
+    }
+
+    final nextTours = [..._tours];
+    final existingIndex = nextTours.indexWhere((item) => item.id == tourId);
+    if (existingIndex >= 0) {
+      nextTours
+        ..removeAt(existingIndex)
+        ..insert(0, tour);
+    } else {
+      nextTours.insert(0, tour);
+    }
+    _tours = List.unmodifiable(nextTours);
+    _listState = TourListState.success;
   }
 }

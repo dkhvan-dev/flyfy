@@ -25,6 +25,7 @@ import '../../screens/activities/activity_payment_screen.dart';
 import '../../screens/activities/create_activity_screen.dart';
 import '../../screens/activities/my_activities_screen.dart';
 import '../../screens/tours/create_tour_screen.dart';
+import '../../screens/tours/tour_select_location_screen.dart';
 import '../../screens/tours/tour_details_screen.dart';
 import '../../screens/tours/tours_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
@@ -261,6 +262,27 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/tours/create/location',
+          pageBuilder: (context, state) {
+            final args = state.extra is TourLocationPickerArgs
+                ? state.extra! as TourLocationPickerArgs
+                : null;
+            final initialSelection = args?.initialSelection ??
+                (state.extra is TourLocationSelection
+                    ? state.extra! as TourLocationSelection
+                    : null);
+            final countryCode =
+                args?.countryCode ?? initialSelection?.countryCode ?? 'KZ';
+            return _buildActivityEditorPage(
+              state: state,
+              child: TourSelectLocationScreen(
+                countryCode: countryCode,
+                initialSelection: initialSelection,
+              ),
+            );
+          },
+        ),
+        GoRoute(
           path: '/tours/:tourId',
           builder: (context, state) {
             final tourId = state.pathParameters['tourId'] ?? '';
@@ -406,7 +428,11 @@ class AppRouter {
       return true;
     }
 
-    if (location.startsWith('/tours/') && location != '/tours/create') {
+    if (location.startsWith('/tours/create')) {
+      return false;
+    }
+
+    if (location.startsWith('/tours/')) {
       return true;
     }
 

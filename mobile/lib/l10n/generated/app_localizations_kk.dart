@@ -2031,6 +2031,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get change => 'Өзгерту';
 
   @override
+  String get select => 'Таңдау';
+
+  @override
   String get confirm => 'Растау';
 
   @override
@@ -2055,6 +2058,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get toursSearchHint => 'Турлар мен әсерлерді іздеу';
 
   @override
+  String get toursSortLabel => 'Сұрыптау';
+
+  @override
   String get toursSortPopular => 'Танымал';
 
   @override
@@ -2062,6 +2068,54 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get toursSortAffordable => 'Арзанырақ';
+
+  @override
+  String get toursFiltersTitle => 'Сүзгілер';
+
+  @override
+  String get toursFiltersClear => 'Тазалау';
+
+  @override
+  String toursFiltersShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count турды',
+      one: '1 турды',
+      zero: '0 турды',
+    );
+    return '$_temp0 көрсету';
+  }
+
+  @override
+  String get toursFilterCategories => 'Санаттар';
+
+  @override
+  String get toursFilterPriceRange => 'Баға аралығы';
+
+  @override
+  String get toursFilterBudget => 'Үнемді';
+
+  @override
+  String get toursFilterPremium => 'Премиум';
+
+  @override
+  String get toursFilterDuration => 'Ұзақтығы';
+
+  @override
+  String get toursFilterShortDuration => 'Қысқа (< 3 сағ)';
+
+  @override
+  String get toursFilterHalfDayDuration => 'Жарты күн (3–6 сағ)';
+
+  @override
+  String get toursFilterFullDayDuration => 'Толық күн (6 сағ+)';
+
+  @override
+  String get toursFilterMultiDayDuration => 'Бірнеше күн';
+
+  @override
+  String get toursFilterLanguage => 'Тіл';
 
   @override
   String get toursLoadFailed => 'Турларды жүктеу мүмкін болмады';
@@ -2116,6 +2170,21 @@ class AppLocalizationsKk extends AppLocalizations {
   String get tourDetailsLanguage => 'Тіл';
 
   @override
+  String get tourLanguageEnglish => 'Ағылшын';
+
+  @override
+  String get tourLanguageRussian => 'Орыс';
+
+  @override
+  String get tourLanguageKazakh => 'Қазақ';
+
+  @override
+  String get tourLanguageFrench => 'Француз';
+
+  @override
+  String get tourLanguageJapanese => 'Жапон';
+
+  @override
   String get tourDetailsExperience => 'Әсер';
 
   @override
@@ -2125,7 +2194,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get tourDetailsLeadGuide => 'Сіздің гидіңіз';
 
   @override
-  String get tourDetailsGuideName => 'FlyFy гиді';
+  String get tourDetailsGuideName => 'Гид';
 
   @override
   String get tourDetailsGuideSubtitle => 'Тексерілген жергілікті сарапшы';
@@ -2171,13 +2240,26 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createTourTitle => 'Тур құру';
 
   @override
-  String get createTourSubmit => 'Тексеруге жіберу';
+  String get createTourSubmit => 'Жариялау';
 
   @override
-  String get createTourSuccess => 'Тур сәтті жіберілді';
+  String get createTourSuccess => 'Тур жарияланды';
 
   @override
   String get createTourFailed => 'Турды жасау мүмкін болмады';
+
+  @override
+  String get createTourCoverSection => 'Тур қаптамасы';
+
+  @override
+  String get createTourCoverUploadTitle => 'Тур суретін жүктеу';
+
+  @override
+  String get createTourCoverChangeAction => 'Тур суретін өзгерту';
+
+  @override
+  String get createTourCoverUploadHint =>
+      'JPG, PNG немесе WEBP. Көрікті орын таңдалса, өз суретіңізді жүктемейінше оның суреті қолданылады.';
 
   @override
   String get createTourSelectedLandmark => 'Таңдалған орын';
@@ -2190,6 +2272,56 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createTourLandmarkValidation => 'Орынды таңдаңыз немесе енгізіңіз';
+
+  @override
+  String get createTourCountryValidation => 'Алдымен елді таңдаңыз';
+
+  @override
+  String get createTourSelectCountryFirst => 'Алдымен елді таңдаңыз';
+
+  @override
+  String get createTourManualLocationHint =>
+      'Өз локацияңызды енгізуге немесе осы елдегі көрікті жерді таңдауға болады.';
+
+  @override
+  String get createTourLocationLockedByAttraction =>
+      'Локация көрікті жерлер анықтамалығынан алынды. Өзгерту үшін басқа көрікті жерді таңдаңыз.';
+
+  @override
+  String get tourSelectLocationTitle => 'Орын таңдау';
+
+  @override
+  String get tourSelectLocationCountrySection => 'Елді таңдаңыз';
+
+  @override
+  String get tourSelectLocationCountrySearchHint => 'Елдерді іздеу...';
+
+  @override
+  String get tourCountryKazakhstan => 'Қазақстан';
+
+  @override
+  String get tourCountryFrance => 'Франция';
+
+  @override
+  String get tourCountryJapan => 'Жапония';
+
+  @override
+  String get tourCountryItaly => 'Италия';
+
+  @override
+  String get tourSelectLocationAttractionSection => 'Көрікті жерді таңдаңыз';
+
+  @override
+  String get tourSelectLocationAttractionSearchHint =>
+      'Көрікті жерлерді іздеу...';
+
+  @override
+  String get tourSelectLocationSelected => 'Таңдалды';
+
+  @override
+  String tourSelectLocationPageCaption(Object current, Object total) {
+    return '$current / $total БЕТ';
+  }
 
   @override
   String get createTourCategorization => 'Саяхат санаты';
@@ -2250,6 +2382,16 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createTourLanguagesValidation => 'Кемінде бір тур тілін қосыңыз';
 
   @override
+  String createTourLanguagesPickerHint(Object count) {
+    return '$count тілге дейін таңдауға болады';
+  }
+
+  @override
+  String createTourLanguagesLimitValidation(Object count) {
+    return '$count тілге дейін таңдауға болады';
+  }
+
+  @override
   String get createTourVisibilityTitle => 'Тур көрінуі';
 
   @override
@@ -2298,11 +2440,74 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createTourCurrencyValidation => 'Валюта кодын енгізіңіз';
 
   @override
+  String get createCurrencyKzt => 'теңге';
+
+  @override
+  String get createCurrencyUsd => 'АҚШ доллары';
+
+  @override
+  String get createCurrencyEur => 'еуро';
+
+  @override
+  String get createCurrencyRub => 'рубль';
+
+  @override
+  String get createCurrencyGbp => 'фунт стерлинг';
+
+  @override
   String get createTourIncludedItemsLabel => 'Не кіреді';
 
   @override
   String get createTourIncludedItemsHint =>
       'Үтір арқылы: SUV, пикник, билеттер';
+
+  @override
+  String get createTourIncludedItemsEmpty =>
+      'Көлік, тамақ, кіру билеттері немесе жабдық сияқты нақты пункттерді қосыңыз';
+
+  @override
+  String get createTourIncludedItemsEditorTitle => 'Не кіреді';
+
+  @override
+  String get createTourIncludedItemsAdd => 'Пункт қосу';
+
+  @override
+  String get createTourIncludedItemsRemove => 'Пунктті жою';
+
+  @override
+  String get createTourIncludedItemsTypeLabel => 'Түрі';
+
+  @override
+  String get createTourIncludedItemsValueLabel => 'Нақты не кіреді';
+
+  @override
+  String get createTourIncludedItemsValueHint =>
+      'Мысалы, жол талғамайтын көлікпен трансфер';
+
+  @override
+  String get createTourIncludedItemsValidation =>
+      'Әр пунктті толтырыңыз немесе бос жолдарды өшіріңіз';
+
+  @override
+  String get createTourIncludedTypeTransport => 'Көлік';
+
+  @override
+  String get createTourIncludedTypeFood => 'Тамақ';
+
+  @override
+  String get createTourIncludedTypeTickets => 'Билеттер';
+
+  @override
+  String get createTourIncludedTypeEquipment => 'Жабдық';
+
+  @override
+  String get createTourIncludedTypeGuide => 'Гид';
+
+  @override
+  String get createTourIncludedTypePhoto => 'Фото';
+
+  @override
+  String get createTourIncludedTypeOther => 'Басқа';
 
   @override
   String get createTourStartOffsetLabel => 'Басталуы, мин';

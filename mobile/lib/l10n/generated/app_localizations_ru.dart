@@ -2022,6 +2022,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get change => 'Изменить';
 
   @override
+  String get select => 'Выбрать';
+
+  @override
   String get confirm => 'Подтвердить';
 
   @override
@@ -2046,6 +2049,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get toursSearchHint => 'Поиск туров и впечатлений';
 
   @override
+  String get toursSortLabel => 'Сортировка';
+
+  @override
   String get toursSortPopular => 'Популярные';
 
   @override
@@ -2053,6 +2059,56 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get toursSortAffordable => 'Дешевле';
+
+  @override
+  String get toursFiltersTitle => 'Фильтры';
+
+  @override
+  String get toursFiltersClear => 'Очистить';
+
+  @override
+  String toursFiltersShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count тура',
+      many: '$count туров',
+      few: '$count тура',
+      one: '$count тур',
+      zero: '0 туров',
+    );
+    return 'Показать $_temp0';
+  }
+
+  @override
+  String get toursFilterCategories => 'Категории';
+
+  @override
+  String get toursFilterPriceRange => 'Диапазон цены';
+
+  @override
+  String get toursFilterBudget => 'Бюджетно';
+
+  @override
+  String get toursFilterPremium => 'Премиум';
+
+  @override
+  String get toursFilterDuration => 'Длительность';
+
+  @override
+  String get toursFilterShortDuration => 'Короткий (< 3 ч)';
+
+  @override
+  String get toursFilterHalfDayDuration => 'Полдня (3–6 ч)';
+
+  @override
+  String get toursFilterFullDayDuration => 'День (6 ч+)';
+
+  @override
+  String get toursFilterMultiDayDuration => 'Несколько дней';
+
+  @override
+  String get toursFilterLanguage => 'Язык';
 
   @override
   String get toursLoadFailed => 'Не удалось загрузить туры';
@@ -2106,6 +2162,21 @@ class AppLocalizationsRu extends AppLocalizations {
   String get tourDetailsLanguage => 'Язык';
 
   @override
+  String get tourLanguageEnglish => 'Английский';
+
+  @override
+  String get tourLanguageRussian => 'Русский';
+
+  @override
+  String get tourLanguageKazakh => 'Казахский';
+
+  @override
+  String get tourLanguageFrench => 'Французский';
+
+  @override
+  String get tourLanguageJapanese => 'Японский';
+
+  @override
   String get tourDetailsExperience => 'Впечатление';
 
   @override
@@ -2115,7 +2186,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get tourDetailsLeadGuide => 'Ваш гид';
 
   @override
-  String get tourDetailsGuideName => 'Гид FlyFy';
+  String get tourDetailsGuideName => 'Гид';
 
   @override
   String get tourDetailsGuideSubtitle => 'Проверенный локальный эксперт';
@@ -2161,13 +2232,26 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createTourTitle => 'Создать тур';
 
   @override
-  String get createTourSubmit => 'Отправить на проверку';
+  String get createTourSubmit => 'Опубликовать';
 
   @override
-  String get createTourSuccess => 'Тур успешно отправлен';
+  String get createTourSuccess => 'Тур опубликован';
 
   @override
   String get createTourFailed => 'Не удалось создать тур';
+
+  @override
+  String get createTourCoverSection => 'Обложка тура';
+
+  @override
+  String get createTourCoverUploadTitle => 'Загрузить изображение тура';
+
+  @override
+  String get createTourCoverChangeAction => 'Изменить изображение тура';
+
+  @override
+  String get createTourCoverUploadHint =>
+      'JPG, PNG или WEBP. Если выбрана достопримечательность, ее фото подставится автоматически, пока вы не загрузите свое.';
 
   @override
   String get createTourSelectedLandmark => 'Выбранная локация';
@@ -2180,6 +2264,57 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createTourLandmarkValidation => 'Выберите или укажите локацию';
+
+  @override
+  String get createTourCountryValidation => 'Сначала выберите страну';
+
+  @override
+  String get createTourSelectCountryFirst => 'Сначала выберите страну';
+
+  @override
+  String get createTourManualLocationHint =>
+      'Можно указать свою локацию или выбрать достопримечательность этой страны.';
+
+  @override
+  String get createTourLocationLockedByAttraction =>
+      'Локация взята из справочника достопримечательностей. Чтобы изменить ее, выберите другую достопримечательность.';
+
+  @override
+  String get tourSelectLocationTitle => 'Выбор локации';
+
+  @override
+  String get tourSelectLocationCountrySection => 'Выберите страну';
+
+  @override
+  String get tourSelectLocationCountrySearchHint => 'Поиск стран...';
+
+  @override
+  String get tourCountryKazakhstan => 'Казахстан';
+
+  @override
+  String get tourCountryFrance => 'Франция';
+
+  @override
+  String get tourCountryJapan => 'Япония';
+
+  @override
+  String get tourCountryItaly => 'Италия';
+
+  @override
+  String get tourSelectLocationAttractionSection =>
+      'Выберите достопримечательность';
+
+  @override
+  String get tourSelectLocationAttractionSearchHint =>
+      'Поиск достопримечательностей...';
+
+  @override
+  String get tourSelectLocationSelected => 'Выбрано';
+
+  @override
+  String tourSelectLocationPageCaption(Object current, Object total) {
+    return 'СТРАНИЦА $current ИЗ $total';
+  }
 
   @override
   String get createTourCategorization => 'Категория путешествия';
@@ -2240,6 +2375,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createTourLanguagesValidation => 'Добавьте хотя бы один язык тура';
 
   @override
+  String createTourLanguagesPickerHint(Object count) {
+    return 'Можно выбрать до $count языков';
+  }
+
+  @override
+  String createTourLanguagesLimitValidation(Object count) {
+    return 'Можно выбрать до $count языков';
+  }
+
+  @override
   String get createTourVisibilityTitle => 'Видимость тура';
 
   @override
@@ -2288,11 +2433,74 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createTourCurrencyValidation => 'Укажите код валюты';
 
   @override
+  String get createCurrencyKzt => 'тенге';
+
+  @override
+  String get createCurrencyUsd => 'доллар США';
+
+  @override
+  String get createCurrencyEur => 'евро';
+
+  @override
+  String get createCurrencyRub => 'рубль';
+
+  @override
+  String get createCurrencyGbp => 'фунт стерлингов';
+
+  @override
   String get createTourIncludedItemsLabel => 'Что включено';
 
   @override
   String get createTourIncludedItemsHint =>
       'Через запятую: внедорожник, пикник, билеты';
+
+  @override
+  String get createTourIncludedItemsEmpty =>
+      'Добавьте точные пункты: транспорт, питание, входные билеты или снаряжение';
+
+  @override
+  String get createTourIncludedItemsEditorTitle => 'Что включено';
+
+  @override
+  String get createTourIncludedItemsAdd => 'Добавить пункт';
+
+  @override
+  String get createTourIncludedItemsRemove => 'Удалить пункт';
+
+  @override
+  String get createTourIncludedItemsTypeLabel => 'Тип';
+
+  @override
+  String get createTourIncludedItemsValueLabel => 'Что именно включено';
+
+  @override
+  String get createTourIncludedItemsValueHint =>
+      'Например, трансфер на внедорожнике';
+
+  @override
+  String get createTourIncludedItemsValidation =>
+      'Заполните каждый пункт или удалите пустые строки';
+
+  @override
+  String get createTourIncludedTypeTransport => 'Транспорт';
+
+  @override
+  String get createTourIncludedTypeFood => 'Питание';
+
+  @override
+  String get createTourIncludedTypeTickets => 'Билеты';
+
+  @override
+  String get createTourIncludedTypeEquipment => 'Снаряжение';
+
+  @override
+  String get createTourIncludedTypeGuide => 'Гид';
+
+  @override
+  String get createTourIncludedTypePhoto => 'Фото';
+
+  @override
+  String get createTourIncludedTypeOther => 'Другое';
 
   @override
   String get createTourStartOffsetLabel => 'Старт через, мин';

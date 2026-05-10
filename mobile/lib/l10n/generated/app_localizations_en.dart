@@ -2021,6 +2021,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get change => 'Change';
 
   @override
+  String get select => 'Select';
+
+  @override
   String get confirm => 'Confirm';
 
   @override
@@ -2045,6 +2048,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toursSearchHint => 'Search tours and experiences';
 
   @override
+  String get toursSortLabel => 'Sort';
+
+  @override
   String get toursSortPopular => 'Popular';
 
   @override
@@ -2052,6 +2058,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toursSortAffordable => 'Affordable';
+
+  @override
+  String get toursFiltersTitle => 'Filters';
+
+  @override
+  String get toursFiltersClear => 'Clear';
+
+  @override
+  String toursFiltersShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tours',
+      one: '1 tour',
+      zero: '0 tours',
+    );
+    return 'Show $_temp0';
+  }
+
+  @override
+  String get toursFilterCategories => 'Categories';
+
+  @override
+  String get toursFilterPriceRange => 'Price Range';
+
+  @override
+  String get toursFilterBudget => 'Budget';
+
+  @override
+  String get toursFilterPremium => 'Premium';
+
+  @override
+  String get toursFilterDuration => 'Duration';
+
+  @override
+  String get toursFilterShortDuration => 'Short (< 3h)';
+
+  @override
+  String get toursFilterHalfDayDuration => 'Half Day (3–6h)';
+
+  @override
+  String get toursFilterFullDayDuration => 'Full Day (6h+)';
+
+  @override
+  String get toursFilterMultiDayDuration => 'Multi-day';
+
+  @override
+  String get toursFilterLanguage => 'Language';
 
   @override
   String get toursLoadFailed => 'Failed to load tours';
@@ -2105,6 +2159,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tourDetailsLanguage => 'Language';
 
   @override
+  String get tourLanguageEnglish => 'English';
+
+  @override
+  String get tourLanguageRussian => 'Russian';
+
+  @override
+  String get tourLanguageKazakh => 'Kazakh';
+
+  @override
+  String get tourLanguageFrench => 'French';
+
+  @override
+  String get tourLanguageJapanese => 'Japanese';
+
+  @override
   String get tourDetailsExperience => 'The Experience';
 
   @override
@@ -2114,7 +2183,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tourDetailsLeadGuide => 'Your Lead Guide';
 
   @override
-  String get tourDetailsGuideName => 'FlyFy Guide';
+  String get tourDetailsGuideName => 'Guide';
 
   @override
   String get tourDetailsGuideSubtitle => 'Verified local expert';
@@ -2160,13 +2229,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createTourTitle => 'Create Tour';
 
   @override
-  String get createTourSubmit => 'Submit for Review';
+  String get createTourSubmit => 'Publish';
 
   @override
-  String get createTourSuccess => 'Tour submitted successfully';
+  String get createTourSuccess => 'Tour published successfully';
 
   @override
   String get createTourFailed => 'Failed to create tour';
+
+  @override
+  String get createTourCoverSection => 'Tour Cover';
+
+  @override
+  String get createTourCoverUploadTitle => 'Upload Tour Image';
+
+  @override
+  String get createTourCoverChangeAction => 'Change Tour Image';
+
+  @override
+  String get createTourCoverUploadHint =>
+      'JPG, PNG or WEBP. If you selected an attraction, its photo will be used unless you upload your own.';
 
   @override
   String get createTourSelectedLandmark => 'Selected Landmark';
@@ -2179,6 +2261,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createTourLandmarkValidation => 'Select or enter a landmark';
+
+  @override
+  String get createTourCountryValidation => 'Select a country first';
+
+  @override
+  String get createTourSelectCountryFirst => 'Select a country first';
+
+  @override
+  String get createTourManualLocationHint =>
+      'You can enter a custom location or choose an attraction from this country.';
+
+  @override
+  String get createTourLocationLockedByAttraction =>
+      'This location comes from the attraction catalog. Change the attraction to edit it.';
+
+  @override
+  String get tourSelectLocationTitle => 'Select Attraction';
+
+  @override
+  String get tourSelectLocationCountrySection => 'Select Country';
+
+  @override
+  String get tourSelectLocationCountrySearchHint => 'Search countries...';
+
+  @override
+  String get tourCountryKazakhstan => 'Kazakhstan';
+
+  @override
+  String get tourCountryFrance => 'France';
+
+  @override
+  String get tourCountryJapan => 'Japan';
+
+  @override
+  String get tourCountryItaly => 'Italy';
+
+  @override
+  String get tourSelectLocationAttractionSection => 'Select Attraction';
+
+  @override
+  String get tourSelectLocationAttractionSearchHint => 'Search attractions...';
+
+  @override
+  String get tourSelectLocationSelected => 'Selected';
+
+  @override
+  String tourSelectLocationPageCaption(Object current, Object total) {
+    return 'PAGE $current OF $total';
+  }
 
   @override
   String get createTourCategorization => 'Travel Categorization';
@@ -2239,6 +2370,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createTourLanguagesValidation => 'Add at least one tour language';
 
   @override
+  String createTourLanguagesPickerHint(Object count) {
+    return 'Select up to $count languages';
+  }
+
+  @override
+  String createTourLanguagesLimitValidation(Object count) {
+    return 'You can select up to $count languages';
+  }
+
+  @override
   String get createTourVisibilityTitle => 'Tour Visibility';
 
   @override
@@ -2287,11 +2428,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createTourCurrencyValidation => 'Enter a currency code';
 
   @override
+  String get createCurrencyKzt => 'tenge';
+
+  @override
+  String get createCurrencyUsd => 'US dollar';
+
+  @override
+  String get createCurrencyEur => 'euro';
+
+  @override
+  String get createCurrencyRub => 'ruble';
+
+  @override
+  String get createCurrencyGbp => 'pound sterling';
+
+  @override
   String get createTourIncludedItemsLabel => 'Included Items';
 
   @override
   String get createTourIncludedItemsHint =>
       'Comma-separated: Private SUV, picnic, tickets';
+
+  @override
+  String get createTourIncludedItemsEmpty =>
+      'Add exact items such as transport, meals, entrance tickets, or gear';
+
+  @override
+  String get createTourIncludedItemsEditorTitle => 'What is included';
+
+  @override
+  String get createTourIncludedItemsAdd => 'Add item';
+
+  @override
+  String get createTourIncludedItemsRemove => 'Remove item';
+
+  @override
+  String get createTourIncludedItemsTypeLabel => 'Type';
+
+  @override
+  String get createTourIncludedItemsValueLabel => 'What exactly is included';
+
+  @override
+  String get createTourIncludedItemsValueHint => 'e.g. Private SUV transfer';
+
+  @override
+  String get createTourIncludedItemsValidation =>
+      'Fill in every included item or remove empty rows';
+
+  @override
+  String get createTourIncludedTypeTransport => 'Transport';
+
+  @override
+  String get createTourIncludedTypeFood => 'Meals';
+
+  @override
+  String get createTourIncludedTypeTickets => 'Tickets';
+
+  @override
+  String get createTourIncludedTypeEquipment => 'Equipment';
+
+  @override
+  String get createTourIncludedTypeGuide => 'Guide';
+
+  @override
+  String get createTourIncludedTypePhoto => 'Photo';
+
+  @override
+  String get createTourIncludedTypeOther => 'Other';
 
   @override
   String get createTourStartOffsetLabel => 'Start after, min';

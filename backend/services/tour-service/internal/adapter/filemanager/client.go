@@ -64,7 +64,8 @@ func (c *Client) ValidateTourCoverFile(ctx context.Context, fileID uuid.UUID) er
 		return app.ErrTourCoverFileNotReady
 	}
 	if !strings.EqualFold(resp.GetPurpose(), "TOUR_MEDIA") &&
-		!strings.EqualFold(resp.GetPurpose(), "ACTIVITY_MEDIA") {
+		!strings.EqualFold(resp.GetPurpose(), "ACTIVITY_MEDIA") &&
+		!strings.EqualFold(resp.GetPurpose(), "ATTRACTION_MEDIA") {
 		return app.ErrTourCoverFileNotAllowed
 	}
 	return nil

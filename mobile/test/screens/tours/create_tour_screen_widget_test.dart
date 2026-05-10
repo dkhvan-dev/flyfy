@@ -26,12 +26,11 @@ void main() {
 
     expect(find.text('Create Tour'), findsOneWidget);
     expect(find.text('Selected Landmark'), findsOneWidget);
-    expect(find.text('Travel Categorization'), findsOneWidget);
+    expect(find.text('Tour Cover'), findsOneWidget);
     expect(find.text('Next Step'), findsOneWidget);
-
-    await tester.drag(find.byType(ListView), const Offset(0, -420));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Detailed Itinerary'), findsOneWidget);
+    expect(
+      find.text('Travel Categorization', skipOffstage: false),
+      findsOneWidget,
+    );
   });
 }

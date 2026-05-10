@@ -7,11 +7,15 @@ import 'package:provider/provider.dart';
 
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/error_view.dart';
+import '../../core/ui/filter_sheet_chrome.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../features/tours/models/tour_vm.dart';
+import '../../features/tours/tour_cover_url.dart';
+import '../../features/tours/tour_localization.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
@@ -26,11 +30,56 @@ class ToursScreen extends StatefulWidget {
 
 enum _ToursSortMode { popular, newest, affordable }
 
+enum _ToursSortDirection { asc, desc }
+
+enum _ToursDurationFilter { short, halfDay, fullDay, multiDay }
+
+enum _ToursPriceFilter { budget, premium }
+
+extension _ToursSortModeLabel on _ToursSortMode {
+  String label(AppLocalizations l10n) {
+    return switch (this) {
+      _ToursSortMode.popular => l10n.toursSortPopular,
+      _ToursSortMode.newest => l10n.toursSortNewest,
+      _ToursSortMode.affordable => l10n.toursSortAffordable,
+    };
+  }
+
+  _ToursSortDirection get defaultDirection {
+    return switch (this) {
+      _ToursSortMode.affordable => _ToursSortDirection.asc,
+      _ToursSortMode.popular => _ToursSortDirection.desc,
+      _ToursSortMode.newest => _ToursSortDirection.desc,
+    };
+  }
+}
+
+class _CategoryFilterOption {
+  const _CategoryFilterOption({
+    required this.slug,
+    required this.icon,
+  });
+
+  final String slug;
+  final IconData icon;
+}
+
+const _categoryFilterOptions = [
+  _CategoryFilterOption(slug: 'adventure', icon: Icons.terrain_rounded),
+  _CategoryFilterOption(slug: 'cultural', icon: Icons.account_balance_rounded),
+  _CategoryFilterOption(slug: 'culinary', icon: Icons.restaurant_rounded),
+  _CategoryFilterOption(slug: 'wellness', icon: Icons.spa_rounded),
+];
+
+const _languageFilterCodes = ['en', 'ru', 'kk'];
+
 class _ToursScreenState extends State<ToursScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   _ToursSortMode _sortMode = _ToursSortMode.popular;
+  _ToursSortDirection _sortDirection = _ToursSortDirection.desc;
+  _ToursFilters _filters = const _ToursFilters();
   String _searchQuery = '';
 
   @override
@@ -83,7 +132,17 @@ class _ToursScreenState extends State<ToursScreen> {
     final result = await ProfileCompletionGate.ensureCompleted(context);
     if (result == ProfileGuardResult.cancelled || !mounted) return;
 
-    context.push('/tours/create');
+    await context.push('/tours/create');
+    if (!mounted) return;
+
+    final lastCreatedTour = context.read<TourProvider>().lastCreatedTour;
+    if (lastCreatedTour != null && _scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   void _openTourDetails(TourVm tour) {
@@ -93,23 +152,36 @@ class _ToursScreenState extends State<ToursScreen> {
   }
 
   void _onSortTap(_ToursSortMode mode) {
-    if (_sortMode == mode) return;
-
     setState(() {
+      if (_sortMode == mode) {
+        _sortDirection = _sortDirection == _ToursSortDirection.asc
+            ? _ToursSortDirection.desc
+            : _ToursSortDirection.asc;
+        return;
+      }
+
       _sortMode = mode;
+      _sortDirection = mode.defaultDirection;
     });
   }
 
   Future<void> _showFilters() async {
-    final selectedMode = await showModalBottomSheet<_ToursSortMode>(
+    final toursSnapshot = context.read<TourProvider>().tours;
+    final selectedFilters = await showModalBottomSheet<_ToursFilters>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _ToursFilterSheet(selected: _sortMode),
+      builder: (context) => _ToursFiltersSheet(
+        initialFilters: _filters,
+        resultCountBuilder: (filters) => _visibleTours(
+          toursSnapshot,
+          filtersOverride: filters,
+        ).length,
+      ),
     );
 
-    if (selectedMode == null || !mounted) return;
-    _onSortTap(selectedMode);
+    if (selectedFilters == null || !mounted) return;
+    setState(() => _filters = selectedFilters);
   }
 
   @override
@@ -183,6 +255,7 @@ class _ToursScreenState extends State<ToursScreen> {
                                   controller: _searchController,
                                   hintText: l10n.toursSearchHint,
                                   onFilterTap: _showFilters,
+                                  activeFilterCount: _filters.activeCount,
                                 ),
                                 const SizedBox(height: 26),
                                 const Divider(
@@ -190,8 +263,10 @@ class _ToursScreenState extends State<ToursScreen> {
                                   color: Color(0x1AFFFFFF),
                                 ),
                                 const SizedBox(height: 9),
-                                _ToursSortTabs(
+                                _ToursSortBar(
+                                  l10n: l10n,
                                   selected: _sortMode,
+                                  direction: _sortDirection,
                                   onChanged: _onSortTap,
                                 ),
                               ],
@@ -255,9 +330,14 @@ class _ToursScreenState extends State<ToursScreen> {
     );
   }
 
-  List<TourVm> _visibleTours(List<TourVm> tours) {
+  List<TourVm> _visibleTours(
+    List<TourVm> tours, {
+    _ToursFilters? filtersOverride,
+  }) {
     final query = _searchQuery.toLowerCase();
+    final filters = filtersOverride ?? _filters;
     final filtered = tours.where((tour) {
+      if (!filters.matches(tour)) return false;
       if (query.isEmpty) return true;
 
       final haystack = [
@@ -273,14 +353,17 @@ class _ToursScreenState extends State<ToursScreen> {
     }).toList(growable: false);
 
     final sorted = [...filtered];
-    switch (_sortMode) {
-      case _ToursSortMode.affordable:
-        sorted.sort((a, b) => a.priceAmount.compareTo(b.priceAmount));
-      case _ToursSortMode.newest:
-        sorted.sort((a, b) => b.id.compareTo(a.id));
-      case _ToursSortMode.popular:
-        sorted.sort((a, b) => a.title.compareTo(b.title));
-    }
+    sorted.sort((a, b) {
+      final comparison = switch (_sortMode) {
+        _ToursSortMode.affordable => a.priceAmount.compareTo(b.priceAmount),
+        _ToursSortMode.newest => a.id.compareTo(b.id),
+        _ToursSortMode.popular => a.title.compareTo(b.title),
+      };
+
+      return _sortDirection == _ToursSortDirection.asc
+          ? comparison
+          : -comparison;
+    });
 
     return sorted;
   }
@@ -351,11 +434,13 @@ class _ToursSearchField extends StatelessWidget {
     required this.controller,
     required this.hintText,
     required this.onFilterTap,
+    required this.activeFilterCount,
   });
 
   final TextEditingController controller;
   final String hintText;
   final VoidCallback onFilterTap;
+  final int activeFilterCount;
 
   @override
   Widget build(BuildContext context) {
@@ -368,11 +453,7 @@ class _ToursSearchField extends StatelessWidget {
       padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 0),
       child: Row(
         children: [
-          const Icon(
-            Icons.search_rounded,
-            color: Color(0xFFA99586),
-            size: 27,
-          ),
+          const Icon(Icons.search_rounded, color: AppColors.accent, size: 27),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
@@ -393,14 +474,45 @@ class _ToursSearchField extends StatelessWidget {
           ),
           Tooltip(
             message: AppLocalizations.of(context)!.myActivitiesFilterButton,
-            child: IconButton(
-              onPressed: onFilterTap,
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.accent.withValues(alpha: 0.12),
-                foregroundColor: AppColors.accent,
-                minimumSize: const Size(43, 43),
-              ),
-              icon: const Icon(Icons.tune_rounded, size: 24),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  onPressed: onFilterTap,
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.accent.withValues(alpha: 0.12),
+                    foregroundColor: AppColors.accent,
+                    minimumSize: const Size(43, 43),
+                  ),
+                  icon: const Icon(Icons.tune_rounded, size: 24),
+                ),
+                if (activeFilterCount > 0)
+                  PositionedDirectional(
+                    top: 2,
+                    end: 2,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        activeFilterCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -409,19 +521,167 @@ class _ToursSearchField extends StatelessWidget {
   }
 }
 
-class _ToursFilterSheet extends StatelessWidget {
-  const _ToursFilterSheet({required this.selected});
+class _ToursFilters {
+  const _ToursFilters({
+    this.categorySlugs = const <String>{},
+    this.languageCodes = const <String>{},
+    this.duration,
+    this.price,
+  });
 
-  final _ToursSortMode selected;
+  final Set<String> categorySlugs;
+  final Set<String> languageCodes;
+  final _ToursDurationFilter? duration;
+  final _ToursPriceFilter? price;
+
+  int get activeCount =>
+      categorySlugs.length +
+      languageCodes.length +
+      (duration == null ? 0 : 1) +
+      (price == null ? 0 : 1);
+
+  bool matches(TourVm tour) {
+    if (categorySlugs.isNotEmpty) {
+      final category = tour.categorySlug?.trim().toLowerCase();
+      if (category == null || !categorySlugs.contains(category)) return false;
+    }
+
+    if (languageCodes.isNotEmpty) {
+      final tourLanguages = tour.languageCodes
+          .map((code) => code.trim().toLowerCase())
+          .where((code) => code.isNotEmpty)
+          .toSet();
+      if (!languageCodes.any(tourLanguages.contains)) return false;
+    }
+
+    final durationFilter = duration;
+    if (durationFilter != null &&
+        !_matchesDuration(durationFilter, tour.durationMinutes)) {
+      return false;
+    }
+
+    final priceFilter = price;
+    if (priceFilter != null && !_matchesPrice(priceFilter, tour)) return false;
+
+    return true;
+  }
+
+  static bool _matchesDuration(_ToursDurationFilter filter, int minutes) {
+    return switch (filter) {
+      _ToursDurationFilter.short => minutes > 0 && minutes < 180,
+      _ToursDurationFilter.halfDay => minutes >= 180 && minutes <= 360,
+      _ToursDurationFilter.fullDay => minutes > 360 && minutes <= 720,
+      _ToursDurationFilter.multiDay => minutes > 720,
+    };
+  }
+
+  static bool _matchesPrice(_ToursPriceFilter filter, TourVm tour) {
+    final priceKzt = _priceApproxKzt(tour);
+    return switch (filter) {
+      _ToursPriceFilter.budget => priceKzt <= 50000,
+      _ToursPriceFilter.premium => priceKzt >= 100000,
+    };
+  }
+
+  static double _priceApproxKzt(TourVm tour) {
+    final amount = tour.priceAmount;
+    switch (tour.currency.trim().toUpperCase()) {
+      case 'USD':
+        return amount * 450;
+      case 'EUR':
+        return amount * 500;
+      case 'RUB':
+        return amount * 5;
+      case 'GBP':
+        return amount * 580;
+      case 'KZT':
+      default:
+        return amount;
+    }
+  }
+}
+
+class _ToursFiltersSheet extends StatefulWidget {
+  const _ToursFiltersSheet({
+    required this.initialFilters,
+    required this.resultCountBuilder,
+  });
+
+  final _ToursFilters initialFilters;
+  final int Function(_ToursFilters filters) resultCountBuilder;
+
+  @override
+  State<_ToursFiltersSheet> createState() => _ToursFiltersSheetState();
+}
+
+class _ToursFiltersSheetState extends State<_ToursFiltersSheet> {
+  late _ToursFilters _filters;
+
+  @override
+  void initState() {
+    super.initState();
+    _filters = widget.initialFilters;
+  }
+
+  void _clear() {
+    setState(() => _filters = const _ToursFilters());
+  }
+
+  void _toggleCategory(String slug) {
+    final next = Set<String>.of(_filters.categorySlugs);
+    if (!next.remove(slug)) next.add(slug);
+
+    setState(() {
+      _filters = _ToursFilters(
+        categorySlugs: next,
+        languageCodes: _filters.languageCodes,
+        duration: _filters.duration,
+        price: _filters.price,
+      );
+    });
+  }
+
+  void _toggleLanguage(String code) {
+    final next = Set<String>.of(_filters.languageCodes);
+    if (!next.remove(code)) next.add(code);
+
+    setState(() {
+      _filters = _ToursFilters(
+        categorySlugs: _filters.categorySlugs,
+        languageCodes: next,
+        duration: _filters.duration,
+        price: _filters.price,
+      );
+    });
+  }
+
+  void _setDuration(_ToursDurationFilter duration) {
+    setState(() {
+      _filters = _ToursFilters(
+        categorySlugs: _filters.categorySlugs,
+        languageCodes: _filters.languageCodes,
+        duration: _filters.duration == duration ? null : duration,
+        price: _filters.price,
+      );
+    });
+  }
+
+  void _setPrice(_ToursPriceFilter price) {
+    setState(() {
+      _filters = _ToursFilters(
+        categorySlugs: _filters.categorySlugs,
+        languageCodes: _filters.languageCodes,
+        duration: _filters.duration,
+        price: _filters.price == price ? null : price,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final options = [
-      (mode: _ToursSortMode.popular, label: l10n.toursSortPopular),
-      (mode: _ToursSortMode.newest, label: l10n.toursSortNewest),
-      (mode: _ToursSortMode.affordable, label: l10n.toursSortAffordable),
-    ];
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final resultCount = widget.resultCountBuilder(_filters);
 
     return SafeArea(
       top: false,
@@ -429,59 +689,129 @@ class _ToursFilterSheet extends StatelessWidget {
         alignment: Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.86,
             maxWidth: 520,
           ),
           child: DecoratedBox(
             decoration: const BoxDecoration(
               color: Color(0xFF21170D),
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border(
-                top: BorderSide(color: Color(0x293A270F)),
-              ),
+              border: Border(top: BorderSide(color: Color(0x293A270F))),
             ),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                24,
-                16,
-                24,
-                MediaQuery.paddingOf(context).bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppFilterSheetHeader(
+                  title: l10n.toursFiltersTitle,
+                  clearLabel: l10n.toursFiltersClear,
+                  onClear: _clear,
+                  height: 74,
+                  horizontalPadding: 22,
+                  titleFontSize: 18,
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(22, 28, 22, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _ToursFilterSection(
+                          title: l10n.toursFilterCategories,
+                          child: Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              for (final option in _categoryFilterOptions)
+                                _ToursFilterChip(
+                                  label: localizedTourCategoryLabel(
+                                    l10n,
+                                    option.slug,
+                                  ),
+                                  icon: option.icon,
+                                  selected: _filters.categorySlugs.contains(
+                                    option.slug,
+                                  ),
+                                  onTap: () => _toggleCategory(option.slug),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        _ToursFilterSection(
+                          title: l10n.toursFilterPriceRange,
+                          child: _ToursSegmentGrid<_ToursPriceFilter>(
+                            items: [
+                              _ToursSegmentItem(
+                                value: _ToursPriceFilter.budget,
+                                label: l10n.toursFilterBudget,
+                              ),
+                              _ToursSegmentItem(
+                                value: _ToursPriceFilter.premium,
+                                label: l10n.toursFilterPremium,
+                              ),
+                            ],
+                            selectedValue: _filters.price,
+                            onSelected: _setPrice,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        _ToursFilterSection(
+                          title: l10n.toursFilterDuration,
+                          child: _ToursSegmentGrid<_ToursDurationFilter>(
+                            items: [
+                              _ToursSegmentItem(
+                                value: _ToursDurationFilter.short,
+                                label: l10n.toursFilterShortDuration,
+                              ),
+                              _ToursSegmentItem(
+                                value: _ToursDurationFilter.halfDay,
+                                label: l10n.toursFilterHalfDayDuration,
+                              ),
+                              _ToursSegmentItem(
+                                value: _ToursDurationFilter.fullDay,
+                                label: l10n.toursFilterFullDayDuration,
+                              ),
+                              _ToursSegmentItem(
+                                value: _ToursDurationFilter.multiDay,
+                                label: l10n.toursFilterMultiDayDuration,
+                              ),
+                            ],
+                            selectedValue: _filters.duration,
+                            onSelected: _setDuration,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        _ToursFilterSection(
+                          title: l10n.toursFilterLanguage,
+                          child: Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              for (final code in _languageFilterCodes)
+                                _ToursFilterChip(
+                                  label: localizedTourLanguageLabel(l10n, code),
+                                  selected:
+                                      _filters.languageCodes.contains(code),
+                                  onTap: () => _toggleLanguage(code),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 22),
-                  Text(
-                    l10n.myActivitiesFilterTitle,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0,
-                    ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(22, 0, 22, bottomInset + 18),
+                  child: AppFilterApplyButton(
+                    label: l10n.toursFiltersShowResults(resultCount),
+                    onTap: () => Navigator.of(context).pop(_filters),
+                    borderRadius: 14,
+                    fontSize: 15,
                   ),
-                  const SizedBox(height: 18),
-                  for (final option in options) ...[
-                    _ToursFilterOption(
-                      label: option.label,
-                      selected: option.mode == selected,
-                      onTap: () => Navigator.of(context).pop(option.mode),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -490,8 +820,147 @@ class _ToursFilterSheet extends StatelessWidget {
   }
 }
 
-class _ToursFilterOption extends StatelessWidget {
-  const _ToursFilterOption({
+class _ToursFilterSection extends StatelessWidget {
+  const _ToursFilterSection({
+    required this.title,
+    required this.child,
+  });
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 16),
+        child,
+      ],
+    );
+  }
+}
+
+class _ToursFilterChip extends StatelessWidget {
+  const _ToursFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          constraints: const BoxConstraints(minHeight: 42),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.accent : const Color(0xFF534638),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  color: selected ? Colors.white : const Color(0xFFD8C7B7),
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selected ? Colors.white : const Color(0xFFD8C7B7),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ToursSegmentItem<T> {
+  const _ToursSegmentItem({
+    required this.value,
+    required this.label,
+  });
+
+  final T value;
+  final String label;
+}
+
+class _ToursSegmentGrid<T> extends StatelessWidget {
+  const _ToursSegmentGrid({
+    required this.items,
+    required this.selectedValue,
+    required this.onSelected,
+  });
+
+  final List<_ToursSegmentItem<T>> items;
+  final T? selectedValue;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useSingleColumn = constraints.maxWidth < 330;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: items.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: useSingleColumn ? 1 : 2,
+            mainAxisExtent: 48,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+          ),
+          itemBuilder: (context, index) {
+            final item = items[index];
+            final selected = item.value == selectedValue;
+            return _ToursSegmentButton(
+              label: item.label,
+              selected: selected,
+              onTap: () => onSelected(item.value),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ToursSegmentButton extends StatelessWidget {
+  const _ToursSegmentButton({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -507,48 +976,25 @@ class _ToursFilterOption extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 54),
-          child: Ink(
-            decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.accent.withValues(alpha: 0.16)
-                  : const Color(0xFF2B1F14),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: selected
-                    ? AppColors.accent.withValues(alpha: 0.44)
-                    : Colors.white.withValues(alpha: 0.07),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        height: 1.2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    selected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color:
-                        selected ? AppColors.accent : const Color(0xFFA99586),
-                  ),
-                ],
-              ),
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.accent : const Color(0xFF4A3D31),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: selected ? Colors.white : const Color(0xFFD8C7B7),
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              height: 1.15,
             ),
           ),
         ),
@@ -557,96 +1003,30 @@ class _ToursFilterOption extends StatelessWidget {
   }
 }
 
-class _ToursSortTabs extends StatelessWidget {
-  const _ToursSortTabs({
+class _ToursSortBar extends StatelessWidget {
+  const _ToursSortBar({
+    required this.l10n,
     required this.selected,
+    required this.direction,
     required this.onChanged,
   });
 
+  final AppLocalizations l10n;
   final _ToursSortMode selected;
+  final _ToursSortDirection direction;
   final ValueChanged<_ToursSortMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final items = [
-      (mode: _ToursSortMode.popular, label: l10n.toursSortPopular),
-      (mode: _ToursSortMode.newest, label: l10n.toursSortNewest),
-      (mode: _ToursSortMode.affordable, label: l10n.toursSortAffordable),
-    ];
-
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: items.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 24),
-        itemBuilder: (context, index) {
-          final item = items[index];
-          final active = item.mode == selected;
-
-          return _ToursSortTab(
-            label: item.label,
-            active: active,
-            onTap: () => onChanged(item.mode),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ToursSortTab extends StatelessWidget {
-  const _ToursSortTab({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.accent : const Color(0xFFC8B8A9);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 9, bottom: 10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.9,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(height: 10),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                height: 3,
-                width: active ? 34 : 0,
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return AppInlineSortRow<_ToursSortMode>(
+      label: l10n.toursSortLabel,
+      options: [
+        for (final mode in _ToursSortMode.values)
+          AppInlineSortOption(value: mode, label: mode.label(l10n)),
+      ],
+      selectedValue: selected,
+      isAscending: direction == _ToursSortDirection.asc,
+      onSelected: onChanged,
     );
   }
 }
@@ -697,7 +1077,10 @@ class TourListCard extends StatelessWidget {
                 Expanded(
                   flex: 7,
                   child: _TourCoverArt(
-                      seed: seed, categorySlug: tour.categorySlug),
+                    seed: seed,
+                    categorySlug: tour.categorySlug,
+                    imageUrl: resolveTourCoverUrl(tour),
+                  ),
                 ),
                 Expanded(
                   flex: 5,
@@ -826,18 +1209,7 @@ class TourListCard extends StatelessWidget {
   }
 
   String _categoryLabel(AppLocalizations l10n, String? categorySlug) {
-    switch (categorySlug?.toLowerCase()) {
-      case 'adventure':
-        return l10n.createTourCategoryAdventure;
-      case 'cultural':
-        return l10n.createTourCategoryCultural;
-      case 'culinary':
-        return l10n.createTourCategoryCulinary;
-      case 'wellness':
-        return l10n.createTourCategoryWellness;
-      default:
-        return l10n.serviceTours;
-    }
+    return localizedTourCategoryLabel(l10n, categorySlug);
   }
 }
 
@@ -845,51 +1217,41 @@ class _TourCoverArt extends StatelessWidget {
   const _TourCoverArt({
     required this.seed,
     required this.categorySlug,
+    this.imageUrl,
   });
 
   final int seed;
   final String? categorySlug;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
     final palette = _paletteFor(categorySlug, seed);
+    final resolvedImageUrl = imageUrl?.trim() ?? '';
 
     return Stack(
       fit: StackFit.expand,
       children: [
+        if (resolvedImageUrl.isNotEmpty)
+          Image.network(
+            resolvedImageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _GeneratedTourCover(
+              palette: palette,
+              seed: seed,
+            ),
+          )
+        else
+          _GeneratedTourCover(palette: palette, seed: seed),
         DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [palette.sky, palette.haze, palette.ground],
-            ),
-          ),
-        ),
-        Positioned.fill(
-          child: CustomPaint(painter: _TourCoverPainter(palette, seed)),
-        ),
-        Positioned(
-          left: 10,
-          top: 10,
-          child: Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: AppColors.accent,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.28),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
+              colors: [
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.16),
               ],
-            ),
-            child: const Icon(
-              Icons.check_rounded,
-              color: Colors.white,
-              size: 18,
             ),
           ),
         ),
@@ -971,6 +1333,35 @@ class _TourCoverArt extends StatelessWidget {
         ];
         return variants[seed % variants.length];
     }
+  }
+}
+
+class _GeneratedTourCover extends StatelessWidget {
+  const _GeneratedTourCover({
+    required this.palette,
+    required this.seed,
+  });
+
+  final _TourCoverPalette palette;
+  final int seed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [palette.sky, palette.haze, palette.ground],
+            ),
+          ),
+        ),
+        CustomPaint(painter: _TourCoverPainter(palette, seed)),
+      ],
+    );
   }
 }
 
