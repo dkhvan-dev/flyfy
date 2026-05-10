@@ -2019,6 +2019,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get comingSoon => 'Скоро появится';
 
   @override
+  String get change => 'Изменить';
+
+  @override
+  String get confirm => 'Подтвердить';
+
+  @override
   String get createActivityFab => 'Создать';
 
   @override
@@ -2032,6 +2038,162 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createActivityFailed => 'Не удалось создать активность';
+
+  @override
+  String get createTourTitle => 'Создать тур';
+
+  @override
+  String get createTourSubmit => 'Отправить на проверку';
+
+  @override
+  String get createTourSuccess => 'Тур успешно отправлен';
+
+  @override
+  String get createTourFailed => 'Не удалось создать тур';
+
+  @override
+  String get createTourSelectedLandmark => 'Выбранная локация';
+
+  @override
+  String get createTourLandmarkNameLabel => 'Локация';
+
+  @override
+  String get createTourLandmarkNameHint => 'Например, Медеу';
+
+  @override
+  String get createTourLandmarkValidation => 'Выберите или укажите локацию';
+
+  @override
+  String get createTourCategorization => 'Категория путешествия';
+
+  @override
+  String get createTourCategoryAdventure => 'Приключения';
+
+  @override
+  String get createTourCategoryCultural => 'Культура';
+
+  @override
+  String get createTourCategoryCulinary => 'Гастро';
+
+  @override
+  String get createTourCategoryWellness => 'Велнес';
+
+  @override
+  String get createTourDetailedItinerary => 'Детальный маршрут';
+
+  @override
+  String get createTourAddTimeSlot => 'Добавить слот';
+
+  @override
+  String get createTourAutosaveHint =>
+      'Прогресс автосохраняется в профиль гида';
+
+  @override
+  String get createTourItineraryValidation =>
+      'Добавьте хотя бы один полный слот маршрута';
+
+  @override
+  String get createTourDurationLabel => 'Длительность';
+
+  @override
+  String get createTourDurationHint => 'Например, 4 часа';
+
+  @override
+  String get createTourDurationValidation =>
+      'Укажите длительность не менее 15 минут';
+
+  @override
+  String get createTourMaxGroupSizeLabel => 'Максимум гостей';
+
+  @override
+  String get createTourMaxGroupSizeHint => 'Например, 12';
+
+  @override
+  String get createTourGroupSizeValidation =>
+      'Укажите размер группы от 1 до 100';
+
+  @override
+  String get createTourLanguagesLabel => 'Языки тура';
+
+  @override
+  String get createTourLanguagesHint => 'Английский, французский, японский...';
+
+  @override
+  String get createTourLanguagesValidation => 'Добавьте хотя бы один язык тура';
+
+  @override
+  String get createTourVisibilityTitle => 'Видимость тура';
+
+  @override
+  String get createTourVisibilityPublicDescription =>
+      'Виден всем пользователям маркетплейса FlyFy.';
+
+  @override
+  String get createTourVisibilityUnlistedDescription =>
+      'Тур увидят и смогут забронировать только пользователи с прямой ссылкой.';
+
+  @override
+  String get createTourMeetingPointHint =>
+      'Введите адрес встречи или ориентир...';
+
+  @override
+  String get createTourSoulTitle => 'Душа путешествия';
+
+  @override
+  String get createTourNameLabel => 'Название тура';
+
+  @override
+  String get createTourNameHint => 'Например, Горный побег в Алматы';
+
+  @override
+  String get createTourSummaryLabel => 'Краткое описание';
+
+  @override
+  String get createTourSummaryHint => 'Короткое обещание для путешественников';
+
+  @override
+  String get createTourSummaryValidation =>
+      'Краткое описание должно быть не менее 3 символов';
+
+  @override
+  String get createTourSoulHint =>
+      'Опишите атмосферу маршрута, скрытые детали и ощущение от путешествия...';
+
+  @override
+  String get createTourDescriptionValidation =>
+      'Описание должно быть не менее 20 символов';
+
+  @override
+  String get createTourInvestmentTitle => 'Стоимость за человека';
+
+  @override
+  String get createTourCurrencyValidation => 'Укажите код валюты';
+
+  @override
+  String get createTourIncludedItemsLabel => 'Что включено';
+
+  @override
+  String get createTourIncludedItemsHint =>
+      'Через запятую: внедорожник, пикник, билеты';
+
+  @override
+  String get createTourStartOffsetLabel => 'Старт через, мин';
+
+  @override
+  String get createTourSlotDurationLabel => 'Длительность, мин';
+
+  @override
+  String get createTourItineraryTitleLabel => 'Название';
+
+  @override
+  String get createTourItineraryTitleHint => 'Например, Подъем к вершине';
+
+  @override
+  String get createTourItineraryDescriptionLabel => 'Описание';
+
+  @override
+  String get createTourItineraryDescriptionHint =>
+      'Что происходит на этой части маршрута';
 
   @override
   String get createStepBasic => 'Основная информация';

@@ -2018,6 +2018,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get comingSoon => 'Coming soon';
 
   @override
+  String get change => 'Change';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
   String get createActivityFab => 'Create';
 
   @override
@@ -2031,6 +2037,162 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createActivityFailed => 'Failed to create activity';
+
+  @override
+  String get createTourTitle => 'Create Tour';
+
+  @override
+  String get createTourSubmit => 'Submit for Review';
+
+  @override
+  String get createTourSuccess => 'Tour submitted successfully';
+
+  @override
+  String get createTourFailed => 'Failed to create tour';
+
+  @override
+  String get createTourSelectedLandmark => 'Selected Landmark';
+
+  @override
+  String get createTourLandmarkNameLabel => 'Landmark';
+
+  @override
+  String get createTourLandmarkNameHint => 'e.g. Medeu';
+
+  @override
+  String get createTourLandmarkValidation => 'Select or enter a landmark';
+
+  @override
+  String get createTourCategorization => 'Travel Categorization';
+
+  @override
+  String get createTourCategoryAdventure => 'Adventure';
+
+  @override
+  String get createTourCategoryCultural => 'Cultural';
+
+  @override
+  String get createTourCategoryCulinary => 'Culinary';
+
+  @override
+  String get createTourCategoryWellness => 'Wellness';
+
+  @override
+  String get createTourDetailedItinerary => 'Detailed Itinerary';
+
+  @override
+  String get createTourAddTimeSlot => 'Add Time Slot';
+
+  @override
+  String get createTourAutosaveHint =>
+      'Auto-saving progress to your guide profile';
+
+  @override
+  String get createTourItineraryValidation =>
+      'Add at least one complete itinerary slot';
+
+  @override
+  String get createTourDurationLabel => 'Duration';
+
+  @override
+  String get createTourDurationHint => 'e.g. 4 hours';
+
+  @override
+  String get createTourDurationValidation =>
+      'Enter a duration of at least 15 minutes';
+
+  @override
+  String get createTourMaxGroupSizeLabel => 'Max Group Size';
+
+  @override
+  String get createTourMaxGroupSizeHint => 'e.g. 12';
+
+  @override
+  String get createTourGroupSizeValidation =>
+      'Enter a group size from 1 to 100';
+
+  @override
+  String get createTourLanguagesLabel => 'Languages Spoken';
+
+  @override
+  String get createTourLanguagesHint => 'English, French, Japanese...';
+
+  @override
+  String get createTourLanguagesValidation => 'Add at least one tour language';
+
+  @override
+  String get createTourVisibilityTitle => 'Tour Visibility';
+
+  @override
+  String get createTourVisibilityPublicDescription =>
+      'Visible to everyone in the FlyFy marketplace.';
+
+  @override
+  String get createTourVisibilityUnlistedDescription =>
+      'Only users with the direct URL can view and book this tour.';
+
+  @override
+  String get createTourMeetingPointHint =>
+      'Enter meeting address or landmark...';
+
+  @override
+  String get createTourSoulTitle => 'Soul of the Journey';
+
+  @override
+  String get createTourNameLabel => 'Tour Title';
+
+  @override
+  String get createTourNameHint => 'e.g. Almaty Mountain Escape';
+
+  @override
+  String get createTourSummaryLabel => 'Short Summary';
+
+  @override
+  String get createTourSummaryHint => 'A concise promise for travelers';
+
+  @override
+  String get createTourSummaryValidation =>
+      'Summary must be at least 3 characters';
+
+  @override
+  String get createTourSoulHint =>
+      'Describe the soul of this journey, hidden details, and the feeling of being there...';
+
+  @override
+  String get createTourDescriptionValidation =>
+      'Description must be at least 20 characters';
+
+  @override
+  String get createTourInvestmentTitle => 'Investment Per Person';
+
+  @override
+  String get createTourCurrencyValidation => 'Enter a currency code';
+
+  @override
+  String get createTourIncludedItemsLabel => 'Included Items';
+
+  @override
+  String get createTourIncludedItemsHint =>
+      'Comma-separated: Private SUV, picnic, tickets';
+
+  @override
+  String get createTourStartOffsetLabel => 'Start after, min';
+
+  @override
+  String get createTourSlotDurationLabel => 'Duration, min';
+
+  @override
+  String get createTourItineraryTitleLabel => 'Title';
+
+  @override
+  String get createTourItineraryTitleHint => 'e.g. Mountain Ascent';
+
+  @override
+  String get createTourItineraryDescriptionLabel => 'Description';
+
+  @override
+  String get createTourItineraryDescriptionHint =>
+      'What happens during this part of the route';
 
   @override
   String get createStepBasic => 'Main Info';

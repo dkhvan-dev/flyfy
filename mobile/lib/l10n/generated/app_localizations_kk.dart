@@ -2028,6 +2028,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get comingSoon => 'Жақында пайда болады';
 
   @override
+  String get change => 'Өзгерту';
+
+  @override
+  String get confirm => 'Растау';
+
+  @override
   String get createActivityFab => 'Жасау';
 
   @override
@@ -2041,6 +2047,162 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createActivityFailed => 'Белсенділікті жасау сәтсіз аяқталды';
+
+  @override
+  String get createTourTitle => 'Тур құру';
+
+  @override
+  String get createTourSubmit => 'Тексеруге жіберу';
+
+  @override
+  String get createTourSuccess => 'Тур сәтті жіберілді';
+
+  @override
+  String get createTourFailed => 'Турды жасау мүмкін болмады';
+
+  @override
+  String get createTourSelectedLandmark => 'Таңдалған орын';
+
+  @override
+  String get createTourLandmarkNameLabel => 'Орын';
+
+  @override
+  String get createTourLandmarkNameHint => 'Мысалы, Медеу';
+
+  @override
+  String get createTourLandmarkValidation => 'Орынды таңдаңыз немесе енгізіңіз';
+
+  @override
+  String get createTourCategorization => 'Саяхат санаты';
+
+  @override
+  String get createTourCategoryAdventure => 'Шытырман';
+
+  @override
+  String get createTourCategoryCultural => 'Мәдениет';
+
+  @override
+  String get createTourCategoryCulinary => 'Гастро';
+
+  @override
+  String get createTourCategoryWellness => 'Wellness';
+
+  @override
+  String get createTourDetailedItinerary => 'Толық маршрут';
+
+  @override
+  String get createTourAddTimeSlot => 'Уақыт слотын қосу';
+
+  @override
+  String get createTourAutosaveHint =>
+      'Прогресс гид профиліне автоматты сақталады';
+
+  @override
+  String get createTourItineraryValidation =>
+      'Маршруттың кемінде бір толық слотын қосыңыз';
+
+  @override
+  String get createTourDurationLabel => 'Ұзақтығы';
+
+  @override
+  String get createTourDurationHint => 'Мысалы, 4 сағат';
+
+  @override
+  String get createTourDurationValidation =>
+      'Ұзақтығы кемінде 15 минут болуы керек';
+
+  @override
+  String get createTourMaxGroupSizeLabel => 'Қонақтар саны';
+
+  @override
+  String get createTourMaxGroupSizeHint => 'Мысалы, 12';
+
+  @override
+  String get createTourGroupSizeValidation =>
+      'Топ өлшемін 1-ден 100-ге дейін енгізіңіз';
+
+  @override
+  String get createTourLanguagesLabel => 'Тур тілдері';
+
+  @override
+  String get createTourLanguagesHint => 'Ағылшын, француз, жапон...';
+
+  @override
+  String get createTourLanguagesValidation => 'Кемінде бір тур тілін қосыңыз';
+
+  @override
+  String get createTourVisibilityTitle => 'Тур көрінуі';
+
+  @override
+  String get createTourVisibilityPublicDescription =>
+      'FlyFy маркетплейсіндегі барлық пайдаланушыларға көрінеді.';
+
+  @override
+  String get createTourVisibilityUnlistedDescription =>
+      'Турды тек тікелей сілтемесі бар пайдаланушылар көріп, брондай алады.';
+
+  @override
+  String get createTourMeetingPointHint =>
+      'Кездесу мекенжайын немесе бағдарды енгізіңіз...';
+
+  @override
+  String get createTourSoulTitle => 'Саяхат рухы';
+
+  @override
+  String get createTourNameLabel => 'Тур атауы';
+
+  @override
+  String get createTourNameHint => 'Мысалы, Алматы таулы саяхаты';
+
+  @override
+  String get createTourSummaryLabel => 'Қысқа сипаттама';
+
+  @override
+  String get createTourSummaryHint => 'Саяхатшыларға қысқа уәде';
+
+  @override
+  String get createTourSummaryValidation =>
+      'Қысқа сипаттама кемінде 3 таңбадан тұруы керек';
+
+  @override
+  String get createTourSoulHint =>
+      'Маршрут атмосферасын, жасырын детальдарды және саяхат сезімін сипаттаңыз...';
+
+  @override
+  String get createTourDescriptionValidation =>
+      'Сипаттама кемінде 20 таңбадан тұруы керек';
+
+  @override
+  String get createTourInvestmentTitle => 'Бір адамға құны';
+
+  @override
+  String get createTourCurrencyValidation => 'Валюта кодын енгізіңіз';
+
+  @override
+  String get createTourIncludedItemsLabel => 'Не кіреді';
+
+  @override
+  String get createTourIncludedItemsHint =>
+      'Үтір арқылы: SUV, пикник, билеттер';
+
+  @override
+  String get createTourStartOffsetLabel => 'Басталуы, мин';
+
+  @override
+  String get createTourSlotDurationLabel => 'Ұзақтығы, мин';
+
+  @override
+  String get createTourItineraryTitleLabel => 'Атауы';
+
+  @override
+  String get createTourItineraryTitleHint => 'Мысалы, Тауға көтерілу';
+
+  @override
+  String get createTourItineraryDescriptionLabel => 'Сипаттама';
+
+  @override
+  String get createTourItineraryDescriptionHint =>
+      'Маршруттың осы бөлігінде не болады';
 
   @override
   String get createStepBasic => 'Негізгі ақпарат';

@@ -3784,6 +3784,18 @@ abstract class AppLocalizations {
   /// **'Coming soon'**
   String get comingSoon;
 
+  /// No description provided for @change.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get change;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
   /// No description provided for @createActivityFab.
   ///
   /// In en, this message translates to:
@@ -3813,6 +3825,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to create activity'**
   String get createActivityFailed;
+
+  /// No description provided for @createTourTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Tour'**
+  String get createTourTitle;
+
+  /// No description provided for @createTourSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit for Review'**
+  String get createTourSubmit;
+
+  /// No description provided for @createTourSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Tour submitted successfully'**
+  String get createTourSuccess;
+
+  /// No description provided for @createTourFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create tour'**
+  String get createTourFailed;
+
+  /// No description provided for @createTourSelectedLandmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected Landmark'**
+  String get createTourSelectedLandmark;
+
+  /// No description provided for @createTourLandmarkNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Landmark'**
+  String get createTourLandmarkNameLabel;
+
+  /// No description provided for @createTourLandmarkNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Medeu'**
+  String get createTourLandmarkNameHint;
+
+  /// No description provided for @createTourLandmarkValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Select or enter a landmark'**
+  String get createTourLandmarkValidation;
+
+  /// No description provided for @createTourCategorization.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel Categorization'**
+  String get createTourCategorization;
+
+  /// No description provided for @createTourCategoryAdventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Adventure'**
+  String get createTourCategoryAdventure;
+
+  /// No description provided for @createTourCategoryCultural.
+  ///
+  /// In en, this message translates to:
+  /// **'Cultural'**
+  String get createTourCategoryCultural;
+
+  /// No description provided for @createTourCategoryCulinary.
+  ///
+  /// In en, this message translates to:
+  /// **'Culinary'**
+  String get createTourCategoryCulinary;
+
+  /// No description provided for @createTourCategoryWellness.
+  ///
+  /// In en, this message translates to:
+  /// **'Wellness'**
+  String get createTourCategoryWellness;
+
+  /// No description provided for @createTourDetailedItinerary.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed Itinerary'**
+  String get createTourDetailedItinerary;
+
+  /// No description provided for @createTourAddTimeSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Time Slot'**
+  String get createTourAddTimeSlot;
+
+  /// No description provided for @createTourAutosaveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-saving progress to your guide profile'**
+  String get createTourAutosaveHint;
+
+  /// No description provided for @createTourItineraryValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one complete itinerary slot'**
+  String get createTourItineraryValidation;
+
+  /// No description provided for @createTourDurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get createTourDurationLabel;
+
+  /// No description provided for @createTourDurationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 4 hours'**
+  String get createTourDurationHint;
+
+  /// No description provided for @createTourDurationValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a duration of at least 15 minutes'**
+  String get createTourDurationValidation;
+
+  /// No description provided for @createTourMaxGroupSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Group Size'**
+  String get createTourMaxGroupSizeLabel;
+
+  /// No description provided for @createTourMaxGroupSizeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 12'**
+  String get createTourMaxGroupSizeHint;
+
+  /// No description provided for @createTourGroupSizeValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a group size from 1 to 100'**
+  String get createTourGroupSizeValidation;
+
+  /// No description provided for @createTourLanguagesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages Spoken'**
+  String get createTourLanguagesLabel;
+
+  /// No description provided for @createTourLanguagesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'English, French, Japanese...'**
+  String get createTourLanguagesHint;
+
+  /// No description provided for @createTourLanguagesValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one tour language'**
+  String get createTourLanguagesValidation;
+
+  /// No description provided for @createTourVisibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tour Visibility'**
+  String get createTourVisibilityTitle;
+
+  /// No description provided for @createTourVisibilityPublicDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible to everyone in the FlyFy marketplace.'**
+  String get createTourVisibilityPublicDescription;
+
+  /// No description provided for @createTourVisibilityUnlistedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Only users with the direct URL can view and book this tour.'**
+  String get createTourVisibilityUnlistedDescription;
+
+  /// No description provided for @createTourMeetingPointHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter meeting address or landmark...'**
+  String get createTourMeetingPointHint;
+
+  /// No description provided for @createTourSoulTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul of the Journey'**
+  String get createTourSoulTitle;
+
+  /// No description provided for @createTourNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tour Title'**
+  String get createTourNameLabel;
+
+  /// No description provided for @createTourNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Almaty Mountain Escape'**
+  String get createTourNameHint;
+
+  /// No description provided for @createTourSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Short Summary'**
+  String get createTourSummaryLabel;
+
+  /// No description provided for @createTourSummaryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A concise promise for travelers'**
+  String get createTourSummaryHint;
+
+  /// No description provided for @createTourSummaryValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary must be at least 3 characters'**
+  String get createTourSummaryValidation;
+
+  /// No description provided for @createTourSoulHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the soul of this journey, hidden details, and the feeling of being there...'**
+  String get createTourSoulHint;
+
+  /// No description provided for @createTourDescriptionValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Description must be at least 20 characters'**
+  String get createTourDescriptionValidation;
+
+  /// No description provided for @createTourInvestmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Investment Per Person'**
+  String get createTourInvestmentTitle;
+
+  /// No description provided for @createTourCurrencyValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a currency code'**
+  String get createTourCurrencyValidation;
+
+  /// No description provided for @createTourIncludedItemsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Included Items'**
+  String get createTourIncludedItemsLabel;
+
+  /// No description provided for @createTourIncludedItemsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Comma-separated: Private SUV, picnic, tickets'**
+  String get createTourIncludedItemsHint;
+
+  /// No description provided for @createTourStartOffsetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start after, min'**
+  String get createTourStartOffsetLabel;
+
+  /// No description provided for @createTourSlotDurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration, min'**
+  String get createTourSlotDurationLabel;
+
+  /// No description provided for @createTourItineraryTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get createTourItineraryTitleLabel;
+
+  /// No description provided for @createTourItineraryTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Mountain Ascent'**
+  String get createTourItineraryTitleHint;
+
+  /// No description provided for @createTourItineraryDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get createTourItineraryDescriptionLabel;
+
+  /// No description provided for @createTourItineraryDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens during this part of the route'**
+  String get createTourItineraryDescriptionHint;
 
   /// No description provided for @createStepBasic.
   ///
