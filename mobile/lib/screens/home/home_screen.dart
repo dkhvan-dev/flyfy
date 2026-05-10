@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/network/file_api.dart';
 import '../../core/network/story_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
@@ -104,6 +103,9 @@ class _HomeScreenState extends State<HomeScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
+          scrollable: true,
+          actionsOverflowDirection: VerticalDirection.down,
+          actionsOverflowButtonSpacing: 8,
           title: Text(
             l10n.logoutDialogTitle,
             style: const TextStyle(
@@ -351,210 +353,238 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierColor: Colors.black.withValues(alpha: 0.58),
       isScrollControlled: true,
       builder: (sheetContext) {
-        final screenWidth = MediaQuery.sizeOf(sheetContext).width;
+        final mediaQuery = MediaQuery.of(sheetContext);
+        final screenSize = mediaQuery.size;
+        final screenWidth = screenSize.width;
+        final screenHeight = screenSize.height;
+        final textScale = _homeTextScaleFactor(sheetContext);
         final isCompact = screenWidth < 375;
-        final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
+        final isShortLayout = screenHeight < 700 || textScale > 1.2;
+        final bottomInset = mediaQuery.viewInsets.bottom;
+        final maxSheetHeight = (screenHeight - mediaQuery.viewPadding.top - 12)
+            .clamp(320.0, screenHeight)
+            .toDouble();
         final horizontalPadding = isCompact ? 22.0 : 26.0;
         final sheetRadius = isCompact ? 30.0 : 34.0;
-        final iconWrapSize = isCompact ? 136.0 : 148.0;
-        final glowSize = isCompact ? 156.0 : 170.0;
-        final iconSize = isCompact ? 56.0 : 60.0;
+        final visualScale = isShortLayout ? 0.82 : 1.0;
+        final iconWrapSize = (isCompact ? 124.0 : 140.0) * visualScale;
+        final glowSize = iconWrapSize + (isCompact ? 20.0 : 22.0);
+        final iconSize = (isCompact ? 50.0 : 58.0) * visualScale;
+        final topPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 28.0);
+        final bottomPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 30.0);
+        final handleToIconGap =
+            isShortLayout ? 20.0 : (isCompact ? 26.0 : 34.0);
+        final iconToTitleGap = isShortLayout ? 18.0 : (isCompact ? 22.0 : 26.0);
+        final titleToOptionsGap =
+            isShortLayout ? 22.0 : (isCompact ? 28.0 : 34.0);
+        final optionGap = isShortLayout ? 12.0 : (isCompact ? 14.0 : 16.0);
 
         return SafeArea(
           top: false,
           child: Padding(
             padding: EdgeInsets.only(bottom: bottomInset),
-            child: ClipRRect(
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(sheetRadius),
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xFF211207), Color(0xFF170D06)],
-                    ),
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(sheetRadius),
-                    ),
-                    border: Border(
-                      top: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.08),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxSheetHeight),
+              child: ClipRRect(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(sheetRadius),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFF211207), Color(0xFF170D06)],
                       ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.24),
-                        blurRadius: 40,
-                        offset: const Offset(0, -12),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(sheetRadius),
                       ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.02),
-                                  Colors.transparent,
-                                ],
-                                stops: const [0, 0.16],
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.24),
+                          blurRadius: 40,
+                          offset: const Offset(0, -12),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.02),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0, 0.16],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        top: -24,
-                        left: 0,
-                        right: 0,
-                        child: IgnorePointer(
-                          child: Container(
-                            height: 110,
-                            decoration: BoxDecoration(
-                              gradient: RadialGradient(
-                                center: const Alignment(0, 0.7),
-                                radius: 0.95,
-                                colors: [
-                                  AppColors.accent.withValues(alpha: 0.08),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          horizontalPadding,
-                          isCompact ? 24 : 28,
-                          horizontalPadding,
-                          isCompact ? 24 : 30,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Center(
-                              child: Container(
-                                width: 76,
-                                height: 7,
-                                decoration: BoxDecoration(
-                                  color: AppColors.accent.withValues(
-                                    alpha: 0.45,
-                                  ),
-                                  borderRadius: BorderRadius.circular(999),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.accent.withValues(
-                                        alpha: 0.18,
-                                      ),
-                                      blurRadius: 18,
-                                    ),
+                        Positioned(
+                          top: -24,
+                          left: 0,
+                          right: 0,
+                          child: IgnorePointer(
+                            child: Container(
+                              height: 110,
+                              decoration: BoxDecoration(
+                                gradient: RadialGradient(
+                                  center: const Alignment(0, 0.7),
+                                  radius: 0.95,
+                                  colors: [
+                                    AppColors.accent.withValues(alpha: 0.08),
+                                    Colors.transparent,
                                   ],
                                 ),
                               ),
                             ),
-                            SizedBox(height: isCompact ? 26 : 34),
-                            Stack(
-                              alignment: Alignment.center,
+                          ),
+                        ),
+                        SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              horizontalPadding,
+                              topPadding,
+                              horizontalPadding,
+                              bottomPadding,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(
-                                  width: glowSize,
-                                  height: glowSize,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      colors: [
-                                        AppColors.accent.withValues(
-                                          alpha: 0.26,
-                                        ),
-                                        AppColors.accent.withValues(
-                                          alpha: 0.12,
-                                        ),
-                                        AppColors.accent.withValues(
-                                          alpha: 0.04,
-                                        ),
-                                        Colors.transparent,
-                                      ],
-                                      stops: const [0, 0.3, 0.52, 0.78],
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  width: iconWrapSize,
-                                  height: iconWrapSize,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      center: const Alignment(0, -0.25),
-                                      colors: [
-                                        AppColors.accent.withValues(
-                                          alpha: 0.05,
-                                        ),
-                                        AppColors.accent.withValues(
-                                          alpha: 0.01,
-                                        ),
-                                      ],
-                                    ),
-                                    border: Border.all(
+                                Center(
+                                  child: Container(
+                                    width: 76,
+                                    height: 7,
+                                    decoration: BoxDecoration(
                                       color: AppColors.accent.withValues(
-                                        alpha: 0.36,
+                                        alpha: 0.45,
                                       ),
-                                      width: 2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.accent.withValues(
-                                          alpha: 0.18,
+                                      borderRadius: BorderRadius.circular(999),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.accent.withValues(
+                                            alpha: 0.18,
+                                          ),
+                                          blurRadius: 18,
                                         ),
-                                        blurRadius: 28,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    Icons.language_rounded,
-                                    size: iconSize,
-                                    color: AppColors.accent,
+                                      ],
+                                    ),
                                   ),
                                 ),
+                                SizedBox(height: handleToIconGap),
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: glowSize,
+                                      height: glowSize,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(
+                                          colors: [
+                                            AppColors.accent.withValues(
+                                              alpha: 0.26,
+                                            ),
+                                            AppColors.accent.withValues(
+                                              alpha: 0.12,
+                                            ),
+                                            AppColors.accent.withValues(
+                                              alpha: 0.04,
+                                            ),
+                                            Colors.transparent,
+                                          ],
+                                          stops: const [0, 0.3, 0.52, 0.78],
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: iconWrapSize,
+                                      height: iconWrapSize,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(
+                                          center: const Alignment(0, -0.25),
+                                          colors: [
+                                            AppColors.accent.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                            AppColors.accent.withValues(
+                                              alpha: 0.01,
+                                            ),
+                                          ],
+                                        ),
+                                        border: Border.all(
+                                          color: AppColors.accent.withValues(
+                                            alpha: 0.36,
+                                          ),
+                                          width: 2,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.accent.withValues(
+                                              alpha: 0.18,
+                                            ),
+                                            blurRadius: 28,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        Icons.language_rounded,
+                                        size: iconSize,
+                                        color: AppColors.accent,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: iconToTitleGap),
+                                Text(
+                                  l10n.appLanguageTitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: isCompact ? 16 : 18,
+                                    height: 1.15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0,
+                                  ),
+                                ),
+                                SizedBox(height: titleToOptionsGap),
+                                for (final option in _languageOptions) ...[
+                                  _LanguageOptionTile(
+                                    label: option.label,
+                                    code: option.code.toUpperCase(),
+                                    isSelected: currentCode == option.code,
+                                    onTap: () => Navigator.of(
+                                      sheetContext,
+                                    ).pop(option.code),
+                                  ),
+                                  if (option != _languageOptions.last)
+                                    SizedBox(height: optionGap),
+                                ],
                               ],
                             ),
-                            SizedBox(height: isCompact ? 22 : 26),
-                            Text(
-                              l10n.appLanguageTitle,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: isCompact ? 14 : 18,
-                                height: 0.98,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0,
-                              ),
-                            ),
-                            SizedBox(height: isCompact ? 28 : 34),
-                            for (final option in _languageOptions) ...[
-                              _LanguageOptionTile(
-                                label: option.label,
-                                code: option.code.toUpperCase(),
-                                isSelected: currentCode == option.code,
-                                onTap: () =>
-                                    Navigator.of(sheetContext).pop(option.code),
-                              ),
-                              if (option != _languageOptions.last)
-                                SizedBox(height: isCompact ? 14 : 16),
-                            ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1507,8 +1537,11 @@ class _TopDestinationsRow extends StatelessWidget {
             .clamp(142.0, 180.0)
             .toDouble();
         final imageHeight = cardWidth / 0.74;
-        final infoHeight = (isCompact ? 78.0 : 82.0) * textScale;
-        final cardHeight = imageHeight + infoHeight;
+        final cardHeight = _homeTopDestinationCardHeight(
+          imageHeight: imageHeight,
+          isCompact: isCompact,
+          textScale: textScale,
+        );
 
         if (isLoading && attractions.isEmpty) {
           return MediaQuery(
@@ -1594,6 +1627,7 @@ class _TopDestinationAttractionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isCompact = MediaQuery.sizeOf(context).width < 375;
+    final textScale = _homeTextScaleFactor(context);
     final titleFontSize = isCompact ? 16.0 : 17.0;
     final titleLineHeight = 1.16;
     final titleStyle = TextStyle(
@@ -1602,7 +1636,10 @@ class _TopDestinationAttractionCard extends StatelessWidget {
       height: titleLineHeight,
       fontWeight: FontWeight.w900,
     );
-    final titleBlockHeight = titleFontSize * titleLineHeight * 2.5 + 4;
+    final titleBlockHeight = _homeTopDestinationTitleBlockHeight(
+      isCompact: isCompact,
+      textScale: textScale,
+    );
     final coverMedia = attraction.coverMedia;
     final coverUrl = _resolveHomeAttractionImageUrl(coverMedia);
     final categoryLabel = _homeAttractionCategoryLabel(l10n, attraction);
@@ -1660,9 +1697,13 @@ class _TopDestinationAttractionCard extends StatelessWidget {
                       ),
                       if (categoryLabel != null)
                         Positioned(
-                          left: 16,
+                          left: isCompact ? 12 : 16,
+                          right: isCompact ? 12 : 16,
                           bottom: 15,
-                          child: _DestinationTag(label: categoryLabel),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: _DestinationTag(label: categoryLabel),
+                          ),
                         ),
                     ],
                   ),
@@ -1864,39 +1905,104 @@ class _TopDestinationMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.borderLight),
+    final textScale = _homeTextScaleFactor(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useStackedAction = constraints.maxWidth < 340 || textScale > 1.25;
+
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: useStackedAction
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(icon, color: AppColors.textCaption, size: 28),
+                          const SizedBox(width: 14),
+                          Expanded(child: _TopDestinationMessageText(message)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: _TopDestinationMessageAction(
+                          label: actionLabel,
+                          onTap: onActionTap,
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Icon(icon, color: AppColors.textCaption, size: 28),
+                      const SizedBox(width: 14),
+                      Expanded(child: _TopDestinationMessageText(message)),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _TopDestinationMessageAction(
+                            label: actionLabel,
+                            onTap: onActionTap,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TopDestinationMessageText extends StatelessWidget {
+  const _TopDestinationMessageText(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      style: const TextStyle(
+        color: AppColors.textSecondary,
+        fontSize: 14,
+        height: 1.35,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.textCaption, size: 28),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                  height: 1.35,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: onActionTap,
-              child: Text(
-                actionLabel,
-                style: const TextStyle(
-                  color: AppColors.accent,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
+    );
+  }
+}
+
+class _TopDestinationMessageAction extends StatelessWidget {
+  const _TopDestinationMessageAction({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onTap,
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: AppColors.accent,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -2450,8 +2556,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
       publicItems: provider.items,
       currentUserId: currentUserId,
     );
-    final isLoadingPublic =
-        provider.state == ActivitiesState.loading ||
+    final isLoadingPublic = provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
     final hasLoadError = provider.state == ActivitiesState.error;
 
@@ -3043,789 +3148,6 @@ class _SkeletonChip extends StatelessWidget {
   }
 }
 
-class _HomeSideDrawer extends StatelessWidget {
-  const _HomeSideDrawer({
-    required this.l10n,
-    required this.isLoggedIn,
-    required this.showGuideBadge,
-    required this.profile,
-    required this.location,
-    required this.languageLabel,
-    required this.onProfileTap,
-    required this.onLanguageTap,
-    required this.onHomeTap,
-    required this.onMyActivitiesTap,
-    required this.onMyStoriesTap,
-    required this.onActivitiesTap,
-    required this.onLoginTap,
-    required this.onLogoutTap,
-  });
-
-  final AppLocalizations l10n;
-  final bool isLoggedIn;
-  final bool showGuideBadge;
-  final UserProfileVm? profile;
-  final String location;
-  final String languageLabel;
-  final VoidCallback onProfileTap;
-  final VoidCallback onLanguageTap;
-  final VoidCallback onHomeTap;
-  final VoidCallback onMyActivitiesTap;
-  final VoidCallback onMyStoriesTap;
-  final VoidCallback onActivitiesTap;
-  final VoidCallback onLoginTap;
-  final VoidCallback onLogoutTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final layout = _HomeDrawerLayout.of(context);
-    final profileTitle =
-        isLoggedIn ? profile?.preferredName ?? 'FlyFy' : 'FlyFy';
-    final profileSubtitle = isLoggedIn ? location : l10n.homeSubtitle;
-    final avatarText = profile?.initials ?? 'F';
-    final avatarUrl = resolvePublicFileContentUrl(
-      (profile?.avatarFileId ?? '').trim(),
-    );
-    return Drawer(
-      width: layout.drawerWidth,
-      backgroundColor: Colors.transparent,
-      shadowColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      child: ClipRRect(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(layout.panelRadius),
-          bottomRight: Radius.circular(layout.panelRadius),
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1B120B), Color(0xFF0F0906)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.36),
-                blurRadius: 40,
-                offset: const Offset(10, 0),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.accent.withValues(alpha: 0.13),
-                          Colors.transparent,
-                          AppColors.accent.withValues(alpha: 0.05),
-                        ],
-                        stops: const [0, 0.45, 1],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: -80,
-                left: -70,
-                child: IgnorePointer(
-                  child: Container(
-                    width: 220,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.accent.withValues(alpha: 0.08),
-                    ),
-                  ),
-                ),
-              ),
-              SafeArea(
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  slivers: [
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        layout.horizontalPadding,
-                        layout.topPadding,
-                        layout.horizontalPadding,
-                        layout.sectionGap,
-                      ),
-                      sliver: SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: isLoggedIn ? onProfileTap : onLoginTap,
-                                borderRadius: BorderRadius.circular(
-                                  layout.cardRadius,
-                                ),
-                                child: Ink(
-                                  padding: EdgeInsets.all(layout.cardPadding),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(
-                                      layout.cardRadius,
-                                    ),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Colors.white.withValues(alpha: 0.05),
-                                        AppColors.accent.withValues(
-                                          alpha: 0.10,
-                                        ),
-                                      ],
-                                    ),
-                                    border: Border.all(
-                                      color: AppColors.accent.withValues(
-                                        alpha: 0.24,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Stack(
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          Container(
-                                            width: layout.avatarSize,
-                                            height: layout.avatarSize,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              gradient: const LinearGradient(
-                                                begin: Alignment.topCenter,
-                                                end: Alignment.bottomCenter,
-                                                colors: [
-                                                  Color(0xFFFDF9F4),
-                                                  Color(0xFFF2E7DA),
-                                                ],
-                                              ),
-                                              border: Border.all(
-                                                color: AppColors.accent,
-                                                width: 3,
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: AppColors.accent
-                                                      .withValues(alpha: 0.18),
-                                                  blurRadius: 22,
-                                                  offset: const Offset(0, 10),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Center(
-                                              child: ClipOval(
-                                                child: SizedBox.expand(
-                                                  child: avatarUrl == null
-                                                      ? Center(
-                                                          child: Text(
-                                                            avatarText,
-                                                            style: TextStyle(
-                                                              color: AppColors
-                                                                  .background,
-                                                              fontSize: layout
-                                                                  .avatarTextSize,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w800,
-                                                            ),
-                                                          ),
-                                                        )
-                                                      : Image.network(
-                                                          avatarUrl,
-                                                          fit: BoxFit.cover,
-                                                          errorBuilder:
-                                                              (_, __, ___) =>
-                                                                  Center(
-                                                            child: Text(
-                                                              avatarText,
-                                                              style: TextStyle(
-                                                                color: AppColors
-                                                                    .background,
-                                                                fontSize: layout
-                                                                    .avatarTextSize,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w800,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          if (showGuideBadge)
-                                            Positioned(
-                                              right: -2,
-                                              bottom: 8,
-                                              child: Container(
-                                                width: layout.avatarBadgeSize,
-                                                height: layout.avatarBadgeSize,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  gradient:
-                                                      const LinearGradient(
-                                                    begin: Alignment.topCenter,
-                                                    end: Alignment.bottomCenter,
-                                                    colors: [
-                                                      Color(0xFFFFB347),
-                                                      Color(0xFFF98C06),
-                                                    ],
-                                                  ),
-                                                  border: Border.all(
-                                                    color: const Color(
-                                                      0xFF2B170C,
-                                                    ),
-                                                    width: 3,
-                                                  ),
-                                                ),
-                                                child: Icon(
-                                                  Icons.verified_rounded,
-                                                  size: layout
-                                                      .avatarBadgeIconSize,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      SizedBox(width: layout.profileGap),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 10,
-                                                vertical: 6,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.accent
-                                                    .withValues(alpha: 0.18),
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                              ),
-                                              child: Text(
-                                                isLoggedIn
-                                                    ? l10n.profileTitle
-                                                    : l10n.loginButton,
-                                                style: TextStyle(
-                                                  color: AppColors.accent,
-                                                  fontSize:
-                                                      layout.metaLabelSize,
-                                                  fontWeight: FontWeight.w800,
-                                                  letterSpacing: 0.4,
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: layout.profileTextGap,
-                                            ),
-                                            Text(
-                                              profileTitle,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                color: AppColors.textPrimary,
-                                                fontSize:
-                                                    layout.profileTitleSize,
-                                                height: 1.05,
-                                                fontWeight: FontWeight.w800,
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: layout.profileTextGap,
-                                            ),
-                                            Text(
-                                              profileSubtitle,
-                                              maxLines: isLoggedIn ? 1 : 3,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.74,
-                                                ),
-                                                fontSize:
-                                                    layout.profileSubtitleSize,
-                                                height: 1.45,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(width: layout.trailingGap),
-                                      Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.55,
-                                        ),
-                                        size: layout.trailingIconSize,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: layout.sectionGap),
-                            _DrawerMenuItem(
-                              layout: layout,
-                              icon: Icons.language_rounded,
-                              iconWidget: Center(
-                                child: Text(
-                                  languageLabel,
-                                  style: TextStyle(
-                                    color: AppColors.accent,
-                                    fontSize: layout.iconBoxSize * 0.36,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                              label: l10n.appLanguageTitle,
-                              labelFontSize: layout.menuLabelSize - 3,
-                              usePreferencePalette: true,
-                              onTap: onLanguageTap,
-                            ),
-                            SizedBox(height: layout.sectionGap),
-                            _DrawerSectionTitle(
-                              title: l10n.homeExploreServices,
-                              layout: layout,
-                            ),
-                            SizedBox(height: layout.menuGap),
-                            _DrawerMenuItem(
-                              layout: layout,
-                              label: l10n.homeNavHome,
-                              icon: Icons.home_rounded,
-                              isActive: true,
-                              onTap: onHomeTap,
-                            ),
-                            SizedBox(height: layout.menuGap),
-                            _DrawerMenuItem(
-                              layout: layout,
-                              label: l10n.myActivitiesTitle,
-                              icon: Icons.event_note_rounded,
-                              usePreferencePalette: true,
-                              onTap: onMyActivitiesTap,
-                            ),
-                            SizedBox(height: layout.menuGap),
-                            _DrawerMenuItem(
-                              layout: layout,
-                              label: l10n.myStoriesTitle,
-                              icon: Icons.auto_stories_rounded,
-                              usePreferencePalette: true,
-                              onTap: onMyStoriesTap,
-                            ),
-                            SizedBox(height: layout.menuGap),
-                            _DrawerMenuItem(
-                              layout: layout,
-                              label: l10n.activitiesEntryTitle,
-                              icon: Icons.explore_rounded,
-                              usePreferencePalette: true,
-                              onTap: onActivitiesTap,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      fillOverscroll: true,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          layout.horizontalPadding,
-                          0,
-                          layout.horizontalPadding,
-                          layout.bottomPadding,
-                        ),
-                        child: Column(
-                          children: [
-                            const Spacer(),
-                            Container(
-                              padding: EdgeInsets.only(
-                                top: layout.footerTopPadding,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  top: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.08),
-                                  ),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          l10n.homeTitle,
-                                          style: TextStyle(
-                                            color: AppColors.accent,
-                                            fontSize: layout.brandTitleSize,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          l10n.homeSubtitle,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.50,
-                                            ),
-                                            fontSize: layout.brandSubtitleSize,
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(width: layout.footerGap),
-                                  _DrawerFooterAction(
-                                    layout: layout,
-                                    icon: isLoggedIn
-                                        ? Icons.logout_rounded
-                                        : Icons.login_rounded,
-                                    isAccent: !isLoggedIn,
-                                    onTap:
-                                        isLoggedIn ? onLogoutTap : onLoginTap,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeDrawerLayout {
-  const _HomeDrawerLayout({
-    required this.drawerWidth,
-    required this.panelRadius,
-    required this.horizontalPadding,
-    required this.topPadding,
-    required this.bottomPadding,
-    required this.cardRadius,
-    required this.cardPadding,
-    required this.avatarSize,
-    required this.avatarTextSize,
-    required this.avatarBadgeSize,
-    required this.avatarBadgeIconSize,
-    required this.profileGap,
-    required this.profileTextGap,
-    required this.profileTitleSize,
-    required this.profileSubtitleSize,
-    required this.metaLabelSize,
-    required this.trailingGap,
-    required this.trailingIconSize,
-    required this.sectionGap,
-    required this.menuGap,
-    required this.menuMinHeight,
-    required this.iconBoxSize,
-    required this.menuLabelSize,
-    required this.footerTopPadding,
-    required this.footerGap,
-    required this.footerButtonSize,
-    required this.brandTitleSize,
-    required this.brandSubtitleSize,
-    required this.sectionTitleSize,
-  });
-
-  final double drawerWidth;
-  final double panelRadius;
-  final double horizontalPadding;
-  final double topPadding;
-  final double bottomPadding;
-  final double cardRadius;
-  final double cardPadding;
-  final double avatarSize;
-  final double avatarTextSize;
-  final double avatarBadgeSize;
-  final double avatarBadgeIconSize;
-  final double profileGap;
-  final double profileTextGap;
-  final double profileTitleSize;
-  final double profileSubtitleSize;
-  final double metaLabelSize;
-  final double trailingGap;
-  final double trailingIconSize;
-  final double sectionGap;
-  final double menuGap;
-  final double menuMinHeight;
-  final double iconBoxSize;
-  final double menuLabelSize;
-  final double footerTopPadding;
-  final double footerGap;
-  final double footerButtonSize;
-  final double brandTitleSize;
-  final double brandSubtitleSize;
-  final double sectionTitleSize;
-
-  static _HomeDrawerLayout of(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final width = size.width;
-    final height = size.height;
-    final isCompact = width < 375;
-    final isShort = height < 740;
-
-    return _HomeDrawerLayout(
-      drawerWidth: (width * 0.88).clamp(292.0, 388.0).toDouble(),
-      panelRadius: width < 420 ? 28 : 32,
-      horizontalPadding: isCompact ? 18 : 24,
-      topPadding: isShort ? 10 : 14,
-      bottomPadding: isShort ? 18 : 22,
-      cardRadius: isCompact ? 22 : 26,
-      cardPadding: isCompact ? 16 : 20,
-      avatarSize: isCompact ? 84 : 100,
-      avatarTextSize: isCompact ? 28 : 32,
-      avatarBadgeSize: isCompact ? 28 : 32,
-      avatarBadgeIconSize: isCompact ? 13 : 14,
-      profileGap: isCompact ? 14 : 16,
-      profileTextGap: isCompact ? 8 : 10,
-      profileTitleSize: isCompact ? 22 : 24,
-      profileSubtitleSize: isCompact ? 13 : 14,
-      metaLabelSize: isCompact ? 11 : 12,
-      trailingGap: isCompact ? 10 : 12,
-      trailingIconSize: isCompact ? 20 : 22,
-      sectionGap: isShort ? 24 : 30,
-      menuGap: isCompact ? 12 : 14,
-      menuMinHeight: isCompact ? 78 : 90,
-      iconBoxSize: isCompact ? 48 : 54,
-      menuLabelSize: isCompact ? 16 : 18,
-      footerTopPadding: isCompact ? 16 : 18,
-      footerGap: isCompact ? 12 : 16,
-      footerButtonSize: isCompact ? 56 : 64,
-      brandTitleSize: isCompact ? 22 : 24,
-      brandSubtitleSize: isCompact ? 10.5 : 11,
-      sectionTitleSize: isCompact ? 11 : 12,
-    );
-  }
-}
-
-class _DrawerSectionTitle extends StatelessWidget {
-  const _DrawerSectionTitle({required this.title, required this.layout});
-
-  final String title;
-  final _HomeDrawerLayout layout;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title.toUpperCase(),
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.86),
-        fontSize: layout.sectionTitleSize,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.3,
-      ),
-    );
-  }
-}
-
-class _DrawerMenuItem extends StatelessWidget {
-  const _DrawerMenuItem({
-    required this.layout,
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.iconWidget,
-    this.labelFontSize,
-    this.isActive = false,
-    this.usePreferencePalette = false,
-  });
-
-  final _HomeDrawerLayout layout;
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-  final Widget? iconWidget;
-  final double? labelFontSize;
-  final bool isActive;
-  final bool usePreferencePalette;
-
-  @override
-  Widget build(BuildContext context) {
-    final matchesPreferencePalette = !isActive && usePreferencePalette;
-    final foregroundColor = isActive
-        ? const Color(0xFFFFB347)
-        : Colors.white.withValues(alpha: 0.90);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(layout.cardRadius),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: layout.menuMinHeight),
-          child: Ink(
-            padding: EdgeInsets.symmetric(
-              horizontal: layout.cardPadding,
-              vertical: layout.cardPadding - 2,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(layout.cardRadius),
-              gradient: isActive
-                  ? LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        AppColors.accent.withValues(alpha: 0.24),
-                        AppColors.accent.withValues(alpha: 0.10),
-                      ],
-                    )
-                  : matchesPreferencePalette
-                      ? LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withValues(alpha: 0.03),
-                            AppColors.accent.withValues(alpha: 0.07),
-                          ],
-                        )
-                      : null,
-              color: isActive
-                  ? null
-                  : matchesPreferencePalette
-                      ? null
-                      : Colors.white.withValues(alpha: 0.02),
-              border: Border.all(
-                color: isActive
-                    ? AppColors.accent.withValues(alpha: 0.20)
-                    : matchesPreferencePalette
-                        ? AppColors.accent.withValues(alpha: 0.20)
-                        : Colors.transparent,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: layout.iconBoxSize,
-                  height: layout.iconBoxSize,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    gradient: isActive
-                        ? const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0xFFFFB02E), Color(0xFFF98C06)],
-                          )
-                        : null,
-                    color: isActive
-                        ? null
-                        : matchesPreferencePalette
-                            ? AppColors.accent.withValues(alpha: 0.12)
-                            : Colors.white.withValues(alpha: 0.04),
-                  ),
-                  child: iconWidget ??
-                      Icon(
-                        icon,
-                        color: isActive
-                            ? Colors.white
-                            : matchesPreferencePalette
-                                ? AppColors.accent
-                                : foregroundColor,
-                        size: layout.iconBoxSize * 0.48,
-                      ),
-                ),
-                SizedBox(width: layout.profileGap),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: foregroundColor,
-                      fontSize: labelFontSize ?? layout.menuLabelSize,
-                      fontWeight: isActive
-                          ? FontWeight.w700
-                          : matchesPreferencePalette
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                      height: 1.2,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DrawerFooterAction extends StatelessWidget {
-  const _DrawerFooterAction({
-    required this.layout,
-    required this.icon,
-    required this.onTap,
-    this.isAccent = false,
-  });
-
-  final _HomeDrawerLayout layout;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isAccent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Ink(
-          width: layout.footerButtonSize,
-          height: layout.footerButtonSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: isAccent
-                ? const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFFFB347), Color(0xFFF98C06)],
-                  )
-                : null,
-            color: isAccent ? null : Colors.white.withValues(alpha: 0.04),
-          ),
-          child: Icon(
-            icon,
-            color: isAccent ? AppColors.background : Colors.white70,
-            size: layout.footerButtonSize * 0.38,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _LanguageOptionTile extends StatelessWidget {
   const _LanguageOptionTile({
     required this.label,
@@ -3882,6 +3204,8 @@ class _LanguageOptionTile extends StatelessWidget {
                   children: [
                     Text(
                       label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: isSelected
                             ? Colors.white
@@ -3893,6 +3217,8 @@ class _LanguageOptionTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       code,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: isSelected
                             ? Colors.white.withValues(alpha: 0.86)
@@ -3994,6 +3320,29 @@ double _homeTextScaleFactor(BuildContext context) {
   final bodySize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14.0;
   final scale = MediaQuery.textScalerOf(context).scale(bodySize) / bodySize;
   return scale.clamp(1.0, 1.6).toDouble();
+}
+
+double _homeTopDestinationTitleBlockHeight({
+  required bool isCompact,
+  required double textScale,
+}) {
+  final titleFontSize = isCompact ? 16.0 : 17.0;
+  const titleLineHeight = 1.16;
+  return titleFontSize * titleLineHeight * textScale * 2 + 4;
+}
+
+double _homeTopDestinationCardHeight({
+  required double imageHeight,
+  required bool isCompact,
+  required double textScale,
+}) {
+  final titleBlockHeight = _homeTopDestinationTitleBlockHeight(
+    isCompact: isCompact,
+    textScale: textScale,
+  );
+  final footerFontSize = isCompact ? 13.0 : 14.0;
+  final footerHeight = footerFontSize * textScale * 1.35;
+  return imageHeight + 13 + titleBlockHeight + 8 + footerHeight + 4;
 }
 
 String? _resolveHomeAttractionImageUrl(AttractionMediaVm? media) {
