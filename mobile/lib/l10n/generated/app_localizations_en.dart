@@ -2587,6 +2587,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activitiesFiltersTitle => 'Filters';
 
   @override
+  String get activitiesSortLabel => 'Sort by';
+
+  @override
   String get activitiesSortDate => 'Date';
 
   @override

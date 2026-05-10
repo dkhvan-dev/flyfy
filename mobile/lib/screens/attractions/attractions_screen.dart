@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../features/attractions/attraction_ui.dart';
@@ -27,17 +28,6 @@ extension _AttractionSortFieldX on _AttractionSortField {
         return l10n.attractionsSortDuration;
       case _AttractionSortField.price:
         return l10n.attractionsSortPrice;
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case _AttractionSortField.rating:
-        return Icons.star_rounded;
-      case _AttractionSortField.duration:
-        return Icons.schedule_rounded;
-      case _AttractionSortField.price:
-        return Icons.payments_rounded;
     }
   }
 
@@ -486,136 +476,23 @@ class _AttractionSortBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fields = _AttractionSortField.values;
+    final isAscending = direction == _AttractionSortDirection.asc;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 340;
-        final labelStyle = TextStyle(
-          color: const Color(0xFFE3D4C2).withValues(alpha: 0.78),
-          fontSize: adaptive.scale(13, minFactor: 0.86),
-          fontWeight: FontWeight.w800,
-        );
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.attractionsSortLabel, style: labelStyle),
-            SizedBox(height: adaptive.scale(10, minFactor: 0.72)),
-            Wrap(
-              spacing: adaptive.scale(8, minFactor: 0.72),
-              runSpacing: adaptive.scale(8, minFactor: 0.72),
-              children: [
-                for (final field in fields)
-                  SizedBox(
-                    width: isNarrow
-                        ? constraints.maxWidth
-                        : (constraints.maxWidth -
-                                adaptive.scale(16, minFactor: 0.72)) /
-                            3,
-                    child: _AttractionSortChip(
-                      label: field.label(l10n),
-                      fieldIcon: field.icon,
-                      adaptive: adaptive,
-                      direction: selectedField == field
-                          ? direction
-                          : field.defaultDirection,
-                      isSelected: selectedField == field,
-                      onTap: () => onFieldSelected(field),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _AttractionSortChip extends StatelessWidget {
-  const _AttractionSortChip({
-    required this.label,
-    required this.fieldIcon,
-    required this.adaptive,
-    required this.direction,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData fieldIcon;
-  final AttractionAdaptive adaptive;
-  final _AttractionSortDirection direction;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final backgroundColor = isSelected
-        ? AppColors.accent.withValues(alpha: 0.18)
-        : Colors.white.withValues(alpha: 0.055);
-    final borderColor = isSelected
-        ? AppColors.accent.withValues(alpha: 0.58)
-        : Colors.white.withValues(alpha: 0.08);
-    final foregroundColor =
-        isSelected ? const Color(0xFFFFD08A) : const Color(0xFFE7D7C5);
-    final directionIcon = direction == _AttractionSortDirection.asc
-        ? Icons.arrow_upward_rounded
-        : Icons.arrow_downward_rounded;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: adaptive.scale(46, minFactor: 0.92),
-          ),
-          child: Ink(
-            padding: EdgeInsets.symmetric(
-              horizontal: adaptive.scale(12, minFactor: 0.84),
-              vertical: adaptive.scale(9, minFactor: 0.84),
-            ),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: borderColor),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  fieldIcon,
-                  color: foregroundColor,
-                  size: adaptive.scale(17, minFactor: 0.88),
-                ),
-                SizedBox(width: adaptive.scale(6, minFactor: 0.72)),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: foregroundColor,
-                      fontSize: adaptive.scale(13, minFactor: 0.9),
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                SizedBox(width: adaptive.scale(4, minFactor: 0.72)),
-                Icon(
-                  directionIcon,
-                  color: foregroundColor,
-                  size: adaptive.scale(17, minFactor: 0.88),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return AppInlineSortRow<_AttractionSortField>(
+      label: l10n.attractionsSortLabel,
+      options: [
+        for (final field in fields)
+          AppInlineSortOption(value: field, label: field.label(l10n)),
+      ],
+      selectedValue: selectedField,
+      isAscending: isAscending,
+      onSelected: onFieldSelected,
+      fontSize: adaptive.scale(12, minFactor: 0.9),
+      iconSize: adaptive.scale(14, minFactor: 0.86),
+      labelToOptionsGap: adaptive.scale(18, minFactor: 0.72),
+      optionGap: adaptive.scale(22, minFactor: 0.72),
+      iconGap: adaptive.scale(5, minFactor: 0.72),
+      verticalPadding: adaptive.scale(8, minFactor: 0.84),
     );
   }
 }

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../core/device/device_context_service.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
@@ -1095,122 +1096,27 @@ class _DiscoverSortBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gap = _activitiesScaled(context, 10, min: 8, max: 10);
-
-    return Row(
-      children: [
-        Expanded(
-          child: _DiscoverSortButton(
-            label: l10n.activitiesSortDate,
-            leadingIcon: Icons.calendar_month_outlined,
-            active: sortField == _ActivitySortField.date,
-            ascending: sortAscending,
-            onTap: () => onSortTap(_ActivitySortField.date),
-          ),
+    return AppInlineSortRow<_ActivitySortField>(
+      label: l10n.activitiesSortLabel,
+      options: [
+        AppInlineSortOption(
+          value: _ActivitySortField.date,
+          label: l10n.activitiesSortDate,
         ),
-        SizedBox(width: gap),
-        Expanded(
-          child: _DiscoverSortButton(
-            label: l10n.activitiesSortPrice,
-            leadingIcon: Icons.payments_outlined,
-            active: sortField == _ActivitySortField.price,
-            ascending: sortAscending,
-            onTap: () => onSortTap(_ActivitySortField.price),
-          ),
+        AppInlineSortOption(
+          value: _ActivitySortField.price,
+          label: l10n.activitiesSortPrice,
         ),
       ],
-    );
-  }
-}
-
-class _DiscoverSortButton extends StatelessWidget {
-  const _DiscoverSortButton({
-    required this.label,
-    required this.leadingIcon,
-    required this.active,
-    required this.ascending,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData leadingIcon;
-  final bool active;
-  final bool ascending;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final foreground = active ? AppColors.textPrimary : const Color(0xFFF3DFCA);
-    final fontSize = _activitiesScaled(context, 14, min: 12, max: 14);
-    final iconSize = _activitiesScaled(context, 16, min: 14, max: 16);
-    final arrowIcon = active
-        ? (ascending
-            ? Icons.arrow_upward_rounded
-            : Icons.arrow_downward_rounded)
-        : Icons.unfold_more_rounded;
-
-    return Semantics(
-      button: true,
-      selected: active,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: Ink(
-            height: _activitiesScaled(context, 42, min: 38, max: 44),
-            padding: EdgeInsets.symmetric(
-              horizontal: _activitiesScaled(context, 14, min: 10, max: 14),
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              gradient: active
-                  ? const LinearGradient(
-                      colors: [Color(0xFFFFAB2D), Color(0xFFFF9800)],
-                    )
-                  : LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.03),
-                        Colors.white.withValues(alpha: 0.02),
-                      ],
-                    ),
-              border: active
-                  ? null
-                  : Border.all(color: AppColors.accent.withValues(alpha: 0.12)),
-              boxShadow: active
-                  ? [
-                      BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.20),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(leadingIcon, size: iconSize, color: foreground),
-                SizedBox(width: _activitiesScaled(context, 7, min: 5, max: 7)),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: foreground,
-                      fontSize: fontSize,
-                      fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                    ),
-                  ),
-                ),
-                SizedBox(width: _activitiesScaled(context, 6, min: 4, max: 6)),
-                Icon(arrowIcon, size: iconSize, color: foreground),
-              ],
-            ),
-          ),
-        ),
-      ),
+      selectedValue: sortField,
+      isAscending: sortAscending,
+      onSelected: onSortTap,
+      fontSize: _activitiesScaled(context, 12, min: 11, max: 12),
+      iconSize: _activitiesScaled(context, 14, min: 12, max: 14),
+      labelToOptionsGap: _activitiesScaled(context, 18, min: 12, max: 18),
+      optionGap: _activitiesScaled(context, 22, min: 16, max: 22),
+      iconGap: _activitiesScaled(context, 5, min: 4, max: 5),
+      verticalPadding: _activitiesScaled(context, 8, min: 6, max: 10),
     );
   }
 }

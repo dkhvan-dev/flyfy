@@ -2603,6 +2603,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activitiesFiltersTitle => 'Сүзгілер';
 
   @override
+  String get activitiesSortLabel => 'Сұрыптау';
+
+  @override
   String get activitiesSortDate => 'Күні';
 
   @override

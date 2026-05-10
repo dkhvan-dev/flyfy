@@ -3,10 +3,14 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('attractions screen exposes rating duration and price sort controls',
+  test(
+      'attractions screen exposes stories-style rating duration and price sort controls',
       () async {
     final source = await File('lib/screens/attractions/attractions_screen.dart')
         .readAsString();
+    final inlineSortRowSource = await File(
+      'lib/core/ui/app_inline_sort_row.dart',
+    ).readAsString();
     final loadStart = source.indexOf('Future<void> _loadAttractions');
     final loadEnd = source.indexOf('Future<void> _openFilters');
     final sortBarStart = source.indexOf('class _AttractionSortBar');
@@ -27,11 +31,18 @@ void main() {
     expect(source, contains('attractionsSortRating'));
     expect(source, contains('attractionsSortDuration'));
     expect(source, contains('attractionsSortPrice'));
-    expect(source, contains('Icons.star_rounded'));
-    expect(source, contains('Icons.schedule_rounded'));
-    expect(source, contains('Icons.payments_rounded'));
-    expect(sortBarSource, contains('Icons.arrow_upward_rounded'));
-    expect(sortBarSource, contains('Icons.arrow_downward_rounded'));
+    expect(sortBarSource, contains('AppInlineSortRow<_AttractionSortField>'));
+    expect(sortBarSource, contains('attractionsSortLabel'));
+    expect(inlineSortRowSource, contains('SingleChildScrollView'));
+    expect(inlineSortRowSource, contains('scrollDirection: Axis.horizontal'));
+    expect(inlineSortRowSource, contains('GestureDetector('));
+    expect(inlineSortRowSource, contains("'\$label:'"));
+    expect(inlineSortRowSource, contains('Icons.arrow_upward_rounded'));
+    expect(inlineSortRowSource, contains('Icons.arrow_downward_rounded'));
+    expect(sortBarSource, isNot(contains('_AttractionSortChip(')));
+    expect(sortBarSource, isNot(contains('Wrap(')));
+    expect(sortBarSource, isNot(contains('BoxDecoration(')));
+    expect(source, isNot(contains('class _AttractionSortChip')));
   });
 
   test('attractions screen does not render curated or recommended headings',

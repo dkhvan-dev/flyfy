@@ -925,6 +925,7 @@
   "activityJoinActivity": "Join Activity",
   "activitiesSearchHint": "Search activities, hosts, or cities",
   "activitiesFiltersTitle": "Filters",
+  "activitiesSortLabel": "Sort by",
   "activitiesSortDate": "Date",
   "activitiesSortPrice": "Price",
   "activitiesFilterCategory": "Category",

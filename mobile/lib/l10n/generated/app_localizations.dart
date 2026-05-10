@@ -4840,6 +4840,12 @@ abstract class AppLocalizations {
   /// **'Filters'**
   String get activitiesFiltersTitle;
 
+  /// No description provided for @activitiesSortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get activitiesSortLabel;
+
   /// No description provided for @activitiesSortDate.
   ///
   /// In en, this message translates to:

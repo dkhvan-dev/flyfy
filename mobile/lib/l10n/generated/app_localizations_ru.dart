@@ -1619,7 +1619,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attractionsFiltersTitle => 'Фильтры';
 
   @override
-  String get attractionsSortLabel => 'Сортировать по';
+  String get attractionsSortLabel => 'Сортировать';
 
   @override
   String get attractionsSortRating => 'Рейтинг';
@@ -2589,6 +2589,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activitiesFiltersTitle => 'Фильтры';
+
+  @override
+  String get activitiesSortLabel => 'Сортировать';
 
   @override
   String get activitiesSortDate => 'Дата';
