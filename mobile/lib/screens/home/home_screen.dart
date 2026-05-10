@@ -98,48 +98,13 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          scrollable: true,
-          actionsOverflowDirection: VerticalDirection.down,
-          actionsOverflowButtonSpacing: 8,
-          title: Text(
-            l10n.logoutDialogTitle,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            l10n.logoutDialogMessage,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 16,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(
-                l10n.cancel,
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: AppColors.background,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(l10n.logoutConfirmButton),
-            ),
-          ],
+        return _LogoutConfirmDialog(
+          title: l10n.logoutDialogTitle,
+          message: l10n.logoutDialogMessage,
+          cancelLabel: l10n.cancel,
+          confirmLabel: l10n.logoutConfirmButton,
+          onCancel: () => Navigator.of(dialogContext).pop(false),
+          onConfirm: () => Navigator.of(dialogContext).pop(true),
         );
       },
     );
@@ -955,6 +920,280 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutConfirmDialog extends StatelessWidget {
+  const _LogoutConfirmDialog({
+    required this.title,
+    required this.message,
+    required this.cancelLabel,
+    required this.confirmLabel,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  final String title;
+  final String message;
+  final String cancelLabel;
+  final String confirmLabel;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final textScale = _homeTextScaleFactor(context);
+    final isCompact = screenWidth < 375;
+    final maxDialogHeight =
+        (screenHeight - mediaQuery.viewPadding.vertical - 48)
+            .clamp(320.0, screenHeight)
+            .toDouble();
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 16 : 24,
+        vertical: 24,
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 386,
+          maxHeight: maxDialogHeight,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF243435),
+                  Color(0xFF201713),
+                  Color(0xFF121817),
+                ],
+                stops: [0, 0.54, 1],
+              ),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.24),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.34),
+                  blurRadius: 34,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: -72,
+                  right: -80,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 190,
+                      height: 190,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.accent.withValues(alpha: 0.12),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -98,
+                  left: -88,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 210,
+                      height: 210,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF7ED7C1).withValues(alpha: 0.08),
+                      ),
+                    ),
+                  ),
+                ),
+                SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isCompact ? 22 : 26,
+                      isCompact ? 22 : 26,
+                      isCompact ? 22 : 26,
+                      isCompact ? 20 : 24,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: isCompact ? 54 : 58,
+                          height: isCompact ? 54 : 58,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppColors.accent.withValues(alpha: 0.95),
+                                const Color(0xFFFFC46A),
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.accent.withValues(alpha: 0.24),
+                                blurRadius: 22,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.logout_rounded,
+                            color: Color(0xFF1D1711),
+                            size: 27,
+                          ),
+                        ),
+                        SizedBox(height: isCompact ? 18 : 20),
+                        Text(
+                          title,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: const Color(0xFFFFF7EC),
+                            fontSize: isCompact ? 21 : 23,
+                            height: 1.12,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          message,
+                          style: TextStyle(
+                            color: const Color(0xFFE0D4C6).withValues(
+                              alpha: 0.88,
+                            ),
+                            fontSize: isCompact ? 14 : 15,
+                            height: 1.45,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: isCompact ? 22 : 26),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final useStackedActions =
+                                constraints.maxWidth < 318 || textScale > 1.25;
+                            final actionWidth = useStackedActions
+                                ? constraints.maxWidth
+                                : (constraints.maxWidth - 12) / 2;
+
+                            return Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              alignment: WrapAlignment.end,
+                              children: [
+                                SizedBox(
+                                  width: actionWidth,
+                                  child: _LogoutDialogActionButton(
+                                    label: cancelLabel,
+                                    onTap: onCancel,
+                                    isPrimary: false,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: actionWidth,
+                                  child: _LogoutDialogActionButton(
+                                    label: confirmLabel,
+                                    onTap: onConfirm,
+                                    isPrimary: true,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutDialogActionButton extends StatelessWidget {
+  const _LogoutDialogActionButton({
+    required this.label,
+    required this.onTap,
+    required this.isPrimary,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor =
+        isPrimary ? const Color(0xFF1D1711) : const Color(0xFFFFE9C8);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: isPrimary
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFB347), Color(0xFFFFD083)],
+                    )
+                  : null,
+              color: isPrimary ? null : Colors.white.withValues(alpha: 0.055),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isPrimary
+                    ? Colors.transparent
+                    : AppColors.accent.withValues(alpha: 0.20),
+              ),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: foregroundColor,
+                    fontSize: 15,
+                    height: 1.1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

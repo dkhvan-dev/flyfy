@@ -1047,7 +1047,7 @@ class _DrawerFooterAction extends StatelessWidget {
           ),
           child: Icon(
             icon,
-            color: isAccent ? AppColors.background : Colors.white70,
+            color: AppColors.accent,
             size: layout.footerButtonSize * 0.38,
           ),
         ),

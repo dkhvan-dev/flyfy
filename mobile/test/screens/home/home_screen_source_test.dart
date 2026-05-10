@@ -41,4 +41,28 @@ void main() {
     expect(sheetSource, contains('ConstrainedBox'));
     expect(sheetSource, contains('SingleChildScrollView'));
   });
+
+  test('logout confirmation uses branded adaptive dialog chrome', () async {
+    final source =
+        await File('lib/screens/home/home_screen.dart').readAsString();
+    final confirmStart = source.indexOf('Future<void> _confirmLogout()');
+    final confirmEnd = source.indexOf('Future<void> _loadTopAttractions');
+    final dialogStart = source.indexOf('class _LogoutConfirmDialog');
+    final dialogEnd = source.indexOf('class _HomeHeader');
+
+    expect(confirmStart, isNonNegative);
+    expect(confirmEnd, greaterThan(confirmStart));
+    expect(dialogStart, isNonNegative);
+    expect(dialogEnd, greaterThan(dialogStart));
+
+    final confirmSource = source.substring(confirmStart, confirmEnd);
+    final dialogSource = source.substring(dialogStart, dialogEnd);
+
+    expect(confirmSource, contains('_LogoutConfirmDialog('));
+    expect(confirmSource, isNot(contains('AlertDialog(')));
+    expect(dialogSource, contains('Icons.logout_rounded'));
+    expect(dialogSource, contains('LinearGradient'));
+    expect(dialogSource, contains('Wrap('));
+    expect(dialogSource, contains('AppColors.accent'));
+  });
 }
