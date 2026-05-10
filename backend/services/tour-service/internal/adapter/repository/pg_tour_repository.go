@@ -319,10 +319,10 @@ func updateTour(ctx context.Context, exec dbExecutor, item *model.Tour) error {
 			published_at = $22,
 			deleted_at = $23,
 			revision = $24,
-			updated_at = $26
+			updated_at = $25
 		WHERE id = $1
 	`
-	tag, err := exec.Exec(ctx, query, tourArgs(item)...)
+	tag, err := exec.Exec(ctx, query, updateTourArgs(item)...)
 	if err != nil {
 		return fmt.Errorf("update tour: %w", err)
 	}
@@ -359,6 +359,36 @@ func tourArgs(item *model.Tour) []any {
 		item.DeletedAt,
 		item.Revision,
 		item.CreatedAt,
+		item.UpdatedAt,
+	}
+}
+
+func updateTourArgs(item *model.Tour) []any {
+	return []any{
+		item.ID,
+		item.GuideProfileID,
+		item.GuideUserID,
+		item.LandmarkID,
+		item.LandmarkName,
+		item.Title,
+		item.Summary,
+		item.Description,
+		item.CategorySlug,
+		string(item.Status),
+		string(item.Visibility),
+		item.DurationMinutes,
+		item.MaxGroupSize,
+		item.CountryCode,
+		item.CityName,
+		item.MeetingPoint,
+		item.Latitude,
+		item.Longitude,
+		item.MapURL,
+		item.PriceAmount,
+		item.Currency,
+		item.PublishedAt,
+		item.DeletedAt,
+		item.Revision,
 		item.UpdatedAt,
 	}
 }

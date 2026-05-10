@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -27,6 +28,7 @@ type ProxyHandler struct {
 	attractionProxy  *httputil.ReverseProxy
 	paymentProxy     *httputil.ReverseProxy
 	stickerProxy     *httputil.ReverseProxy
+	userIDResolver   userIDResolver
 }
 
 func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHandler, error) {
@@ -89,6 +91,10 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 	if err != nil {
 		return nil, err
 	}
+	userIDResolver, err := newUserServiceUserIDResolver(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	return &ProxyHandler{
 		cfg:              cfg,
@@ -105,6 +111,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		attractionProxy:  attractionProxy,
 		paymentProxy:     paymentProxy,
 		stickerProxy:     stickerProxy,
+		userIDResolver:   userIDResolver,
 	}, nil
 }
 
@@ -148,7 +155,15 @@ func (h *ProxyHandler) Dispatch(w http.ResponseWriter, r *http.Request) {
 
 	proxyReq := r.Clone(r.Context())
 	h.rewritePath(proxyReq, policy)
-	h.injectTrustedHeaders(proxyReq)
+	if err := h.injectTrustedHeaders(proxyReq, policy.AuthMode); err != nil {
+		log.Warn().
+			Err(err).
+			Str("route", policy.Name).
+			Str("request_id", RequestIDFromContext(r.Context())).
+			Msg("failed to inject trusted auth headers")
+		writeError(w, http.StatusBadGateway, "failed to resolve authenticated user")
+		return
+	}
 
 	log.Info().
 		Str("upstream", policy.Upstream).
@@ -192,7 +207,7 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 	}
 }
 
-func (h *ProxyHandler) injectTrustedHeaders(r *http.Request) {
+func (h *ProxyHandler) injectTrustedHeaders(r *http.Request, authMode RouteAuthMode) error {
 	r.Header.Del(h.cfg.Security.TrustedHeaderUser)
 	r.Header.Del(h.cfg.Security.TrustedHeaderRoles)
 	r.Header.Del(h.cfg.Security.TrustedHeaderSub)
@@ -201,21 +216,46 @@ func (h *ProxyHandler) injectTrustedHeaders(r *http.Request) {
 	claims := ClaimsFromContext(r.Context())
 
 	if claims == nil {
-		return
+		return nil
 	}
 
-	if subject := strings.TrimSpace(claims.Subject); subject != "" {
+	subject := strings.TrimSpace(claims.Subject)
+	if subject != "" {
 		r.Header.Set(h.cfg.Security.TrustedHeaderSub, subject)
 	}
+
+	roles := adapter.NormalizeRoles(claims.Roles, "")
+
 	userID := strings.TrimSpace(claims.UserID)
-	if userID == "" {
+	needsResolve := subject != "" && (userID == "" || userID == subject)
+	if needsResolve && h.userIDResolver != nil {
+		resolvedUserID, err := h.userIDResolver.ResolveUserID(
+			r.Context(),
+			subject,
+			roles,
+			RequestIDFromContext(r.Context()),
+		)
+		if err != nil {
+			if authMode != RouteAuthPublic {
+				return fmt.Errorf("resolve user id by subject: %w", err)
+			}
+			log.Warn().
+				Err(err).
+				Str("subject", subject).
+				Str("request_id", RequestIDFromContext(r.Context())).
+				Msg("failed to resolve optional user id for public route")
+			userID = ""
+		} else {
+			userID = resolvedUserID
+		}
+	}
+	if userID == "" && h.userIDResolver == nil {
 		userID = strings.TrimSpace(claims.Subject)
 	}
 	if userID != "" {
 		r.Header.Set(h.cfg.Security.TrustedHeaderUser, userID)
 	}
 
-	roles := adapter.NormalizeRoles(claims.Roles, "")
 	if len(roles) > 0 {
 		r.Header.Set(h.cfg.Security.TrustedHeaderRoles, strings.Join(roles, ","))
 	} else {
@@ -225,6 +265,7 @@ func (h *ProxyHandler) injectTrustedHeaders(r *http.Request) {
 	if requestID := strings.TrimSpace(RequestIDFromContext(r.Context())); requestID != "" {
 		r.Header.Set(h.cfg.Security.RequestIDHeader, requestID)
 	}
+	return nil
 }
 
 func (h *ProxyHandler) rewritePath(r *http.Request, policy *RoutePolicy) {

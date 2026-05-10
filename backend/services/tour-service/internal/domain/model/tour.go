@@ -282,26 +282,14 @@ func (t *Tour) ValidatePublishable(params PublishTourParams) error {
 }
 
 func (t *Tour) Publish(params PublishTourParams) error {
+	if t.Status == enum.TourStatusArchived || t.DeletedAt != nil {
+		return ErrTourAlreadyArchived
+	}
 	if err := t.ValidatePublishable(params); err != nil {
 		return err
 	}
-	if len(normalizeLanguageCodes(params.LanguageCodes)) == 0 {
-		return ErrTourLanguageRequired
-	}
-	if len(params.Itinerary) == 0 {
-		return ErrTourItineraryRequired
-	}
-
-	for _, item := range params.Itinerary {
-		if item == nil {
-			return ErrTourItineraryRequired
-		}
-		if item.TourID != t.ID {
-			item.TourID = t.ID
-		}
-		if err := item.Validate(); err != nil {
-			return err
-		}
+	if t.Status == enum.TourStatusPublished && t.PublishedAt != nil {
+		return nil
 	}
 
 	now := time.Now().UTC()
