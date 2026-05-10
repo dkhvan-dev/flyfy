@@ -931,7 +931,7 @@
   "activitiesFilterEndDatePlaceholder": "22.05.2026",
   "activitiesFilterPricing": "Құны",
   "activitiesFilterVisibility": "Көрінуі",
-  "activitiesDiscoverTitle": "Белсенділіктерді табу",
+  "activitiesDiscoverTitle": "Белсенділіктер",
   "activitiesFilteredEmptyTitle": "Бұл сүзгілерге сай белсенділік табылмады",
   "activitiesFilteredEmptySubtitle": "Санатты, күн аралығын немесе баға шегін кеңейтіп көріңіз",
   "activitiesResultsCount": "{count, plural, =0{Белсенділік жоқ} =1{1 белсенділік} other{{count} белсенділік}}",

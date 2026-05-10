@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
@@ -165,7 +166,6 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
             child: Scaffold(
               backgroundColor: const Color(0xFF201407),
               bottomNavigationBar: CommonBottomNavigationBar(
-                activeItem: AppBottomNavItem.home,
                 onHomeTap: () => context.go('/'),
                 onQrTap: () => context.push('/qr'),
                 onMapTap: () => context.push('/map'),
@@ -176,7 +176,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
                 bottom: false,
                 child: Column(
                   children: [
-                    _buildHeader(adaptive, l10n),
+                    _buildHeader(l10n),
                     _buildSearchBar(adaptive, l10n),
                     Expanded(child: _buildBody(adaptive, l10n)),
                   ],
@@ -189,57 +189,12 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     );
   }
 
-  Widget _buildHeader(AttractionAdaptive a, AppLocalizations l10n) {
-    return Container(
-      height: a.scale(76, minFactor: 0.9),
-      padding: EdgeInsets.fromLTRB(
-        a.scale(24, minFactor: 0.78),
-        a.scale(14),
-        a.scale(24, minFactor: 0.78),
-        a.scale(14),
-      ),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF3A270F))),
-      ),
-      child: Row(
-        children: [
-          _CircleIconButton(
-            icon: Icons.arrow_back_ios_new_rounded,
-            color: AppColors.textPrimary,
-            background: Colors.transparent,
-            size: a.scale(48),
-            iconSize: a.scale(28),
-            tooltip: l10n.attractionBackTooltip,
-            onTap: _onBack,
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: a.scale(8)),
-              child: Text(
-                l10n.attractionsTitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: a.scale(28, minFactor: 0.86),
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1.2,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-          _CircleIconButton(
-            icon: Icons.notifications_outlined,
-            color: AppColors.accent,
-            background: const Color(0xFF3A2308),
-            size: a.scale(48),
-            iconSize: a.scale(28),
-            tooltip: l10n.attractionNotificationsTooltip,
-            onTap: () {},
-          ),
-        ],
-      ),
+  Widget _buildHeader(AppLocalizations l10n) {
+    return AppListScreenHeader(
+      title: l10n.attractionsTitle,
+      notificationsTooltip: l10n.profileNotificationsRowTitle,
+      onBackTap: _onBack,
+      onNotificationsTap: () => context.push('/notifications'),
     );
   }
 
@@ -454,49 +409,6 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
 
   double _discoverImageHeight(double cardWidth) {
     return (cardWidth * 1.33).clamp(200.0, 230.0);
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({
-    required this.icon,
-    required this.color,
-    required this.background,
-    required this.size,
-    required this.iconSize,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color color;
-  final Color background;
-  final double size;
-  final double iconSize;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: Ink(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              color: background,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: iconSize),
-          ),
-        ),
-      ),
-    );
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:superapp/core/ui/app_colors.dart';
 
 import '../../core/ui/app_bottom_navigation_bars.dart';
+import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
@@ -485,9 +486,14 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                         layout.listBottomPadding + safeBottomInset,
                       ),
                       children: [
-                        _MyActivitiesTopBar(
+                        AppListScreenHeader(
                           title: l10n.myActivitiesTitle,
+                          notificationsTooltip:
+                              l10n.profileNotificationsRowTitle,
                           onBackTap: _goBack,
+                          onNotificationsTap: () =>
+                              context.push('/notifications'),
+                          horizontalPadding: 0,
                         ),
                         SizedBox(height: layout.topSectionSpacing),
                         _MyActivitiesSearchField(
@@ -724,40 +730,6 @@ class _MyActivitiesAdaptiveLayout {
   double get navIconSize => isCompact ? 20 : 22;
   double get navVerticalPadding => isCompact ? 4 : 6;
   double get navHorizontalPadding => isCompact ? 6 : 10;
-}
-
-class _MyActivitiesTopBar extends StatelessWidget {
-  const _MyActivitiesTopBar({required this.title, required this.onBackTap});
-
-  final String title;
-  final VoidCallback onBackTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final layout = _MyActivitiesAdaptiveLayout.of(context);
-
-    return Row(
-      children: [
-        _CircleIconButton(
-          icon: Icons.arrow_back_ios_new_rounded,
-          onTap: onBackTap,
-        ),
-        Expanded(
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: _MyActivitiesPalette.text,
-              fontSize: layout.topBarTitleSize,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.4,
-            ),
-          ),
-        ),
-        SizedBox.square(dimension: layout.isCompact ? 38 : 40),
-      ],
-    );
-  }
 }
 
 class _MyActivitiesSearchField extends StatelessWidget {
@@ -1785,39 +1757,6 @@ class _SkeletonLine extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(999),
-        ),
-      ),
-    );
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 360;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Container(
-          width: compact ? 38 : 40,
-          height: compact ? 38 : 40,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Icon(
-            icon,
-            size: compact ? 18 : 20,
-            color: _MyActivitiesPalette.text,
-          ),
         ),
       ),
     );

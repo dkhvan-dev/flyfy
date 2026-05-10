@@ -931,7 +931,7 @@
   "activitiesFilterEndDatePlaceholder": "22.05.2026",
   "activitiesFilterPricing": "Pricing",
   "activitiesFilterVisibility": "Visibility",
-  "activitiesDiscoverTitle": "Discover Activities",
+  "activitiesDiscoverTitle": "Activities",
   "activitiesFilteredEmptyTitle": "No activities match these filters",
   "activitiesFilteredEmptySubtitle": "Try widening the category, date range, or pricing filters",
   "activitiesResultsCount": "{count, plural, =0{No activities} =1{1 activity} other{{count} activities}}",

@@ -931,7 +931,7 @@
   "activitiesFilterEndDatePlaceholder": "22.05.2026",
   "activitiesFilterPricing": "Стоимость",
   "activitiesFilterVisibility": "Видимость",
-  "activitiesDiscoverTitle": "Поиск активностей",
+  "activitiesDiscoverTitle": "Активности",
   "activitiesFilteredEmptyTitle": "По этим фильтрам ничего не найдено",
   "activitiesFilteredEmptySubtitle": "Попробуйте расширить категорию, диапазон дат или стоимость",
   "activitiesResultsCount": "{count, plural, =0{Нет активностей} one{{count} активность} few{{count} активности} many{{count} активностей} other{{count} активности}}",

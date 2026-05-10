@@ -10,6 +10,7 @@ import '../../core/network/reference_api.dart';
 import '../../core/network/story_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../features/stories/models/story_vm.dart';
@@ -82,6 +83,14 @@ class _StoriesScreenState extends State<StoriesScreen> {
       });
       _loadStories(showLoader: false, page: 1);
     });
+  }
+
+  void _goBack() {
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/');
   }
 
   Future<void> _loadStories({bool showLoader = true, int? page}) async {
@@ -469,20 +478,13 @@ class _StoriesScreenState extends State<StoriesScreen> {
           bottom: false,
           child: Column(
             children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  adaptive.scale(18),
-                  adaptive.scale(14),
-                  adaptive.scale(18),
-                  adaptive.scale(18),
-                ),
-                child: _StoriesTopBar(
-                  title: widget.myOnly
-                      ? l10n.myStoriesTitle
-                      : l10n.storiesDiscoverTitle,
-                  onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-                  onNotificationsTap: () => context.push('/notifications'),
-                ),
+              AppListScreenHeader(
+                title: widget.myOnly
+                    ? l10n.myStoriesTitle
+                    : l10n.storiesDiscoverTitle,
+                notificationsTooltip: l10n.profileNotificationsRowTitle,
+                onBackTap: _goBack,
+                onNotificationsTap: () => context.push('/notifications'),
               ),
               Expanded(
                 child: RefreshIndicator(
@@ -497,7 +499,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                       SliverPadding(
                         padding: EdgeInsets.fromLTRB(
                           adaptive.scale(18),
-                          0,
+                          adaptive.scale(18),
                           adaptive.scale(18),
                           adaptive.scale(24),
                         ),
@@ -588,52 +590,6 @@ class _StoriesScreenState extends State<StoriesScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _StoriesTopBar extends StatelessWidget {
-  const _StoriesTopBar({
-    required this.title,
-    required this.onMenuTap,
-    required this.onNotificationsTap,
-  });
-
-  final String title;
-  final VoidCallback onMenuTap;
-  final VoidCallback onNotificationsTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final adaptive = StoryAdaptive.of(context);
-
-    return Row(
-      children: [
-        _StoriesCircleButton(
-          icon: Icons.menu_rounded,
-          onTap: onMenuTap,
-          size: adaptive.scale(44),
-        ),
-        Expanded(
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: StoryPalette.text,
-              fontSize: adaptive.scale(18),
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-            ),
-          ),
-        ),
-        _StoriesCircleButton(
-          icon: Icons.notifications_none_rounded,
-          onTap: onNotificationsTap,
-          size: adaptive.scale(44),
-        ),
-      ],
     );
   }
 }
@@ -1099,38 +1055,6 @@ class _StoriesEmptyState extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StoriesCircleButton extends StatelessWidget {
-  const _StoriesCircleButton({
-    required this.icon,
-    required this.onTap,
-    required this.size,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(size / 2),
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.accent.withValues(alpha: 0.10),
-          ),
-          child: Icon(icon, color: AppColors.accent, size: size * 0.48),
-        ),
       ),
     );
   }
