@@ -10,15 +10,15 @@ enum AppBottomNavCreateBackgroundStyle { elevated, flat }
 class CommonBottomNavigationBar extends StatelessWidget {
   const CommonBottomNavigationBar({
     super.key,
-    required this.activeItem,
     required this.onHomeTap,
     required this.onQrTap,
     required this.onMapTap,
     required this.onServicesTap,
     required this.onChatsTap,
+    this.activeItem,
   });
 
-  final AppBottomNavItem activeItem;
+  final AppBottomNavItem? activeItem;
   final VoidCallback onHomeTap;
   final VoidCallback onQrTap;
   final VoidCallback onMapTap;
