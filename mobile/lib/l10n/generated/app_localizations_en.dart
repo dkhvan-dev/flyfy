@@ -2605,7 +2605,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activitiesFilterVisibility => 'Visibility';
 
   @override
-  String get activitiesDiscoverTitle => 'Discover Activities';
+  String get activitiesDiscoverTitle => 'Activities';
 
   @override
   String get activitiesFilteredEmptyTitle =>

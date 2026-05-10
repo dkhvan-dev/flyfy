@@ -2621,7 +2621,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activitiesFilterVisibility => 'Көрінуі';
 
   @override
-  String get activitiesDiscoverTitle => 'Белсенділіктерді табу';
+  String get activitiesDiscoverTitle => 'Белсенділіктер';
 
   @override
   String get activitiesFilteredEmptyTitle =>

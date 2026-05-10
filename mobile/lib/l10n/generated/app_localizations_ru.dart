@@ -2609,7 +2609,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activitiesFilterVisibility => 'Видимость';
 
   @override
-  String get activitiesDiscoverTitle => 'Поиск активностей';
+  String get activitiesDiscoverTitle => 'Активности';
 
   @override
   String get activitiesFilteredEmptyTitle =>

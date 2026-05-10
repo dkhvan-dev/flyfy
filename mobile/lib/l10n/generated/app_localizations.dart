@@ -4879,7 +4879,7 @@ abstract class AppLocalizations {
   /// No description provided for @activitiesDiscoverTitle.
   ///
   /// In en, this message translates to:
-  /// **'Discover Activities'**
+  /// **'Activities'**
   String get activitiesDiscoverTitle;
 
   /// No description provided for @activitiesFilteredEmptyTitle.
