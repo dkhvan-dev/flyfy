@@ -102,4 +102,24 @@ void main() {
           'onBookTap: () => _showSoon(l10n.tourDetailsBookingComingSoon)')),
     );
   });
+
+  test('tour details creates direct chat with guide from message CTA',
+      () async {
+    final source =
+        await File('lib/screens/tours/tour_details_screen.dart').readAsString();
+
+    expect(source, contains('ChatApi'));
+    expect(source, contains('_isMessageGuideLoading'));
+    expect(source, contains('_openGuideChat'));
+    expect(source, contains('_chatApi.createDirectConversation(guideUserId)'));
+    expect(source, contains("context.push('/chats/\$conversationId')"));
+    expect(source, contains('DioErrorMapper.toMessage'));
+    expect(source, contains('showErrorDialog'));
+    expect(source, contains('isMessageGuideLoading: _isMessageGuideLoading'));
+    expect(
+      source,
+      isNot(contains(
+          'onMessageGuideTap: () =>\n                _showSoon(l10n.tourDetailsGuideChatComingSoon)')),
+    );
+  });
 }

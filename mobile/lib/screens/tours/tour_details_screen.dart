@@ -1,12 +1,16 @@
 import 'dart:math' as math;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/network/chat_api.dart';
+import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/user_profile_vm.dart';
@@ -34,8 +38,10 @@ class TourDetailsScreen extends StatefulWidget {
 
 class _TourDetailsScreenState extends State<TourDetailsScreen> {
   final ProfileApi _profileApi = ProfileApi();
+  final ChatApi _chatApi = ChatApi();
   Map<String, UserProfileVm> _resolvedProfiles = const {};
   String? _resolvingGuideUserId;
+  bool _isMessageGuideLoading = false;
 
   @override
   void initState() {
@@ -63,7 +69,7 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
         );
   }
 
-  void _showSoon(String message) {
+  void _showInfoSnack(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -73,6 +79,36 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
           backgroundColor: const Color(0xFF3A2B1D),
         ),
       );
+  }
+
+  Future<void> _openGuideChat(String guideUserId) async {
+    final l10n = AppLocalizations.of(context)!;
+    final trimmedGuideUserId = guideUserId.trim();
+    if (trimmedGuideUserId.isEmpty || _isMessageGuideLoading) {
+      if (trimmedGuideUserId.isEmpty) {
+        _showInfoSnack(l10n.profileNotAvailable);
+      }
+      return;
+    }
+
+    setState(() => _isMessageGuideLoading = true);
+
+    try {
+      final conversationId =
+          await _chatApi.createDirectConversation(guideUserId);
+      if (!mounted) return;
+      context.push('/chats/$conversationId');
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.profileMessageOpenFailed;
+      await showErrorDialog(context, title: l10n.error, message: message);
+    } finally {
+      if (mounted) {
+        setState(() => _isMessageGuideLoading = false);
+      }
+    }
   }
 
   void _scheduleResolveGuideProfile(
@@ -202,13 +238,13 @@ class _TourDetailsScreenState extends State<TourDetailsScreen> {
             guideAvatarFallbackText: _displayInitials(guideName),
             showMessageGuide: !isAuthor,
             showBookingAction: !isAuthor,
+            isMessageGuideLoading: _isMessageGuideLoading,
             onBackTap: _goBack,
             onNotificationsTap: () => context.push('/notifications'),
             onGuideProfileTap: () =>
                 _openGuideProfile(guideUserId, isAuthor: isAuthor),
             onBookTap: () => _openBooking(tour),
-            onMessageGuideTap: () =>
-                _showSoon(l10n.tourDetailsGuideChatComingSoon),
+            onMessageGuideTap: () => _openGuideChat(guideUserId),
           );
         },
       ),
@@ -227,6 +263,7 @@ class TourDetailsContent extends StatelessWidget {
     this.guideAvatarFallbackText = 'FG',
     this.showMessageGuide = true,
     this.showBookingAction = true,
+    this.isMessageGuideLoading = false,
     this.onGuideProfileTap,
     this.onBackTap,
     this.onNotificationsTap,
@@ -240,6 +277,7 @@ class TourDetailsContent extends StatelessWidget {
   final String guideAvatarFallbackText;
   final bool showMessageGuide;
   final bool showBookingAction;
+  final bool isMessageGuideLoading;
   final VoidCallback? onGuideProfileTap;
   final VoidCallback? onBackTap;
   final VoidCallback? onNotificationsTap;
@@ -299,6 +337,7 @@ class TourDetailsContent extends StatelessWidget {
                                 guideAvatarFallbackText:
                                     guideAvatarFallbackText,
                                 showMessageGuide: showMessageGuide,
+                                isMessageGuideLoading: isMessageGuideLoading,
                                 onGuideProfileTap: onGuideProfileTap,
                                 onMessageGuideTap: onMessageGuideTap,
                               ),
@@ -984,6 +1023,7 @@ class _TourGuideAndMapSection extends StatelessWidget {
     required this.guideName,
     required this.guideAvatarFallbackText,
     required this.showMessageGuide,
+    required this.isMessageGuideLoading,
     required this.onMessageGuideTap,
     this.guideAvatarUrl,
     this.onGuideProfileTap,
@@ -994,6 +1034,7 @@ class _TourGuideAndMapSection extends StatelessWidget {
   final String? guideAvatarUrl;
   final String guideAvatarFallbackText;
   final bool showMessageGuide;
+  final bool isMessageGuideLoading;
   final VoidCallback onMessageGuideTap;
   final VoidCallback? onGuideProfileTap;
 
@@ -1093,7 +1134,7 @@ class _TourGuideAndMapSection extends StatelessWidget {
               if (showMessageGuide) ...[
                 const SizedBox(height: 20),
                 OutlinedButton(
-                  onPressed: onMessageGuideTap,
+                  onPressed: isMessageGuideLoading ? null : onMessageGuideTap,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.textPrimary,
                     side: BorderSide(
@@ -1104,13 +1145,27 @@ class _TourGuideAndMapSection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
-                  child: Text(
-                    l10n.tourDetailsMessageGuide,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                    ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: isMessageGuideLoading
+                        ? const SizedBox(
+                            key: ValueKey('message-guide-progress'),
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: AppColors.accent,
+                            ),
+                          )
+                        : Text(
+                            l10n.tourDetailsMessageGuide,
+                            key: const ValueKey('message-guide-label'),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                            ),
+                          ),
                   ),
                 ),
               ],
