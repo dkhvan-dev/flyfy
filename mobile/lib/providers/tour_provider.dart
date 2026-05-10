@@ -10,6 +10,8 @@ enum TourActionState { idle, loading, success, error }
 
 enum TourListState { initial, loading, success, error }
 
+enum TourDetailState { initial, loading, success, error }
+
 class TourProvider extends ChangeNotifier {
   TourProvider({TourApi? tourApi}) : _tourApi = tourApi ?? TourApi();
 
@@ -20,6 +22,11 @@ class TourProvider extends ChangeNotifier {
   String? _listErrorMessage;
   bool _isRefreshing = false;
 
+  TourDetailState _detailState = TourDetailState.initial;
+  String? _detailTourId;
+  TourVm? _selectedTour;
+  String? _detailErrorMessage;
+
   TourActionState _actionState = TourActionState.idle;
   String? _actionErrorMessage;
   TourVm? _lastCreatedTour;
@@ -28,6 +35,10 @@ class TourProvider extends ChangeNotifier {
   List<TourVm> get tours => _tours;
   String? get listErrorMessage => _listErrorMessage;
   bool get isRefreshing => _isRefreshing;
+
+  TourDetailState get detailState => _detailState;
+  TourVm? get selectedTour => _selectedTour;
+  String? get detailErrorMessage => _detailErrorMessage;
 
   TourActionState get actionState => _actionState;
   String? get actionErrorMessage => _actionErrorMessage;
@@ -86,6 +97,56 @@ class TourProvider extends ChangeNotifier {
     );
   }
 
+  Future<void> loadTourDetails(String tourId, {TourVm? initialTour}) async {
+    final trimmedTourId = tourId.trim();
+    if (trimmedTourId.isEmpty) {
+      _detailState = TourDetailState.error;
+      _detailErrorMessage = 'Invalid tour id';
+      notifyListeners();
+      return;
+    }
+
+    final cachedTour = initialTour ?? _findCachedTour(trimmedTourId);
+    final hasCachedTour = cachedTour != null;
+
+    _detailTourId = trimmedTourId;
+    _detailErrorMessage = null;
+    if (hasCachedTour) {
+      _selectedTour = cachedTour;
+      _detailState = TourDetailState.success;
+    } else {
+      _selectedTour = null;
+      _detailState = TourDetailState.loading;
+    }
+    notifyListeners();
+
+    try {
+      final tour = await _tourApi.getTourById(trimmedTourId);
+      if (_detailTourId != trimmedTourId) return;
+
+      _selectedTour = tour;
+      _detailState = TourDetailState.success;
+    } on DioException catch (e) {
+      if (_detailTourId != trimmedTourId) return;
+
+      _detailErrorMessage = DioErrorMapper.toMessage(e);
+      if (!hasCachedTour) {
+        _detailState = TourDetailState.error;
+      }
+    } catch (_) {
+      if (_detailTourId != trimmedTourId) return;
+
+      _detailErrorMessage = 'Failed to load tour';
+      if (!hasCachedTour) {
+        _detailState = TourDetailState.error;
+      }
+    } finally {
+      if (_detailTourId == trimmedTourId) {
+        notifyListeners();
+      }
+    }
+  }
+
   void resetActionState() {
     _actionState = TourActionState.idle;
     _actionErrorMessage = null;
@@ -114,5 +175,12 @@ class TourProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  TourVm? _findCachedTour(String tourId) {
+    for (final tour in _tours) {
+      if (tour.id == tourId) return tour;
+    }
+    return null;
   }
 }

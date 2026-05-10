@@ -41,6 +41,15 @@ class TourApi {
         .toList(growable: false);
   }
 
+  Future<TourVm> getTourById(String tourId) async {
+    final response = await _apiClient.dio.get(
+      '/tours/${Uri.encodeComponent(tourId)}',
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    return TourVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<TourVm> createTour(CreateTourRequest request) async {
     final response = await _apiClient.dio.post(
       '/me/tours',

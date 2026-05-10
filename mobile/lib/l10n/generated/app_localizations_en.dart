@@ -2079,6 +2079,84 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toursDurationMinuteShort => 'min';
 
   @override
+  String get tourDetailsTitle => 'Tour Details';
+
+  @override
+  String get tourDetailsPrice => 'Price';
+
+  @override
+  String get tourDetailsPerPerson => '/pp';
+
+  @override
+  String get tourDetailsIntensity => 'Intensity';
+
+  @override
+  String get tourDetailsIntensityModerate => 'Moderate';
+
+  @override
+  String get tourDetailsGroupSize => 'Group Size';
+
+  @override
+  String tourDetailsGroupSizeUpTo(Object count) {
+    return 'Up to $count';
+  }
+
+  @override
+  String get tourDetailsLanguage => 'Language';
+
+  @override
+  String get tourDetailsExperience => 'The Experience';
+
+  @override
+  String get tourDetailsWhatToExpect => 'What to expect';
+
+  @override
+  String get tourDetailsLeadGuide => 'Your Lead Guide';
+
+  @override
+  String get tourDetailsGuideName => 'FlyFy Guide';
+
+  @override
+  String get tourDetailsGuideSubtitle => 'Verified local expert';
+
+  @override
+  String get tourDetailsGuideQuote =>
+      'Every route is more memorable with local context, thoughtful timing, and a guide who knows when to slow down.';
+
+  @override
+  String get tourDetailsMessageGuide => 'Message Guide';
+
+  @override
+  String get tourDetailsMapPreview => 'Route meeting point';
+
+  @override
+  String get tourDetailsItinerary => 'Itinerary';
+
+  @override
+  String get tourDetailsMeetingPoint => 'Meeting point';
+
+  @override
+  String get tourDetailsTotal => 'Total';
+
+  @override
+  String get tourDetailsBook => 'Book';
+
+  @override
+  String get tourDetailsLoadFailed => 'Failed to load tour';
+
+  @override
+  String get tourDetailsBookingComingSoon =>
+      'Tour booking will be available soon.';
+
+  @override
+  String get tourDetailsGuideChatComingSoon =>
+      'Guide chat will be available soon.';
+
+  @override
+  String get tourDetailsNoDescription =>
+      'Your guide will share the detailed experience soon.';
+
+  @override
   String get createTourTitle => 'Create Tour';
 
   @override

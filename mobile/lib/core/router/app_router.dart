@@ -25,6 +25,7 @@ import '../../screens/activities/activity_payment_screen.dart';
 import '../../screens/activities/create_activity_screen.dart';
 import '../../screens/activities/my_activities_screen.dart';
 import '../../screens/tours/create_tour_screen.dart';
+import '../../screens/tours/tour_details_screen.dart';
 import '../../screens/tours/tours_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
 import '../../screens/chat/conversations_screen.dart';
@@ -32,6 +33,7 @@ import '../../screens/chat/chat_screen.dart';
 import '../../screens/attractions/attractions_screen.dart';
 import '../../screens/attractions/attraction_details_screen.dart';
 import '../../features/attractions/models/attraction_vm.dart';
+import '../../features/tours/models/tour_vm.dart';
 import '../../screens/common/feature_stub_screen.dart';
 import '../../screens/map/map_screen.dart';
 
@@ -259,6 +261,17 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/tours/:tourId',
+          builder: (context, state) {
+            final tourId = state.pathParameters['tourId'] ?? '';
+            final initialTour =
+                state.extra is TourVm ? state.extra! as TourVm : null;
+            return _withAndroidBackSwipe(
+              TourDetailsScreen(tourId: tourId, initialTour: initialTour),
+            );
+          },
+        ),
+        GoRoute(
           path: '/qr',
           builder: (context, state) =>
               _withAndroidBackSwipe(const AttendanceScannerScreen()),
@@ -390,6 +403,10 @@ class AppRouter {
     }
 
     if (location.startsWith('/stories/')) {
+      return true;
+    }
+
+    if (location.startsWith('/tours/') && location != '/tours/create') {
       return true;
     }
 

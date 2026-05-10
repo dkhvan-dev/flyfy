@@ -86,6 +86,12 @@ class _ToursScreenState extends State<ToursScreen> {
     context.push('/tours/create');
   }
 
+  void _openTourDetails(TourVm tour) {
+    if (tour.id.trim().isEmpty) return;
+
+    context.push('/tours/${Uri.encodeComponent(tour.id)}', extra: tour);
+  }
+
   void _onSortTap(_ToursSortMode mode) {
     if (_sortMode == mode) return;
 
@@ -226,6 +232,8 @@ class _ToursScreenState extends State<ToursScreen> {
                                 return TourListCard(
                                   tour: visibleTours[index],
                                   seed: index,
+                                  onTap: () =>
+                                      _openTourDetails(visibleTours[index]),
                                 );
                               },
                             ),

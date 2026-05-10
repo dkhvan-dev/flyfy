@@ -2080,6 +2080,84 @@ class AppLocalizationsRu extends AppLocalizations {
   String get toursDurationMinuteShort => 'мин';
 
   @override
+  String get tourDetailsTitle => 'Детали тура';
+
+  @override
+  String get tourDetailsPrice => 'Цена';
+
+  @override
+  String get tourDetailsPerPerson => '/чел';
+
+  @override
+  String get tourDetailsIntensity => 'Нагрузка';
+
+  @override
+  String get tourDetailsIntensityModerate => 'Средняя';
+
+  @override
+  String get tourDetailsGroupSize => 'Размер группы';
+
+  @override
+  String tourDetailsGroupSizeUpTo(Object count) {
+    return 'До $count';
+  }
+
+  @override
+  String get tourDetailsLanguage => 'Язык';
+
+  @override
+  String get tourDetailsExperience => 'Впечатление';
+
+  @override
+  String get tourDetailsWhatToExpect => 'Что входит';
+
+  @override
+  String get tourDetailsLeadGuide => 'Ваш гид';
+
+  @override
+  String get tourDetailsGuideName => 'Гид FlyFy';
+
+  @override
+  String get tourDetailsGuideSubtitle => 'Проверенный локальный эксперт';
+
+  @override
+  String get tourDetailsGuideQuote =>
+      'Маршрут запоминается сильнее, когда у него есть локальный контекст, правильный ритм и гид, который знает, когда замедлиться.';
+
+  @override
+  String get tourDetailsMessageGuide => 'Написать гиду';
+
+  @override
+  String get tourDetailsMapPreview => 'Точка встречи';
+
+  @override
+  String get tourDetailsItinerary => 'Маршрут';
+
+  @override
+  String get tourDetailsMeetingPoint => 'Место встречи';
+
+  @override
+  String get tourDetailsTotal => 'Итого';
+
+  @override
+  String get tourDetailsBook => 'Забронировать';
+
+  @override
+  String get tourDetailsLoadFailed => 'Не удалось загрузить тур';
+
+  @override
+  String get tourDetailsBookingComingSoon =>
+      'Бронирование тура скоро будет доступно.';
+
+  @override
+  String get tourDetailsGuideChatComingSoon =>
+      'Чат с гидом скоро будет доступен.';
+
+  @override
+  String get tourDetailsNoDescription =>
+      'Гид скоро добавит подробное описание впечатления.';
+
+  @override
   String get createTourTitle => 'Создать тур';
 
   @override

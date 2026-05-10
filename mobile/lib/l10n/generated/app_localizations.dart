@@ -3904,6 +3904,150 @@ abstract class AppLocalizations {
   /// **'min'**
   String get toursDurationMinuteShort;
 
+  /// No description provided for @tourDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tour Details'**
+  String get tourDetailsTitle;
+
+  /// No description provided for @tourDetailsPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get tourDetailsPrice;
+
+  /// No description provided for @tourDetailsPerPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'/pp'**
+  String get tourDetailsPerPerson;
+
+  /// No description provided for @tourDetailsIntensity.
+  ///
+  /// In en, this message translates to:
+  /// **'Intensity'**
+  String get tourDetailsIntensity;
+
+  /// No description provided for @tourDetailsIntensityModerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get tourDetailsIntensityModerate;
+
+  /// No description provided for @tourDetailsGroupSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Size'**
+  String get tourDetailsGroupSize;
+
+  /// No description provided for @tourDetailsGroupSizeUpTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {count}'**
+  String tourDetailsGroupSizeUpTo(Object count);
+
+  /// No description provided for @tourDetailsLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get tourDetailsLanguage;
+
+  /// No description provided for @tourDetailsExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'The Experience'**
+  String get tourDetailsExperience;
+
+  /// No description provided for @tourDetailsWhatToExpect.
+  ///
+  /// In en, this message translates to:
+  /// **'What to expect'**
+  String get tourDetailsWhatToExpect;
+
+  /// No description provided for @tourDetailsLeadGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Lead Guide'**
+  String get tourDetailsLeadGuide;
+
+  /// No description provided for @tourDetailsGuideName.
+  ///
+  /// In en, this message translates to:
+  /// **'FlyFy Guide'**
+  String get tourDetailsGuideName;
+
+  /// No description provided for @tourDetailsGuideSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified local expert'**
+  String get tourDetailsGuideSubtitle;
+
+  /// No description provided for @tourDetailsGuideQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Every route is more memorable with local context, thoughtful timing, and a guide who knows when to slow down.'**
+  String get tourDetailsGuideQuote;
+
+  /// No description provided for @tourDetailsMessageGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Guide'**
+  String get tourDetailsMessageGuide;
+
+  /// No description provided for @tourDetailsMapPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Route meeting point'**
+  String get tourDetailsMapPreview;
+
+  /// No description provided for @tourDetailsItinerary.
+  ///
+  /// In en, this message translates to:
+  /// **'Itinerary'**
+  String get tourDetailsItinerary;
+
+  /// No description provided for @tourDetailsMeetingPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting point'**
+  String get tourDetailsMeetingPoint;
+
+  /// No description provided for @tourDetailsTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get tourDetailsTotal;
+
+  /// No description provided for @tourDetailsBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get tourDetailsBook;
+
+  /// No description provided for @tourDetailsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load tour'**
+  String get tourDetailsLoadFailed;
+
+  /// No description provided for @tourDetailsBookingComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Tour booking will be available soon.'**
+  String get tourDetailsBookingComingSoon;
+
+  /// No description provided for @tourDetailsGuideChatComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide chat will be available soon.'**
+  String get tourDetailsGuideChatComingSoon;
+
+  /// No description provided for @tourDetailsNoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your guide will share the detailed experience soon.'**
+  String get tourDetailsNoDescription;
+
   /// No description provided for @createTourTitle.
   ///
   /// In en, this message translates to:

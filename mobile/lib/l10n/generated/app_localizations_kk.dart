@@ -2090,6 +2090,84 @@ class AppLocalizationsKk extends AppLocalizations {
   String get toursDurationMinuteShort => 'мин';
 
   @override
+  String get tourDetailsTitle => 'Тур мәліметтері';
+
+  @override
+  String get tourDetailsPrice => 'Баға';
+
+  @override
+  String get tourDetailsPerPerson => '/адам';
+
+  @override
+  String get tourDetailsIntensity => 'Қарқын';
+
+  @override
+  String get tourDetailsIntensityModerate => 'Орташа';
+
+  @override
+  String get tourDetailsGroupSize => 'Топ өлшемі';
+
+  @override
+  String tourDetailsGroupSizeUpTo(Object count) {
+    return '$count дейін';
+  }
+
+  @override
+  String get tourDetailsLanguage => 'Тіл';
+
+  @override
+  String get tourDetailsExperience => 'Әсер';
+
+  @override
+  String get tourDetailsWhatToExpect => 'Не күтуге болады';
+
+  @override
+  String get tourDetailsLeadGuide => 'Сіздің гидіңіз';
+
+  @override
+  String get tourDetailsGuideName => 'FlyFy гиді';
+
+  @override
+  String get tourDetailsGuideSubtitle => 'Тексерілген жергілікті сарапшы';
+
+  @override
+  String get tourDetailsGuideQuote =>
+      'Жергілікті контексті, дұрыс ырғағы және қашан баяулау керегін білетін гиді бар маршрут есте жақсы сақталады.';
+
+  @override
+  String get tourDetailsMessageGuide => 'Гидке жазу';
+
+  @override
+  String get tourDetailsMapPreview => 'Кездесу нүктесі';
+
+  @override
+  String get tourDetailsItinerary => 'Маршрут';
+
+  @override
+  String get tourDetailsMeetingPoint => 'Кездесу орны';
+
+  @override
+  String get tourDetailsTotal => 'Барлығы';
+
+  @override
+  String get tourDetailsBook => 'Брондау';
+
+  @override
+  String get tourDetailsLoadFailed => 'Турды жүктеу мүмкін болмады';
+
+  @override
+  String get tourDetailsBookingComingSoon =>
+      'Турды брондау жақында қолжетімді болады.';
+
+  @override
+  String get tourDetailsGuideChatComingSoon =>
+      'Гидпен чат жақында қолжетімді болады.';
+
+  @override
+  String get tourDetailsNoDescription =>
+      'Гид жақында әсердің толық сипаттамасын қосады.';
+
+  @override
   String get createTourTitle => 'Тур құру';
 
   @override
