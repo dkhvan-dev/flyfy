@@ -211,6 +211,51 @@ services:
       - flyfy-network
 
   # ============================================
+  # Tour PostgreSQL
+  # ============================================
+  tour-postgres:
+    image: postgres:17-alpine
+    container_name: tour-postgres
+    environment:
+      POSTGRES_DB: tour_service_db
+      POSTGRES_USER: tour_service
+      POSTGRES_PASSWORD: tour_secret_dev
+    ports:
+      - "5444:5432"
+    volumes:
+      - tour_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/012_tour_service.sh:/docker-entrypoint-initdb.d/012_tour_service.sh
+      - ../backend/services/tour-service/migrations:/migrations/tour-service:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tour_service -d tour_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  tour-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: tour-postgres-migrator
+    environment:
+      PGHOST: tour-postgres
+      PGPORT: 5432
+      POSTGRES_DB: tour_service_db
+      POSTGRES_USER: tour_service
+      POSTGRES_PASSWORD: tour_secret_dev
+    volumes:
+      - ./init-scripts/012_tour_service_migrate.sh:/usr/local/bin/012_tour_service_migrate.sh:ro
+      - ../backend/services/tour-service/migrations:/migrations/tour-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/012_tour_service_migrate.sh"]
+    depends_on:
+      tour-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Stories PostgreSQL
   # ============================================
   stories-postgres:
@@ -680,6 +725,57 @@ services:
       CHAT_SERVICE_REQUEST_TIMEOUT: 5s
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
       PAYMENT_SERVICE_REQUEST_TIMEOUT: 5s
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
+  # Tour Service
+  # ============================================
+  tour-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/tour-service/Dockerfile
+    container_name: tour-service
+    depends_on:
+      tour-postgres:
+        condition: service_healthy
+      tour-postgres-migrator:
+        condition: service_completed_successfully
+      guide-service:
+        condition: service_started
+      file-manager-service:
+        condition: service_started
+    ports:
+      - "8093:8093"
+    environment:
+      APP_NAME: tour-service
+      APP_ENV: development
+
+      HTTP_PORT: 8093
+
+      DB_HOST: tour-postgres
+      DB_PORT: 5432
+      DB_NAME: tour_service_db
+      DB_USER: tour_service
+      DB_PASSWORD: tour_secret_dev
+      DB_SSLMODE: disable
+      DB_MAX_CONNS: 10
+      DB_MIN_CONNS: 2
+      DB_MAX_CONN_IDLE: 15m
+      DB_MAX_CONN_LIFETIME: 1h
+
+      LOG_LEVEL: debug
+
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      REQUIRE_AUTHENTICATED_WRITES: "true"
+      TRUSTED_GATEWAY_HEADER_USER_ID: X-User-Id
+      TRUSTED_GATEWAY_HEADER_ROLES: X-User-Roles
+      TRUSTED_GATEWAY_HEADER_SUB: X-Auth-Subject
+      REQUEST_ID_HEADER: X-Request-Id
+
+      GUIDE_SERVICE_GRPC_TARGET: dns:///guide-service:9095
+      FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -1173,6 +1269,8 @@ services:
         condition: service_started
       guide-service:
         condition: service_started
+      tour-service:
+        condition: service_started
       stories-service:
         condition: service_started
       chat-service:
@@ -1209,6 +1307,7 @@ services:
       AUTH_SERVICE_HTTP_URL: http://auth-service:8082
       USER_SERVICE_HTTP_URL: http://user-service:8084
       GUIDE_SERVICE_HTTP_URL: http://guide-service:8085
+      TOUR_SERVICE_HTTP_URL: http://tour-service:8093
       FILE_MANAGER_HTTP_URL: http://file-manager-service:8083
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
       STORIES_SERVICE_HTTP_URL: http://stories-service:8087
@@ -1253,6 +1352,7 @@ volumes:
   user_postgres_data:
   guide_postgres_data:
   activity_postgres_data:
+  tour_postgres_data:
   stories_postgres_data:
   chat_postgres_data:
   nats_data:

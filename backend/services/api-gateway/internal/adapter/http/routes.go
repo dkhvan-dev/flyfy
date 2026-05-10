@@ -36,6 +36,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	chatLimit := 300
 	paymentLimit := 180
 	stickerLimit := 180
+	tourLimit := 180
 
 	return []RoutePolicy{
 		{
@@ -123,6 +124,22 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "activity",
 			RateLimitPerMinute: &activityLimit,
 			RewritePrefix:      "/v1/activities",
+		},
+		{
+			Name:               "my-tours",
+			Prefix:             apiPrefix + "/me/tours",
+			AuthMode:           RouteAuthAuthenticated,
+			Upstream:           "tour",
+			RateLimitPerMinute: &tourLimit,
+			RewritePrefix:      "/v1/me/tours",
+		},
+		{
+			Name:               "tours",
+			Prefix:             apiPrefix + "/tours",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "tour",
+			RateLimitPerMinute: &tourLimit,
+			RewritePrefix:      "/v1/tours",
 		},
 		{
 			Name:               "payments",

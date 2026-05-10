@@ -20,6 +20,7 @@ type ProxyHandler struct {
 	guideProxy       *httputil.ReverseProxy
 	fileManagerProxy *httputil.ReverseProxy
 	activityProxy    *httputil.ReverseProxy
+	tourProxy        *httputil.ReverseProxy
 	storiesProxy     *httputil.ReverseProxy
 	chatProxy        *httputil.ReverseProxy
 	referenceProxy   *httputil.ReverseProxy
@@ -50,6 +51,11 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 	}
 
 	activityProxy, err := newSingleHostProxy("activity", cfg.Downstreams.ActivityService)
+	if err != nil {
+		return nil, err
+	}
+
+	tourProxy, err := newSingleHostProxy("tour", cfg.Downstreams.TourService)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +98,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		guideProxy:       guideProxy,
 		fileManagerProxy: fileManagerProxy,
 		activityProxy:    activityProxy,
+		tourProxy:        tourProxy,
 		storiesProxy:     storiesProxy,
 		chatProxy:        chatProxy,
 		referenceProxy:   referenceProxy,
@@ -166,6 +173,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.fileManagerProxy
 	case "activity":
 		return h.activityProxy
+	case "tour":
+		return h.tourProxy
 	case "stories":
 		return h.storiesProxy
 	case "chat":
