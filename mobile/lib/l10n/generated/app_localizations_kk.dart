@@ -2049,6 +2049,47 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createActivityFailed => 'Белсенділікті жасау сәтсіз аяқталды';
 
   @override
+  String get toursDiscoverTitle => 'Турлар';
+
+  @override
+  String get toursSearchHint => 'Турлар мен әсерлерді іздеу';
+
+  @override
+  String get toursSortPopular => 'Танымал';
+
+  @override
+  String get toursSortNewest => 'Жаңа';
+
+  @override
+  String get toursSortAffordable => 'Арзанырақ';
+
+  @override
+  String get toursLoadFailed => 'Турларды жүктеу мүмкін болмады';
+
+  @override
+  String get toursEmptyTitle => 'Әзірге турлар жоқ';
+
+  @override
+  String get toursEmptySubtitle =>
+      'Мұнда тексерілген гидтердің маршруттары пайда болады.';
+
+  @override
+  String get toursEmptySearchSubtitle =>
+      'Басқа қала, санат немесе тур атауын қолданып көріңіз.';
+
+  @override
+  String get toursCreateFab => 'Тур құру';
+
+  @override
+  String get toursFreePrice => 'Тегін';
+
+  @override
+  String get toursDurationHourShort => 'сағ';
+
+  @override
+  String get toursDurationMinuteShort => 'мин';
+
+  @override
   String get createTourTitle => 'Тур құру';
 
   @override

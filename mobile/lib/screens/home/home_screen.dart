@@ -138,6 +138,10 @@ class _HomeScreenState extends State<HomeScreen> {
     context.push('/activities');
   }
 
+  void _openTours() {
+    context.push('/tours');
+  }
+
   void _openStories() {
     context.push('/stories');
   }
@@ -701,6 +705,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _QuickActionData(
         title: l10n.serviceTours,
         icon: Icons.travel_explore_rounded,
+        onTap: _openTours,
       ),
       _QuickActionData(
         title: l10n.serviceGuides,

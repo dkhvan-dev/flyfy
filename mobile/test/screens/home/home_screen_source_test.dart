@@ -65,4 +65,13 @@ void main() {
     expect(dialogSource, contains('Wrap('));
     expect(dialogSource, contains('AppColors.accent'));
   });
+
+  test('tours quick action opens the tours list screen', () async {
+    final source =
+        await File('lib/screens/home/home_screen.dart').readAsString();
+
+    expect(source, contains('void _openTours()'));
+    expect(source, contains("context.push('/tours')"));
+    expect(source, contains('onTap: _openTours'));
+  });
 }

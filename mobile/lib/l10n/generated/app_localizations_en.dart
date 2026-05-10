@@ -2039,6 +2039,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createActivityFailed => 'Failed to create activity';
 
   @override
+  String get toursDiscoverTitle => 'Discover Tours';
+
+  @override
+  String get toursSearchHint => 'Search tours and experiences';
+
+  @override
+  String get toursSortPopular => 'Popular';
+
+  @override
+  String get toursSortNewest => 'New';
+
+  @override
+  String get toursSortAffordable => 'Affordable';
+
+  @override
+  String get toursLoadFailed => 'Failed to load tours';
+
+  @override
+  String get toursEmptyTitle => 'No tours yet';
+
+  @override
+  String get toursEmptySubtitle => 'Verified guide routes will appear here.';
+
+  @override
+  String get toursEmptySearchSubtitle =>
+      'Try another destination, category, or tour name.';
+
+  @override
+  String get toursCreateFab => 'Create tour';
+
+  @override
+  String get toursFreePrice => 'Free';
+
+  @override
+  String get toursDurationHourShort => 'h';
+
+  @override
+  String get toursDurationMinuteShort => 'min';
+
+  @override
   String get createTourTitle => 'Create Tour';
 
   @override

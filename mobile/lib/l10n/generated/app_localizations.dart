@@ -3826,6 +3826,84 @@ abstract class AppLocalizations {
   /// **'Failed to create activity'**
   String get createActivityFailed;
 
+  /// No description provided for @toursDiscoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover Tours'**
+  String get toursDiscoverTitle;
+
+  /// No description provided for @toursSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tours and experiences'**
+  String get toursSearchHint;
+
+  /// No description provided for @toursSortPopular.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular'**
+  String get toursSortPopular;
+
+  /// No description provided for @toursSortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get toursSortNewest;
+
+  /// No description provided for @toursSortAffordable.
+  ///
+  /// In en, this message translates to:
+  /// **'Affordable'**
+  String get toursSortAffordable;
+
+  /// No description provided for @toursLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load tours'**
+  String get toursLoadFailed;
+
+  /// No description provided for @toursEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No tours yet'**
+  String get toursEmptyTitle;
+
+  /// No description provided for @toursEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified guide routes will appear here.'**
+  String get toursEmptySubtitle;
+
+  /// No description provided for @toursEmptySearchSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another destination, category, or tour name.'**
+  String get toursEmptySearchSubtitle;
+
+  /// No description provided for @toursCreateFab.
+  ///
+  /// In en, this message translates to:
+  /// **'Create tour'**
+  String get toursCreateFab;
+
+  /// No description provided for @toursFreePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get toursFreePrice;
+
+  /// No description provided for @toursDurationHourShort.
+  ///
+  /// In en, this message translates to:
+  /// **'h'**
+  String get toursDurationHourShort;
+
+  /// No description provided for @toursDurationMinuteShort.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get toursDurationMinuteShort;
+
   /// No description provided for @createTourTitle.
   ///
   /// In en, this message translates to:

@@ -114,6 +114,7 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
     required this.onServicesTap,
     required this.onChatsTap,
     this.activeItem,
+    this.createSemanticsLabel,
     this.backgroundStyle = AppBottomNavCreateBackgroundStyle.elevated,
   });
 
@@ -123,6 +124,7 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
   final VoidCallback onServicesTap;
   final VoidCallback onChatsTap;
   final AppBottomNavItem? activeItem;
+  final String? createSemanticsLabel;
   final AppBottomNavCreateBackgroundStyle backgroundStyle;
 
   @override
@@ -190,7 +192,8 @@ class CreateActionBottomNavigationBar extends StatelessWidget {
                 Expanded(
                   child: _CreateBottomNavFab(
                     layout: layout,
-                    semanticsLabel: l10n.createActivityFab,
+                    semanticsLabel:
+                        createSemanticsLabel ?? l10n.createActivityFab,
                     onTap: onCreateTap,
                   ),
                 ),

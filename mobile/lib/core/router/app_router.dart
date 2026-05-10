@@ -25,6 +25,7 @@ import '../../screens/activities/activity_payment_screen.dart';
 import '../../screens/activities/create_activity_screen.dart';
 import '../../screens/activities/my_activities_screen.dart';
 import '../../screens/tours/create_tour_screen.dart';
+import '../../screens/tours/tours_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
 import '../../screens/chat/conversations_screen.dart';
 import '../../screens/chat/chat_screen.dart';
@@ -244,6 +245,11 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/tours',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const ToursScreen()),
+        ),
+        GoRoute(
           path: '/tours/create',
           pageBuilder: (context, state) {
             return _buildActivityEditorPage(
@@ -366,6 +372,7 @@ class AppRouter {
     }
 
     if (location == '/activities' ||
+        location == '/tours' ||
         location == '/stories' ||
         location == '/menu' ||
         location == '/map' ||

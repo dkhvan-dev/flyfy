@@ -2040,6 +2040,46 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createActivityFailed => 'Не удалось создать активность';
 
   @override
+  String get toursDiscoverTitle => 'Туры';
+
+  @override
+  String get toursSearchHint => 'Поиск туров и впечатлений';
+
+  @override
+  String get toursSortPopular => 'Популярные';
+
+  @override
+  String get toursSortNewest => 'Новинки';
+
+  @override
+  String get toursSortAffordable => 'Дешевле';
+
+  @override
+  String get toursLoadFailed => 'Не удалось загрузить туры';
+
+  @override
+  String get toursEmptyTitle => 'Туров пока нет';
+
+  @override
+  String get toursEmptySubtitle => 'Здесь появятся маршруты проверенных гидов.';
+
+  @override
+  String get toursEmptySearchSubtitle =>
+      'Попробуйте другой город, категорию или название тура.';
+
+  @override
+  String get toursCreateFab => 'Создать тур';
+
+  @override
+  String get toursFreePrice => 'Бесплатно';
+
+  @override
+  String get toursDurationHourShort => 'ч';
+
+  @override
+  String get toursDurationMinuteShort => 'мин';
+
+  @override
   String get createTourTitle => 'Создать тур';
 
   @override
