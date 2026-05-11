@@ -2132,6 +2132,111 @@ class AppLocalizationsKk extends AppLocalizations {
       'Басқа қала, санат немесе тур атауын қолданып көріңіз.';
 
   @override
+  String get guidesTitle => 'Гидтер';
+
+  @override
+  String get guidesSearchHint => 'Гидтерді іздеу';
+
+  @override
+  String get guidesSortLabel => 'Сұрыптау';
+
+  @override
+  String get guidesSortRating => 'Рейтинг';
+
+  @override
+  String get guidesSortExperience => 'Тәжірибе';
+
+  @override
+  String get guidesViewProfile => 'Профильді көру';
+
+  @override
+  String get guidesFiltersTitle => 'Сүзгілер';
+
+  @override
+  String get guidesFiltersClear => 'Тазалау';
+
+  @override
+  String get guidesFilterExpertise => 'Мамандану';
+
+  @override
+  String get guidesFilterLanguage => 'Тіл';
+
+  @override
+  String get guidesFilterRating => 'Рейтинг';
+
+  @override
+  String get guidesFilterExperience => 'Тәжірибе';
+
+  @override
+  String guidesFilterRatingAtLeast(Object value) {
+    return '$value+ жұлдыз';
+  }
+
+  @override
+  String guidesFiltersShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count гидті',
+      one: '1 гидті',
+      zero: '0 гидті',
+    );
+    return '$_temp0 көрсету';
+  }
+
+  @override
+  String get guidesLoadFailed => 'Гидтерді жүктеу мүмкін болмады';
+
+  @override
+  String get guidesEmptyTitle => 'Әзірге гидтер жоқ';
+
+  @override
+  String get guidesEmptySubtitle =>
+      'Мұнда тексерілген жергілікті сарапшылар пайда болады.';
+
+  @override
+  String get guidesNoResultsTitle => 'Гидтер табылмады';
+
+  @override
+  String get guidesNoResultsSubtitle =>
+      'Басқа ат, мамандану, тіл немесе сүзгіні қолданып көріңіз.';
+
+  @override
+  String get guidesSpecialtyMountainGuide => 'Тау гиді';
+
+  @override
+  String get guidesSpecialtyCityHistorian => 'Қала тарихшысы';
+
+  @override
+  String get guidesSpecialtyCulinaryExpert => 'Аспаздық сарапшы';
+
+  @override
+  String get guidesSpecialtyNaturePhotographer => 'Табиғат фотографы';
+
+  @override
+  String get guidesRoleLocalExpert => 'Жергілікті сарапшы';
+
+  @override
+  String get guidesFilterPrivateTours => 'Жеке турлар';
+
+  @override
+  String get guidesFilterActivities => 'Іс-шаралар';
+
+  @override
+  String get guidesFilterTours => 'Турлар';
+
+  @override
+  String guidesExperienceYears(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count жыл',
+      one: '1 жыл',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get toursCreateFab => 'Тур құру';
 
   @override

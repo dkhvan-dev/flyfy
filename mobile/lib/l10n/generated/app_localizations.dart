@@ -3847,7 +3847,7 @@ abstract class AppLocalizations {
   /// No description provided for @toursSortLabel.
   ///
   /// In en, this message translates to:
-  /// **'Sort'**
+  /// **'Sort by'**
   String get toursSortLabel;
 
   /// No description provided for @toursSortPopular.
@@ -3969,6 +3969,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try another destination, category, or tour name.'**
   String get toursEmptySearchSubtitle;
+
+  /// No description provided for @guidesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel Guides'**
+  String get guidesTitle;
+
+  /// No description provided for @guidesSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search guides'**
+  String get guidesSearchHint;
+
+  /// No description provided for @guidesSortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get guidesSortLabel;
+
+  /// No description provided for @guidesSortRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get guidesSortRating;
+
+  /// No description provided for @guidesSortExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Experience'**
+  String get guidesSortExperience;
+
+  /// No description provided for @guidesViewProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'View Profile'**
+  String get guidesViewProfile;
+
+  /// No description provided for @guidesFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get guidesFiltersTitle;
+
+  /// No description provided for @guidesFiltersClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get guidesFiltersClear;
+
+  /// No description provided for @guidesFilterExpertise.
+  ///
+  /// In en, this message translates to:
+  /// **'Expertise'**
+  String get guidesFilterExpertise;
+
+  /// No description provided for @guidesFilterLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get guidesFilterLanguage;
+
+  /// No description provided for @guidesFilterRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get guidesFilterRating;
+
+  /// No description provided for @guidesFilterExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Experience'**
+  String get guidesFilterExperience;
+
+  /// No description provided for @guidesFilterRatingAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}+ stars'**
+  String guidesFilterRatingAtLeast(Object value);
+
+  /// No description provided for @guidesFiltersShowResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count, plural, =0{0 guides} =1{1 guide} other{{count} guides}}'**
+  String guidesFiltersShowResults(num count);
+
+  /// No description provided for @guidesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load guides'**
+  String get guidesLoadFailed;
+
+  /// No description provided for @guidesEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No guides yet'**
+  String get guidesEmptyTitle;
+
+  /// No description provided for @guidesEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified local experts will appear here.'**
+  String get guidesEmptySubtitle;
+
+  /// No description provided for @guidesNoResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No guides found'**
+  String get guidesNoResultsTitle;
+
+  /// No description provided for @guidesNoResultsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another name, expertise, language, or filter.'**
+  String get guidesNoResultsSubtitle;
+
+  /// No description provided for @guidesSpecialtyMountainGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Mountain Guide'**
+  String get guidesSpecialtyMountainGuide;
+
+  /// No description provided for @guidesSpecialtyCityHistorian.
+  ///
+  /// In en, this message translates to:
+  /// **'City Historian'**
+  String get guidesSpecialtyCityHistorian;
+
+  /// No description provided for @guidesSpecialtyCulinaryExpert.
+  ///
+  /// In en, this message translates to:
+  /// **'Culinary Expert'**
+  String get guidesSpecialtyCulinaryExpert;
+
+  /// No description provided for @guidesSpecialtyNaturePhotographer.
+  ///
+  /// In en, this message translates to:
+  /// **'Nature Photographer'**
+  String get guidesSpecialtyNaturePhotographer;
+
+  /// No description provided for @guidesRoleLocalExpert.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Expert'**
+  String get guidesRoleLocalExpert;
+
+  /// No description provided for @guidesFilterPrivateTours.
+  ///
+  /// In en, this message translates to:
+  /// **'Private tours'**
+  String get guidesFilterPrivateTours;
+
+  /// No description provided for @guidesFilterActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get guidesFilterActivities;
+
+  /// No description provided for @guidesFilterTours.
+  ///
+  /// In en, this message translates to:
+  /// **'Tours'**
+  String get guidesFilterTours;
+
+  /// No description provided for @guidesExperienceYears.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 year} other{{count} years}}'**
+  String guidesExperienceYears(num count);
 
   /// No description provided for @toursCreateFab.
   ///

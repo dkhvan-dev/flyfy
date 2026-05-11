@@ -31,6 +31,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	authLimit := 300
 	filesLimit := 180
 	activityLimit := 180
+	guideLimit := 180
 	storiesLimit := 180
 	attractionLimit := 180
 	chatLimit := 300
@@ -68,6 +69,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Upstream:           "file-manager",
 			RateLimitPerMinute: &filesLimit,
 			RewritePrefix:      "/v1/public/files/",
+		},
+		{
+			Name:               "public-guides",
+			Prefix:             apiPrefix + "/guides/public",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "guide",
+			RateLimitPerMinute: &guideLimit,
+			RewritePrefix:      "/v1/guides/public",
 		},
 		{
 			Name:          "guides",

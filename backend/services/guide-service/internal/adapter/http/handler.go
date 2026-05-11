@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -359,41 +360,28 @@ func (h *Handler) AttachMyGuideDocument(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) ListPublicGuides(w http.ResponseWriter, r *http.Request) {
-	items, err := h.useCase.ListPublicGuideCards(r.Context(), 20, 0)
+	input, err := parsePublicGuideListInput(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := h.useCase.ListPublicGuideCards(r.Context(), input)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list public guides")
 		return
 	}
 
-	resp := make([]dto.PublicGuideCardResponse, 0, len(items))
-	for _, item := range items {
-		card := dto.PublicGuideCardResponse{
-			GuideProfile: toGuideProfileResponse(item.GuideProfile),
-		}
-
-		if item.UserProfile != nil {
-			var avatarFileID *string
-			if item.UserProfile.AvatarFileID != nil {
-				v := item.UserProfile.AvatarFileID.String()
-				avatarFileID = &v
-			}
-
-			card.UserProfile = &dto.PublicUserCard{
-				UserID:       item.UserProfile.UserID.String(),
-				DisplayName:  item.UserProfile.DisplayName,
-				AvatarFileID: avatarFileID,
-				CountryCode:  item.UserProfile.CountryCode,
-				Locale:       item.UserProfile.Locale,
-				Timezone:     item.UserProfile.Timezone,
-				IsPublic:     item.UserProfile.IsPublic,
-			}
-		}
-
-		resp = append(resp, card)
+	resp := make([]dto.PublicGuideCardResponse, 0, len(result.Items))
+	for _, item := range result.Items {
+		resp = append(resp, toPublicGuideCardResponse(item))
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"items": resp,
+		"items":  resp,
+		"total":  result.Total,
+		"limit":  result.Limit,
+		"offset": result.Offset,
 	})
 }
 
@@ -524,6 +512,41 @@ func toGuideAggregateResponse(aggregate *app.GuideAggregate) dto.GuideAggregateR
 	return resp
 }
 
+func toPublicGuideCardResponse(item *app.PublicGuideCard) dto.PublicGuideCardResponse {
+	card := dto.PublicGuideCardResponse{
+		GuideProfile:    toGuideProfileResponse(item.GuideProfile),
+		Languages:       make([]dto.GuideLanguageResponse, 0, len(item.Languages)),
+		Specializations: make([]dto.GuideSpecializationResponse, 0, len(item.Specializations)),
+	}
+
+	for _, lang := range item.Languages {
+		card.Languages = append(card.Languages, toGuideLanguageResponse(lang))
+	}
+	for _, spec := range item.Specializations {
+		card.Specializations = append(card.Specializations, toGuideSpecializationResponse(spec))
+	}
+
+	if item.UserProfile != nil {
+		var avatarFileID *string
+		if item.UserProfile.AvatarFileID != nil {
+			v := item.UserProfile.AvatarFileID.String()
+			avatarFileID = &v
+		}
+
+		card.UserProfile = &dto.PublicUserCard{
+			UserID:       item.UserProfile.UserID.String(),
+			DisplayName:  item.UserProfile.DisplayName,
+			AvatarFileID: avatarFileID,
+			CountryCode:  item.UserProfile.CountryCode,
+			Locale:       item.UserProfile.Locale,
+			Timezone:     item.UserProfile.Timezone,
+			IsPublic:     item.UserProfile.IsPublic,
+		}
+	}
+
+	return card
+}
+
 func toGuideProfileResponse(profile *model.GuideProfile) dto.GuideProfileResponse {
 	var baseCityID *string
 	if profile.BaseCityID != nil {
@@ -622,6 +645,75 @@ func parseOptionalUUID(v *string) (*uuid.UUID, error) {
 		return nil, err
 	}
 	return &parsed, nil
+}
+
+func parsePublicGuideListInput(r *http.Request) (app.ListPublicGuidesInput, error) {
+	q := r.URL.Query()
+
+	limit, err := parseOptionalIntQuery(q.Get("limit"), "limit")
+	if err != nil {
+		return app.ListPublicGuidesInput{}, err
+	}
+	offset, err := parseOptionalIntQuery(q.Get("offset"), "offset")
+	if err != nil {
+		return app.ListPublicGuidesInput{}, err
+	}
+
+	var minRating *float64
+	if raw := strings.TrimSpace(q.Get("minRating")); raw != "" {
+		parsed, parseErr := strconv.ParseFloat(raw, 64)
+		if parseErr != nil || parsed < 0 || parsed > 5 {
+			return app.ListPublicGuidesInput{}, errors.New("invalid minRating")
+		}
+		minRating = &parsed
+	}
+
+	var minExperienceYears *int
+	if raw := strings.TrimSpace(q.Get("minExperienceYears")); raw != "" {
+		parsed, parseErr := strconv.Atoi(raw)
+		if parseErr != nil || parsed < 0 {
+			return app.ListPublicGuidesInput{}, errors.New("invalid minExperienceYears")
+		}
+		minExperienceYears = &parsed
+	}
+
+	return app.ListPublicGuidesInput{
+		Query:               q.Get("q"),
+		CountryCodes:        splitQueryList(q["countries"]),
+		LanguageCodes:       splitQueryList(q["languages"]),
+		SpecializationCodes: splitQueryList(q["specializations"]),
+		MinRating:           minRating,
+		MinExperienceYears:  minExperienceYears,
+		Sort:                q.Get("sort"),
+		Limit:               limit,
+		Offset:              offset,
+	}, nil
+}
+
+func parseOptionalIntQuery(raw string, field string) (int, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, nil
+	}
+
+	parsed, err := strconv.Atoi(raw)
+	if err != nil || parsed < 0 {
+		return 0, errors.New("invalid " + field)
+	}
+	return parsed, nil
+}
+
+func splitQueryList(values []string) []string {
+	result := make([]string, 0, len(values))
+	for _, rawValue := range values {
+		for _, part := range strings.Split(rawValue, ",") {
+			item := strings.TrimSpace(part)
+			if item != "" {
+				result = append(result, item)
+			}
+		}
+	}
+	return result
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {

@@ -242,6 +242,25 @@ func (s *Server) GetPublicProfilesByUserIds(
 	return resp, nil
 }
 
+func (s *Server) ListPublicUserIdsByCountryCodes(
+	ctx context.Context,
+	req *userv1.ListPublicUserIdsByCountryCodesRequest,
+) (*userv1.ListPublicUserIdsByCountryCodesResponse, error) {
+	userIDs, err := s.useCase.ListPublicUserIDsByCountryCodes(ctx, req.GetCountryCodes())
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	resp := &userv1.ListPublicUserIdsByCountryCodesResponse{
+		UserIds: make([]string, 0, len(userIDs)),
+	}
+	for _, userID := range userIDs {
+		resp.UserIds = append(resp.UserIds, userID.String())
+	}
+
+	return resp, nil
+}
+
 func (s *Server) GetUserBySubject(
 	ctx context.Context,
 	req *userv1.GetUserBySubjectRequest,

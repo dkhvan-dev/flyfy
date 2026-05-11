@@ -2048,7 +2048,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toursSearchHint => 'Search tours and experiences';
 
   @override
-  String get toursSortLabel => 'Sort';
+  String get toursSortLabel => 'Sort by';
 
   @override
   String get toursSortPopular => 'Popular';
@@ -2119,6 +2119,110 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get toursEmptySearchSubtitle =>
       'Try another destination, category, or tour name.';
+
+  @override
+  String get guidesTitle => 'Travel Guides';
+
+  @override
+  String get guidesSearchHint => 'Search guides';
+
+  @override
+  String get guidesSortLabel => 'Sort by';
+
+  @override
+  String get guidesSortRating => 'Rating';
+
+  @override
+  String get guidesSortExperience => 'Experience';
+
+  @override
+  String get guidesViewProfile => 'View Profile';
+
+  @override
+  String get guidesFiltersTitle => 'Filters';
+
+  @override
+  String get guidesFiltersClear => 'Clear';
+
+  @override
+  String get guidesFilterExpertise => 'Expertise';
+
+  @override
+  String get guidesFilterLanguage => 'Language';
+
+  @override
+  String get guidesFilterRating => 'Rating';
+
+  @override
+  String get guidesFilterExperience => 'Experience';
+
+  @override
+  String guidesFilterRatingAtLeast(Object value) {
+    return '$value+ stars';
+  }
+
+  @override
+  String guidesFiltersShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count guides',
+      one: '1 guide',
+      zero: '0 guides',
+    );
+    return 'Show $_temp0';
+  }
+
+  @override
+  String get guidesLoadFailed => 'Failed to load guides';
+
+  @override
+  String get guidesEmptyTitle => 'No guides yet';
+
+  @override
+  String get guidesEmptySubtitle => 'Verified local experts will appear here.';
+
+  @override
+  String get guidesNoResultsTitle => 'No guides found';
+
+  @override
+  String get guidesNoResultsSubtitle =>
+      'Try another name, expertise, language, or filter.';
+
+  @override
+  String get guidesSpecialtyMountainGuide => 'Mountain Guide';
+
+  @override
+  String get guidesSpecialtyCityHistorian => 'City Historian';
+
+  @override
+  String get guidesSpecialtyCulinaryExpert => 'Culinary Expert';
+
+  @override
+  String get guidesSpecialtyNaturePhotographer => 'Nature Photographer';
+
+  @override
+  String get guidesRoleLocalExpert => 'Local Expert';
+
+  @override
+  String get guidesFilterPrivateTours => 'Private tours';
+
+  @override
+  String get guidesFilterActivities => 'Activities';
+
+  @override
+  String get guidesFilterTours => 'Tours';
+
+  @override
+  String guidesExperienceYears(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count years',
+      one: '1 year',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get toursCreateFab => 'Create tour';

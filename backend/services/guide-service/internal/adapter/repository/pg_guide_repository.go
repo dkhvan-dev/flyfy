@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/port"
 )
 
 type PGGuideRepository struct {
@@ -528,6 +530,47 @@ func (r *PGGuideRepository) ListGuideLanguages(ctx context.Context, guideProfile
 	return result, rows.Err()
 }
 
+func (r *PGGuideRepository) ListGuideLanguagesByProfileIDs(
+	ctx context.Context,
+	guideProfileIDs []uuid.UUID,
+) (map[uuid.UUID][]*model.GuideLanguage, error) {
+	if len(guideProfileIDs) == 0 {
+		return map[uuid.UUID][]*model.GuideLanguage{}, nil
+	}
+
+	placeholders, args := uuidPlaceholders(guideProfileIDs)
+	query := fmt.Sprintf(`
+		SELECT
+			id, guide_profile_id, language_code, proficiency_level, created_at
+		FROM guide_languages
+		WHERE guide_profile_id IN (%s)
+		ORDER BY guide_profile_id ASC, created_at ASC
+	`, placeholders)
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query guide languages by profile ids: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[uuid.UUID][]*model.GuideLanguage, len(guideProfileIDs))
+	for rows.Next() {
+		var item model.GuideLanguage
+		if err = rows.Scan(
+			&item.ID,
+			&item.GuideProfileID,
+			&item.LanguageCode,
+			&item.ProficiencyLevel,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan guide language: %w", err)
+		}
+		result[item.GuideProfileID] = append(result[item.GuideProfileID], &item)
+	}
+
+	return result, rows.Err()
+}
+
 func (r *PGGuideRepository) AddGuideSpecialization(ctx context.Context, specialization *model.GuideSpecialization) error {
 	const query = `
 		INSERT INTO guide_specializations (
@@ -628,21 +671,100 @@ func (r *PGGuideRepository) ListGuideSpecializations(ctx context.Context, guideP
 	return result, rows.Err()
 }
 
-func (r *PGGuideRepository) ListPublicGuideProfiles(ctx context.Context, limit int, offset int) ([]*model.GuideProfile, error) {
-	const query = `
-		SELECT
-			id, user_id, type, status, headline, about, experience_years,
-			base_city_id, is_private_guide_available, is_activity_host_available,
-			is_tour_guide_available, rating_avg, reviews_count, created_at, updated_at
-		FROM guide_profiles
-		WHERE status = $1
-		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3
-	`
+func (r *PGGuideRepository) ListGuideSpecializationsByProfileIDs(
+	ctx context.Context,
+	guideProfileIDs []uuid.UUID,
+) (map[uuid.UUID][]*model.GuideSpecialization, error) {
+	if len(guideProfileIDs) == 0 {
+		return map[uuid.UUID][]*model.GuideSpecialization{}, nil
+	}
 
-	rows, err := r.pool.Query(ctx, query, string(enum.GuideStatusActive), limit, offset)
+	placeholders, args := uuidPlaceholders(guideProfileIDs)
+	query := fmt.Sprintf(`
+		SELECT
+			id, guide_profile_id, specialization_code, created_at
+		FROM guide_specializations
+		WHERE guide_profile_id IN (%s)
+		ORDER BY guide_profile_id ASC, created_at ASC
+	`, placeholders)
+
+	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("query public guide profiles: %w", err)
+		return nil, fmt.Errorf("query guide specializations by profile ids: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[uuid.UUID][]*model.GuideSpecialization, len(guideProfileIDs))
+	for rows.Next() {
+		var item model.GuideSpecialization
+		if err = rows.Scan(
+			&item.ID,
+			&item.GuideProfileID,
+			&item.SpecializationCode,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan guide specialization: %w", err)
+		}
+		result[item.GuideProfileID] = append(result[item.GuideProfileID], &item)
+	}
+
+	return result, rows.Err()
+}
+
+func (r *PGGuideRepository) ListPublicGuideProfiles(
+	ctx context.Context,
+	filter port.PublicGuideListFilter,
+) (port.PublicGuideListResult, error) {
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+	if filter.Limit > 100 {
+		filter.Limit = 100
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+	if filter.Sort == "" {
+		filter.Sort = port.PublicGuideSortRatingDesc
+	}
+
+	where, args := buildPublicGuideWhere(filter)
+	whereClause := strings.Join(where, "\n\t\t\tAND ")
+
+	countQuery := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM guide_profiles gp
+		WHERE %s
+	`, whereClause)
+
+	var total int
+	if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
+		return port.PublicGuideListResult{}, fmt.Errorf("count public guide profiles: %w", err)
+	}
+	if total == 0 {
+		return port.PublicGuideListResult{Items: []*model.GuideProfile{}, Total: 0}, nil
+	}
+
+	queryArgs := append([]any{}, args...)
+	limitRef := fmt.Sprintf("$%d", len(queryArgs)+1)
+	queryArgs = append(queryArgs, filter.Limit)
+	offsetRef := fmt.Sprintf("$%d", len(queryArgs)+1)
+	queryArgs = append(queryArgs, filter.Offset)
+
+	query := fmt.Sprintf(`
+		SELECT
+			gp.id, gp.user_id, gp.type, gp.status, gp.headline, gp.about, gp.experience_years,
+			gp.base_city_id, gp.is_private_guide_available, gp.is_activity_host_available,
+			gp.is_tour_guide_available, gp.rating_avg, gp.reviews_count, gp.created_at, gp.updated_at
+		FROM guide_profiles gp
+		WHERE %s
+		ORDER BY %s
+		LIMIT %s OFFSET %s
+	`, whereClause, publicGuideOrderBy(filter.Sort), limitRef, offsetRef)
+
+	rows, err := r.pool.Query(ctx, query, queryArgs...)
+	if err != nil {
+		return port.PublicGuideListResult{}, fmt.Errorf("query public guide profiles: %w", err)
 	}
 	defer rows.Close()
 
@@ -671,7 +793,7 @@ func (r *PGGuideRepository) ListPublicGuideProfiles(ctx context.Context, limit i
 			&item.CreatedAt,
 			&item.UpdatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("scan public guide profile: %w", err)
+			return port.PublicGuideListResult{}, fmt.Errorf("scan public guide profile: %w", err)
 		}
 
 		item.Type = enum.GuideType(typeRaw)
@@ -679,7 +801,112 @@ func (r *PGGuideRepository) ListPublicGuideProfiles(ctx context.Context, limit i
 		result = append(result, &item)
 	}
 
-	return result, rows.Err()
+	if err = rows.Err(); err != nil {
+		return port.PublicGuideListResult{}, err
+	}
+
+	return port.PublicGuideListResult{
+		Items: result,
+		Total: total,
+	}, nil
+}
+
+func buildPublicGuideWhere(filter port.PublicGuideListFilter) ([]string, []any) {
+	where := []string{"gp.status = $1"}
+	args := []any{string(enum.GuideStatusActive)}
+	addArg := func(value any) string {
+		args = append(args, value)
+		return fmt.Sprintf("$%d", len(args))
+	}
+
+	if query := strings.TrimSpace(strings.ToLower(filter.Query)); query != "" {
+		searchTerm := addArg("%" + query + "%")
+		normalizedCodeQuery := strings.ReplaceAll(query, " ", "_")
+		codeSearchTerm := searchTerm
+		if normalizedCodeQuery != query {
+			codeSearchTerm = addArg("%" + normalizedCodeQuery + "%")
+		}
+		where = append(where, fmt.Sprintf(`(
+				gp.headline ILIKE %s
+				OR gp.about ILIKE %s
+				OR EXISTS (
+					SELECT 1
+					FROM guide_languages gl_search
+					WHERE gl_search.guide_profile_id = gp.id
+						AND LOWER(gl_search.language_code) LIKE %s
+				)
+				OR EXISTS (
+					SELECT 1
+					FROM guide_specializations gs_search
+					WHERE gs_search.guide_profile_id = gp.id
+						AND LOWER(gs_search.specialization_code) LIKE %s
+				)
+			)`, searchTerm, searchTerm, codeSearchTerm, codeSearchTerm))
+	}
+
+	if len(filter.UserIDs) > 0 {
+		placeholder := addArg(filter.UserIDs)
+		where = append(where, fmt.Sprintf("gp.user_id = ANY(%s)", placeholder))
+	} else if len(filter.CountryCodes) > 0 {
+		where = append(where, "FALSE")
+	}
+
+	if len(filter.LanguageCodes) > 0 {
+		placeholder := addArg(filter.LanguageCodes)
+		where = append(where, fmt.Sprintf(`EXISTS (
+				SELECT 1
+				FROM guide_languages gl_filter
+				WHERE gl_filter.guide_profile_id = gp.id
+					AND LOWER(gl_filter.language_code) = ANY(%s)
+			)`, placeholder))
+	}
+
+	if len(filter.SpecializationCodes) > 0 {
+		placeholder := addArg(filter.SpecializationCodes)
+		where = append(where, fmt.Sprintf(`EXISTS (
+				SELECT 1
+				FROM guide_specializations gs_filter
+				WHERE gs_filter.guide_profile_id = gp.id
+					AND LOWER(gs_filter.specialization_code) = ANY(%s)
+			)`, placeholder))
+	}
+
+	if filter.MinRating != nil {
+		where = append(where, fmt.Sprintf("gp.rating_avg >= %s", addArg(*filter.MinRating)))
+	}
+
+	if filter.MinExperienceYears != nil {
+		where = append(where, fmt.Sprintf("gp.experience_years >= %s", addArg(*filter.MinExperienceYears)))
+	}
+
+	return where, args
+}
+
+func publicGuideOrderBy(sort port.PublicGuideSort) string {
+	switch sort {
+	case port.PublicGuideSortRatingAsc:
+		return "gp.rating_avg ASC, gp.reviews_count DESC, gp.created_at DESC, gp.id ASC"
+	case port.PublicGuideSortExperienceDesc:
+		return "gp.experience_years DESC, gp.rating_avg DESC, gp.reviews_count DESC, gp.id ASC"
+	case port.PublicGuideSortExperienceAsc:
+		return "gp.experience_years ASC, gp.rating_avg DESC, gp.reviews_count DESC, gp.id ASC"
+	case port.PublicGuideSortNewestDesc:
+		return "gp.created_at DESC, gp.id ASC"
+	case port.PublicGuideSortNewestAsc:
+		return "gp.created_at ASC, gp.id ASC"
+	default:
+		return "gp.rating_avg DESC, gp.reviews_count DESC, gp.created_at DESC, gp.id ASC"
+	}
+}
+
+func uuidPlaceholders(ids []uuid.UUID) (string, []any) {
+	placeholders := make([]string, 0, len(ids))
+	args := make([]any, 0, len(ids))
+	for _, id := range ids {
+		placeholders = append(placeholders, fmt.Sprintf("$%d", len(args)+1))
+		args = append(args, id)
+	}
+	return strings.Join(placeholders, ", "), args
 }
 
 func (r *PGGuideRepository) ListVerificationRequestsByStatuses(

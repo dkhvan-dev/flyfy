@@ -493,6 +493,40 @@ func (u *UserUseCase) GetPublicProfilesByUserIDs(
 	return items, nil
 }
 
+func (u *UserUseCase) ListPublicUserIDsByCountryCodes(
+	ctx context.Context,
+	countryCodes []string,
+) ([]uuid.UUID, error) {
+	normalized := normalizeCountryCodes(countryCodes)
+	if len(normalized) == 0 {
+		return []uuid.UUID{}, nil
+	}
+
+	userIDs, err := u.repo.ListPublicUserIDsByCountryCodes(ctx, normalized)
+	if err != nil {
+		return nil, fmt.Errorf("list public user ids by country codes: %w", err)
+	}
+
+	return userIDs, nil
+}
+
+func normalizeCountryCodes(codes []string) []string {
+	seen := make(map[string]struct{}, len(codes))
+	result := make([]string, 0, len(codes))
+	for _, code := range codes {
+		normalized := strings.ToUpper(strings.TrimSpace(code))
+		if normalized == "" {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	return result
+}
+
 type FollowersPage struct {
 	Items      []*model.UserProfile
 	NextOffset *int

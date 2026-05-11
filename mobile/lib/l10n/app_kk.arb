@@ -750,6 +750,49 @@
   "toursEmptyTitle": "Әзірге турлар жоқ",
   "toursEmptySubtitle": "Мұнда тексерілген гидтердің маршруттары пайда болады.",
   "toursEmptySearchSubtitle": "Басқа қала, санат немесе тур атауын қолданып көріңіз.",
+  "guidesTitle": "Гидтер",
+  "guidesSearchHint": "Гидтерді іздеу",
+  "guidesSortLabel": "Сұрыптау",
+  "guidesSortRating": "Рейтинг",
+  "guidesSortExperience": "Тәжірибе",
+  "guidesViewProfile": "Профильді көру",
+  "guidesFiltersTitle": "Сүзгілер",
+  "guidesFiltersClear": "Тазалау",
+  "guidesFilterExpertise": "Мамандану",
+  "guidesFilterLanguage": "Тіл",
+  "guidesFilterRating": "Рейтинг",
+  "guidesFilterExperience": "Тәжірибе",
+  "guidesFilterRatingAtLeast": "{value}+ жұлдыз",
+  "@guidesFilterRatingAtLeast": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "guidesFiltersShowResults": "{count, plural, =0{0 гидті} =1{1 гидті} other{{count} гидті}} көрсету",
+  "@guidesFiltersShowResults": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guidesLoadFailed": "Гидтерді жүктеу мүмкін болмады",
+  "guidesEmptyTitle": "Әзірге гидтер жоқ",
+  "guidesEmptySubtitle": "Мұнда тексерілген жергілікті сарапшылар пайда болады.",
+  "guidesNoResultsTitle": "Гидтер табылмады",
+  "guidesNoResultsSubtitle": "Басқа ат, мамандану, тіл немесе сүзгіні қолданып көріңіз.",
+  "guidesSpecialtyMountainGuide": "Тау гиді",
+  "guidesSpecialtyCityHistorian": "Қала тарихшысы",
+  "guidesSpecialtyCulinaryExpert": "Аспаздық сарапшы",
+  "guidesSpecialtyNaturePhotographer": "Табиғат фотографы",
+  "guidesRoleLocalExpert": "Жергілікті сарапшы",
+  "guidesFilterPrivateTours": "Жеке турлар",
+  "guidesFilterActivities": "Іс-шаралар",
+  "guidesFilterTours": "Турлар",
+  "guidesExperienceYears": "{count, plural, =1{1 жыл} other{{count} жыл}}",
+  "@guidesExperienceYears": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "toursCreateFab": "Тур құру",
   "toursFreePrice": "Тегін",
   "toursDurationHourShort": "сағ",

@@ -48,3 +48,19 @@ func TestTourRoutesProxyToTourService(t *testing.T) {
 		t.Fatalf("my rewrite prefix = %q, want /v1/me/tours", myPolicy.RewritePrefix)
 	}
 }
+
+func TestPublicGuidesRouteDoesNotRequireBearerToken(t *testing.T) {
+	policy := matchRoutePolicy("/api/v1/guides/public", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected public guides route policy")
+	}
+	if policy.Upstream != "guide" {
+		t.Fatalf("upstream = %q, want guide", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/guides/public" {
+		t.Fatalf("rewrite prefix = %q, want /v1/guides/public", policy.RewritePrefix)
+	}
+}

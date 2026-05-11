@@ -195,16 +195,19 @@ func (s *Server) ListPublicGuides(
 	ctx context.Context,
 	req *guidev1.ListPublicGuidesRequest,
 ) (*guidev1.ListPublicGuidesResponse, error) {
-	items, err := s.useCase.ListPublicGuideCards(ctx, int(req.GetLimit()), int(req.GetOffset()))
+	result, err := s.useCase.ListPublicGuideCards(ctx, app.ListPublicGuidesInput{
+		Limit:  int(req.GetLimit()),
+		Offset: int(req.GetOffset()),
+	})
 	if err != nil {
 		return nil, mapError(err)
 	}
 
 	resp := &guidev1.ListPublicGuidesResponse{
-		Items: make([]*guidev1.PublicGuideCard, 0, len(items)),
+		Items: make([]*guidev1.PublicGuideCard, 0, len(result.Items)),
 	}
 
-	for _, item := range items {
+	for _, item := range result.Items {
 		card := &guidev1.PublicGuideCard{
 			GuideProfile: toProtoGuideProfile(item.GuideProfile),
 		}

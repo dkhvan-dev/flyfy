@@ -580,27 +580,107 @@ func (u *GuideUseCase) AttachGuideDocument(
 	return doc, nil
 }
 
+type ListPublicGuidesInput struct {
+	Query               string
+	CountryCodes        []string
+	LanguageCodes       []string
+	SpecializationCodes []string
+	MinRating           *float64
+	MinExperienceYears  *int
+	Sort                string
+	Limit               int
+	Offset              int
+}
+
 func (u *GuideUseCase) ListPublicGuideProfiles(
 	ctx context.Context,
-	limit int,
-	offset int,
-) ([]*model.GuideProfile, error) {
+	input ListPublicGuidesInput,
+) (port.PublicGuideListResult, error) {
+	filter := normalizePublicGuideListFilter(input)
+	if len(filter.CountryCodes) > 0 {
+		if u.userClient == nil {
+			return port.PublicGuideListResult{}, fmt.Errorf("user service client is not configured")
+		}
+
+		userIDs, err := u.userClient.ListPublicUserIDsByCountryCodes(ctx, filter.CountryCodes)
+		if err != nil {
+			return port.PublicGuideListResult{}, fmt.Errorf("list public guide user ids by country codes: %w", err)
+		}
+		if len(userIDs) == 0 {
+			return port.PublicGuideListResult{
+				Items: []*model.GuideProfile{},
+				Total: 0,
+			}, nil
+		}
+		filter.UserIDs = userIDs
+	}
+
+	items, err := u.repo.ListPublicGuideProfiles(ctx, filter)
+	if err != nil {
+		return port.PublicGuideListResult{}, fmt.Errorf("list public guide profiles: %w", err)
+	}
+
+	return items, nil
+}
+
+func normalizePublicGuideListFilter(input ListPublicGuidesInput) port.PublicGuideListFilter {
+	limit := input.Limit
 	if limit <= 0 {
 		limit = 20
 	}
 	if limit > 100 {
 		limit = 100
 	}
+	offset := input.Offset
 	if offset < 0 {
 		offset = 0
 	}
 
-	items, err := u.repo.ListPublicGuideProfiles(ctx, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("list public guide profiles: %w", err)
+	return port.PublicGuideListFilter{
+		Query:               strings.TrimSpace(input.Query),
+		CountryCodes:        normalizePublicGuideCodes(input.CountryCodes),
+		LanguageCodes:       normalizePublicGuideCodes(input.LanguageCodes),
+		SpecializationCodes: normalizePublicGuideCodes(input.SpecializationCodes),
+		MinRating:           input.MinRating,
+		MinExperienceYears:  input.MinExperienceYears,
+		Sort:                normalizePublicGuideSort(input.Sort),
+		Limit:               limit,
+		Offset:              offset,
 	}
+}
 
-	return items, nil
+func normalizePublicGuideSort(sort string) port.PublicGuideSort {
+	switch port.PublicGuideSort(strings.TrimSpace(strings.ToLower(sort))) {
+	case port.PublicGuideSortRatingAsc:
+		return port.PublicGuideSortRatingAsc
+	case port.PublicGuideSortExperienceDesc:
+		return port.PublicGuideSortExperienceDesc
+	case port.PublicGuideSortExperienceAsc:
+		return port.PublicGuideSortExperienceAsc
+	case port.PublicGuideSortNewestDesc:
+		return port.PublicGuideSortNewestDesc
+	case port.PublicGuideSortNewestAsc:
+		return port.PublicGuideSortNewestAsc
+	default:
+		return port.PublicGuideSortRatingDesc
+	}
+}
+
+func normalizePublicGuideCodes(codes []string) []string {
+	seen := make(map[string]struct{}, len(codes))
+	result := make([]string, 0, len(codes))
+	for _, code := range codes {
+		normalized := strings.TrimSpace(strings.ToLower(code))
+		if normalized == "" {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	return result
 }
 
 type ReviewVerificationRequestInput struct {
@@ -782,32 +862,70 @@ func (u *GuideUseCase) ListPendingVerificationRequests(
 }
 
 type PublicGuideCard struct {
-	GuideProfile *model.GuideProfile
-	UserProfile  *PublicUserProfile
+	GuideProfile    *model.GuideProfile
+	UserProfile     *PublicUserProfile
+	Languages       []*model.GuideLanguage
+	Specializations []*model.GuideSpecialization
+}
+
+type PublicGuideCardList struct {
+	Items  []*PublicGuideCard
+	Total  int
+	Limit  int
+	Offset int
 }
 
 func (u *GuideUseCase) ListPublicGuideCards(
 	ctx context.Context,
-	limit int,
-	offset int,
-) ([]*PublicGuideCard, error) {
-	items, err := u.ListPublicGuideProfiles(ctx, limit, offset)
+	input ListPublicGuidesInput,
+) (PublicGuideCardList, error) {
+	profiles, err := u.ListPublicGuideProfiles(ctx, input)
 	if err != nil {
-		return nil, err
+		return PublicGuideCardList{}, err
 	}
 
+	items := profiles.Items
 	if len(items) == 0 {
-		return []*PublicGuideCard{}, nil
+		filter := normalizePublicGuideListFilter(input)
+		return PublicGuideCardList{
+			Items:  []*PublicGuideCard{},
+			Total:  profiles.Total,
+			Limit:  filter.Limit,
+			Offset: filter.Offset,
+		}, nil
+	}
+
+	profileIDs := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		profileIDs = append(profileIDs, item.ID)
+	}
+
+	languagesByProfileID, err := u.repo.ListGuideLanguagesByProfileIDs(ctx, profileIDs)
+	if err != nil {
+		return PublicGuideCardList{}, fmt.Errorf("list public guide languages: %w", err)
+	}
+
+	specializationsByProfileID, err := u.repo.ListGuideSpecializationsByProfileIDs(ctx, profileIDs)
+	if err != nil {
+		return PublicGuideCardList{}, fmt.Errorf("list public guide specializations: %w", err)
 	}
 
 	if u.userClient == nil {
 		result := make([]*PublicGuideCard, 0, len(items))
 		for _, item := range items {
 			result = append(result, &PublicGuideCard{
-				GuideProfile: item,
+				GuideProfile:    item,
+				Languages:       languagesByProfileID[item.ID],
+				Specializations: specializationsByProfileID[item.ID],
 			})
 		}
-		return result, nil
+		filter := normalizePublicGuideListFilter(input)
+		return PublicGuideCardList{
+			Items:  result,
+			Total:  profiles.Total,
+			Limit:  filter.Limit,
+			Offset: filter.Offset,
+		}, nil
 	}
 
 	userIDs := make([]uuid.UUID, 0, len(items))
@@ -817,13 +935,15 @@ func (u *GuideUseCase) ListPublicGuideCards(
 
 	userProfiles, err := u.userClient.GetPublicUserProfiles(ctx, userIDs)
 	if err != nil {
-		return nil, fmt.Errorf("get public user profiles: %w", err)
+		return PublicGuideCardList{}, fmt.Errorf("get public user profiles: %w", err)
 	}
 
 	result := make([]*PublicGuideCard, 0, len(items))
 	for _, item := range items {
 		card := &PublicGuideCard{
-			GuideProfile: item,
+			GuideProfile:    item,
+			Languages:       languagesByProfileID[item.ID],
+			Specializations: specializationsByProfileID[item.ID],
 		}
 		if profile, ok := userProfiles[item.UserID]; ok {
 			p := profile
@@ -832,5 +952,11 @@ func (u *GuideUseCase) ListPublicGuideCards(
 		result = append(result, card)
 	}
 
-	return result, nil
+	filter := normalizePublicGuideListFilter(input)
+	return PublicGuideCardList{
+		Items:  result,
+		Total:  profiles.Total,
+		Limit:  filter.Limit,
+		Offset: filter.Offset,
+	}, nil
 }

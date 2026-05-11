@@ -724,7 +724,7 @@
   "createActivityFailed": "Failed to create activity",
   "toursDiscoverTitle": "Discover Tours",
   "toursSearchHint": "Search tours and experiences",
-  "toursSortLabel": "Sort",
+  "toursSortLabel": "Sort by",
   "toursSortPopular": "Popular",
   "toursSortNewest": "New",
   "toursSortAffordable": "Affordable",
@@ -750,6 +750,49 @@
   "toursEmptyTitle": "No tours yet",
   "toursEmptySubtitle": "Verified guide routes will appear here.",
   "toursEmptySearchSubtitle": "Try another destination, category, or tour name.",
+  "guidesTitle": "Travel Guides",
+  "guidesSearchHint": "Search guides",
+  "guidesSortLabel": "Sort by",
+  "guidesSortRating": "Rating",
+  "guidesSortExperience": "Experience",
+  "guidesViewProfile": "View Profile",
+  "guidesFiltersTitle": "Filters",
+  "guidesFiltersClear": "Clear",
+  "guidesFilterExpertise": "Expertise",
+  "guidesFilterLanguage": "Language",
+  "guidesFilterRating": "Rating",
+  "guidesFilterExperience": "Experience",
+  "guidesFilterRatingAtLeast": "{value}+ stars",
+  "@guidesFilterRatingAtLeast": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "guidesFiltersShowResults": "Show {count, plural, =0{0 guides} =1{1 guide} other{{count} guides}}",
+  "@guidesFiltersShowResults": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guidesLoadFailed": "Failed to load guides",
+  "guidesEmptyTitle": "No guides yet",
+  "guidesEmptySubtitle": "Verified local experts will appear here.",
+  "guidesNoResultsTitle": "No guides found",
+  "guidesNoResultsSubtitle": "Try another name, expertise, language, or filter.",
+  "guidesSpecialtyMountainGuide": "Mountain Guide",
+  "guidesSpecialtyCityHistorian": "City Historian",
+  "guidesSpecialtyCulinaryExpert": "Culinary Expert",
+  "guidesSpecialtyNaturePhotographer": "Nature Photographer",
+  "guidesRoleLocalExpert": "Local Expert",
+  "guidesFilterPrivateTours": "Private tours",
+  "guidesFilterActivities": "Activities",
+  "guidesFilterTours": "Tours",
+  "guidesExperienceYears": "{count, plural, =1{1 year} other{{count} years}}",
+  "@guidesExperienceYears": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "toursCreateFab": "Create tour",
   "toursFreePrice": "Free",
   "toursDurationHourShort": "h",

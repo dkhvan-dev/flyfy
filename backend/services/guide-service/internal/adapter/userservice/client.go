@@ -191,6 +191,40 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 	return result, nil
 }
 
+func (c *Client) ListPublicUserIDsByCountryCodes(
+	ctx context.Context,
+	countryCodes []string,
+) ([]uuid.UUID, error) {
+	if len(countryCodes) == 0 {
+		return []uuid.UUID{}, nil
+	}
+
+	callCtx, cancel := context.WithTimeout(ctx, defaultListPublicUsersTimeout)
+	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
+
+	resp, err := c.service.ListPublicUserIdsByCountryCodes(
+		callCtx,
+		&userv1.ListPublicUserIdsByCountryCodesRequest{
+			CountryCodes: countryCodes,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]uuid.UUID, 0, len(resp.GetUserIds()))
+	for _, raw := range resp.GetUserIds() {
+		userID, parseErr := uuid.Parse(strings.TrimSpace(raw))
+		if parseErr != nil {
+			continue
+		}
+		result = append(result, userID)
+	}
+
+	return result, nil
+}
+
 func (c *Client) GrantGuideRole(ctx context.Context, userID uuid.UUID, grantedBy *uuid.UUID) error {
 	callCtx, cancel := context.WithTimeout(ctx, defaultGetUserTimeout)
 	defer cancel()

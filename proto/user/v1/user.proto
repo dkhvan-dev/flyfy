@@ -13,6 +13,7 @@ service UserService {
   rpc GrantUserRole(GrantUserRoleRequest) returns (GrantUserRoleResponse);
   rpc ListPublicProfiles(ListPublicProfilesRequest) returns (ListPublicProfilesResponse);
   rpc GetPublicProfilesByUserIds(GetPublicProfilesByUserIdsRequest) returns (GetPublicProfilesByUserIdsResponse);
+  rpc ListPublicUserIdsByCountryCodes(ListPublicUserIdsByCountryCodesRequest) returns (ListPublicUserIdsByCountryCodesResponse);
   rpc GetUserBySubject(GetUserBySubjectRequest) returns (GetUserBySubjectResponse);
 }
 
@@ -177,6 +178,14 @@ message GetPublicProfilesByUserIdsRequest {
 
 message GetPublicProfilesByUserIdsResponse {
   repeated PublicProfile items = 1;
+}
+
+message ListPublicUserIdsByCountryCodesRequest {
+  repeated string country_codes = 1;
+}
+
+message ListPublicUserIdsByCountryCodesResponse {
+  repeated string user_ids = 1;
 }
 
 message GetUserBySubjectRequest {

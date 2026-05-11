@@ -2049,7 +2049,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get toursSearchHint => 'Поиск туров и впечатлений';
 
   @override
-  String get toursSortLabel => 'Сортировка';
+  String get toursSortLabel => 'Сортировать';
 
   @override
   String get toursSortPopular => 'Популярные';
@@ -2122,6 +2122,115 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get toursEmptySearchSubtitle =>
       'Попробуйте другой город, категорию или название тура.';
+
+  @override
+  String get guidesTitle => 'Гиды';
+
+  @override
+  String get guidesSearchHint => 'Поиск гидов';
+
+  @override
+  String get guidesSortLabel => 'Сортировать';
+
+  @override
+  String get guidesSortRating => 'Рейтинг';
+
+  @override
+  String get guidesSortExperience => 'Опыт';
+
+  @override
+  String get guidesViewProfile => 'Профиль';
+
+  @override
+  String get guidesFiltersTitle => 'Фильтры';
+
+  @override
+  String get guidesFiltersClear => 'Очистить';
+
+  @override
+  String get guidesFilterExpertise => 'Экспертиза';
+
+  @override
+  String get guidesFilterLanguage => 'Язык';
+
+  @override
+  String get guidesFilterRating => 'Рейтинг';
+
+  @override
+  String get guidesFilterExperience => 'Опыт';
+
+  @override
+  String guidesFilterRatingAtLeast(Object value) {
+    return '$value+ звезд';
+  }
+
+  @override
+  String guidesFiltersShowResults(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count гида',
+      many: '$count гидов',
+      few: '$count гида',
+      one: '$count гид',
+      zero: '0 гидов',
+    );
+    return 'Показать $_temp0';
+  }
+
+  @override
+  String get guidesLoadFailed => 'Не удалось загрузить гидов';
+
+  @override
+  String get guidesEmptyTitle => 'Гидов пока нет';
+
+  @override
+  String get guidesEmptySubtitle =>
+      'Здесь появятся проверенные локальные эксперты.';
+
+  @override
+  String get guidesNoResultsTitle => 'Гиды не найдены';
+
+  @override
+  String get guidesNoResultsSubtitle =>
+      'Попробуйте другое имя, специализацию, язык или фильтр.';
+
+  @override
+  String get guidesSpecialtyMountainGuide => 'Горный гид';
+
+  @override
+  String get guidesSpecialtyCityHistorian => 'Городской историк';
+
+  @override
+  String get guidesSpecialtyCulinaryExpert => 'Кулинарный эксперт';
+
+  @override
+  String get guidesSpecialtyNaturePhotographer => 'Фотограф природы';
+
+  @override
+  String get guidesRoleLocalExpert => 'Локальный эксперт';
+
+  @override
+  String get guidesFilterPrivateTours => 'Частные туры';
+
+  @override
+  String get guidesFilterActivities => 'Активности';
+
+  @override
+  String get guidesFilterTours => 'Туры';
+
+  @override
+  String guidesExperienceYears(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count года',
+      many: '$count лет',
+      few: '$count года',
+      one: '$count год',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get toursCreateFab => 'Создать тур';

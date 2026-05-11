@@ -10,6 +10,7 @@ void main() {
       'lib/screens/activities/activities_screen.dart',
       'lib/screens/activities/my_activities_screen.dart',
       'lib/screens/attractions/attractions_screen.dart',
+      'lib/screens/guides/guides_screen.dart',
       'lib/screens/stories/stories_screen.dart',
     ];
 

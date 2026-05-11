@@ -19,15 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_GetOrCreateUserBySubject_FullMethodName   = "/user.v1.UserService/GetOrCreateUserBySubject"
-	UserService_GetUserById_FullMethodName                = "/user.v1.UserService/GetUserById"
-	UserService_GetUserProfile_FullMethodName             = "/user.v1.UserService/GetUserProfile"
-	UserService_UpdateUserProfile_FullMethodName          = "/user.v1.UserService/UpdateUserProfile"
-	UserService_UpdateUserSettings_FullMethodName         = "/user.v1.UserService/UpdateUserSettings"
-	UserService_GrantUserRole_FullMethodName              = "/user.v1.UserService/GrantUserRole"
-	UserService_ListPublicProfiles_FullMethodName         = "/user.v1.UserService/ListPublicProfiles"
-	UserService_GetPublicProfilesByUserIds_FullMethodName = "/user.v1.UserService/GetPublicProfilesByUserIds"
-	UserService_GetUserBySubject_FullMethodName           = "/user.v1.UserService/GetUserBySubject"
+	UserService_GetOrCreateUserBySubject_FullMethodName        = "/user.v1.UserService/GetOrCreateUserBySubject"
+	UserService_GetUserById_FullMethodName                     = "/user.v1.UserService/GetUserById"
+	UserService_GetUserProfile_FullMethodName                  = "/user.v1.UserService/GetUserProfile"
+	UserService_UpdateUserProfile_FullMethodName               = "/user.v1.UserService/UpdateUserProfile"
+	UserService_UpdateUserSettings_FullMethodName              = "/user.v1.UserService/UpdateUserSettings"
+	UserService_GrantUserRole_FullMethodName                   = "/user.v1.UserService/GrantUserRole"
+	UserService_ListPublicProfiles_FullMethodName              = "/user.v1.UserService/ListPublicProfiles"
+	UserService_GetPublicProfilesByUserIds_FullMethodName      = "/user.v1.UserService/GetPublicProfilesByUserIds"
+	UserService_ListPublicUserIdsByCountryCodes_FullMethodName = "/user.v1.UserService/ListPublicUserIdsByCountryCodes"
+	UserService_GetUserBySubject_FullMethodName                = "/user.v1.UserService/GetUserBySubject"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -42,6 +43,7 @@ type UserServiceClient interface {
 	GrantUserRole(ctx context.Context, in *GrantUserRoleRequest, opts ...grpc.CallOption) (*GrantUserRoleResponse, error)
 	ListPublicProfiles(ctx context.Context, in *ListPublicProfilesRequest, opts ...grpc.CallOption) (*ListPublicProfilesResponse, error)
 	GetPublicProfilesByUserIds(ctx context.Context, in *GetPublicProfilesByUserIdsRequest, opts ...grpc.CallOption) (*GetPublicProfilesByUserIdsResponse, error)
+	ListPublicUserIdsByCountryCodes(ctx context.Context, in *ListPublicUserIdsByCountryCodesRequest, opts ...grpc.CallOption) (*ListPublicUserIdsByCountryCodesResponse, error)
 	GetUserBySubject(ctx context.Context, in *GetUserBySubjectRequest, opts ...grpc.CallOption) (*GetUserBySubjectResponse, error)
 }
 
@@ -133,6 +135,16 @@ func (c *userServiceClient) GetPublicProfilesByUserIds(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *userServiceClient) ListPublicUserIdsByCountryCodes(ctx context.Context, in *ListPublicUserIdsByCountryCodesRequest, opts ...grpc.CallOption) (*ListPublicUserIdsByCountryCodesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPublicUserIdsByCountryCodesResponse)
+	err := c.cc.Invoke(ctx, UserService_ListPublicUserIdsByCountryCodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) GetUserBySubject(ctx context.Context, in *GetUserBySubjectRequest, opts ...grpc.CallOption) (*GetUserBySubjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUserBySubjectResponse)
@@ -155,6 +167,7 @@ type UserServiceServer interface {
 	GrantUserRole(context.Context, *GrantUserRoleRequest) (*GrantUserRoleResponse, error)
 	ListPublicProfiles(context.Context, *ListPublicProfilesRequest) (*ListPublicProfilesResponse, error)
 	GetPublicProfilesByUserIds(context.Context, *GetPublicProfilesByUserIdsRequest) (*GetPublicProfilesByUserIdsResponse, error)
+	ListPublicUserIdsByCountryCodes(context.Context, *ListPublicUserIdsByCountryCodesRequest) (*ListPublicUserIdsByCountryCodesResponse, error)
 	GetUserBySubject(context.Context, *GetUserBySubjectRequest) (*GetUserBySubjectResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
@@ -189,6 +202,9 @@ func (UnimplementedUserServiceServer) ListPublicProfiles(context.Context, *ListP
 }
 func (UnimplementedUserServiceServer) GetPublicProfilesByUserIds(context.Context, *GetPublicProfilesByUserIdsRequest) (*GetPublicProfilesByUserIdsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPublicProfilesByUserIds not implemented")
+}
+func (UnimplementedUserServiceServer) ListPublicUserIdsByCountryCodes(context.Context, *ListPublicUserIdsByCountryCodesRequest) (*ListPublicUserIdsByCountryCodesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPublicUserIdsByCountryCodes not implemented")
 }
 func (UnimplementedUserServiceServer) GetUserBySubject(context.Context, *GetUserBySubjectRequest) (*GetUserBySubjectResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserBySubject not implemented")
@@ -358,6 +374,24 @@ func _UserService_GetPublicProfilesByUserIds_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_ListPublicUserIdsByCountryCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPublicUserIdsByCountryCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListPublicUserIdsByCountryCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListPublicUserIdsByCountryCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListPublicUserIdsByCountryCodes(ctx, req.(*ListPublicUserIdsByCountryCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_GetUserBySubject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetUserBySubjectRequest)
 	if err := dec(in); err != nil {
@@ -414,6 +448,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPublicProfilesByUserIds",
 			Handler:    _UserService_GetPublicProfilesByUserIds_Handler,
+		},
+		{
+			MethodName: "ListPublicUserIdsByCountryCodes",
+			Handler:    _UserService_ListPublicUserIdsByCountryCodes_Handler,
 		},
 		{
 			MethodName: "GetUserBySubject",

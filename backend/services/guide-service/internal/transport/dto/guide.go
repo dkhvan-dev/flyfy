@@ -128,8 +128,10 @@ type VerificationQueueItemResponse struct {
 }
 
 type PublicGuideCardResponse struct {
-	GuideProfile GuideProfileResponse `json:"guideProfile"`
-	UserProfile  *PublicUserCard      `json:"userProfile,omitempty"`
+	GuideProfile    GuideProfileResponse          `json:"guideProfile"`
+	UserProfile     *PublicUserCard               `json:"userProfile,omitempty"`
+	Languages       []GuideLanguageResponse       `json:"languages"`
+	Specializations []GuideSpecializationResponse `json:"specializations"`
 }
 
 type PublicUserCard struct {

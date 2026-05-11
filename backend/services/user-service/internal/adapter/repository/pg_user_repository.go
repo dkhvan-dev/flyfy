@@ -773,6 +773,42 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 	return result, rows.Err()
 }
 
+func (r *PGUserRepository) ListPublicUserIDsByCountryCodes(
+	ctx context.Context,
+	countryCodes []string,
+) ([]uuid.UUID, error) {
+	if len(countryCodes) == 0 {
+		return []uuid.UUID{}, nil
+	}
+
+	const query = `
+		SELECT p.user_id
+		FROM user_profiles p
+		JOIN users u ON u.id = p.user_id
+		WHERE p.is_public = TRUE
+		  AND u.is_deleted = FALSE
+		  AND UPPER(COALESCE(p.country_code, '')) = ANY($1)
+		ORDER BY p.created_at DESC, p.user_id ASC
+	`
+
+	rows, err := r.pool.Query(ctx, query, countryCodes)
+	if err != nil {
+		return nil, fmt.Errorf("query public user ids by country codes: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]uuid.UUID, 0)
+	for rows.Next() {
+		var userID uuid.UUID
+		if err = rows.Scan(&userID); err != nil {
+			return nil, fmt.Errorf("scan public user id by country code: %w", err)
+		}
+		result = append(result, userID)
+	}
+
+	return result, rows.Err()
+}
+
 func (r *PGUserRepository) ListFollowersByUserID(
 	ctx context.Context,
 	userID uuid.UUID,

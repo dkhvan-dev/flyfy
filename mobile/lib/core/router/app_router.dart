@@ -29,6 +29,7 @@ import '../../screens/tours/tour_booking_screen.dart';
 import '../../screens/tours/tour_select_location_screen.dart';
 import '../../screens/tours/tour_details_screen.dart';
 import '../../screens/tours/tours_screen.dart';
+import '../../screens/guides/guides_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
 import '../../screens/chat/conversations_screen.dart';
 import '../../screens/chat/chat_screen.dart';
@@ -254,6 +255,11 @@ class AppRouter {
               _withAndroidBackSwipe(const ToursScreen()),
         ),
         GoRoute(
+          path: '/guides',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const GuidesScreen()),
+        ),
+        GoRoute(
           path: '/tours/create',
           pageBuilder: (context, state) {
             return _buildActivityEditorPage(
@@ -423,6 +429,7 @@ class AppRouter {
 
     if (location == '/activities' ||
         location == '/tours' ||
+        location == '/guides' ||
         location == '/stories' ||
         location == '/menu' ||
         location == '/map' ||
