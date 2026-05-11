@@ -48,6 +48,7 @@ Future<void> showAppLanguageSheet(BuildContext context) async {
   final currentCode = localeProvider.locale.languageCode;
   final selectedCode = await showModalBottomSheet<String>(
     context: context,
+    isDismissible: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.58),
     isScrollControlled: true,
@@ -296,9 +297,8 @@ class AppSideDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = _AppDrawerLayout.of(context);
-    final profileTitle = isLoggedIn
-        ? profile?.preferredName ?? 'FlyFy'
-        : 'FlyFy';
+    final profileTitle =
+        isLoggedIn ? profile?.preferredName ?? 'FlyFy' : 'FlyFy';
     final profileSubtitle = isLoggedIn ? location : l10n.homeSubtitle;
     final avatarText = profile?.initials ?? 'F';
     final avatarUrl = resolvePublicFileContentUrl(
@@ -464,7 +464,9 @@ class AppSideDrawer extends StatelessWidget {
                                                       : Image.network(
                                                           avatarUrl,
                                                           fit: BoxFit.cover,
-                                                          errorBuilder: (_, __, ___) => Center(
+                                                          errorBuilder:
+                                                              (_, __, ___) =>
+                                                                  Center(
                                                             child: Text(
                                                               avatarText,
                                                               style: TextStyle(
@@ -494,15 +496,13 @@ class AppSideDrawer extends StatelessWidget {
                                                   shape: BoxShape.circle,
                                                   gradient:
                                                       const LinearGradient(
-                                                        begin:
-                                                            Alignment.topCenter,
-                                                        end: Alignment
-                                                            .bottomCenter,
-                                                        colors: [
-                                                          Color(0xFFFFB347),
-                                                          Color(0xFFF98C06),
-                                                        ],
-                                                      ),
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Color(0xFFFFB347),
+                                                      Color(0xFFF98C06),
+                                                    ],
+                                                  ),
                                                   border: Border.all(
                                                     color: const Color(
                                                       0xFF2B170C,
@@ -529,9 +529,9 @@ class AppSideDrawer extends StatelessWidget {
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
-                                                  ),
+                                                horizontal: 10,
+                                                vertical: 6,
+                                              ),
                                               decoration: BoxDecoration(
                                                 color: AppColors.accent
                                                     .withValues(alpha: 0.18),
@@ -628,8 +628,7 @@ class AppSideDrawer extends StatelessWidget {
                               layout: layout,
                               label: l10n.myActivitiesTitle,
                               icon: Icons.event_note_rounded,
-                              isActive:
-                                  activeItem ==
+                              isActive: activeItem ==
                                   AppDrawerActiveItem.myActivities,
                               usePreferencePalette: true,
                               onTap: onMyActivitiesTap,
@@ -640,8 +639,7 @@ class AppSideDrawer extends StatelessWidget {
                               label: l10n.myStoriesTitle,
                               icon: Icons.auto_stories_rounded,
                               isActive:
-                                  activeItem ==
-                                  AppDrawerActiveItem.myStories,
+                                  activeItem == AppDrawerActiveItem.myStories,
                               usePreferencePalette: true,
                               onTap: onMyStoriesTap,
                             ),
@@ -713,9 +711,8 @@ class AppSideDrawer extends StatelessWidget {
                                         ? Icons.logout_rounded
                                         : Icons.login_rounded,
                                     isAccent: !isLoggedIn,
-                                    onTap: isLoggedIn
-                                        ? onLogoutTap
-                                        : onLoginTap,
+                                    onTap:
+                                        isLoggedIn ? onLogoutTap : onLoginTap,
                                   ),
                                 ],
                               ),
@@ -879,7 +876,6 @@ class _DrawerSectionTitle extends StatelessWidget {
   }
 }
 
-
 class _DrawerMenuItem extends StatelessWidget {
   const _DrawerMenuItem({
     required this.layout,
@@ -932,26 +928,26 @@ class _DrawerMenuItem extends StatelessWidget {
                       ],
                     )
                   : matchesPreferencePalette
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.03),
-                        AppColors.accent.withValues(alpha: 0.07),
-                      ],
-                    )
-                  : null,
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.03),
+                            AppColors.accent.withValues(alpha: 0.07),
+                          ],
+                        )
+                      : null,
               color: isActive
                   ? null
                   : matchesPreferencePalette
-                  ? null
-                  : Colors.white.withValues(alpha: 0.02),
+                      ? null
+                      : Colors.white.withValues(alpha: 0.02),
               border: Border.all(
                 color: isActive
                     ? AppColors.accent.withValues(alpha: 0.20)
                     : matchesPreferencePalette
-                    ? AppColors.accent.withValues(alpha: 0.20)
-                    : Colors.transparent,
+                        ? AppColors.accent.withValues(alpha: 0.20)
+                        : Colors.transparent,
               ),
             ),
             child: Row(
@@ -971,18 +967,19 @@ class _DrawerMenuItem extends StatelessWidget {
                     color: isActive
                         ? null
                         : matchesPreferencePalette
-                        ? AppColors.accent.withValues(alpha: 0.12)
-                        : Colors.white.withValues(alpha: 0.04),
+                            ? AppColors.accent.withValues(alpha: 0.12)
+                            : Colors.white.withValues(alpha: 0.04),
                   ),
-                  child: iconWidget ?? Icon(
-                    icon,
-                    color: isActive
-                        ? Colors.white
-                        : matchesPreferencePalette
-                        ? AppColors.accent
-                        : foregroundColor,
-                    size: layout.iconBoxSize * 0.48,
-                  ),
+                  child: iconWidget ??
+                      Icon(
+                        icon,
+                        color: isActive
+                            ? Colors.white
+                            : matchesPreferencePalette
+                                ? AppColors.accent
+                                : foregroundColor,
+                        size: layout.iconBoxSize * 0.48,
+                      ),
                 ),
                 SizedBox(width: layout.profileGap),
                 Expanded(
@@ -996,8 +993,8 @@ class _DrawerMenuItem extends StatelessWidget {
                       fontWeight: isActive
                           ? FontWeight.w700
                           : matchesPreferencePalette
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                       height: 1.2,
                     ),
                   ),

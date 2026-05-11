@@ -377,6 +377,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     final availableStatuses = _statusOrderForTab(_activeTab).toSet();
     final result = await showModalBottomSheet<_MyActivitiesFilters>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,

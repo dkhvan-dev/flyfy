@@ -169,6 +169,7 @@ class _ToursScreenState extends State<ToursScreen> {
     final toursSnapshot = context.read<TourProvider>().tours;
     final selectedFilters = await showModalBottomSheet<_ToursFilters>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _ToursFiltersSheet(
@@ -683,136 +684,131 @@ class _ToursFiltersSheetState extends State<_ToursFiltersSheet> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final resultCount = widget.resultCountBuilder(_filters);
 
-    return SafeArea(
-      top: false,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.86,
-            maxWidth: 520,
+    return AppDismissibleModalSheet(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.86,
+          maxWidth: 520,
+        ),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xFF21170D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: Color(0x293A270F))),
           ),
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Color(0xFF21170D),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border(top: BorderSide(color: Color(0x293A270F))),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppFilterSheetHeader(
-                  title: l10n.toursFiltersTitle,
-                  clearLabel: l10n.toursFiltersClear,
-                  onClear: _clear,
-                  height: 74,
-                  horizontalPadding: 22,
-                  titleFontSize: 18,
-                ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(22, 28, 22, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _ToursFilterSection(
-                          title: l10n.toursFilterCategories,
-                          child: Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              for (final option in _categoryFilterOptions)
-                                _ToursFilterChip(
-                                  label: localizedTourCategoryLabel(
-                                    l10n,
-                                    option.slug,
-                                  ),
-                                  icon: option.icon,
-                                  selected: _filters.categorySlugs.contains(
-                                    option.slug,
-                                  ),
-                                  onTap: () => _toggleCategory(option.slug),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppFilterSheetHeader(
+                title: l10n.toursFiltersTitle,
+                clearLabel: l10n.toursFiltersClear,
+                onClear: _clear,
+                height: 74,
+                horizontalPadding: 22,
+                titleFontSize: 18,
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(22, 28, 22, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ToursFilterSection(
+                        title: l10n.toursFilterCategories,
+                        child: Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            for (final option in _categoryFilterOptions)
+                              _ToursFilterChip(
+                                label: localizedTourCategoryLabel(
+                                  l10n,
+                                  option.slug,
                                 ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        _ToursFilterSection(
-                          title: l10n.toursFilterPriceRange,
-                          child: _ToursSegmentGrid<_ToursPriceFilter>(
-                            items: [
-                              _ToursSegmentItem(
-                                value: _ToursPriceFilter.budget,
-                                label: l10n.toursFilterBudget,
-                              ),
-                              _ToursSegmentItem(
-                                value: _ToursPriceFilter.premium,
-                                label: l10n.toursFilterPremium,
-                              ),
-                            ],
-                            selectedValue: _filters.price,
-                            onSelected: _setPrice,
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        _ToursFilterSection(
-                          title: l10n.toursFilterDuration,
-                          child: _ToursSegmentGrid<_ToursDurationFilter>(
-                            items: [
-                              _ToursSegmentItem(
-                                value: _ToursDurationFilter.short,
-                                label: l10n.toursFilterShortDuration,
-                              ),
-                              _ToursSegmentItem(
-                                value: _ToursDurationFilter.halfDay,
-                                label: l10n.toursFilterHalfDayDuration,
-                              ),
-                              _ToursSegmentItem(
-                                value: _ToursDurationFilter.fullDay,
-                                label: l10n.toursFilterFullDayDuration,
-                              ),
-                              _ToursSegmentItem(
-                                value: _ToursDurationFilter.multiDay,
-                                label: l10n.toursFilterMultiDayDuration,
-                              ),
-                            ],
-                            selectedValue: _filters.duration,
-                            onSelected: _setDuration,
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        _ToursFilterSection(
-                          title: l10n.toursFilterLanguage,
-                          child: Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              for (final code in _languageFilterCodes)
-                                _ToursFilterChip(
-                                  label: localizedTourLanguageLabel(l10n, code),
-                                  selected:
-                                      _filters.languageCodes.contains(code),
-                                  onTap: () => _toggleLanguage(code),
+                                icon: option.icon,
+                                selected: _filters.categorySlugs.contains(
+                                  option.slug,
                                 ),
-                            ],
-                          ),
+                                onTap: () => _toggleCategory(option.slug),
+                              ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 30),
+                      _ToursFilterSection(
+                        title: l10n.toursFilterPriceRange,
+                        child: _ToursSegmentGrid<_ToursPriceFilter>(
+                          items: [
+                            _ToursSegmentItem(
+                              value: _ToursPriceFilter.budget,
+                              label: l10n.toursFilterBudget,
+                            ),
+                            _ToursSegmentItem(
+                              value: _ToursPriceFilter.premium,
+                              label: l10n.toursFilterPremium,
+                            ),
+                          ],
+                          selectedValue: _filters.price,
+                          onSelected: _setPrice,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      _ToursFilterSection(
+                        title: l10n.toursFilterDuration,
+                        child: _ToursSegmentGrid<_ToursDurationFilter>(
+                          items: [
+                            _ToursSegmentItem(
+                              value: _ToursDurationFilter.short,
+                              label: l10n.toursFilterShortDuration,
+                            ),
+                            _ToursSegmentItem(
+                              value: _ToursDurationFilter.halfDay,
+                              label: l10n.toursFilterHalfDayDuration,
+                            ),
+                            _ToursSegmentItem(
+                              value: _ToursDurationFilter.fullDay,
+                              label: l10n.toursFilterFullDayDuration,
+                            ),
+                            _ToursSegmentItem(
+                              value: _ToursDurationFilter.multiDay,
+                              label: l10n.toursFilterMultiDayDuration,
+                            ),
+                          ],
+                          selectedValue: _filters.duration,
+                          onSelected: _setDuration,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      _ToursFilterSection(
+                        title: l10n.toursFilterLanguage,
+                        child: Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            for (final code in _languageFilterCodes)
+                              _ToursFilterChip(
+                                label: localizedTourLanguageLabel(l10n, code),
+                                selected: _filters.languageCodes.contains(code),
+                                onTap: () => _toggleLanguage(code),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(22, 0, 22, bottomInset + 18),
-                  child: AppFilterApplyButton(
-                    label: l10n.toursFiltersShowResults(resultCount),
-                    onTap: () => Navigator.of(context).pop(_filters),
-                    borderRadius: 14,
-                    fontSize: 15,
-                  ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(22, 0, 22, bottomInset + 18),
+                child: AppFilterApplyButton(
+                  label: l10n.toursFiltersShowResults(resultCount),
+                  onTap: () => Navigator.of(context).pop(_filters),
+                  borderRadius: 14,
+                  fontSize: 15,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

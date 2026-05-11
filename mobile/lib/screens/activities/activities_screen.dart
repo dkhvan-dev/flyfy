@@ -324,6 +324,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
     final result = await showModalBottomSheet<_DiscoverFilters>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {

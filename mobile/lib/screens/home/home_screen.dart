@@ -322,6 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final currentCode = localeProvider.locale.languageCode;
     final selectedCode = await showModalBottomSheet<String>(
       context: context,
+      isDismissible: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.58),
       isScrollControlled: true,

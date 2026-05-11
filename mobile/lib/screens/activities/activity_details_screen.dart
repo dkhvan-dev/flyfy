@@ -14,6 +14,7 @@ import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../core/ui/error_view.dart';
+import '../../core/ui/filter_sheet_chrome.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/models/activity_category_vm.dart';
@@ -151,8 +152,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
   void _handleBackSwipeEnd(DragEndDetails details) {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldGoBack =
-        _isTrackingBackSwipe &&
+    final shouldGoBack = _isTrackingBackSwipe &&
         Navigator.of(context).canPop() &&
         (_backSwipeDistance >= _backSwipeMinDistance ||
             primaryVelocity >= _backSwipeMinVelocity);
@@ -448,9 +448,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<ActivityProvider>();
     setState(
-      () => _pendingAction = minutes == 30
-          ? _FooterAction.extend30
-          : _FooterAction.extend60,
+      () => _pendingAction =
+          minutes == 30 ? _FooterAction.extend30 : _FooterAction.extend60,
     );
     final updated = await provider.extendActivity(
       widget.activityId,
@@ -568,6 +567,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   Future<String?> _showCancelActivitySheet(AppLocalizations l10n) {
     return showModalBottomSheet<String>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => _CancelActivitySheet(l10n: l10n),
@@ -577,6 +577,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   Future<String?> _showCompleteActivitySheet(AppLocalizations l10n) {
     return showModalBottomSheet<String>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => _CompleteActivitySheet(l10n: l10n),
@@ -586,6 +587,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   Future<String?> _showCancelInsteadSheet(AppLocalizations l10n) {
     return showModalBottomSheet<String>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => _CancelInsteadSheet(l10n: l10n),
@@ -806,6 +808,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
     await showModalBottomSheet<void>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
@@ -884,9 +887,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                 imageUrl: _resolveUserAvatarUrl(
                                   participant.userId,
                                   resolvedProfiles: _resolvedProfiles,
-                                  currentProfile: context
-                                      .read<SessionProvider>()
-                                      .profile,
+                                  currentProfile:
+                                      context.read<SessionProvider>().profile,
                                 ),
                                 radius: 21,
                                 borderColor: _DetailsColors.sheet,
@@ -1009,12 +1011,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       );
     }
 
-    final activeParticipants =
-        _participants.where((participant) => participant.isActive).toList()
-          ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
-    final occupyingCount = _participants
-        .where((participant) => participant.occupiesSlot)
-        .length;
+    final activeParticipants = _participants
+        .where((participant) => participant.isActive)
+        .toList()
+      ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
+    final occupyingCount =
+        _participants.where((participant) => participant.occupiesSlot).length;
     final isOwner =
         currentUserId.isNotEmpty && currentUserId == activity.hostUserId;
     ActivityParticipantVm? currentParticipant;
@@ -1042,23 +1044,21 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       activity,
       isOwner: isOwner,
     );
-    final canShowAttendanceQr =
-        isOwner &&
+    final canShowAttendanceQr = isOwner &&
         !const {'CANCELLED', 'COMPLETED', 'ARCHIVED'}.contains(status);
     final lifecycleReason = activity.isCompletedEarly
         ? (activity.completionReason ?? '').trim()
         : status == 'CANCELLED'
-        ? (activity.cancellationReason ?? '').trim()
-        : '';
+            ? (activity.cancellationReason ?? '').trim()
+            : '';
     final lifecycleReasonTitle = activity.isCompletedEarly
         ? l10n.activityCompleteReasonLabel
         : l10n.activityCancelReasonLabel;
     final lifecycleReasonIcon = activity.isCompletedEarly
         ? Icons.task_alt_rounded
         : Icons.event_busy_rounded;
-    final lifecycleReasonColor = activity.isCompletedEarly
-        ? _DetailsColors.success
-        : AppColors.accent;
+    final lifecycleReasonColor =
+        activity.isCompletedEarly ? _DetailsColors.success : AppColors.accent;
     final categoryLabel = _resolveLocalizedCategoryLabel(
       activity.categorySlug,
       provider.categoryItems,
@@ -1114,8 +1114,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                   final heroHeight = width < 360
                       ? 292.0
                       : width > 430
-                      ? 348.0
-                      : 326.0;
+                          ? 348.0
+                          : 326.0;
                   final compact = width < 360;
 
                   return RefreshIndicator(
@@ -1220,10 +1220,10 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           loadFailed: _participantsError != null,
                           onViewAll: activeParticipants.isNotEmpty
                               ? () => _showParticipantsSheet(
-                                  activeParticipants,
-                                  l10n,
-                                  activity.hostUserId,
-                                )
+                                    activeParticipants,
+                                    l10n,
+                                    activity.hostUserId,
+                                  )
                               : null,
                         ),
                         const SizedBox(height: 8),
@@ -1237,24 +1237,19 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           canCancelActivity: canCancelActivity,
                           canExtendActivity: canExtendActivity,
                           canCompleteActivity: canCompleteActivity,
-                          isLeaving:
-                              provider.actionState ==
+                          isLeaving: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.leave,
-                          isExtending30:
-                              provider.actionState ==
+                          isExtending30: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.extend30,
-                          isExtending60:
-                              provider.actionState ==
+                          isExtending60: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.extend60,
-                          isCompleting:
-                              provider.actionState ==
+                          isCompleting: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.complete,
-                          isCancelling:
-                              provider.actionState ==
+                          isCancelling: provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.cancel,
                           onLeaveTap: _handleLeave,
@@ -1729,8 +1724,7 @@ class _PrivateActivityPasswordDialogState
                                     letterSpacing: 0.2,
                                   ),
                                   decoration: InputDecoration(
-                                    hintText: widget
-                                        .l10n
+                                    hintText: widget.l10n
                                         .activityPrivateJoinPasswordPlaceholder,
                                     hintStyle: TextStyle(
                                       color: Colors.white.withValues(
@@ -1748,9 +1742,9 @@ class _PrivateActivityPasswordDialogState
                                       onPressed: _isSubmitting
                                           ? null
                                           : () => setState(
-                                              () =>
-                                                  _obscureText = !_obscureText,
-                                            ),
+                                                () => _obscureText =
+                                                    !_obscureText,
+                                              ),
                                       icon: Icon(
                                         _obscureText
                                             ? Icons.visibility_outlined
@@ -1767,9 +1761,8 @@ class _PrivateActivityPasswordDialogState
                                     }
                                     setState(() => _errorText = null);
                                   },
-                                  onSubmitted: _isSubmitting
-                                      ? null
-                                      : (_) => _submit(),
+                                  onSubmitted:
+                                      _isSubmitting ? null : (_) => _submit(),
                                 ),
                               ),
                               if (_errorText != null) ...[
@@ -1826,17 +1819,17 @@ class _PrivateActivityPasswordDialogState
                                             ? const SizedBox(
                                                 width: 24,
                                                 height: 24,
-                                                child: CircularProgressIndicator(
+                                                child:
+                                                    CircularProgressIndicator(
                                                   strokeWidth: 2.6,
                                                   valueColor:
                                                       AlwaysStoppedAnimation(
-                                                        Colors.white,
-                                                      ),
+                                                    Colors.white,
+                                                  ),
                                                 ),
                                               )
                                             : Text(
-                                                widget
-                                                    .l10n
+                                                widget.l10n
                                                     .activityPrivateJoinSubmit,
                                                 style: TextStyle(
                                                   color: Colors.white,
@@ -1975,11 +1968,10 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
     final compact = mediaQuery.size.width < 390;
 
     return _DetailsResponsiveTextScope(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: SafeArea(
-          top: false,
+      child: AppDismissibleModalSheet(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
           child: AnimatedPadding(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
@@ -1988,224 +1980,220 @@ class _ReasonActionSheetState extends State<_ReasonActionSheet> {
               right: 12,
               bottom: mediaQuery.viewInsets.bottom,
             ),
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(32),
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xF92A190D), Color(0xFA180E08)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.34),
-                        blurRadius: 36,
-                        offset: const Offset(0, -18),
-                      ),
-                    ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(32),
                   ),
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      compact ? 16 : 18,
-                      14,
-                      compact ? 16 : 18,
-                      compact ? 18 : 20,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xF92A190D), Color(0xFA180E08)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.34),
+                      blurRadius: 36,
+                      offset: const Offset(0, -18),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 52,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    compact ? 16 : 18,
+                    14,
+                    compact ? 16 : 18,
+                    compact ? 18 : 20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 52,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                         ),
-                        const SizedBox(height: 22),
-                        Center(
-                          child: Container(
-                            width: compact ? 58 : 62,
-                            height: compact ? 58 : 62,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.accent.withValues(alpha: 0.12),
-                              border: Border.all(
-                                color: AppColors.accent.withValues(alpha: 0.26),
-                              ),
-                            ),
-                            child: Icon(
-                              widget.confirmIcon,
-                              color: AppColors.accent,
-                              size: 26,
+                      ),
+                      const SizedBox(height: 22),
+                      Center(
+                        child: Container(
+                          width: compact ? 58 : 62,
+                          height: compact ? 58 : 62,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.accent.withValues(alpha: 0.12),
+                            border: Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.26),
                             ),
                           ),
+                          child: Icon(
+                            widget.confirmIcon,
+                            color: AppColors.accent,
+                            size: 26,
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        Center(
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: Text(
+                          widget.title,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _DetailsColors.text,
+                            fontSize: compact ? 21 : 23,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 360),
                           child: Text(
-                            widget.title,
+                            widget.description,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: _DetailsColors.text,
-                              fontSize: compact ? 21 : 23,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0,
+                              color: _DetailsColors.muted,
+                              fontSize: compact ? 13.5 : 14,
+                              height: 1.42,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 360),
-                            child: Text(
-                              widget.description,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: _DetailsColors.muted,
-                                fontSize: compact ? 13.5 : 14,
-                                height: 1.42,
-                              ),
-                            ),
+                      ),
+                      const SizedBox(height: 22),
+                      Text(
+                        widget.reasonLabel,
+                        style: const TextStyle(
+                          color: _DetailsColors.text,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: _errorText == null
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : const Color(0x88FF8A65),
                           ),
                         ),
-                        const SizedBox(height: 22),
-                        Text(
-                          widget.reasonLabel,
+                        child: TextField(
+                          controller: _reasonController,
+                          focusNode: _reasonFocusNode,
+                          maxLines: 4,
+                          minLines: 3,
+                          maxLength: 160,
+                          textCapitalization: TextCapitalization.sentences,
                           style: const TextStyle(
                             color: _DetailsColors.text,
                             fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                              color: _errorText == null
-                                  ? Colors.white.withValues(alpha: 0.08)
-                                  : const Color(0x88FF8A65),
-                            ),
-                          ),
-                          child: TextField(
-                            controller: _reasonController,
-                            focusNode: _reasonFocusNode,
-                            maxLines: 4,
-                            minLines: 3,
-                            maxLength: 160,
-                            textCapitalization: TextCapitalization.sentences,
-                            style: const TextStyle(
-                              color: _DetailsColors.text,
+                          decoration: InputDecoration(
+                            hintText: widget.reasonPlaceholder,
+                            hintStyle: TextStyle(
+                              color: _DetailsColors.muted.withValues(
+                                alpha: 0.72,
+                              ),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              height: 1.4,
                             ),
-                            decoration: InputDecoration(
-                              hintText: widget.reasonPlaceholder,
-                              hintStyle: TextStyle(
-                                color: _DetailsColors.muted.withValues(
-                                  alpha: 0.72,
-                                ),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              border: InputBorder.none,
-                              counterStyle: const TextStyle(
-                                color: _DetailsColors.subtle,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              contentPadding: const EdgeInsets.fromLTRB(
-                                16,
-                                14,
-                                16,
-                                10,
-                              ),
+                            border: InputBorder.none,
+                            counterStyle: const TextStyle(
+                              color: _DetailsColors.subtle,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
-                            onChanged: (_) {
-                              if (_errorText == null) {
-                                return;
-                              }
-                              if (_reasonController.text.trim().isNotEmpty) {
-                                setState(() => _errorText = null);
-                              }
-                            },
-                            onTapOutside: (_) =>
-                                FocusScope.of(context).unfocus(),
-                          ),
-                        ),
-                        if (_errorText != null) ...[
-                          const SizedBox(height: 10),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Text(
-                              _errorText!,
-                              style: const TextStyle(
-                                color: Color(0xFFFF8A65),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            contentPadding: const EdgeInsets.fromLTRB(
+                              16,
+                              14,
+                              16,
+                              10,
                             ),
                           ),
-                        ],
-                        const SizedBox(height: 18),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final stackVertically = constraints.maxWidth < 360;
-                            final keepButton = _SheetActionButton(
-                              label: l10n.activityCancelKeepButton,
-                              icon: Icons.arrow_back_rounded,
-                              isPrimary: false,
-                              onTap: () => Navigator.of(context).pop(),
-                            );
-                            final confirmButton = _SheetActionButton(
-                              label: widget.confirmLabel,
-                              icon: widget.confirmIcon,
-                              isPrimary: true,
-                              onTap: _submit,
-                            );
-
-                            if (stackVertically) {
-                              return Column(
-                                children: [
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: keepButton,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: confirmButton,
-                                  ),
-                                ],
-                              );
+                          onChanged: (_) {
+                            if (_errorText == null) {
+                              return;
                             }
-
-                            return Row(
-                              children: [
-                                Expanded(child: keepButton),
-                                const SizedBox(width: 12),
-                                Expanded(child: confirmButton),
-                              ],
-                            );
+                            if (_reasonController.text.trim().isNotEmpty) {
+                              setState(() => _errorText = null);
+                            }
                           },
+                          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                        ),
+                      ),
+                      if (_errorText != null) ...[
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            _errorText!,
+                            style: const TextStyle(
+                              color: Color(0xFFFF8A65),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ],
-                    ),
+                      const SizedBox(height: 18),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final stackVertically = constraints.maxWidth < 360;
+                          final keepButton = _SheetActionButton(
+                            label: l10n.activityCancelKeepButton,
+                            icon: Icons.arrow_back_rounded,
+                            isPrimary: false,
+                            onTap: () => Navigator.of(context).pop(),
+                          );
+                          final confirmButton = _SheetActionButton(
+                            label: widget.confirmLabel,
+                            icon: widget.confirmIcon,
+                            isPrimary: true,
+                            onTap: _submit,
+                          );
+
+                          if (stackVertically) {
+                            return Column(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: keepButton,
+                                ),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: confirmButton,
+                                ),
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              Expanded(child: keepButton),
+                              const SizedBox(width: 12),
+                              Expanded(child: confirmButton),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -2235,13 +2223,11 @@ class _SheetActionButton extends StatelessWidget {
     final minHeight = _detailsScaled(context, 52, min: 48, max: 54);
     final iconSize = _detailsScaled(context, 16, min: 15, max: 18);
 
-    final backgroundColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.06);
+    final backgroundColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.06);
     final foregroundColor = isPrimary ? Colors.white : _DetailsColors.text;
-    final borderColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.1);
+    final borderColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
 
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -3055,8 +3041,7 @@ class _StatsGrid extends StatelessWidget {
         ? l10n.freeLabel
         : '${activity.priceLabel} ${l10n.activityPerPerson}';
     final formatText = formatActivityFormat(activity.format, l10n);
-    final capacityText =
-        activity.capacityType.toUpperCase() == 'LIMITED' &&
+    final capacityText = activity.capacityType.toUpperCase() == 'LIMITED' &&
             activity.maxParticipants != null
         ? l10n.activityPeopleMax(activity.maxParticipants!)
         : l10n.activityUnlimitedSpots;
@@ -3257,8 +3242,7 @@ class _MeetingSection extends StatelessWidget {
     final mapHeight = _detailsScaled(context, 220, min: 190, max: 236);
 
     final hasMeetingLink = (activity.meetingUrl ?? '').trim().isNotEmpty;
-    final hasLocation =
-        (activity.addressText ?? '').trim().isNotEmpty ||
+    final hasLocation = (activity.addressText ?? '').trim().isNotEmpty ||
         activity.shortLocation.isNotEmpty;
     if (!hasMeetingLink && !hasLocation) {
       return const SizedBox.shrink();
@@ -3470,8 +3454,8 @@ class _MeetingSection extends StatelessWidget {
                 showProtectedNotice
                     ? l10n.activitySensitiveDetailsHint
                     : (locationLine.isNotEmpty
-                          ? locationLine
-                          : l10n.notSpecified),
+                        ? locationLine
+                        : l10n.notSpecified),
                 style: const TextStyle(
                   color: _DetailsColors.muted,
                   fontSize: 14,
@@ -4387,16 +4371,15 @@ class _DetailsActionBar extends StatelessWidget {
             action: _FooterAction.publish,
           )
         : shouldShowPaymentAction
-        ? _FooterButtonSpec(
-            label: l10n.activityDetailsChatButton,
-            icon: Icons.forum_rounded,
-            onTap: onOpenChat ?? () {},
-            style: _FooterButtonStyle.secondary,
-            action: null,
-          )
-        : null;
-    final isRepeatableOwnerActivity =
-        isOwner &&
+            ? _FooterButtonSpec(
+                label: l10n.activityDetailsChatButton,
+                icon: Icons.forum_rounded,
+                onTap: onOpenChat ?? () {},
+                style: _FooterButtonStyle.secondary,
+                action: null,
+              )
+            : null;
+    final isRepeatableOwnerActivity = isOwner &&
         const {
           'CANCELLED',
           'COMPLETED',
@@ -4414,28 +4397,28 @@ class _DetailsActionBar extends StatelessWidget {
             action: null,
           )
         : isJoined
-        ? shouldShowPaymentAction
-              ? _FooterButtonSpec(
-                  label: l10n.activityPaymentPayButton,
-                  icon: Icons.payments_rounded,
-                  onTap: onPay ?? () {},
-                  style: _FooterButtonStyle.primary,
-                  action: null,
-                )
-              : _FooterButtonSpec(
-                  label: l10n.activityDetailsChatButton,
-                  icon: Icons.forum_rounded,
-                  onTap: onOpenChat ?? () {},
-                  style: _FooterButtonStyle.primary,
-                  action: null,
-                )
-        : _FooterButtonSpec(
-            label: l10n.activityJoinActivity,
-            icon: Icons.chevron_right_rounded,
-            onTap: onJoin,
-            style: _FooterButtonStyle.primary,
-            action: _FooterAction.join,
-          );
+            ? shouldShowPaymentAction
+                ? _FooterButtonSpec(
+                    label: l10n.activityPaymentPayButton,
+                    icon: Icons.payments_rounded,
+                    onTap: onPay ?? () {},
+                    style: _FooterButtonStyle.primary,
+                    action: null,
+                  )
+                : _FooterButtonSpec(
+                    label: l10n.activityDetailsChatButton,
+                    icon: Icons.forum_rounded,
+                    onTap: onOpenChat ?? () {},
+                    style: _FooterButtonStyle.primary,
+                    action: null,
+                  )
+            : _FooterButtonSpec(
+                label: l10n.activityJoinActivity,
+                icon: Icons.chevron_right_rounded,
+                onTap: onJoin,
+                style: _FooterButtonStyle.primary,
+                action: _FooterAction.join,
+              );
     final priceBlockLabel = isPaid
         ? l10n.activityPaymentStatusLabel
         : l10n.activityDetailsTotalLabel;
@@ -4461,8 +4444,7 @@ class _DetailsActionBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final stackVertically =
-                constraints.maxWidth < 390 ||
+            final stackVertically = constraints.maxWidth < 390 ||
                 (secondaryAction != null && constraints.maxWidth < 430);
             if (stackVertically) {
               return Column(
@@ -4491,8 +4473,7 @@ class _DetailsActionBar extends StatelessWidget {
                           width: double.infinity,
                           child: _FooterButton(
                             spec: secondaryAction,
-                            isBusy:
-                                isBusy &&
+                            isBusy: isBusy &&
                                 pendingAction == secondaryAction.action,
                           ),
                         ),
@@ -4532,8 +4513,7 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: secondaryAction,
-                                isBusy:
-                                    isBusy &&
+                                isBusy: isBusy &&
                                     pendingAction == secondaryAction.action,
                               ),
                             ),
@@ -4541,8 +4521,7 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: primaryAction,
-                                isBusy:
-                                    isBusy &&
+                                isBusy: isBusy &&
                                     pendingAction == primaryAction.action,
                               ),
                             ),
@@ -4639,12 +4618,10 @@ class _FooterButton extends StatelessWidget {
     final iconSize = _detailsScaled(context, 18, min: 16, max: 19);
 
     final isPrimary = spec.style == _FooterButtonStyle.primary;
-    final backgroundColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.08);
-    final borderColor = isPrimary
-        ? AppColors.accent
-        : Colors.white.withValues(alpha: 0.1);
+    final backgroundColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.08);
+    final borderColor =
+        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
     final foreground = isPrimary ? Colors.white : _DetailsColors.text;
 
     return ConstrainedBox(

@@ -186,6 +186,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
     FocusScope.of(context).unfocus();
     final selected = await showModalBottomSheet<_StoryFiltersResult>(
       context: context,
+      isDismissible: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       useSafeArea: true,

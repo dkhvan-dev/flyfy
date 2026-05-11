@@ -155,6 +155,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     FocusScope.of(context).unfocus();
     final result = await showModalBottomSheet<AttractionFilterResult>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,

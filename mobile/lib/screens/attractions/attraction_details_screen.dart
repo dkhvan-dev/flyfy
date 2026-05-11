@@ -206,6 +206,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
 
     await showModalBottomSheet<bool>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,

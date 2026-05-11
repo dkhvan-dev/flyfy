@@ -274,6 +274,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
     final l10n = AppLocalizations.of(context)!;
     final selected = await showModalBottomSheet<_GuideFilters>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _GuidesFiltersSheet(
@@ -1111,162 +1112,156 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final resultCount = _resultCount ?? widget.fallbackResultCount;
 
-    return SafeArea(
-      top: false,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.86,
-            maxWidth: 520,
+    return AppDismissibleModalSheet(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.86,
+          maxWidth: 520,
+        ),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xFF211508),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: Color(0x293A270F))),
           ),
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Color(0xFF211508),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border(top: BorderSide(color: Color(0x293A270F))),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppFilterSheetHeader(
-                  title: l10n.guidesFiltersTitle,
-                  clearLabel: l10n.guidesFiltersClear,
-                  onClear: _clear,
-                  height: 74,
-                  horizontalPadding: 22,
-                  titleFontSize: 18,
-                ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(22, 28, 22, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _GuideFilterSection(
-                          title: l10n.profileCountry,
-                          child: widget.isCountriesLoading &&
-                                  widget.countries.isEmpty
-                              ? const Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.4,
-                                      color: AppColors.accent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppFilterSheetHeader(
+                title: l10n.guidesFiltersTitle,
+                clearLabel: l10n.guidesFiltersClear,
+                onClear: _clear,
+                height: 74,
+                horizontalPadding: 22,
+                titleFontSize: 18,
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(22, 28, 22, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _GuideFilterSection(
+                        title: l10n.profileCountry,
+                        child: widget.isCountriesLoading &&
+                                widget.countries.isEmpty
+                            ? const Align(
+                                alignment: Alignment.centerLeft,
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.4,
+                                    color: AppColors.accent,
+                                  ),
+                                ),
+                              )
+                            : Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  for (final country in widget.countries)
+                                    _GuideFilterChip(
+                                      label: _countryLabel(country),
+                                      selected: _filters.countryCodes
+                                          .contains(_normalizeCountryCode(
+                                        country.code,
+                                      )),
+                                      onTap: () => _selectCountry(country.code),
                                     ),
-                                  ),
-                                )
-                              : Wrap(
-                                  spacing: 12,
-                                  runSpacing: 12,
-                                  children: [
-                                    for (final country in widget.countries)
-                                      _GuideFilterChip(
-                                        label: _countryLabel(country),
-                                        selected: _filters.countryCodes
-                                            .contains(_normalizeCountryCode(
-                                          country.code,
-                                        )),
-                                        onTap: () =>
-                                            _selectCountry(country.code),
-                                      ),
-                                  ],
+                                ],
+                              ),
+                      ),
+                      const SizedBox(height: 30),
+                      _GuideFilterSection(
+                        title: l10n.guidesFilterExpertise,
+                        child: Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            for (final code in _guideSpecializationFilterCodes)
+                              _GuideFilterChip(
+                                label: localizedGuideSpecializationLabel(
+                                  l10n,
+                                  code,
                                 ),
-                        ),
-                        const SizedBox(height: 30),
-                        _GuideFilterSection(
-                          title: l10n.guidesFilterExpertise,
-                          child: Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              for (final code
-                                  in _guideSpecializationFilterCodes)
-                                _GuideFilterChip(
-                                  label: localizedGuideSpecializationLabel(
-                                    l10n,
-                                    code,
-                                  ),
-                                  selected: _filters.specializations.contains(
-                                    code,
-                                  ),
-                                  onTap: () => _toggleSpecialization(code),
+                                selected: _filters.specializations.contains(
+                                  code,
                                 ),
-                            ],
-                          ),
+                                onTap: () => _toggleSpecialization(code),
+                              ),
+                          ],
                         ),
-                        const SizedBox(height: 30),
-                        _GuideFilterSection(
-                          title: l10n.guidesFilterLanguage,
-                          child: Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              for (final code in _guideLanguageFilterCodes)
-                                _GuideFilterChip(
-                                  label: localizedGuideLanguageLabel(
-                                    l10n,
-                                    code,
-                                  ),
-                                  selected: _filters.languageCodes.contains(
-                                    code,
-                                  ),
-                                  onTap: () => _toggleLanguage(code),
+                      ),
+                      const SizedBox(height: 30),
+                      _GuideFilterSection(
+                        title: l10n.guidesFilterLanguage,
+                        child: Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            for (final code in _guideLanguageFilterCodes)
+                              _GuideFilterChip(
+                                label: localizedGuideLanguageLabel(
+                                  l10n,
+                                  code,
                                 ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        _GuideFilterSection(
-                          title: l10n.guidesFilterRating,
-                          child: _GuideSegmentGrid<double>(
-                            items: [
-                              for (final rating in _ratings)
-                                _GuideSegmentItem(
-                                  value: rating,
-                                  label: l10n.guidesFilterRatingAtLeast(
-                                    rating.toStringAsFixed(1),
-                                  ),
+                                selected: _filters.languageCodes.contains(
+                                  code,
                                 ),
-                            ],
-                            selectedValue: _filters.minRating,
-                            onSelected: _setRating,
-                          ),
+                                onTap: () => _toggleLanguage(code),
+                              ),
+                          ],
                         ),
-                        const SizedBox(height: 30),
-                        _GuideFilterSection(
-                          title: l10n.guidesFilterExperience,
-                          child: _GuideSegmentGrid<int>(
-                            items: [
-                              for (final years in _experienceYears)
-                                _GuideSegmentItem(
-                                  value: years,
-                                  label: l10n.guidesExperienceYears(years),
+                      ),
+                      const SizedBox(height: 30),
+                      _GuideFilterSection(
+                        title: l10n.guidesFilterRating,
+                        child: _GuideSegmentGrid<double>(
+                          items: [
+                            for (final rating in _ratings)
+                              _GuideSegmentItem(
+                                value: rating,
+                                label: l10n.guidesFilterRatingAtLeast(
+                                  rating.toStringAsFixed(1),
                                 ),
-                            ],
-                            selectedValue: _filters.minExperienceYears,
-                            onSelected: _setExperience,
-                          ),
+                              ),
+                          ],
+                          selectedValue: _filters.minRating,
+                          onSelected: _setRating,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 30),
+                      _GuideFilterSection(
+                        title: l10n.guidesFilterExperience,
+                        child: _GuideSegmentGrid<int>(
+                          items: [
+                            for (final years in _experienceYears)
+                              _GuideSegmentItem(
+                                value: years,
+                                label: l10n.guidesExperienceYears(years),
+                              ),
+                          ],
+                          selectedValue: _filters.minExperienceYears,
+                          onSelected: _setExperience,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(22, 0, 22, bottomInset + 18),
-                  child: AppFilterApplyButton(
-                    label: l10n.guidesFiltersShowResults(resultCount),
-                    onTap: () => Navigator.of(context).pop(_filters),
-                    borderRadius: 14,
-                    fontSize: 15,
-                    isLoading: _isLoadingResultCount,
-                  ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(22, 0, 22, bottomInset + 18),
+                child: AppFilterApplyButton(
+                  label: l10n.guidesFiltersShowResults(resultCount),
+                  onTap: () => Navigator.of(context).pop(_filters),
+                  borderRadius: 14,
+                  fontSize: 15,
+                  isLoading: _isLoadingResultCount,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

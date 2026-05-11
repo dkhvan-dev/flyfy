@@ -333,6 +333,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
   Future<void> _selectCountry() async {
     final selected = await showModalBottomSheet<String>(
       context: context,
+      isDismissible: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         final l10n = AppLocalizations.of(sheetContext)!;
@@ -1506,8 +1507,7 @@ class _HeroBanner extends StatelessWidget {
                       letterSpacing: -1.2,
                     ),
                   ),
-                  SizedBox(
-                      height: profileScaled(context, 8, min: 6, max: 10)),
+                  SizedBox(height: profileScaled(context, 8, min: 6, max: 10)),
                   Text(
                     subtitle,
                     style: TextStyle(

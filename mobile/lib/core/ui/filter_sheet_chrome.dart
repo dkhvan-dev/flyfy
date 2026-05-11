@@ -2,6 +2,46 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
+class AppDismissibleModalSheet extends StatelessWidget {
+  const AppDismissibleModalSheet({
+    super.key,
+    required this.child,
+    this.alignment = Alignment.bottomCenter,
+    this.useSafeArea = true,
+    this.safeAreaTop = false,
+    this.safeAreaBottom = false,
+  });
+
+  final Widget child;
+  final AlignmentGeometry alignment;
+  final bool useSafeArea;
+  final bool safeAreaTop;
+  final bool safeAreaBottom;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Stack(
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => Navigator.maybePop(context),
+          ),
+        ),
+        Align(alignment: alignment, child: child),
+      ],
+    );
+
+    if (!useSafeArea) return content;
+
+    return SafeArea(
+      top: safeAreaTop,
+      bottom: safeAreaBottom,
+      child: content,
+    );
+  }
+}
+
 class AppFilterSheetHeader extends StatelessWidget {
   const AppFilterSheetHeader({
     super.key,

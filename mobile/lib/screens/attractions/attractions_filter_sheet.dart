@@ -303,14 +303,13 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
               )
               .toDouble();
 
-          return AnimatedPadding(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            padding: EdgeInsets.only(bottom: viewInsets),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: sideInset),
-              child: Align(
-                alignment: Alignment.bottomCenter,
+          return AppDismissibleModalSheet(
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.only(bottom: viewInsets),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: sideInset),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 393),
                   child: SizedBox(

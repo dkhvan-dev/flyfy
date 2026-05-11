@@ -362,6 +362,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
   Future<void> _openIncludedItemsEditor() async {
     final result = await showModalBottomSheet<List<_TourIncludedItemDraft>>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _TourIncludedItemsEditorSheet(
@@ -381,6 +382,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
   Future<void> _openCountryPicker() async {
     final result = await showModalBottomSheet<String>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _TourCountryPickerSheet(
@@ -686,6 +688,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     final l10n = AppLocalizations.of(context)!;
     final result = await showModalBottomSheet<_TourItineraryDraft>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _AddItinerarySlotSheet(l10n: l10n),
@@ -3090,6 +3093,7 @@ class _CurrencyPickerField extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final result = await showModalBottomSheet<String>(
       context: context,
+      isDismissible: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return SafeArea(
