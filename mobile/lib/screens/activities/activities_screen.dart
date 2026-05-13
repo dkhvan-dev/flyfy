@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/device/device_context_service.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
@@ -14,7 +13,6 @@ import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
-import '../../features/activities/activity_currency.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/models/activity_category_vm.dart';
@@ -44,14 +42,11 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
-  final DeviceContextService _deviceContextService =
-      const DeviceContextService();
   final GuideApi _guideApi = GuideApi();
 
   _DiscoverFilters _filters = const _DiscoverFilters();
   String _searchQuery = '';
   String? _loadedHostedUserId;
-  String? _priceFilterCountryCode;
   String? _guideBadgeUserId;
   bool _showGuideBadge = false;
   int _currentPage = 1;
@@ -66,7 +61,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
       final provider = context.read<ActivityProvider>();
       provider.loadActivities();
       provider.loadActivityCategories();
-      _prefillPriceFilterCountryContext();
     });
   }
 
@@ -316,8 +310,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     BuildContext context,
     List<_DiscoverCategoryOption> categoryOptions,
     List<ActivityListItemVm> items,
-    String? currentCountryCode,
-    String? fallbackCurrencyCode,
     Map<String, String> categoryLabelsBySlug,
   ) async {
     FocusScope.of(context).unfocus();
@@ -332,9 +324,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           l10n: AppLocalizations.of(sheetContext)!,
           initialFilters: _filters,
           categoryOptions: categoryOptions,
-          items: items,
-          currentCountryCode: currentCountryCode,
-          fallbackCurrencyCode: fallbackCurrencyCode,
           previewCountBuilder: (draftFilters) {
             return _applyDiscoverFilters(
               items,
@@ -357,38 +346,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     });
   }
 
-  Future<void> _prefillPriceFilterCountryContext() async {
-    final profileCountryCode = normalizeActivityCountryCode(
-      context.read<SessionProvider>().profile?.countryCode,
-    );
-    if (mounted &&
-        profileCountryCode != null &&
-        _priceFilterCountryCode == null) {
-      setState(() {
-        _priceFilterCountryCode = profileCountryCode;
-      });
-    }
-
-    try {
-      final suggestion = await _deviceContextService.detectLocationSuggestion(
-        requestPermission: false,
-      );
-      final detectedCountryCode = normalizeActivityCountryCode(
-        suggestion?.countryCode,
-      );
-      if (!mounted ||
-          detectedCountryCode == null ||
-          detectedCountryCode == _priceFilterCountryCode) {
-        return;
-      }
-      setState(() {
-        _priceFilterCountryCode = detectedCountryCode;
-      });
-    } catch (_) {
-      // Keep profile country when passive geolocation is unavailable.
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -399,8 +356,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     final isLoggedIn = auth.state == AuthState.authenticated;
     final profile = session.profile;
     final currentUserId = (profile?.userId ?? '').trim();
-    final currentPriceFilterCountryCode = _priceFilterCountryCode ??
-        normalizeActivityCountryCode(profile?.countryCode);
     final location = resolveDrawerLocation(
       profile,
       Localizations.localeOf(context),
@@ -529,10 +484,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                       context,
                                       categoryOptions,
                                       discoverItems,
-                                      currentPriceFilterCountryCode,
-                                      normalizeActivityCurrencyCode(
-                                        profile?.currency,
-                                      ),
                                       categoryLabelsBySlug,
                                     ),
                                   ),
@@ -1747,18 +1698,12 @@ class _DiscoverFiltersSheet extends StatefulWidget {
     required this.l10n,
     required this.initialFilters,
     required this.categoryOptions,
-    required this.items,
-    required this.currentCountryCode,
-    required this.fallbackCurrencyCode,
     required this.previewCountBuilder,
   });
 
   final AppLocalizations l10n;
   final _DiscoverFilters initialFilters;
   final List<_DiscoverCategoryOption> categoryOptions;
-  final List<ActivityListItemVm> items;
-  final String? currentCountryCode;
-  final String? fallbackCurrencyCode;
   final int Function(_DiscoverFilters filters) previewCountBuilder;
 
   @override
@@ -1958,20 +1903,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
   }
 
   Widget _buildPriceSection(BuildContext context) {
-    final currencyCode = _resolvePriceFilterCurrencyCode(
-      currentCountryCode: widget.currentCountryCode,
-      fallbackCurrencyCode: widget.fallbackCurrencyCode,
-      items: widget.items,
-    );
-    final currencyLabel = filterCurrencyLabel(currency: currencyCode);
-    final presets = _buildPricePresets(
-      currencyLabel: currencyLabel,
-      nominalUnit: pricePresetNominalUnit(
-        countryCode: widget.currentCountryCode,
-        currency: currencyCode,
-      ),
-      l10n: widget.l10n,
-    );
+    final presets = _buildPricePresets(l10n: widget.l10n);
 
     return _FilterSection(
       icon: Icons.payments_outlined,
@@ -1984,7 +1916,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
             first: _RangeTextField(
               label: widget.l10n.activitiesFilterMinPrice,
               controller: _minPriceController,
-              prefix: currencyLabel,
+              prefix: '',
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -1993,7 +1925,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
             second: _RangeTextField(
               label: widget.l10n.activitiesFilterMaxPrice,
               controller: _maxPriceController,
-              prefix: currencyLabel,
+              prefix: '',
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -2218,87 +2150,94 @@ class _CategoryFilterPill extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          height: _activitiesScaled(context, 58, min: 52, max: 60),
-          padding: EdgeInsets.symmetric(
-            horizontal: _activitiesScaled(context, 12, min: 10, max: 12),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: _activitiesScaled(context, 58, min: 52, max: 60),
           ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected
-                  ? AppColors.accent
-                  : Colors.white.withValues(alpha: 0.08),
-              width: selected ? 1.5 : 1.0,
+          child: Ink(
+            padding: EdgeInsets.symmetric(
+              horizontal: _activitiesScaled(context, 12, min: 10, max: 12),
+              vertical: _activitiesScaled(context, 10, min: 8, max: 10),
             ),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: selected
-                  ? [
-                      option.colors.first.withValues(alpha: 0.42),
-                      option.colors.last.withValues(alpha: 0.24),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.03),
-                      Colors.white.withValues(alpha: 0.015),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: selected
+                    ? AppColors.accent
+                    : Colors.white.withValues(alpha: 0.08),
+                width: selected ? 1.5 : 1.0,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: selected
+                    ? [
+                        option.colors.first.withValues(alpha: 0.42),
+                        option.colors.last.withValues(alpha: 0.24),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.03),
+                        Colors.white.withValues(alpha: 0.015),
+                      ],
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: iconWrap,
+                  height: iconWrap,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: selected
+                        ? AppColors.accent.withValues(alpha: 0.16)
+                        : Colors.white.withValues(alpha: 0.04),
+                  ),
+                  child: Icon(
+                    option.icon,
+                    size: _activitiesScaled(context, 17, min: 15, max: 17),
+                    color: selected ? AppColors.accent : foreground,
+                  ),
+                ),
+                SizedBox(
+                  width: _activitiesScaled(context, 10, min: 8, max: 10),
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        option.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: foreground,
+                          fontSize: titleSize,
+                          height: 1.1,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(
+                        height: _activitiesScaled(context, 3, min: 2, max: 4),
+                      ),
+                      Text(
+                        countLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selected
+                              ? const Color(0xFFFFC56A)
+                              : const Color(0x8FFFF7EF),
+                          fontSize: countSize,
+                          height: 1.1,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: iconWrap,
-                height: iconWrap,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: selected
-                      ? AppColors.accent.withValues(alpha: 0.16)
-                      : Colors.white.withValues(alpha: 0.04),
-                ),
-                child: Icon(
-                  option.icon,
-                  size: _activitiesScaled(context, 17, min: 15, max: 17),
-                  color: selected ? AppColors.accent : foreground,
-                ),
-              ),
-              SizedBox(width: _activitiesScaled(context, 10, min: 8, max: 10)),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      option.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: foreground,
-                        fontSize: titleSize,
-                        height: 1.1,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(
-                      height: _activitiesScaled(context, 3, min: 2, max: 4),
-                    ),
-                    Text(
-                      countLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: selected
-                            ? const Color(0xFFFFC56A)
-                            : const Color(0x8FFFF7EF),
-                        fontSize: countSize,
-                        height: 1.1,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -2332,93 +2271,99 @@ class _VisibilityOptionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          height: _activitiesScaled(context, 76, min: 68, max: 78),
-          padding: EdgeInsets.symmetric(
-            horizontal: _activitiesScaled(context, 14, min: 12, max: 14),
-            vertical: _activitiesScaled(context, 12, min: 10, max: 12),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: _activitiesScaled(context, 76, min: 68, max: 78),
           ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: selected
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.accent.withValues(alpha: 0.26),
-                      AppColors.accent.withValues(alpha: 0.12),
-                    ],
-                  )
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.03),
-                      Colors.white.withValues(alpha: 0.015),
+          child: Ink(
+            padding: EdgeInsets.symmetric(
+              horizontal: _activitiesScaled(context, 14, min: 12, max: 14),
+              vertical: _activitiesScaled(context, 12, min: 10, max: 12),
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: selected
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.accent.withValues(alpha: 0.26),
+                        AppColors.accent.withValues(alpha: 0.12),
+                      ],
+                    )
+                  : LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.03),
+                        Colors.white.withValues(alpha: 0.015),
+                      ],
+                    ),
+              border: Border.all(
+                color: selected
+                    ? AppColors.accent
+                    : AppColors.accent.withValues(alpha: 0.18),
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: iconWrap,
+                  height: iconWrap,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected
+                        ? Colors.white.withValues(alpha: 0.14)
+                        : AppColors.accent.withValues(alpha: 0.08),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: _activitiesScaled(context, 18, min: 16, max: 18),
+                    color: selected ? Colors.white : AppColors.accent,
+                  ),
+                ),
+                SizedBox(
+                  width: _activitiesScaled(context, 10, min: 8, max: 10),
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selected
+                              ? const Color(0xFFFFF9F0)
+                              : const Color(0xE6F0E2D2),
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(
+                        height: _activitiesScaled(context, 4, min: 3, max: 5),
+                      ),
+                      Text(
+                        description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selected
+                              ? Colors.white.withValues(alpha: 0.78)
+                              : const Color(0xA8FFF0E0),
+                          fontSize: bodySize,
+                          height: 1.25,
+                        ),
+                      ),
                     ],
                   ),
-            border: Border.all(
-              color: selected
-                  ? AppColors.accent
-                  : AppColors.accent.withValues(alpha: 0.18),
-              width: selected ? 1.5 : 1,
+                ),
+              ],
             ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: iconWrap,
-                height: iconWrap,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: selected
-                      ? Colors.white.withValues(alpha: 0.14)
-                      : AppColors.accent.withValues(alpha: 0.08),
-                ),
-                child: Icon(
-                  icon,
-                  size: _activitiesScaled(context, 18, min: 16, max: 18),
-                  color: selected ? Colors.white : AppColors.accent,
-                ),
-              ),
-              SizedBox(width: _activitiesScaled(context, 10, min: 8, max: 10)),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: selected
-                            ? const Color(0xFFFFF9F0)
-                            : const Color(0xE6F0E2D2),
-                        fontSize: titleSize,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(
-                      height: _activitiesScaled(context, 4, min: 3, max: 5),
-                    ),
-                    Text(
-                      description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: selected
-                            ? Colors.white.withValues(alpha: 0.78)
-                            : const Color(0xA8FFF0E0),
-                        fontSize: bodySize,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -3426,71 +3371,9 @@ IconData _formatIcon(String format) {
   }
 }
 
-String _dominantCurrencyCode(List<ActivityListItemVm> items) {
-  final counts = <String, int>{};
-  for (final item in items) {
-    final currency = item.resolvedCurrencyCode;
-    if (currency == null || currency.isEmpty || item.isFree) {
-      continue;
-    }
-    counts[currency] = (counts[currency] ?? 0) + 1;
-  }
-
-  if (counts.isEmpty) {
-    return 'KZT';
-  }
-
-  var dominantCode = counts.keys.first;
-  var maxCount = counts[dominantCode] ?? 0;
-  counts.forEach((code, count) {
-    if (count > maxCount) {
-      dominantCode = code;
-      maxCount = count;
-    }
-  });
-
-  return dominantCode;
-}
-
-String _resolvePriceFilterCurrencyCode({
-  required String? currentCountryCode,
-  required String? fallbackCurrencyCode,
-  required List<ActivityListItemVm> items,
-}) {
-  return filterCurrencyCode(
-    countryCode: currentCountryCode,
-    currency: normalizeActivityCurrencyCode(fallbackCurrencyCode) ??
-        _dominantCurrencyCode(items),
-  );
-}
-
-List<_PricePreset> _buildPricePresets({
-  required String currencyLabel,
-  required double nominalUnit,
-  required AppLocalizations l10n,
-}) {
-  final minPaid = nominalUnit;
-  final low = nominalUnit * 10;
-  final medium = nominalUnit * 50;
+List<_PricePreset> _buildPricePresets({required AppLocalizations l10n}) {
   return [
     _PricePreset(label: l10n.createPriceFree, minPrice: 0, maxPrice: 0),
-    _PricePreset(
-      label:
-          '$currencyLabel ${minPaid.toStringAsFixed(0)}-${low.toStringAsFixed(0)}',
-      minPrice: minPaid,
-      maxPrice: low,
-    ),
-    _PricePreset(
-      label:
-          '$currencyLabel ${low.toStringAsFixed(0)}-${medium.toStringAsFixed(0)}',
-      minPrice: low,
-      maxPrice: medium,
-    ),
-    _PricePreset(
-      label: '$currencyLabel ${medium.toStringAsFixed(0)}+',
-      minPrice: medium,
-      maxPrice: null,
-    ),
   ];
 }
 

@@ -48,4 +48,66 @@ void main() {
     expect(scaffoldSource, contains('AppFilterApplyButton'));
     expect(scaffoldSource, isNot(contains('_PrimaryPillButton(')));
   });
+
+  test('discover activities price filter keeps only a free preset', () async {
+    final source = await File(
+      'lib/screens/activities/activities_screen.dart',
+    ).readAsString();
+    final priceSectionStart = source.indexOf('Widget _buildPriceSection');
+    final priceSectionEnd = source.indexOf('Widget _buildVisibilitySection');
+    final presetsStart =
+        source.indexOf('List<_PricePreset> _buildPricePresets');
+    final presetsEnd = source.indexOf('List<_DatePreset> _buildDatePresets');
+
+    expect(priceSectionStart, isNonNegative);
+    expect(priceSectionEnd, greaterThan(priceSectionStart));
+    expect(presetsStart, isNonNegative);
+    expect(presetsEnd, greaterThan(presetsStart));
+
+    final priceSectionSource = source.substring(
+      priceSectionStart,
+      priceSectionEnd,
+    );
+    final presetsSource = source.substring(presetsStart, presetsEnd);
+
+    expect(priceSectionSource, contains("prefix: ''"));
+    expect(priceSectionSource, isNot(contains('filterCurrencyLabel')));
+    expect(priceSectionSource, isNot(contains('pricePresetNominalUnit')));
+    expect(presetsSource, contains('l10n.createPriceFree'));
+    expect(RegExp(r'_PricePreset\(').allMatches(presetsSource), hasLength(1));
+    expect(presetsSource, isNot(contains('currencyLabel')));
+    expect(presetsSource, isNot(contains('nominalUnit')));
+  });
+
+  test('discover activities filter option cards avoid fixed heights', () async {
+    final source = await File(
+      'lib/screens/activities/activities_screen.dart',
+    ).readAsString();
+    final categoryStart = source.indexOf('class _CategoryFilterPill');
+    final visibilityStart = source.indexOf('class _VisibilityOptionCard');
+    final filterSectionStart = source.indexOf('class _FilterSection');
+
+    expect(categoryStart, isNonNegative);
+    expect(visibilityStart, greaterThan(categoryStart));
+    expect(filterSectionStart, greaterThan(visibilityStart));
+
+    final categorySource = source.substring(categoryStart, visibilityStart);
+    final visibilitySource = source.substring(
+      visibilityStart,
+      filterSectionStart,
+    );
+
+    expect(categorySource, contains('constraints: BoxConstraints('));
+    expect(categorySource, contains('minHeight:'));
+    expect(
+      categorySource,
+      isNot(contains('height: _activitiesScaled(context, 58')),
+    );
+    expect(visibilitySource, contains('constraints: BoxConstraints('));
+    expect(visibilitySource, contains('minHeight:'));
+    expect(
+      visibilitySource,
+      isNot(contains('height: _activitiesScaled(context, 76')),
+    );
+  });
 }
