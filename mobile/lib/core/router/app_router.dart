@@ -97,8 +97,9 @@ class AppRouter {
         GoRoute(
           path: '/stories/create',
           builder: (context, state) {
-            final initialStory =
-                state.extra is StoryVm ? state.extra! as StoryVm : null;
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(initialStory: initialStory),
             );
@@ -108,8 +109,9 @@ class AppRouter {
           path: '/stories/:storyId/edit',
           builder: (context, state) {
             final storyId = state.pathParameters['storyId'] ?? '';
-            final initialStory =
-                state.extra is StoryVm ? state.extra! as StoryVm : null;
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(storyId: storyId, initialStory: initialStory),
             );
@@ -120,8 +122,9 @@ class AppRouter {
           builder: (context, state) {
             final slug = state.pathParameters['slug'] ?? '';
             final initialCommentId = state.uri.queryParameters['comment'];
-            final initialStory =
-                state.extra is StoryVm ? state.extra! as StoryVm : null;
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
             return _withAndroidBackSwipe(
               StoryDetailsScreen(
                 slug: slug,
@@ -274,7 +277,8 @@ class AppRouter {
             final args = state.extra is TourLocationPickerArgs
                 ? state.extra! as TourLocationPickerArgs
                 : null;
-            final initialSelection = args?.initialSelection ??
+            final initialSelection =
+                args?.initialSelection ??
                 (state.extra is TourLocationSelection
                     ? state.extra! as TourLocationSelection
                     : null);
@@ -290,16 +294,34 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/tours/:tourId/edit',
+          pageBuilder: (context, state) {
+            final tourId = state.pathParameters['tourId'] ?? '';
+            final initialTour = state.extra is TourVm
+                ? state.extra! as TourVm
+                : null;
+            return _buildActivityEditorPage(
+              state: state,
+              child: CreateTourScreen(tourId: tourId, initialTour: initialTour),
+            );
+          },
+        ),
+        GoRoute(
           path: '/tours/:tourId/booking',
           builder: (context, state) {
             final tourId = state.pathParameters['tourId'] ?? '';
             final args = state.extra is TourBookingRouteArgs
                 ? state.extra! as TourBookingRouteArgs
                 : null;
-            final initialTour = args?.tour ??
+            final initialTour =
+                args?.tour ??
                 (state.extra is TourVm ? state.extra! as TourVm : null);
             return _withAndroidBackSwipe(
-              TourBookingScreen(tourId: tourId, initialTour: initialTour),
+              TourBookingScreen(
+                tourId: tourId,
+                initialTour: initialTour,
+                selectedOfferId: args?.selectedOfferId,
+              ),
             );
           },
         ),
@@ -307,8 +329,9 @@ class AppRouter {
           path: '/tours/:tourId',
           builder: (context, state) {
             final tourId = state.pathParameters['tourId'] ?? '';
-            final initialTour =
-                state.extra is TourVm ? state.extra! as TourVm : null;
+            final initialTour = state.extra is TourVm
+                ? state.extra! as TourVm
+                : null;
             return _withAndroidBackSwipe(
               TourDetailsScreen(tourId: tourId, initialTour: initialTour),
             );
@@ -347,8 +370,9 @@ class AppRouter {
         GoRoute(
           path: '/map',
           builder: (context, state) {
-            final initialTarget =
-                state.extra is MapTarget ? state.extra! as MapTarget : null;
+            final initialTarget = state.extra is MapTarget
+                ? state.extra! as MapTarget
+                : null;
             return _withAndroidBackSwipe(
               MapScreen(initialTarget: initialTarget),
             );
@@ -451,6 +475,10 @@ class AppRouter {
     }
 
     if (location.startsWith('/tours/create')) {
+      return false;
+    }
+
+    if (location.startsWith('/tours/') && location.endsWith('/edit')) {
       return false;
     }
 

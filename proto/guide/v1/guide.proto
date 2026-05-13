@@ -96,6 +96,7 @@ message GuideAggregate {
   repeated GuideDocument documents = 3;
   repeated GuideLanguage languages = 4;
   repeated GuideSpecialization specializations = 5;
+  PublicUserProfile user_profile = 6;
 }
 
 message GuideProfile {
@@ -228,4 +229,6 @@ message PublicUserProfile {
   string locale = 5;
   string timezone = 6;
   bool is_public = 7;
+  string first_name = 8;
+  string last_name = 9;
 }

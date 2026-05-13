@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,12 +6,15 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/network/reference_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
+import '../../features/attractions/data/attraction_api.dart';
+import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../features/tours/models/tour_vm.dart';
@@ -28,37 +32,34 @@ class ToursScreen extends StatefulWidget {
   State<ToursScreen> createState() => _ToursScreenState();
 }
 
-enum _ToursSortMode { popular, newest, affordable }
+enum _ToursSortMode { createdAt, rating, price, duration }
 
 enum _ToursSortDirection { asc, desc }
 
 enum _ToursDurationFilter { short, halfDay, fullDay, multiDay }
 
-enum _ToursPriceFilter { budget, premium }
-
 extension _ToursSortModeLabel on _ToursSortMode {
   String label(AppLocalizations l10n) {
     return switch (this) {
-      _ToursSortMode.popular => l10n.toursSortPopular,
-      _ToursSortMode.newest => l10n.toursSortNewest,
-      _ToursSortMode.affordable => l10n.toursSortAffordable,
+      _ToursSortMode.createdAt => l10n.toursSortCreatedAt,
+      _ToursSortMode.rating => l10n.toursSortRating,
+      _ToursSortMode.price => l10n.toursSortPrice,
+      _ToursSortMode.duration => l10n.toursSortDuration,
     };
   }
 
   _ToursSortDirection get defaultDirection {
     return switch (this) {
-      _ToursSortMode.affordable => _ToursSortDirection.asc,
-      _ToursSortMode.popular => _ToursSortDirection.desc,
-      _ToursSortMode.newest => _ToursSortDirection.desc,
+      _ToursSortMode.createdAt => _ToursSortDirection.desc,
+      _ToursSortMode.rating => _ToursSortDirection.desc,
+      _ToursSortMode.price => _ToursSortDirection.asc,
+      _ToursSortMode.duration => _ToursSortDirection.asc,
     };
   }
 }
 
 class _CategoryFilterOption {
-  const _CategoryFilterOption({
-    required this.slug,
-    required this.icon,
-  });
+  const _CategoryFilterOption({required this.slug, required this.icon});
 
   final String slug;
   final IconData icon;
@@ -73,22 +74,340 @@ const _categoryFilterOptions = [
 
 const _languageFilterCodes = ['en', 'ru', 'kk'];
 
+String? _normalizeTourCountryCode(String? code) {
+  final normalized = code?.trim().toUpperCase() ?? '';
+  return normalized.isEmpty ? null : normalized;
+}
+
+String _normalizeTourSearchText(String value) {
+  return value
+      .trim()
+      .toLowerCase()
+      .replaceAll('ё', 'е')
+      .replaceAll(RegExp(r'[@_.,;:\/\\|()\[\]{}<>+\-=]+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+List<List<String>> _tourSearchNeedleGroups(String value) {
+  final tokens = _normalizeTourSearchText(value)
+      .split(' ')
+      .where((token) => token.trim().isNotEmpty)
+      .take(6)
+      .toList(growable: false);
+  return [
+    for (final token in tokens) _tourSearchNeedleVariants(token),
+  ].where((variants) => variants.isNotEmpty).toList(growable: false);
+}
+
+List<String> _tourSearchNeedleVariants(String token) {
+  final variants = <String>[];
+  final seen = <String>{};
+  void add(String value) {
+    final normalized = _normalizeTourSearchText(value);
+    if (normalized.isEmpty || !seen.add(normalized)) return;
+    variants.add(normalized);
+  }
+
+  add(token);
+  if (RegExp(r'[a-z]').hasMatch(token)) {
+    add(_latinToCyrillicTourSearchText(token));
+  }
+  if (RegExp(r'[а-яәғқңөұүһі]').hasMatch(token)) {
+    add(_cyrillicToLatinTourSearchText(token));
+  }
+  _addTourLanguageSearchVariants(add, token);
+  return variants;
+}
+
+String _latinToCyrillicTourSearchText(String value) {
+  final normalized = value.trim().toLowerCase();
+  if (normalized.isEmpty) return '';
+
+  final buffer = StringBuffer();
+  var index = 0;
+  while (index < normalized.length) {
+    final rest = normalized.substring(index);
+    if (rest.startsWith('shch')) {
+      buffer.write('щ');
+      index += 4;
+    } else if (rest.startsWith('sch')) {
+      buffer.write('щ');
+      index += 3;
+    } else if (rest.startsWith('nyo') || rest.startsWith('nio')) {
+      buffer.write('ньо');
+      index += 3;
+    } else if (rest.startsWith('ch')) {
+      buffer.write('ч');
+      index += 2;
+    } else if (rest.startsWith('sh')) {
+      buffer.write('ш');
+      index += 2;
+    } else if (rest.startsWith('zh')) {
+      buffer.write('ж');
+      index += 2;
+    } else if (rest.startsWith('kh')) {
+      buffer.write('х');
+      index += 2;
+    } else if (rest.startsWith('gh')) {
+      buffer.write('ғ');
+      index += 2;
+    } else if (rest.startsWith('ng')) {
+      buffer.write('ң');
+      index += 2;
+    } else if (rest.startsWith('ya') || rest.startsWith('ia')) {
+      buffer.write('я');
+      index += 2;
+    } else if (rest.startsWith('yu') || rest.startsWith('iu')) {
+      buffer.write('ю');
+      index += 2;
+    } else if (rest.startsWith('yo') || rest.startsWith('io')) {
+      buffer.write('е');
+      index += 2;
+    } else if (rest.startsWith('ye')) {
+      buffer.write('е');
+      index += 2;
+    } else {
+      buffer.write(_latinCharToCyrillic(normalized[index]));
+      index++;
+    }
+  }
+  return buffer.toString();
+}
+
+String _latinCharToCyrillic(String char) {
+  return switch (char) {
+    'a' => 'а',
+    'b' => 'б',
+    'c' || 'k' => 'к',
+    'd' => 'д',
+    'e' => 'е',
+    'f' => 'ф',
+    'g' => 'г',
+    'h' => 'х',
+    'i' => 'и',
+    'j' => 'ж',
+    'l' => 'л',
+    'm' => 'м',
+    'n' => 'н',
+    'o' => 'о',
+    'p' => 'п',
+    'q' => 'қ',
+    'r' => 'р',
+    's' => 'с',
+    't' => 'т',
+    'u' || 'w' => 'у',
+    'v' => 'в',
+    'x' => 'кс',
+    'y' => 'ы',
+    'z' => 'з',
+    _ => char,
+  };
+}
+
+String _cyrillicToLatinTourSearchText(String value) {
+  final buffer = StringBuffer();
+  for (final rune in value.trim().toLowerCase().runes) {
+    final char = String.fromCharCode(rune);
+    buffer.write(
+      switch (char) {
+        'а' || 'ә' => 'a',
+        'б' => 'b',
+        'в' => 'v',
+        'г' || 'ғ' => 'g',
+        'д' => 'd',
+        'е' || 'э' => 'e',
+        'ё' => 'yo',
+        'ж' => 'zh',
+        'з' => 'z',
+        'и' || 'і' => 'i',
+        'й' => 'y',
+        'к' || 'қ' => 'k',
+        'л' => 'l',
+        'м' => 'm',
+        'н' || 'ң' => 'n',
+        'о' || 'ө' => 'o',
+        'п' => 'p',
+        'р' => 'r',
+        'с' => 's',
+        'т' => 't',
+        'у' || 'ұ' || 'ү' => 'u',
+        'ф' => 'f',
+        'х' || 'һ' => 'h',
+        'ц' => 'ts',
+        'ч' => 'ch',
+        'ш' => 'sh',
+        'щ' => 'shch',
+        'ы' || 'ь' => 'y',
+        'ъ' => '',
+        'ю' => 'yu',
+        'я' => 'ya',
+        _ => char,
+      },
+    );
+  }
+  return buffer.toString();
+}
+
+void _addTourLanguageSearchVariants(
+    void Function(String value) add, String token) {
+  switch (_normalizeTourSearchText(token)) {
+    case 'en':
+    case 'eng':
+    case 'english':
+    case 'анг':
+    case 'английский':
+    case 'ағылшын':
+      add('en');
+      add('english');
+      add('английский');
+      add('ағылшын');
+      return;
+    case 'ru':
+    case 'rus':
+    case 'russian':
+    case 'рус':
+    case 'русский':
+    case 'орыс':
+      add('ru');
+      add('russian');
+      add('русский');
+      add('орыс');
+      return;
+    case 'kk':
+    case 'kz':
+    case 'kaz':
+    case 'kazakh':
+    case 'қазақ':
+    case 'казахский':
+      add('kk');
+      add('kz');
+      add('kazakh');
+      add('қазақ');
+      add('казахский');
+      return;
+    case 'fr':
+    case 'fre':
+    case 'french':
+    case 'француз':
+    case 'французский':
+      add('fr');
+      add('french');
+      add('французский');
+      return;
+    case 'ja':
+    case 'jp':
+    case 'japanese':
+    case 'япон':
+    case 'японский':
+    case 'жапон':
+      add('ja');
+      add('jp');
+      add('japanese');
+      add('японский');
+      add('жапон');
+      return;
+    case 'de':
+    case 'ger':
+    case 'german':
+    case 'немецкий':
+    case 'неміс':
+      add('de');
+      add('german');
+      add('немецкий');
+      add('неміс');
+      return;
+    case 'es':
+    case 'spa':
+    case 'spanish':
+    case 'испанский':
+    case 'испан':
+      add('es');
+      add('spanish');
+      add('испанский');
+      return;
+    case 'tr':
+    case 'tur':
+    case 'turkish':
+    case 'турецкий':
+    case 'түрік':
+      add('tr');
+      add('turkish');
+      add('турецкий');
+      add('түрік');
+      return;
+  }
+}
+
+String _formatTourPriceInput(double? value) {
+  if (value == null || value <= 0) return '';
+  return value == value.truncateToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(2);
+}
+
+double? _parseTourPriceInput(String value) {
+  final parsed = double.tryParse(value.trim().replaceAll(',', '.'));
+  if (parsed == null || parsed <= 0) return null;
+  return parsed;
+}
+
+List<ReferenceCountry> _withDefaultTourCountry(
+  List<ReferenceCountry> countries,
+  String? defaultCountryCode,
+) {
+  if (defaultCountryCode == null) return countries;
+  final hasDefault = countries.any(
+    (country) => country.code.trim().toUpperCase() == defaultCountryCode,
+  );
+  if (hasDefault) return countries;
+
+  return [
+    ReferenceCountry(code: defaultCountryCode, name: defaultCountryCode),
+    ...countries,
+  ];
+}
+
 class _ToursScreenState extends State<ToursScreen> {
+  final AttractionApi _attractionApi = AttractionApi();
+  final ReferenceApi _referenceApi = ReferenceApi();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  _ToursSortMode _sortMode = _ToursSortMode.popular;
+  List<ReferenceCountry> _countries = const [];
+  Map<String, Set<String>> _countrySearchAliases = const {};
+  Map<String, AttractionVm> _localizedLandmarks = const {};
+  final Set<String> _loadingLocalizedLandmarkIds = <String>{};
+  String? _localizedLandmarksLocale;
+  bool _isCountriesLoading = false;
+  bool _hasAppliedDefaultCountryFilter = false;
+  Future<void>? _countriesLoadFuture;
+  _ToursSortMode _sortMode = _ToursSortMode.createdAt;
   _ToursSortDirection _sortDirection = _ToursSortDirection.desc;
   _ToursFilters _filters = const _ToursFilters();
   String _searchQuery = '';
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyDefaultCountryFilter();
+      unawaited(_loadCountries());
       context.read<TourProvider>().loadTours();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final lang = Localizations.localeOf(context).languageCode;
+    if (_localizedLandmarksLocale == lang) return;
+    _localizedLandmarksLocale = lang;
+    _localizedLandmarks = const {};
+    _loadingLocalizedLandmarkIds.clear();
   }
 
   @override
@@ -96,8 +415,113 @@ class _ToursScreenState extends State<ToursScreen> {
     _searchController
       ..removeListener(_handleSearchChanged)
       ..dispose();
+    _searchDebounce?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  String? _defaultCountryCode() {
+    return _normalizeTourCountryCode(
+      context.read<SessionProvider>().profile?.countryCode,
+    );
+  }
+
+  void _applyDefaultCountryFilter() {
+    if (!mounted || _hasAppliedDefaultCountryFilter) return;
+    _hasAppliedDefaultCountryFilter = true;
+
+    final defaultCountryCode = _defaultCountryCode();
+    if (defaultCountryCode == null || _filters.countryCode != null) return;
+
+    setState(() {
+      _filters = _filters.copyWith(countryCode: defaultCountryCode);
+    });
+  }
+
+  Future<void> _loadCountries() {
+    if (_countries.isNotEmpty) return Future.value();
+    final inFlight = _countriesLoadFuture;
+    if (inFlight != null) return inFlight;
+
+    final future = _loadCountriesInner();
+    _countriesLoadFuture = future;
+    return future.whenComplete(() => _countriesLoadFuture = null);
+  }
+
+  Future<void> _loadCountriesInner() async {
+    if (!mounted) return;
+
+    setState(() => _isCountriesLoading = true);
+    final lang = Localizations.localeOf(context).languageCode;
+    final defaultCountryCode = _defaultCountryCode();
+
+    try {
+      final countries = _withDefaultTourCountry(
+        await _referenceApi.listCountries(lang: lang),
+        defaultCountryCode,
+      );
+      final countrySearchAliases = await _loadCountrySearchAliases(
+        countries,
+        lang,
+      );
+      if (!mounted) return;
+      setState(() {
+        _countries = countries;
+        _countrySearchAliases = countrySearchAliases;
+        _isCountriesLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      final countries = _withDefaultTourCountry(const [], defaultCountryCode);
+      setState(() {
+        _countries = countries;
+        _countrySearchAliases = _countrySearchAliasMap(countries);
+        _isCountriesLoading = false;
+      });
+    }
+  }
+
+  Future<Map<String, Set<String>>> _loadCountrySearchAliases(
+    List<ReferenceCountry> countries,
+    String currentLang,
+  ) async {
+    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
+    final localizedLists = await Future.wait(
+      languages.map((lang) async {
+        try {
+          return await _referenceApi.listCountries(lang: lang);
+        } catch (_) {
+          return const <ReferenceCountry>[];
+        }
+      }),
+    );
+
+    return _countrySearchAliasMap([
+      ...countries,
+      for (final localizedCountries in localizedLists) ...localizedCountries,
+    ]);
+  }
+
+  Map<String, Set<String>> _countrySearchAliasMap(
+    List<ReferenceCountry> countries,
+  ) {
+    final aliases = <String, Set<String>>{};
+    for (final country in countries) {
+      final code = _normalizeTourCountryCode(country.code);
+      if (code == null) continue;
+
+      final countryAliases = aliases.putIfAbsent(code, () => <String>{});
+      countryAliases
+        ..add(code)
+        ..add(country.code.trim())
+        ..add(country.name.trim());
+
+      final phoneCode = country.phoneCode?.trim();
+      if (phoneCode != null && phoneCode.isNotEmpty) {
+        countryAliases.add(phoneCode);
+      }
+    }
+    return aliases;
   }
 
   void _handleSearchChanged() {
@@ -106,6 +530,12 @@ class _ToursScreenState extends State<ToursScreen> {
 
     setState(() {
       _searchQuery = nextQuery;
+    });
+
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      context.read<TourProvider>().refreshTours(query: _searchQuery);
     });
   }
 
@@ -119,6 +549,58 @@ class _ToursScreenState extends State<ToursScreen> {
 
   Future<void> _handleRefresh() {
     return context.read<TourProvider>().refreshTours(query: _searchQuery);
+  }
+
+  void _scheduleResolveLocalizedLandmarks(List<TourVm> tours) {
+    if (!mounted) return;
+
+    final lang = Localizations.localeOf(context).languageCode;
+    final ids = <String>[];
+    for (final tour in tours) {
+      final landmarkId = tour.landmarkId?.trim();
+      if (landmarkId == null ||
+          landmarkId.isEmpty ||
+          _localizedLandmarks.containsKey(landmarkId) ||
+          _loadingLocalizedLandmarkIds.contains(landmarkId)) {
+        continue;
+      }
+      ids.add(landmarkId);
+    }
+    if (ids.isEmpty) return;
+
+    for (final landmarkId in ids.take(16)) {
+      _loadingLocalizedLandmarkIds.add(landmarkId);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_loadLocalizedLandmark(landmarkId, lang));
+      });
+    }
+  }
+
+  Future<void> _loadLocalizedLandmark(String landmarkId, String lang) async {
+    try {
+      final attraction = await _attractionApi.getAttraction(
+        landmarkId,
+        locale: lang,
+      );
+      if (!mounted || _localizedLandmarksLocale != lang) return;
+
+      setState(() {
+        _localizedLandmarks = {
+          ..._localizedLandmarks,
+          landmarkId: attraction,
+        };
+        _loadingLocalizedLandmarkIds.remove(landmarkId);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingLocalizedLandmarkIds.remove(landmarkId));
+    }
+  }
+
+  AttractionVm? _localizedLandmarkFor(TourVm tour) {
+    final landmarkId = tour.landmarkId?.trim();
+    if (landmarkId == null || landmarkId.isEmpty) return null;
+    return _localizedLandmarks[landmarkId];
   }
 
   Future<void> _onCreateTourTap() async {
@@ -166,6 +648,8 @@ class _ToursScreenState extends State<ToursScreen> {
   }
 
   Future<void> _showFilters() async {
+    await _loadCountries();
+    if (!mounted) return;
     final toursSnapshot = context.read<TourProvider>().tours;
     final selectedFilters = await showModalBottomSheet<_ToursFilters>(
       context: context,
@@ -174,10 +658,11 @@ class _ToursScreenState extends State<ToursScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _ToursFiltersSheet(
         initialFilters: _filters,
-        resultCountBuilder: (filters) => _visibleTours(
-          toursSnapshot,
-          filtersOverride: filters,
-        ).length,
+        countries: _countries,
+        countrySearchAliases: _countrySearchAliases,
+        isCountriesLoading: _isCountriesLoading,
+        resultCountBuilder: (filters) =>
+            _visibleTours(toursSnapshot, filtersOverride: filters).length,
       ),
     );
 
@@ -215,6 +700,7 @@ class _ToursScreenState extends State<ToursScreen> {
             Expanded(
               child: Consumer<TourProvider>(
                 builder: (context, provider, _) {
+                  _scheduleResolveLocalizedLandmarks(provider.tours);
                   final visibleTours = _visibleTours(provider.tours);
                   final isInitialLoading =
                       provider.listState == TourListState.loading &&
@@ -227,9 +713,9 @@ class _ToursScreenState extends State<ToursScreen> {
                     return ErrorView(
                       message:
                           provider.listErrorMessage ?? l10n.toursLoadFailed,
-                      onRetry: () => context
-                          .read<TourProvider>()
-                          .loadTours(query: _searchQuery),
+                      onRetry: () => context.read<TourProvider>().loadTours(
+                            query: _searchQuery,
+                          ),
                     );
                   }
 
@@ -276,7 +762,8 @@ class _ToursScreenState extends State<ToursScreen> {
                         ),
                         if (isInitialLoading)
                           _ToursLoadingGrid(
-                              horizontalPadding: _horizontalPadding(context))
+                            horizontalPadding: _horizontalPadding(context),
+                          )
                         else if (visibleTours.isEmpty)
                           SliverFillRemaining(
                             hasScrollBody: false,
@@ -307,6 +794,11 @@ class _ToursScreenState extends State<ToursScreen> {
                               itemBuilder: (context, index) {
                                 return TourListCard(
                                   tour: visibleTours[index],
+                                  languageCode: Localizations.localeOf(context)
+                                      .languageCode,
+                                  localizedLandmark: _localizedLandmarkFor(
+                                    visibleTours[index],
+                                  ),
                                   seed: index,
                                   onTap: () =>
                                       _openTourDetails(visibleTours[index]),
@@ -335,38 +827,156 @@ class _ToursScreenState extends State<ToursScreen> {
     List<TourVm> tours, {
     _ToursFilters? filtersOverride,
   }) {
-    final query = _searchQuery.toLowerCase();
+    final l10n = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
+    final searchGroups = _tourSearchNeedleGroups(_searchQuery);
     final filters = filtersOverride ?? _filters;
     final filtered = tours.where((tour) {
       if (!filters.matches(tour)) return false;
-      if (query.isEmpty) return true;
+      if (searchGroups.isEmpty) return true;
 
-      final haystack = [
-        tour.title,
-        tour.summary,
-        tour.cityName,
-        tour.landmarkName,
-        tour.categorySlug,
-        ...tour.tags,
-      ].whereType<String>().join(' ').toLowerCase();
-
-      return haystack.contains(query);
+      final haystack = _tourSearchHaystack(l10n, tour, lang);
+      return searchGroups.every(
+        (variants) => variants.any(haystack.contains),
+      );
     }).toList(growable: false);
 
     final sorted = [...filtered];
     sorted.sort((a, b) {
       final comparison = switch (_sortMode) {
-        _ToursSortMode.affordable => a.priceAmount.compareTo(b.priceAmount),
-        _ToursSortMode.newest => a.id.compareTo(b.id),
-        _ToursSortMode.popular => a.title.compareTo(b.title),
+        _ToursSortMode.createdAt => _tourCreatedAtFor(
+            a,
+          ).compareTo(_tourCreatedAtFor(b)),
+        _ToursSortMode.rating => _tourRatingFor(a).compareTo(_tourRatingFor(b)),
+        _ToursSortMode.price => _tourCardPriceFor(
+            a,
+          ).amount.compareTo(_tourCardPriceFor(b).amount),
+        _ToursSortMode.duration => a.durationMinutes.compareTo(
+            b.durationMinutes,
+          ),
       };
 
-      return _sortDirection == _ToursSortDirection.asc
-          ? comparison
-          : -comparison;
+      final directedComparison =
+          _sortDirection == _ToursSortDirection.asc ? comparison : -comparison;
+      if (directedComparison != 0) return directedComparison;
+      final aTitle = localizedTourTitle(
+        languageCode: lang,
+        tour: a,
+        attraction: _localizedLandmarkFor(a),
+      );
+      final bTitle = localizedTourTitle(
+        languageCode: lang,
+        tour: b,
+        attraction: _localizedLandmarkFor(b),
+      );
+      return aTitle.compareTo(bTitle);
     });
 
     return sorted;
+  }
+
+  String _tourSearchHaystack(
+    AppLocalizations l10n,
+    TourVm tour,
+    String lang,
+  ) {
+    final landmark = _localizedLandmarkFor(tour);
+    final countryCode = _normalizeTourCountryCode(tour.countryCode);
+    final countryAliases = countryCode == null
+        ? const <String>{}
+        : _countrySearchAliases[countryCode] ?? const <String>{};
+    final values = <String>[
+      tour.id,
+      localizedTourTitle(
+        languageCode: lang,
+        tour: tour,
+        attraction: landmark,
+      ),
+      localizedTourSummary(
+        languageCode: lang,
+        tour: tour,
+        attraction: landmark,
+      ),
+      localizedTourDescription(
+        languageCode: lang,
+        tour: tour,
+        attraction: landmark,
+      ),
+      localizedTourLandmarkName(
+        languageCode: lang,
+        tour: tour,
+        attraction: landmark,
+      ),
+      tour.title,
+      tour.summary,
+      tour.description,
+      tour.cityName ?? '',
+      tour.countryCode ?? '',
+      tour.landmarkId ?? '',
+      tour.landmarkName ?? '',
+      tour.categorySlug ?? '',
+      localizedTourCategoryLabel(l10n, tour.categorySlug),
+      tour.meetingPoint,
+      tour.mapUrl ?? '',
+      tour.status,
+      tour.visibility,
+      tour.currency,
+      tour.priceAmount.toString(),
+      tour.durationMinutes.toString(),
+      tour.maxGroupSize.toString(),
+      ...countryAliases,
+      ...tour.tags,
+      for (final code in tour.languageCodes) ...[
+        code,
+        localizedTourLanguageLabel(l10n, code),
+      ],
+      ...tour.includedItems,
+      ...tour.localizedIncludedItems(lang),
+      for (final values in tour.includedItemTranslations.values) ...values,
+      for (final item in tour.itinerary) ...[
+        item.title,
+        item.description,
+        item.localizedTitle(lang),
+        item.localizedDescription(lang),
+        for (final copy in item.translations.values) ...[
+          copy.title,
+          copy.description,
+        ],
+        item.durationMinutes?.toString() ?? '',
+        item.startOffsetMinutes.toString(),
+      ],
+      for (final offer in tour.offers) ...[
+        offer.title,
+        offer.summary,
+        offer.description,
+        offer.meetingPoint,
+        offer.currency,
+        offer.priceAmount.toString(),
+        offer.durationMinutes.toString(),
+        offer.maxGroupSize.toString(),
+        offer.guideUserId,
+        offer.guideProfileId,
+        ...offer.includedItems,
+        ...offer.localizedIncludedItems(lang),
+        for (final values in offer.includedItemTranslations.values) ...values,
+        for (final item in offer.itinerary) ...[
+          item.title,
+          item.description,
+          item.localizedTitle(lang),
+          item.localizedDescription(lang),
+          for (final copy in item.translations.values) ...[
+            copy.title,
+            copy.description,
+          ],
+        ],
+        for (final code in offer.languageCodes) ...[
+          code,
+          localizedTourLanguageLabel(l10n, code),
+        ],
+      ],
+    ];
+
+    return _normalizeTourSearchText(values.join(' '));
   }
 
   double _horizontalPadding(BuildContext context) {
@@ -382,6 +992,17 @@ class _ToursScreenState extends State<ToursScreen> {
     if (width >= 600) return 0.72;
     return 0.68;
   }
+}
+
+DateTime _tourCreatedAtFor(TourVm tour) {
+  return tour.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+}
+
+double _tourRatingFor(TourVm tour) {
+  if (tour.offers.isEmpty) return 0;
+  return tour.offers
+      .map((offer) => offer.guideRatingAvg)
+      .fold<double>(0, math.max);
 }
 
 class ToursBottomNavigation extends StatelessWidget {
@@ -524,24 +1145,58 @@ class _ToursSearchField extends StatelessWidget {
 
 class _ToursFilters {
   const _ToursFilters({
+    this.countryCode,
     this.categorySlugs = const <String>{},
     this.languageCodes = const <String>{},
     this.duration,
-    this.price,
+    this.priceMin,
+    this.priceMax,
   });
 
+  final String? countryCode;
   final Set<String> categorySlugs;
   final Set<String> languageCodes;
   final _ToursDurationFilter? duration;
-  final _ToursPriceFilter? price;
+  final double? priceMin;
+  final double? priceMax;
 
   int get activeCount =>
+      (countryCode == null ? 0 : 1) +
       categorySlugs.length +
       languageCodes.length +
       (duration == null ? 0 : 1) +
-      (price == null ? 0 : 1);
+      (priceMin == null ? 0 : 1) +
+      (priceMax == null ? 0 : 1);
+
+  _ToursFilters copyWith({
+    String? countryCode,
+    bool clearCountryCode = false,
+    Set<String>? categorySlugs,
+    Set<String>? languageCodes,
+    _ToursDurationFilter? duration,
+    bool clearDuration = false,
+    double? priceMin,
+    bool clearPriceMin = false,
+    double? priceMax,
+    bool clearPriceMax = false,
+  }) {
+    return _ToursFilters(
+      countryCode: clearCountryCode ? null : countryCode ?? this.countryCode,
+      categorySlugs: categorySlugs ?? this.categorySlugs,
+      languageCodes: languageCodes ?? this.languageCodes,
+      duration: clearDuration ? null : duration ?? this.duration,
+      priceMin: clearPriceMin ? null : priceMin ?? this.priceMin,
+      priceMax: clearPriceMax ? null : priceMax ?? this.priceMax,
+    );
+  }
 
   bool matches(TourVm tour) {
+    final country = countryCode;
+    if (country != null) {
+      final tourCountry = _normalizeTourCountryCode(tour.countryCode);
+      if (tourCountry == null || tourCountry != country) return false;
+    }
+
     if (categorySlugs.isNotEmpty) {
       final category = tour.categorySlug?.trim().toLowerCase();
       if (category == null || !categorySlugs.contains(category)) return false;
@@ -561,8 +1216,11 @@ class _ToursFilters {
       return false;
     }
 
-    final priceFilter = price;
-    if (priceFilter != null && !_matchesPrice(priceFilter, tour)) return false;
+    final priceKzt = _priceApproxKzt(tour);
+    final min = priceMin;
+    if (min != null && priceKzt < min) return false;
+    final max = priceMax;
+    if (max != null && priceKzt > max) return false;
 
     return true;
   }
@@ -576,17 +1234,10 @@ class _ToursFilters {
     };
   }
 
-  static bool _matchesPrice(_ToursPriceFilter filter, TourVm tour) {
-    final priceKzt = _priceApproxKzt(tour);
-    return switch (filter) {
-      _ToursPriceFilter.budget => priceKzt <= 50000,
-      _ToursPriceFilter.premium => priceKzt >= 100000,
-    };
-  }
-
   static double _priceApproxKzt(TourVm tour) {
-    final amount = tour.priceAmount;
-    switch (tour.currency.trim().toUpperCase()) {
+    final price = _tourCardPriceFor(tour);
+    final amount = price.amount;
+    switch (price.currency.trim().toUpperCase()) {
       case 'USD':
         return amount * 450;
       case 'EUR':
@@ -605,10 +1256,16 @@ class _ToursFilters {
 class _ToursFiltersSheet extends StatefulWidget {
   const _ToursFiltersSheet({
     required this.initialFilters,
+    required this.countries,
+    required this.countrySearchAliases,
+    required this.isCountriesLoading,
     required this.resultCountBuilder,
   });
 
   final _ToursFilters initialFilters;
+  final List<ReferenceCountry> countries;
+  final Map<String, Set<String>> countrySearchAliases;
+  final bool isCountriesLoading;
   final int Function(_ToursFilters filters) resultCountBuilder;
 
   @override
@@ -617,15 +1274,68 @@ class _ToursFiltersSheet extends StatefulWidget {
 
 class _ToursFiltersSheetState extends State<_ToursFiltersSheet> {
   late _ToursFilters _filters;
+  late final TextEditingController _countrySearchController;
+  late final TextEditingController _priceFromController;
+  late final TextEditingController _priceToController;
+  String _countrySearchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _filters = widget.initialFilters;
+    _countrySearchController = TextEditingController()
+      ..addListener(_handleCountrySearchChanged);
+    _priceFromController = TextEditingController(
+      text: _formatTourPriceInput(widget.initialFilters.priceMin),
+    )..addListener(_handlePriceRangeChanged);
+    _priceToController = TextEditingController(
+      text: _formatTourPriceInput(widget.initialFilters.priceMax),
+    )..addListener(_handlePriceRangeChanged);
+  }
+
+  @override
+  void dispose() {
+    _countrySearchController
+      ..removeListener(_handleCountrySearchChanged)
+      ..dispose();
+    _priceFromController
+      ..removeListener(_handlePriceRangeChanged)
+      ..dispose();
+    _priceToController
+      ..removeListener(_handlePriceRangeChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleCountrySearchChanged() {
+    final nextQuery = _countrySearchController.text.trim();
+    if (nextQuery == _countrySearchQuery) return;
+
+    setState(() => _countrySearchQuery = nextQuery);
   }
 
   void _clear() {
-    setState(() => _filters = const _ToursFilters());
+    _countrySearchController.clear();
+    _priceFromController.clear();
+    _priceToController.clear();
+    setState(() {
+      _filters = const _ToursFilters();
+      _countrySearchQuery = '';
+    });
+  }
+
+  void _selectCountry(String code) {
+    final normalized = _normalizeTourCountryCode(code);
+    if (normalized == null) return;
+
+    setState(() {
+      _filters = _filters.copyWith(
+        countryCode: normalized,
+        clearCountryCode: _filters.countryCode == normalized,
+      );
+      _countrySearchController.clear();
+      _countrySearchQuery = '';
+    });
   }
 
   void _toggleCategory(String slug) {
@@ -633,12 +1343,7 @@ class _ToursFiltersSheetState extends State<_ToursFiltersSheet> {
     if (!next.remove(slug)) next.add(slug);
 
     setState(() {
-      _filters = _ToursFilters(
-        categorySlugs: next,
-        languageCodes: _filters.languageCodes,
-        duration: _filters.duration,
-        price: _filters.price,
-      );
+      _filters = _filters.copyWith(categorySlugs: next);
     });
   }
 
@@ -647,35 +1352,72 @@ class _ToursFiltersSheetState extends State<_ToursFiltersSheet> {
     if (!next.remove(code)) next.add(code);
 
     setState(() {
-      _filters = _ToursFilters(
-        categorySlugs: _filters.categorySlugs,
-        languageCodes: next,
-        duration: _filters.duration,
-        price: _filters.price,
-      );
+      _filters = _filters.copyWith(languageCodes: next);
     });
   }
 
   void _setDuration(_ToursDurationFilter duration) {
     setState(() {
-      _filters = _ToursFilters(
-        categorySlugs: _filters.categorySlugs,
-        languageCodes: _filters.languageCodes,
+      _filters = _filters.copyWith(
         duration: _filters.duration == duration ? null : duration,
-        price: _filters.price,
+        clearDuration: _filters.duration == duration,
       );
     });
   }
 
-  void _setPrice(_ToursPriceFilter price) {
+  void _handlePriceRangeChanged() {
+    final priceMin = _parseTourPriceInput(_priceFromController.text);
+    final priceMax = _parseTourPriceInput(_priceToController.text);
     setState(() {
-      _filters = _ToursFilters(
-        categorySlugs: _filters.categorySlugs,
-        languageCodes: _filters.languageCodes,
-        duration: _filters.duration,
-        price: _filters.price == price ? null : price,
+      _filters = _filters.copyWith(
+        priceMin: priceMin,
+        clearPriceMin: priceMin == null,
+        priceMax: priceMax,
+        clearPriceMax: priceMax == null,
       );
     });
+  }
+
+  String _countryLabel(ReferenceCountry country) {
+    final name = country.name.trim();
+    if (name.isNotEmpty) return name;
+    return country.code.trim().toUpperCase();
+  }
+
+  ReferenceCountry? _selectedCountry() {
+    final countryCode = _filters.countryCode;
+    if (countryCode == null) return null;
+
+    for (final country in widget.countries) {
+      if (_normalizeTourCountryCode(country.code) == countryCode) {
+        return country;
+      }
+    }
+    return null;
+  }
+
+  List<ReferenceCountry> _visibleCountries() {
+    final query = _countrySearchQuery.trim().toLowerCase();
+    if (query.isEmpty) return const [];
+
+    return widget.countries
+        .where((country) => _countrySearchHaystack(country).contains(query))
+        .take(24)
+        .toList(growable: false);
+  }
+
+  String _countrySearchHaystack(ReferenceCountry country) {
+    final countryCode = _normalizeTourCountryCode(country.code);
+    final aliases = countryCode == null
+        ? const <String>{}
+        : widget.countrySearchAliases[countryCode] ?? const <String>{};
+
+    return [
+      country.code,
+      country.name,
+      if (country.phoneCode != null) country.phoneCode!,
+      ...aliases,
+    ].map((value) => value.trim().toLowerCase()).join(' ');
   }
 
   @override
@@ -683,6 +1425,8 @@ class _ToursFiltersSheetState extends State<_ToursFiltersSheet> {
     final l10n = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final resultCount = widget.resultCountBuilder(_filters);
+    final selectedCountry = _selectedCountry();
+    final visibleCountries = _visibleCountries();
 
     return AppDismissibleModalSheet(
       child: ConstrainedBox(
@@ -715,6 +1459,222 @@ class _ToursFiltersSheetState extends State<_ToursFiltersSheet> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _ToursFilterSection(
+                        title: l10n.toursFilterCountry,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2C2118),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.public_rounded,
+                                      color: AppColors.accent,
+                                      size: 21,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        selectedCountry == null
+                                            ? _filters.countryCode ??
+                                                l10n.toursFilterCountryAll
+                                            : _countryLabel(selectedCountry),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_filters.countryCode != null)
+                                      IconButton(
+                                        tooltip: l10n.toursFiltersClear,
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed: () => setState(() {
+                                          _filters = _filters.copyWith(
+                                            clearCountryCode: true,
+                                          );
+                                        }),
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          color: Color(0xFFBDAA98),
+                                          size: 20,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _countrySearchController,
+                              enabled: widget.countries.isNotEmpty,
+                              cursorColor: AppColors.accent,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: l10n.toursFilterCountrySearchHint,
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF9D8877),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: AppColors.accent,
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFF171009),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.accent,
+                                    width: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (widget.isCountriesLoading &&
+                                widget.countries.isEmpty) ...[
+                              const SizedBox(height: 12),
+                              const Align(
+                                alignment: Alignment.centerLeft,
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.4,
+                                    color: AppColors.accent,
+                                  ),
+                                ),
+                              ),
+                            ] else if (_countrySearchQuery.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              if (visibleCountries.isEmpty)
+                                Text(
+                                  l10n.toursFilterCountryNoResults,
+                                  style: const TextStyle(
+                                    color: Color(0xFFBDAA98),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                )
+                              else
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 224,
+                                  ),
+                                  child: ListView.separated(
+                                    shrinkWrap: true,
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: visibleCountries.length,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 8),
+                                    itemBuilder: (context, index) {
+                                      final country = visibleCountries[index];
+                                      final code = _normalizeTourCountryCode(
+                                            country.code,
+                                          ) ??
+                                          country.code.trim().toUpperCase();
+                                      final selected =
+                                          _filters.countryCode == code;
+
+                                      return InkWell(
+                                        onTap: () =>
+                                            _selectCountry(country.code),
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: selected
+                                                ? AppColors.accent.withValues(
+                                                    alpha: 0.18,
+                                                  )
+                                                : const Color(0xFF2C2118),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            border: Border.all(
+                                              color: selected
+                                                  ? AppColors.accent
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.07,
+                                                    ),
+                                            ),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 13,
+                                              vertical: 11,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    _countryLabel(country),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      color:
+                                                          AppColors.textPrimary,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Text(
+                                                  code,
+                                                  style: const TextStyle(
+                                                    color: Color(0xFFBDAA98),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      _ToursFilterSection(
                         title: l10n.toursFilterCategories,
                         child: Wrap(
                           spacing: 12,
@@ -738,19 +1698,12 @@ class _ToursFiltersSheetState extends State<_ToursFiltersSheet> {
                       const SizedBox(height: 30),
                       _ToursFilterSection(
                         title: l10n.toursFilterPriceRange,
-                        child: _ToursSegmentGrid<_ToursPriceFilter>(
-                          items: [
-                            _ToursSegmentItem(
-                              value: _ToursPriceFilter.budget,
-                              label: l10n.toursFilterBudget,
-                            ),
-                            _ToursSegmentItem(
-                              value: _ToursPriceFilter.premium,
-                              label: l10n.toursFilterPremium,
-                            ),
-                          ],
-                          selectedValue: _filters.price,
-                          onSelected: _setPrice,
+                        child: _ToursPriceRangeFields(
+                          fromController: _priceFromController,
+                          toController: _priceToController,
+                          fromLabel: l10n.toursFilterPriceFrom,
+                          toLabel: l10n.toursFilterPriceTo,
+                          currencyLabel: 'KZT',
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -817,10 +1770,7 @@ class _ToursFiltersSheetState extends State<_ToursFiltersSheet> {
 }
 
 class _ToursFilterSection extends StatelessWidget {
-  const _ToursFilterSection({
-    required this.title,
-    required this.child,
-  });
+  const _ToursFilterSection({required this.title, required this.child});
 
   final String title;
   final Widget child;
@@ -843,6 +1793,113 @@ class _ToursFilterSection extends StatelessWidget {
         const SizedBox(height: 16),
         child,
       ],
+    );
+  }
+}
+
+class _ToursPriceRangeFields extends StatelessWidget {
+  const _ToursPriceRangeFields({
+    required this.fromController,
+    required this.toController,
+    required this.fromLabel,
+    required this.toLabel,
+    required this.currencyLabel,
+  });
+
+  final TextEditingController fromController;
+  final TextEditingController toController;
+  final String fromLabel;
+  final String toLabel;
+  final String currencyLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 340;
+        final fields = [
+          _ToursPriceInputField(
+            controller: fromController,
+            label: fromLabel,
+            suffix: currencyLabel,
+          ),
+          _ToursPriceInputField(
+            controller: toController,
+            label: toLabel,
+            suffix: currencyLabel,
+          ),
+        ];
+
+        if (isNarrow) {
+          return Column(
+            children: [
+              fields[0],
+              const SizedBox(height: 12),
+              fields[1],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: fields[0]),
+            const SizedBox(width: 12),
+            Expanded(child: fields[1]),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ToursPriceInputField extends StatelessWidget {
+  const _ToursPriceInputField({
+    required this.controller,
+    required this.label,
+    required this.suffix,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String suffix;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      cursorColor: AppColors.accent,
+      style: const TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(
+          color: Color(0xFFBDAA98),
+          fontWeight: FontWeight.w700,
+        ),
+        suffixText: suffix,
+        suffixStyle: const TextStyle(
+          color: Color(0xFFBDAA98),
+          fontWeight: FontWeight.w800,
+        ),
+        filled: true,
+        fillColor: const Color(0xFF171009),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 13,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+        ),
+      ),
     );
   }
 }
@@ -905,10 +1962,7 @@ class _ToursFilterChip extends StatelessWidget {
 }
 
 class _ToursSegmentItem<T> {
-  const _ToursSegmentItem({
-    required this.value,
-    required this.label,
-  });
+  const _ToursSegmentItem({required this.value, required this.label});
 
   final T value;
   final String label;
@@ -1031,21 +2085,32 @@ class TourListCard extends StatelessWidget {
   const TourListCard({
     super.key,
     required this.tour,
+    required this.languageCode,
     required this.seed,
+    this.localizedLandmark,
     this.onTap,
   });
 
   final TourVm tour;
+  final String languageCode;
   final int seed;
+  final AttractionVm? localizedLandmark;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final location = _primaryLocation(tour);
     final duration = _formatDuration(context, tour.durationMinutes);
+    final meta = _formatMeta(context, tour, duration);
     final price = _formatPrice(context, tour);
     final category = _categoryLabel(l10n, tour.categorySlug);
+    final displayTitle = localizedTourTitle(
+      languageCode: languageCode,
+      tour: tour,
+      attraction: localizedLandmark,
+      fallback: category,
+    );
+    final location = _primaryLocation(tour, displayTitle, category);
 
     return Material(
       color: Colors.transparent,
@@ -1071,7 +2136,7 @@ class TourListCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  flex: 7,
+                  flex: 6,
                   child: _TourCoverArt(
                     seed: seed,
                     categorySlug: tour.categorySlug,
@@ -1079,72 +2144,63 @@ class TourListCard extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  flex: 5,
+                  flex: 6,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
+                    padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (location.isNotEmpty) ...[
+                          Text(
+                            location.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.accent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.4,
+                              height: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 7),
+                        ],
                         Text(
-                          location.toUpperCase(),
+                          displayTitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFEADCD0),
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                            height: 1.16,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          price,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.accent,
-                            fontSize: 11,
+                            fontSize: 20,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 1.4,
+                            letterSpacing: 0,
                             height: 1,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: Text(
-                            tour.title.isEmpty ? category : tour.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFEADCD0),
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0,
-                              height: 1.16,
-                            ),
+                        const SizedBox(height: 6),
+                        Text(
+                          meta.isEmpty ? category : meta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFB5A394),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            height: 1,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                duration.isEmpty ? category : duration,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFFB5A394),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1,
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              child: Text(
-                                price,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.end,
-                                style: const TextStyle(
-                                  color: AppColors.accent,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0,
-                                  height: 1,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
@@ -1158,16 +2214,35 @@ class TourListCard extends StatelessWidget {
     );
   }
 
-  String _primaryLocation(TourVm tour) {
+  String _primaryLocation(
+    TourVm tour,
+    String displayTitle,
+    String fallbackLabel,
+  ) {
     final city = tour.cityName?.trim();
-    if (city != null && city.isNotEmpty) return city;
+    if (city != null && city.isNotEmpty && !_isSameLabel(city, displayTitle)) {
+      return city;
+    }
 
-    final landmark = tour.landmarkName?.trim();
-    if (landmark != null && landmark.isNotEmpty) return landmark;
+    final landmark = localizedTourLandmarkName(
+      languageCode: languageCode,
+      tour: tour,
+      attraction: localizedLandmark,
+    ).trim();
+    if (landmark.isNotEmpty && !_isSameLabel(landmark, displayTitle)) {
+      return landmark;
+    }
 
-    return tour.categorySlug?.trim().isNotEmpty == true
-        ? tour.categorySlug!.trim()
-        : 'FlyFy';
+    if (fallbackLabel.trim().isNotEmpty &&
+        !_isSameLabel(fallbackLabel, displayTitle)) {
+      return fallbackLabel.trim();
+    }
+
+    return 'FlyFy';
+  }
+
+  bool _isSameLabel(String left, String right) {
+    return left.trim().toLowerCase() == right.trim().toLowerCase();
   }
 
   String _formatDuration(BuildContext context, int minutes) {
@@ -1187,26 +2262,73 @@ class TourListCard extends StatelessWidget {
     return '$minutes ${l10n.toursDurationMinuteShort}';
   }
 
+  String _formatMeta(BuildContext context, TourVm tour, String duration) {
+    final l10n = AppLocalizations.of(context)!;
+    final parts = <String>[
+      if (duration.trim().isNotEmpty) duration.trim(),
+      if (tour.publishedOffersCount > 0)
+        l10n.toursOffersCount(tour.publishedOffersCount),
+    ];
+    return parts.join(' • ');
+  }
+
   String _formatPrice(BuildContext context, TourVm tour) {
     final l10n = AppLocalizations.of(context)!;
-    if (tour.priceAmount <= 0) return l10n.toursFreePrice;
+    final price = _displayPriceFor(tour);
+    if (price.amount <= 0) return l10n.toursFreePrice;
 
-    final decimalDigits =
-        tour.priceAmount == tour.priceAmount.truncateToDouble() ? 0 : 2;
+    final formatted = _formatMoney(price.amount, price.currency);
+    return l10n.toursPriceFrom(formatted);
+  }
+
+  String _formatMoney(double amount, String currency) {
+    final decimalDigits = amount == amount.truncateToDouble() ? 0 : 2;
 
     try {
       return NumberFormat.simpleCurrency(
-        name: tour.currency,
+        name: currency,
         decimalDigits: decimalDigits,
-      ).format(tour.priceAmount);
+      ).format(amount);
     } catch (_) {
-      return '${tour.priceAmount.toStringAsFixed(decimalDigits)} ${tour.currency}';
+      return '${amount.toStringAsFixed(decimalDigits)} $currency';
     }
+  }
+
+  _TourCardPrice _displayPriceFor(TourVm tour) {
+    return _tourCardPriceFor(tour);
   }
 
   String _categoryLabel(AppLocalizations l10n, String? categorySlug) {
     return localizedTourCategoryLabel(l10n, categorySlug);
   }
+}
+
+_TourCardPrice _tourCardPriceFor(TourVm tour) {
+  final offers = tour.offers;
+  if (offers.isEmpty) {
+    return _TourCardPrice(amount: tour.priceAmount, currency: tour.currency);
+  }
+
+  var selected = _TourCardPrice(
+    amount: offers.first.priceAmount,
+    currency: offers.first.currency,
+  );
+  for (final offer in offers.skip(1)) {
+    if (offer.priceAmount < selected.amount) {
+      selected = _TourCardPrice(
+        amount: offer.priceAmount,
+        currency: offer.currency,
+      );
+    }
+  }
+  return selected;
+}
+
+class _TourCardPrice {
+  const _TourCardPrice({required this.amount, required this.currency});
+
+  final double amount;
+  final String currency;
 }
 
 class _TourCoverArt extends StatelessWidget {
@@ -1232,10 +2354,8 @@ class _TourCoverArt extends StatelessWidget {
           Image.network(
             resolvedImageUrl,
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => _GeneratedTourCover(
-              palette: palette,
-              seed: seed,
-            ),
+            errorBuilder: (_, _, _) =>
+                _GeneratedTourCover(palette: palette, seed: seed),
           )
         else
           _GeneratedTourCover(palette: palette, seed: seed),
@@ -1333,10 +2453,7 @@ class _TourCoverArt extends StatelessWidget {
 }
 
 class _GeneratedTourCover extends StatelessWidget {
-  const _GeneratedTourCover({
-    required this.palette,
-    required this.seed,
-  });
+  const _GeneratedTourCover({required this.palette, required this.seed});
 
   final _TourCoverPalette palette;
   final int seed;
@@ -1446,8 +2563,12 @@ class _ToursLoadingGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
-      padding:
-          EdgeInsets.fromLTRB(horizontalPadding, 26, horizontalPadding, 28),
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        26,
+        horizontalPadding,
+        28,
+      ),
       sliver: SliverGrid.builder(
         itemCount: 6,
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
@@ -1530,10 +2651,7 @@ class _SkeletonLine extends StatelessWidget {
 }
 
 class _ToursEmptyState extends StatelessWidget {
-  const _ToursEmptyState({
-    required this.title,
-    required this.subtitle,
-  });
+  const _ToursEmptyState({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;

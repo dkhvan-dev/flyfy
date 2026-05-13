@@ -2060,6 +2060,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toursSortAffordable => 'Affordable';
 
   @override
+  String get toursSortCreatedAt => 'Created';
+
+  @override
+  String get toursSortRating => 'Rating';
+
+  @override
+  String get toursSortPrice => 'Price';
+
+  @override
+  String get toursSortDuration => 'Duration';
+
+  @override
   String get toursFiltersTitle => 'Filters';
 
   @override
@@ -2078,10 +2090,28 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get toursFilterCountry => 'Country';
+
+  @override
+  String get toursFilterCountryAll => 'All countries';
+
+  @override
+  String get toursFilterCountrySearchHint => 'Search country, code, or phone';
+
+  @override
+  String get toursFilterCountryNoResults => 'Country not found';
+
+  @override
   String get toursFilterCategories => 'Categories';
 
   @override
   String get toursFilterPriceRange => 'Price Range';
+
+  @override
+  String get toursFilterPriceFrom => 'From';
+
+  @override
+  String get toursFilterPriceTo => 'To';
 
   @override
   String get toursFilterBudget => 'Budget';
@@ -2231,6 +2261,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toursFreePrice => 'Free';
 
   @override
+  String toursPriceFrom(Object price) {
+    return 'From $price';
+  }
+
+  @override
+  String toursOffersCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count guides',
+      one: '1 guide',
+      zero: 'No guides yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get toursDurationHourShort => 'h';
 
   @override
@@ -2278,10 +2325,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tourLanguageJapanese => 'Japanese';
 
   @override
+  String get tourLanguageGerman => 'German';
+
+  @override
+  String get tourLanguageSpanish => 'Spanish';
+
+  @override
+  String get tourLanguageTurkish => 'Turkish';
+
+  @override
   String get tourDetailsExperience => 'The Experience';
 
   @override
   String get tourDetailsWhatToExpect => 'What to expect';
+
+  @override
+  String get tourDetailsSelectedOfferIncluded => 'Included with selected guide';
 
   @override
   String get tourDetailsLeadGuide => 'Your Lead Guide';
@@ -2300,6 +2359,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tourDetailsMessageGuide => 'Message Guide';
 
   @override
+  String get tourDetailsOffersTitle => 'Available guides';
+
+  @override
+  String get tourDetailsOffersEmpty => 'No guides available yet';
+
+  @override
+  String get tourDetailsOfferSelected => 'Selected';
+
+  @override
+  String get tourDetailsOfferCurrentUser => 'This is you';
+
+  @override
+  String get tourDetailsOffersSearchHint => 'Search guides or offers';
+
+  @override
+  String get tourDetailsOffersLoadMore => 'Show more guides';
+
+  @override
+  String get tourDetailsOffersLoadFailed => 'Failed to load guides';
+
+  @override
+  String get tourDetailsOffersSortRating => 'Rating';
+
+  @override
+  String get tourDetailsOffersSortExperience => 'Experience';
+
+  @override
+  String get tourDetailsOffersSortPrice => 'Price';
+
+  @override
+  String get tourDetailsOffersFiltersTitle => 'Guide filters';
+
+  @override
+  String get tourDetailsOffersMaxPrice => 'Max price';
+
+  @override
+  String get tourDetailsOffersMaxPriceHint => 'e.g. 50000';
+
+  @override
+  String get tourDetailsOffersMinGroup => 'Minimum group size';
+
+  @override
+  String get tourDetailsOffersMinGroupHint => 'e.g. 4';
+
+  @override
+  String get tourDetailsOffersLanguageAny => 'Any language';
+
+  @override
+  String get tourDetailsOffersLanguageSearchHint => 'Search language or code';
+
+  @override
+  String get tourDetailsOffersLanguageNoResults => 'Language not found';
+
+  @override
+  String get tourDetailsOffersApplyFilters => 'Apply filters';
+
+  @override
   String get tourDetailsMapPreview => 'Route meeting point';
 
   @override
@@ -2313,6 +2429,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tourDetailsBook => 'Book';
+
+  @override
+  String get tourDetailsEditOffer => 'Edit offer';
 
   @override
   String get tourDetailsLoadFailed => 'Failed to load tour';
@@ -2392,13 +2511,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createTourTitle => 'Create Tour';
 
   @override
+  String get createTourEditTitle => 'Edit Offer';
+
+  @override
   String get createTourSubmit => 'Publish';
+
+  @override
+  String get createTourSaveChanges => 'Save';
 
   @override
   String get createTourSuccess => 'Tour published successfully';
 
   @override
+  String get createTourUpdateSuccess => 'Offer updated successfully';
+
+  @override
   String get createTourFailed => 'Failed to create tour';
+
+  @override
+  String get createTourUpdateFailed => 'Failed to update offer';
 
   @override
   String get createTourCoverSection => 'Tour Cover';
@@ -2496,6 +2627,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createTourAddTimeSlot => 'Add Time Slot';
 
   @override
+  String get createTourItineraryEmpty =>
+      'Add at least one route point. It will be shown to tourists in the tour details.';
+
+  @override
   String get createTourAutosaveHint =>
       'Auto-saving progress to your guide profile';
 
@@ -2508,6 +2643,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createTourDurationHint => 'e.g. 4 hours';
+
+  @override
+  String get createTourDurationUnitLabel => 'Unit';
+
+  @override
+  String get createTourDurationUnitMinutes => 'Minutes';
+
+  @override
+  String get createTourDurationUnitHours => 'Hours';
+
+  @override
+  String get createTourDurationUnitDays => 'Days';
 
   @override
   String get createTourDurationValidation =>

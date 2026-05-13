@@ -764,6 +764,7 @@ type GuideAggregate struct {
 	Documents           []*GuideDocument       `protobuf:"bytes,3,rep,name=documents,proto3" json:"documents,omitempty"`
 	Languages           []*GuideLanguage       `protobuf:"bytes,4,rep,name=languages,proto3" json:"languages,omitempty"`
 	Specializations     []*GuideSpecialization `protobuf:"bytes,5,rep,name=specializations,proto3" json:"specializations,omitempty"`
+	UserProfile         *PublicUserProfile     `protobuf:"bytes,6,opt,name=user_profile,json=userProfile,proto3" json:"user_profile,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -829,6 +830,13 @@ func (x *GuideAggregate) GetLanguages() []*GuideLanguage {
 func (x *GuideAggregate) GetSpecializations() []*GuideSpecialization {
 	if x != nil {
 		return x.Specializations
+	}
+	return nil
+}
+
+func (x *GuideAggregate) GetUserProfile() *PublicUserProfile {
+	if x != nil {
+		return x.UserProfile
 	}
 	return nil
 }
@@ -2046,6 +2054,8 @@ type PublicUserProfile struct {
 	Locale        string                 `protobuf:"bytes,5,opt,name=locale,proto3" json:"locale,omitempty"`
 	Timezone      string                 `protobuf:"bytes,6,opt,name=timezone,proto3" json:"timezone,omitempty"`
 	IsPublic      bool                   `protobuf:"varint,7,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
+	FirstName     string                 `protobuf:"bytes,8,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName      string                 `protobuf:"bytes,9,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2129,6 +2139,20 @@ func (x *PublicUserProfile) GetIsPublic() bool {
 	return false
 }
 
+func (x *PublicUserProfile) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *PublicUserProfile) GetLastName() string {
+	if x != nil {
+		return x.LastName
+	}
+	return ""
+}
+
 var File_guide_v1_guide_proto protoreflect.FileDescriptor
 
 const file_guide_v1_guide_proto_rawDesc = "" +
@@ -2182,13 +2206,14 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x05R\x06offset\"K\n" +
 	"\x18ListPublicGuidesResponse\x12/\n" +
-	"\x05items\x18\x01 \x03(\v2\x19.guide.v1.PublicGuideCardR\x05items\"\xcb\x02\n" +
+	"\x05items\x18\x01 \x03(\v2\x19.guide.v1.PublicGuideCardR\x05items\"\x8b\x03\n" +
 	"\x0eGuideAggregate\x120\n" +
 	"\aprofile\x18\x01 \x01(\v2\x16.guide.v1.GuideProfileR\aprofile\x12P\n" +
 	"\x14verification_request\x18\x02 \x01(\v2\x1d.guide.v1.VerificationRequestR\x13verificationRequest\x125\n" +
 	"\tdocuments\x18\x03 \x03(\v2\x17.guide.v1.GuideDocumentR\tdocuments\x125\n" +
 	"\tlanguages\x18\x04 \x03(\v2\x17.guide.v1.GuideLanguageR\tlanguages\x12G\n" +
-	"\x0fspecializations\x18\x05 \x03(\v2\x1d.guide.v1.GuideSpecializationR\x0fspecializations\"\x95\x04\n" +
+	"\x0fspecializations\x18\x05 \x03(\v2\x1d.guide.v1.GuideSpecializationR\x0fspecializations\x12>\n" +
+	"\fuser_profile\x18\x06 \x01(\v2\x1b.guide.v1.PublicUserProfileR\vuserProfile\"\x95\x04\n" +
 	"\fGuideProfile\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x12\n" +
@@ -2288,7 +2313,7 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\"\x8e\x01\n" +
 	"\x0fPublicGuideCard\x12;\n" +
 	"\rguide_profile\x18\x01 \x01(\v2\x16.guide.v1.GuideProfileR\fguideProfile\x12>\n" +
-	"\fuser_profile\x18\x02 \x01(\v2\x1b.guide.v1.PublicUserProfileR\vuserProfile\"\xe9\x01\n" +
+	"\fuser_profile\x18\x02 \x01(\v2\x1b.guide.v1.PublicUserProfileR\vuserProfile\"\xa5\x02\n" +
 	"\x11PublicUserProfile\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12$\n" +
@@ -2296,7 +2321,10 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"\fcountry_code\x18\x04 \x01(\tR\vcountryCode\x12\x16\n" +
 	"\x06locale\x18\x05 \x01(\tR\x06locale\x12\x1a\n" +
 	"\btimezone\x18\x06 \x01(\tR\btimezone\x12\x1b\n" +
-	"\tis_public\x18\a \x01(\bR\bisPublic2\xc0\n" +
+	"\tis_public\x18\a \x01(\bR\bisPublic\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\b \x01(\tR\tfirstName\x12\x1b\n" +
+	"\tlast_name\x18\t \x01(\tR\blastName2\xc0\n" +
 	"\n" +
 	"\fGuideService\x12n\n" +
 	"\x17GetOrCreateGuideProfile\x12(.guide.v1.GetOrCreateGuideProfileRequest\x1a).guide.v1.GetOrCreateGuideProfileResponse\x12b\n" +
@@ -2377,42 +2405,43 @@ var file_guide_v1_guide_proto_depIdxs = []int32{
 	17, // 11: guide.v1.GuideAggregate.documents:type_name -> guide.v1.GuideDocument
 	18, // 12: guide.v1.GuideAggregate.languages:type_name -> guide.v1.GuideLanguage
 	19, // 13: guide.v1.GuideAggregate.specializations:type_name -> guide.v1.GuideSpecialization
-	14, // 14: guide.v1.ApproveVerificationRequestResponse.aggregate:type_name -> guide.v1.GuideAggregate
-	14, // 15: guide.v1.RejectVerificationRequestResponse.aggregate:type_name -> guide.v1.GuideAggregate
-	14, // 16: guide.v1.SuspendGuideProfileResponse.aggregate:type_name -> guide.v1.GuideAggregate
-	14, // 17: guide.v1.ActivateGuideProfileResponse.aggregate:type_name -> guide.v1.GuideAggregate
-	32, // 18: guide.v1.ListPendingVerificationRequestsResponse.items:type_name -> guide.v1.VerificationQueueItem
-	15, // 19: guide.v1.PublicGuideCard.guide_profile:type_name -> guide.v1.GuideProfile
-	34, // 20: guide.v1.PublicGuideCard.user_profile:type_name -> guide.v1.PublicUserProfile
-	0,  // 21: guide.v1.GuideService.GetOrCreateGuideProfile:input_type -> guide.v1.GetOrCreateGuideProfileRequest
-	2,  // 22: guide.v1.GuideService.GetGuideProfileById:input_type -> guide.v1.GetGuideProfileByIdRequest
-	4,  // 23: guide.v1.GuideService.GetGuideProfileByUserId:input_type -> guide.v1.GetGuideProfileByUserIdRequest
-	6,  // 24: guide.v1.GuideService.UpdateGuideProfile:input_type -> guide.v1.UpdateGuideProfileRequest
-	8,  // 25: guide.v1.GuideService.CreateVerificationRequest:input_type -> guide.v1.CreateVerificationRequestRequest
-	10, // 26: guide.v1.GuideService.AttachVerificationDocument:input_type -> guide.v1.AttachVerificationDocumentRequest
-	12, // 27: guide.v1.GuideService.ListPublicGuides:input_type -> guide.v1.ListPublicGuidesRequest
-	22, // 28: guide.v1.GuideService.ApproveVerificationRequest:input_type -> guide.v1.ApproveVerificationRequestRequest
-	24, // 29: guide.v1.GuideService.RejectVerificationRequest:input_type -> guide.v1.RejectVerificationRequestRequest
-	26, // 30: guide.v1.GuideService.SuspendGuideProfile:input_type -> guide.v1.SuspendGuideProfileRequest
-	28, // 31: guide.v1.GuideService.ActivateGuideProfile:input_type -> guide.v1.ActivateGuideProfileRequest
-	30, // 32: guide.v1.GuideService.ListPendingVerificationRequests:input_type -> guide.v1.ListPendingVerificationRequestsRequest
-	1,  // 33: guide.v1.GuideService.GetOrCreateGuideProfile:output_type -> guide.v1.GetOrCreateGuideProfileResponse
-	3,  // 34: guide.v1.GuideService.GetGuideProfileById:output_type -> guide.v1.GetGuideProfileByIdResponse
-	5,  // 35: guide.v1.GuideService.GetGuideProfileByUserId:output_type -> guide.v1.GetGuideProfileByUserIdResponse
-	7,  // 36: guide.v1.GuideService.UpdateGuideProfile:output_type -> guide.v1.UpdateGuideProfileResponse
-	9,  // 37: guide.v1.GuideService.CreateVerificationRequest:output_type -> guide.v1.CreateVerificationRequestResponse
-	11, // 38: guide.v1.GuideService.AttachVerificationDocument:output_type -> guide.v1.AttachVerificationDocumentResponse
-	13, // 39: guide.v1.GuideService.ListPublicGuides:output_type -> guide.v1.ListPublicGuidesResponse
-	23, // 40: guide.v1.GuideService.ApproveVerificationRequest:output_type -> guide.v1.ApproveVerificationRequestResponse
-	25, // 41: guide.v1.GuideService.RejectVerificationRequest:output_type -> guide.v1.RejectVerificationRequestResponse
-	27, // 42: guide.v1.GuideService.SuspendGuideProfile:output_type -> guide.v1.SuspendGuideProfileResponse
-	29, // 43: guide.v1.GuideService.ActivateGuideProfile:output_type -> guide.v1.ActivateGuideProfileResponse
-	31, // 44: guide.v1.GuideService.ListPendingVerificationRequests:output_type -> guide.v1.ListPendingVerificationRequestsResponse
-	33, // [33:45] is the sub-list for method output_type
-	21, // [21:33] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	34, // 14: guide.v1.GuideAggregate.user_profile:type_name -> guide.v1.PublicUserProfile
+	14, // 15: guide.v1.ApproveVerificationRequestResponse.aggregate:type_name -> guide.v1.GuideAggregate
+	14, // 16: guide.v1.RejectVerificationRequestResponse.aggregate:type_name -> guide.v1.GuideAggregate
+	14, // 17: guide.v1.SuspendGuideProfileResponse.aggregate:type_name -> guide.v1.GuideAggregate
+	14, // 18: guide.v1.ActivateGuideProfileResponse.aggregate:type_name -> guide.v1.GuideAggregate
+	32, // 19: guide.v1.ListPendingVerificationRequestsResponse.items:type_name -> guide.v1.VerificationQueueItem
+	15, // 20: guide.v1.PublicGuideCard.guide_profile:type_name -> guide.v1.GuideProfile
+	34, // 21: guide.v1.PublicGuideCard.user_profile:type_name -> guide.v1.PublicUserProfile
+	0,  // 22: guide.v1.GuideService.GetOrCreateGuideProfile:input_type -> guide.v1.GetOrCreateGuideProfileRequest
+	2,  // 23: guide.v1.GuideService.GetGuideProfileById:input_type -> guide.v1.GetGuideProfileByIdRequest
+	4,  // 24: guide.v1.GuideService.GetGuideProfileByUserId:input_type -> guide.v1.GetGuideProfileByUserIdRequest
+	6,  // 25: guide.v1.GuideService.UpdateGuideProfile:input_type -> guide.v1.UpdateGuideProfileRequest
+	8,  // 26: guide.v1.GuideService.CreateVerificationRequest:input_type -> guide.v1.CreateVerificationRequestRequest
+	10, // 27: guide.v1.GuideService.AttachVerificationDocument:input_type -> guide.v1.AttachVerificationDocumentRequest
+	12, // 28: guide.v1.GuideService.ListPublicGuides:input_type -> guide.v1.ListPublicGuidesRequest
+	22, // 29: guide.v1.GuideService.ApproveVerificationRequest:input_type -> guide.v1.ApproveVerificationRequestRequest
+	24, // 30: guide.v1.GuideService.RejectVerificationRequest:input_type -> guide.v1.RejectVerificationRequestRequest
+	26, // 31: guide.v1.GuideService.SuspendGuideProfile:input_type -> guide.v1.SuspendGuideProfileRequest
+	28, // 32: guide.v1.GuideService.ActivateGuideProfile:input_type -> guide.v1.ActivateGuideProfileRequest
+	30, // 33: guide.v1.GuideService.ListPendingVerificationRequests:input_type -> guide.v1.ListPendingVerificationRequestsRequest
+	1,  // 34: guide.v1.GuideService.GetOrCreateGuideProfile:output_type -> guide.v1.GetOrCreateGuideProfileResponse
+	3,  // 35: guide.v1.GuideService.GetGuideProfileById:output_type -> guide.v1.GetGuideProfileByIdResponse
+	5,  // 36: guide.v1.GuideService.GetGuideProfileByUserId:output_type -> guide.v1.GetGuideProfileByUserIdResponse
+	7,  // 37: guide.v1.GuideService.UpdateGuideProfile:output_type -> guide.v1.UpdateGuideProfileResponse
+	9,  // 38: guide.v1.GuideService.CreateVerificationRequest:output_type -> guide.v1.CreateVerificationRequestResponse
+	11, // 39: guide.v1.GuideService.AttachVerificationDocument:output_type -> guide.v1.AttachVerificationDocumentResponse
+	13, // 40: guide.v1.GuideService.ListPublicGuides:output_type -> guide.v1.ListPublicGuidesResponse
+	23, // 41: guide.v1.GuideService.ApproveVerificationRequest:output_type -> guide.v1.ApproveVerificationRequestResponse
+	25, // 42: guide.v1.GuideService.RejectVerificationRequest:output_type -> guide.v1.RejectVerificationRequestResponse
+	27, // 43: guide.v1.GuideService.SuspendGuideProfile:output_type -> guide.v1.SuspendGuideProfileResponse
+	29, // 44: guide.v1.GuideService.ActivateGuideProfile:output_type -> guide.v1.ActivateGuideProfileResponse
+	31, // 45: guide.v1.GuideService.ListPendingVerificationRequests:output_type -> guide.v1.ListPendingVerificationRequestsResponse
+	34, // [34:46] is the sub-list for method output_type
+	22, // [22:34] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_guide_v1_guide_proto_init() }

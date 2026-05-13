@@ -21,6 +21,8 @@ class TourLocationSelection {
     this.mapUrl,
     this.coverFileId,
     this.coverImageUrl,
+    this.translations = const {},
+    this.categorySlug = '',
   });
 
   final String id;
@@ -32,12 +34,38 @@ class TourLocationSelection {
   final String? mapUrl;
   final String? coverFileId;
   final String? coverImageUrl;
+  final Map<String, TourLocationLocalizedCopy> translations;
+  final String categorySlug;
 
   factory TourLocationSelection.fromAttraction(AttractionVm attraction) {
     final mapUrl = attraction.locationSourceUrl.trim();
     final coverMedia = attraction.coverMedia;
     final coverImageUrl =
         coverMedia == null ? null : resolveAttractionMediaUrl(coverMedia);
+    final translations = <String, TourLocationLocalizedCopy>{};
+    for (final entry in attraction.translations.entries) {
+      final locale = entry.key.trim().toLowerCase().replaceAll('_', '-');
+      if (locale.isEmpty) continue;
+      final title = entry.value.title.trim();
+      final description = entry.value.description.trim();
+      if (title.isEmpty && description.isEmpty) continue;
+      translations[locale] = TourLocationLocalizedCopy(
+        title: title,
+        description: description,
+      );
+    }
+    final locale = attraction.locale.trim().toLowerCase().replaceAll('_', '-');
+    if (locale.isNotEmpty &&
+        (attraction.title.trim().isNotEmpty ||
+            attraction.description.trim().isNotEmpty)) {
+      translations.putIfAbsent(
+        locale,
+        () => TourLocationLocalizedCopy(
+          title: attraction.title.trim(),
+          description: attraction.description.trim(),
+        ),
+      );
+    }
     return TourLocationSelection(
       id: attraction.id,
       name: attraction.title,
@@ -47,8 +75,22 @@ class TourLocationSelection {
       mapUrl: mapUrl.isEmpty ? null : mapUrl,
       coverFileId: attraction.coverFileId,
       coverImageUrl: coverImageUrl,
+      translations: translations,
+      categorySlug: attraction.category.trim(),
     );
   }
+}
+
+class TourLocationLocalizedCopy {
+  const TourLocationLocalizedCopy({
+    this.title = '',
+    this.summary = '',
+    this.description = '',
+  });
+
+  final String title;
+  final String summary;
+  final String description;
 }
 
 class TourLocationPickerArgs {
@@ -415,9 +457,7 @@ class _LocationTopBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF21160C).withValues(alpha: 0.96),
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.accent.withValues(alpha: 0.14),
-          ),
+          bottom: BorderSide(color: AppColors.accent.withValues(alpha: 0.14)),
         ),
       ),
       child: Row(

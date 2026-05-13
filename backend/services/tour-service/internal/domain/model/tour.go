@@ -36,6 +36,7 @@ const (
 	minTourSummaryLength     = 3
 	maxTourSummaryLength     = 240
 	minTourDescriptionLength = 20
+	maxTourDescriptionLength = 5000
 	maxTourDurationMinutes   = 30 * 24 * 60
 	minTourDurationMinutes   = 15
 	minTourGroupSize         = 1
@@ -43,18 +44,33 @@ const (
 	maxTourPrice             = 1000000
 )
 
+type TourLocalizedCopy struct {
+	Title       string `json:"title,omitempty"`
+	Summary     string `json:"summary,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type TourTranslations map[string]TourLocalizedCopy
+
 type Tour struct {
-	ID             uuid.UUID
-	GuideProfileID uuid.UUID
-	GuideUserID    uuid.UUID
+	ID                   uuid.UUID
+	GuideProfileID       uuid.UUID
+	GuideUserID          uuid.UUID
+	GuideRatingAvg       float64
+	GuideReviewsCount    int
+	GuideExperienceYears int
+	GuideDisplayName     string
+	GuideSearchText      string
 
 	LandmarkID   *uuid.UUID
 	LandmarkName *string
 
-	Title        string
-	Summary      string
-	Description  string
-	CategorySlug string
+	Title               string
+	Summary             string
+	Description         string
+	Translations        TourTranslations
+	CategorySlug        string
+	ProductTranslations TourTranslations
 
 	Status     enum.TourStatus
 	Visibility enum.TourVisibility
@@ -80,15 +96,22 @@ type Tour struct {
 }
 
 type NewTourParams struct {
-	GuideProfileID uuid.UUID
-	GuideUserID    uuid.UUID
-	LandmarkID     *uuid.UUID
-	LandmarkName   *string
-	Title          string
-	Summary        string
-	Description    string
-	CategorySlug   string
-	Visibility     enum.TourVisibility
+	GuideProfileID       uuid.UUID
+	GuideUserID          uuid.UUID
+	GuideRatingAvg       float64
+	GuideReviewsCount    int
+	GuideExperienceYears int
+	GuideDisplayName     string
+	GuideSearchText      string
+	LandmarkID           *uuid.UUID
+	LandmarkName         *string
+	Title                string
+	Summary              string
+	Description          string
+	Translations         TourTranslations
+	CategorySlug         string
+	ProductTranslations  TourTranslations
+	Visibility           enum.TourVisibility
 
 	DurationMinutes int
 	MaxGroupSize    int
@@ -112,30 +135,37 @@ func NewTour(params NewTourParams) (*Tour, error) {
 	}
 
 	item := &Tour{
-		ID:              uuid.New(),
-		GuideProfileID:  params.GuideProfileID,
-		GuideUserID:     params.GuideUserID,
-		LandmarkID:      params.LandmarkID,
-		LandmarkName:    NormalizeOptionalString(params.LandmarkName),
-		Title:           strings.TrimSpace(params.Title),
-		Summary:         strings.TrimSpace(params.Summary),
-		Description:     strings.TrimSpace(params.Description),
-		CategorySlug:    NormalizeSlug(params.CategorySlug),
-		Status:          enum.TourStatusDraft,
-		Visibility:      visibility,
-		DurationMinutes: params.DurationMinutes,
-		MaxGroupSize:    params.MaxGroupSize,
-		CountryCode:     NormalizeOptionalString(params.CountryCode),
-		CityName:        NormalizeOptionalString(params.CityName),
-		MeetingPoint:    strings.TrimSpace(params.MeetingPoint),
-		Latitude:        params.Latitude,
-		Longitude:       params.Longitude,
-		MapURL:          NormalizeOptionalString(params.MapURL),
-		PriceAmount:     params.PriceAmount,
-		Currency:        strings.ToUpper(strings.TrimSpace(params.Currency)),
-		Revision:        1,
-		CreatedAt:       now,
-		UpdatedAt:       now,
+		ID:                   uuid.New(),
+		GuideProfileID:       params.GuideProfileID,
+		GuideUserID:          params.GuideUserID,
+		GuideRatingAvg:       normalizeGuideRatingAvg(params.GuideRatingAvg),
+		GuideReviewsCount:    normalizeNonNegativeInt(params.GuideReviewsCount),
+		GuideExperienceYears: normalizeNonNegativeInt(params.GuideExperienceYears),
+		GuideDisplayName:     normalizeGuideSnapshotText(params.GuideDisplayName),
+		GuideSearchText:      normalizeGuideSnapshotText(params.GuideSearchText),
+		LandmarkID:           params.LandmarkID,
+		LandmarkName:         NormalizeOptionalString(params.LandmarkName),
+		Title:                strings.TrimSpace(params.Title),
+		Summary:              strings.TrimSpace(params.Summary),
+		Description:          strings.TrimSpace(params.Description),
+		Translations:         NormalizeTourTranslations(params.Translations),
+		CategorySlug:         NormalizeSlug(params.CategorySlug),
+		ProductTranslations:  NormalizeTourTranslations(params.ProductTranslations),
+		Status:               enum.TourStatusDraft,
+		Visibility:           visibility,
+		DurationMinutes:      params.DurationMinutes,
+		MaxGroupSize:         params.MaxGroupSize,
+		CountryCode:          NormalizeOptionalString(params.CountryCode),
+		CityName:             NormalizeOptionalString(params.CityName),
+		MeetingPoint:         strings.TrimSpace(params.MeetingPoint),
+		Latitude:             params.Latitude,
+		Longitude:            params.Longitude,
+		MapURL:               NormalizeOptionalString(params.MapURL),
+		PriceAmount:          params.PriceAmount,
+		Currency:             strings.ToUpper(strings.TrimSpace(params.Currency)),
+		Revision:             1,
+		CreatedAt:            now,
+		UpdatedAt:            now,
 	}
 
 	if err := item.Validate(); err != nil {
@@ -146,13 +176,15 @@ func NewTour(params NewTourParams) (*Tour, error) {
 }
 
 type UpdateTourParams struct {
-	LandmarkID   *uuid.UUID
-	LandmarkName *string
-	Title        string
-	Summary      string
-	Description  string
-	CategorySlug string
-	Visibility   enum.TourVisibility
+	LandmarkID          *uuid.UUID
+	LandmarkName        *string
+	Title               string
+	Summary             string
+	Description         string
+	Translations        TourTranslations
+	CategorySlug        string
+	ProductTranslations TourTranslations
+	Visibility          enum.TourVisibility
 
 	DurationMinutes int
 	MaxGroupSize    int
@@ -178,7 +210,9 @@ func (t *Tour) ApplyUpdate(params UpdateTourParams) error {
 	t.Title = strings.TrimSpace(params.Title)
 	t.Summary = strings.TrimSpace(params.Summary)
 	t.Description = strings.TrimSpace(params.Description)
+	t.Translations = NormalizeTourTranslations(params.Translations)
 	t.CategorySlug = NormalizeSlug(params.CategorySlug)
+	t.ProductTranslations = NormalizeTourTranslations(params.ProductTranslations)
 	if strings.TrimSpace(string(params.Visibility)) == "" {
 		t.Visibility = enum.TourVisibilityPublic
 	} else {
@@ -198,6 +232,20 @@ func (t *Tour) ApplyUpdate(params UpdateTourParams) error {
 	t.UpdatedAt = time.Now().UTC()
 
 	return t.Validate()
+}
+
+func (t *Tour) ApplyGuideSnapshot(
+	ratingAvg float64,
+	reviewsCount int,
+	experienceYears int,
+	displayName string,
+	searchText string,
+) {
+	t.GuideRatingAvg = normalizeGuideRatingAvg(ratingAvg)
+	t.GuideReviewsCount = normalizeNonNegativeInt(reviewsCount)
+	t.GuideExperienceYears = normalizeNonNegativeInt(experienceYears)
+	t.GuideDisplayName = normalizeGuideSnapshotText(displayName)
+	t.GuideSearchText = normalizeGuideSnapshotText(searchText)
 }
 
 func (t *Tour) Validate() error {
@@ -220,6 +268,12 @@ func (t *Tour) Validate() error {
 	}
 	if len(strings.TrimSpace(t.Description)) < minTourDescriptionLength {
 		return ErrInvalidTourDescription
+	}
+	if err := validateTourTranslations(t.Translations); err != nil {
+		return err
+	}
+	if err := validateTourTranslations(t.ProductTranslations); err != nil {
+		return err
 	}
 	if strings.TrimSpace(t.CategorySlug) == "" {
 		return ErrInvalidTourCategory
@@ -323,6 +377,75 @@ func (t *Tour) IsPubliclyReadable() bool {
 
 func (t *Tour) IsOwnedBy(userID uuid.UUID) bool {
 	return userID != uuid.Nil && t.GuideUserID == userID
+}
+
+func normalizeGuideRatingAvg(value float64) float64 {
+	if value < 0 {
+		return 0
+	}
+	if value > 5 {
+		return 5
+	}
+	return value
+}
+
+func normalizeNonNegativeInt(value int) int {
+	if value < 0 {
+		return 0
+	}
+	return value
+}
+
+func normalizeGuideSnapshotText(value string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(value)), " ")
+}
+
+func NormalizeTourTranslations(input TourTranslations) TourTranslations {
+	if len(input) == 0 {
+		return nil
+	}
+
+	result := make(TourTranslations, len(input))
+	for locale, copy := range input {
+		normalizedLocale := normalizeLocaleCode(locale)
+		if normalizedLocale == "" {
+			continue
+		}
+		normalizedCopy := TourLocalizedCopy{
+			Title:       strings.Join(strings.Fields(strings.TrimSpace(copy.Title)), " "),
+			Summary:     strings.Join(strings.Fields(strings.TrimSpace(copy.Summary)), " "),
+			Description: strings.TrimSpace(copy.Description),
+		}
+		if normalizedCopy.Title == "" && normalizedCopy.Summary == "" && normalizedCopy.Description == "" {
+			continue
+		}
+		result[normalizedLocale] = normalizedCopy
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+func normalizeLocaleCode(value string) string {
+	code := strings.ToLower(strings.TrimSpace(value))
+	code = strings.ReplaceAll(code, "_", "-")
+	return code
+}
+
+func validateTourTranslations(input TourTranslations) error {
+	for _, copy := range input {
+		if titleLen := len(strings.TrimSpace(copy.Title)); titleLen > maxTourTitleLength {
+			return ErrInvalidTourTitle
+		}
+		if summaryLen := len(strings.TrimSpace(copy.Summary)); summaryLen > maxTourSummaryLength {
+			return ErrInvalidTourSummary
+		}
+		if descriptionLen := len(strings.TrimSpace(copy.Description)); descriptionLen > maxTourDescriptionLength {
+			return ErrInvalidTourDescription
+		}
+	}
+	return nil
 }
 
 func normalizeLanguageCodes(values []string) []string {

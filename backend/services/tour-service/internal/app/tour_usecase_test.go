@@ -17,8 +17,10 @@ type tourRepoStub struct {
 	createdTour       *model.Tour
 	createdRelations  port.TourRelations
 	gotTour           *model.Tour
+	gotOffer          *model.TourOffer
 	savedTour         *model.Tour
 	savedRelations    port.TourRelations
+	createdBooking    *model.TourBooking
 	loadedRelations   port.TourRelations
 	createAggregateFn func(ctx context.Context, item *model.Tour, relations port.TourRelations) error
 }
@@ -59,6 +61,31 @@ func (s *tourRepoStub) CreateTourEvent(ctx context.Context, item *model.TourEven
 	return nil
 }
 
+func (s *tourRepoStub) ListTourProductCards(ctx context.Context, filter port.TourProductFilter) ([]*model.TourProductCard, error) {
+	return nil, nil
+}
+
+func (s *tourRepoStub) GetTourProductCardByID(ctx context.Context, productID uuid.UUID) (*model.TourProductCard, error) {
+	return nil, nil
+}
+
+func (s *tourRepoStub) ListTourOffers(ctx context.Context, filter port.TourOfferFilter) ([]*model.TourOffer, error) {
+	return nil, nil
+}
+
+func (s *tourRepoStub) GetTourOfferByID(ctx context.Context, offerID uuid.UUID) (*model.TourOffer, error) {
+	return s.gotOffer, nil
+}
+
+func (s *tourRepoStub) LoadTourOfferRelations(ctx context.Context, offerID uuid.UUID) (port.TourOfferRelations, error) {
+	return port.TourOfferRelations{}, nil
+}
+
+func (s *tourRepoStub) CreateTourBooking(ctx context.Context, item *model.TourBooking) error {
+	s.createdBooking = item
+	return nil
+}
+
 type guideVerifierStub struct {
 	result port.GuideTourPermission
 	err    error
@@ -93,9 +120,6 @@ func TestCreateTourRequiresActiveTourGuide(t *testing.T) {
 
 	_, err := uc.CreateTour(context.Background(), CreateTourInput{
 		ActorUserID:     uuid.New(),
-		Title:           "Almaty Mountain Escape",
-		Summary:         "Private mountain route",
-		Description:     "A guided route through the most scenic mountain stops around Almaty.",
 		CategorySlug:    "nature",
 		DurationMinutes: 240,
 		MaxGroupSize:    8,
@@ -116,6 +140,39 @@ func TestCreateTourRequiresActiveTourGuide(t *testing.T) {
 	}
 }
 
+func TestCreateTourRequiresAttraction(t *testing.T) {
+	repo := &tourRepoStub{}
+	actorUserID := uuid.New()
+	uc := NewTourUseCase(repo, guideVerifierStub{
+		result: port.GuideTourPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil)
+
+	_, err := uc.CreateTour(context.Background(), CreateTourInput{
+		ActorUserID:     actorUserID,
+		LandmarkName:    stringPtr("Custom place"),
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+		Itinerary: []TourItineraryItemInput{
+			{StartOffsetMinutes: 0, Title: "Hotel departure", Description: "Meet your guide and start the route."},
+		},
+	})
+
+	if !errors.Is(err, ErrTourAttractionRequired) {
+		t.Fatalf("error = %v, want %v", err, ErrTourAttractionRequired)
+	}
+	if repo.createdTour != nil {
+		t.Fatal("tour was persisted without an attraction")
+	}
+}
+
 func TestCreateTourPersistsDraftAggregate(t *testing.T) {
 	coverFileID := uuid.New()
 	repo := &tourRepoStub{}
@@ -132,12 +189,9 @@ func TestCreateTourPersistsDraftAggregate(t *testing.T) {
 
 	aggregate, err := uc.CreateTour(context.Background(), CreateTourInput{
 		ActorUserID:     actorUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
 		LandmarkName:    stringPtr("Medeu"),
-		Title:           "Almaty Mountain Escape",
-		Summary:         "Private mountain route",
-		Description:     "A guided route through the most scenic mountain stops around Almaty.",
 		CategorySlug:    "nature",
-		Tags:            []string{"mountains", "private"},
 		Visibility:      "PUBLIC",
 		DurationMinutes: 240,
 		MaxGroupSize:    8,
@@ -146,7 +200,10 @@ func TestCreateTourPersistsDraftAggregate(t *testing.T) {
 		PriceAmount:     120,
 		Currency:        "usd",
 		CoverFileID:     &coverFileID,
-		IncludedItems:   []string{"Private SUV", "Gourmet picnic"},
+		IncludedItems: []TourIncludedItemInput{
+			{Text: "transport"},
+			{Text: "food"},
+		},
 		Itinerary: []TourItineraryItemInput{
 			{StartOffsetMinutes: 0, Title: "Hotel departure", Description: "Meet your guide and start the route."},
 		},
@@ -170,6 +227,96 @@ func TestCreateTourPersistsDraftAggregate(t *testing.T) {
 	if files.bound == nil || *files.bound != coverFileID {
 		t.Fatal("cover file was not bound to the tour")
 	}
+	if len(repo.createdRelations.IncludedItems) != 2 ||
+		repo.createdRelations.IncludedItems[0].Text != "food" ||
+		repo.createdRelations.IncludedItems[1].Text != "transport" {
+		t.Fatalf("included items = %#v, want stable dictionary keys", repo.createdRelations.IncludedItems)
+	}
+}
+
+func TestCreateTourRejectsFreeTextIncludedItem(t *testing.T) {
+	repo := &tourRepoStub{}
+	actorUserID := uuid.New()
+	uc := NewTourUseCase(repo, guideVerifierStub{
+		result: port.GuideTourPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil)
+
+	_, err := uc.CreateTour(context.Background(), CreateTourInput{
+		ActorUserID:     actorUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		CategorySlug:    "nature",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+		IncludedItems: []TourIncludedItemInput{
+			{Text: "Private SUV"},
+		},
+		Itinerary: []TourItineraryItemInput{
+			{StartOffsetMinutes: 0, Title: "Hotel departure", Description: "Meet your guide and start the route."},
+		},
+	})
+
+	if !errors.Is(err, ErrInvalidTourIncludedItem) {
+		t.Fatalf("error = %v, want %v", err, ErrInvalidTourIncludedItem)
+	}
+	if repo.createdTour != nil {
+		t.Fatal("tour was persisted with a free-text included item")
+	}
+}
+
+func TestCreateTourPersistsGuideSearchSnapshot(t *testing.T) {
+	repo := &tourRepoStub{}
+	guideProfileID := uuid.New()
+	actorUserID := uuid.New()
+	uc := NewTourUseCase(repo, guideVerifierStub{
+		result: port.GuideTourPermission{
+			GuideProfileID:  guideProfileID,
+			GuideUserID:     actorUserID,
+			Allowed:         true,
+			DisplayName:     "Aruzhan T.",
+			GuideSearchText: "Aruzhan T. @aru_t local canyon expert",
+		},
+	}, nil)
+
+	aggregate, err := uc.CreateTour(context.Background(), CreateTourInput{
+		ActorUserID:     actorUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Charyn Canyon"),
+		CategorySlug:    "nature",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+		Itinerary: []TourItineraryItemInput{
+			{StartOffsetMinutes: 0, Title: "Hotel departure", Description: "Meet your guide and start the route."},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("CreateTour() error = %v", err)
+	}
+	if aggregate.Tour.GuideDisplayName != "Aruzhan T." {
+		t.Fatalf("guide display name = %q, want snapshot display name", aggregate.Tour.GuideDisplayName)
+	}
+	if aggregate.Tour.GuideSearchText != "Aruzhan T. @aru_t local canyon expert" {
+		t.Fatalf("guide search text = %q, want snapshot search text", aggregate.Tour.GuideSearchText)
+	}
+	if repo.createdTour.GuideDisplayName != aggregate.Tour.GuideDisplayName ||
+		repo.createdTour.GuideSearchText != aggregate.Tour.GuideSearchText {
+		t.Fatal("guide search snapshot was not persisted with the tour aggregate")
+	}
 }
 
 func TestUpdateTourRejectsNonOwner(t *testing.T) {
@@ -177,6 +324,8 @@ func TestUpdateTourRejectsNonOwner(t *testing.T) {
 	tour, err := model.NewTour(model.NewTourParams{
 		GuideProfileID:  uuid.New(),
 		GuideUserID:     ownerID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
 		Title:           "Almaty Mountain Escape",
 		Summary:         "Private mountain route",
 		Description:     "A guided route through the most scenic mountain stops around Almaty.",
@@ -198,9 +347,6 @@ func TestUpdateTourRejectsNonOwner(t *testing.T) {
 	_, err = uc.UpdateTour(context.Background(), UpdateTourInput{
 		ActorUserID:     uuid.New(),
 		TourID:          tour.ID,
-		Title:           "Updated",
-		Summary:         "Updated summary",
-		Description:     "Updated guided route through the most scenic mountain stops around Almaty.",
 		CategorySlug:    "nature",
 		DurationMinutes: 240,
 		MaxGroupSize:    8,
@@ -227,6 +373,8 @@ func TestUpdatePublishedTourKeepsOriginalPublicationTime(t *testing.T) {
 	tour, err := model.NewTour(model.NewTourParams{
 		GuideProfileID:  uuid.New(),
 		GuideUserID:     ownerID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
 		Title:           "Almaty Mountain Escape",
 		Summary:         "Private mountain route",
 		Description:     "A guided route through the most scenic mountain stops around Almaty.",
@@ -256,9 +404,6 @@ func TestUpdatePublishedTourKeepsOriginalPublicationTime(t *testing.T) {
 	_, err = uc.UpdateTour(context.Background(), UpdateTourInput{
 		ActorUserID:     ownerID,
 		TourID:          tour.ID,
-		Title:           "Almaty Mountain Escape Updated",
-		Summary:         "Updated private mountain route",
-		Description:     "An updated guided route through the most scenic mountain stops around Almaty.",
 		CategorySlug:    "nature",
 		Visibility:      string(enum.TourVisibilityPublic),
 		DurationMinutes: 260,
@@ -285,6 +430,108 @@ func TestUpdatePublishedTourKeepsOriginalPublicationTime(t *testing.T) {
 	}
 }
 
+func TestCreateTourBookingPersistsRequestForSelectedOffer(t *testing.T) {
+	productID := uuid.New()
+	offerID := uuid.New()
+	legacyTourID := uuid.New()
+	guideUserID := uuid.New()
+	touristUserID := uuid.New()
+	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
+
+	repo := &tourRepoStub{
+		gotOffer: &model.TourOffer{
+			ID:              offerID,
+			ProductID:       productID,
+			LegacyTourID:    &legacyTourID,
+			GuideProfileID:  uuid.New(),
+			GuideUserID:     guideUserID,
+			Status:          enum.TourStatusPublished,
+			Visibility:      enum.TourVisibilityPublic,
+			DurationMinutes: 240,
+			MaxGroupSize:    8,
+			MeetingPoint:    "Hotel pickup",
+			PriceAmount:     120,
+			Currency:        "USD",
+			Revision:        1,
+			CreatedAt:       time.Now().UTC(),
+			UpdatedAt:       time.Now().UTC(),
+		},
+	}
+	uc := NewTourUseCase(repo, guideVerifierStub{}, nil)
+
+	booking, err := uc.CreateTourBooking(context.Background(), CreateTourBookingInput{
+		ActorUserID:  touristUserID,
+		ProductID:    productID,
+		OfferID:      offerID,
+		ScheduledFor: scheduledFor,
+		Adults:       2,
+		Children:     1,
+	})
+	if err != nil {
+		t.Fatalf("CreateTourBooking() error = %v", err)
+	}
+	if repo.createdBooking == nil {
+		t.Fatal("booking was not persisted")
+	}
+	if booking.OfferID != offerID {
+		t.Fatalf("booking offer id = %s, want %s", booking.OfferID, offerID)
+	}
+	if booking.LegacyTourID == nil || *booking.LegacyTourID != legacyTourID {
+		t.Fatalf("legacy tour id = %v, want %s", booking.LegacyTourID, legacyTourID)
+	}
+	if booking.GuideUserID != guideUserID {
+		t.Fatalf("guide user id = %s, want %s", booking.GuideUserID, guideUserID)
+	}
+	if booking.TouristUserID != touristUserID {
+		t.Fatalf("tourist user id = %s, want %s", booking.TouristUserID, touristUserID)
+	}
+	if booking.TotalSeats != 3 {
+		t.Fatalf("total seats = %d, want 3", booking.TotalSeats)
+	}
+	if booking.TotalPriceAmount <= booking.UnitPriceAmount {
+		t.Fatalf("total price = %v, want subtotal plus service fee", booking.TotalPriceAmount)
+	}
+}
+
+func TestCreateTourBookingRejectsOwnOffer(t *testing.T) {
+	actorUserID := uuid.New()
+	productID := uuid.New()
+	offerID := uuid.New()
+	repo := &tourRepoStub{
+		gotOffer: &model.TourOffer{
+			ID:             offerID,
+			ProductID:      productID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Status:         enum.TourStatusPublished,
+			Visibility:     enum.TourVisibilityPublic,
+			MaxGroupSize:   4,
+			PriceAmount:    80,
+			Currency:       "USD",
+		},
+	}
+	uc := NewTourUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.CreateTourBooking(context.Background(), CreateTourBookingInput{
+		ActorUserID:  actorUserID,
+		ProductID:    productID,
+		OfferID:      offerID,
+		ScheduledFor: time.Now().UTC().Add(24 * time.Hour),
+		Adults:       1,
+	})
+
+	if !errors.Is(err, ErrTourAccessDenied) {
+		t.Fatalf("error = %v, want %v", err, ErrTourAccessDenied)
+	}
+	if repo.createdBooking != nil {
+		t.Fatal("guide booked their own offer")
+	}
+}
+
 func stringPtr(v string) *string {
+	return &v
+}
+
+func uuidPtr(v uuid.UUID) *uuid.UUID {
 	return &v
 }

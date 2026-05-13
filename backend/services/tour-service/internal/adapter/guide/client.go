@@ -65,13 +65,85 @@ func (c *Client) VerifyTourGuide(ctx context.Context, userID uuid.UUID) (port.Gu
 		return port.GuideTourPermission{}, app.ErrGuideNotAllowed
 	}
 
+	userProfile := resp.GetAggregate().GetUserProfile()
+	firstName := strings.TrimSpace(userProfile.GetFirstName())
+	lastName := strings.TrimSpace(userProfile.GetLastName())
+	displayName := guideDisplayName(
+		userProfile.GetDisplayName(),
+		firstName,
+		lastName,
+	)
+	searchText := guideSearchText(
+		displayName,
+		firstName,
+		lastName,
+		fullName(firstName, lastName),
+		fullName(lastName, firstName),
+		lastNameWithInitial(lastName, firstName),
+		profile.GetHeadline(),
+		profile.GetAbout(),
+		profileID.String(),
+		profileUserID.String(),
+	)
+
 	allowed := profileUserID == userID &&
 		strings.EqualFold(profile.GetStatus(), "ACTIVE") &&
 		profile.GetIsTourGuideAvailable()
 
 	return port.GuideTourPermission{
-		GuideProfileID: profileID,
-		GuideUserID:    profileUserID,
-		Allowed:        allowed,
+		GuideProfileID:  profileID,
+		GuideUserID:     profileUserID,
+		Allowed:         allowed,
+		RatingAvg:       profile.GetRatingAvg(),
+		ReviewsCount:    int(profile.GetReviewsCount()),
+		ExperienceYears: int(profile.GetExperienceYears()),
+		DisplayName:     displayName,
+		GuideSearchText: searchText,
 	}, nil
+}
+
+func guideDisplayName(displayName string, firstName string, lastName string) string {
+	displayName = strings.Join(strings.Fields(strings.TrimSpace(displayName)), " ")
+	if displayName != "" {
+		return displayName
+	}
+	return fullName(firstName, lastName)
+}
+
+func guideSearchText(values ...string) string {
+	seen := make(map[string]struct{}, len(values)*2)
+	parts := make([]string, 0, len(values)*2)
+	for _, value := range values {
+		value = strings.Join(strings.Fields(strings.TrimSpace(value)), " ")
+		if value == "" {
+			continue
+		}
+		appendGuideSearchPart(&parts, seen, value)
+		if strings.HasPrefix(value, "@") {
+			appendGuideSearchPart(&parts, seen, strings.TrimPrefix(value, "@"))
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+func appendGuideSearchPart(parts *[]string, seen map[string]struct{}, value string) {
+	key := strings.ToLower(value)
+	if _, ok := seen[key]; ok {
+		return
+	}
+	seen[key] = struct{}{}
+	*parts = append(*parts, value)
+}
+
+func fullName(first string, last string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(first)+" "+strings.TrimSpace(last)), " ")
+}
+
+func lastNameWithInitial(last string, first string) string {
+	last = strings.TrimSpace(last)
+	first = strings.TrimSpace(first)
+	if last == "" || first == "" {
+		return ""
+	}
+	return last + " " + string([]rune(first)[0])
 }

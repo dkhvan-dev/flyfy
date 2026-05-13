@@ -3868,6 +3868,30 @@ abstract class AppLocalizations {
   /// **'Affordable'**
   String get toursSortAffordable;
 
+  /// No description provided for @toursSortCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get toursSortCreatedAt;
+
+  /// No description provided for @toursSortRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get toursSortRating;
+
+  /// No description provided for @toursSortPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get toursSortPrice;
+
+  /// No description provided for @toursSortDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get toursSortDuration;
+
   /// No description provided for @toursFiltersTitle.
   ///
   /// In en, this message translates to:
@@ -3886,6 +3910,30 @@ abstract class AppLocalizations {
   /// **'Show {count, plural, =0{0 tours} =1{1 tour} other{{count} tours}}'**
   String toursFiltersShowResults(num count);
 
+  /// No description provided for @toursFilterCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get toursFilterCountry;
+
+  /// No description provided for @toursFilterCountryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All countries'**
+  String get toursFilterCountryAll;
+
+  /// No description provided for @toursFilterCountrySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country, code, or phone'**
+  String get toursFilterCountrySearchHint;
+
+  /// No description provided for @toursFilterCountryNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Country not found'**
+  String get toursFilterCountryNoResults;
+
   /// No description provided for @toursFilterCategories.
   ///
   /// In en, this message translates to:
@@ -3897,6 +3945,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Price Range'**
   String get toursFilterPriceRange;
+
+  /// No description provided for @toursFilterPriceFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get toursFilterPriceFrom;
+
+  /// No description provided for @toursFilterPriceTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get toursFilterPriceTo;
 
   /// No description provided for @toursFilterBudget.
   ///
@@ -4150,6 +4210,18 @@ abstract class AppLocalizations {
   /// **'Free'**
   String get toursFreePrice;
 
+  /// No description provided for @toursPriceFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {price}'**
+  String toursPriceFrom(Object price);
+
+  /// No description provided for @toursOffersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No guides yet} =1{1 guide} other{{count} guides}}'**
+  String toursOffersCount(num count);
+
   /// No description provided for @toursDurationHourShort.
   ///
   /// In en, this message translates to:
@@ -4240,6 +4312,24 @@ abstract class AppLocalizations {
   /// **'Japanese'**
   String get tourLanguageJapanese;
 
+  /// No description provided for @tourLanguageGerman.
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
+  String get tourLanguageGerman;
+
+  /// No description provided for @tourLanguageSpanish.
+  ///
+  /// In en, this message translates to:
+  /// **'Spanish'**
+  String get tourLanguageSpanish;
+
+  /// No description provided for @tourLanguageTurkish.
+  ///
+  /// In en, this message translates to:
+  /// **'Turkish'**
+  String get tourLanguageTurkish;
+
   /// No description provided for @tourDetailsExperience.
   ///
   /// In en, this message translates to:
@@ -4251,6 +4341,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What to expect'**
   String get tourDetailsWhatToExpect;
+
+  /// No description provided for @tourDetailsSelectedOfferIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Included with selected guide'**
+  String get tourDetailsSelectedOfferIncluded;
 
   /// No description provided for @tourDetailsLeadGuide.
   ///
@@ -4282,6 +4378,120 @@ abstract class AppLocalizations {
   /// **'Message Guide'**
   String get tourDetailsMessageGuide;
 
+  /// No description provided for @tourDetailsOffersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Available guides'**
+  String get tourDetailsOffersTitle;
+
+  /// No description provided for @tourDetailsOffersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No guides available yet'**
+  String get tourDetailsOffersEmpty;
+
+  /// No description provided for @tourDetailsOfferSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get tourDetailsOfferSelected;
+
+  /// No description provided for @tourDetailsOfferCurrentUser.
+  ///
+  /// In en, this message translates to:
+  /// **'This is you'**
+  String get tourDetailsOfferCurrentUser;
+
+  /// No description provided for @tourDetailsOffersSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search guides or offers'**
+  String get tourDetailsOffersSearchHint;
+
+  /// No description provided for @tourDetailsOffersLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more guides'**
+  String get tourDetailsOffersLoadMore;
+
+  /// No description provided for @tourDetailsOffersLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load guides'**
+  String get tourDetailsOffersLoadFailed;
+
+  /// No description provided for @tourDetailsOffersSortRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get tourDetailsOffersSortRating;
+
+  /// No description provided for @tourDetailsOffersSortExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Experience'**
+  String get tourDetailsOffersSortExperience;
+
+  /// No description provided for @tourDetailsOffersSortPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get tourDetailsOffersSortPrice;
+
+  /// No description provided for @tourDetailsOffersFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide filters'**
+  String get tourDetailsOffersFiltersTitle;
+
+  /// No description provided for @tourDetailsOffersMaxPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Max price'**
+  String get tourDetailsOffersMaxPrice;
+
+  /// No description provided for @tourDetailsOffersMaxPriceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 50000'**
+  String get tourDetailsOffersMaxPriceHint;
+
+  /// No description provided for @tourDetailsOffersMinGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum group size'**
+  String get tourDetailsOffersMinGroup;
+
+  /// No description provided for @tourDetailsOffersMinGroupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 4'**
+  String get tourDetailsOffersMinGroupHint;
+
+  /// No description provided for @tourDetailsOffersLanguageAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Any language'**
+  String get tourDetailsOffersLanguageAny;
+
+  /// No description provided for @tourDetailsOffersLanguageSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search language or code'**
+  String get tourDetailsOffersLanguageSearchHint;
+
+  /// No description provided for @tourDetailsOffersLanguageNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Language not found'**
+  String get tourDetailsOffersLanguageNoResults;
+
+  /// No description provided for @tourDetailsOffersApplyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get tourDetailsOffersApplyFilters;
+
   /// No description provided for @tourDetailsMapPreview.
   ///
   /// In en, this message translates to:
@@ -4311,6 +4521,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Book'**
   String get tourDetailsBook;
+
+  /// No description provided for @tourDetailsEditOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit offer'**
+  String get tourDetailsEditOffer;
 
   /// No description provided for @tourDetailsLoadFailed.
   ///
@@ -4450,11 +4666,23 @@ abstract class AppLocalizations {
   /// **'Create Tour'**
   String get createTourTitle;
 
+  /// No description provided for @createTourEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Offer'**
+  String get createTourEditTitle;
+
   /// No description provided for @createTourSubmit.
   ///
   /// In en, this message translates to:
   /// **'Publish'**
   String get createTourSubmit;
+
+  /// No description provided for @createTourSaveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get createTourSaveChanges;
 
   /// No description provided for @createTourSuccess.
   ///
@@ -4462,11 +4690,23 @@ abstract class AppLocalizations {
   /// **'Tour published successfully'**
   String get createTourSuccess;
 
+  /// No description provided for @createTourUpdateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer updated successfully'**
+  String get createTourUpdateSuccess;
+
   /// No description provided for @createTourFailed.
   ///
   /// In en, this message translates to:
   /// **'Failed to create tour'**
   String get createTourFailed;
+
+  /// No description provided for @createTourUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update offer'**
+  String get createTourUpdateFailed;
 
   /// No description provided for @createTourCoverSection.
   ///
@@ -4648,6 +4888,12 @@ abstract class AppLocalizations {
   /// **'Add Time Slot'**
   String get createTourAddTimeSlot;
 
+  /// No description provided for @createTourItineraryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one route point. It will be shown to tourists in the tour details.'**
+  String get createTourItineraryEmpty;
+
   /// No description provided for @createTourAutosaveHint.
   ///
   /// In en, this message translates to:
@@ -4671,6 +4917,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'e.g. 4 hours'**
   String get createTourDurationHint;
+
+  /// No description provided for @createTourDurationUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get createTourDurationUnitLabel;
+
+  /// No description provided for @createTourDurationUnitMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes'**
+  String get createTourDurationUnitMinutes;
+
+  /// No description provided for @createTourDurationUnitHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours'**
+  String get createTourDurationUnitHours;
+
+  /// No description provided for @createTourDurationUnitDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get createTourDurationUnitDays;
 
   /// No description provided for @createTourDurationValidation.
   ///

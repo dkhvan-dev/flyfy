@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
+import '../../features/tours/models/create_tour_booking_request.dart';
 import '../../features/tours/models/tour_vm.dart';
 import '../../features/tours/tour_cover_url.dart';
 import '../../features/tours/tour_localization.dart';
@@ -15,9 +16,10 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/tour_provider.dart';
 
 class TourBookingRouteArgs {
-  const TourBookingRouteArgs({this.tour});
+  const TourBookingRouteArgs({this.tour, this.selectedOfferId});
 
   final TourVm? tour;
+  final String? selectedOfferId;
 }
 
 class TourBookingScreen extends StatefulWidget {
@@ -25,10 +27,12 @@ class TourBookingScreen extends StatefulWidget {
     super.key,
     required this.tourId,
     this.initialTour,
+    this.selectedOfferId,
   });
 
   final String tourId;
   final TourVm? initialTour;
+  final String? selectedOfferId;
 
   @override
   State<TourBookingScreen> createState() => _TourBookingScreenState();
@@ -49,7 +53,7 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
     super.initState();
     _selectedDate = DateTime.now().add(const Duration(days: 2));
     _selectedTime = const TimeOfDay(hour: 10, minute: 0);
-    _tour = widget.initialTour;
+    _tour = _applySelectedOffer(widget.initialTour);
     _isLoading = widget.initialTour == null;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -90,9 +94,11 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
 
     if (!mounted) return;
     final loadedTour = provider.selectedTour;
-    final nextTour = loadedTour != null && loadedTour.id == trimmedTourId
+    final loadedMatchingTour =
+        loadedTour != null && loadedTour.id == trimmedTourId
         ? loadedTour
-        : _tour;
+        : null;
+    final nextTour = _applySelectedOffer(loadedMatchingTour ?? _tour);
 
     setState(() {
       _tour = nextTour;
@@ -187,13 +193,60 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
 
   Future<void> _confirmBooking() async {
     if (_isSubmitting) return;
+    final productId = widget.tourId.trim();
+    final offerId = _selectedOfferId;
+    if (productId.isEmpty || offerId.isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.tourBookingLoadFailed),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF3A2B1D),
+          ),
+        );
+      return;
+    }
 
     HapticFeedback.mediumImpact();
     setState(() => _isSubmitting = true);
-    await Future<void>.delayed(const Duration(milliseconds: 650));
+    final scheduledFor = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
+    final success = await context.read<TourProvider>().createTourBooking(
+      CreateTourBookingRequest(
+        productId: productId,
+        offerId: offerId,
+        scheduledFor: scheduledFor,
+        adults: _adults,
+        children: _children,
+        idempotencyKey:
+            '$productId:$offerId:${scheduledFor.toUtc().toIso8601String()}:$_adults:$_children',
+      ),
+    );
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
+    if (!success) {
+      final provider = context.read<TourProvider>();
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              provider.actionErrorMessage ??
+                  AppLocalizations.of(context)!.tourBookingLoadFailed,
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF3A2B1D),
+          ),
+        );
+      return;
+    }
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -206,6 +259,27 @@ class _TourBookingScreenState extends State<TourBookingScreen> {
   }
 
   int get _maxTravelers => _maxTravelersFor(_tour);
+
+  String get _selectedOfferId {
+    final explicit = widget.selectedOfferId?.trim();
+    if (explicit != null && explicit.isNotEmpty) {
+      return explicit;
+    }
+    return (_tour?.primaryOffer?.id ?? '').trim();
+  }
+
+  TourVm? _applySelectedOffer(TourVm? tour) {
+    final selectedOfferId = widget.selectedOfferId?.trim();
+    if (tour == null || selectedOfferId == null || selectedOfferId.isEmpty) {
+      return tour;
+    }
+    for (final offer in tour.offers) {
+      if (offer.id == selectedOfferId) {
+        return tour.withPrimaryOffer(offer);
+      }
+    }
+    return tour;
+  }
 
   int _maxTravelersFor(TourVm? tour) {
     final groupSize = tour?.maxGroupSize ?? 0;
@@ -561,11 +635,7 @@ class _BookingScheduleSection extends StatelessWidget {
 
             if (isNarrow) {
               return Column(
-                children: [
-                  cards.first,
-                  const SizedBox(height: 12),
-                  cards.last,
-                ],
+                children: [cards.first, const SizedBox(height: 12), cards.last],
               );
             }
 
@@ -611,10 +681,7 @@ class _TravelersSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          l10n.tourBookingTravelers,
-          style: _sectionTitleStyle,
-        ),
+        Text(l10n.tourBookingTravelers, style: _sectionTitleStyle),
         const SizedBox(height: 22),
         _TravelerCounterRow(
           title: l10n.tourBookingAdults,
@@ -769,8 +836,9 @@ class _BookingFooter extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                        AppColors.accent.withValues(alpha: 0.45),
+                    disabledBackgroundColor: AppColors.accent.withValues(
+                      alpha: 0.45,
+                    ),
                     shape: const StadiumBorder(),
                   ),
                   child: AnimatedSwitcher(
@@ -1050,10 +1118,8 @@ class _CounterButton extends StatelessWidget {
           color: filled
               ? Colors.white
               : emphasized
-                  ? AppColors.accent.withValues(alpha: enabled ? 1 : 0.34)
-                  : const Color(0xFFD6C1B3).withValues(
-                      alpha: enabled ? 1 : 0.35,
-                    ),
+              ? AppColors.accent.withValues(alpha: enabled ? 1 : 0.34)
+              : const Color(0xFFD6C1B3).withValues(alpha: enabled ? 1 : 0.35),
           size: 20,
         ),
       ),
@@ -1062,10 +1128,7 @@ class _CounterButton extends StatelessWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({
-    required this.label,
-    required this.value,
-  });
+  const _SummaryRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -1108,10 +1171,7 @@ class _SummaryRow extends StatelessWidget {
 }
 
 class _SoftErrorBanner extends StatelessWidget {
-  const _SoftErrorBanner({
-    required this.message,
-    this.onRetry,
-  });
+  const _SoftErrorBanner({required this.message, this.onRetry});
 
   final String message;
   final VoidCallback? onRetry;
@@ -1129,8 +1189,11 @@ class _SoftErrorBanner extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            const Icon(Icons.info_outline_rounded,
-                color: AppColors.accent, size: 20),
+            const Icon(
+              Icons.info_outline_rounded,
+              color: AppColors.accent,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -1147,10 +1210,7 @@ class _SoftErrorBanner extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(width: 8),
-              TextButton(
-                onPressed: onRetry,
-                child: Text(l10n.retry),
-              ),
+              TextButton(onPressed: onRetry, child: Text(l10n.retry)),
             ],
           ],
         ),
@@ -1173,11 +1233,7 @@ class _BookingImageFallback extends StatelessWidget {
         ),
       ),
       child: Center(
-        child: Icon(
-          Icons.terrain_rounded,
-          color: AppColors.accent,
-          size: 34,
-        ),
+        child: Icon(Icons.terrain_rounded, color: AppColors.accent, size: 34),
       ),
     );
   }

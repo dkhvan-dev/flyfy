@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
@@ -14,13 +15,17 @@ import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/tours/models/create_tour_request.dart';
+import '../../features/tours/models/tour_vm.dart';
 import '../../features/tours/tour_localization.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/tour_provider.dart';
 import 'tour_select_location_screen.dart';
 
 class CreateTourScreen extends StatefulWidget {
-  const CreateTourScreen({super.key});
+  const CreateTourScreen({super.key, this.tourId, this.initialTour});
+
+  final String? tourId;
+  final TourVm? initialTour;
 
   @override
   State<CreateTourScreen> createState() => _CreateTourScreenState();
@@ -40,14 +45,12 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
   final MapController _mapController = MapController();
   var _currentStep = 0;
   var _isSubmitting = false;
+  var _isLoadingInitialTour = false;
+  var _didApplyInitialTour = false;
 
   final _landmarkNameCtrl = TextEditingController();
   final _cityNameCtrl = TextEditingController();
-  final _titleCtrl = TextEditingController();
-  final _summaryCtrl = TextEditingController();
-  final _descriptionCtrl = TextEditingController();
-  final _tagsCtrl = TextEditingController();
-  final _durationCtrl = TextEditingController(text: '4 hours');
+  final _durationValueCtrl = TextEditingController(text: '4');
   final _maxGroupSizeCtrl = TextEditingController(text: '8');
   final _meetingPointCtrl = TextEditingController();
   final _mapUrlCtrl = TextEditingController();
@@ -55,6 +58,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
 
   var _selectedCategorySlug = 'adventure';
   var _visibility = 'PUBLIC';
+  var _selectedDurationUnit = _TourDurationUnit.hours;
   var _selectedCurrencyCode = 'KZT';
   String? _selectedCountryCode;
   String? _selectedLandmarkId;
@@ -62,6 +66,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
   double? _selectedLongitude;
   String? _selectedAttractionCoverFileId;
   String? _selectedAttractionCoverImageUrl;
+  Map<String, CreateTourLocalizedCopyRequest> _productTranslations = const {};
   var _isApplyingLocationSelection = false;
   Uint8List? _coverPreviewBytes;
   String? _coverFileId;
@@ -70,30 +75,35 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
   String? _coverUploadErrorMessage;
   bool _isTrackingStepBackSwipe = false;
   double _stepBackSwipeDistance = 0;
+  int _mapSelectionRequestSerial = 0;
   String? _stepErrorText;
   final Set<String> _selectedLanguageCodes = {'en', 'ru'};
   final List<_TourIncludedItemDraft> _includedItems = [];
 
-  final List<_TourItineraryDraft> _itinerary = [
-    _TourItineraryDraft(
-      startOffsetMinutes: 0,
-      durationMinutes: 45,
-      title: 'Meet at base camp',
-      description: 'Meet your guide, check gear, and align on the route.',
-    ),
-    _TourItineraryDraft(
-      startOffsetMinutes: 120,
-      durationMinutes: 90,
-      title: 'Mountain ascent and photography',
-      description: 'Walk to the scenic ridge and stop for photo moments.',
-    ),
-  ];
+  final List<_TourItineraryDraft> _itinerary = [];
 
   @override
   void initState() {
     super.initState();
     _landmarkNameCtrl.addListener(_handleLocationTextEdited);
     _cityNameCtrl.addListener(_handleLocationTextEdited);
+    if ((widget.tourId ?? '').trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadTourForEdit();
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didApplyInitialTour) return;
+
+    _didApplyInitialTour = true;
+    final initialTour = widget.initialTour;
+    if (initialTour != null) {
+      _populateFromTour(initialTour);
+    }
   }
 
   @override
@@ -103,16 +113,116 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     _cityNameCtrl.removeListener(_handleLocationTextEdited);
     _landmarkNameCtrl.dispose();
     _cityNameCtrl.dispose();
-    _titleCtrl.dispose();
-    _summaryCtrl.dispose();
-    _descriptionCtrl.dispose();
-    _tagsCtrl.dispose();
-    _durationCtrl.dispose();
+    _durationValueCtrl.dispose();
     _maxGroupSizeCtrl.dispose();
     _meetingPointCtrl.dispose();
     _mapUrlCtrl.dispose();
     _priceAmountCtrl.dispose();
     super.dispose();
+  }
+
+  bool get _isEditMode => (widget.tourId ?? '').trim().isNotEmpty;
+
+  List<Widget> _visibleStepPages(AppLocalizations l10n, double bottomInset) {
+    if (_isEditMode) {
+      return [
+        _buildStepOfferMediaAndItinerary(l10n, bottomInset),
+        _buildStepLogistics(l10n, bottomInset),
+        _buildStepStoryAndPrice(l10n, bottomInset),
+      ];
+    }
+
+    return [
+      _buildStepLandmark(l10n, bottomInset),
+      _buildStepLogistics(l10n, bottomInset),
+      _buildStepStoryAndPrice(l10n, bottomInset),
+    ];
+  }
+
+  Future<void> _loadTourForEdit() async {
+    final tourId = (widget.tourId ?? '').trim();
+    if (tourId.isEmpty || _isLoadingInitialTour) return;
+    setState(() => _isLoadingInitialTour = true);
+    final tour = await context.read<TourProvider>().loadMyTourForEdit(tourId);
+    if (!mounted) return;
+    if (tour != null) {
+      _populateFromTour(tour);
+    }
+    setState(() => _isLoadingInitialTour = false);
+  }
+
+  void _populateFromTour(TourVm tour) {
+    _isApplyingLocationSelection = true;
+    _selectedLandmarkId = (tour.landmarkId ?? '').trim().isEmpty
+        ? null
+        : tour.landmarkId!.trim();
+    _selectedCountryCode = (tour.countryCode ?? '').trim().isEmpty
+        ? null
+        : tour.countryCode!.trim().toUpperCase();
+    _selectedLatitude = tour.latitude;
+    _selectedLongitude = tour.longitude;
+    _selectedCategorySlug = (tour.categorySlug ?? '').trim().isEmpty
+        ? _selectedCategorySlug
+        : tour.categorySlug!.trim();
+    _visibility = tour.visibility.trim().isEmpty
+        ? _visibility
+        : tour.visibility;
+    _selectedCurrencyCode = tour.currency.trim().isEmpty
+        ? _selectedCurrencyCode
+        : tour.currency;
+    _landmarkNameCtrl.text = (tour.landmarkName ?? '').trim();
+    _cityNameCtrl.text = (tour.cityName ?? '').trim();
+    if (tour.durationMinutes > 0) {
+      _setDurationFromMinutes(tour.durationMinutes);
+    }
+    _maxGroupSizeCtrl.text = tour.maxGroupSize > 0
+        ? tour.maxGroupSize.toString()
+        : _maxGroupSizeCtrl.text;
+    _meetingPointCtrl.text = tour.meetingPoint.trim();
+    _mapUrlCtrl.text = (tour.mapUrl ?? '').trim();
+    _priceAmountCtrl.text = tour.priceAmount > 0
+        ? _formatNumberInput(tour.priceAmount)
+        : '';
+    _coverFileId = (tour.coverFileId ?? '').trim().isEmpty
+        ? null
+        : tour.coverFileId!.trim();
+    _coverChanged = _coverFileId != null;
+    _selectedLanguageCodes
+      ..clear()
+      ..addAll(
+        tour.languageCodes
+            .map((code) => code.trim().toLowerCase())
+            .where((code) => code.isNotEmpty),
+      );
+    _includedItems
+      ..clear()
+      ..addAll(_uniqueIncludedItemDrafts(tour.includedItems));
+    if (tour.itinerary.isNotEmpty) {
+      _itinerary
+        ..clear()
+        ..addAll(
+          tour.itinerary.map(
+            (item) => _TourItineraryDraft(
+              startOffsetMinutes: item.startOffsetMinutes,
+              durationMinutes: item.durationMinutes,
+              title: item.localizedTitle(
+                Localizations.localeOf(context).languageCode,
+              ),
+              description: item.localizedDescription(
+                Localizations.localeOf(context).languageCode,
+              ),
+            ),
+          ),
+        );
+    }
+    _isApplyingLocationSelection = false;
+  }
+
+  String _formatNumberInput(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value.toString();
   }
 
   void _handleLocationTextEdited() {
@@ -128,6 +238,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
       _selectedLongitude = null;
       _selectedAttractionCoverFileId = null;
       _selectedAttractionCoverImageUrl = null;
+      _productTranslations = const {};
     });
   }
 
@@ -160,24 +271,31 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
 
   bool _validateCurrentStep() {
     final l10n = AppLocalizations.of(context)!;
-    final error = switch (_currentStep) {
-      0 => _validateLandmarkStep(l10n),
-      1 => _validateLogisticsStep(l10n),
-      _ => _validateStoryAndPriceStep(l10n),
-    };
+    final error = _isEditMode
+        ? _validateEditStep(l10n)
+        : switch (_currentStep) {
+            0 => _validateLandmarkStep(l10n),
+            1 => _validateLogisticsStep(l10n),
+            _ => _validateStoryAndPriceStep(l10n),
+          };
     setState(() => _stepErrorText = error);
     return error == null;
   }
 
-  String? _validateLandmarkStep(AppLocalizations l10n) {
-    if (!_hasSelectedCountry) {
-      return l10n.createTourCountryValidation;
+  String? _validateEditStep(AppLocalizations l10n) {
+    return switch (_currentStep) {
+      0 => _validateOfferMediaAndItineraryStep(l10n),
+      1 => _validateLogisticsStep(l10n),
+      _ => _validateStoryAndPriceStep(l10n),
+    };
+  }
+
+  String? _validateOfferMediaAndItineraryStep(AppLocalizations l10n) {
+    if (_isCoverUploading) {
+      return l10n.createCoverUploadInProgress;
     }
-    if (_landmarkNameCtrl.text.trim().isEmpty) {
-      return l10n.createTourLandmarkValidation;
-    }
-    if (_selectedCategorySlug.trim().isEmpty) {
-      return l10n.createCategoryValidation;
+    if (_coverChanged && (_coverFileId ?? '').trim().isEmpty) {
+      return l10n.createCoverUploadRetryRequired;
     }
     if (_itinerary.isEmpty ||
         _itinerary.any(
@@ -189,8 +307,22 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     return null;
   }
 
+  String? _validateLandmarkStep(AppLocalizations l10n) {
+    if (!_hasSelectedCountry) {
+      return l10n.createTourCountryValidation;
+    }
+    if (!_hasSelectedAttraction) {
+      return l10n.createTourLandmarkValidation;
+    }
+    final offerMediaError = _validateOfferMediaAndItineraryStep(l10n);
+    if (offerMediaError != null) {
+      return offerMediaError;
+    }
+    return null;
+  }
+
   String? _validateLogisticsStep(AppLocalizations l10n) {
-    final durationMinutes = _parseDurationMinutes(_durationCtrl.text);
+    final durationMinutes = _durationMinutesFromInput();
     final groupSize = int.tryParse(_maxGroupSizeCtrl.text.trim());
 
     if (durationMinutes == null || durationMinutes < 15) {
@@ -212,15 +344,6 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     if (_coverChanged && (_coverFileId ?? '').trim().isEmpty) {
       return l10n.createCoverUploadRetryRequired;
     }
-    if (_titleCtrl.text.trim().length < 3) {
-      return l10n.createTitleValidation;
-    }
-    if (_summaryCtrl.text.trim().length < 3) {
-      return l10n.createTourSummaryValidation;
-    }
-    if (_descriptionCtrl.text.trim().length < 20) {
-      return l10n.createTourDescriptionValidation;
-    }
     if (_meetingPointCtrl.text.trim().isEmpty) {
       return l10n.createLocationValidation;
     }
@@ -241,18 +364,25 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
 
     setState(() => _isSubmitting = true);
     final provider = context.read<TourProvider>();
-    final created = await provider.createAndPublishTour(_buildRequest());
+    final request = _buildRequest();
+    final saved = _isEditMode
+        ? await provider.updateTourOffer(widget.tourId!.trim(), request)
+        : await provider.createAndPublishTour(request);
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
 
     final l10n = AppLocalizations.of(context)!;
-    if (created != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.createTourSuccess)));
+    if (saved != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isEditMode ? l10n.createTourUpdateSuccess : l10n.createTourSuccess,
+          ),
+        ),
+      );
       if (context.canPop()) {
-        context.pop();
+        context.pop(saved);
       } else {
         context.go('/');
       }
@@ -262,7 +392,9 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     await showErrorDialog(
       context,
       title: l10n.error,
-      message: provider.actionErrorMessage ?? l10n.createTourFailed,
+      message:
+          provider.actionErrorMessage ??
+          (_isEditMode ? l10n.createTourUpdateFailed : l10n.createTourFailed),
     );
   }
 
@@ -271,12 +403,9 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     return CreateTourRequest(
       landmarkName: _landmarkNameCtrl.text.trim(),
       landmarkId: _selectedLandmarkId,
-      title: _titleCtrl.text.trim(),
-      summary: _summaryCtrl.text.trim(),
-      description: _descriptionCtrl.text.trim(),
       categorySlug: _selectedCategorySlug,
-      tags: _parseCommaList(_tagsCtrl.text),
-      durationMinutes: _parseDurationMinutes(_durationCtrl.text) ?? 60,
+      productTranslations: _productTranslationsForRequest(),
+      durationMinutes: _durationMinutesFromInput() ?? 60,
       maxGroupSize: int.tryParse(_maxGroupSizeCtrl.text.trim()) ?? 1,
       languageCodes: _selectedLanguageCodes.toList(growable: false),
       visibility: _visibility,
@@ -288,10 +417,12 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
       mapUrl: _mapUrlCtrl.text.trim(),
       priceAmount: price,
       currency: _selectedCurrencyCode,
-      coverFileId: _effectiveCoverFileId,
+      coverFileId: _offerCoverFileId,
+      productCoverFileId: _productCoverFileId,
       includedItems: _includedItems
           .map((item) => item.toPayload())
           .toList(growable: false),
+      includedItemTranslations: _includedItemTranslationsForRequest(),
       itinerary: _itinerary
           .map(
             (item) => CreateTourItineraryItemRequest(
@@ -299,43 +430,101 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
               durationMinutes: item.durationMinutes,
               title: item.title,
               description: item.description,
+              translations: _itineraryTranslationsForRequest(item),
             ),
           )
           .toList(growable: false),
     );
   }
 
-  int? _parseDurationMinutes(String value) {
-    final normalized = value.trim().toLowerCase();
-    if (normalized.isEmpty) {
-      return null;
+  Map<String, CreateTourLocalizedCopyRequest> _productTranslationsForRequest() {
+    if (_selectedLandmarkId == null) {
+      return const {};
     }
-    final direct = int.tryParse(normalized);
-    if (direct != null) {
-      return direct;
-    }
-    final numberMatch = RegExp(r'\d+([.,]\d+)?').firstMatch(normalized);
-    if (numberMatch == null) {
-      return null;
-    }
-    final amount = double.tryParse(
-      numberMatch.group(0)!.replaceAll(',', '.'),
-    );
-    if (amount == null) {
-      return null;
-    }
-    final isHour = normalized.contains('hour') ||
-        normalized.contains('hr') ||
-        normalized.contains('час') ||
-        normalized.contains('сағ');
-    return (amount * (isHour ? 60 : 1)).round();
+    return _productTranslations;
   }
 
-  List<String> _parseCommaList(String value) => value
-      .split(',')
-      .map((item) => item.trim())
-      .where((item) => item.isNotEmpty)
-      .toList(growable: false);
+  Map<String, CreateTourLocalizedCopyRequest> _copyLocationTranslations(
+    Map<String, TourLocationLocalizedCopy> translations,
+  ) {
+    if (translations.isEmpty) return const {};
+    final result = <String, CreateTourLocalizedCopyRequest>{};
+    translations.forEach((locale, copy) {
+      final normalizedLocale = locale.trim().toLowerCase().replaceAll('_', '-');
+      if (normalizedLocale.isEmpty) return;
+      result[normalizedLocale] = CreateTourLocalizedCopyRequest(
+        title: copy.title,
+        summary: copy.summary,
+        description: copy.description,
+      );
+    });
+    return result;
+  }
+
+  Map<String, TourLocationLocalizedCopy> _locationTranslationsForPicker() {
+    if (_productTranslations.isEmpty) return const {};
+    final result = <String, TourLocationLocalizedCopy>{};
+    _productTranslations.forEach((locale, copy) {
+      final normalizedLocale = locale.trim().toLowerCase().replaceAll('_', '-');
+      if (normalizedLocale.isEmpty) return;
+      result[normalizedLocale] = TourLocationLocalizedCopy(
+        title: copy.title ?? '',
+        summary: copy.summary ?? '',
+        description: copy.description ?? '',
+      );
+    });
+    return result;
+  }
+
+  Map<String, List<String>> _includedItemTranslationsForRequest() {
+    if (_includedItems.isEmpty) return const {};
+
+    return {
+      for (final locale in const ['en', 'ru', 'kk'])
+        locale: _includedItems
+            .map((item) => item.localizedPayload(locale))
+            .toList(growable: false),
+    };
+  }
+
+  Map<String, CreateTourItineraryLocalizedCopyRequest>
+  _itineraryTranslationsForRequest(_TourItineraryDraft item) {
+    final locale = Localizations.localeOf(
+      context,
+    ).languageCode.trim().toLowerCase();
+    if (locale.isEmpty) return const {};
+    return {
+      locale: CreateTourItineraryLocalizedCopyRequest(
+        title: item.title,
+        description: item.description,
+      ),
+    };
+  }
+
+  int? _durationMinutesFromInput() {
+    final value = int.tryParse(_durationValueCtrl.text.trim());
+    if (value == null || value <= 0) {
+      return null;
+    }
+    return value * _selectedDurationUnit.minutesMultiplier;
+  }
+
+  void _setDurationFromMinutes(int minutes) {
+    if (minutes % _TourDurationUnit.days.minutesMultiplier == 0) {
+      _selectedDurationUnit = _TourDurationUnit.days;
+      _durationValueCtrl.text =
+          (minutes ~/ _TourDurationUnit.days.minutesMultiplier).toString();
+      return;
+    }
+    if (minutes % _TourDurationUnit.hours.minutesMultiplier == 0) {
+      _selectedDurationUnit = _TourDurationUnit.hours;
+      _durationValueCtrl.text =
+          (minutes ~/ _TourDurationUnit.hours.minutesMultiplier).toString();
+      return;
+    }
+    _selectedDurationUnit = _TourDurationUnit.minutes;
+    _durationValueCtrl.text = minutes.toString();
+  }
 
   void _toggleLanguageCode(String code) {
     final normalized = code.trim().toLowerCase();
@@ -349,8 +538,9 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
       }
 
       if (_selectedLanguageCodes.length >= _maxTourLanguages) {
-        _stepErrorText = AppLocalizations.of(context)!
-            .createTourLanguagesLimitValidation(_maxTourLanguages);
+        _stepErrorText = AppLocalizations.of(
+          context,
+        )!.createTourLanguagesLimitValidation(_maxTourLanguages);
         return;
       }
 
@@ -365,9 +555,8 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
       isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _TourIncludedItemsEditorSheet(
-        initialItems: _includedItems,
-      ),
+      builder: (context) =>
+          _TourIncludedItemsEditorSheet(initialItems: _includedItems),
     );
 
     if (result == null || !mounted) return;
@@ -379,15 +568,27 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     });
   }
 
+  List<_TourIncludedItemDraft> _uniqueIncludedItemDrafts(List<String> values) {
+    final seen = <_TourIncludedItemType>{};
+    final items = <_TourIncludedItemDraft>[];
+    for (final value in values) {
+      final item = _TourIncludedItemDraft.fromPayload(value);
+      if (!seen.add(item.type)) continue;
+      items.add(item);
+    }
+    return items;
+  }
+
   Future<void> _openCountryPicker() async {
+    if (_isEditMode) return;
+
     final result = await showModalBottomSheet<String>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _TourCountryPickerSheet(
-        selectedCode: _selectedCountryCode,
-      ),
+      builder: (context) =>
+          _TourCountryPickerSheet(selectedCode: _selectedCountryCode),
     );
 
     if (result == null || !mounted) return;
@@ -403,6 +604,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
       _selectedLongitude = null;
       _selectedAttractionCoverFileId = null;
       _selectedAttractionCoverImageUrl = null;
+      _productTranslations = const {};
       _landmarkNameCtrl.clear();
       _cityNameCtrl.clear();
       _mapUrlCtrl.clear();
@@ -419,8 +621,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
   bool get _hasSelectedAttraction =>
       (_selectedLandmarkId ?? '').trim().isNotEmpty;
 
-  bool get _isLocationEditingEnabled =>
-      _hasSelectedCountry && !_hasSelectedAttraction;
+  bool get _isLocationEditingEnabled => false;
 
   String? get _effectiveCoverFileId {
     final customCover = (_coverFileId ?? '').trim();
@@ -429,6 +630,29 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     }
     final attractionCover = (_selectedAttractionCoverFileId ?? '').trim();
     return attractionCover.isEmpty ? null : attractionCover;
+  }
+
+  String? get _offerCoverFileId {
+    final customCover = (_coverFileId ?? '').trim();
+    if (customCover.isNotEmpty) {
+      return customCover;
+    }
+    if (!_hasSelectedAttraction) {
+      return _effectiveCoverFileId;
+    }
+    return null;
+  }
+
+  String? get _productCoverFileId {
+    final attractionCover = (_selectedAttractionCoverFileId ?? '').trim();
+    if (attractionCover.isNotEmpty) {
+      return attractionCover;
+    }
+    if (!_hasSelectedAttraction) {
+      final customCover = (_coverFileId ?? '').trim();
+      return customCover.isEmpty ? null : customCover;
+    }
+    return null;
   }
 
   String? get _effectiveCoverImageUrl {
@@ -470,6 +694,29 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     return 'https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=16/$lat/$lng';
   }
 
+  String _buildCoordinateMeetingPointLabel(double latitude, double longitude) {
+    return '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}';
+  }
+
+  String _composeMeetingPointLabel(Placemark placemark) {
+    final parts = <String>[];
+
+    void addPart(String? value) {
+      final trimmed = value?.trim() ?? '';
+      if (trimmed.isNotEmpty && !parts.contains(trimmed)) {
+        parts.add(trimmed);
+      }
+    }
+
+    addPart(placemark.name);
+    addPart(placemark.street);
+    addPart(placemark.thoroughfare);
+    addPart(placemark.subLocality);
+    addPart(placemark.locality);
+
+    return parts.join(', ');
+  }
+
   void _moveMapToSelection({double zoom = 15}) {
     if (!_hasSelectedMapPoint) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -482,17 +729,42 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     });
   }
 
-  void _handleMapTapped(LatLng position) {
+  Future<void> _handleMapTapped(LatLng position) async {
+    final requestSerial = ++_mapSelectionRequestSerial;
+    final mapUrl = _buildMapUrl(position.latitude, position.longitude);
+    final coordinateLabel = _buildCoordinateMeetingPointLabel(
+      position.latitude,
+      position.longitude,
+    );
+
     setState(() {
       _selectedLatitude = position.latitude;
       _selectedLongitude = position.longitude;
-      _mapUrlCtrl.text = _buildMapUrl(position.latitude, position.longitude);
-      if (_meetingPointCtrl.text.trim().isEmpty) {
-        _meetingPointCtrl.text = _landmarkNameCtrl.text.trim();
-      }
+      _mapUrlCtrl.text = mapUrl;
+      _meetingPointCtrl.text = coordinateLabel;
       _stepErrorText = null;
     });
     _mapController.move(position, 15);
+
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (!mounted || requestSerial != _mapSelectionRequestSerial) return;
+
+      if (placemarks.isNotEmpty) {
+        final address = _composeMeetingPointLabel(placemarks.first);
+        if (address.isNotEmpty) {
+          setState(() {
+            _meetingPointCtrl.text = address;
+            _stepErrorText = null;
+          });
+        }
+      }
+    } catch (_) {
+      // Keep coordinates and map link when reverse geocoding is unavailable.
+    }
   }
 
   Future<void> _pickCoverImage() async {
@@ -628,6 +900,8 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
   }
 
   Future<void> _openLocationSelector() async {
+    if (_isEditMode) return;
+
     final l10n = AppLocalizations.of(context)!;
     if (!_hasSelectedCountry) {
       setState(() => _stepErrorText = l10n.createTourCountryValidation);
@@ -649,6 +923,8 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
           mapUrl: _mapUrlCtrl.text.trim(),
           coverFileId: _selectedAttractionCoverFileId,
           coverImageUrl: _selectedAttractionCoverImageUrl,
+          translations: _locationTranslationsForPicker(),
+          categorySlug: _selectedCategorySlug,
         ),
       ),
     );
@@ -668,8 +944,12 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
           : result.coverFileId!.trim();
       _selectedAttractionCoverImageUrl =
           (result.coverImageUrl ?? '').trim().isEmpty
-              ? null
-              : result.coverImageUrl!.trim();
+          ? null
+          : result.coverImageUrl!.trim();
+      _productTranslations = _copyLocationTranslations(result.translations);
+      if (result.categorySlug.trim().isNotEmpty) {
+        _selectedCategorySlug = result.categorySlug.trim();
+      }
       if ((result.mapUrl ?? '').trim().isNotEmpty) {
         _mapUrlCtrl.text = result.mapUrl!.trim();
       } else if (result.latitude != null && result.longitude != null) {
@@ -740,7 +1020,8 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
 
   void _handleStepBackSwipeEnd(DragEndDetails details) {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldGoBack = _isTrackingStepBackSwipe &&
+    final shouldGoBack =
+        _isTrackingStepBackSwipe &&
         _currentStep > 0 &&
         (_stepBackSwipeDistance >= _stepBackSwipeMinDistance ||
             primaryVelocity >= _stepBackSwipeMinVelocity);
@@ -782,7 +1063,9 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
                   child: Column(
                     children: [
                       _TourTopBar(
-                        title: l10n.createTourTitle,
+                        title: _isEditMode
+                            ? l10n.createTourEditTitle
+                            : l10n.createTourTitle,
                         onBack: _currentStep == 0
                             ? () => context.pop()
                             : () => _goToStep(_currentStep - 1),
@@ -802,16 +1085,14 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
                         child: PageView(
                           controller: _pageController,
                           physics: const NeverScrollableScrollPhysics(),
-                          children: [
-                            _buildStepLandmark(l10n, bottomInset),
-                            _buildStepLogistics(l10n, bottomInset),
-                            _buildStepStoryAndPrice(l10n, bottomInset),
-                          ],
+                          children: _visibleStepPages(l10n, bottomInset),
                         ),
                       ),
                       _TourBottomActionBar(
                         label: _currentStep == _totalSteps - 1
-                            ? l10n.createTourSubmit
+                            ? (_isEditMode
+                                  ? l10n.createTourSaveChanges
+                                  : l10n.createTourSubmit)
                             : l10n.createStepNext,
                         isSubmitting: _isSubmitting || _isCoverUploading,
                         onPressed: _nextStep,
@@ -841,6 +1122,70 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     );
   }
 
+  Widget _buildStepOfferMediaAndItinerary(
+    AppLocalizations l10n,
+    double bottomInset,
+  ) {
+    return ListView(
+      padding: EdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
+      children: [
+        ..._buildOfferCoverSection(l10n),
+        const SizedBox(height: 24),
+        ..._buildOfferItinerarySection(l10n),
+        const SizedBox(height: 16),
+        Text(
+          l10n.createTourAutosaveHint,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Color(0xFFB69B78), fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildOfferCoverSection(AppLocalizations l10n) {
+    return [
+      _SectionHeader(title: l10n.createTourCoverSection),
+      const SizedBox(height: 12),
+      _TourCoverUploadCard(
+        title: _hasAnyCoverPreview
+            ? l10n.createTourCoverChangeAction
+            : l10n.createTourCoverUploadTitle,
+        hint: _coverUploadErrorMessage ?? l10n.createTourCoverUploadHint,
+        imageUrl: _effectiveCoverImageUrl,
+        previewBytes: _coverPreviewBytes,
+        isUploading: _isCoverUploading,
+        hasError: _coverUploadErrorMessage != null,
+        onTap: _pickCoverImage,
+      ),
+    ];
+  }
+
+  List<Widget> _buildOfferItinerarySection(AppLocalizations l10n) {
+    return [
+      _SectionHeader(title: l10n.createTourDetailedItinerary),
+      const SizedBox(height: 12),
+      if (_itinerary.isEmpty) ...[
+        _ItineraryEmptyState(message: l10n.createTourItineraryEmpty),
+        const SizedBox(height: 12),
+      ],
+      ..._itinerary.map(
+        (item) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _ItinerarySlotCard(
+            item: item,
+            onDelete: () => setState(() => _itinerary.remove(item)),
+          ),
+        ),
+      ),
+      const SizedBox(height: 6),
+      _OutlineActionButton(
+        icon: Icons.add_rounded,
+        label: l10n.createTourAddTimeSlot,
+        onTap: _openItineraryEditor,
+      ),
+    ];
+  }
+
   Widget _buildStepLandmark(AppLocalizations l10n, double bottomInset) {
     return ListView(
       padding: EdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
@@ -864,49 +1209,9 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
           onSelectLocation: _hasSelectedCountry ? _openLocationSelector : null,
         ),
         const SizedBox(height: 24),
-        _SectionHeader(title: l10n.createTourCoverSection),
-        const SizedBox(height: 12),
-        _TourCoverUploadCard(
-          title: _hasAnyCoverPreview
-              ? l10n.createTourCoverChangeAction
-              : l10n.createTourCoverUploadTitle,
-          hint: _coverUploadErrorMessage ?? l10n.createTourCoverUploadHint,
-          imageUrl: _effectiveCoverImageUrl,
-          previewBytes: _coverPreviewBytes,
-          isUploading: _isCoverUploading,
-          hasError: _coverUploadErrorMessage != null,
-          onTap: _pickCoverImage,
-        ),
+        ..._buildOfferCoverSection(l10n),
         const SizedBox(height: 24),
-        _SectionHeader(title: l10n.createTourCategorization),
-        const SizedBox(height: 12),
-        _CategoryGrid(
-          selectedSlug: _selectedCategorySlug,
-          onSelected: (value) => setState(() {
-            _selectedCategorySlug = value;
-            _stepErrorText = null;
-          }),
-        ),
-        const SizedBox(height: 24),
-        _SectionHeader(title: l10n.createTourDetailedItinerary),
-        const SizedBox(height: 12),
-        ..._itinerary.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _ItinerarySlotCard(
-              item: item,
-              onDelete: _itinerary.length == 1
-                  ? null
-                  : () => setState(() => _itinerary.remove(item)),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        _OutlineActionButton(
-          icon: Icons.add_rounded,
-          label: l10n.createTourAddTimeSlot,
-          onTap: _openItineraryEditor,
-        ),
+        ..._buildOfferItinerarySection(l10n),
         const SizedBox(height: 16),
         Text(
           l10n.createTourAutosaveHint,
@@ -921,12 +1226,13 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
     return ListView(
       padding: EdgeInsets.fromLTRB(20, 10, 20, 24 + bottomInset),
       children: [
-        _TourTextField(
-          controller: _durationCtrl,
-          label: l10n.createTourDurationLabel,
-          hint: l10n.createTourDurationHint,
-          icon: Icons.schedule_rounded,
-          keyboardType: TextInputType.text,
+        _TourDurationPickerRow(
+          controller: _durationValueCtrl,
+          selectedUnit: _selectedDurationUnit,
+          onUnitChanged: (unit) => setState(() {
+            _selectedDurationUnit = unit;
+            _stepErrorText = null;
+          }),
         ),
         const SizedBox(height: 16),
         _TourTextField(
@@ -976,6 +1282,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
           label: l10n.createMeetingPointLocationLabel,
           hint: l10n.createTourMeetingPointHint,
           icon: Icons.location_on_outlined,
+          horizontalScroll: true,
         ),
         const SizedBox(height: 12),
         _TourTextField(
@@ -984,6 +1291,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
           hint: l10n.createMapLinkHint,
           icon: Icons.link_rounded,
           keyboardType: TextInputType.url,
+          horizontalScroll: true,
         ),
         const SizedBox(height: 14),
         _TourMapPickerCard(
@@ -998,32 +1306,6 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
           l10n.createMapTapHint,
           style: const TextStyle(color: Color(0xFFD4BEA8), fontSize: 12),
         ),
-        const SizedBox(height: 24),
-        _SectionHeader(title: l10n.createTourSoulTitle),
-        const SizedBox(height: 12),
-        _TourTextField(
-          controller: _titleCtrl,
-          label: l10n.createTourNameLabel,
-          hint: l10n.createTourNameHint,
-          icon: Icons.flag_outlined,
-        ),
-        const SizedBox(height: 12),
-        _TourTextField(
-          controller: _summaryCtrl,
-          label: l10n.createTourSummaryLabel,
-          hint: l10n.createTourSummaryHint,
-          icon: Icons.short_text_rounded,
-        ),
-        const SizedBox(height: 12),
-        _TourTextField(
-          controller: _descriptionCtrl,
-          label: l10n.createDescriptionLabel,
-          hint: l10n.createTourSoulHint,
-          icon: Icons.auto_stories_outlined,
-          minLines: 5,
-          maxLines: 8,
-        ),
-        const SizedBox(height: 20),
         _SectionHeader(title: l10n.createTourInvestmentTitle),
         const SizedBox(height: 12),
         _TourTextField(
@@ -1031,9 +1313,7 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
           label: l10n.createPriceAmountLabel,
           hint: '0.00',
           icon: Icons.payments_outlined,
-          keyboardType: const TextInputType.numberWithOptions(
-            decimal: true,
-          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
         const SizedBox(height: 12),
         _CurrencyPickerField(
@@ -1055,14 +1335,166 @@ class _CreateTourScreenState extends State<CreateTourScreen> {
           items: _includedItems,
           onTap: _openIncludedItemsEditor,
         ),
-        const SizedBox(height: 12),
-        _TourTextField(
-          controller: _tagsCtrl,
-          label: l10n.createTagsLabel,
-          hint: l10n.createTagsHint,
-          icon: Icons.local_offer_outlined,
-        ),
       ],
+    );
+  }
+}
+
+enum _TourDurationUnit { minutes, hours, days }
+
+extension _TourDurationUnitUi on _TourDurationUnit {
+  int get minutesMultiplier {
+    return switch (this) {
+      _TourDurationUnit.minutes => 1,
+      _TourDurationUnit.hours => 60,
+      _TourDurationUnit.days => 24 * 60,
+    };
+  }
+
+  String label(AppLocalizations l10n) {
+    return switch (this) {
+      _TourDurationUnit.minutes => l10n.createTourDurationUnitMinutes,
+      _TourDurationUnit.hours => l10n.createTourDurationUnitHours,
+      _TourDurationUnit.days => l10n.createTourDurationUnitDays,
+    };
+  }
+}
+
+class _TourDurationPickerRow extends StatelessWidget {
+  const _TourDurationPickerRow({
+    required this.controller,
+    required this.selectedUnit,
+    required this.onUnitChanged,
+  });
+
+  final TextEditingController controller;
+  final _TourDurationUnit selectedUnit;
+  final ValueChanged<_TourDurationUnit> onUnitChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 380;
+        final amountField = _TourTextField(
+          controller: controller,
+          label: l10n.createTourDurationLabel,
+          hint: '4',
+          icon: Icons.schedule_rounded,
+          keyboardType: TextInputType.number,
+        );
+        final unitField = _DurationUnitPickerField(
+          label: l10n.createTourDurationUnitLabel,
+          selectedUnit: selectedUnit,
+          onChanged: onUnitChanged,
+        );
+
+        if (isCompact) {
+          return Column(
+            children: [amountField, const SizedBox(height: 12), unitField],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 3, child: amountField),
+            const SizedBox(width: 12),
+            Expanded(flex: 2, child: unitField),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DurationUnitPickerField extends StatelessWidget {
+  const _DurationUnitPickerField({
+    required this.label,
+    required this.selectedUnit,
+    required this.onChanged,
+  });
+
+  final String label;
+  final _TourDurationUnit selectedUnit;
+  final ValueChanged<_TourDurationUnit> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return _TourFieldShell(
+      label: label,
+      child: PopupMenuButton<_TourDurationUnit>(
+        initialValue: selectedUnit,
+        onSelected: onChanged,
+        color: const Color(0xFF2D2115),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        itemBuilder: (context) => [
+          for (final unit in _TourDurationUnit.values)
+            PopupMenuItem<_TourDurationUnit>(
+              value: unit,
+              child: Row(
+                children: [
+                  Icon(
+                    unit == selectedUnit
+                        ? Icons.check_circle_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    color: unit == selectedUnit
+                        ? AppColors.accent
+                        : const Color(0xFFA99683),
+                    size: 19,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      unit.label(l10n),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFFFF8F0),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 62),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D2115),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.10)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.timelapse_rounded, color: Color(0xFFA99683)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  selectedUnit.label(l10n),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFFFF8F0),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Color(0xFFA99683),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1091,6 +1523,15 @@ enum _TourIncludedItemType {
   other,
 }
 
+const _selectableIncludedItemTypes = [
+  _TourIncludedItemType.transport,
+  _TourIncludedItemType.food,
+  _TourIncludedItemType.tickets,
+  _TourIncludedItemType.equipment,
+  _TourIncludedItemType.guide,
+  _TourIncludedItemType.photo,
+];
+
 extension _TourIncludedItemTypeUi on _TourIncludedItemType {
   IconData get icon {
     return switch (this) {
@@ -1115,25 +1556,109 @@ extension _TourIncludedItemTypeUi on _TourIncludedItemType {
       _TourIncludedItemType.other => l10n.createTourIncludedTypeOther,
     };
   }
+
+  String localizedLabel(String languageCode) {
+    final normalized = languageCode.trim().toLowerCase();
+    final labels = switch (this) {
+      _TourIncludedItemType.transport => const {
+        'en': 'Transport',
+        'ru': 'Транспорт',
+        'kk': 'Көлік',
+      },
+      _TourIncludedItemType.food => const {
+        'en': 'Food',
+        'ru': 'Питание',
+        'kk': 'Тамақ',
+      },
+      _TourIncludedItemType.tickets => const {
+        'en': 'Tickets',
+        'ru': 'Билеты',
+        'kk': 'Билеттер',
+      },
+      _TourIncludedItemType.equipment => const {
+        'en': 'Equipment',
+        'ru': 'Снаряжение',
+        'kk': 'Жабдық',
+      },
+      _TourIncludedItemType.guide => const {
+        'en': 'Guide',
+        'ru': 'Гид',
+        'kk': 'Гид',
+      },
+      _TourIncludedItemType.photo => const {
+        'en': 'Photo',
+        'ru': 'Фото',
+        'kk': 'Фото',
+      },
+      _TourIncludedItemType.other => const {
+        'en': 'Other',
+        'ru': 'Другое',
+        'kk': 'Басқа',
+      },
+    };
+    return labels[normalized] ?? labels[normalized.split('-').first] ?? name;
+  }
 }
 
 class _TourIncludedItemDraft {
-  const _TourIncludedItemDraft({
-    required this.type,
-    required this.title,
-  });
+  const _TourIncludedItemDraft({required this.type});
+
+  factory _TourIncludedItemDraft.fromPayload(String rawValue) {
+    final value = rawValue.trim();
+    final separatorIndex = value.indexOf(':');
+    if (separatorIndex > 0) {
+      final type = _tourIncludedItemTypeFromName(
+        value.substring(0, separatorIndex).trim(),
+      );
+      return _TourIncludedItemDraft(type: type);
+    }
+    return _TourIncludedItemDraft(type: _tourIncludedItemTypeFromName(value));
+  }
 
   final _TourIncludedItemType type;
-  final String title;
 
-  String toPayload() => '${type.name}: ${title.trim()}';
+  String toPayload() => type.name;
+
+  String localizedPayload(String languageCode) =>
+      type.localizedLabel(languageCode);
+}
+
+_TourIncludedItemType _tourIncludedItemTypeFromName(String rawValue) {
+  final normalized = rawValue.trim().toLowerCase();
+  final normalizedWords = normalized
+      .replaceAll(RegExp(r'[_-]+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  for (final type in _TourIncludedItemType.values) {
+    if (type.name == normalized || type.name == normalizedWords) {
+      return type;
+    }
+  }
+  return switch (normalizedWords) {
+    'transport' || 'транспорт' || 'көлік' => _TourIncludedItemType.transport,
+    'food' ||
+    'meal' ||
+    'meals' ||
+    'питание' ||
+    'еда' ||
+    'тамақ' => _TourIncludedItemType.food,
+    'tickets' ||
+    'ticket' ||
+    'билеты' ||
+    'билет' ||
+    'билеттер' => _TourIncludedItemType.tickets,
+    'equipment' ||
+    'gear' ||
+    'снаряжение' ||
+    'жабдық' => _TourIncludedItemType.equipment,
+    'guide' || 'гид' => _TourIncludedItemType.guide,
+    'photo' || 'photos' || 'фото' => _TourIncludedItemType.photo,
+    _ => _TourIncludedItemType.other,
+  };
 }
 
 class TourCountryOption {
-  const TourCountryOption({
-    required this.code,
-    required this.searchAliases,
-  });
+  const TourCountryOption({required this.code, required this.searchAliases});
 
   final String code;
   final List<String> searchAliases;
@@ -1163,18 +1688,9 @@ const tourCountryOptions = [
     code: 'KZ',
     searchAliases: ['Kazakhstan', 'Казахстан', 'Қазақстан'],
   ),
-  TourCountryOption(
-    code: 'FR',
-    searchAliases: ['France', 'Франция'],
-  ),
-  TourCountryOption(
-    code: 'JP',
-    searchAliases: ['Japan', 'Япония', 'Жапония'],
-  ),
-  TourCountryOption(
-    code: 'IT',
-    searchAliases: ['Italy', 'Италия'],
-  ),
+  TourCountryOption(code: 'FR', searchAliases: ['France', 'Франция']),
+  TourCountryOption(code: 'JP', searchAliases: ['Japan', 'Япония', 'Жапония']),
+  TourCountryOption(code: 'IT', searchAliases: ['Italy', 'Италия']),
 ];
 
 TourCountryOption? findTourCountryOption(String? code) {
@@ -1211,9 +1727,7 @@ class _TourLanguagePickerField extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF2D2115),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: AppColors.accent.withValues(alpha: 0.10),
-          ),
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.10)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -1228,7 +1742,8 @@ class _TourLanguagePickerField extends StatelessWidget {
                     _TourLanguageChip(
                       label: localizedTourLanguageLabel(l10n, code),
                       selected: selectedCodes.contains(code),
-                      disabled: !selectedCodes.contains(code) &&
+                      disabled:
+                          !selectedCodes.contains(code) &&
                           selectedCodes.length >= maxSelected,
                       onTap: () => onToggle(code),
                     ),
@@ -1269,8 +1784,8 @@ class _TourLanguageChip extends StatelessWidget {
     final foreground = disabled
         ? const Color(0xFF806F5E)
         : selected
-            ? Colors.white
-            : const Color(0xFFFFF8F0);
+        ? Colors.white
+        : const Color(0xFFFFF8F0);
 
     return Material(
       color: selected ? AppColors.accent : const Color(0xFF3A2A1D),
@@ -1304,10 +1819,7 @@ class _TourLanguageChip extends StatelessWidget {
 }
 
 class _TourIncludedItemsPreview extends StatelessWidget {
-  const _TourIncludedItemsPreview({
-    required this.items,
-    required this.onTap,
-  });
+  const _TourIncludedItemsPreview({required this.items, required this.onTap});
 
   final List<_TourIncludedItemDraft> items;
   final VoidCallback onTap;
@@ -1328,9 +1840,7 @@ class _TourIncludedItemsPreview extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.10),
-            ),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.10)),
           ),
           child: items.isEmpty
               ? Row(
@@ -1367,10 +1877,7 @@ class _TourIncludedItemsPreview extends StatelessWidget {
 }
 
 class _TourIncludedItemChip extends StatelessWidget {
-  const _TourIncludedItemChip({
-    required this.item,
-    required this.l10n,
-  });
+  const _TourIncludedItemChip({required this.item, required this.l10n});
 
   final _TourIncludedItemDraft item;
   final AppLocalizations l10n;
@@ -1391,7 +1898,7 @@ class _TourIncludedItemChip extends StatelessWidget {
           const SizedBox(width: 6),
           Flexible(
             child: Text(
-              '${item.type.label(l10n)}: ${item.title}',
+              item.type.label(l10n),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -1408,9 +1915,7 @@ class _TourIncludedItemChip extends StatelessWidget {
 }
 
 class _TourIncludedItemsEditorSheet extends StatefulWidget {
-  const _TourIncludedItemsEditorSheet({
-    required this.initialItems,
-  });
+  const _TourIncludedItemsEditorSheet({required this.initialItems});
 
   final List<_TourIncludedItemDraft> initialItems;
 
@@ -1421,50 +1926,37 @@ class _TourIncludedItemsEditorSheet extends StatefulWidget {
 
 class _TourIncludedItemsEditorSheetState
     extends State<_TourIncludedItemsEditorSheet> {
-  late final List<_EditableTourIncludedItem> _drafts;
-  String? _errorText;
+  late final Set<_TourIncludedItemType> selectedTypes;
 
   @override
   void initState() {
     super.initState();
-    _drafts = widget.initialItems.isEmpty
-        ? [_EditableTourIncludedItem.empty()]
-        : widget.initialItems
-            .map(_EditableTourIncludedItem.fromDraft)
-            .toList(growable: true);
+    selectedTypes = widget.initialItems
+        .map((item) => item.type)
+        .where((type) => type != _TourIncludedItemType.other)
+        .toSet();
   }
 
-  @override
-  void dispose() {
-    for (final draft in _drafts) {
-      draft.dispose();
-    }
-    super.dispose();
-  }
-
-  void _addItem() {
+  void _toggleType(_TourIncludedItemType type) {
     setState(() {
-      _drafts.add(_EditableTourIncludedItem.empty());
-      _errorText = null;
+      if (selectedTypes.contains(type)) {
+        selectedTypes.remove(type);
+      } else {
+        selectedTypes.add(type);
+      }
     });
   }
 
-  void _removeItem(int index) {
-    final removed = _drafts.removeAt(index);
-    removed.dispose();
-    setState(() => _errorText = null);
-  }
-
-  void _submit(AppLocalizations l10n) {
-    final items = <_TourIncludedItemDraft>[];
-    for (final draft in _drafts) {
-      final title = draft.controller.text.trim();
-      if (title.isEmpty) {
-        setState(() => _errorText = l10n.createTourIncludedItemsValidation);
-        return;
-      }
-      items.add(_TourIncludedItemDraft(type: draft.type, title: title));
-    }
+  void _submit() {
+    final items =
+        selectedTypes
+            .map((type) => _TourIncludedItemDraft(type: type))
+            .toList(growable: false)
+          ..sort(
+            (a, b) => _selectableIncludedItemTypes
+                .indexOf(a.type)
+                .compareTo(_selectableIncludedItemTypes.indexOf(b.type)),
+          );
     Navigator.of(context).pop(items);
   }
 
@@ -1523,76 +2015,37 @@ class _TourIncludedItemsEditorSheetState
                   ),
                 ),
                 Expanded(
-                  child: ListView.separated(
+                  child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-                    itemCount: _drafts.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      return _TourIncludedItemEditorRow(
-                        draft: _drafts[index],
-                        canDelete: _drafts.length > 1,
-                        onTypeChanged: (type) => setState(() {
-                          _drafts[index].type = type;
-                          _errorText = null;
-                        }),
-                        onDelete: () => _removeItem(index),
-                      );
-                    },
+                    children: [
+                      for (final type in _selectableIncludedItemTypes) ...[
+                        _TourIncludedTypeOption(
+                          type: type,
+                          selected: selectedTypes.contains(type),
+                          onTap: () => _toggleType(type),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ],
                   ),
                 ),
-                if (_errorText != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-                    child: Text(
-                      _errorText!,
-                      style: const TextStyle(
-                        color: Color(0xFFFFB4A6),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _addItem,
-                          icon: const Icon(Icons.add_rounded),
-                          label: Text(l10n.createTourIncludedItemsAdd),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFFFDEB6),
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.18),
-                            ),
-                            minimumSize: const Size.fromHeight(50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                        ),
+                  child: FilledButton(
+                    onPressed: _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () => _submit(l10n),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            l10n.saveProfileButton,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+                    child: Text(
+                      l10n.saveProfileButton,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -1604,140 +2057,68 @@ class _TourIncludedItemsEditorSheetState
   }
 }
 
-class _EditableTourIncludedItem {
-  _EditableTourIncludedItem({
+class _TourIncludedTypeOption extends StatelessWidget {
+  const _TourIncludedTypeOption({
     required this.type,
-    required String title,
-  }) : controller = TextEditingController(text: title);
-
-  factory _EditableTourIncludedItem.empty() {
-    return _EditableTourIncludedItem(
-      type: _TourIncludedItemType.transport,
-      title: '',
-    );
-  }
-
-  factory _EditableTourIncludedItem.fromDraft(_TourIncludedItemDraft draft) {
-    return _EditableTourIncludedItem(
-      type: draft.type,
-      title: draft.title,
-    );
-  }
-
-  _TourIncludedItemType type;
-  final TextEditingController controller;
-
-  void dispose() => controller.dispose();
-}
-
-class _TourIncludedItemEditorRow extends StatelessWidget {
-  const _TourIncludedItemEditorRow({
-    required this.draft,
-    required this.canDelete,
-    required this.onTypeChanged,
-    required this.onDelete,
+    required this.selected,
+    required this.onTap,
   });
 
-  final _EditableTourIncludedItem draft;
-  final bool canDelete;
-  final ValueChanged<_TourIncludedItemType> onTypeChanged;
-  final VoidCallback onDelete;
+  final _TourIncludedItemType type;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2A1D),
+    return Material(
+      color: selected ? AppColors.accent : const Color(0xFF3A2A1D),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<_TourIncludedItemType>(
-                    initialValue: draft.type,
-                    isExpanded: true,
-                    dropdownColor: const Color(0xFF2D2115),
-                    decoration: InputDecoration(
-                      labelText: l10n.createTourIncludedItemsTypeLabel,
-                      labelStyle: const TextStyle(color: Color(0xFFA99683)),
-                      filled: true,
-                      fillColor: const Color(0xFF2D2115),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    style: const TextStyle(
-                      color: Color(0xFFFFF8F0),
-                      fontWeight: FontWeight.w800,
-                    ),
-                    items: [
-                      for (final type in _TourIncludedItemType.values)
-                        DropdownMenuItem(
-                          value: type,
-                          child: Row(
-                            children: [
-                              Icon(
-                                type.icon,
-                                color: AppColors.accent,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  type.label(l10n),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) onTypeChanged(value);
-                    },
-                  ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : AppColors.accent.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
                 ),
-                if (canDelete) ...[
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    color: const Color(0xFFFFB4A6),
-                    tooltip: l10n.createTourIncludedItemsRemove,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: draft.controller,
-              textCapitalization: TextCapitalization.sentences,
-              style: const TextStyle(
-                color: Color(0xFFFFF8F0),
-                fontWeight: FontWeight.w800,
-              ),
-              decoration: InputDecoration(
-                labelText: l10n.createTourIncludedItemsValueLabel,
-                hintText: l10n.createTourIncludedItemsValueHint,
-                labelStyle: const TextStyle(color: Color(0xFFA99683)),
-                hintStyle: const TextStyle(color: Color(0xFFA99683)),
-                filled: true,
-                fillColor: const Color(0xFF2D2115),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
+                child: Icon(
+                  type.icon,
+                  color: selected ? Colors.white : AppColors.accent,
+                  size: 19,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  type.label(l10n),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected ? Colors.white : const Color(0xFFFFF8F0),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: selected ? Colors.white : const Color(0xFFA99683),
+                size: 22,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1834,8 +2215,8 @@ class _TourStepIndicator extends StatelessWidget {
                   color: isDone
                       ? AppColors.success
                       : isActive
-                          ? AppColors.accent
-                          : const Color(0xFF5A370D),
+                      ? AppColors.accent
+                      : const Color(0xFF5A370D),
                   boxShadow: isDone
                       ? [
                           BoxShadow(
@@ -1845,14 +2226,14 @@ class _TourStepIndicator extends StatelessWidget {
                           ),
                         ]
                       : isActive
-                          ? [
-                              BoxShadow(
-                                color: AppColors.accent.withValues(alpha: 0.24),
-                                blurRadius: 22,
-                                offset: const Offset(0, 10),
-                              ),
-                            ]
-                          : null,
+                      ? [
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.24),
+                            blurRadius: 22,
+                            offset: const Offset(0, 10),
+                          ),
+                        ]
+                      : null,
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.08),
                   ),
@@ -2125,7 +2506,8 @@ class _TourCountryPickerSheetState extends State<_TourCountryPickerSheet> {
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final country = _visibleCountries[index];
-                      final selected = country.code ==
+                      final selected =
+                          country.code ==
                           (widget.selectedCode ?? '').trim().toUpperCase();
                       return ListTile(
                         onTap: () => Navigator.of(context).pop(country.code),
@@ -2319,8 +2701,8 @@ class _LocationEditHint extends StatelessWidget {
     final message = isLockedByAttraction
         ? l10n.createTourLocationLockedByAttraction
         : isEditable
-            ? l10n.createTourManualLocationHint
-            : l10n.createTourSelectCountryFirst;
+        ? l10n.createTourManualLocationHint
+        : l10n.createTourSelectCountryFirst;
 
     return Material(
       color: Colors.white.withValues(alpha: 0.08),
@@ -2707,120 +3089,51 @@ class _TransparentTextField extends StatelessWidget {
   }
 }
 
-class _CategoryGrid extends StatelessWidget {
-  const _CategoryGrid({
-    required this.selectedSlug,
-    required this.onSelected,
-  });
+class _ItineraryEmptyState extends StatelessWidget {
+  const _ItineraryEmptyState({required this.message});
 
-  final String selectedSlug;
-  final ValueChanged<String> onSelected;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final items = [
-      _TourCategoryOption(
-        slug: 'adventure',
-        label: l10n.createTourCategoryAdventure,
-        icon: Icons.explore_outlined,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF4A321D),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
-      _TourCategoryOption(
-        slug: 'cultural',
-        label: l10n.createTourCategoryCultural,
-        icon: Icons.account_balance_outlined,
-      ),
-      _TourCategoryOption(
-        slug: 'culinary',
-        label: l10n.createTourCategoryCulinary,
-        icon: Icons.restaurant_outlined,
-      ),
-      _TourCategoryOption(
-        slug: 'wellness',
-        label: l10n.createTourCategoryWellness,
-        icon: Icons.spa_outlined,
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth < 370 ? 1 : 2;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: items.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: columns == 1 ? 4.6 : 2.7,
-          ),
-          itemBuilder: (context, index) {
-            final item = items[index];
-            final selected = selectedSlug == item.slug;
-            return _CategoryButton(
-              option: item,
-              selected: selected,
-              onTap: () => onSelected(item.slug),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _TourCategoryOption {
-  const _TourCategoryOption({
-    required this.slug,
-    required this.label,
-    required this.icon,
-  });
-
-  final String slug;
-  final String label;
-  final IconData icon;
-}
-
-class _CategoryButton extends StatelessWidget {
-  const _CategoryButton({
-    required this.option,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _TourCategoryOption option;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppColors.accent : const Color(0xFF4A321D),
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Icon(option.icon, color: Colors.white, size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  option.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.route_rounded,
+                color: AppColors.accent,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Color(0xFFFFE3B8),
+                  fontSize: 14,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -2954,6 +3267,7 @@ class _TourTextField extends StatelessWidget {
     this.keyboardType,
     this.minLines = 1,
     this.maxLines = 1,
+    this.horizontalScroll = false,
   });
 
   final TextEditingController controller;
@@ -2963,16 +3277,21 @@ class _TourTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final int minLines;
   final int maxLines;
+  final bool horizontalScroll;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveMinLines = horizontalScroll ? 1 : minLines;
+    final effectiveMaxLines = horizontalScroll ? 1 : maxLines;
+
     return _TourFieldShell(
       label: label,
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
-        minLines: minLines,
-        maxLines: maxLines,
+        minLines: effectiveMinLines,
+        maxLines: effectiveMaxLines,
+        scrollPhysics: horizontalScroll ? const BouncingScrollPhysics() : null,
         textCapitalization: TextCapitalization.sentences,
         style: const TextStyle(
           color: Color(0xFFFFF8F0),
@@ -3011,10 +3330,7 @@ class _TourTextField extends StatelessWidget {
 }
 
 class _TourFieldShell extends StatelessWidget {
-  const _TourFieldShell({
-    required this.label,
-    required this.child,
-  });
+  const _TourFieldShell({required this.label, required this.child});
 
   final String label;
   final Widget child;
@@ -3043,10 +3359,7 @@ class _TourFieldShell extends StatelessWidget {
 }
 
 class _CurrencyOption {
-  const _CurrencyOption({
-    required this.code,
-    required this.symbol,
-  });
+  const _CurrencyOption({required this.code, required this.symbol});
 
   final String code;
   final String symbol;
@@ -3118,8 +3431,9 @@ class _CurrencyPickerField extends StatelessWidget {
                   return ListTile(
                     onTap: () => Navigator.of(context).pop(option.code),
                     leading: CircleAvatar(
-                      backgroundColor:
-                          selected ? AppColors.accent : const Color(0xFF3A2A1D),
+                      backgroundColor: selected
+                          ? AppColors.accent
+                          : const Color(0xFF3A2A1D),
                       foregroundColor: Colors.white,
                       child: Text(option.symbol),
                     ),
@@ -3263,8 +3577,9 @@ class _VisibilityCard extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        color:
-                            selected ? Colors.white : const Color(0xFFFFE3B8),
+                        color: selected
+                            ? Colors.white
+                            : const Color(0xFFFFE3B8),
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
@@ -3552,8 +3867,10 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                         backgroundColor: AppColors.accent,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
-                      child: Text(widget.l10n.confirm,
-                          style: const TextStyle(color: AppColors.textPrimary)),
+                      child: Text(
+                        widget.l10n.confirm,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                      ),
                     ),
                   ),
                 ],

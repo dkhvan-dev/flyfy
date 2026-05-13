@@ -90,6 +90,57 @@ func (c *Client) ValidateUserExists(ctx context.Context, userID uuid.UUID) error
 	return nil
 }
 
+func (c *Client) GetUserProfile(ctx context.Context, userID uuid.UUID) (*app.PublicUserProfile, error) {
+	callCtx, cancel := context.WithTimeout(ctx, defaultGetUserTimeout)
+	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
+
+	resp, err := c.service.GetUserById(callCtx, &userv1.GetUserByIdRequest{
+		UserId: userID.String(),
+	})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return nil, app.ErrUserNotFound
+			case codes.InvalidArgument:
+				return nil, app.ErrInvalidGuideUserID
+			default:
+				return nil, err
+			}
+		}
+		return nil, err
+	}
+
+	profile := resp.GetAggregate().GetProfile()
+	if profile == nil || strings.TrimSpace(profile.GetUserId()) == "" {
+		return nil, app.ErrUserNotFound
+	}
+	profileUserID, err := uuid.Parse(strings.TrimSpace(profile.GetUserId()))
+	if err != nil {
+		return nil, app.ErrInvalidGuideUserID
+	}
+
+	var avatarFileID *uuid.UUID
+	if strings.TrimSpace(profile.GetAvatarFileId()) != "" {
+		if parsed, parseErr := uuid.Parse(strings.TrimSpace(profile.GetAvatarFileId())); parseErr == nil {
+			avatarFileID = &parsed
+		}
+	}
+
+	return &app.PublicUserProfile{
+		UserID:       profileUserID,
+		FirstName:    optionalString(profile.GetFirstName()),
+		LastName:     optionalString(profile.GetLastName()),
+		DisplayName:  optionalString(profile.GetDisplayName()),
+		AvatarFileID: avatarFileID,
+		CountryCode:  optionalString(profile.GetCountryCode()),
+		Locale:       profile.GetLocale(),
+		Timezone:     profile.GetTimezone(),
+		IsPublic:     profile.GetIsPublic(),
+	}, nil
+}
+
 func (c *Client) ResolveUserIDBySubject(ctx context.Context, subject string) (uuid.UUID, error) {
 	subject = strings.TrimSpace(subject)
 	if subject == "" {
@@ -165,23 +216,11 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 			}
 		}
 
-		var displayName *string
-		if strings.TrimSpace(item.GetDisplayName()) != "" {
-			v := strings.TrimSpace(item.GetDisplayName())
-			displayName = &v
-		}
-
-		var countryCode *string
-		if strings.TrimSpace(item.GetCountryCode()) != "" {
-			v := strings.TrimSpace(item.GetCountryCode())
-			countryCode = &v
-		}
-
 		result[userID] = app.PublicUserProfile{
 			UserID:       userID,
-			DisplayName:  displayName,
+			DisplayName:  optionalString(item.GetDisplayName()),
 			AvatarFileID: avatarFileID,
-			CountryCode:  countryCode,
+			CountryCode:  optionalString(item.GetCountryCode()),
 			Locale:       item.GetLocale(),
 			Timezone:     item.GetTimezone(),
 			IsPublic:     item.GetIsPublic(),
@@ -256,4 +295,12 @@ func (c *Client) GrantGuideRole(ctx context.Context, userID uuid.UUID, grantedBy
 	}
 
 	return nil
+}
+
+func optionalString(value string) *string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return &value
 }

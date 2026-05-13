@@ -286,6 +286,13 @@ func (s *publicUserClientStub) ResolveUserIDBySubject(context.Context, string) (
 	return uuid.Nil, nil
 }
 
+func (s *publicUserClientStub) GetUserProfile(_ context.Context, userID uuid.UUID) (*app.PublicUserProfile, error) {
+	if profile, ok := s.profiles[userID]; ok {
+		return &profile, nil
+	}
+	return nil, nil
+}
+
 func (s *publicUserClientStub) GetPublicUserProfiles(context.Context, []uuid.UUID) (map[uuid.UUID]app.PublicUserProfile, error) {
 	return s.profiles, nil
 }

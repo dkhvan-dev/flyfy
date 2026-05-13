@@ -213,20 +213,7 @@ func (s *Server) ListPublicGuides(
 		}
 
 		if item.UserProfile != nil {
-			var avatarFileID string
-			if item.UserProfile.AvatarFileID != nil {
-				avatarFileID = item.UserProfile.AvatarFileID.String()
-			}
-
-			card.UserProfile = &guidev1.PublicUserProfile{
-				UserId:       item.UserProfile.UserID.String(),
-				DisplayName:  valueOrEmpty(item.UserProfile.DisplayName),
-				AvatarFileId: avatarFileID,
-				CountryCode:  valueOrEmpty(item.UserProfile.CountryCode),
-				Locale:       item.UserProfile.Locale,
-				Timezone:     item.UserProfile.Timezone,
-				IsPublic:     item.UserProfile.IsPublic,
-			}
+			card.UserProfile = toProtoPublicUserProfile(item.UserProfile)
 		}
 
 		resp.Items = append(resp.Items, card)
@@ -246,6 +233,9 @@ func toProtoAggregate(aggregate *app.GuideAggregate) *guidev1.GuideAggregate {
 	if aggregate.VerificationRequest != nil {
 		resp.VerificationRequest = toProtoVerificationRequest(aggregate.VerificationRequest)
 	}
+	if aggregate.UserProfile != nil {
+		resp.UserProfile = toProtoPublicUserProfile(aggregate.UserProfile)
+	}
 	for _, item := range aggregate.Documents {
 		resp.Documents = append(resp.Documents, toProtoGuideDocument(item))
 	}
@@ -257,6 +247,27 @@ func toProtoAggregate(aggregate *app.GuideAggregate) *guidev1.GuideAggregate {
 	}
 
 	return resp
+}
+
+func toProtoPublicUserProfile(profile *app.PublicUserProfile) *guidev1.PublicUserProfile {
+	if profile == nil {
+		return nil
+	}
+	var avatarFileID string
+	if profile.AvatarFileID != nil {
+		avatarFileID = profile.AvatarFileID.String()
+	}
+	return &guidev1.PublicUserProfile{
+		UserId:       profile.UserID.String(),
+		DisplayName:  valueOrEmpty(profile.DisplayName),
+		AvatarFileId: avatarFileID,
+		CountryCode:  valueOrEmpty(profile.CountryCode),
+		Locale:       profile.Locale,
+		Timezone:     profile.Timezone,
+		IsPublic:     profile.IsPublic,
+		FirstName:    valueOrEmpty(profile.FirstName),
+		LastName:     valueOrEmpty(profile.LastName),
+	}
 }
 
 func toProtoGuideProfile(profile *model.GuideProfile) *guidev1.GuideProfile {

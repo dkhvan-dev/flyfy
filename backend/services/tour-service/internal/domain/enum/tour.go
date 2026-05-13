@@ -56,3 +56,19 @@ func (e TourEventType) IsValid() bool {
 		return false
 	}
 }
+
+type TourBookingStatus string
+
+const (
+	TourBookingStatusRequested TourBookingStatus = "REQUESTED"
+	TourBookingStatusCancelled TourBookingStatus = "CANCELLED"
+)
+
+func (s TourBookingStatus) IsValid() bool {
+	switch s {
+	case TourBookingStatusRequested, TourBookingStatusCancelled:
+		return true
+	default:
+		return false
+	}
+}

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:superapp/features/profile/models/user_profile_vm.dart';
 import 'package:superapp/features/tours/models/tour_vm.dart';
 import 'package:superapp/l10n/generated/app_localizations.dart';
 import 'package:superapp/screens/tours/tour_details_screen.dart';
 
 void main() {
   testWidgets('renders tour details content and booking CTA', (tester) async {
+    TourOfferVm? selectedOffer = _tour.offers.first;
+
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [
@@ -19,10 +22,15 @@ void main() {
         home: Scaffold(
           body: TourDetailsContent(
             tour: _tour,
+            selectedOffer: selectedOffer,
+            offerProfiles: {
+              'guide-user-1': _guideProfile1,
+              'guide-user-2': _guideProfile2,
+            },
             onBookTap: () {},
+            onEditOfferTap: () {},
             onMessageGuideTap: () {},
-            guideName: 'Aruzhan Guide',
-            guideAvatarFallbackText: 'AG',
+            onOfferSelected: (offer) => selectedOffer = offer,
             showMessageGuide: true,
             showBookingAction: true,
           ),
@@ -31,17 +39,27 @@ void main() {
     );
 
     expect(find.text('Almaty Mountain Escape'), findsWidgets);
-    expect(find.text('A private alpine route through Shymbulak and Medeu.'),
-        findsOneWidget);
-    expect(find.text('English', findRichText: true), findsOneWidget);
-    expect(find.text('Aruzhan Guide'), findsOneWidget);
+    expect(
+      find.text('A private alpine route through Shymbulak and Medeu.'),
+      findsOneWidget,
+    );
+    expect(find.text('English', findRichText: true), findsWidgets);
+    expect(find.text('Sadykova A.'), findsOneWidget);
+    expect(find.text('Baimukhan N.'), findsOneWidget);
+    expect(find.text('Guide #1'), findsNothing);
+    expect(find.text('Guide #2'), findsNothing);
     expect(find.text('Message Guide'), findsOneWidget);
+    expect(find.text('Available guides'), findsOneWidget);
     expect(find.text('Private SUV'), findsOneWidget);
     expect(find.text('Hotel departure'), findsOneWidget);
     expect(find.text('Book'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Baimukhan N.'));
+    await tester.tap(find.text('Baimukhan N.'));
+    expect(selectedOffer?.id, 'offer-2');
   });
 
-  testWidgets('hides guide message action for author view', (tester) async {
+  testWidgets('does not render redundant lead guide block', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: const [
@@ -54,10 +72,12 @@ void main() {
         home: Scaffold(
           body: TourDetailsContent(
             tour: _tour,
+            selectedOffer: _tour.offers.first,
+            offerProfiles: {'guide-user-1': _guideProfile1},
             onBookTap: () {},
+            onEditOfferTap: () {},
             onMessageGuideTap: () {},
-            guideName: 'Aruzhan Guide',
-            guideAvatarFallbackText: 'AG',
+            onOfferSelected: (_) {},
             showMessageGuide: false,
             showBookingAction: false,
           ),
@@ -65,11 +85,311 @@ void main() {
       ),
     );
 
-    expect(find.text('Aruzhan Guide'), findsOneWidget);
+    expect(find.text('Your Lead Guide'), findsNothing);
+    expect(find.text('Verified local expert'), findsNothing);
+    expect(find.text('Sadykova A.'), findsOneWidget);
     expect(find.text('Message Guide'), findsNothing);
     expect(find.text('Book'), findsNothing);
   });
+
+  testWidgets('shows included items only for the selected guide offer', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TourDetailsContent(
+            tour: _tour,
+            selectedOffer: _tour.offers.last,
+            offerProfiles: {
+              'guide-user-1': _guideProfile1,
+              'guide-user-2': _guideProfile2,
+            },
+            onBookTap: () {},
+            onEditOfferTap: () {},
+            onMessageGuideTap: () {},
+            onOfferSelected: (_) {},
+            showMessageGuide: true,
+            showBookingAction: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Included with selected guide'), findsOneWidget);
+    expect(find.text('Tickets'), findsOneWidget);
+    expect(find.text('Private SUV'), findsNothing);
+  });
+
+  testWidgets('renders no-offers state without booking CTA', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TourDetailsContent(
+            tour: _tourWithoutOffers,
+            selectedOffer: null,
+            offerProfiles: const {},
+            onBookTap: () {},
+            onEditOfferTap: () {},
+            onMessageGuideTap: () {},
+            onOfferSelected: (_) {},
+            showMessageGuide: false,
+            showBookingAction: false,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('No guides available yet'), findsOneWidget);
+    expect(find.text('Book'), findsNothing);
+  });
+
+  testWidgets('renders full-width edit CTA without price for guide authors', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TourDetailsContent(
+            tour: _tour,
+            selectedOffer: _tour.offers.first,
+            offerProfiles: {'guide-user-1': _guideProfile1},
+            onBookTap: () {},
+            onEditOfferTap: () {},
+            onMessageGuideTap: () {},
+            onOfferSelected: (_) {},
+            showMessageGuide: false,
+            showBookingAction: false,
+            showEditOfferAction: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Edit offer'), findsOneWidget);
+    expect(find.text('TOTAL'), findsNothing);
+    expect(find.text('Book'), findsNothing);
+  });
+
+  testWidgets('pins current guide offer first and hides its profile action', (
+    tester,
+  ) async {
+    final selectedOffers = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TourDetailsContent(
+            tour: _tour,
+            offers: _tour.offers,
+            selectedOffer: _tour.offers.last,
+            currentUserId: 'guide-user-2',
+            isCurrentUserGuide: true,
+            offerProfiles: {
+              'guide-user-1': _guideProfile1,
+              'guide-user-2': _guideProfile2,
+            },
+            onBookTap: () {},
+            onEditOfferTap: () {},
+            onMessageGuideTap: () {},
+            onOfferSelected: (offer) => selectedOffers.add(offer.id),
+            showMessageGuide: false,
+            showBookingAction: false,
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    final ownGuide = find.text('Baimukhan N.');
+    final otherGuide = find.text('Sadykova A.');
+    expect(ownGuide, findsOneWidget);
+    expect(otherGuide, findsOneWidget);
+    expect(
+      tester.getTopLeft(ownGuide).dy,
+      lessThan(tester.getTopLeft(otherGuide).dy),
+    );
+    expect(find.text('This is you'), findsOneWidget);
+    expect(find.text('Profile'), findsNothing);
+    expect(selectedOffers, isEmpty);
+  });
+
+  testWidgets(
+    'filters guide offers by full name display name and localized data',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: TourDetailsContent(
+              tour: _tour,
+              selectedOffer: _tour.offers.first,
+              offerProfiles: {
+                'guide-user-1': _guideProfile1,
+                'guide-user-2': _guideProfile2,
+              },
+              onBookTap: () {},
+              onEditOfferTap: () {},
+              onMessageGuideTap: () {},
+              onOfferSelected: (_) {},
+              showMessageGuide: true,
+              showBookingAction: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.ensureVisible(find.byType(TextField).first);
+      await tester.enterText(find.byType(TextField).first, 'nurlan');
+      await tester.pump();
+
+      expect(find.text('Baimukhan N.'), findsOneWidget);
+      expect(find.text('Sadykova A.'), findsNothing);
+
+      await tester.enterText(find.byType(TextField).first, 'aru guide');
+      await tester.pump();
+
+      expect(find.text('Sadykova A.'), findsOneWidget);
+      expect(find.text('Baimukhan N.'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'shows itinerary source text when requested translation is missing',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: TourDetailsContent(
+              tour: _tourWithRussianGuideCopy,
+              selectedOffer: _tourWithRussianGuideCopy.offers.first,
+              offerProfiles: {'guide-user-1': _guideProfile1},
+              onBookTap: () {},
+              onEditOfferTap: () {},
+              onMessageGuideTap: () {},
+              onOfferSelected: (_) {},
+              showMessageGuide: true,
+              showBookingAction: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Transport'), findsOneWidget);
+      expect(find.text('Имеется'), findsNothing);
+      expect(find.text('Step 1 of 1'), findsNothing);
+      expect(find.text('Тест'), findsOneWidget);
+      expect(find.text('Возможно стоит изменить'), findsOneWidget);
+    },
+  );
+
+  testWidgets('renders included item type keys as localized labels', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TourDetailsContent(
+            tour: _tourWithIncludedTypeKeys,
+            selectedOffer: _tourWithIncludedTypeKeys.offers.first,
+            offerProfiles: {'guide-user-1': _guideProfile1},
+            onBookTap: () {},
+            onEditOfferTap: () {},
+            onMessageGuideTap: () {},
+            onOfferSelected: (_) {},
+            showMessageGuide: true,
+            showBookingAction: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Transport'), findsOneWidget);
+    expect(find.text('Food'), findsOneWidget);
+    expect(find.text('transport'), findsNothing);
+    expect(find.text('food'), findsNothing);
+  });
 }
+
+final _guideProfile1 = UserProfileVm(
+  userId: 'guide-user-1',
+  status: 'ACTIVE',
+  locale: 'ru',
+  timezone: 'Asia/Almaty',
+  isPublic: true,
+  isProfileCompleted: true,
+  roles: ['GUIDE'],
+  followersCount: 0,
+  isFollowedByMe: false,
+  firstName: 'Aruzhan',
+  lastName: 'Sadykova',
+  displayName: '@aru_guide',
+);
+
+final _guideProfile2 = UserProfileVm(
+  userId: 'guide-user-2',
+  status: 'ACTIVE',
+  locale: 'ru',
+  timezone: 'Asia/Almaty',
+  isPublic: true,
+  isProfileCompleted: true,
+  roles: ['GUIDE'],
+  followersCount: 0,
+  isFollowedByMe: false,
+  firstName: 'Nurlan',
+  lastName: 'Baimukhan',
+);
 
 const _tour = TourVm(
   id: 'tour-1',
@@ -97,4 +417,120 @@ const _tour = TourVm(
   currency: 'USD',
   cityName: 'Almaty',
   meetingPoint: 'Hotel pickup',
+  publishedOffersCount: 2,
+  offers: [
+    TourOfferVm(
+      id: 'offer-1',
+      productId: 'tour-1',
+      guideProfileId: 'guide-profile-1',
+      guideUserId: 'guide-user-1',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      durationMinutes: 480,
+      maxGroupSize: 4,
+      meetingPoint: 'Hotel pickup',
+      priceAmount: 240,
+      currency: 'USD',
+      languageCodes: ['en'],
+      includedItems: ['Private SUV'],
+    ),
+    TourOfferVm(
+      id: 'offer-2',
+      productId: 'tour-1',
+      guideProfileId: 'guide-profile-2',
+      guideUserId: 'guide-user-2',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      durationMinutes: 420,
+      maxGroupSize: 6,
+      meetingPoint: 'Medeu entrance',
+      priceAmount: 180,
+      currency: 'USD',
+      languageCodes: ['ru'],
+      includedItems: ['Tickets'],
+    ),
+  ],
+);
+
+const _tourWithoutOffers = TourVm(
+  id: 'tour-empty',
+  title: 'Empty Tour',
+  summary: 'No guide yet',
+  status: 'PUBLISHED',
+  visibility: 'PUBLIC',
+  priceAmount: 0,
+  currency: 'KZT',
+);
+
+const _tourWithRussianGuideCopy = TourVm(
+  id: 'tour-russian-copy',
+  title: 'Bozjyra Tract',
+  summary: 'Shared route',
+  status: 'PUBLISHED',
+  visibility: 'PUBLIC',
+  priceAmount: 50000,
+  currency: 'KZT',
+  itinerary: [
+    TourItineraryItemVm(
+      id: 'step-ru-1',
+      sortOrder: 0,
+      startOffsetMinutes: 0,
+      title: 'Тест',
+      description: 'Возможно стоит изменить',
+      translations: {
+        'ru': TourItineraryLocalizedCopyVm(
+          title: 'Тест',
+          description: 'Возможно стоит изменить',
+        ),
+      },
+    ),
+  ],
+  offers: [
+    TourOfferVm(
+      id: 'offer-russian-copy',
+      productId: 'tour-russian-copy',
+      guideProfileId: 'guide-profile-1',
+      guideUserId: 'guide-user-1',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      durationMinutes: 480,
+      maxGroupSize: 4,
+      meetingPoint: 'Hotel pickup',
+      priceAmount: 50000,
+      currency: 'KZT',
+      languageCodes: ['ru'],
+      includedItems: ['transport: Имеется'],
+      includedItemTranslations: {
+        'en': ['Transport: Имеется'],
+        'ru': ['Транспорт: Имеется'],
+      },
+    ),
+  ],
+);
+
+const _tourWithIncludedTypeKeys = TourVm(
+  id: 'tour-type-keys',
+  title: 'Bozjyra Tract',
+  summary: 'Shared route',
+  status: 'PUBLISHED',
+  visibility: 'PUBLIC',
+  priceAmount: 50000,
+  currency: 'KZT',
+  offers: [
+    TourOfferVm(
+      id: 'offer-type-keys',
+      productId: 'tour-type-keys',
+      guideProfileId: 'guide-profile-1',
+      guideUserId: 'guide-user-1',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      durationMinutes: 480,
+      maxGroupSize: 4,
+      meetingPoint: 'Hotel pickup',
+      priceAmount: 50000,
+      currency: 'KZT',
+      languageCodes: ['en'],
+      includedItems: ['transport', 'food'],
+    ),
+  ],
 );

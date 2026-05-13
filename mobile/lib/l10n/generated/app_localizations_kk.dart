@@ -2070,6 +2070,18 @@ class AppLocalizationsKk extends AppLocalizations {
   String get toursSortAffordable => 'Арзанырақ';
 
   @override
+  String get toursSortCreatedAt => 'Құрылған күн';
+
+  @override
+  String get toursSortRating => 'Рейтинг';
+
+  @override
+  String get toursSortPrice => 'Баға';
+
+  @override
+  String get toursSortDuration => 'Ұзақтығы';
+
+  @override
   String get toursFiltersTitle => 'Сүзгілер';
 
   @override
@@ -2088,10 +2100,29 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String get toursFilterCountry => 'Ел';
+
+  @override
+  String get toursFilterCountryAll => 'Барлық елдер';
+
+  @override
+  String get toursFilterCountrySearchHint =>
+      'Ел, код немесе телефон бойынша іздеу';
+
+  @override
+  String get toursFilterCountryNoResults => 'Ел табылмады';
+
+  @override
   String get toursFilterCategories => 'Санаттар';
 
   @override
   String get toursFilterPriceRange => 'Баға аралығы';
+
+  @override
+  String get toursFilterPriceFrom => 'Бастап';
+
+  @override
+  String get toursFilterPriceTo => 'Дейін';
 
   @override
   String get toursFilterBudget => 'Үнемді';
@@ -2243,6 +2274,23 @@ class AppLocalizationsKk extends AppLocalizations {
   String get toursFreePrice => 'Тегін';
 
   @override
+  String toursPriceFrom(Object price) {
+    return '$price бастап';
+  }
+
+  @override
+  String toursOffersCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count гид',
+      one: '1 гид',
+      zero: 'Әзірге гид жоқ',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get toursDurationHourShort => 'сағ';
 
   @override
@@ -2290,10 +2338,22 @@ class AppLocalizationsKk extends AppLocalizations {
   String get tourLanguageJapanese => 'Жапон';
 
   @override
+  String get tourLanguageGerman => 'Неміс';
+
+  @override
+  String get tourLanguageSpanish => 'Испан';
+
+  @override
+  String get tourLanguageTurkish => 'Түрік';
+
+  @override
   String get tourDetailsExperience => 'Әсер';
 
   @override
   String get tourDetailsWhatToExpect => 'Не күтуге болады';
+
+  @override
+  String get tourDetailsSelectedOfferIncluded => 'Таңдалған гидте не кіреді';
 
   @override
   String get tourDetailsLeadGuide => 'Сіздің гидіңіз';
@@ -2312,6 +2372,63 @@ class AppLocalizationsKk extends AppLocalizations {
   String get tourDetailsMessageGuide => 'Гидке жазу';
 
   @override
+  String get tourDetailsOffersTitle => 'Қолжетімді гидтер';
+
+  @override
+  String get tourDetailsOffersEmpty => 'Әзірге қолжетімді гидтер жоқ';
+
+  @override
+  String get tourDetailsOfferSelected => 'Таңдалды';
+
+  @override
+  String get tourDetailsOfferCurrentUser => 'Бұл сіз';
+
+  @override
+  String get tourDetailsOffersSearchHint => 'Гидтер мен ұсыныстарды іздеу';
+
+  @override
+  String get tourDetailsOffersLoadMore => 'Тағы гидтерді көрсету';
+
+  @override
+  String get tourDetailsOffersLoadFailed => 'Гидтерді жүктеу мүмкін болмады';
+
+  @override
+  String get tourDetailsOffersSortRating => 'Рейтинг';
+
+  @override
+  String get tourDetailsOffersSortExperience => 'Тәжірибе';
+
+  @override
+  String get tourDetailsOffersSortPrice => 'Баға';
+
+  @override
+  String get tourDetailsOffersFiltersTitle => 'Гид сүзгілері';
+
+  @override
+  String get tourDetailsOffersMaxPrice => 'Ең жоғары баға';
+
+  @override
+  String get tourDetailsOffersMaxPriceHint => 'Мысалы, 50000';
+
+  @override
+  String get tourDetailsOffersMinGroup => 'Мин. топ өлшемі';
+
+  @override
+  String get tourDetailsOffersMinGroupHint => 'Мысалы, 4';
+
+  @override
+  String get tourDetailsOffersLanguageAny => 'Кез келген тіл';
+
+  @override
+  String get tourDetailsOffersLanguageSearchHint => 'Тілді немесе кодты іздеу';
+
+  @override
+  String get tourDetailsOffersLanguageNoResults => 'Тіл табылмады';
+
+  @override
+  String get tourDetailsOffersApplyFilters => 'Сүзгілерді қолдану';
+
+  @override
   String get tourDetailsMapPreview => 'Кездесу нүктесі';
 
   @override
@@ -2325,6 +2442,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get tourDetailsBook => 'Брондау';
+
+  @override
+  String get tourDetailsEditOffer => 'Ұсынысты өзгерту';
 
   @override
   String get tourDetailsLoadFailed => 'Турды жүктеу мүмкін болмады';
@@ -2404,13 +2524,25 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createTourTitle => 'Тур құру';
 
   @override
+  String get createTourEditTitle => 'Ұсынысты өзгерту';
+
+  @override
   String get createTourSubmit => 'Жариялау';
+
+  @override
+  String get createTourSaveChanges => 'Сақтау';
 
   @override
   String get createTourSuccess => 'Тур жарияланды';
 
   @override
+  String get createTourUpdateSuccess => 'Ұсыныс жаңартылды';
+
+  @override
   String get createTourFailed => 'Турды жасау мүмкін болмады';
+
+  @override
+  String get createTourUpdateFailed => 'Ұсынысты жаңарту мүмкін болмады';
 
   @override
   String get createTourCoverSection => 'Тур қаптамасы';
@@ -2509,6 +2641,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createTourAddTimeSlot => 'Уақыт слотын қосу';
 
   @override
+  String get createTourItineraryEmpty =>
+      'Маршруттың кемінде бір пунктін қосыңыз. Ол туристерге тур мәліметінде көрсетіледі.';
+
+  @override
   String get createTourAutosaveHint =>
       'Прогресс гид профиліне автоматты сақталады';
 
@@ -2521,6 +2657,18 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createTourDurationHint => 'Мысалы, 4 сағат';
+
+  @override
+  String get createTourDurationUnitLabel => 'Бірлік';
+
+  @override
+  String get createTourDurationUnitMinutes => 'Минут';
+
+  @override
+  String get createTourDurationUnitHours => 'Сағат';
+
+  @override
+  String get createTourDurationUnitDays => 'Күн';
 
   @override
   String get createTourDurationValidation =>

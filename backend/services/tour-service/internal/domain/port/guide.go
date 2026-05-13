@@ -7,9 +7,14 @@ import (
 )
 
 type GuideTourPermission struct {
-	GuideProfileID uuid.UUID
-	GuideUserID    uuid.UUID
-	Allowed        bool
+	GuideProfileID  uuid.UUID
+	GuideUserID     uuid.UUID
+	Allowed         bool
+	RatingAvg       float64
+	ReviewsCount    int
+	ExperienceYears int
+	DisplayName     string
+	GuideSearchText string
 }
 
 type GuideVerifier interface {

@@ -49,6 +49,23 @@ func TestTourRoutesProxyToTourService(t *testing.T) {
 	}
 }
 
+func TestTourProductRoutesProxyToTourService(t *testing.T) {
+	policy := matchRoutePolicy("/api/v1/tour-products/123/offers", "/api/v1")
+
+	if policy == nil {
+		t.Fatal("expected tour product route policy")
+	}
+	if policy.Upstream != "tour" {
+		t.Fatalf("upstream = %q, want tour", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/tour-products" {
+		t.Fatalf("rewrite prefix = %q, want /v1/tour-products", policy.RewritePrefix)
+	}
+}
+
 func TestPublicGuidesRouteDoesNotRequireBearerToken(t *testing.T) {
 	policy := matchRoutePolicy("/api/v1/guides/public", "/api/v1")
 	if policy == nil {

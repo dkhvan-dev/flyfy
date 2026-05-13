@@ -15,6 +15,7 @@ import (
 
 type GuideAggregate struct {
 	Profile             *model.GuideProfile
+	UserProfile         *PublicUserProfile
 	VerificationRequest *model.GuideVerificationRequest
 	Documents           []*model.GuideDocument
 	Languages           []*model.GuideLanguage
@@ -125,13 +126,16 @@ func (u *GuideUseCase) GetGuideAggregateByProfileID(ctx context.Context, profile
 		return nil, fmt.Errorf("list guide specializations: %w", err)
 	}
 
-	return &GuideAggregate{
+	aggregate := &GuideAggregate{
 		Profile:             profile,
 		VerificationRequest: latestRequest,
 		Documents:           documents,
 		Languages:           languages,
 		Specializations:     specializations,
-	}, nil
+	}
+	u.attachPublicUserProfile(ctx, aggregate)
+
+	return aggregate, nil
 }
 
 func (u *GuideUseCase) GetGuideAggregateByUserID(ctx context.Context, userID uuid.UUID) (*GuideAggregate, error) {
@@ -148,6 +152,27 @@ func (u *GuideUseCase) GetGuideAggregateByUserID(ctx context.Context, userID uui
 	}
 
 	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+}
+
+func (u *GuideUseCase) attachPublicUserProfile(ctx context.Context, aggregate *GuideAggregate) {
+	if u.userClient == nil || aggregate == nil || aggregate.Profile == nil {
+		return
+	}
+
+	profile, err := u.userClient.GetUserProfile(ctx, aggregate.Profile.UserID)
+	if err == nil && profile != nil {
+		aggregate.UserProfile = profile
+		return
+	}
+
+	profiles, err := u.userClient.GetPublicUserProfiles(ctx, []uuid.UUID{aggregate.Profile.UserID})
+	if err != nil {
+		return
+	}
+	if profile, ok := profiles[aggregate.Profile.UserID]; ok {
+		p := profile
+		aggregate.UserProfile = &p
+	}
 }
 
 func (u *GuideUseCase) ResolveUserIDBySubject(ctx context.Context, subject string) (uuid.UUID, error) {

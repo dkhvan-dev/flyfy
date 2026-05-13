@@ -1,8 +1,5 @@
 class CreateTourRequest {
   const CreateTourRequest({
-    required this.title,
-    required this.summary,
-    required this.description,
     required this.categorySlug,
     required this.durationMinutes,
     required this.maxGroupSize,
@@ -13,7 +10,6 @@ class CreateTourRequest {
     required this.itinerary,
     this.landmarkId,
     this.landmarkName,
-    this.tags = const [],
     this.visibility = 'PUBLIC',
     this.countryCode,
     this.cityName,
@@ -21,16 +17,16 @@ class CreateTourRequest {
     this.longitude,
     this.mapUrl,
     this.includedItems = const [],
+    this.includedItemTranslations = const {},
     this.coverFileId,
+    this.productCoverFileId,
+    this.productTranslations = const {},
   });
 
   final String? landmarkId;
   final String? landmarkName;
-  final String title;
-  final String summary;
-  final String description;
   final String categorySlug;
-  final List<String> tags;
+  final Map<String, CreateTourLocalizedCopyRequest> productTranslations;
   final int durationMinutes;
   final int maxGroupSize;
   final List<String> languageCodes;
@@ -44,24 +40,30 @@ class CreateTourRequest {
   final double priceAmount;
   final String currency;
   final List<String> includedItems;
+  final Map<String, List<String>> includedItemTranslations;
   final List<CreateTourItineraryItemRequest> itinerary;
   final String? coverFileId;
+  final String? productCoverFileId;
 
   Map<String, dynamic> toJson() {
-    final normalizedTags = _cleanList(tags);
     final normalizedLanguages = _cleanList(
       languageCodes.map((value) => value.toLowerCase()).toList(),
     );
     final normalizedIncludedItems = _cleanList(includedItems);
+    final normalizedIncludedItemTranslations = _cleanIncludedItemTranslations(
+      includedItemTranslations,
+      normalizedIncludedItems.length,
+    );
+    final normalizedProductTranslations = _cleanTranslations(
+      productTranslations,
+    );
 
     return {
       if (_isPresent(landmarkId)) 'landmarkId': landmarkId!.trim(),
       if (_isPresent(landmarkName)) 'landmarkName': landmarkName!.trim(),
-      'title': title.trim(),
-      'summary': summary.trim(),
-      'description': description.trim(),
       'categorySlug': categorySlug.trim().toLowerCase(),
-      if (normalizedTags.isNotEmpty) 'tags': normalizedTags,
+      if (normalizedProductTranslations.isNotEmpty)
+        'productTranslations': normalizedProductTranslations,
       'durationMinutes': durationMinutes,
       'maxGroupSize': maxGroupSize,
       'languageCodes': normalizedLanguages,
@@ -77,9 +79,13 @@ class CreateTourRequest {
       'currency': currency.trim().toUpperCase(),
       if (normalizedIncludedItems.isNotEmpty)
         'includedItems': normalizedIncludedItems,
+      if (normalizedIncludedItemTranslations.isNotEmpty)
+        'includedItemTranslations': normalizedIncludedItemTranslations,
       'itinerary':
           itinerary.map((item) => item.toJson()).toList(growable: false),
       if (_isPresent(coverFileId)) 'coverFileId': coverFileId!.trim(),
+      if (_isPresent(productCoverFileId))
+        'productCoverFileId': productCoverFileId!.trim(),
     };
   }
 
@@ -98,6 +104,64 @@ class CreateTourRequest {
     }
     return result;
   }
+
+  static Map<String, Map<String, dynamic>> _cleanTranslations(
+    Map<String, CreateTourLocalizedCopyRequest> values,
+  ) {
+    final result = <String, Map<String, dynamic>>{};
+    values.forEach((locale, copy) {
+      final normalizedLocale = locale.trim().toLowerCase().replaceAll('_', '-');
+      final normalizedCopy = copy.toJson();
+      if (normalizedLocale.isEmpty || normalizedCopy.isEmpty) {
+        return;
+      }
+      result[normalizedLocale] = normalizedCopy;
+    });
+    return result;
+  }
+
+  static Map<String, List<String>> _cleanIncludedItemTranslations(
+    Map<String, List<String>> values,
+    int itemCount,
+  ) {
+    if (itemCount <= 0 || values.isEmpty) return const {};
+
+    final result = <String, List<String>>{};
+    values.forEach((locale, rawValues) {
+      final normalizedLocale = locale.trim().toLowerCase().replaceAll('_', '-');
+      if (normalizedLocale.isEmpty) return;
+
+      final localizedValues = List<String>.generate(itemCount, (index) {
+        if (index >= rawValues.length) return '';
+        return rawValues[index].trim();
+      }, growable: false);
+      if (localizedValues.every((value) => value.isEmpty)) return;
+
+      result[normalizedLocale] = localizedValues;
+    });
+    return result;
+  }
+}
+
+class CreateTourLocalizedCopyRequest {
+  const CreateTourLocalizedCopyRequest({
+    this.title,
+    this.summary,
+    this.description,
+  });
+
+  final String? title;
+  final String? summary;
+  final String? description;
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (CreateTourRequest._isPresent(title)) 'title': title!.trim(),
+      if (CreateTourRequest._isPresent(summary)) 'summary': summary!.trim(),
+      if (CreateTourRequest._isPresent(description))
+        'description': description!.trim(),
+    };
+  }
 }
 
 class CreateTourItineraryItemRequest {
@@ -106,19 +170,57 @@ class CreateTourItineraryItemRequest {
     required this.title,
     required this.description,
     this.durationMinutes,
+    this.translations = const {},
   });
 
   final int startOffsetMinutes;
   final int? durationMinutes;
   final String title;
   final String description;
+  final Map<String, CreateTourItineraryLocalizedCopyRequest> translations;
 
   Map<String, dynamic> toJson() {
+    final normalizedTranslations = _cleanItineraryTranslations(translations);
     return {
       'startOffsetMinutes': startOffsetMinutes,
       if (durationMinutes != null) 'durationMinutes': durationMinutes,
       'title': title.trim(),
       'description': description.trim(),
+      if (normalizedTranslations.isNotEmpty)
+        'translations': normalizedTranslations,
+    };
+  }
+
+  static Map<String, Map<String, dynamic>> _cleanItineraryTranslations(
+    Map<String, CreateTourItineraryLocalizedCopyRequest> values,
+  ) {
+    final result = <String, Map<String, dynamic>>{};
+    values.forEach((locale, copy) {
+      final normalizedLocale = locale.trim().toLowerCase().replaceAll('_', '-');
+      final normalizedCopy = copy.toJson();
+      if (normalizedLocale.isEmpty || normalizedCopy.isEmpty) {
+        return;
+      }
+      result[normalizedLocale] = normalizedCopy;
+    });
+    return result;
+  }
+}
+
+class CreateTourItineraryLocalizedCopyRequest {
+  const CreateTourItineraryLocalizedCopyRequest({
+    this.title,
+    this.description,
+  });
+
+  final String? title;
+  final String? description;
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (CreateTourRequest._isPresent(title)) 'title': title!.trim(),
+      if (CreateTourRequest._isPresent(description))
+        'description': description!.trim(),
     };
   }
 }

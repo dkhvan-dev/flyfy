@@ -2,6 +2,8 @@ package model
 
 import "strings"
 
+import "github.com/google/uuid"
+
 func NormalizeOptionalString(v *string) *string {
 	if v == nil {
 		return nil
@@ -11,6 +13,14 @@ func NormalizeOptionalString(v *string) *string {
 		return nil
 	}
 	return &trimmed
+}
+
+func NormalizeUUIDPointer(v *uuid.UUID) *uuid.UUID {
+	if v == nil || *v == uuid.Nil {
+		return nil
+	}
+	out := *v
+	return &out
 }
 
 func NormalizeSlug(raw string) string {
