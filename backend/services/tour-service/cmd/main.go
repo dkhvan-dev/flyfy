@@ -13,6 +13,7 @@ import (
 	guideadapter "github.com/dkhvan-dev/flyfy/backend/services/tour-service/internal/adapter/guide"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/tour-service/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/tour-service/internal/adapter/repository"
+	translationadapter "github.com/dkhvan-dev/flyfy/backend/services/tour-service/internal/adapter/translation"
 	"github.com/dkhvan-dev/flyfy/backend/services/tour-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/tour-service/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -66,7 +67,12 @@ func main() {
 	}
 	defer fileManagerClient.Close()
 
-	tourUC := app.NewTourUseCase(repo, guideClient, fileManagerClient)
+	translator := translationadapter.NewClient(
+		cfg.Translation.BaseURL,
+		cfg.Translation.Timeout,
+		cfg.Security.InternalServiceToken,
+	)
+	tourUC := app.NewTourUseCase(repo, guideClient, fileManagerClient, translator)
 	handler := httpadapter.NewHandler(tourUC, fileManagerClient)
 
 	mux := http.NewServeMux()

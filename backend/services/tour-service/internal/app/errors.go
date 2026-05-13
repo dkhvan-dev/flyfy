@@ -12,6 +12,7 @@ var (
 	ErrInvalidTourIncludedItem = errors.New("invalid tour included item")
 	ErrTourOfferNotFound       = errors.New("tour offer not found")
 	ErrTourOfferNotBookable    = errors.New("tour offer is not available for booking")
+	ErrTourTranslationFailed   = errors.New("failed to translate tour content")
 
 	ErrTourCoverFileNotFound   = errors.New("tour cover file not found")
 	ErrTourCoverFileNotReady   = errors.New("tour cover file is not ready")

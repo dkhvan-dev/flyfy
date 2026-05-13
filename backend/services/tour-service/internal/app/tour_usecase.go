@@ -39,17 +39,24 @@ type TourUseCase struct {
 	repo          port.TourRepository
 	guideVerifier port.GuideVerifier
 	fileManager   port.TourCoverFileManager
+	translator    port.TourTranslator
 }
 
 func NewTourUseCase(
 	repo port.TourRepository,
 	guideVerifier port.GuideVerifier,
 	fileManager port.TourCoverFileManager,
+	translators ...port.TourTranslator,
 ) *TourUseCase {
+	var translator port.TourTranslator
+	if len(translators) > 0 {
+		translator = translators[0]
+	}
 	return &TourUseCase{
 		repo:          repo,
 		guideVerifier: guideVerifier,
 		fileManager:   fileManager,
+		translator:    translator,
 	}
 }
 
@@ -64,6 +71,12 @@ type TourItineraryItemInput struct {
 type TourIncludedItemInput struct {
 	Text         string
 	Translations model.TourLocalizedText
+}
+
+type itineraryTranslationJob struct {
+	itemIndex      int
+	missingLocales []string
+	sourceCopy     model.TourItineraryLocalizedCopy
 }
 
 type CreateTourInput struct {
@@ -182,7 +195,11 @@ func (u *TourUseCase) CreateTour(ctx context.Context, input CreateTourInput) (*T
 		return nil, err
 	}
 
-	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, input.Itinerary)
+	itinerary, err := u.translateItinerary(ctx, input.Itinerary)
+	if err != nil {
+		return nil, err
+	}
+	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, itinerary)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +282,11 @@ func (u *TourUseCase) UpdateTour(ctx context.Context, input UpdateTourInput) (*T
 		return nil, err
 	}
 
-	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, input.Itinerary)
+	itinerary, err := u.translateItinerary(ctx, input.Itinerary)
+	if err != nil {
+		return nil, err
+	}
+	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, itinerary)
 	if err != nil {
 		return nil, err
 	}
@@ -627,6 +648,207 @@ func (u *TourUseCase) recordEvent(ctx context.Context, tourID uuid.UUID, eventTy
 		return
 	}
 	_ = u.repo.CreateTourEvent(ctx, event)
+}
+
+var tourTranslationLocales = []string{"en", "ru", "kk"}
+
+func (u *TourUseCase) translateItinerary(ctx context.Context, itinerary []TourItineraryItemInput) ([]TourItineraryItemInput, error) {
+	if len(itinerary) == 0 {
+		return itinerary, nil
+	}
+
+	result := make([]TourItineraryItemInput, len(itinerary))
+	copy(result, itinerary)
+	jobsBySource := make(map[string][]itineraryTranslationJob)
+
+	for index := range result {
+		translations := model.NormalizeTourItineraryTranslations(result[index].Translations)
+		sourceLocale, sourceCopy := chooseItinerarySourceCopy(result[index], translations)
+		if sourceLocale == "" {
+			result[index].Translations = translations
+			continue
+		}
+
+		if translations == nil {
+			translations = make(model.TourItineraryTranslations, len(tourTranslationLocales))
+		}
+		translations[sourceLocale] = sourceCopy
+
+		missingLocales := missingItineraryTranslationLocales(sourceLocale, translations)
+		if len(missingLocales) > 0 {
+			jobsBySource[sourceLocale] = append(jobsBySource[sourceLocale], itineraryTranslationJob{
+				itemIndex:      index,
+				missingLocales: missingLocales,
+				sourceCopy:     sourceCopy,
+			})
+		}
+
+		result[index].Translations = model.NormalizeTourItineraryTranslations(translations)
+	}
+
+	if u.translator == nil || len(jobsBySource) == 0 {
+		return result, nil
+	}
+
+	for sourceLocale, jobs := range jobsBySource {
+		translated, err := u.translator.TranslateTexts(ctx, port.TranslationRequest{
+			SourceLocale:  sourceLocale,
+			TargetLocales: uniqueMissingLocales(jobs),
+			Texts:         itineraryTranslationTexts(jobs),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrTourTranslationFailed, err)
+		}
+		applyItineraryTranslationJobs(result, jobs, translated)
+	}
+
+	for index := range result {
+		translations := model.NormalizeTourItineraryTranslations(result[index].Translations)
+		sourceLocale, _ := chooseItinerarySourceCopy(result[index], translations)
+		if sourceLocale != "" && len(missingItineraryTranslationLocales(sourceLocale, translations)) > 0 {
+			return nil, ErrTourTranslationFailed
+		}
+		result[index].Translations = translations
+	}
+
+	return result, nil
+}
+
+func chooseItinerarySourceCopy(
+	input TourItineraryItemInput,
+	translations model.TourItineraryTranslations,
+) (string, model.TourItineraryLocalizedCopy) {
+	for _, locale := range tourTranslationLocales {
+		copy, ok := translations[locale]
+		if !ok || (strings.TrimSpace(copy.Title) == "" && strings.TrimSpace(copy.Description) == "") {
+			continue
+		}
+		return locale, fillItineraryCopyFromBase(input, copy)
+	}
+
+	if len(translations) == 0 {
+		return "", model.TourItineraryLocalizedCopy{}
+	}
+	locales := make([]string, 0, len(translations))
+	for locale := range translations {
+		locales = append(locales, locale)
+	}
+	sort.Strings(locales)
+	for _, locale := range locales {
+		normalizedLocale := normalizeTourTranslationLocale(locale)
+		if normalizedLocale == "" {
+			continue
+		}
+		copy := fillItineraryCopyFromBase(input, translations[locale])
+		if strings.TrimSpace(copy.Title) != "" || strings.TrimSpace(copy.Description) != "" {
+			return normalizedLocale, copy
+		}
+	}
+	return "", model.TourItineraryLocalizedCopy{}
+}
+
+func fillItineraryCopyFromBase(
+	input TourItineraryItemInput,
+	copy model.TourItineraryLocalizedCopy,
+) model.TourItineraryLocalizedCopy {
+	title := strings.Join(strings.Fields(strings.TrimSpace(copy.Title)), " ")
+	if title == "" {
+		title = strings.Join(strings.Fields(strings.TrimSpace(input.Title)), " ")
+	}
+	description := strings.TrimSpace(copy.Description)
+	if description == "" {
+		description = strings.TrimSpace(input.Description)
+	}
+	return model.TourItineraryLocalizedCopy{Title: title, Description: description}
+}
+
+func missingItineraryTranslationLocales(
+	sourceLocale string,
+	translations model.TourItineraryTranslations,
+) []string {
+	missing := make([]string, 0, len(tourTranslationLocales)-1)
+	for _, locale := range tourTranslationLocales {
+		if locale == sourceLocale {
+			continue
+		}
+		copy := translations[locale]
+		if strings.TrimSpace(copy.Title) == "" || strings.TrimSpace(copy.Description) == "" {
+			missing = append(missing, locale)
+		}
+	}
+	return missing
+}
+
+func uniqueMissingLocales(jobs []itineraryTranslationJob) []string {
+	seen := make(map[string]struct{}, len(tourTranslationLocales))
+	result := make([]string, 0, len(tourTranslationLocales))
+	for _, job := range jobs {
+		for _, locale := range job.missingLocales {
+			if _, ok := seen[locale]; ok {
+				continue
+			}
+			seen[locale] = struct{}{}
+			result = append(result, locale)
+		}
+	}
+	sort.Strings(result)
+	return result
+}
+
+func itineraryTranslationTexts(jobs []itineraryTranslationJob) []string {
+	texts := make([]string, 0, len(jobs)*2)
+	for _, job := range jobs {
+		texts = append(texts, job.sourceCopy.Title, job.sourceCopy.Description)
+	}
+	return texts
+}
+
+func applyItineraryTranslationJobs(
+	items []TourItineraryItemInput,
+	jobs []itineraryTranslationJob,
+	result port.TranslationResult,
+) {
+	for jobIndex, job := range jobs {
+		if job.itemIndex < 0 || job.itemIndex >= len(items) {
+			continue
+		}
+		translations := model.NormalizeTourItineraryTranslations(items[job.itemIndex].Translations)
+		if translations == nil {
+			translations = make(model.TourItineraryTranslations, len(tourTranslationLocales))
+		}
+		for _, locale := range job.missingLocales {
+			texts := result.Translations[locale]
+			titleIndex := jobIndex * 2
+			descriptionIndex := titleIndex + 1
+			if len(texts) <= descriptionIndex {
+				continue
+			}
+			copy := translations[locale]
+			title := strings.Join(strings.Fields(strings.TrimSpace(texts[titleIndex])), " ")
+			description := strings.TrimSpace(texts[descriptionIndex])
+			if title != "" {
+				copy.Title = title
+			}
+			if description != "" {
+				copy.Description = description
+			}
+			translations[locale] = copy
+		}
+		items[job.itemIndex].Translations = model.NormalizeTourItineraryTranslations(translations)
+	}
+}
+
+func normalizeTourTranslationLocale(value string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	if index := strings.IndexAny(normalized, "-_"); index >= 0 {
+		normalized = normalized[:index]
+	}
+	for _, locale := range tourTranslationLocales {
+		if normalized == locale {
+			return normalized
+		}
+	}
+	return ""
 }
 
 func buildRelations(

@@ -114,6 +114,17 @@ func (s *fileManagerStub) CreateDownloadURL(ctx context.Context, fileID uuid.UUI
 	return "https://cdn.example.test/tour-cover.jpg", nil
 }
 
+type translatorStub struct {
+	result port.TranslationResult
+	err    error
+	calls  []port.TranslationRequest
+}
+
+func (s *translatorStub) TranslateTexts(ctx context.Context, input port.TranslationRequest) (port.TranslationResult, error) {
+	s.calls = append(s.calls, input)
+	return s.result, s.err
+}
+
 func TestCreateTourRequiresActiveTourGuide(t *testing.T) {
 	repo := &tourRepoStub{}
 	uc := NewTourUseCase(repo, guideVerifierStub{err: ErrGuideNotAllowed}, nil)
@@ -231,6 +242,189 @@ func TestCreateTourPersistsDraftAggregate(t *testing.T) {
 		repo.createdRelations.IncludedItems[0].Text != "food" ||
 		repo.createdRelations.IncludedItems[1].Text != "transport" {
 		t.Fatalf("included items = %#v, want stable dictionary keys", repo.createdRelations.IncludedItems)
+	}
+}
+
+func TestCreateTourTranslatesItineraryBeforePersisting(t *testing.T) {
+	repo := &tourRepoStub{}
+	translator := &translatorStub{
+		result: port.TranslationResult{
+			Translations: map[string][]string{
+				"en": {"Hotel departure", "Meet your guide and start the route."},
+				"kk": {"Қонақүйден шығу", "Гидпен кездесіп, маршрутты бастаңыз."},
+			},
+		},
+	}
+	actorUserID := uuid.New()
+	uc := NewTourUseCase(repo, guideVerifierStub{
+		result: port.GuideTourPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil, translator)
+
+	_, err := uc.CreateTour(context.Background(), CreateTourInput{
+		ActorUserID:     actorUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		CategorySlug:    "nature",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"ru"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+		Itinerary: []TourItineraryItemInput{
+			{
+				StartOffsetMinutes: 0,
+				Title:              "Выезд из отеля",
+				Description:        "Встречаемся с гидом и начинаем маршрут.",
+				Translations: model.TourItineraryTranslations{
+					"ru": {Title: "Выезд из отеля", Description: "Встречаемся с гидом и начинаем маршрут."},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("CreateTour() error = %v", err)
+	}
+	if len(translator.calls) != 1 {
+		t.Fatalf("translator calls = %d, want 1", len(translator.calls))
+	}
+	if translator.calls[0].SourceLocale != "ru" {
+		t.Fatalf("source locale = %q, want ru", translator.calls[0].SourceLocale)
+	}
+	got := repo.createdRelations.Itinerary[0].Translations
+	if got["ru"].Title != "Выезд из отеля" || got["ru"].Description == "" {
+		t.Fatalf("source translation = %#v, want persisted ru copy", got["ru"])
+	}
+	if got["en"].Title != "Hotel departure" || got["kk"].Title != "Қонақүйден шығу" {
+		t.Fatalf("translations = %#v, want generated en and kk copies", got)
+	}
+}
+
+func TestCreateTourBatchesItineraryTranslationBySourceLocale(t *testing.T) {
+	repo := &tourRepoStub{}
+	translator := &translatorStub{
+		result: port.TranslationResult{
+			Translations: map[string][]string{
+				"en": {
+					"Hotel departure", "Meet your guide and start the route.",
+					"Viewpoint walk", "We stop for photos.",
+				},
+				"kk": {
+					"Қонақүйден шығу", "Гидпен кездесіп, маршрутты бастаңыз.",
+					"Шолу алаңына серуен", "Суретке түсу үшін тоқтаймыз.",
+				},
+			},
+		},
+	}
+	actorUserID := uuid.New()
+	uc := NewTourUseCase(repo, guideVerifierStub{
+		result: port.GuideTourPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil, translator)
+
+	_, err := uc.CreateTour(context.Background(), CreateTourInput{
+		ActorUserID:     actorUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		CategorySlug:    "nature",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"ru"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+		Itinerary: []TourItineraryItemInput{
+			{
+				StartOffsetMinutes: 0,
+				Title:              "Выезд из отеля",
+				Description:        "Встречаемся с гидом и начинаем маршрут.",
+				Translations: model.TourItineraryTranslations{
+					"ru": {Title: "Выезд из отеля", Description: "Встречаемся с гидом и начинаем маршрут."},
+				},
+			},
+			{
+				StartOffsetMinutes: 60,
+				Title:              "Прогулка к смотровой",
+				Description:        "Останавливаемся для фото.",
+				Translations: model.TourItineraryTranslations{
+					"ru": {Title: "Прогулка к смотровой", Description: "Останавливаемся для фото."},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("CreateTour() error = %v", err)
+	}
+	if len(translator.calls) != 1 {
+		t.Fatalf("translator calls = %d, want 1 batched call", len(translator.calls))
+	}
+	if len(translator.calls[0].Texts) != 4 {
+		t.Fatalf("translated text count = %d, want 4", len(translator.calls[0].Texts))
+	}
+	got := repo.createdRelations.Itinerary[1].Translations
+	if got["en"].Title != "Viewpoint walk" || got["kk"].Description != "Суретке түсу үшін тоқтаймыз." {
+		t.Fatalf("second item translations = %#v, want batched generated copies", got)
+	}
+}
+
+func TestCreateTourRejectsIncompleteItineraryTranslation(t *testing.T) {
+	repo := &tourRepoStub{}
+	translator := &translatorStub{
+		result: port.TranslationResult{
+			Translations: map[string][]string{
+				"en": {"Hotel departure", "Meet your guide and start the route."},
+			},
+		},
+	}
+	actorUserID := uuid.New()
+	uc := NewTourUseCase(repo, guideVerifierStub{
+		result: port.GuideTourPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil, translator)
+
+	_, err := uc.CreateTour(context.Background(), CreateTourInput{
+		ActorUserID:     actorUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		CategorySlug:    "nature",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"ru"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+		Itinerary: []TourItineraryItemInput{
+			{
+				StartOffsetMinutes: 0,
+				Title:              "Выезд из отеля",
+				Description:        "Встречаемся с гидом и начинаем маршрут.",
+				Translations: model.TourItineraryTranslations{
+					"ru": {Title: "Выезд из отеля", Description: "Встречаемся с гидом и начинаем маршрут."},
+				},
+			},
+		},
+	})
+
+	if !errors.Is(err, ErrTourTranslationFailed) {
+		t.Fatalf("error = %v, want %v", err, ErrTourTranslationFailed)
+	}
+	if repo.createdTour != nil {
+		t.Fatal("tour was persisted with incomplete itinerary translations")
 	}
 }
 
@@ -427,6 +621,77 @@ func TestUpdatePublishedTourKeepsOriginalPublicationTime(t *testing.T) {
 	}
 	if repo.savedTour.PublishedAt == nil || !repo.savedTour.PublishedAt.Equal(publishedAt) {
 		t.Fatalf("publishedAt = %v, want %v", repo.savedTour.PublishedAt, publishedAt)
+	}
+}
+
+func TestUpdateTourTranslatesItineraryBeforePersisting(t *testing.T) {
+	ownerID := uuid.New()
+	tour, err := model.NewTour(model.NewTourParams{
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     ownerID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		Title:           "Medeu",
+		Summary:         "Compare guide offers for Medeu.",
+		Description:     "Choose a guide, language, price, meeting point, schedule, and included options before booking.",
+		CategorySlug:    "nature",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+	})
+	if err != nil {
+		t.Fatalf("NewTour() error = %v", err)
+	}
+
+	repo := &tourRepoStub{gotTour: tour}
+	translator := &translatorStub{
+		result: port.TranslationResult{
+			Translations: map[string][]string{
+				"en": {"Walk to the viewpoint", "We stop for photos and a short story."},
+				"kk": {"Шолу алаңына серуен", "Суретке түсіп, қысқа әңгіме тыңдаймыз."},
+			},
+		},
+	}
+	uc := NewTourUseCase(repo, guideVerifierStub{
+		result: port.GuideTourPermission{
+			GuideProfileID: tour.GuideProfileID,
+			GuideUserID:    ownerID,
+			Allowed:        true,
+		},
+	}, nil, translator)
+
+	_, err = uc.UpdateTour(context.Background(), UpdateTourInput{
+		ActorUserID:     ownerID,
+		TourID:          tour.ID,
+		CategorySlug:    "nature",
+		Visibility:      string(enum.TourVisibilityPublic),
+		DurationMinutes: 260,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"ru"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     140,
+		Currency:        "USD",
+		Itinerary: []TourItineraryItemInput{
+			{
+				StartOffsetMinutes: 60,
+				Title:              "Прогулка к смотровой",
+				Description:        "Останавливаемся для фото и короткого рассказа.",
+				Translations: model.TourItineraryTranslations{
+					"ru": {Title: "Прогулка к смотровой", Description: "Останавливаемся для фото и короткого рассказа."},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("UpdateTour() error = %v", err)
+	}
+	got := repo.savedRelations.Itinerary[0].Translations
+	if got["en"].Title != "Walk to the viewpoint" || got["kk"].Description == "" {
+		t.Fatalf("translations = %#v, want generated copies before save", got)
 	}
 }
 

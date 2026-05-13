@@ -853,6 +853,8 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		writeError(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, model.ErrTourAlreadyArchived):
 		writeError(w, http.StatusConflict, err.Error())
+	case errors.Is(err, app.ErrTourTranslationFailed):
+		writeError(w, http.StatusServiceUnavailable, err.Error())
 	case errors.Is(err, app.ErrInvalidTourID),
 		errors.Is(err, app.ErrTourAttractionRequired),
 		errors.Is(err, app.ErrInvalidTourIncludedItem),

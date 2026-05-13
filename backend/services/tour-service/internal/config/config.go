@@ -16,6 +16,7 @@ type Config struct {
 	Security     SecurityConfig
 	GuideService GuideServiceConfig
 	FileManager  FileManagerConfig
+	Translation  TranslationServiceConfig
 }
 
 type AppConfig struct {
@@ -94,6 +95,11 @@ type GuideServiceConfig struct {
 
 type FileManagerConfig struct {
 	Target string `env:"FILE_MANAGER_GRPC_TARGET, default=dns:///file-manager-service:9093"`
+}
+
+type TranslationServiceConfig struct {
+	BaseURL string        `env:"TRANSLATION_SERVICE_URL"`
+	Timeout time.Duration `env:"TRANSLATION_SERVICE_TIMEOUT, default=8s"`
 }
 
 func Load(ctx context.Context) (*Config, error) {
