@@ -329,7 +329,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       future: _extrasFutureFor(effectiveProfile),
       builder: (context, snapshot) {
         final extras = snapshot.data ?? const _ProfileExtras();
-        final isGuideProfile = extras.guide?.isVerified == true;
         return _ProfileBody(
           profile: effectiveProfile,
           guide: extras.guide,
@@ -350,9 +349,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
-          onFollowersTap: isGuideProfile
-              ? null
-              : () => _openFollowers(effectiveProfile),
+          onFollowersTap: () => _openFollowers(effectiveProfile),
         );
       },
     );
@@ -442,9 +439,6 @@ class _ProfileBody extends StatelessWidget {
           SizedBox(height: profileScaled(context, 22, min: 16, max: 24)),
         _ProfileStatsGrid(
           profile: profile,
-          guide: guide,
-          isGuideProfile: isGuideProfile,
-          isOwnProfile: isOwnProfile,
           activityStatsFuture: activityStatsFuture,
           onFollowersTap: onFollowersTap,
         ),
@@ -1029,17 +1023,11 @@ class _BecomeGuideCard extends StatelessWidget {
 class _ProfileStatsGrid extends StatelessWidget {
   const _ProfileStatsGrid({
     required this.profile,
-    required this.guide,
-    required this.isGuideProfile,
-    required this.isOwnProfile,
     required this.activityStatsFuture,
     this.onFollowersTap,
   });
 
   final UserProfileVm profile;
-  final GuideProfileVm? guide;
-  final bool isGuideProfile;
-  final bool isOwnProfile;
   final Future<ActivityCompletionStatsVm> activityStatsFuture;
   final VoidCallback? onFollowersTap;
 
@@ -1059,21 +1047,16 @@ class _ProfileStatsGrid extends StatelessWidget {
             value: '$totalCompleted',
             highlighted: true,
           ),
-          if (isGuideProfile)
-            _StatConfig(
-              label: l10n.profileReviewsStat,
-              value: guide == null ? '—' : '${guide!.reviewsCount}',
-              highlighted: guide != null,
-              disabled: guide == null,
-            )
-          else
-            _StatConfig(label: l10n.profileBlogsStat, value: '0'),
           _StatConfig(
-            label: isGuideProfile
-                ? l10n.profileBlogsStat
-                : l10n.profileFollowersStat,
-            value: isGuideProfile ? '0' : '${profile.followersCount}',
-            onTap: isGuideProfile ? null : onFollowersTap,
+            label: l10n.profileBlogsStat,
+            value: '0',
+            highlighted: true,
+          ),
+          _StatConfig(
+            label: l10n.profileFollowersStat,
+            value: '${profile.followersCount}',
+            highlighted: true,
+            onTap: onFollowersTap,
           ),
         ];
 
@@ -1112,14 +1095,12 @@ class _StatConfig {
     required this.label,
     required this.value,
     this.highlighted = false,
-    this.disabled = false,
     this.onTap,
   });
 
   final String label;
   final String value;
   final bool highlighted;
-  final bool disabled;
   final VoidCallback? onTap;
 }
 
@@ -1138,7 +1119,6 @@ class _ProfileStatCard extends StatelessWidget {
       decoration: profileCardDecoration(
         context,
         highlighted: config.highlighted,
-        disabled: config.disabled,
         radius: profileScaled(context, 20, min: 18, max: 22),
       ),
       child: Column(
@@ -1150,7 +1130,7 @@ class _ProfileStatCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: config.disabled ? profileDisabled : AppColors.accent,
+              color: AppColors.accent,
               fontSize: profileScaled(context, 24, min: 20, max: 28),
               fontWeight: FontWeight.w900,
               letterSpacing: -0.8,
@@ -1163,7 +1143,7 @@ class _ProfileStatCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: config.disabled ? profileDisabled : profileTextSoft,
+              color: profileTextSoft,
               fontSize: profileScaled(context, 11, min: 10, max: 11),
               fontWeight: FontWeight.w800,
               letterSpacing: 1.2,
@@ -1173,7 +1153,7 @@ class _ProfileStatCard extends StatelessWidget {
       ),
     );
 
-    if (config.onTap == null || config.disabled) {
+    if (config.onTap == null) {
       return child;
     }
 
