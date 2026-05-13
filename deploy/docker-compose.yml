@@ -730,6 +730,33 @@ services:
       - flyfy-network
 
   # ============================================
+  # Translation Service
+  # ============================================
+  translation-service:
+    build:
+      context: ..
+      dockerfile: ./backend/services/translation-service/Dockerfile
+    container_name: translation-service
+    ports:
+      - "8094:8094"
+    environment:
+      APP_ENV: development
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      TRANSLATION_MODEL_NAME: facebook/m2m100_418M
+      TRANSLATION_SUPPORTED_LANGUAGES: en,ru,kk
+      TRANSLATION_MAX_BATCH_SIZE: 16
+      TRANSLATION_MAX_INPUT_TOKENS: 256
+      TRANSLATION_MAX_OUTPUT_TOKENS: 256
+      TRANSLATION_NUM_BEAMS: 2
+      TRANSLATION_CACHE_MAX_ITEMS: 20000
+      TRANSLATION_PRELOAD_MODEL: "true"
+    volumes:
+      - translation_hf_cache:/models/huggingface
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Tour Service
   # ============================================
   tour-service:
@@ -746,6 +773,8 @@ services:
         condition: service_started
       file-manager-service:
         condition: service_started
+      translation-service:
+        condition: service_healthy
     ports:
       - "8093:8093"
     environment:
@@ -776,6 +805,8 @@ services:
 
       GUIDE_SERVICE_GRPC_TARGET: dns:///guide-service:9095
       FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
+      TRANSLATION_SERVICE_URL: http://translation-service:8094
+      TRANSLATION_SERVICE_TIMEOUT: 20s
     restart: unless-stopped
     networks:
       - flyfy-network
@@ -1360,3 +1391,4 @@ volumes:
   payment_postgres_data:
   sticker_postgres_data:
   token_service_keys:
+  translation_hf_cache:
