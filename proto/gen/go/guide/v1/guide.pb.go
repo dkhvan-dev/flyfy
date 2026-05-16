@@ -294,19 +294,19 @@ func (x *GetGuideProfileByUserIdResponse) GetAggregate() *GuideAggregate {
 }
 
 type UpdateGuideProfileRequest struct {
-	state                   protoimpl.MessageState      `protogen:"open.v1"`
-	GuideProfileId          string                      `protobuf:"bytes,1,opt,name=guide_profile_id,json=guideProfileId,proto3" json:"guide_profile_id,omitempty"`
-	Headline                string                      `protobuf:"bytes,2,opt,name=headline,proto3" json:"headline,omitempty"`
-	About                   string                      `protobuf:"bytes,3,opt,name=about,proto3" json:"about,omitempty"`
-	ExperienceYears         *int32                      `protobuf:"varint,4,opt,name=experience_years,json=experienceYears,proto3,oneof" json:"experience_years,omitempty"`
-	BaseCityId              string                      `protobuf:"bytes,5,opt,name=base_city_id,json=baseCityId,proto3" json:"base_city_id,omitempty"`
-	IsPrivateGuideAvailable *bool                       `protobuf:"varint,6,opt,name=is_private_guide_available,json=isPrivateGuideAvailable,proto3,oneof" json:"is_private_guide_available,omitempty"`
-	IsActivityHostAvailable *bool                       `protobuf:"varint,7,opt,name=is_activity_host_available,json=isActivityHostAvailable,proto3,oneof" json:"is_activity_host_available,omitempty"`
-	IsTourGuideAvailable    *bool                       `protobuf:"varint,8,opt,name=is_tour_guide_available,json=isTourGuideAvailable,proto3,oneof" json:"is_tour_guide_available,omitempty"`
-	Languages               []*GuideLanguageInput       `protobuf:"bytes,9,rep,name=languages,proto3" json:"languages,omitempty"`
-	Specializations         []*GuideSpecializationInput `protobuf:"bytes,10,rep,name=specializations,proto3" json:"specializations,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	state                     protoimpl.MessageState      `protogen:"open.v1"`
+	GuideProfileId            string                      `protobuf:"bytes,1,opt,name=guide_profile_id,json=guideProfileId,proto3" json:"guide_profile_id,omitempty"`
+	Headline                  string                      `protobuf:"bytes,2,opt,name=headline,proto3" json:"headline,omitempty"`
+	About                     string                      `protobuf:"bytes,3,opt,name=about,proto3" json:"about,omitempty"`
+	ExperienceYears           *int32                      `protobuf:"varint,4,opt,name=experience_years,json=experienceYears,proto3,oneof" json:"experience_years,omitempty"`
+	BaseCityId                string                      `protobuf:"bytes,5,opt,name=base_city_id,json=baseCityId,proto3" json:"base_city_id,omitempty"`
+	IsPrivateGuideAvailable   *bool                       `protobuf:"varint,6,opt,name=is_private_guide_available,json=isPrivateGuideAvailable,proto3,oneof" json:"is_private_guide_available,omitempty"`
+	IsActivityHostAvailable   *bool                       `protobuf:"varint,7,opt,name=is_activity_host_available,json=isActivityHostAvailable,proto3,oneof" json:"is_activity_host_available,omitempty"`
+	IsExcursionGuideAvailable *bool                       `protobuf:"varint,8,opt,name=is_excursion_guide_available,json=isExcursionGuideAvailable,proto3,oneof" json:"is_excursion_guide_available,omitempty"`
+	Languages                 []*GuideLanguageInput       `protobuf:"bytes,9,rep,name=languages,proto3" json:"languages,omitempty"`
+	Specializations           []*GuideSpecializationInput `protobuf:"bytes,10,rep,name=specializations,proto3" json:"specializations,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *UpdateGuideProfileRequest) Reset() {
@@ -388,9 +388,9 @@ func (x *UpdateGuideProfileRequest) GetIsActivityHostAvailable() bool {
 	return false
 }
 
-func (x *UpdateGuideProfileRequest) GetIsTourGuideAvailable() bool {
-	if x != nil && x.IsTourGuideAvailable != nil {
-		return *x.IsTourGuideAvailable
+func (x *UpdateGuideProfileRequest) GetIsExcursionGuideAvailable() bool {
+	if x != nil && x.IsExcursionGuideAvailable != nil {
+		return *x.IsExcursionGuideAvailable
 	}
 	return false
 }
@@ -842,24 +842,24 @@ func (x *GuideAggregate) GetUserProfile() *PublicUserProfile {
 }
 
 type GuideProfile struct {
-	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Id                      string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId                  string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Type                    string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
-	Status                  string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
-	Headline                string                 `protobuf:"bytes,5,opt,name=headline,proto3" json:"headline,omitempty"`
-	About                   string                 `protobuf:"bytes,6,opt,name=about,proto3" json:"about,omitempty"`
-	ExperienceYears         int32                  `protobuf:"varint,7,opt,name=experience_years,json=experienceYears,proto3" json:"experience_years,omitempty"`
-	BaseCityId              string                 `protobuf:"bytes,8,opt,name=base_city_id,json=baseCityId,proto3" json:"base_city_id,omitempty"`
-	IsPrivateGuideAvailable bool                   `protobuf:"varint,9,opt,name=is_private_guide_available,json=isPrivateGuideAvailable,proto3" json:"is_private_guide_available,omitempty"`
-	IsActivityHostAvailable bool                   `protobuf:"varint,10,opt,name=is_activity_host_available,json=isActivityHostAvailable,proto3" json:"is_activity_host_available,omitempty"`
-	IsTourGuideAvailable    bool                   `protobuf:"varint,11,opt,name=is_tour_guide_available,json=isTourGuideAvailable,proto3" json:"is_tour_guide_available,omitempty"`
-	RatingAvg               float64                `protobuf:"fixed64,12,opt,name=rating_avg,json=ratingAvg,proto3" json:"rating_avg,omitempty"`
-	ReviewsCount            int32                  `protobuf:"varint,13,opt,name=reviews_count,json=reviewsCount,proto3" json:"reviews_count,omitempty"`
-	CreatedAt               string                 `protobuf:"bytes,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt               string                 `protobuf:"bytes,15,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	state                     protoimpl.MessageState `protogen:"open.v1"`
+	Id                        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId                    string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Type                      string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	Status                    string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	Headline                  string                 `protobuf:"bytes,5,opt,name=headline,proto3" json:"headline,omitempty"`
+	About                     string                 `protobuf:"bytes,6,opt,name=about,proto3" json:"about,omitempty"`
+	ExperienceYears           int32                  `protobuf:"varint,7,opt,name=experience_years,json=experienceYears,proto3" json:"experience_years,omitempty"`
+	BaseCityId                string                 `protobuf:"bytes,8,opt,name=base_city_id,json=baseCityId,proto3" json:"base_city_id,omitempty"`
+	IsPrivateGuideAvailable   bool                   `protobuf:"varint,9,opt,name=is_private_guide_available,json=isPrivateGuideAvailable,proto3" json:"is_private_guide_available,omitempty"`
+	IsActivityHostAvailable   bool                   `protobuf:"varint,10,opt,name=is_activity_host_available,json=isActivityHostAvailable,proto3" json:"is_activity_host_available,omitempty"`
+	IsExcursionGuideAvailable bool                   `protobuf:"varint,11,opt,name=is_excursion_guide_available,json=isExcursionGuideAvailable,proto3" json:"is_excursion_guide_available,omitempty"`
+	RatingAvg                 float64                `protobuf:"fixed64,12,opt,name=rating_avg,json=ratingAvg,proto3" json:"rating_avg,omitempty"`
+	ReviewsCount              int32                  `protobuf:"varint,13,opt,name=reviews_count,json=reviewsCount,proto3" json:"reviews_count,omitempty"`
+	CreatedAt                 string                 `protobuf:"bytes,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt                 string                 `protobuf:"bytes,15,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *GuideProfile) Reset() {
@@ -962,9 +962,9 @@ func (x *GuideProfile) GetIsActivityHostAvailable() bool {
 	return false
 }
 
-func (x *GuideProfile) GetIsTourGuideAvailable() bool {
+func (x *GuideProfile) GetIsExcursionGuideAvailable() bool {
 	if x != nil {
-		return x.IsTourGuideAvailable
+		return x.IsExcursionGuideAvailable
 	}
 	return false
 }
@@ -2170,7 +2170,7 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"\x1eGetGuideProfileByUserIdRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"Y\n" +
 	"\x1fGetGuideProfileByUserIdResponse\x126\n" +
-	"\taggregate\x18\x01 \x01(\v2\x18.guide.v1.GuideAggregateR\taggregate\"\x82\x05\n" +
+	"\taggregate\x18\x01 \x01(\v2\x18.guide.v1.GuideAggregateR\taggregate\"\x91\x05\n" +
 	"\x19UpdateGuideProfileRequest\x12(\n" +
 	"\x10guide_profile_id\x18\x01 \x01(\tR\x0eguideProfileId\x12\x1a\n" +
 	"\bheadline\x18\x02 \x01(\tR\bheadline\x12\x14\n" +
@@ -2179,15 +2179,15 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"\fbase_city_id\x18\x05 \x01(\tR\n" +
 	"baseCityId\x12@\n" +
 	"\x1ais_private_guide_available\x18\x06 \x01(\bH\x01R\x17isPrivateGuideAvailable\x88\x01\x01\x12@\n" +
-	"\x1ais_activity_host_available\x18\a \x01(\bH\x02R\x17isActivityHostAvailable\x88\x01\x01\x12:\n" +
-	"\x17is_tour_guide_available\x18\b \x01(\bH\x03R\x14isTourGuideAvailable\x88\x01\x01\x12:\n" +
+	"\x1ais_activity_host_available\x18\a \x01(\bH\x02R\x17isActivityHostAvailable\x88\x01\x01\x12D\n" +
+	"\x1cis_excursion_guide_available\x18\b \x01(\bH\x03R\x19isExcursionGuideAvailable\x88\x01\x01\x12:\n" +
 	"\tlanguages\x18\t \x03(\v2\x1c.guide.v1.GuideLanguageInputR\tlanguages\x12L\n" +
 	"\x0fspecializations\x18\n" +
 	" \x03(\v2\".guide.v1.GuideSpecializationInputR\x0fspecializationsB\x13\n" +
 	"\x11_experience_yearsB\x1d\n" +
 	"\x1b_is_private_guide_availableB\x1d\n" +
-	"\x1b_is_activity_host_availableB\x1a\n" +
-	"\x18_is_tour_guide_available\"T\n" +
+	"\x1b_is_activity_host_availableB\x1f\n" +
+	"\x1d_is_excursion_guide_available\"T\n" +
 	"\x1aUpdateGuideProfileResponse\x126\n" +
 	"\taggregate\x18\x01 \x01(\v2\x18.guide.v1.GuideAggregateR\taggregate\"f\n" +
 	" CreateVerificationRequestRequest\x12(\n" +
@@ -2213,7 +2213,7 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"\tdocuments\x18\x03 \x03(\v2\x17.guide.v1.GuideDocumentR\tdocuments\x125\n" +
 	"\tlanguages\x18\x04 \x03(\v2\x17.guide.v1.GuideLanguageR\tlanguages\x12G\n" +
 	"\x0fspecializations\x18\x05 \x03(\v2\x1d.guide.v1.GuideSpecializationR\x0fspecializations\x12>\n" +
-	"\fuser_profile\x18\x06 \x01(\v2\x1b.guide.v1.PublicUserProfileR\vuserProfile\"\x95\x04\n" +
+	"\fuser_profile\x18\x06 \x01(\v2\x1b.guide.v1.PublicUserProfileR\vuserProfile\"\x9f\x04\n" +
 	"\fGuideProfile\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x12\n" +
@@ -2226,8 +2226,8 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"baseCityId\x12;\n" +
 	"\x1ais_private_guide_available\x18\t \x01(\bR\x17isPrivateGuideAvailable\x12;\n" +
 	"\x1ais_activity_host_available\x18\n" +
-	" \x01(\bR\x17isActivityHostAvailable\x125\n" +
-	"\x17is_tour_guide_available\x18\v \x01(\bR\x14isTourGuideAvailable\x12\x1d\n" +
+	" \x01(\bR\x17isActivityHostAvailable\x12?\n" +
+	"\x1cis_excursion_guide_available\x18\v \x01(\bR\x19isExcursionGuideAvailable\x12\x1d\n" +
 	"\n" +
 	"rating_avg\x18\f \x01(\x01R\tratingAvg\x12#\n" +
 	"\rreviews_count\x18\r \x01(\x05R\freviewsCount\x12\x1d\n" +

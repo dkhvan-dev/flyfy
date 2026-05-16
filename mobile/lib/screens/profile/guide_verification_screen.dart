@@ -61,7 +61,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
   String? _countryCode;
 
   String _identityDocumentType = 'PASSPORT';
-  String _professionalDocumentType = 'OFFICIAL_TOUR_GUIDE_LICENSE';
+  String _professionalDocumentType = 'OFFICIAL_EXCURSION_GUIDE_LICENSE';
 
   _UploadedGuideDocument _identityDocument = const _UploadedGuideDocument();
   _UploadedGuideDocument _professionalDocument = const _UploadedGuideDocument();
@@ -942,8 +942,8 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
           value: _professionalDocumentType,
           items: [
             _DropdownItem(
-              value: 'OFFICIAL_TOUR_GUIDE_LICENSE',
-              label: l10n.guideVerificationOfficialTourGuideLicense,
+              value: 'OFFICIAL_EXCURSION_GUIDE_LICENSE',
+              label: l10n.guideVerificationOfficialExcursionGuideLicense,
             ),
             _DropdownItem(
               value: 'CITY_GUIDE_PERMIT',
@@ -1246,7 +1246,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
 
   bool _isPrimaryProfessionalDocumentType(String value) {
     final normalized = value.trim().toUpperCase();
-    return normalized == 'OFFICIAL_TOUR_GUIDE_LICENSE' ||
+    return normalized == 'OFFICIAL_EXCURSION_GUIDE_LICENSE' ||
         normalized == 'CITY_GUIDE_PERMIT' ||
         normalized == 'MUSEUM_ACCREDITATION';
   }
@@ -1274,9 +1274,9 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
         return l10n.guideVerificationFirstAid;
       case 'LANGUAGE_PROFICIENCY_CERTIFICATE':
         return l10n.guideVerificationLanguageProficiency;
-      case 'OFFICIAL_TOUR_GUIDE_LICENSE':
+      case 'OFFICIAL_EXCURSION_GUIDE_LICENSE':
       default:
-        return l10n.guideVerificationOfficialTourGuideLicense;
+        return l10n.guideVerificationOfficialExcursionGuideLicense;
     }
   }
 }

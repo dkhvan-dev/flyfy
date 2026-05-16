@@ -20,21 +20,21 @@ var (
 )
 
 type GuideProfile struct {
-	ID                      uuid.UUID
-	UserID                  uuid.UUID
-	Type                    enum.GuideType
-	Status                  enum.GuideStatus
-	Headline                *string
-	About                   *string
-	ExperienceYears         int
-	BaseCityID              *uuid.UUID
-	IsPrivateGuideAvailable bool
-	IsActivityHostAvailable bool
-	IsTourGuideAvailable    bool
-	RatingAvg               float64
-	ReviewsCount            int
-	CreatedAt               time.Time
-	UpdatedAt               time.Time
+	ID                        uuid.UUID
+	UserID                    uuid.UUID
+	Type                      enum.GuideType
+	Status                    enum.GuideStatus
+	Headline                  *string
+	About                     *string
+	ExperienceYears           int
+	BaseCityID                *uuid.UUID
+	IsPrivateGuideAvailable   bool
+	IsActivityHostAvailable   bool
+	IsExcursionGuideAvailable bool
+	RatingAvg                 float64
+	ReviewsCount              int
+	CreatedAt                 time.Time
+	UpdatedAt                 time.Time
 }
 
 type NewGuideProfileParams struct {
@@ -46,18 +46,18 @@ func NewGuideProfile(params NewGuideProfileParams) (*GuideProfile, error) {
 	now := time.Now().UTC()
 
 	profile := &GuideProfile{
-		ID:                      uuid.New(),
-		UserID:                  params.UserID,
-		Type:                    params.Type,
-		Status:                  enum.GuideStatusDraft,
-		ExperienceYears:         0,
-		IsPrivateGuideAvailable: false,
-		IsActivityHostAvailable: false,
-		IsTourGuideAvailable:    false,
-		RatingAvg:               0,
-		ReviewsCount:            0,
-		CreatedAt:               now,
-		UpdatedAt:               now,
+		ID:                        uuid.New(),
+		UserID:                    params.UserID,
+		Type:                      params.Type,
+		Status:                    enum.GuideStatusDraft,
+		ExperienceYears:           0,
+		IsPrivateGuideAvailable:   false,
+		IsActivityHostAvailable:   false,
+		IsExcursionGuideAvailable: false,
+		RatingAvg:                 0,
+		ReviewsCount:              0,
+		CreatedAt:                 now,
+		UpdatedAt:                 now,
 	}
 
 	if err := profile.Validate(); err != nil {
@@ -93,13 +93,13 @@ func (g *GuideProfile) Validate() error {
 }
 
 type UpdateGuideProfileParams struct {
-	Headline                *string
-	About                   *string
-	ExperienceYears         *int
-	BaseCityID              *uuid.UUID
-	IsPrivateGuideAvailable *bool
-	IsActivityHostAvailable *bool
-	IsTourGuideAvailable    *bool
+	Headline                  *string
+	About                     *string
+	ExperienceYears           *int
+	BaseCityID                *uuid.UUID
+	IsPrivateGuideAvailable   *bool
+	IsActivityHostAvailable   *bool
+	IsExcursionGuideAvailable *bool
 }
 
 func (g *GuideProfile) ApplyUpdate(params UpdateGuideProfileParams) error {
@@ -121,8 +121,8 @@ func (g *GuideProfile) ApplyUpdate(params UpdateGuideProfileParams) error {
 	if params.IsActivityHostAvailable != nil {
 		g.IsActivityHostAvailable = *params.IsActivityHostAvailable
 	}
-	if params.IsTourGuideAvailable != nil {
-		g.IsTourGuideAvailable = *params.IsTourGuideAvailable
+	if params.IsExcursionGuideAvailable != nil {
+		g.IsExcursionGuideAvailable = *params.IsExcursionGuideAvailable
 	}
 
 	g.UpdatedAt = time.Now().UTC()

@@ -24,11 +24,11 @@ import '../../screens/activities/activity_attendance_qr_screen.dart';
 import '../../screens/activities/activity_payment_screen.dart';
 import '../../screens/activities/create_activity_screen.dart';
 import '../../screens/activities/my_activities_screen.dart';
-import '../../screens/tours/create_tour_screen.dart';
-import '../../screens/tours/tour_booking_screen.dart';
-import '../../screens/tours/tour_select_location_screen.dart';
-import '../../screens/tours/tour_details_screen.dart';
-import '../../screens/tours/tours_screen.dart';
+import '../../screens/excursions/create_excursion_screen.dart';
+import '../../screens/excursions/excursion_booking_screen.dart';
+import '../../screens/excursions/excursion_select_location_screen.dart';
+import '../../screens/excursions/excursion_details_screen.dart';
+import '../../screens/excursions/excursions_screen.dart';
 import '../../screens/guides/guides_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
 import '../../screens/chat/conversations_screen.dart';
@@ -36,7 +36,7 @@ import '../../screens/chat/chat_screen.dart';
 import '../../screens/attractions/attractions_screen.dart';
 import '../../screens/attractions/attraction_details_screen.dart';
 import '../../features/attractions/models/attraction_vm.dart';
-import '../../features/tours/models/tour_vm.dart';
+import '../../features/excursions/models/excursion_vm.dart';
 import '../../screens/common/feature_stub_screen.dart';
 import '../../screens/map/map_screen.dart';
 
@@ -97,9 +97,8 @@ class AppRouter {
         GoRoute(
           path: '/stories/create',
           builder: (context, state) {
-            final initialStory = state.extra is StoryVm
-                ? state.extra! as StoryVm
-                : null;
+            final initialStory =
+                state.extra is StoryVm ? state.extra! as StoryVm : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(initialStory: initialStory),
             );
@@ -109,9 +108,8 @@ class AppRouter {
           path: '/stories/:storyId/edit',
           builder: (context, state) {
             final storyId = state.pathParameters['storyId'] ?? '';
-            final initialStory = state.extra is StoryVm
-                ? state.extra! as StoryVm
-                : null;
+            final initialStory =
+                state.extra is StoryVm ? state.extra! as StoryVm : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(storyId: storyId, initialStory: initialStory),
             );
@@ -122,9 +120,8 @@ class AppRouter {
           builder: (context, state) {
             final slug = state.pathParameters['slug'] ?? '';
             final initialCommentId = state.uri.queryParameters['comment'];
-            final initialStory = state.extra is StoryVm
-                ? state.extra! as StoryVm
-                : null;
+            final initialStory =
+                state.extra is StoryVm ? state.extra! as StoryVm : null;
             return _withAndroidBackSwipe(
               StoryDetailsScreen(
                 slug: slug,
@@ -259,9 +256,9 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: '/tours',
+          path: '/excursions',
           builder: (context, state) =>
-              _withAndroidBackSwipe(const ToursScreen()),
+              _withAndroidBackSwipe(const ExcursionsScreen()),
         ),
         GoRoute(
           path: '/guides',
@@ -269,30 +266,29 @@ class AppRouter {
               _withAndroidBackSwipe(const GuidesScreen()),
         ),
         GoRoute(
-          path: '/tours/create',
+          path: '/excursions/create',
           pageBuilder: (context, state) {
             return _buildActivityEditorPage(
               state: state,
-              child: const CreateTourScreen(),
+              child: const CreateExcursionScreen(),
             );
           },
         ),
         GoRoute(
-          path: '/tours/create/location',
+          path: '/excursions/create/location',
           pageBuilder: (context, state) {
-            final args = state.extra is TourLocationPickerArgs
-                ? state.extra! as TourLocationPickerArgs
+            final args = state.extra is ExcursionLocationPickerArgs
+                ? state.extra! as ExcursionLocationPickerArgs
                 : null;
-            final initialSelection =
-                args?.initialSelection ??
-                (state.extra is TourLocationSelection
-                    ? state.extra! as TourLocationSelection
+            final initialSelection = args?.initialSelection ??
+                (state.extra is ExcursionLocationSelection
+                    ? state.extra! as ExcursionLocationSelection
                     : null);
             final countryCode =
                 args?.countryCode ?? initialSelection?.countryCode ?? 'KZ';
             return _buildActivityEditorPage(
               state: state,
-              child: TourSelectLocationScreen(
+              child: ExcursionSelectLocationScreen(
                 countryCode: countryCode,
                 initialSelection: initialSelection,
               ),
@@ -300,46 +296,47 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: '/tours/:tourId/edit',
+          path: '/excursions/:excursionId/edit',
           pageBuilder: (context, state) {
-            final tourId = state.pathParameters['tourId'] ?? '';
-            final initialTour = state.extra is TourVm
-                ? state.extra! as TourVm
-                : null;
+            final excursionId = state.pathParameters['excursionId'] ?? '';
+            final initialExcursion =
+                state.extra is ExcursionVm ? state.extra! as ExcursionVm : null;
             return _buildActivityEditorPage(
               state: state,
-              child: CreateTourScreen(tourId: tourId, initialTour: initialTour),
+              child: CreateExcursionScreen(
+                  excursionId: excursionId, initialExcursion: initialExcursion),
             );
           },
         ),
         GoRoute(
-          path: '/tours/:tourId/booking',
+          path: '/excursions/:excursionId/booking',
           builder: (context, state) {
-            final tourId = state.pathParameters['tourId'] ?? '';
-            final args = state.extra is TourBookingRouteArgs
-                ? state.extra! as TourBookingRouteArgs
+            final excursionId = state.pathParameters['excursionId'] ?? '';
+            final args = state.extra is ExcursionBookingRouteArgs
+                ? state.extra! as ExcursionBookingRouteArgs
                 : null;
-            final initialTour =
-                args?.tour ??
-                (state.extra is TourVm ? state.extra! as TourVm : null);
+            final initialExcursion = args?.excursion ??
+                (state.extra is ExcursionVm
+                    ? state.extra! as ExcursionVm
+                    : null);
             return _withAndroidBackSwipe(
-              TourBookingScreen(
-                tourId: tourId,
-                initialTour: initialTour,
+              ExcursionBookingScreen(
+                excursionId: excursionId,
+                initialExcursion: initialExcursion,
                 selectedOfferId: args?.selectedOfferId,
               ),
             );
           },
         ),
         GoRoute(
-          path: '/tours/:tourId',
+          path: '/excursions/:excursionId',
           builder: (context, state) {
-            final tourId = state.pathParameters['tourId'] ?? '';
-            final initialTour = state.extra is TourVm
-                ? state.extra! as TourVm
-                : null;
+            final excursionId = state.pathParameters['excursionId'] ?? '';
+            final initialExcursion =
+                state.extra is ExcursionVm ? state.extra! as ExcursionVm : null;
             return _withAndroidBackSwipe(
-              TourDetailsScreen(tourId: tourId, initialTour: initialTour),
+              ExcursionDetailsScreen(
+                  excursionId: excursionId, initialExcursion: initialExcursion),
             );
           },
         ),
@@ -376,9 +373,8 @@ class AppRouter {
         GoRoute(
           path: '/map',
           builder: (context, state) {
-            final initialTarget = state.extra is MapTarget
-                ? state.extra! as MapTarget
-                : null;
+            final initialTarget =
+                state.extra is MapTarget ? state.extra! as MapTarget : null;
             return _withAndroidBackSwipe(
               MapScreen(initialTarget: initialTarget),
             );
@@ -462,7 +458,7 @@ class AppRouter {
     }
 
     if (location == '/activities' ||
-        location == '/tours' ||
+        location == '/excursions' ||
         location == '/guides' ||
         location == '/stories' ||
         location == '/menu' ||
@@ -484,19 +480,19 @@ class AppRouter {
       return true;
     }
 
-    if (location.startsWith('/tours/create')) {
+    if (location.startsWith('/excursions/create')) {
       return false;
     }
 
-    if (location.startsWith('/tours/') && location.endsWith('/edit')) {
+    if (location.startsWith('/excursions/') && location.endsWith('/edit')) {
       return false;
     }
 
-    if (location.startsWith('/tours/') && location.endsWith('/booking')) {
+    if (location.startsWith('/excursions/') && location.endsWith('/booking')) {
       return false;
     }
 
-    if (location.startsWith('/tours/')) {
+    if (location.startsWith('/excursions/')) {
       return true;
     }
 

@@ -499,7 +499,7 @@
                             "AVATAR",
                             "GUIDE_VERIFICATION_DOC",
                             "ACTIVITY_MEDIA",
-                            "TOUR_MEDIA",
+                            "EXCURSION_MEDIA",
                             "CHAT_ATTACHMENT",
                             "GENERIC_DOCUMENT"
                         ]
@@ -520,7 +520,7 @@
                             "GUIDE_PROFILE",
                             "GUIDE_VERIFICATION_REQUEST",
                             "ACTIVITY",
-                            "TOUR",
+                            "EXCURSION",
                             "ORGANIZATION"
                         ]
                     },
@@ -713,7 +713,7 @@
                             "GUIDE_PROFILE",
                             "GUIDE_VERIFICATION_REQUEST",
                             "ACTIVITY",
-                            "TOUR",
+                            "EXCURSION",
                             "ORGANIZATION"
                         ]
                     },
@@ -727,7 +727,7 @@
                             "AVATAR",
                             "GUIDE_VERIFICATION_DOC",
                             "ACTIVITY_MEDIA",
-                            "TOUR_MEDIA",
+                            "EXCURSION_MEDIA",
                             "CHAT_ATTACHMENT",
                             "GENERIC_DOCUMENT"
                         ]

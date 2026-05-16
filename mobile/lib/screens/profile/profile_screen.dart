@@ -340,12 +340,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           isOwnProfile: isOwnProfile,
           isFollowActionLoading: _isFollowActionLoading,
           isMessageActionLoading: _isMessageActionLoading,
-          onToggleFollow: isOwnProfile
-              ? null
-              : () => _toggleFollow(effectiveProfile),
-          onMessageTap: isOwnProfile
-              ? null
-              : () => _openDirectChat(effectiveProfile),
+          onToggleFollow:
+              isOwnProfile ? null : () => _toggleFollow(effectiveProfile),
+          onMessageTap:
+              isOwnProfile ? null : () => _openDirectChat(effectiveProfile),
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
@@ -659,13 +657,10 @@ class _ProfileHero extends StatelessWidget {
     }
     final normalized = value.replaceAll(RegExp(r'[_-]+'), ' ');
     final words = normalized.split(RegExp(r'\s+'));
-    return words
-        .where((word) => word.isNotEmpty)
-        .map((word) {
-          final lower = word.toLowerCase();
-          return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
-        })
-        .join(' ');
+    return words.where((word) => word.isNotEmpty).map((word) {
+      final lower = word.toLowerCase();
+      return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+    }).join(' ');
   }
 }
 
@@ -934,20 +929,20 @@ class _BecomeGuideCard extends StatelessWidget {
     final title = isPending
         ? l10n.guideVerificationPendingTitle
         : isRejected
-        ? l10n.guideVerificationRejectedTitle
-        : l10n.profileBecomeGuideTitle;
+            ? l10n.guideVerificationRejectedTitle
+            : l10n.profileBecomeGuideTitle;
     final subtitle = isPending
         ? l10n.guideVerificationPendingSubtitle
         : isRejected
-        ? l10n.guideVerificationRejectedSubtitle
-        : isDraft
-        ? l10n.guideVerificationDraftSubtitle
-        : l10n.profileBecomeGuideSubtitle;
+            ? l10n.guideVerificationRejectedSubtitle
+            : isDraft
+                ? l10n.guideVerificationDraftSubtitle
+                : l10n.profileBecomeGuideSubtitle;
     final buttonLabel = isPending
         ? l10n.guideVerificationViewApplicationButton
         : isRejected || isDraft
-        ? l10n.guideVerificationContinueButton
-        : l10n.becomeGuideButton;
+            ? l10n.guideVerificationContinueButton
+            : l10n.becomeGuideButton;
 
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
@@ -1405,9 +1400,8 @@ class _ProfileMenuTile extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color: effectiveDisabled
-                        ? profileDisabled
-                        : AppColors.accent,
+                    color:
+                        effectiveDisabled ? profileDisabled : AppColors.accent,
                   ),
                 ),
                 SizedBox(width: profileScaled(context, 14, min: 12, max: 14)),

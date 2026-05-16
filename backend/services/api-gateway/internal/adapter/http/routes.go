@@ -37,7 +37,7 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 	chatLimit := 300
 	paymentLimit := 180
 	stickerLimit := 180
-	tourLimit := 180
+	excursionLimit := 180
 
 	return []RoutePolicy{
 		{
@@ -135,36 +135,36 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RewritePrefix:      "/v1/activities",
 		},
 		{
-			Name:               "my-tour-bookings",
-			Prefix:             apiPrefix + "/me/tour-bookings",
+			Name:               "my-excursion-bookings",
+			Prefix:             apiPrefix + "/me/excursion-bookings",
 			AuthMode:           RouteAuthAuthenticated,
-			Upstream:           "tour",
-			RateLimitPerMinute: &tourLimit,
-			RewritePrefix:      "/v1/me/tour-bookings",
+			Upstream:           "excursion",
+			RateLimitPerMinute: &excursionLimit,
+			RewritePrefix:      "/v1/me/excursion-bookings",
 		},
 		{
-			Name:               "my-tours",
-			Prefix:             apiPrefix + "/me/tours",
+			Name:               "my-excursions",
+			Prefix:             apiPrefix + "/me/excursions",
 			AuthMode:           RouteAuthAuthenticated,
-			Upstream:           "tour",
-			RateLimitPerMinute: &tourLimit,
-			RewritePrefix:      "/v1/me/tours",
+			Upstream:           "excursion",
+			RateLimitPerMinute: &excursionLimit,
+			RewritePrefix:      "/v1/me/excursions",
 		},
 		{
-			Name:               "tour-products",
-			Prefix:             apiPrefix + "/tour-products",
+			Name:               "excursion-products",
+			Prefix:             apiPrefix + "/excursion-products",
 			AuthMode:           RouteAuthPublic,
-			Upstream:           "tour",
-			RateLimitPerMinute: &tourLimit,
-			RewritePrefix:      "/v1/tour-products",
+			Upstream:           "excursion",
+			RateLimitPerMinute: &excursionLimit,
+			RewritePrefix:      "/v1/excursion-products",
 		},
 		{
-			Name:               "tours",
-			Prefix:             apiPrefix + "/tours",
+			Name:               "excursions",
+			Prefix:             apiPrefix + "/excursions",
 			AuthMode:           RouteAuthPublic,
-			Upstream:           "tour",
-			RateLimitPerMinute: &tourLimit,
-			RewritePrefix:      "/v1/tours",
+			Upstream:           "excursion",
+			RateLimitPerMinute: &excursionLimit,
+			RewritePrefix:      "/v1/excursions",
 		},
 		{
 			Name:               "payments",

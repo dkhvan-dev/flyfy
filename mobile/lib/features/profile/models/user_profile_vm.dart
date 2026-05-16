@@ -77,9 +77,8 @@ class UserProfileVm {
       followersCount: int.tryParse(followers['count']?.toString() ?? '') ?? 0,
       isFollowedByMe: followers['isFollowedByMe'] == true,
       settings: settings == null ? null : UserSettingsVm.fromJson(settings),
-      reputation: reputation == null
-          ? null
-          : UserReputationVm.fromJson(reputation),
+      reputation:
+          reputation == null ? null : UserReputationVm.fromJson(reputation),
     );
   }
 

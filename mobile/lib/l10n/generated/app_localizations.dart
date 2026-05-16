@@ -244,11 +244,11 @@ abstract class AppLocalizations {
   /// **'Explore Services'**
   String get homeExploreServices;
 
-  /// No description provided for @serviceTours.
+  /// No description provided for @serviceExcursions.
   ///
   /// In en, this message translates to:
-  /// **'Tours'**
-  String get serviceTours;
+  /// **'Excursions'**
+  String get serviceExcursions;
 
   /// No description provided for @serviceGuides.
   ///
@@ -610,11 +610,11 @@ abstract class AppLocalizations {
   /// **'Select document type'**
   String get guideVerificationSelectLicenseType;
 
-  /// No description provided for @guideVerificationOfficialTourGuideLicense.
+  /// No description provided for @guideVerificationOfficialExcursionGuideLicense.
   ///
   /// In en, this message translates to:
-  /// **'Official tour guide license'**
-  String get guideVerificationOfficialTourGuideLicense;
+  /// **'Official excursion guide license'**
+  String get guideVerificationOfficialExcursionGuideLicense;
 
   /// No description provided for @guideVerificationCityGuidePermit.
   ///
@@ -691,7 +691,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideVerificationLanguageProficiencyHint.
   ///
   /// In en, this message translates to:
-  /// **'You can host activities and tours in more than one language.'**
+  /// **'You can host activities and excursions in more than one language.'**
   String get guideVerificationLanguageProficiencyHint;
 
   /// No description provided for @guideVerificationTimelineTitle.
@@ -2662,17 +2662,17 @@ abstract class AppLocalizations {
   /// **'Services'**
   String get servicesSectionTitle;
 
-  /// No description provided for @homeToursTitle.
+  /// No description provided for @homeExcursionsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tours'**
-  String get homeToursTitle;
+  /// **'Excursions'**
+  String get homeExcursionsTitle;
 
-  /// No description provided for @homeToursSubtitle.
+  /// No description provided for @homeExcursionsSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Choose interesting routes and trips'**
-  String get homeToursSubtitle;
+  String get homeExcursionsSubtitle;
 
   /// No description provided for @homeGuidesTitle.
   ///
@@ -2725,7 +2725,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search activities, attractions, tours...'**
+  /// **'Search activities, attractions, excursions...'**
   String get homeSearchHint;
 
   /// No description provided for @homeTopDestinations.
@@ -2839,7 +2839,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePromoMountainTitle.
   ///
   /// In en, this message translates to:
-  /// **'Mountain Tours'**
+  /// **'Mountain Excursions'**
   String get homePromoMountainTitle;
 
   /// No description provided for @homePromoMountainDescription.
@@ -3592,11 +3592,11 @@ abstract class AppLocalizations {
   /// **'Video'**
   String get attractionReviewVideoPreview;
 
-  /// No description provided for @attractionFindTours.
+  /// No description provided for @attractionFindExcursions.
   ///
   /// In en, this message translates to:
-  /// **'Find tours'**
-  String get attractionFindTours;
+  /// **'Find excursions'**
+  String get attractionFindExcursions;
 
   /// No description provided for @attractionMapLink.
   ///
@@ -3832,203 +3832,203 @@ abstract class AppLocalizations {
   /// **'Failed to create activity'**
   String get createActivityFailed;
 
-  /// No description provided for @toursDiscoverTitle.
+  /// No description provided for @excursionsDiscoverTitle.
   ///
   /// In en, this message translates to:
-  /// **'Discover Tours'**
-  String get toursDiscoverTitle;
+  /// **'Discover Excursions'**
+  String get excursionsDiscoverTitle;
 
-  /// No description provided for @toursSearchHint.
+  /// No description provided for @excursionsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search tours and experiences'**
-  String get toursSearchHint;
+  /// **'Search excursions and experiences'**
+  String get excursionsSearchHint;
 
-  /// No description provided for @toursSortLabel.
+  /// No description provided for @excursionsSortLabel.
   ///
   /// In en, this message translates to:
   /// **'Sort by'**
-  String get toursSortLabel;
+  String get excursionsSortLabel;
 
-  /// No description provided for @toursSortPopular.
+  /// No description provided for @excursionsSortPopular.
   ///
   /// In en, this message translates to:
   /// **'Popular'**
-  String get toursSortPopular;
+  String get excursionsSortPopular;
 
-  /// No description provided for @toursSortNewest.
+  /// No description provided for @excursionsSortNewest.
   ///
   /// In en, this message translates to:
   /// **'New'**
-  String get toursSortNewest;
+  String get excursionsSortNewest;
 
-  /// No description provided for @toursSortAffordable.
+  /// No description provided for @excursionsSortAffordable.
   ///
   /// In en, this message translates to:
   /// **'Affordable'**
-  String get toursSortAffordable;
+  String get excursionsSortAffordable;
 
-  /// No description provided for @toursSortCreatedAt.
+  /// No description provided for @excursionsSortCreatedAt.
   ///
   /// In en, this message translates to:
   /// **'Created'**
-  String get toursSortCreatedAt;
+  String get excursionsSortCreatedAt;
 
-  /// No description provided for @toursSortRating.
+  /// No description provided for @excursionsSortRating.
   ///
   /// In en, this message translates to:
   /// **'Rating'**
-  String get toursSortRating;
+  String get excursionsSortRating;
 
-  /// No description provided for @toursSortPrice.
+  /// No description provided for @excursionsSortPrice.
   ///
   /// In en, this message translates to:
   /// **'Price'**
-  String get toursSortPrice;
+  String get excursionsSortPrice;
 
-  /// No description provided for @toursSortDuration.
+  /// No description provided for @excursionsSortDuration.
   ///
   /// In en, this message translates to:
   /// **'Duration'**
-  String get toursSortDuration;
+  String get excursionsSortDuration;
 
-  /// No description provided for @toursFiltersTitle.
+  /// No description provided for @excursionsFiltersTitle.
   ///
   /// In en, this message translates to:
   /// **'Filters'**
-  String get toursFiltersTitle;
+  String get excursionsFiltersTitle;
 
-  /// No description provided for @toursFiltersClear.
+  /// No description provided for @excursionsFiltersClear.
   ///
   /// In en, this message translates to:
   /// **'Clear'**
-  String get toursFiltersClear;
+  String get excursionsFiltersClear;
 
-  /// No description provided for @toursFiltersShowResults.
+  /// No description provided for @excursionsFiltersShowResults.
   ///
   /// In en, this message translates to:
-  /// **'Show {count, plural, =0{0 tours} =1{1 tour} other{{count} tours}}'**
-  String toursFiltersShowResults(num count);
+  /// **'Show {count, plural, =0{0 excursions} =1{1 excursion} other{{count} excursions}}'**
+  String excursionsFiltersShowResults(num count);
 
-  /// No description provided for @toursFilterCountry.
+  /// No description provided for @excursionsFilterCountry.
   ///
   /// In en, this message translates to:
   /// **'Country'**
-  String get toursFilterCountry;
+  String get excursionsFilterCountry;
 
-  /// No description provided for @toursFilterCountryAll.
+  /// No description provided for @excursionsFilterCountryAll.
   ///
   /// In en, this message translates to:
   /// **'All countries'**
-  String get toursFilterCountryAll;
+  String get excursionsFilterCountryAll;
 
-  /// No description provided for @toursFilterCountrySearchHint.
+  /// No description provided for @excursionsFilterCountrySearchHint.
   ///
   /// In en, this message translates to:
   /// **'Search country, code, or phone'**
-  String get toursFilterCountrySearchHint;
+  String get excursionsFilterCountrySearchHint;
 
-  /// No description provided for @toursFilterCountryNoResults.
+  /// No description provided for @excursionsFilterCountryNoResults.
   ///
   /// In en, this message translates to:
   /// **'Country not found'**
-  String get toursFilterCountryNoResults;
+  String get excursionsFilterCountryNoResults;
 
-  /// No description provided for @toursFilterCategories.
+  /// No description provided for @excursionsFilterCategories.
   ///
   /// In en, this message translates to:
   /// **'Categories'**
-  String get toursFilterCategories;
+  String get excursionsFilterCategories;
 
-  /// No description provided for @toursFilterPriceRange.
+  /// No description provided for @excursionsFilterPriceRange.
   ///
   /// In en, this message translates to:
   /// **'Price Range'**
-  String get toursFilterPriceRange;
+  String get excursionsFilterPriceRange;
 
-  /// No description provided for @toursFilterPriceFrom.
+  /// No description provided for @excursionsFilterPriceFrom.
   ///
   /// In en, this message translates to:
   /// **'From'**
-  String get toursFilterPriceFrom;
+  String get excursionsFilterPriceFrom;
 
-  /// No description provided for @toursFilterPriceTo.
+  /// No description provided for @excursionsFilterPriceTo.
   ///
   /// In en, this message translates to:
   /// **'To'**
-  String get toursFilterPriceTo;
+  String get excursionsFilterPriceTo;
 
-  /// No description provided for @toursFilterBudget.
+  /// No description provided for @excursionsFilterBudget.
   ///
   /// In en, this message translates to:
   /// **'Budget'**
-  String get toursFilterBudget;
+  String get excursionsFilterBudget;
 
-  /// No description provided for @toursFilterPremium.
+  /// No description provided for @excursionsFilterPremium.
   ///
   /// In en, this message translates to:
   /// **'Premium'**
-  String get toursFilterPremium;
+  String get excursionsFilterPremium;
 
-  /// No description provided for @toursFilterDuration.
+  /// No description provided for @excursionsFilterDuration.
   ///
   /// In en, this message translates to:
   /// **'Duration'**
-  String get toursFilterDuration;
+  String get excursionsFilterDuration;
 
-  /// No description provided for @toursFilterShortDuration.
+  /// No description provided for @excursionsFilterShortDuration.
   ///
   /// In en, this message translates to:
   /// **'Short (< 3h)'**
-  String get toursFilterShortDuration;
+  String get excursionsFilterShortDuration;
 
-  /// No description provided for @toursFilterHalfDayDuration.
+  /// No description provided for @excursionsFilterHalfDayDuration.
   ///
   /// In en, this message translates to:
   /// **'Half Day (3–6h)'**
-  String get toursFilterHalfDayDuration;
+  String get excursionsFilterHalfDayDuration;
 
-  /// No description provided for @toursFilterFullDayDuration.
+  /// No description provided for @excursionsFilterFullDayDuration.
   ///
   /// In en, this message translates to:
   /// **'Full Day (6h+)'**
-  String get toursFilterFullDayDuration;
+  String get excursionsFilterFullDayDuration;
 
-  /// No description provided for @toursFilterMultiDayDuration.
+  /// No description provided for @excursionsFilterMultiDayDuration.
   ///
   /// In en, this message translates to:
   /// **'Multi-day'**
-  String get toursFilterMultiDayDuration;
+  String get excursionsFilterMultiDayDuration;
 
-  /// No description provided for @toursFilterLanguage.
+  /// No description provided for @excursionsFilterLanguage.
   ///
   /// In en, this message translates to:
   /// **'Language'**
-  String get toursFilterLanguage;
+  String get excursionsFilterLanguage;
 
-  /// No description provided for @toursLoadFailed.
+  /// No description provided for @excursionsLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load tours'**
-  String get toursLoadFailed;
+  /// **'Failed to load excursions'**
+  String get excursionsLoadFailed;
 
-  /// No description provided for @toursEmptyTitle.
+  /// No description provided for @excursionsEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No tours yet'**
-  String get toursEmptyTitle;
+  /// **'No excursions yet'**
+  String get excursionsEmptyTitle;
 
-  /// No description provided for @toursEmptySubtitle.
+  /// No description provided for @excursionsEmptySubtitle.
   ///
   /// In en, this message translates to:
   /// **'Verified guide routes will appear here.'**
-  String get toursEmptySubtitle;
+  String get excursionsEmptySubtitle;
 
-  /// No description provided for @toursEmptySearchSubtitle.
+  /// No description provided for @excursionsEmptySearchSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Try another destination, category, or tour name.'**
-  String get toursEmptySearchSubtitle;
+  /// **'Try another destination, category, or excursion name.'**
+  String get excursionsEmptySearchSubtitle;
 
   /// No description provided for @guidesTitle.
   ///
@@ -4174,11 +4174,11 @@ abstract class AppLocalizations {
   /// **'Local Expert'**
   String get guidesRoleLocalExpert;
 
-  /// No description provided for @guidesFilterPrivateTours.
+  /// No description provided for @guidesFilterPrivateExcursions.
   ///
   /// In en, this message translates to:
-  /// **'Private tours'**
-  String get guidesFilterPrivateTours;
+  /// **'Private excursions'**
+  String get guidesFilterPrivateExcursions;
 
   /// No description provided for @guidesFilterActivities.
   ///
@@ -4186,11 +4186,11 @@ abstract class AppLocalizations {
   /// **'Activities'**
   String get guidesFilterActivities;
 
-  /// No description provided for @guidesFilterTours.
+  /// No description provided for @guidesFilterExcursions.
   ///
   /// In en, this message translates to:
-  /// **'Tours'**
-  String get guidesFilterTours;
+  /// **'Excursions'**
+  String get guidesFilterExcursions;
 
   /// No description provided for @guidesExperienceYears.
   ///
@@ -4198,887 +4198,899 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 year} other{{count} years}}'**
   String guidesExperienceYears(num count);
 
-  /// No description provided for @toursCreateFab.
+  /// No description provided for @excursionsCreateFab.
   ///
   /// In en, this message translates to:
-  /// **'Create tour'**
-  String get toursCreateFab;
+  /// **'Create excursion'**
+  String get excursionsCreateFab;
 
-  /// No description provided for @toursFreePrice.
+  /// No description provided for @excursionsFreePrice.
   ///
   /// In en, this message translates to:
   /// **'Free'**
-  String get toursFreePrice;
+  String get excursionsFreePrice;
 
-  /// No description provided for @toursPriceFrom.
+  /// No description provided for @excursionsPriceFrom.
   ///
   /// In en, this message translates to:
   /// **'From {price}'**
-  String toursPriceFrom(Object price);
+  String excursionsPriceFrom(Object price);
 
-  /// No description provided for @toursOffersCount.
+  /// No description provided for @excursionsOffersCount.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =0{No guides yet} =1{1 guide} other{{count} guides}}'**
-  String toursOffersCount(num count);
+  String excursionsOffersCount(num count);
 
-  /// No description provided for @toursDurationHourShort.
+  /// No description provided for @excursionsDurationHourShort.
   ///
   /// In en, this message translates to:
   /// **'h'**
-  String get toursDurationHourShort;
+  String get excursionsDurationHourShort;
 
-  /// No description provided for @toursDurationMinuteShort.
+  /// No description provided for @excursionsDurationMinuteShort.
   ///
   /// In en, this message translates to:
   /// **'min'**
-  String get toursDurationMinuteShort;
+  String get excursionsDurationMinuteShort;
 
-  /// No description provided for @tourDetailsTitle.
+  /// No description provided for @excursionDetailsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tour Details'**
-  String get tourDetailsTitle;
+  /// **'Excursion Details'**
+  String get excursionDetailsTitle;
 
-  /// No description provided for @tourDetailsPrice.
+  /// No description provided for @excursionDetailsPrice.
   ///
   /// In en, this message translates to:
   /// **'Price'**
-  String get tourDetailsPrice;
+  String get excursionDetailsPrice;
 
-  /// No description provided for @tourDetailsPerPerson.
+  /// No description provided for @excursionDetailsPerPerson.
   ///
   /// In en, this message translates to:
   /// **'/pp'**
-  String get tourDetailsPerPerson;
+  String get excursionDetailsPerPerson;
 
-  /// No description provided for @tourDetailsIntensity.
+  /// No description provided for @excursionDetailsIntensity.
   ///
   /// In en, this message translates to:
   /// **'Intensity'**
-  String get tourDetailsIntensity;
+  String get excursionDetailsIntensity;
 
-  /// No description provided for @tourDetailsIntensityModerate.
+  /// No description provided for @excursionDetailsIntensityModerate.
   ///
   /// In en, this message translates to:
   /// **'Moderate'**
-  String get tourDetailsIntensityModerate;
+  String get excursionDetailsIntensityModerate;
 
-  /// No description provided for @tourDetailsGroupSize.
+  /// No description provided for @excursionDetailsGroupSize.
   ///
   /// In en, this message translates to:
   /// **'Group Size'**
-  String get tourDetailsGroupSize;
+  String get excursionDetailsGroupSize;
 
-  /// No description provided for @tourDetailsGroupSizeUpTo.
+  /// No description provided for @excursionDetailsGroupSizeUpTo.
   ///
   /// In en, this message translates to:
   /// **'Up to {count}'**
-  String tourDetailsGroupSizeUpTo(Object count);
+  String excursionDetailsGroupSizeUpTo(Object count);
 
-  /// No description provided for @tourDetailsLanguage.
+  /// No description provided for @excursionDetailsLanguage.
   ///
   /// In en, this message translates to:
   /// **'Language'**
-  String get tourDetailsLanguage;
+  String get excursionDetailsLanguage;
 
-  /// No description provided for @tourLanguageEnglish.
+  /// No description provided for @excursionLanguageEnglish.
   ///
   /// In en, this message translates to:
   /// **'English'**
-  String get tourLanguageEnglish;
+  String get excursionLanguageEnglish;
 
-  /// No description provided for @tourLanguageRussian.
+  /// No description provided for @excursionLanguageRussian.
   ///
   /// In en, this message translates to:
   /// **'Russian'**
-  String get tourLanguageRussian;
+  String get excursionLanguageRussian;
 
-  /// No description provided for @tourLanguageKazakh.
+  /// No description provided for @excursionLanguageKazakh.
   ///
   /// In en, this message translates to:
   /// **'Kazakh'**
-  String get tourLanguageKazakh;
+  String get excursionLanguageKazakh;
 
-  /// No description provided for @tourLanguageFrench.
+  /// No description provided for @excursionLanguageFrench.
   ///
   /// In en, this message translates to:
   /// **'French'**
-  String get tourLanguageFrench;
+  String get excursionLanguageFrench;
 
-  /// No description provided for @tourLanguageJapanese.
+  /// No description provided for @excursionLanguageJapanese.
   ///
   /// In en, this message translates to:
   /// **'Japanese'**
-  String get tourLanguageJapanese;
+  String get excursionLanguageJapanese;
 
-  /// No description provided for @tourLanguageGerman.
+  /// No description provided for @excursionLanguageGerman.
   ///
   /// In en, this message translates to:
   /// **'German'**
-  String get tourLanguageGerman;
+  String get excursionLanguageGerman;
 
-  /// No description provided for @tourLanguageSpanish.
+  /// No description provided for @excursionLanguageSpanish.
   ///
   /// In en, this message translates to:
   /// **'Spanish'**
-  String get tourLanguageSpanish;
+  String get excursionLanguageSpanish;
 
-  /// No description provided for @tourLanguageTurkish.
+  /// No description provided for @excursionLanguageTurkish.
   ///
   /// In en, this message translates to:
   /// **'Turkish'**
-  String get tourLanguageTurkish;
+  String get excursionLanguageTurkish;
 
-  /// No description provided for @tourDetailsExperience.
+  /// No description provided for @excursionDetailsExperience.
   ///
   /// In en, this message translates to:
-  /// **'The Experience'**
-  String get tourDetailsExperience;
+  /// **'Description'**
+  String get excursionDetailsExperience;
 
-  /// No description provided for @tourDetailsWhatToExpect.
+  /// No description provided for @excursionDetailsWhatToExpect.
   ///
   /// In en, this message translates to:
   /// **'What to expect'**
-  String get tourDetailsWhatToExpect;
+  String get excursionDetailsWhatToExpect;
 
-  /// No description provided for @tourDetailsSelectedOfferIncluded.
+  /// No description provided for @excursionDetailsSelectedOfferIncluded.
   ///
   /// In en, this message translates to:
   /// **'Included with selected guide'**
-  String get tourDetailsSelectedOfferIncluded;
+  String get excursionDetailsSelectedOfferIncluded;
 
-  /// No description provided for @tourDetailsLeadGuide.
+  /// No description provided for @excursionDetailsLeadGuide.
   ///
   /// In en, this message translates to:
   /// **'Your Lead Guide'**
-  String get tourDetailsLeadGuide;
+  String get excursionDetailsLeadGuide;
 
-  /// No description provided for @tourDetailsGuideName.
+  /// No description provided for @excursionDetailsGuideName.
   ///
   /// In en, this message translates to:
   /// **'Guide'**
-  String get tourDetailsGuideName;
+  String get excursionDetailsGuideName;
 
-  /// No description provided for @tourDetailsGuideSubtitle.
+  /// No description provided for @excursionDetailsGuideSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Verified local expert'**
-  String get tourDetailsGuideSubtitle;
+  String get excursionDetailsGuideSubtitle;
 
-  /// No description provided for @tourDetailsGuideQuote.
+  /// No description provided for @excursionDetailsGuideQuote.
   ///
   /// In en, this message translates to:
   /// **'Every route is more memorable with local context, thoughtful timing, and a guide who knows when to slow down.'**
-  String get tourDetailsGuideQuote;
+  String get excursionDetailsGuideQuote;
 
-  /// No description provided for @tourDetailsMessageGuide.
+  /// No description provided for @excursionDetailsMessageGuide.
   ///
   /// In en, this message translates to:
   /// **'Message Guide'**
-  String get tourDetailsMessageGuide;
+  String get excursionDetailsMessageGuide;
 
-  /// No description provided for @tourDetailsOffersTitle.
+  /// No description provided for @excursionDetailsOffersTitle.
   ///
   /// In en, this message translates to:
   /// **'Available guides'**
-  String get tourDetailsOffersTitle;
+  String get excursionDetailsOffersTitle;
 
-  /// No description provided for @tourDetailsOffersEmpty.
+  /// No description provided for @excursionDetailsOffersEmpty.
   ///
   /// In en, this message translates to:
   /// **'No guides available yet'**
-  String get tourDetailsOffersEmpty;
+  String get excursionDetailsOffersEmpty;
 
-  /// No description provided for @tourDetailsOfferSelected.
+  /// No description provided for @excursionDetailsOfferSelected.
   ///
   /// In en, this message translates to:
   /// **'Selected'**
-  String get tourDetailsOfferSelected;
+  String get excursionDetailsOfferSelected;
 
-  /// No description provided for @tourDetailsOfferCurrentUser.
+  /// No description provided for @excursionDetailsOfferCurrentUser.
   ///
   /// In en, this message translates to:
   /// **'This is you'**
-  String get tourDetailsOfferCurrentUser;
+  String get excursionDetailsOfferCurrentUser;
 
-  /// No description provided for @tourDetailsOffersSearchHint.
+  /// No description provided for @excursionDetailsOffersSearchHint.
   ///
   /// In en, this message translates to:
   /// **'Search guides or offers'**
-  String get tourDetailsOffersSearchHint;
+  String get excursionDetailsOffersSearchHint;
 
-  /// No description provided for @tourDetailsOffersLoadMore.
+  /// No description provided for @excursionDetailsOffersLoadMore.
   ///
   /// In en, this message translates to:
   /// **'Show more guides'**
-  String get tourDetailsOffersLoadMore;
+  String get excursionDetailsOffersLoadMore;
 
-  /// No description provided for @tourDetailsOffersLoadFailed.
+  /// No description provided for @excursionDetailsOffersLoadFailed.
   ///
   /// In en, this message translates to:
   /// **'Failed to load guides'**
-  String get tourDetailsOffersLoadFailed;
+  String get excursionDetailsOffersLoadFailed;
 
-  /// No description provided for @tourDetailsOffersSortRating.
+  /// No description provided for @excursionDetailsOffersSortRating.
   ///
   /// In en, this message translates to:
   /// **'Rating'**
-  String get tourDetailsOffersSortRating;
+  String get excursionDetailsOffersSortRating;
 
-  /// No description provided for @tourDetailsOffersSortExperience.
+  /// No description provided for @excursionDetailsOffersSortExperience.
   ///
   /// In en, this message translates to:
   /// **'Experience'**
-  String get tourDetailsOffersSortExperience;
+  String get excursionDetailsOffersSortExperience;
 
-  /// No description provided for @tourDetailsOffersSortPrice.
+  /// No description provided for @excursionDetailsOffersSortPrice.
   ///
   /// In en, this message translates to:
   /// **'Price'**
-  String get tourDetailsOffersSortPrice;
+  String get excursionDetailsOffersSortPrice;
 
-  /// No description provided for @tourDetailsOffersFiltersTitle.
+  /// No description provided for @excursionDetailsOffersFiltersTitle.
   ///
   /// In en, this message translates to:
   /// **'Guide filters'**
-  String get tourDetailsOffersFiltersTitle;
+  String get excursionDetailsOffersFiltersTitle;
 
-  /// No description provided for @tourDetailsOffersMaxPrice.
+  /// No description provided for @excursionDetailsOffersMaxPrice.
   ///
   /// In en, this message translates to:
   /// **'Max price'**
-  String get tourDetailsOffersMaxPrice;
+  String get excursionDetailsOffersMaxPrice;
 
-  /// No description provided for @tourDetailsOffersMaxPriceHint.
+  /// No description provided for @excursionDetailsOffersMaxPriceHint.
   ///
   /// In en, this message translates to:
   /// **'e.g. 50000'**
-  String get tourDetailsOffersMaxPriceHint;
+  String get excursionDetailsOffersMaxPriceHint;
 
-  /// No description provided for @tourDetailsOffersMinGroup.
+  /// No description provided for @excursionDetailsOffersMinGroup.
   ///
   /// In en, this message translates to:
   /// **'Minimum group size'**
-  String get tourDetailsOffersMinGroup;
+  String get excursionDetailsOffersMinGroup;
 
-  /// No description provided for @tourDetailsOffersMinGroupHint.
+  /// No description provided for @excursionDetailsOffersMinGroupHint.
   ///
   /// In en, this message translates to:
   /// **'e.g. 4'**
-  String get tourDetailsOffersMinGroupHint;
+  String get excursionDetailsOffersMinGroupHint;
 
-  /// No description provided for @tourDetailsOffersLanguageAny.
+  /// No description provided for @excursionDetailsOffersLanguageAny.
   ///
   /// In en, this message translates to:
   /// **'Any language'**
-  String get tourDetailsOffersLanguageAny;
+  String get excursionDetailsOffersLanguageAny;
 
-  /// No description provided for @tourDetailsOffersLanguageSearchHint.
+  /// No description provided for @excursionDetailsOffersLanguageSearchHint.
   ///
   /// In en, this message translates to:
   /// **'Search language or code'**
-  String get tourDetailsOffersLanguageSearchHint;
+  String get excursionDetailsOffersLanguageSearchHint;
 
-  /// No description provided for @tourDetailsOffersLanguageNoResults.
+  /// No description provided for @excursionDetailsOffersLanguageNoResults.
   ///
   /// In en, this message translates to:
   /// **'Language not found'**
-  String get tourDetailsOffersLanguageNoResults;
+  String get excursionDetailsOffersLanguageNoResults;
 
-  /// No description provided for @tourDetailsOffersApplyFilters.
+  /// No description provided for @excursionDetailsOffersApplyFilters.
   ///
   /// In en, this message translates to:
   /// **'Apply filters'**
-  String get tourDetailsOffersApplyFilters;
+  String get excursionDetailsOffersApplyFilters;
 
-  /// No description provided for @tourDetailsMapPreview.
+  /// No description provided for @excursionDetailsMapPreview.
   ///
   /// In en, this message translates to:
   /// **'Route meeting point'**
-  String get tourDetailsMapPreview;
+  String get excursionDetailsMapPreview;
 
-  /// No description provided for @tourDetailsItinerary.
+  /// No description provided for @excursionDetailsItinerary.
   ///
   /// In en, this message translates to:
   /// **'Itinerary'**
-  String get tourDetailsItinerary;
+  String get excursionDetailsItinerary;
 
-  /// No description provided for @tourDetailsMeetingPoint.
+  /// No description provided for @excursionDetailsMeetingPoint.
   ///
   /// In en, this message translates to:
   /// **'Meeting point'**
-  String get tourDetailsMeetingPoint;
+  String get excursionDetailsMeetingPoint;
 
-  /// No description provided for @tourDetailsTotal.
+  /// No description provided for @excursionDetailsTotal.
   ///
   /// In en, this message translates to:
   /// **'Total'**
-  String get tourDetailsTotal;
+  String get excursionDetailsTotal;
 
-  /// No description provided for @tourDetailsBook.
+  /// No description provided for @excursionDetailsBook.
   ///
   /// In en, this message translates to:
   /// **'Book'**
-  String get tourDetailsBook;
+  String get excursionDetailsBook;
 
-  /// No description provided for @tourDetailsEditOffer.
+  /// No description provided for @excursionDetailsEditOffer.
   ///
   /// In en, this message translates to:
   /// **'Edit offer'**
-  String get tourDetailsEditOffer;
+  String get excursionDetailsEditOffer;
 
-  /// No description provided for @tourDetailsLoadFailed.
+  /// No description provided for @excursionDetailsLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load tour'**
-  String get tourDetailsLoadFailed;
+  /// **'Failed to load excursion'**
+  String get excursionDetailsLoadFailed;
 
-  /// No description provided for @tourDetailsBookingComingSoon.
+  /// No description provided for @excursionDetailsBookingComingSoon.
   ///
   /// In en, this message translates to:
-  /// **'Tour booking will be available soon.'**
-  String get tourDetailsBookingComingSoon;
+  /// **'Excursion booking will be available soon.'**
+  String get excursionDetailsBookingComingSoon;
 
-  /// No description provided for @tourDetailsGuideChatComingSoon.
+  /// No description provided for @excursionDetailsGuideChatComingSoon.
   ///
   /// In en, this message translates to:
   /// **'Guide chat will be available soon.'**
-  String get tourDetailsGuideChatComingSoon;
+  String get excursionDetailsGuideChatComingSoon;
 
-  /// No description provided for @tourBookingTitle.
+  /// No description provided for @excursionBookingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Booking Tour'**
-  String get tourBookingTitle;
+  /// **'Booking Excursion'**
+  String get excursionBookingTitle;
 
-  /// No description provided for @tourBookingSchedule.
+  /// No description provided for @excursionBookingSchedule.
   ///
   /// In en, this message translates to:
   /// **'Schedule'**
-  String get tourBookingSchedule;
+  String get excursionBookingSchedule;
 
-  /// No description provided for @tourBookingChange.
+  /// No description provided for @excursionBookingChange.
   ///
   /// In en, this message translates to:
   /// **'Change'**
-  String get tourBookingChange;
+  String get excursionBookingChange;
 
-  /// No description provided for @tourBookingDate.
+  /// No description provided for @excursionBookingDate.
   ///
   /// In en, this message translates to:
   /// **'Date'**
-  String get tourBookingDate;
+  String get excursionBookingDate;
 
-  /// No description provided for @tourBookingTimeSlot.
+  /// No description provided for @excursionBookingTimeSlot.
   ///
   /// In en, this message translates to:
   /// **'Time Slot'**
-  String get tourBookingTimeSlot;
+  String get excursionBookingTimeSlot;
 
-  /// No description provided for @tourBookingTravelers.
+  /// No description provided for @excursionBookingTravelers.
   ///
   /// In en, this message translates to:
   /// **'Travelers'**
-  String get tourBookingTravelers;
+  String get excursionBookingTravelers;
 
-  /// No description provided for @tourBookingAdults.
+  /// No description provided for @excursionBookingAdults.
   ///
   /// In en, this message translates to:
   /// **'Adults'**
-  String get tourBookingAdults;
+  String get excursionBookingAdults;
 
-  /// No description provided for @tourBookingChildren.
+  /// No description provided for @excursionBookingChildren.
   ///
   /// In en, this message translates to:
   /// **'Children'**
-  String get tourBookingChildren;
+  String get excursionBookingChildren;
 
-  /// No description provided for @tourBookingSummary.
+  /// No description provided for @excursionBookingSummary.
   ///
   /// In en, this message translates to:
   /// **'Summary'**
-  String get tourBookingSummary;
+  String get excursionBookingSummary;
 
-  /// No description provided for @tourBookingAdultSummary.
+  /// No description provided for @excursionBookingAdultSummary.
   ///
   /// In en, this message translates to:
   /// **'Adult ({count} x {price})'**
-  String tourBookingAdultSummary(Object count, Object price);
+  String excursionBookingAdultSummary(Object count, Object price);
 
-  /// No description provided for @tourBookingChildrenSummary.
+  /// No description provided for @excursionBookingChildrenSummary.
   ///
   /// In en, this message translates to:
   /// **'Children ({count} x {price})'**
-  String tourBookingChildrenSummary(Object count, Object price);
+  String excursionBookingChildrenSummary(Object count, Object price);
 
-  /// No description provided for @tourBookingServiceFeeSummary.
+  /// No description provided for @excursionBookingServiceFeeSummary.
   ///
   /// In en, this message translates to:
   /// **'Service fee (5%)'**
-  String get tourBookingServiceFeeSummary;
+  String get excursionBookingServiceFeeSummary;
 
-  /// No description provided for @tourBookingTotalPrice.
+  /// No description provided for @excursionBookingTotalPrice.
   ///
   /// In en, this message translates to:
   /// **'Total Price'**
-  String get tourBookingTotalPrice;
+  String get excursionBookingTotalPrice;
 
-  /// No description provided for @tourBookingConfirmPay.
+  /// No description provided for @excursionBookingConfirmPay.
   ///
   /// In en, this message translates to:
   /// **'Confirm & Pay'**
-  String get tourBookingConfirmPay;
+  String get excursionBookingConfirmPay;
 
-  /// No description provided for @tourBookingSecurePayment.
+  /// No description provided for @excursionBookingSecurePayment.
   ///
   /// In en, this message translates to:
   /// **'Secure payment processed by FlyFy'**
-  String get tourBookingSecurePayment;
+  String get excursionBookingSecurePayment;
 
-  /// No description provided for @tourBookingSubmitted.
+  /// No description provided for @excursionBookingSubmitted.
   ///
   /// In en, this message translates to:
   /// **'Booking request is ready. Online payment will be connected soon.'**
-  String get tourBookingSubmitted;
+  String get excursionBookingSubmitted;
 
-  /// No description provided for @tourBookingLoadFailed.
+  /// No description provided for @excursionBookingLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load tour booking'**
-  String get tourBookingLoadFailed;
+  /// **'Failed to load excursion booking'**
+  String get excursionBookingLoadFailed;
 
-  /// No description provided for @tourBookingPerPerson.
+  /// No description provided for @excursionBookingPerPerson.
   ///
   /// In en, this message translates to:
   /// **'/ person'**
-  String get tourBookingPerPerson;
+  String get excursionBookingPerPerson;
 
-  /// No description provided for @tourDetailsNoDescription.
+  /// No description provided for @excursionDetailsNoDescription.
   ///
   /// In en, this message translates to:
-  /// **'Your guide will share the detailed experience soon.'**
-  String get tourDetailsNoDescription;
+  /// **'Your guide will share the detailed description soon.'**
+  String get excursionDetailsNoDescription;
 
-  /// No description provided for @createTourTitle.
+  /// No description provided for @createExcursionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Create Tour'**
-  String get createTourTitle;
+  /// **'Create Excursion'**
+  String get createExcursionTitle;
 
-  /// No description provided for @createTourEditTitle.
+  /// No description provided for @createExcursionEditTitle.
   ///
   /// In en, this message translates to:
   /// **'Edit Offer'**
-  String get createTourEditTitle;
+  String get createExcursionEditTitle;
 
-  /// No description provided for @createTourSubmit.
+  /// No description provided for @createExcursionSubmit.
   ///
   /// In en, this message translates to:
   /// **'Publish'**
-  String get createTourSubmit;
+  String get createExcursionSubmit;
 
-  /// No description provided for @createTourSaveChanges.
+  /// No description provided for @createExcursionSaveChanges.
   ///
   /// In en, this message translates to:
   /// **'Save'**
-  String get createTourSaveChanges;
+  String get createExcursionSaveChanges;
 
-  /// No description provided for @createTourSuccess.
+  /// No description provided for @createExcursionSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Tour published successfully'**
-  String get createTourSuccess;
+  /// **'Excursion published successfully'**
+  String get createExcursionSuccess;
 
-  /// No description provided for @createTourUpdateSuccess.
+  /// No description provided for @createExcursionUpdateSuccess.
   ///
   /// In en, this message translates to:
   /// **'Offer updated successfully'**
-  String get createTourUpdateSuccess;
+  String get createExcursionUpdateSuccess;
 
-  /// No description provided for @createTourFailed.
+  /// No description provided for @createExcursionFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to create tour'**
-  String get createTourFailed;
+  /// **'Failed to create excursion'**
+  String get createExcursionFailed;
 
-  /// No description provided for @createTourUpdateFailed.
+  /// No description provided for @createExcursionUpdateFailed.
   ///
   /// In en, this message translates to:
   /// **'Failed to update offer'**
-  String get createTourUpdateFailed;
+  String get createExcursionUpdateFailed;
 
-  /// No description provided for @createTourCoverSection.
+  /// No description provided for @createExcursionCoverSection.
   ///
   /// In en, this message translates to:
-  /// **'Tour Cover'**
-  String get createTourCoverSection;
+  /// **'Excursion Cover'**
+  String get createExcursionCoverSection;
 
-  /// No description provided for @createTourCoverUploadTitle.
+  /// No description provided for @createExcursionCoverUploadTitle.
   ///
   /// In en, this message translates to:
-  /// **'Upload Tour Image'**
-  String get createTourCoverUploadTitle;
+  /// **'Upload Excursion Image'**
+  String get createExcursionCoverUploadTitle;
 
-  /// No description provided for @createTourCoverChangeAction.
+  /// No description provided for @createExcursionCoverChangeAction.
   ///
   /// In en, this message translates to:
-  /// **'Change Tour Image'**
-  String get createTourCoverChangeAction;
+  /// **'Change Excursion Image'**
+  String get createExcursionCoverChangeAction;
 
-  /// No description provided for @createTourCoverUploadHint.
+  /// No description provided for @createExcursionCoverUploadHint.
   ///
   /// In en, this message translates to:
   /// **'JPG, PNG or WEBP. If you selected an attraction, its photo will be used unless you upload your own.'**
-  String get createTourCoverUploadHint;
+  String get createExcursionCoverUploadHint;
 
-  /// No description provided for @createTourSelectedLandmark.
+  /// No description provided for @createExcursionSelectedLandmark.
   ///
   /// In en, this message translates to:
-  /// **'Selected Landmark'**
-  String get createTourSelectedLandmark;
+  /// **'Attraction'**
+  String get createExcursionSelectedLandmark;
 
-  /// No description provided for @createTourLandmarkNameLabel.
+  /// No description provided for @createExcursionLandmarkNameLabel.
   ///
   /// In en, this message translates to:
   /// **'Landmark'**
-  String get createTourLandmarkNameLabel;
+  String get createExcursionLandmarkNameLabel;
 
-  /// No description provided for @createTourLandmarkNameHint.
+  /// No description provided for @createExcursionLandmarkNameHint.
   ///
   /// In en, this message translates to:
   /// **'e.g. Medeu'**
-  String get createTourLandmarkNameHint;
+  String get createExcursionLandmarkNameHint;
 
-  /// No description provided for @createTourLandmarkValidation.
+  /// No description provided for @createExcursionLandmarkValidation.
   ///
   /// In en, this message translates to:
-  /// **'Select or enter a landmark'**
-  String get createTourLandmarkValidation;
+  /// **'Choose an attraction'**
+  String get createExcursionLandmarkValidation;
 
-  /// No description provided for @createTourCountryValidation.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a country first'**
-  String get createTourCountryValidation;
-
-  /// No description provided for @createTourSelectCountryFirst.
+  /// No description provided for @createExcursionCountryValidation.
   ///
   /// In en, this message translates to:
   /// **'Select a country first'**
-  String get createTourSelectCountryFirst;
+  String get createExcursionCountryValidation;
 
-  /// No description provided for @createTourManualLocationHint.
+  /// No description provided for @createExcursionSelectCountryFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a country first'**
+  String get createExcursionSelectCountryFirst;
+
+  /// No description provided for @createExcursionManualLocationHint.
   ///
   /// In en, this message translates to:
   /// **'You can enter a custom location or choose an attraction from this country.'**
-  String get createTourManualLocationHint;
+  String get createExcursionManualLocationHint;
 
-  /// No description provided for @createTourLocationLockedByAttraction.
+  /// No description provided for @createExcursionLocationLockedByAttraction.
   ///
   /// In en, this message translates to:
   /// **'This location comes from the attraction catalog. Change the attraction to edit it.'**
-  String get createTourLocationLockedByAttraction;
+  String get createExcursionLocationLockedByAttraction;
 
-  /// No description provided for @tourSelectLocationTitle.
+  /// No description provided for @createExcursionAttractionCatalogHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Attraction catalog for the selected country'**
+  String get createExcursionAttractionCatalogHint;
+
+  /// No description provided for @createExcursionAttractionCatalogSource.
+  ///
+  /// In en, this message translates to:
+  /// **'From the attraction catalog'**
+  String get createExcursionAttractionCatalogSource;
+
+  /// No description provided for @excursionSelectLocationTitle.
   ///
   /// In en, this message translates to:
   /// **'Select Attraction'**
-  String get tourSelectLocationTitle;
+  String get excursionSelectLocationTitle;
 
-  /// No description provided for @tourSelectLocationCountrySection.
+  /// No description provided for @excursionSelectLocationCountrySection.
   ///
   /// In en, this message translates to:
   /// **'Select Country'**
-  String get tourSelectLocationCountrySection;
+  String get excursionSelectLocationCountrySection;
 
-  /// No description provided for @tourSelectLocationCountrySearchHint.
+  /// No description provided for @excursionSelectLocationCountrySearchHint.
   ///
   /// In en, this message translates to:
   /// **'Search countries...'**
-  String get tourSelectLocationCountrySearchHint;
+  String get excursionSelectLocationCountrySearchHint;
 
-  /// No description provided for @tourCountryKazakhstan.
+  /// No description provided for @excursionCountryKazakhstan.
   ///
   /// In en, this message translates to:
   /// **'Kazakhstan'**
-  String get tourCountryKazakhstan;
+  String get excursionCountryKazakhstan;
 
-  /// No description provided for @tourCountryFrance.
+  /// No description provided for @excursionCountryFrance.
   ///
   /// In en, this message translates to:
   /// **'France'**
-  String get tourCountryFrance;
+  String get excursionCountryFrance;
 
-  /// No description provided for @tourCountryJapan.
+  /// No description provided for @excursionCountryJapan.
   ///
   /// In en, this message translates to:
   /// **'Japan'**
-  String get tourCountryJapan;
+  String get excursionCountryJapan;
 
-  /// No description provided for @tourCountryItaly.
+  /// No description provided for @excursionCountryItaly.
   ///
   /// In en, this message translates to:
   /// **'Italy'**
-  String get tourCountryItaly;
+  String get excursionCountryItaly;
 
-  /// No description provided for @tourSelectLocationAttractionSection.
+  /// No description provided for @excursionSelectLocationAttractionSection.
   ///
   /// In en, this message translates to:
   /// **'Select Attraction'**
-  String get tourSelectLocationAttractionSection;
+  String get excursionSelectLocationAttractionSection;
 
-  /// No description provided for @tourSelectLocationAttractionSearchHint.
+  /// No description provided for @excursionSelectLocationAttractionSearchHint.
   ///
   /// In en, this message translates to:
   /// **'Search attractions...'**
-  String get tourSelectLocationAttractionSearchHint;
+  String get excursionSelectLocationAttractionSearchHint;
 
-  /// No description provided for @tourSelectLocationSelected.
+  /// No description provided for @excursionSelectLocationSelected.
   ///
   /// In en, this message translates to:
   /// **'Selected'**
-  String get tourSelectLocationSelected;
+  String get excursionSelectLocationSelected;
 
-  /// No description provided for @tourSelectLocationPageCaption.
+  /// No description provided for @excursionSelectLocationPageCaption.
   ///
   /// In en, this message translates to:
   /// **'PAGE {current} OF {total}'**
-  String tourSelectLocationPageCaption(Object current, Object total);
+  String excursionSelectLocationPageCaption(Object current, Object total);
 
-  /// No description provided for @createTourCategorization.
+  /// No description provided for @createExcursionCategorization.
   ///
   /// In en, this message translates to:
   /// **'Travel Categorization'**
-  String get createTourCategorization;
+  String get createExcursionCategorization;
 
-  /// No description provided for @createTourCategoryAdventure.
+  /// No description provided for @createExcursionCategoryAdventure.
   ///
   /// In en, this message translates to:
   /// **'Adventure'**
-  String get createTourCategoryAdventure;
+  String get createExcursionCategoryAdventure;
 
-  /// No description provided for @createTourCategoryCultural.
+  /// No description provided for @createExcursionCategoryCultural.
   ///
   /// In en, this message translates to:
   /// **'Cultural'**
-  String get createTourCategoryCultural;
+  String get createExcursionCategoryCultural;
 
-  /// No description provided for @createTourCategoryCulinary.
+  /// No description provided for @createExcursionCategoryCulinary.
   ///
   /// In en, this message translates to:
   /// **'Culinary'**
-  String get createTourCategoryCulinary;
+  String get createExcursionCategoryCulinary;
 
-  /// No description provided for @createTourCategoryWellness.
+  /// No description provided for @createExcursionCategoryWellness.
   ///
   /// In en, this message translates to:
   /// **'Wellness'**
-  String get createTourCategoryWellness;
+  String get createExcursionCategoryWellness;
 
-  /// No description provided for @createTourDetailedItinerary.
+  /// No description provided for @createExcursionDetailedItinerary.
   ///
   /// In en, this message translates to:
   /// **'Detailed Itinerary'**
-  String get createTourDetailedItinerary;
+  String get createExcursionDetailedItinerary;
 
-  /// No description provided for @createTourAddTimeSlot.
+  /// No description provided for @createExcursionAddTimeSlot.
   ///
   /// In en, this message translates to:
   /// **'Add Time Slot'**
-  String get createTourAddTimeSlot;
+  String get createExcursionAddTimeSlot;
 
-  /// No description provided for @createTourItineraryEmpty.
+  /// No description provided for @createExcursionItineraryEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Add at least one route point. It will be shown to tourists in the tour details.'**
-  String get createTourItineraryEmpty;
+  /// **'Add at least one route point. It will be shown to tourists in the excursion details.'**
+  String get createExcursionItineraryEmpty;
 
-  /// No description provided for @createTourAutosaveHint.
+  /// No description provided for @createExcursionAutosaveHint.
   ///
   /// In en, this message translates to:
   /// **'Auto-saving progress to your guide profile'**
-  String get createTourAutosaveHint;
+  String get createExcursionAutosaveHint;
 
-  /// No description provided for @createTourItineraryValidation.
+  /// No description provided for @createExcursionItineraryValidation.
   ///
   /// In en, this message translates to:
   /// **'Add at least one complete itinerary slot'**
-  String get createTourItineraryValidation;
+  String get createExcursionItineraryValidation;
 
-  /// No description provided for @createTourDurationLabel.
+  /// No description provided for @createExcursionDurationLabel.
   ///
   /// In en, this message translates to:
   /// **'Duration'**
-  String get createTourDurationLabel;
+  String get createExcursionDurationLabel;
 
-  /// No description provided for @createTourDurationHint.
+  /// No description provided for @createExcursionDurationHint.
   ///
   /// In en, this message translates to:
   /// **'e.g. 4 hours'**
-  String get createTourDurationHint;
+  String get createExcursionDurationHint;
 
-  /// No description provided for @createTourDurationUnitLabel.
+  /// No description provided for @createExcursionDurationUnitLabel.
   ///
   /// In en, this message translates to:
   /// **'Unit'**
-  String get createTourDurationUnitLabel;
+  String get createExcursionDurationUnitLabel;
 
-  /// No description provided for @createTourDurationUnitMinutes.
+  /// No description provided for @createExcursionDurationUnitMinutes.
   ///
   /// In en, this message translates to:
   /// **'Minutes'**
-  String get createTourDurationUnitMinutes;
+  String get createExcursionDurationUnitMinutes;
 
-  /// No description provided for @createTourDurationUnitHours.
+  /// No description provided for @createExcursionDurationUnitHours.
   ///
   /// In en, this message translates to:
   /// **'Hours'**
-  String get createTourDurationUnitHours;
+  String get createExcursionDurationUnitHours;
 
-  /// No description provided for @createTourDurationUnitDays.
+  /// No description provided for @createExcursionDurationUnitDays.
   ///
   /// In en, this message translates to:
   /// **'Days'**
-  String get createTourDurationUnitDays;
+  String get createExcursionDurationUnitDays;
 
-  /// No description provided for @createTourDurationValidation.
+  /// No description provided for @createExcursionDurationValidation.
   ///
   /// In en, this message translates to:
   /// **'Enter a duration of at least 15 minutes'**
-  String get createTourDurationValidation;
+  String get createExcursionDurationValidation;
 
-  /// No description provided for @createTourMaxGroupSizeLabel.
+  /// No description provided for @createExcursionMaxGroupSizeLabel.
   ///
   /// In en, this message translates to:
   /// **'Max Group Size'**
-  String get createTourMaxGroupSizeLabel;
+  String get createExcursionMaxGroupSizeLabel;
 
-  /// No description provided for @createTourMaxGroupSizeHint.
+  /// No description provided for @createExcursionMaxGroupSizeHint.
   ///
   /// In en, this message translates to:
   /// **'e.g. 12'**
-  String get createTourMaxGroupSizeHint;
+  String get createExcursionMaxGroupSizeHint;
 
-  /// No description provided for @createTourGroupSizeValidation.
+  /// No description provided for @createExcursionGroupSizeValidation.
   ///
   /// In en, this message translates to:
   /// **'Enter a group size from 1 to 100'**
-  String get createTourGroupSizeValidation;
+  String get createExcursionGroupSizeValidation;
 
-  /// No description provided for @createTourLanguagesLabel.
+  /// No description provided for @createExcursionLanguagesLabel.
   ///
   /// In en, this message translates to:
   /// **'Languages Spoken'**
-  String get createTourLanguagesLabel;
+  String get createExcursionLanguagesLabel;
 
-  /// No description provided for @createTourLanguagesHint.
+  /// No description provided for @createExcursionLanguagesHint.
   ///
   /// In en, this message translates to:
   /// **'English, French, Japanese...'**
-  String get createTourLanguagesHint;
+  String get createExcursionLanguagesHint;
 
-  /// No description provided for @createTourLanguagesValidation.
+  /// No description provided for @createExcursionLanguagesValidation.
   ///
   /// In en, this message translates to:
-  /// **'Add at least one tour language'**
-  String get createTourLanguagesValidation;
+  /// **'Add at least one excursion language'**
+  String get createExcursionLanguagesValidation;
 
-  /// No description provided for @createTourLanguagesPickerHint.
+  /// No description provided for @createExcursionLanguagesPickerHint.
   ///
   /// In en, this message translates to:
   /// **'Select up to {count} languages'**
-  String createTourLanguagesPickerHint(Object count);
+  String createExcursionLanguagesPickerHint(Object count);
 
-  /// No description provided for @createTourLanguagesLimitValidation.
+  /// No description provided for @createExcursionLanguagesLimitValidation.
   ///
   /// In en, this message translates to:
   /// **'You can select up to {count} languages'**
-  String createTourLanguagesLimitValidation(Object count);
+  String createExcursionLanguagesLimitValidation(Object count);
 
-  /// No description provided for @createTourVisibilityTitle.
+  /// No description provided for @createExcursionVisibilityTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tour Visibility'**
-  String get createTourVisibilityTitle;
+  /// **'Excursion Visibility'**
+  String get createExcursionVisibilityTitle;
 
-  /// No description provided for @createTourVisibilityPublicDescription.
+  /// No description provided for @createExcursionVisibilityPublicDescription.
   ///
   /// In en, this message translates to:
   /// **'Visible to everyone in the FlyFy marketplace.'**
-  String get createTourVisibilityPublicDescription;
+  String get createExcursionVisibilityPublicDescription;
 
-  /// No description provided for @createTourVisibilityUnlistedDescription.
+  /// No description provided for @createExcursionVisibilityUnlistedDescription.
   ///
   /// In en, this message translates to:
-  /// **'Only users with the direct URL can view and book this tour.'**
-  String get createTourVisibilityUnlistedDescription;
+  /// **'Only users with the direct URL can view and book this excursion.'**
+  String get createExcursionVisibilityUnlistedDescription;
 
-  /// No description provided for @createTourMeetingPointHint.
+  /// No description provided for @createExcursionMeetingPointHint.
   ///
   /// In en, this message translates to:
   /// **'Enter meeting address or landmark...'**
-  String get createTourMeetingPointHint;
+  String get createExcursionMeetingPointHint;
 
-  /// No description provided for @createTourSoulTitle.
+  /// No description provided for @createExcursionSoulTitle.
   ///
   /// In en, this message translates to:
   /// **'Soul of the Journey'**
-  String get createTourSoulTitle;
+  String get createExcursionSoulTitle;
 
-  /// No description provided for @createTourNameLabel.
+  /// No description provided for @createExcursionNameLabel.
   ///
   /// In en, this message translates to:
-  /// **'Tour Title'**
-  String get createTourNameLabel;
+  /// **'Excursion Title'**
+  String get createExcursionNameLabel;
 
-  /// No description provided for @createTourNameHint.
+  /// No description provided for @createExcursionNameHint.
   ///
   /// In en, this message translates to:
   /// **'e.g. Almaty Mountain Escape'**
-  String get createTourNameHint;
+  String get createExcursionNameHint;
 
-  /// No description provided for @createTourSummaryLabel.
+  /// No description provided for @createExcursionSummaryLabel.
   ///
   /// In en, this message translates to:
   /// **'Short Summary'**
-  String get createTourSummaryLabel;
+  String get createExcursionSummaryLabel;
 
-  /// No description provided for @createTourSummaryHint.
+  /// No description provided for @createExcursionSummaryHint.
   ///
   /// In en, this message translates to:
   /// **'A concise promise for travelers'**
-  String get createTourSummaryHint;
+  String get createExcursionSummaryHint;
 
-  /// No description provided for @createTourSummaryValidation.
+  /// No description provided for @createExcursionSummaryValidation.
   ///
   /// In en, this message translates to:
   /// **'Summary must be at least 3 characters'**
-  String get createTourSummaryValidation;
+  String get createExcursionSummaryValidation;
 
-  /// No description provided for @createTourSoulHint.
+  /// No description provided for @createExcursionSoulHint.
   ///
   /// In en, this message translates to:
   /// **'Describe the soul of this journey, hidden details, and the feeling of being there...'**
-  String get createTourSoulHint;
+  String get createExcursionSoulHint;
 
-  /// No description provided for @createTourDescriptionValidation.
+  /// No description provided for @createExcursionDescriptionValidation.
   ///
   /// In en, this message translates to:
   /// **'Description must be at least 20 characters'**
-  String get createTourDescriptionValidation;
+  String get createExcursionDescriptionValidation;
 
-  /// No description provided for @createTourInvestmentTitle.
+  /// No description provided for @createExcursionInvestmentTitle.
   ///
   /// In en, this message translates to:
   /// **'Investment Per Person'**
-  String get createTourInvestmentTitle;
+  String get createExcursionInvestmentTitle;
 
-  /// No description provided for @createTourCurrencyValidation.
+  /// No description provided for @createExcursionCurrencyValidation.
   ///
   /// In en, this message translates to:
   /// **'Enter a currency code'**
-  String get createTourCurrencyValidation;
+  String get createExcursionCurrencyValidation;
 
   /// No description provided for @createCurrencyKzt.
   ///
@@ -5110,143 +5122,143 @@ abstract class AppLocalizations {
   /// **'pound sterling'**
   String get createCurrencyGbp;
 
-  /// No description provided for @createTourIncludedItemsLabel.
+  /// No description provided for @createExcursionIncludedItemsLabel.
   ///
   /// In en, this message translates to:
   /// **'Included Items'**
-  String get createTourIncludedItemsLabel;
+  String get createExcursionIncludedItemsLabel;
 
-  /// No description provided for @createTourIncludedItemsHint.
+  /// No description provided for @createExcursionIncludedItemsHint.
   ///
   /// In en, this message translates to:
   /// **'Comma-separated: Private SUV, picnic, tickets'**
-  String get createTourIncludedItemsHint;
+  String get createExcursionIncludedItemsHint;
 
-  /// No description provided for @createTourIncludedItemsEmpty.
+  /// No description provided for @createExcursionIncludedItemsEmpty.
   ///
   /// In en, this message translates to:
   /// **'Add exact items such as transport, meals, entrance tickets, or gear'**
-  String get createTourIncludedItemsEmpty;
+  String get createExcursionIncludedItemsEmpty;
 
-  /// No description provided for @createTourIncludedItemsEditorTitle.
+  /// No description provided for @createExcursionIncludedItemsEditorTitle.
   ///
   /// In en, this message translates to:
   /// **'What is included'**
-  String get createTourIncludedItemsEditorTitle;
+  String get createExcursionIncludedItemsEditorTitle;
 
-  /// No description provided for @createTourIncludedItemsAdd.
+  /// No description provided for @createExcursionIncludedItemsAdd.
   ///
   /// In en, this message translates to:
   /// **'Add item'**
-  String get createTourIncludedItemsAdd;
+  String get createExcursionIncludedItemsAdd;
 
-  /// No description provided for @createTourIncludedItemsRemove.
+  /// No description provided for @createExcursionIncludedItemsRemove.
   ///
   /// In en, this message translates to:
   /// **'Remove item'**
-  String get createTourIncludedItemsRemove;
+  String get createExcursionIncludedItemsRemove;
 
-  /// No description provided for @createTourIncludedItemsTypeLabel.
+  /// No description provided for @createExcursionIncludedItemsTypeLabel.
   ///
   /// In en, this message translates to:
   /// **'Type'**
-  String get createTourIncludedItemsTypeLabel;
+  String get createExcursionIncludedItemsTypeLabel;
 
-  /// No description provided for @createTourIncludedItemsValueLabel.
+  /// No description provided for @createExcursionIncludedItemsValueLabel.
   ///
   /// In en, this message translates to:
   /// **'What exactly is included'**
-  String get createTourIncludedItemsValueLabel;
+  String get createExcursionIncludedItemsValueLabel;
 
-  /// No description provided for @createTourIncludedItemsValueHint.
+  /// No description provided for @createExcursionIncludedItemsValueHint.
   ///
   /// In en, this message translates to:
   /// **'e.g. Private SUV transfer'**
-  String get createTourIncludedItemsValueHint;
+  String get createExcursionIncludedItemsValueHint;
 
-  /// No description provided for @createTourIncludedItemsValidation.
+  /// No description provided for @createExcursionIncludedItemsValidation.
   ///
   /// In en, this message translates to:
   /// **'Fill in every included item or remove empty rows'**
-  String get createTourIncludedItemsValidation;
+  String get createExcursionIncludedItemsValidation;
 
-  /// No description provided for @createTourIncludedTypeTransport.
+  /// No description provided for @createExcursionIncludedTypeTransport.
   ///
   /// In en, this message translates to:
   /// **'Transport'**
-  String get createTourIncludedTypeTransport;
+  String get createExcursionIncludedTypeTransport;
 
-  /// No description provided for @createTourIncludedTypeFood.
+  /// No description provided for @createExcursionIncludedTypeFood.
   ///
   /// In en, this message translates to:
   /// **'Meals'**
-  String get createTourIncludedTypeFood;
+  String get createExcursionIncludedTypeFood;
 
-  /// No description provided for @createTourIncludedTypeTickets.
+  /// No description provided for @createExcursionIncludedTypeTickets.
   ///
   /// In en, this message translates to:
   /// **'Tickets'**
-  String get createTourIncludedTypeTickets;
+  String get createExcursionIncludedTypeTickets;
 
-  /// No description provided for @createTourIncludedTypeEquipment.
+  /// No description provided for @createExcursionIncludedTypeEquipment.
   ///
   /// In en, this message translates to:
   /// **'Equipment'**
-  String get createTourIncludedTypeEquipment;
+  String get createExcursionIncludedTypeEquipment;
 
-  /// No description provided for @createTourIncludedTypeGuide.
+  /// No description provided for @createExcursionIncludedTypeGuide.
   ///
   /// In en, this message translates to:
   /// **'Guide'**
-  String get createTourIncludedTypeGuide;
+  String get createExcursionIncludedTypeGuide;
 
-  /// No description provided for @createTourIncludedTypePhoto.
+  /// No description provided for @createExcursionIncludedTypePhoto.
   ///
   /// In en, this message translates to:
   /// **'Photo'**
-  String get createTourIncludedTypePhoto;
+  String get createExcursionIncludedTypePhoto;
 
-  /// No description provided for @createTourIncludedTypeOther.
+  /// No description provided for @createExcursionIncludedTypeOther.
   ///
   /// In en, this message translates to:
   /// **'Other'**
-  String get createTourIncludedTypeOther;
+  String get createExcursionIncludedTypeOther;
 
-  /// No description provided for @createTourStartOffsetLabel.
+  /// No description provided for @createExcursionStartOffsetLabel.
   ///
   /// In en, this message translates to:
   /// **'Start after, min'**
-  String get createTourStartOffsetLabel;
+  String get createExcursionStartOffsetLabel;
 
-  /// No description provided for @createTourSlotDurationLabel.
+  /// No description provided for @createExcursionSlotDurationLabel.
   ///
   /// In en, this message translates to:
   /// **'Duration, min'**
-  String get createTourSlotDurationLabel;
+  String get createExcursionSlotDurationLabel;
 
-  /// No description provided for @createTourItineraryTitleLabel.
+  /// No description provided for @createExcursionItineraryTitleLabel.
   ///
   /// In en, this message translates to:
   /// **'Title'**
-  String get createTourItineraryTitleLabel;
+  String get createExcursionItineraryTitleLabel;
 
-  /// No description provided for @createTourItineraryTitleHint.
+  /// No description provided for @createExcursionItineraryTitleHint.
   ///
   /// In en, this message translates to:
   /// **'e.g. Mountain Ascent'**
-  String get createTourItineraryTitleHint;
+  String get createExcursionItineraryTitleHint;
 
-  /// No description provided for @createTourItineraryDescriptionLabel.
+  /// No description provided for @createExcursionItineraryDescriptionLabel.
   ///
   /// In en, this message translates to:
   /// **'Description'**
-  String get createTourItineraryDescriptionLabel;
+  String get createExcursionItineraryDescriptionLabel;
 
-  /// No description provided for @createTourItineraryDescriptionHint.
+  /// No description provided for @createExcursionItineraryDescriptionHint.
   ///
   /// In en, this message translates to:
   /// **'What happens during this part of the route'**
-  String get createTourItineraryDescriptionHint;
+  String get createExcursionItineraryDescriptionHint;
 
   /// No description provided for @createStepBasic.
   ///

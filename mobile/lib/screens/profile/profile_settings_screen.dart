@@ -312,9 +312,8 @@ class _ProfileSettingsHero extends StatelessWidget {
                 highlighted: profile.isGuide,
               ),
               _MiniPill(
-                text: profile.isPublic
-                    ? l10n.profilePublic
-                    : l10n.profilePrivate,
+                text:
+                    profile.isPublic ? l10n.profilePublic : l10n.profilePrivate,
               ),
             ],
           ),

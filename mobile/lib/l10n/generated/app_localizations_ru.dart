@@ -84,7 +84,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeExploreServices => 'Сервисы';
 
   @override
-  String get serviceTours => 'Туры';
+  String get serviceExcursions => 'Экскурсии';
 
   @override
   String get serviceGuides => 'Гиды';
@@ -283,7 +283,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guideVerificationSelectLicenseType => 'Выберите тип документа';
 
   @override
-  String get guideVerificationOfficialTourGuideLicense =>
+  String get guideVerificationOfficialExcursionGuideLicense =>
       'Лицензия официального гида';
 
   @override
@@ -1424,10 +1424,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get servicesSectionTitle => 'Сервисы';
 
   @override
-  String get homeToursTitle => 'Туры';
+  String get homeExcursionsTitle => 'Экскурсии';
 
   @override
-  String get homeToursSubtitle => 'Подберите интересные маршруты и поездки';
+  String get homeExcursionsSubtitle =>
+      'Подберите интересные маршруты и поездки';
 
   @override
   String get homeGuidesTitle => 'Гиды';
@@ -1456,7 +1457,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get homeSearchHint => 'Искать активности, места, туры...';
+  String get homeSearchHint => 'Искать активности, места, экскурсии...';
 
   @override
   String get homeTopDestinations => 'Топ направления';
@@ -1514,7 +1515,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Роскошный отдых на воде в авторском формате...';
 
   @override
-  String get homePromoMountainTitle => 'Горные туры';
+  String get homePromoMountainTitle => 'Горные экскурсии';
 
   @override
   String get homePromoMountainDescription =>
@@ -1918,7 +1919,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attractionReviewVideoPreview => 'Видео';
 
   @override
-  String get attractionFindTours => 'Найти туры';
+  String get attractionFindExcursions => 'Найти экскурсии';
 
   @override
   String get attractionMapLink => 'Открыть на карте';
@@ -2043,115 +2044,117 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createActivityFailed => 'Не удалось создать активность';
 
   @override
-  String get toursDiscoverTitle => 'Туры';
+  String get excursionsDiscoverTitle => 'Экскурсии';
 
   @override
-  String get toursSearchHint => 'Поиск туров и впечатлений';
+  String get excursionsSearchHint => 'Поиск экскурсий и впечатлений';
 
   @override
-  String get toursSortLabel => 'Сортировать';
+  String get excursionsSortLabel => 'Сортировать';
 
   @override
-  String get toursSortPopular => 'Популярные';
+  String get excursionsSortPopular => 'Популярные';
 
   @override
-  String get toursSortNewest => 'Новинки';
+  String get excursionsSortNewest => 'Новинки';
 
   @override
-  String get toursSortAffordable => 'Дешевле';
+  String get excursionsSortAffordable => 'Дешевле';
 
   @override
-  String get toursSortCreatedAt => 'Дата создания';
+  String get excursionsSortCreatedAt => 'Дата создания';
 
   @override
-  String get toursSortRating => 'Рейтинг';
+  String get excursionsSortRating => 'Рейтинг';
 
   @override
-  String get toursSortPrice => 'Цена';
+  String get excursionsSortPrice => 'Цена';
 
   @override
-  String get toursSortDuration => 'Продолжительность';
+  String get excursionsSortDuration => 'Продолжительность';
 
   @override
-  String get toursFiltersTitle => 'Фильтры';
+  String get excursionsFiltersTitle => 'Фильтры';
 
   @override
-  String get toursFiltersClear => 'Очистить';
+  String get excursionsFiltersClear => 'Очистить';
 
   @override
-  String toursFiltersShowResults(num count) {
+  String excursionsFiltersShowResults(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count тура',
-      many: '$count туров',
-      few: '$count тура',
-      one: '$count тур',
-      zero: '0 туров',
+      other: '$count экскурсии',
+      many: '$count экскурсий',
+      few: '$count экскурсии',
+      one: '$count экскурсия',
+      zero: '0 экскурсий',
     );
     return 'Показать $_temp0';
   }
 
   @override
-  String get toursFilterCountry => 'Страна';
+  String get excursionsFilterCountry => 'Страна';
 
   @override
-  String get toursFilterCountryAll => 'Все страны';
+  String get excursionsFilterCountryAll => 'Все страны';
 
   @override
-  String get toursFilterCountrySearchHint => 'Поиск страны, кода или телефона';
+  String get excursionsFilterCountrySearchHint =>
+      'Поиск страны, кода или телефона';
 
   @override
-  String get toursFilterCountryNoResults => 'Страна не найдена';
+  String get excursionsFilterCountryNoResults => 'Страна не найдена';
 
   @override
-  String get toursFilterCategories => 'Категории';
+  String get excursionsFilterCategories => 'Категории';
 
   @override
-  String get toursFilterPriceRange => 'Диапазон цены';
+  String get excursionsFilterPriceRange => 'Диапазон цены';
 
   @override
-  String get toursFilterPriceFrom => 'От';
+  String get excursionsFilterPriceFrom => 'От';
 
   @override
-  String get toursFilterPriceTo => 'До';
+  String get excursionsFilterPriceTo => 'До';
 
   @override
-  String get toursFilterBudget => 'Бюджетно';
+  String get excursionsFilterBudget => 'Бюджетно';
 
   @override
-  String get toursFilterPremium => 'Премиум';
+  String get excursionsFilterPremium => 'Премиум';
 
   @override
-  String get toursFilterDuration => 'Длительность';
+  String get excursionsFilterDuration => 'Длительность';
 
   @override
-  String get toursFilterShortDuration => 'Короткий (< 3 ч)';
+  String get excursionsFilterShortDuration => 'Короткий (< 3 ч)';
 
   @override
-  String get toursFilterHalfDayDuration => 'Полдня (3–6 ч)';
+  String get excursionsFilterHalfDayDuration => 'Полдня (3–6 ч)';
 
   @override
-  String get toursFilterFullDayDuration => 'День (6 ч+)';
+  String get excursionsFilterFullDayDuration => 'День (6 ч+)';
 
   @override
-  String get toursFilterMultiDayDuration => 'Несколько дней';
+  String get excursionsFilterMultiDayDuration => 'Несколько дней';
 
   @override
-  String get toursFilterLanguage => 'Язык';
+  String get excursionsFilterLanguage => 'Язык';
 
   @override
-  String get toursLoadFailed => 'Не удалось загрузить туры';
+  String get excursionsLoadFailed => 'Не удалось загрузить экскурсии';
 
   @override
-  String get toursEmptyTitle => 'Туров пока нет';
+  String get excursionsEmptyTitle => 'Экскурсий пока нет';
 
   @override
-  String get toursEmptySubtitle => 'Здесь появятся маршруты проверенных гидов.';
+  String get excursionsEmptySubtitle =>
+      'Здесь появятся маршруты проверенных гидов.';
 
   @override
-  String get toursEmptySearchSubtitle =>
-      'Попробуйте другой город, категорию или название тура.';
+  String get excursionsEmptySearchSubtitle =>
+      'Попробуйте другой город, категорию или название экскурсии.';
 
   @override
   String get guidesTitle => 'Гиды';
@@ -2241,13 +2244,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guidesRoleLocalExpert => 'Локальный эксперт';
 
   @override
-  String get guidesFilterPrivateTours => 'Частные туры';
+  String get guidesFilterPrivateExcursions => 'Частные экскурсии';
 
   @override
   String get guidesFilterActivities => 'Активности';
 
   @override
-  String get guidesFilterTours => 'Туры';
+  String get guidesFilterExcursions => 'Экскурсии';
 
   @override
   String guidesExperienceYears(num count) {
@@ -2263,18 +2266,18 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get toursCreateFab => 'Создать тур';
+  String get excursionsCreateFab => 'Создать экскурсию';
 
   @override
-  String get toursFreePrice => 'Бесплатно';
+  String get excursionsFreePrice => 'Бесплатно';
 
   @override
-  String toursPriceFrom(Object price) {
+  String excursionsPriceFrom(Object price) {
     return 'От $price';
   }
 
   @override
-  String toursOffersCount(num count) {
+  String excursionsOffersCount(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2288,466 +2291,482 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get toursDurationHourShort => 'ч';
+  String get excursionsDurationHourShort => 'ч';
 
   @override
-  String get toursDurationMinuteShort => 'мин';
+  String get excursionsDurationMinuteShort => 'мин';
 
   @override
-  String get tourDetailsTitle => 'Детали тура';
+  String get excursionDetailsTitle => 'Детали экскурсии';
 
   @override
-  String get tourDetailsPrice => 'Цена';
+  String get excursionDetailsPrice => 'Цена';
 
   @override
-  String get tourDetailsPerPerson => '/чел';
+  String get excursionDetailsPerPerson => '/чел';
 
   @override
-  String get tourDetailsIntensity => 'Нагрузка';
+  String get excursionDetailsIntensity => 'Нагрузка';
 
   @override
-  String get tourDetailsIntensityModerate => 'Средняя';
+  String get excursionDetailsIntensityModerate => 'Средняя';
 
   @override
-  String get tourDetailsGroupSize => 'Размер группы';
+  String get excursionDetailsGroupSize => 'Размер группы';
 
   @override
-  String tourDetailsGroupSizeUpTo(Object count) {
+  String excursionDetailsGroupSizeUpTo(Object count) {
     return 'До $count';
   }
 
   @override
-  String get tourDetailsLanguage => 'Язык';
+  String get excursionDetailsLanguage => 'Язык';
 
   @override
-  String get tourLanguageEnglish => 'Английский';
+  String get excursionLanguageEnglish => 'Английский';
 
   @override
-  String get tourLanguageRussian => 'Русский';
+  String get excursionLanguageRussian => 'Русский';
 
   @override
-  String get tourLanguageKazakh => 'Казахский';
+  String get excursionLanguageKazakh => 'Казахский';
 
   @override
-  String get tourLanguageFrench => 'Французский';
+  String get excursionLanguageFrench => 'Французский';
 
   @override
-  String get tourLanguageJapanese => 'Японский';
+  String get excursionLanguageJapanese => 'Японский';
 
   @override
-  String get tourLanguageGerman => 'Немецкий';
+  String get excursionLanguageGerman => 'Немецкий';
 
   @override
-  String get tourLanguageSpanish => 'Испанский';
+  String get excursionLanguageSpanish => 'Испанский';
 
   @override
-  String get tourLanguageTurkish => 'Турецкий';
+  String get excursionLanguageTurkish => 'Турецкий';
 
   @override
-  String get tourDetailsExperience => 'Впечатление';
+  String get excursionDetailsExperience => 'Описание';
 
   @override
-  String get tourDetailsWhatToExpect => 'Что входит';
+  String get excursionDetailsWhatToExpect => 'Что входит';
 
   @override
-  String get tourDetailsSelectedOfferIncluded => 'Что входит у выбранного гида';
+  String get excursionDetailsSelectedOfferIncluded =>
+      'Что входит у выбранного гида';
 
   @override
-  String get tourDetailsLeadGuide => 'Ваш гид';
+  String get excursionDetailsLeadGuide => 'Ваш гид';
 
   @override
-  String get tourDetailsGuideName => 'Гид';
+  String get excursionDetailsGuideName => 'Гид';
 
   @override
-  String get tourDetailsGuideSubtitle => 'Проверенный локальный эксперт';
+  String get excursionDetailsGuideSubtitle => 'Проверенный локальный эксперт';
 
   @override
-  String get tourDetailsGuideQuote =>
+  String get excursionDetailsGuideQuote =>
       'Маршрут запоминается сильнее, когда у него есть локальный контекст, правильный ритм и гид, который знает, когда замедлиться.';
 
   @override
-  String get tourDetailsMessageGuide => 'Написать гиду';
+  String get excursionDetailsMessageGuide => 'Написать гиду';
 
   @override
-  String get tourDetailsOffersTitle => 'Доступные гиды';
+  String get excursionDetailsOffersTitle => 'Доступные гиды';
 
   @override
-  String get tourDetailsOffersEmpty => 'Доступных гидов пока нет';
+  String get excursionDetailsOffersEmpty => 'Доступных гидов пока нет';
 
   @override
-  String get tourDetailsOfferSelected => 'Выбран';
+  String get excursionDetailsOfferSelected => 'Выбран';
 
   @override
-  String get tourDetailsOfferCurrentUser => 'Это вы';
+  String get excursionDetailsOfferCurrentUser => 'Это вы';
 
   @override
-  String get tourDetailsOffersSearchHint => 'Поиск гидов и предложений';
+  String get excursionDetailsOffersSearchHint => 'Поиск гидов и предложений';
 
   @override
-  String get tourDetailsOffersLoadMore => 'Показать ещё гидов';
+  String get excursionDetailsOffersLoadMore => 'Показать ещё гидов';
 
   @override
-  String get tourDetailsOffersLoadFailed => 'Не удалось загрузить гидов';
+  String get excursionDetailsOffersLoadFailed => 'Не удалось загрузить гидов';
 
   @override
-  String get tourDetailsOffersSortRating => 'Рейтинг';
+  String get excursionDetailsOffersSortRating => 'Рейтинг';
 
   @override
-  String get tourDetailsOffersSortExperience => 'Опыт';
+  String get excursionDetailsOffersSortExperience => 'Опыт';
 
   @override
-  String get tourDetailsOffersSortPrice => 'Цена';
+  String get excursionDetailsOffersSortPrice => 'Цена';
 
   @override
-  String get tourDetailsOffersFiltersTitle => 'Фильтры гидов';
+  String get excursionDetailsOffersFiltersTitle => 'Фильтры гидов';
 
   @override
-  String get tourDetailsOffersMaxPrice => 'Цена до';
+  String get excursionDetailsOffersMaxPrice => 'Цена до';
 
   @override
-  String get tourDetailsOffersMaxPriceHint => 'Например, 50000';
+  String get excursionDetailsOffersMaxPriceHint => 'Например, 50000';
 
   @override
-  String get tourDetailsOffersMinGroup => 'Мин. размер группы';
+  String get excursionDetailsOffersMinGroup => 'Мин. размер группы';
 
   @override
-  String get tourDetailsOffersMinGroupHint => 'Например, 4';
+  String get excursionDetailsOffersMinGroupHint => 'Например, 4';
 
   @override
-  String get tourDetailsOffersLanguageAny => 'Любой язык';
+  String get excursionDetailsOffersLanguageAny => 'Любой язык';
 
   @override
-  String get tourDetailsOffersLanguageSearchHint => 'Поиск языка или кода';
+  String get excursionDetailsOffersLanguageSearchHint => 'Поиск языка или кода';
 
   @override
-  String get tourDetailsOffersLanguageNoResults => 'Язык не найден';
+  String get excursionDetailsOffersLanguageNoResults => 'Язык не найден';
 
   @override
-  String get tourDetailsOffersApplyFilters => 'Применить фильтры';
+  String get excursionDetailsOffersApplyFilters => 'Применить фильтры';
 
   @override
-  String get tourDetailsMapPreview => 'Точка встречи';
+  String get excursionDetailsMapPreview => 'Точка встречи';
 
   @override
-  String get tourDetailsItinerary => 'Маршрут';
+  String get excursionDetailsItinerary => 'Маршрут';
 
   @override
-  String get tourDetailsMeetingPoint => 'Место встречи';
+  String get excursionDetailsMeetingPoint => 'Место встречи';
 
   @override
-  String get tourDetailsTotal => 'Итого';
+  String get excursionDetailsTotal => 'Итого';
 
   @override
-  String get tourDetailsBook => 'Забронировать';
+  String get excursionDetailsBook => 'Забронировать';
 
   @override
-  String get tourDetailsEditOffer => 'Редактировать предложение';
+  String get excursionDetailsEditOffer => 'Редактировать предложение';
 
   @override
-  String get tourDetailsLoadFailed => 'Не удалось загрузить тур';
+  String get excursionDetailsLoadFailed => 'Не удалось загрузить экскурсию';
 
   @override
-  String get tourDetailsBookingComingSoon =>
-      'Бронирование тура скоро будет доступно.';
+  String get excursionDetailsBookingComingSoon =>
+      'Бронирование экскурсии скоро будет доступно.';
 
   @override
-  String get tourDetailsGuideChatComingSoon =>
+  String get excursionDetailsGuideChatComingSoon =>
       'Чат с гидом скоро будет доступен.';
 
   @override
-  String get tourBookingTitle => 'Бронирование тура';
+  String get excursionBookingTitle => 'Бронирование экскурсии';
 
   @override
-  String get tourBookingSchedule => 'Расписание';
+  String get excursionBookingSchedule => 'Расписание';
 
   @override
-  String get tourBookingChange => 'Изменить';
+  String get excursionBookingChange => 'Изменить';
 
   @override
-  String get tourBookingDate => 'Дата';
+  String get excursionBookingDate => 'Дата';
 
   @override
-  String get tourBookingTimeSlot => 'Время';
+  String get excursionBookingTimeSlot => 'Время';
 
   @override
-  String get tourBookingTravelers => 'Путешественники';
+  String get excursionBookingTravelers => 'Путешественники';
 
   @override
-  String get tourBookingAdults => 'Взрослые';
+  String get excursionBookingAdults => 'Взрослые';
 
   @override
-  String get tourBookingChildren => 'Дети';
+  String get excursionBookingChildren => 'Дети';
 
   @override
-  String get tourBookingSummary => 'Итог';
+  String get excursionBookingSummary => 'Итог';
 
   @override
-  String tourBookingAdultSummary(Object count, Object price) {
+  String excursionBookingAdultSummary(Object count, Object price) {
     return 'Взрослые ($count × $price)';
   }
 
   @override
-  String tourBookingChildrenSummary(Object count, Object price) {
+  String excursionBookingChildrenSummary(Object count, Object price) {
     return 'Дети ($count × $price)';
   }
 
   @override
-  String get tourBookingServiceFeeSummary => 'Сервисный сбор (5%)';
+  String get excursionBookingServiceFeeSummary => 'Сервисный сбор (5%)';
 
   @override
-  String get tourBookingTotalPrice => 'Итоговая стоимость';
+  String get excursionBookingTotalPrice => 'Итоговая стоимость';
 
   @override
-  String get tourBookingConfirmPay => 'Подтвердить и оплатить';
+  String get excursionBookingConfirmPay => 'Подтвердить и оплатить';
 
   @override
-  String get tourBookingSecurePayment => 'Безопасная оплата через FlyFy';
+  String get excursionBookingSecurePayment => 'Безопасная оплата через FlyFy';
 
   @override
-  String get tourBookingSubmitted =>
+  String get excursionBookingSubmitted =>
       'Заявка на бронирование готова. Онлайн-оплата будет подключена скоро.';
 
   @override
-  String get tourBookingLoadFailed => 'Не удалось загрузить бронирование тура';
+  String get excursionBookingLoadFailed =>
+      'Не удалось загрузить бронирование экскурсии';
 
   @override
-  String get tourBookingPerPerson => '/ чел.';
+  String get excursionBookingPerPerson => '/ чел.';
 
   @override
-  String get tourDetailsNoDescription =>
-      'Гид скоро добавит подробное описание впечатления.';
+  String get excursionDetailsNoDescription =>
+      'Гид скоро добавит подробное описание.';
 
   @override
-  String get createTourTitle => 'Создать тур';
+  String get createExcursionTitle => 'Создать экскурсию';
 
   @override
-  String get createTourEditTitle => 'Редактировать предложение';
+  String get createExcursionEditTitle => 'Редактировать предложение';
 
   @override
-  String get createTourSubmit => 'Опубликовать';
+  String get createExcursionSubmit => 'Опубликовать';
 
   @override
-  String get createTourSaveChanges => 'Сохранить';
+  String get createExcursionSaveChanges => 'Сохранить';
 
   @override
-  String get createTourSuccess => 'Тур опубликован';
+  String get createExcursionSuccess => 'Экскурсия опубликована';
 
   @override
-  String get createTourUpdateSuccess => 'Предложение обновлено';
+  String get createExcursionUpdateSuccess => 'Предложение обновлено';
 
   @override
-  String get createTourFailed => 'Не удалось создать тур';
+  String get createExcursionFailed => 'Не удалось создать экскурсию';
 
   @override
-  String get createTourUpdateFailed => 'Не удалось обновить предложение';
+  String get createExcursionUpdateFailed => 'Не удалось обновить предложение';
 
   @override
-  String get createTourCoverSection => 'Обложка тура';
+  String get createExcursionCoverSection => 'Обложка экскурсии';
 
   @override
-  String get createTourCoverUploadTitle => 'Загрузить изображение тура';
+  String get createExcursionCoverUploadTitle =>
+      'Загрузить изображение экскурсии';
 
   @override
-  String get createTourCoverChangeAction => 'Изменить изображение тура';
+  String get createExcursionCoverChangeAction =>
+      'Изменить изображение экскурсии';
 
   @override
-  String get createTourCoverUploadHint =>
+  String get createExcursionCoverUploadHint =>
       'JPG, PNG или WEBP. Если выбрана достопримечательность, ее фото подставится автоматически, пока вы не загрузите свое.';
 
   @override
-  String get createTourSelectedLandmark => 'Выбранная локация';
+  String get createExcursionSelectedLandmark => 'Достопримечательность';
 
   @override
-  String get createTourLandmarkNameLabel => 'Локация';
+  String get createExcursionLandmarkNameLabel => 'Локация';
 
   @override
-  String get createTourLandmarkNameHint => 'Например, Медеу';
+  String get createExcursionLandmarkNameHint => 'Например, Медеу';
 
   @override
-  String get createTourLandmarkValidation => 'Выберите или укажите локацию';
-
-  @override
-  String get createTourCountryValidation => 'Сначала выберите страну';
-
-  @override
-  String get createTourSelectCountryFirst => 'Сначала выберите страну';
-
-  @override
-  String get createTourManualLocationHint =>
-      'Можно указать свою локацию или выбрать достопримечательность этой страны.';
-
-  @override
-  String get createTourLocationLockedByAttraction =>
-      'Локация взята из справочника достопримечательностей. Чтобы изменить ее, выберите другую достопримечательность.';
-
-  @override
-  String get tourSelectLocationTitle => 'Выбор локации';
-
-  @override
-  String get tourSelectLocationCountrySection => 'Выберите страну';
-
-  @override
-  String get tourSelectLocationCountrySearchHint => 'Поиск стран...';
-
-  @override
-  String get tourCountryKazakhstan => 'Казахстан';
-
-  @override
-  String get tourCountryFrance => 'Франция';
-
-  @override
-  String get tourCountryJapan => 'Япония';
-
-  @override
-  String get tourCountryItaly => 'Италия';
-
-  @override
-  String get tourSelectLocationAttractionSection =>
+  String get createExcursionLandmarkValidation =>
       'Выберите достопримечательность';
 
   @override
-  String get tourSelectLocationAttractionSearchHint =>
+  String get createExcursionCountryValidation => 'Сначала выберите страну';
+
+  @override
+  String get createExcursionSelectCountryFirst => 'Сначала выберите страну';
+
+  @override
+  String get createExcursionManualLocationHint =>
+      'Можно указать свою локацию или выбрать достопримечательность этой страны.';
+
+  @override
+  String get createExcursionLocationLockedByAttraction =>
+      'Локация взята из справочника достопримечательностей. Чтобы изменить ее, выберите другую достопримечательность.';
+
+  @override
+  String get createExcursionAttractionCatalogHint =>
+      'Каталог достопримечательностей выбранной страны';
+
+  @override
+  String get createExcursionAttractionCatalogSource =>
+      'Из каталога достопримечательностей';
+
+  @override
+  String get excursionSelectLocationTitle => 'Выбор локации';
+
+  @override
+  String get excursionSelectLocationCountrySection => 'Выберите страну';
+
+  @override
+  String get excursionSelectLocationCountrySearchHint => 'Поиск стран...';
+
+  @override
+  String get excursionCountryKazakhstan => 'Казахстан';
+
+  @override
+  String get excursionCountryFrance => 'Франция';
+
+  @override
+  String get excursionCountryJapan => 'Япония';
+
+  @override
+  String get excursionCountryItaly => 'Италия';
+
+  @override
+  String get excursionSelectLocationAttractionSection =>
+      'Выберите достопримечательность';
+
+  @override
+  String get excursionSelectLocationAttractionSearchHint =>
       'Поиск достопримечательностей...';
 
   @override
-  String get tourSelectLocationSelected => 'Выбрано';
+  String get excursionSelectLocationSelected => 'Выбрано';
 
   @override
-  String tourSelectLocationPageCaption(Object current, Object total) {
+  String excursionSelectLocationPageCaption(Object current, Object total) {
     return 'СТРАНИЦА $current ИЗ $total';
   }
 
   @override
-  String get createTourCategorization => 'Категория путешествия';
+  String get createExcursionCategorization => 'Категория путешествия';
 
   @override
-  String get createTourCategoryAdventure => 'Приключения';
+  String get createExcursionCategoryAdventure => 'Приключения';
 
   @override
-  String get createTourCategoryCultural => 'Культура';
+  String get createExcursionCategoryCultural => 'Культура';
 
   @override
-  String get createTourCategoryCulinary => 'Гастро';
+  String get createExcursionCategoryCulinary => 'Гастро';
 
   @override
-  String get createTourCategoryWellness => 'Велнес';
+  String get createExcursionCategoryWellness => 'Велнес';
 
   @override
-  String get createTourDetailedItinerary => 'Детальный маршрут';
+  String get createExcursionDetailedItinerary => 'Детальный маршрут';
 
   @override
-  String get createTourAddTimeSlot => 'Добавить слот';
+  String get createExcursionAddTimeSlot => 'Добавить слот';
 
   @override
-  String get createTourItineraryEmpty =>
-      'Добавьте хотя бы один пункт маршрута. Он будет показан туристам в деталях тура.';
+  String get createExcursionItineraryEmpty =>
+      'Добавьте хотя бы один пункт маршрута. Он будет показан туристам в деталях экскурсии.';
 
   @override
-  String get createTourAutosaveHint =>
+  String get createExcursionAutosaveHint =>
       'Прогресс автосохраняется в профиль гида';
 
   @override
-  String get createTourItineraryValidation =>
+  String get createExcursionItineraryValidation =>
       'Добавьте хотя бы один полный слот маршрута';
 
   @override
-  String get createTourDurationLabel => 'Длительность';
+  String get createExcursionDurationLabel => 'Длительность';
 
   @override
-  String get createTourDurationHint => 'Например, 4 часа';
+  String get createExcursionDurationHint => 'Например, 4 часа';
 
   @override
-  String get createTourDurationUnitLabel => 'Единица';
+  String get createExcursionDurationUnitLabel => 'Единица';
 
   @override
-  String get createTourDurationUnitMinutes => 'Минуты';
+  String get createExcursionDurationUnitMinutes => 'Минуты';
 
   @override
-  String get createTourDurationUnitHours => 'Часы';
+  String get createExcursionDurationUnitHours => 'Часы';
 
   @override
-  String get createTourDurationUnitDays => 'Дни';
+  String get createExcursionDurationUnitDays => 'Дни';
 
   @override
-  String get createTourDurationValidation =>
+  String get createExcursionDurationValidation =>
       'Укажите длительность не менее 15 минут';
 
   @override
-  String get createTourMaxGroupSizeLabel => 'Максимум гостей';
+  String get createExcursionMaxGroupSizeLabel => 'Максимум гостей';
 
   @override
-  String get createTourMaxGroupSizeHint => 'Например, 12';
+  String get createExcursionMaxGroupSizeHint => 'Например, 12';
 
   @override
-  String get createTourGroupSizeValidation =>
+  String get createExcursionGroupSizeValidation =>
       'Укажите размер группы от 1 до 100';
 
   @override
-  String get createTourLanguagesLabel => 'Языки тура';
+  String get createExcursionLanguagesLabel => 'Языки экскурсии';
 
   @override
-  String get createTourLanguagesHint => 'Английский, французский, японский...';
+  String get createExcursionLanguagesHint =>
+      'Английский, французский, японский...';
 
   @override
-  String get createTourLanguagesValidation => 'Добавьте хотя бы один язык тура';
+  String get createExcursionLanguagesValidation =>
+      'Добавьте хотя бы один язык экскурсии';
 
   @override
-  String createTourLanguagesPickerHint(Object count) {
+  String createExcursionLanguagesPickerHint(Object count) {
     return 'Можно выбрать до $count языков';
   }
 
   @override
-  String createTourLanguagesLimitValidation(Object count) {
+  String createExcursionLanguagesLimitValidation(Object count) {
     return 'Можно выбрать до $count языков';
   }
 
   @override
-  String get createTourVisibilityTitle => 'Видимость тура';
+  String get createExcursionVisibilityTitle => 'Видимость экскурсии';
 
   @override
-  String get createTourVisibilityPublicDescription =>
+  String get createExcursionVisibilityPublicDescription =>
       'Виден всем пользователям маркетплейса FlyFy.';
 
   @override
-  String get createTourVisibilityUnlistedDescription =>
-      'Тур увидят и смогут забронировать только пользователи с прямой ссылкой.';
+  String get createExcursionVisibilityUnlistedDescription =>
+      'Экскурсию увидят и смогут забронировать только пользователи с прямой ссылкой.';
 
   @override
-  String get createTourMeetingPointHint =>
+  String get createExcursionMeetingPointHint =>
       'Введите адрес встречи или ориентир...';
 
   @override
-  String get createTourSoulTitle => 'Душа путешествия';
+  String get createExcursionSoulTitle => 'Душа путешествия';
 
   @override
-  String get createTourNameLabel => 'Название тура';
+  String get createExcursionNameLabel => 'Название экскурсии';
 
   @override
-  String get createTourNameHint => 'Например, Горный побег в Алматы';
+  String get createExcursionNameHint => 'Например, Горный побег в Алматы';
 
   @override
-  String get createTourSummaryLabel => 'Краткое описание';
+  String get createExcursionSummaryLabel => 'Краткое описание';
 
   @override
-  String get createTourSummaryHint => 'Короткое обещание для путешественников';
+  String get createExcursionSummaryHint =>
+      'Короткое обещание для путешественников';
 
   @override
-  String get createTourSummaryValidation =>
+  String get createExcursionSummaryValidation =>
       'Краткое описание должно быть не менее 3 символов';
 
   @override
-  String get createTourSoulHint =>
+  String get createExcursionSoulHint =>
       'Опишите атмосферу маршрута, скрытые детали и ощущение от путешествия...';
 
   @override
-  String get createTourDescriptionValidation =>
+  String get createExcursionDescriptionValidation =>
       'Описание должно быть не менее 20 символов';
 
   @override
-  String get createTourInvestmentTitle => 'Стоимость за человека';
+  String get createExcursionInvestmentTitle => 'Стоимость за человека';
 
   @override
-  String get createTourCurrencyValidation => 'Укажите код валюты';
+  String get createExcursionCurrencyValidation => 'Укажите код валюты';
 
   @override
   String get createCurrencyKzt => 'тенге';
@@ -2765,77 +2784,77 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createCurrencyGbp => 'фунт стерлингов';
 
   @override
-  String get createTourIncludedItemsLabel => 'Что включено';
+  String get createExcursionIncludedItemsLabel => 'Что включено';
 
   @override
-  String get createTourIncludedItemsHint =>
+  String get createExcursionIncludedItemsHint =>
       'Через запятую: внедорожник, пикник, билеты';
 
   @override
-  String get createTourIncludedItemsEmpty =>
+  String get createExcursionIncludedItemsEmpty =>
       'Добавьте точные пункты: транспорт, питание, входные билеты или снаряжение';
 
   @override
-  String get createTourIncludedItemsEditorTitle => 'Что включено';
+  String get createExcursionIncludedItemsEditorTitle => 'Что включено';
 
   @override
-  String get createTourIncludedItemsAdd => 'Добавить пункт';
+  String get createExcursionIncludedItemsAdd => 'Добавить пункт';
 
   @override
-  String get createTourIncludedItemsRemove => 'Удалить пункт';
+  String get createExcursionIncludedItemsRemove => 'Удалить пункт';
 
   @override
-  String get createTourIncludedItemsTypeLabel => 'Тип';
+  String get createExcursionIncludedItemsTypeLabel => 'Тип';
 
   @override
-  String get createTourIncludedItemsValueLabel => 'Что именно включено';
+  String get createExcursionIncludedItemsValueLabel => 'Что именно включено';
 
   @override
-  String get createTourIncludedItemsValueHint =>
+  String get createExcursionIncludedItemsValueHint =>
       'Например, трансфер на внедорожнике';
 
   @override
-  String get createTourIncludedItemsValidation =>
+  String get createExcursionIncludedItemsValidation =>
       'Заполните каждый пункт или удалите пустые строки';
 
   @override
-  String get createTourIncludedTypeTransport => 'Транспорт';
+  String get createExcursionIncludedTypeTransport => 'Транспорт';
 
   @override
-  String get createTourIncludedTypeFood => 'Питание';
+  String get createExcursionIncludedTypeFood => 'Питание';
 
   @override
-  String get createTourIncludedTypeTickets => 'Билеты';
+  String get createExcursionIncludedTypeTickets => 'Билеты';
 
   @override
-  String get createTourIncludedTypeEquipment => 'Снаряжение';
+  String get createExcursionIncludedTypeEquipment => 'Снаряжение';
 
   @override
-  String get createTourIncludedTypeGuide => 'Гид';
+  String get createExcursionIncludedTypeGuide => 'Гид';
 
   @override
-  String get createTourIncludedTypePhoto => 'Фото';
+  String get createExcursionIncludedTypePhoto => 'Фото';
 
   @override
-  String get createTourIncludedTypeOther => 'Другое';
+  String get createExcursionIncludedTypeOther => 'Другое';
 
   @override
-  String get createTourStartOffsetLabel => 'Старт через, мин';
+  String get createExcursionStartOffsetLabel => 'Старт через, мин';
 
   @override
-  String get createTourSlotDurationLabel => 'Длительность, мин';
+  String get createExcursionSlotDurationLabel => 'Длительность, мин';
 
   @override
-  String get createTourItineraryTitleLabel => 'Название';
+  String get createExcursionItineraryTitleLabel => 'Название';
 
   @override
-  String get createTourItineraryTitleHint => 'Например, Подъем к вершине';
+  String get createExcursionItineraryTitleHint => 'Например, Подъем к вершине';
 
   @override
-  String get createTourItineraryDescriptionLabel => 'Описание';
+  String get createExcursionItineraryDescriptionLabel => 'Описание';
 
   @override
-  String get createTourItineraryDescriptionHint =>
+  String get createExcursionItineraryDescriptionHint =>
       'Что происходит на этой части маршрута';
 
   @override

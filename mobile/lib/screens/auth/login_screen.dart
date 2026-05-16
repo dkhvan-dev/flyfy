@@ -75,9 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final isCompact = screenWidth < 375 || textScale > 1.02;
     final isNarrow = screenWidth < 360 || textScale > 1.08;
-    final phoneErrorText = _showPhoneValidation
-        ? _phoneValidationMessage(l10n)
-        : null;
+    final phoneErrorText =
+        _showPhoneValidation ? _phoneValidationMessage(l10n) : null;
     final canSubmitPhone = _isPhoneValid();
 
     return Scaffold(
@@ -347,29 +346,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                             contentPadding:
                                                 EdgeInsets.symmetric(
-                                                  horizontal: authScaled(
-                                                    context,
-                                                    20,
-                                                    min: 16,
-                                                    max: 20,
-                                                  ),
-                                                  vertical: authScaled(
-                                                    context,
-                                                    16,
-                                                    min: 14,
-                                                    max: 16,
-                                                  ),
-                                                ),
+                                              horizontal: authScaled(
+                                                context,
+                                                20,
+                                                min: 16,
+                                                max: 20,
+                                              ),
+                                              vertical: authScaled(
+                                                context,
+                                                16,
+                                                min: 14,
+                                                max: 16,
+                                              ),
+                                            ),
                                             border: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(
-                                                    authScaled(
-                                                      context,
-                                                      16,
-                                                      min: 14,
-                                                      max: 16,
-                                                    ),
-                                                  ),
+                                                authScaled(
+                                                  context,
+                                                  16,
+                                                  min: 14,
+                                                  max: 16,
+                                                ),
+                                              ),
                                               borderSide: BorderSide(
                                                 color: Colors.white.withValues(
                                                   alpha: 0.1,
@@ -379,13 +378,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                             enabledBorder: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(
-                                                    authScaled(
-                                                      context,
-                                                      16,
-                                                      min: 14,
-                                                      max: 16,
-                                                    ),
-                                                  ),
+                                                authScaled(
+                                                  context,
+                                                  16,
+                                                  min: 14,
+                                                  max: 16,
+                                                ),
+                                              ),
                                               borderSide: BorderSide(
                                                 color: Colors.white.withValues(
                                                   alpha: 0.1,
@@ -420,8 +419,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   color: AppColors.accent,
                                                   borderRadius:
                                                       BorderRadius.circular(
-                                                        999,
-                                                      ),
+                                                    999,
+                                                  ),
                                                 ),
                                                 alignment: Alignment.center,
                                                 child: const SizedBox(
@@ -429,10 +428,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   height: 24,
                                                   child:
                                                       CircularProgressIndicator(
-                                                        color: AppColors
-                                                            .background,
-                                                        strokeWidth: 2.5,
-                                                      ),
+                                                    color: AppColors.background,
+                                                    strokeWidth: 2.5,
+                                                  ),
                                                 ),
                                               );
                                             }
@@ -457,8 +455,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius:
                                                       BorderRadius.circular(
-                                                        999,
-                                                      ),
+                                                    999,
+                                                  ),
                                                 ),
                                                 elevation: 0,
                                               ),
@@ -505,7 +503,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           builder: (consumerContext, auth, _) {
                                             final isAnyOAuthLoading =
                                                 auth.isGoogleLoading ||
-                                                auth.isAppleLoading;
+                                                    auth.isAppleLoading;
 
                                             if (isNarrow) {
                                               return Column(
@@ -520,15 +518,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                                         : () async {
                                                             final ctx = context;
                                                             final authProvider =
-                                                                ctx
-                                                                    .read<
-                                                                      AuthProvider
-                                                                    >();
+                                                                ctx.read<
+                                                                    AuthProvider>();
                                                             final success =
                                                                 await authProvider
                                                                     .loginWithGoogle(
-                                                                      'mock_google_token',
-                                                                    );
+                                                              'mock_google_token',
+                                                            );
 
                                                             if (!ctx.mounted) {
                                                               return;
@@ -543,8 +539,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                                 ctx,
                                                                 title:
                                                                     l10n.error,
-                                                                message:
-                                                                    authProvider
+                                                                message: authProvider
                                                                         .errorMessage ??
                                                                     l10n.googleLoginFailed,
                                                               );
@@ -562,15 +557,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                                         : () async {
                                                             final ctx = context;
                                                             final authProvider =
-                                                                ctx
-                                                                    .read<
-                                                                      AuthProvider
-                                                                    >();
+                                                                ctx.read<
+                                                                    AuthProvider>();
                                                             final success =
                                                                 await authProvider
                                                                     .loginWithApple(
-                                                                      'mock_apple_token',
-                                                                    );
+                                                              'mock_apple_token',
+                                                            );
 
                                                             if (!ctx.mounted) {
                                                               return;
@@ -585,8 +578,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                                 ctx,
                                                                 title:
                                                                     l10n.error,
-                                                                message:
-                                                                    authProvider
+                                                                message: authProvider
                                                                         .errorMessage ??
                                                                     l10n.appleLoginFailed,
                                                               );
@@ -610,15 +602,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                                         : () async {
                                                             final ctx = context;
                                                             final authProvider =
-                                                                ctx
-                                                                    .read<
-                                                                      AuthProvider
-                                                                    >();
+                                                                ctx.read<
+                                                                    AuthProvider>();
                                                             final success =
                                                                 await authProvider
                                                                     .loginWithGoogle(
-                                                                      'mock_google_token',
-                                                                    );
+                                                              'mock_google_token',
+                                                            );
 
                                                             if (!ctx.mounted) {
                                                               return;
@@ -633,8 +623,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                                 ctx,
                                                                 title:
                                                                     l10n.error,
-                                                                message:
-                                                                    authProvider
+                                                                message: authProvider
                                                                         .errorMessage ??
                                                                     l10n.googleLoginFailed,
                                                               );
@@ -654,15 +643,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                                         : () async {
                                                             final ctx = context;
                                                             final authProvider =
-                                                                ctx
-                                                                    .read<
-                                                                      AuthProvider
-                                                                    >();
+                                                                ctx.read<
+                                                                    AuthProvider>();
                                                             final success =
                                                                 await authProvider
                                                                     .loginWithApple(
-                                                                      'mock_apple_token',
-                                                                    );
+                                                              'mock_apple_token',
+                                                            );
 
                                                             if (!ctx.mounted) {
                                                               return;
@@ -677,8 +664,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                                 ctx,
                                                                 title:
                                                                     l10n.error,
-                                                                message:
-                                                                    authProvider
+                                                                message: authProvider
                                                                         .errorMessage ??
                                                                     l10n.appleLoginFailed,
                                                               );
@@ -696,22 +682,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                           Consumer<AuthProvider>(
                                             builder:
                                                 (consumerContext, auth, _) {
-                                                  final isAnyLoading =
-                                                      auth.isGoogleLoading ||
+                                              final isAnyLoading =
+                                                  auth.isGoogleLoading ||
                                                       auth.isAppleLoading ||
                                                       auth.isSendingOtp ||
                                                       auth.isVerifyingOtp;
 
-                                                  return _OAuthButton(
-                                                    icon: Icons.fingerprint,
-                                                    label: l10n
-                                                        .loginWithBiometrics,
-                                                    isLoading: false,
-                                                    onPressed: isAnyLoading
-                                                        ? null
-                                                        : _loginWithBiometrics,
-                                                  );
-                                                },
+                                              return _OAuthButton(
+                                                icon: Icons.fingerprint,
+                                                label: l10n.loginWithBiometrics,
+                                                isLoading: false,
+                                                onPressed: isAnyLoading
+                                                    ? null
+                                                    : _loginWithBiometrics,
+                                              );
+                                            },
                                           ),
                                         ],
                                         SizedBox(
@@ -831,9 +816,9 @@ class _LoginScreenState extends State<LoginScreen> {
     AuthProvider authProvider,
   ) async {
     await ctx.read<SessionProvider>().restoreSession(
-      primaryPhoneHint: authProvider.lastPrimaryPhoneHint,
-      primaryEmailHint: authProvider.lastPrimaryEmailHint,
-    );
+          primaryPhoneHint: authProvider.lastPrimaryPhoneHint,
+          primaryEmailHint: authProvider.lastPrimaryEmailHint,
+        );
 
     if (!ctx.mounted) return;
 

@@ -61,8 +61,7 @@ class _AndroidBackSwipeScopeState extends State<AndroidBackSwipeScope> {
 
   void _handleEnd(DragEndDetails details) {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldPop =
-        _isTracking &&
+    final shouldPop = _isTracking &&
         Navigator.of(context).canPop() &&
         (_distance >= _minDistance || primaryVelocity >= _minVelocity);
 

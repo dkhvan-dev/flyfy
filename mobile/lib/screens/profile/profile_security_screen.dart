@@ -137,11 +137,10 @@ class _ProfileSecurityScreenState extends State<ProfileSecurityScreen> {
                         subtitle: !_hasPin
                             ? l10n.profileSecurityBiometricNeedsPin
                             : _biometricAvailable
-                            ? l10n.profileSecurityBiometricSubtitle
-                            : l10n.profileSecurityBiometricUnavailable,
+                                ? l10n.profileSecurityBiometricSubtitle
+                                : l10n.profileSecurityBiometricUnavailable,
                         value: _biometricEnabled,
-                        enabled:
-                            _biometricAvailable &&
+                        enabled: _biometricAvailable &&
                             _hasPin &&
                             !_isTogglingBiometric,
                         onChanged: _setBiometricEnabled,
@@ -328,8 +327,8 @@ class _SecurityInfoTile extends StatelessWidget {
     final accentColor = danger
         ? const Color(0xFFF2A099)
         : highlighted
-        ? AppColors.accent
-        : profileTextSoft;
+            ? AppColors.accent
+            : profileTextSoft;
 
     return Padding(
       padding: EdgeInsets.only(

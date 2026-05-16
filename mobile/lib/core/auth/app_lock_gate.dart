@@ -603,8 +603,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     if (!mounted) return;
 
     final hasStoredSession = await authProvider.hasStoredSessionForUnlock();
-    final unlockSucceeded =
-        sessionProvider.isAuthenticated ||
+    final unlockSucceeded = sessionProvider.isAuthenticated ||
         (authProvider.state == AuthState.authenticated && hasStoredSession);
 
     if (unlockSucceeded) {
@@ -919,8 +918,9 @@ class _AppLockOverlay extends StatelessWidget {
                                     isLoadingState
                                         ? l10n.appLockLoading
                                         : showPinUnlock
-                                        ? l10n.appLockPinUnlockDescription
-                                        : l10n.appLockBiometricUnlockDescription,
+                                            ? l10n.appLockPinUnlockDescription
+                                            : l10n
+                                                .appLockBiometricUnlockDescription,
                                     style: TextStyle(
                                       fontSize: authScaled(
                                         context,
@@ -1046,9 +1046,8 @@ class _AppLockOverlay extends StatelessWidget {
                                       ),
                                     ),
                                     FilledButton(
-                                      onPressed: isUnlocking
-                                          ? null
-                                          : onUnlockPressed,
+                                      onPressed:
+                                          isUnlocking ? null : onUnlockPressed,
                                       style: FilledButton.styleFrom(
                                         backgroundColor: AppColors.accent
                                             .withValues(alpha: 0.95),

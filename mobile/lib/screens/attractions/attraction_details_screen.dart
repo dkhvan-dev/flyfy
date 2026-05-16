@@ -1236,7 +1236,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Bottom CTA — always visible "Find tours →"
+  // Bottom CTA — always visible "Find excursions →"
   // ---------------------------------------------------------------------------
 
   Widget _buildBottomCta(AttractionAdaptive a, AppLocalizations l10n) {
@@ -1284,7 +1284,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  l10n.attractionFindTours.toUpperCase(),
+                  l10n.attractionFindExcursions.toUpperCase(),
                   style: TextStyle(
                     fontSize: a.scale(13),
                     fontWeight: FontWeight.w900,

@@ -1378,8 +1378,8 @@ class _ServiceChip extends StatelessWidget {
     final color = disabled
         ? profileDisabled
         : active
-        ? AppColors.accent
-        : profileTextSoft;
+            ? AppColors.accent
+            : profileTextSoft;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -1390,15 +1390,15 @@ class _ServiceChip extends StatelessWidget {
         color: disabled
             ? Colors.white.withValues(alpha: 0.03)
             : active
-            ? AppColors.accent.withValues(alpha: 0.12)
-            : Colors.white.withValues(alpha: 0.04),
+                ? AppColors.accent.withValues(alpha: 0.12)
+                : Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: disabled
               ? Colors.white.withValues(alpha: 0.04)
               : active
-              ? AppColors.accent.withValues(alpha: 0.18)
-              : Colors.white.withValues(alpha: 0.05),
+                  ? AppColors.accent.withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.05),
         ),
       ),
       child: Text(

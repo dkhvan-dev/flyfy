@@ -143,8 +143,8 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
   ) async {
     if (duration.inMilliseconds <= 0) return;
     final target = Duration(
-      milliseconds: (duration.inMilliseconds * seekFraction.clamp(0.0, 1.0))
-          .round(),
+      milliseconds:
+          (duration.inMilliseconds * seekFraction.clamp(0.0, 1.0)).round(),
     );
     await _player.seek(target);
   }
@@ -178,12 +178,10 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
             stream: _player.playerStateStream,
             builder: (context, snapshot) {
               final processing = snapshot.data?.processingState;
-              final busy =
-                  _preparing ||
+              final busy = _preparing ||
                   processing == ProcessingState.loading ||
                   processing == ProcessingState.buffering;
-              final playing =
-                  (snapshot.data?.playing ?? false) &&
+              final playing = (snapshot.data?.playing ?? false) &&
                   processing != ProcessingState.completed;
 
               return GestureDetector(
@@ -237,8 +235,7 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                 StreamBuilder<Duration?>(
                   stream: _player.durationStream,
                   builder: (context, durationSnapshot) {
-                    final duration =
-                        durationSnapshot.data ??
+                    final duration = durationSnapshot.data ??
                         _player.duration ??
                         Duration.zero;
                     return StreamBuilder<Duration>(
@@ -249,8 +246,8 @@ class _ChatVoiceAttachmentPlayerState extends State<ChatVoiceAttachmentPlayer> {
                         final progress = duration.inMilliseconds <= 0
                             ? 0.0
                             : (position.inMilliseconds /
-                                      duration.inMilliseconds)
-                                  .clamp(0.0, 1.0);
+                                    duration.inMilliseconds)
+                                .clamp(0.0, 1.0);
 
                         return Row(
                           children: [
@@ -324,15 +321,12 @@ class _ChatVoiceWaveform extends StatelessWidget {
 
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTapDown: enabled
-              ? (details) => seekAt(details.localPosition)
-              : null,
-          onHorizontalDragStart: enabled
-              ? (details) => seekAt(details.localPosition)
-              : null,
-          onHorizontalDragUpdate: enabled
-              ? (details) => seekAt(details.localPosition)
-              : null,
+          onTapDown:
+              enabled ? (details) => seekAt(details.localPosition) : null,
+          onHorizontalDragStart:
+              enabled ? (details) => seekAt(details.localPosition) : null,
+          onHorizontalDragUpdate:
+              enabled ? (details) => seekAt(details.localPosition) : null,
           child: SizedBox(
             height: scale(dense ? 24 : 28),
             child: Row(

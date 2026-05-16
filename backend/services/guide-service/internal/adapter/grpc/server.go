@@ -111,16 +111,16 @@ func (s *Server) UpdateGuideProfile(
 	}
 
 	aggregate, err := s.useCase.UpdateGuideProfile(ctx, app.UpdateGuideProfileInput{
-		ProfileID:               profileID,
-		Headline:                stringPtrOrNil(req.GetHeadline()),
-		About:                   stringPtrOrNil(req.GetAbout()),
-		ExperienceYears:         optionalInt32ToInt(req.ExperienceYears),
-		BaseCityID:              baseCityID,
-		IsPrivateGuideAvailable: optionalBoolPtr(req.IsPrivateGuideAvailable),
-		IsActivityHostAvailable: optionalBoolPtr(req.IsActivityHostAvailable),
-		IsTourGuideAvailable:    optionalBoolPtr(req.IsTourGuideAvailable),
-		Languages:               languages,
-		Specializations:         specializations,
+		ProfileID:                 profileID,
+		Headline:                  stringPtrOrNil(req.GetHeadline()),
+		About:                     stringPtrOrNil(req.GetAbout()),
+		ExperienceYears:           optionalInt32ToInt(req.ExperienceYears),
+		BaseCityID:                baseCityID,
+		IsPrivateGuideAvailable:   optionalBoolPtr(req.IsPrivateGuideAvailable),
+		IsActivityHostAvailable:   optionalBoolPtr(req.IsActivityHostAvailable),
+		IsExcursionGuideAvailable: optionalBoolPtr(req.IsExcursionGuideAvailable),
+		Languages:                 languages,
+		Specializations:           specializations,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -277,21 +277,21 @@ func toProtoGuideProfile(profile *model.GuideProfile) *guidev1.GuideProfile {
 	}
 
 	return &guidev1.GuideProfile{
-		Id:                      profile.ID.String(),
-		UserId:                  profile.UserID.String(),
-		Type:                    string(profile.Type),
-		Status:                  string(profile.Status),
-		Headline:                valueOrEmpty(profile.Headline),
-		About:                   valueOrEmpty(profile.About),
-		ExperienceYears:         int32(profile.ExperienceYears),
-		BaseCityId:              baseCityID,
-		IsPrivateGuideAvailable: profile.IsPrivateGuideAvailable,
-		IsActivityHostAvailable: profile.IsActivityHostAvailable,
-		IsTourGuideAvailable:    profile.IsTourGuideAvailable,
-		RatingAvg:               profile.RatingAvg,
-		ReviewsCount:            int32(profile.ReviewsCount),
-		CreatedAt:               profile.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:               profile.UpdatedAt.UTC().Format(time.RFC3339),
+		Id:                        profile.ID.String(),
+		UserId:                    profile.UserID.String(),
+		Type:                      string(profile.Type),
+		Status:                    string(profile.Status),
+		Headline:                  valueOrEmpty(profile.Headline),
+		About:                     valueOrEmpty(profile.About),
+		ExperienceYears:           int32(profile.ExperienceYears),
+		BaseCityId:                baseCityID,
+		IsPrivateGuideAvailable:   profile.IsPrivateGuideAvailable,
+		IsActivityHostAvailable:   profile.IsActivityHostAvailable,
+		IsExcursionGuideAvailable: profile.IsExcursionGuideAvailable,
+		RatingAvg:                 profile.RatingAvg,
+		ReviewsCount:              int32(profile.ReviewsCount),
+		CreatedAt:                 profile.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:                 profile.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 }
 

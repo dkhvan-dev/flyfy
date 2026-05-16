@@ -11,7 +11,7 @@ class ChatLinkMatch {
 }
 
 final chatUrlRegex = RegExp(
-  r'((?:https?:\/\/|flyfy:\/\/|www\.|\/(?:activities|attractions|chats|map|me|profile|stories|tours|users)\b)[^\s<>()]*)',
+  r'((?:https?:\/\/|flyfy:\/\/|www\.|\/(?:activities|attractions|chats|map|me|profile|stories|excursions|users)\b)[^\s<>()]*)',
   caseSensitive: false,
 );
 
@@ -102,7 +102,7 @@ String? knownInternalChatRoute(String route) {
       path.startsWith('/attractions/') ||
       path.startsWith('/chats/') ||
       path.startsWith('/stories/') ||
-      path.startsWith('/tours/') ||
+      path.startsWith('/excursions/') ||
       path.startsWith('/users/')) {
     return route;
   }

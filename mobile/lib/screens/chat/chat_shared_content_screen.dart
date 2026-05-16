@@ -392,24 +392,20 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     final media = _sharedFiles
         .where((item) => item.metadata?.isMedia ?? false)
         .toList(growable: false);
-    final voiceMessages = _sharedFiles
-        .where((item) {
-          final metadataKnown = _fileMetaById.containsKey(item.fileId);
-          return metadataKnown && (item.metadata?.isAudio ?? false);
-        })
-        .toList(growable: false);
-    final files = _sharedFiles
-        .where((item) {
-          final metadataKnown = _fileMetaById.containsKey(item.fileId);
-          return metadataKnown && !_isSharedMediaOrAudio(item.metadata);
-        })
-        .toList(growable: false);
+    final voiceMessages = _sharedFiles.where((item) {
+      final metadataKnown = _fileMetaById.containsKey(item.fileId);
+      return metadataKnown && (item.metadata?.isAudio ?? false);
+    }).toList(growable: false);
+    final files = _sharedFiles.where((item) {
+      final metadataKnown = _fileMetaById.containsKey(item.fileId);
+      return metadataKnown && !_isSharedMediaOrAudio(item.metadata);
+    }).toList(growable: false);
     final links = _sharedLinks(l10n);
     final contentWidth = MediaQuery.sizeOf(context).width;
     final horizontalPadding = contentWidth < 360 ? 14.0 : 16.0;
     final profileUserId = widget.conversation.isDirect
         ? widget.conversation.directPeer(widget.currentUserId)?.userId.trim() ??
-              ''
+            ''
         : '';
 
     return Scaffold(
@@ -771,8 +767,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
   String _sharedTitle(AppLocalizations l10n) {
     if (widget.conversation.isDirect) {
-      final peerName =
-          widget.conversation
+      final peerName = widget.conversation
               .directPeer(widget.currentUserId)
               ?.displayName
               .trim() ??
@@ -857,9 +852,8 @@ class _SharedHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: MediaQuery.sizeOf(context).width < 360
-                          ? 22
-                          : 24,
+                      fontSize:
+                          MediaQuery.sizeOf(context).width < 360 ? 22 : 24,
                       height: 1.12,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.9,

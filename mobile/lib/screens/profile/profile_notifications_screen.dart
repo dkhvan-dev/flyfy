@@ -33,8 +33,7 @@ class _ProfileNotificationsScreenState
       return;
     }
     final settings = context.read<SessionProvider>().profile?.settings;
-    _settings =
-        settings ??
+    _settings = settings ??
         UserSettingsVm(
           userId: '',
           notificationsPushEnabled: true,

@@ -15,8 +15,8 @@ enum ActivityActionState { idle, loading, success, error }
 
 class ActivityProvider extends ChangeNotifier {
   ActivityProvider({ActivityApi? activityApi, ChatApi? chatApi})
-    : _activityApi = activityApi ?? ActivityApi(),
-      _chatApi = chatApi ?? ChatApi();
+      : _activityApi = activityApi ?? ActivityApi(),
+        _chatApi = chatApi ?? ChatApi();
 
   static const int _listFetchLimit = 100;
 

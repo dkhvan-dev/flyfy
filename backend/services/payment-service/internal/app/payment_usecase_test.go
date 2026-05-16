@@ -41,9 +41,9 @@ func TestPaymentUseCaseChargeIsGenericAndIdempotent(t *testing.T) {
 
 	again, err := useCase.Charge(ctx, CreatePaymentInput{
 		IdempotencyKey: "charge-activity-1",
-		SubjectType:    "TOUR",
+		SubjectType:    "EXCURSION",
 		SubjectID:      uuid.New(),
-		Purpose:        "BOOK_TOUR",
+		Purpose:        "BOOK_EXCURSION",
 		PayerUserID:    payerID,
 		AmountMinor:    99_999,
 		Currency:       "USD",
@@ -58,20 +58,20 @@ func TestPaymentUseCaseChargeIsGenericAndIdempotent(t *testing.T) {
 		t.Fatalf("idempotent response was mutated: %#v", again)
 	}
 
-	tour, err := useCase.Charge(ctx, CreatePaymentInput{
-		IdempotencyKey: "charge-tour-1",
-		SubjectType:    "TOUR",
+	excursion, err := useCase.Charge(ctx, CreatePaymentInput{
+		IdempotencyKey: "charge-excursion-1",
+		SubjectType:    "EXCURSION",
 		SubjectID:      uuid.New(),
-		Purpose:        "BOOK_TOUR",
+		Purpose:        "BOOK_EXCURSION",
 		PayerUserID:    payerID,
 		AmountMinor:    45_000,
 		Currency:       "KZT",
 	})
 	if err != nil {
-		t.Fatalf("charge tour: %v", err)
+		t.Fatalf("charge excursion: %v", err)
 	}
-	if tour.SubjectType != "TOUR" || tour.Purpose != "BOOK_TOUR" {
-		t.Fatalf("expected generic tour payment, got %#v", tour)
+	if excursion.SubjectType != "EXCURSION" || excursion.Purpose != "BOOK_EXCURSION" {
+		t.Fatalf("expected generic excursion payment, got %#v", excursion)
 	}
 }
 

@@ -5,15 +5,15 @@ type InitGuideProfileRequest struct {
 }
 
 type UpdateGuideProfileRequest struct {
-	Headline                *string                      `json:"headline,omitempty"`
-	About                   *string                      `json:"about,omitempty"`
-	ExperienceYears         *int                         `json:"experienceYears,omitempty"`
-	BaseCityID              *string                      `json:"baseCityId,omitempty"`
-	IsPrivateGuideAvailable *bool                        `json:"isPrivateGuideAvailable,omitempty"`
-	IsActivityHostAvailable *bool                        `json:"isActivityHostAvailable,omitempty"`
-	IsTourGuideAvailable    *bool                        `json:"isTourGuideAvailable,omitempty"`
-	Languages               []GuideLanguageRequest       `json:"languages,omitempty"`
-	Specializations         []GuideSpecializationRequest `json:"specializations,omitempty"`
+	Headline                  *string                      `json:"headline,omitempty"`
+	About                     *string                      `json:"about,omitempty"`
+	ExperienceYears           *int                         `json:"experienceYears,omitempty"`
+	BaseCityID                *string                      `json:"baseCityId,omitempty"`
+	IsPrivateGuideAvailable   *bool                        `json:"isPrivateGuideAvailable,omitempty"`
+	IsActivityHostAvailable   *bool                        `json:"isActivityHostAvailable,omitempty"`
+	IsExcursionGuideAvailable *bool                        `json:"isExcursionGuideAvailable,omitempty"`
+	Languages                 []GuideLanguageRequest       `json:"languages,omitempty"`
+	Specializations           []GuideSpecializationRequest `json:"specializations,omitempty"`
 }
 
 type GuideLanguageRequest struct {
@@ -42,7 +42,7 @@ type SubmitGuideApplicationRequest struct {
 	BaseCityID                 *string `json:"baseCityId,omitempty"`
 	IsPrivateGuideAvailable    *bool   `json:"isPrivateGuideAvailable,omitempty"`
 	IsActivityHostAvailable    *bool   `json:"isActivityHostAvailable,omitempty"`
-	IsTourGuideAvailable       *bool   `json:"isTourGuideAvailable,omitempty"`
+	IsExcursionGuideAvailable  *bool   `json:"isExcursionGuideAvailable,omitempty"`
 	Comment                    *string `json:"comment,omitempty"`
 	IdentityDocumentFileID     string  `json:"identityDocumentFileId"`
 	IdentityDocumentType       string  `json:"identityDocumentType"`
@@ -61,21 +61,21 @@ type GuideAggregateResponse struct {
 }
 
 type GuideProfileResponse struct {
-	ID                      string  `json:"id"`
-	UserID                  string  `json:"userId"`
-	Type                    string  `json:"type"`
-	Status                  string  `json:"status"`
-	Headline                *string `json:"headline,omitempty"`
-	About                   *string `json:"about,omitempty"`
-	ExperienceYears         int     `json:"experienceYears"`
-	BaseCityID              *string `json:"baseCityId,omitempty"`
-	IsPrivateGuideAvailable bool    `json:"isPrivateGuideAvailable"`
-	IsActivityHostAvailable bool    `json:"isActivityHostAvailable"`
-	IsTourGuideAvailable    bool    `json:"isTourGuideAvailable"`
-	RatingAvg               float64 `json:"ratingAvg"`
-	ReviewsCount            int     `json:"reviewsCount"`
-	CreatedAt               string  `json:"createdAt"`
-	UpdatedAt               string  `json:"updatedAt"`
+	ID                        string  `json:"id"`
+	UserID                    string  `json:"userId"`
+	Type                      string  `json:"type"`
+	Status                    string  `json:"status"`
+	Headline                  *string `json:"headline,omitempty"`
+	About                     *string `json:"about,omitempty"`
+	ExperienceYears           int     `json:"experienceYears"`
+	BaseCityID                *string `json:"baseCityId,omitempty"`
+	IsPrivateGuideAvailable   bool    `json:"isPrivateGuideAvailable"`
+	IsActivityHostAvailable   bool    `json:"isActivityHostAvailable"`
+	IsExcursionGuideAvailable bool    `json:"isExcursionGuideAvailable"`
+	RatingAvg                 float64 `json:"ratingAvg"`
+	ReviewsCount              int     `json:"reviewsCount"`
+	CreatedAt                 string  `json:"createdAt"`
+	UpdatedAt                 string  `json:"updatedAt"`
 }
 
 type GuideVerificationRequestResponse struct {

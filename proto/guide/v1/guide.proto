@@ -52,7 +52,7 @@ message UpdateGuideProfileRequest {
   string base_city_id = 5;
   optional bool is_private_guide_available = 6;
   optional bool is_activity_host_available = 7;
-  optional bool is_tour_guide_available = 8;
+  optional bool is_excursion_guide_available = 8;
   repeated GuideLanguageInput languages = 9;
   repeated GuideSpecializationInput specializations = 10;
 }
@@ -110,7 +110,7 @@ message GuideProfile {
   string base_city_id = 8;
   bool is_private_guide_available = 9;
   bool is_activity_host_available = 10;
-  bool is_tour_guide_available = 11;
+  bool is_excursion_guide_available = 11;
   double rating_avg = 12;
   int32 reviews_count = 13;
   string created_at = 14;

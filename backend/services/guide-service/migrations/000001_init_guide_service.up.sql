@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS guide_profiles (
 
     is_private_guide_available BOOLEAN NOT NULL DEFAULT FALSE,
     is_activity_host_available BOOLEAN NOT NULL DEFAULT FALSE,
-    is_tour_guide_available BOOLEAN NOT NULL DEFAULT FALSE,
+    is_excursion_guide_available BOOLEAN NOT NULL DEFAULT FALSE,
 
     rating_avg NUMERIC(4,2) NOT NULL DEFAULT 0,
     reviews_count INTEGER NOT NULL DEFAULT 0 CHECK (reviews_count >= 0),

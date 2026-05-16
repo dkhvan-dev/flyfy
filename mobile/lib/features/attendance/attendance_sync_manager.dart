@@ -154,14 +154,14 @@ class AttendanceSyncManager {
     final seconds = retryCount <= 1
         ? 15
         : retryCount == 2
-        ? 30
-        : retryCount == 3
-        ? 60
-        : retryCount == 4
-        ? 120
-        : retryCount == 5
-        ? 300
-        : 900;
+            ? 30
+            : retryCount == 3
+                ? 60
+                : retryCount == 4
+                    ? 120
+                    : retryCount == 5
+                        ? 300
+                        : 900;
     return now.add(Duration(seconds: seconds));
   }
 

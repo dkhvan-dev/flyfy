@@ -2,7 +2,7 @@ import '../storage/secure_storage.dart';
 
 class AppLockService {
   AppLockService({SecureStorage? secureStorage})
-    : _secureStorage = secureStorage ?? SecureStorage();
+      : _secureStorage = secureStorage ?? SecureStorage();
 
   final SecureStorage _secureStorage;
 

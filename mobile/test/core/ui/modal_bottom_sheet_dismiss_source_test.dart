@@ -39,7 +39,7 @@ void main() {
 
     for (final path in [
       'lib/screens/guides/guides_screen.dart',
-      'lib/screens/tours/tours_screen.dart',
+      'lib/screens/excursions/excursions_screen.dart',
       'lib/screens/attractions/attractions_filter_sheet.dart',
     ]) {
       expect(

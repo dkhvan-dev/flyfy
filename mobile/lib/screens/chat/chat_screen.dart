@@ -1522,6 +1522,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final selected = await showModalBottomSheet<ConversationVm>(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
       backgroundColor: const Color(0xFF1d120b),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -1558,6 +1559,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final selectedUserId = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
       backgroundColor: const Color(0xFF1d120b),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -1575,6 +1577,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final selectedUserId = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
       backgroundColor: const Color(0xFF1d120b),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

@@ -9,7 +9,7 @@ class GuideProfileVm {
     required this.experienceYears,
     required this.isPrivateGuideAvailable,
     required this.isActivityHostAvailable,
-    required this.isTourGuideAvailable,
+    required this.isExcursionGuideAvailable,
     required this.ratingAvg,
     required this.reviewsCount,
     required this.languages,
@@ -25,7 +25,7 @@ class GuideProfileVm {
   final int? experienceYears;
   final bool isPrivateGuideAvailable;
   final bool isActivityHostAvailable;
-  final bool isTourGuideAvailable;
+  final bool isExcursionGuideAvailable;
   final double ratingAvg;
   final int reviewsCount;
   final List<String> languages;
@@ -52,7 +52,7 @@ class GuideProfileVm {
       experienceYears: parseNullableInt(profile['experienceYears']),
       isPrivateGuideAvailable: profile['isPrivateGuideAvailable'] == true,
       isActivityHostAvailable: profile['isActivityHostAvailable'] == true,
-      isTourGuideAvailable: profile['isTourGuideAvailable'] == true,
+      isExcursionGuideAvailable: profile['isExcursionGuideAvailable'] == true,
       ratingAvg: double.tryParse(profile['ratingAvg']?.toString() ?? '') ?? 0,
       reviewsCount:
           int.tryParse(profile['reviewsCount']?.toString() ?? '') ?? 0,

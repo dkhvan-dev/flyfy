@@ -88,7 +88,7 @@ class FileApi {
     );
   }
 
-  Future<FileUploadRequestVm> createTourCoverUpload({
+  Future<FileUploadRequestVm> createExcursionCoverUpload({
     required String originalName,
     required String contentType,
     required int sizeBytes,
@@ -97,7 +97,7 @@ class FileApi {
       originalName: originalName,
       contentType: contentType,
       sizeBytes: sizeBytes,
-      purpose: 'TOUR_MEDIA',
+      purpose: 'EXCURSION_MEDIA',
       visibility: 'PUBLIC',
     );
   }

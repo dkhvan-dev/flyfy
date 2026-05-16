@@ -28,7 +28,7 @@ void main() {
               'experienceYears': 8,
               'isPrivateGuideAvailable': true,
               'isActivityHostAvailable': true,
-              'isTourGuideAvailable': true,
+              'isExcursionGuideAvailable': true,
               'ratingAvg': 4.9,
               'reviewsCount': 42,
             },

@@ -25,9 +25,8 @@ class SaveStoryRequest {
       'content': content.trim(),
       'category': category.trim(),
       'status': status.trim(),
-      'coverFileId': (coverFileId ?? '').trim().isEmpty
-          ? null
-          : coverFileId!.trim(),
+      'coverFileId':
+          (coverFileId ?? '').trim().isEmpty ? null : coverFileId!.trim(),
       'placeName': (placeName ?? '').trim().isEmpty ? null : placeName!.trim(),
       'placeCountryCode': (placeCountryCode ?? '').trim().isEmpty
           ? null

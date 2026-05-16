@@ -138,16 +138,16 @@ func (h *Handler) UpdateMyGuideProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updated, err := h.useCase.UpdateGuideProfile(r.Context(), app.UpdateGuideProfileInput{
-		ProfileID:               aggregate.Profile.ID,
-		Headline:                req.Headline,
-		About:                   req.About,
-		ExperienceYears:         req.ExperienceYears,
-		BaseCityID:              baseCityID,
-		IsPrivateGuideAvailable: req.IsPrivateGuideAvailable,
-		IsActivityHostAvailable: req.IsActivityHostAvailable,
-		IsTourGuideAvailable:    req.IsTourGuideAvailable,
-		Languages:               langs,
-		Specializations:         specs,
+		ProfileID:                 aggregate.Profile.ID,
+		Headline:                  req.Headline,
+		About:                     req.About,
+		ExperienceYears:           req.ExperienceYears,
+		BaseCityID:                baseCityID,
+		IsPrivateGuideAvailable:   req.IsPrivateGuideAvailable,
+		IsActivityHostAvailable:   req.IsActivityHostAvailable,
+		IsExcursionGuideAvailable: req.IsExcursionGuideAvailable,
+		Languages:                 langs,
+		Specializations:           specs,
 	})
 	if err != nil {
 		switch {
@@ -252,7 +252,7 @@ func (h *Handler) SubmitMyGuideApplication(w http.ResponseWriter, r *http.Reques
 		BaseCityID:                 baseCityID,
 		IsPrivateGuideAvailable:    req.IsPrivateGuideAvailable,
 		IsActivityHostAvailable:    req.IsActivityHostAvailable,
-		IsTourGuideAvailable:       req.IsTourGuideAvailable,
+		IsExcursionGuideAvailable:  req.IsExcursionGuideAvailable,
 		Comment:                    req.Comment,
 		IdentityDocumentFileID:     identityDocumentFileID,
 		IdentityDocumentType:       req.IdentityDocumentType,
@@ -555,21 +555,21 @@ func toGuideProfileResponse(profile *model.GuideProfile) dto.GuideProfileRespons
 	}
 
 	return dto.GuideProfileResponse{
-		ID:                      profile.ID.String(),
-		UserID:                  profile.UserID.String(),
-		Type:                    string(profile.Type),
-		Status:                  string(profile.Status),
-		Headline:                profile.Headline,
-		About:                   profile.About,
-		ExperienceYears:         profile.ExperienceYears,
-		BaseCityID:              baseCityID,
-		IsPrivateGuideAvailable: profile.IsPrivateGuideAvailable,
-		IsActivityHostAvailable: profile.IsActivityHostAvailable,
-		IsTourGuideAvailable:    profile.IsTourGuideAvailable,
-		RatingAvg:               profile.RatingAvg,
-		ReviewsCount:            profile.ReviewsCount,
-		CreatedAt:               profile.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:               profile.UpdatedAt.UTC().Format(time.RFC3339),
+		ID:                        profile.ID.String(),
+		UserID:                    profile.UserID.String(),
+		Type:                      string(profile.Type),
+		Status:                    string(profile.Status),
+		Headline:                  profile.Headline,
+		About:                     profile.About,
+		ExperienceYears:           profile.ExperienceYears,
+		BaseCityID:                baseCityID,
+		IsPrivateGuideAvailable:   profile.IsPrivateGuideAvailable,
+		IsActivityHostAvailable:   profile.IsActivityHostAvailable,
+		IsExcursionGuideAvailable: profile.IsExcursionGuideAvailable,
+		RatingAvg:                 profile.RatingAvg,
+		ReviewsCount:              profile.ReviewsCount,
+		CreatedAt:                 profile.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:                 profile.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 }
 

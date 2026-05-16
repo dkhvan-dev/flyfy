@@ -39,7 +39,7 @@ func TestInjectTrustedHeadersResolvesAuthSubjectToDomainUserID(t *testing.T) {
 	})
 	ctx = context.WithValue(ctx, contextKeyRequestID, "request-1")
 
-	req := httptest.NewRequest("POST", "/api/v1/me/tours", nil).WithContext(ctx)
+	req := httptest.NewRequest("POST", "/api/v1/me/excursions", nil).WithContext(ctx)
 	if err := handler.injectTrustedHeaders(req, RouteAuthAuthenticated); err != nil {
 		t.Fatalf("injectTrustedHeaders returned error: %v", err)
 	}

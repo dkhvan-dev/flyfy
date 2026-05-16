@@ -122,9 +122,9 @@ class _OtpScreenState extends State<OtpScreen> {
       final updatedAuth = ctx.read<AuthProvider>();
 
       await ctx.read<SessionProvider>().restoreSession(
-        primaryPhoneHint: updatedAuth.lastPrimaryPhoneHint ?? widget.phone,
-        primaryEmailHint: updatedAuth.lastPrimaryEmailHint,
-      );
+            primaryPhoneHint: updatedAuth.lastPrimaryPhoneHint ?? widget.phone,
+            primaryEmailHint: updatedAuth.lastPrimaryEmailHint,
+          );
 
       if (!ctx.mounted) return;
 
@@ -426,32 +426,29 @@ class _OtpScreenState extends State<OtpScreen> {
                                 SizedBox(height: sectionGap),
                                 LayoutBuilder(
                                   builder: (context, otpConstraints) {
-                                    final boxWidth =
-                                        ((otpConstraints.maxWidth -
-                                                    otpGap * 5) /
-                                                6)
-                                            .clamp(minBoxWidth, maxBoxWidth);
+                                    final boxWidth = ((otpConstraints.maxWidth -
+                                                otpGap * 5) /
+                                            6)
+                                        .clamp(minBoxWidth, maxBoxWidth);
 
                                     return Stack(
                                       children: [
                                         Row(
                                           children: [
-                                            for (
-                                              var index = 0;
-                                              index < 6;
-                                              index++
-                                            ) ...[
+                                            for (var index = 0;
+                                                index < 6;
+                                                index++) ...[
                                               Builder(
                                                 builder: (context) {
                                                   final text =
                                                       _codeController.text;
                                                   final char =
                                                       index < text.length
-                                                      ? text[index]
-                                                      : '';
+                                                          ? text[index]
+                                                          : '';
                                                   final isFocused =
                                                       index == text.length &&
-                                                      _focusNode.hasFocus;
+                                                          _focusNode.hasFocus;
 
                                                   return Container(
                                                     width: boxWidth,
@@ -460,19 +457,19 @@ class _OtpScreenState extends State<OtpScreen> {
                                                     decoration: BoxDecoration(
                                                       color: AppColors.accent
                                                           .withValues(
-                                                            alpha: 0.05,
-                                                          ),
+                                                        alpha: 0.05,
+                                                      ),
                                                       borderRadius:
                                                           BorderRadius.circular(
-                                                            otpRadius,
-                                                          ),
+                                                        otpRadius,
+                                                      ),
                                                       border: Border.all(
                                                         color: isFocused
                                                             ? AppColors.accent
                                                             : AppColors.accent
-                                                                  .withValues(
-                                                                    alpha: 0.2,
-                                                                  ),
+                                                                .withValues(
+                                                                alpha: 0.2,
+                                                              ),
                                                         width: 2,
                                                       ),
                                                     ),
@@ -484,9 +481,9 @@ class _OtpScreenState extends State<OtpScreen> {
                                                             FontWeight.bold,
                                                         color: char.isEmpty
                                                             ? AppColors
-                                                                  .textCaption
+                                                                .textCaption
                                                             : AppColors
-                                                                  .textPrimary,
+                                                                .textPrimary,
                                                       ),
                                                     ),
                                                   );
@@ -662,7 +659,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
                                       final canSubmit =
                                           _codeController.text.trim().length ==
-                                          6;
+                                              6;
 
                                       return ElevatedButton(
                                         onPressed: canSubmit ? _submit : null,

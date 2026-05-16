@@ -1,9 +1,9 @@
 import '../../l10n/generated/app_localizations.dart';
-import '../tours/tour_localization.dart';
+import '../excursions/excursion_localization.dart';
 import 'models/public_guide_vm.dart';
 
 String localizedGuideLanguageLabel(AppLocalizations l10n, String code) {
-  return localizedTourLanguageLabel(l10n, code);
+  return localizedExcursionLanguageLabel(l10n, code);
 }
 
 String localizedGuideSpecializationLabel(
@@ -53,9 +53,9 @@ String guideRoleLabel(AppLocalizations l10n, PublicGuideVm guide) {
 
 List<String> guideServiceLabels(AppLocalizations l10n, PublicGuideVm guide) {
   return [
-    if (guide.isPrivateGuideAvailable) l10n.guidesFilterPrivateTours,
+    if (guide.isPrivateGuideAvailable) l10n.guidesFilterPrivateExcursions,
     if (guide.isActivityHostAvailable) l10n.guidesFilterActivities,
-    if (guide.isTourGuideAvailable) l10n.guidesFilterTours,
+    if (guide.isExcursionGuideAvailable) l10n.guidesFilterExcursions,
   ];
 }
 

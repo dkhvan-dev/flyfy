@@ -28,7 +28,7 @@ func (r *PGGuideRepository) CreateGuideProfile(ctx context.Context, profile *mod
 		INSERT INTO guide_profiles (
 			id, user_id, type, status, headline, about, experience_years,
 			base_city_id, is_private_guide_available, is_activity_host_available,
-			is_tour_guide_available, rating_avg, reviews_count, created_at, updated_at
+			is_excursion_guide_available, rating_avg, reviews_count, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7,
 			$8, $9, $10,
@@ -49,7 +49,7 @@ func (r *PGGuideRepository) CreateGuideProfile(ctx context.Context, profile *mod
 		profile.BaseCityID,
 		profile.IsPrivateGuideAvailable,
 		profile.IsActivityHostAvailable,
-		profile.IsTourGuideAvailable,
+		profile.IsExcursionGuideAvailable,
 		profile.RatingAvg,
 		profile.ReviewsCount,
 		profile.CreatedAt,
@@ -71,7 +71,7 @@ func (r *PGGuideRepository) GetGuideProfileByID(ctx context.Context, id uuid.UUI
 		SELECT
 			id, user_id, type, status, headline, about, experience_years,
 			base_city_id, is_private_guide_available, is_activity_host_available,
-			is_tour_guide_available, rating_avg, reviews_count, created_at, updated_at
+			is_excursion_guide_available, rating_avg, reviews_count, created_at, updated_at
 		FROM guide_profiles
 		WHERE id = $1
 		LIMIT 1
@@ -96,7 +96,7 @@ func (r *PGGuideRepository) GetGuideProfileByID(ctx context.Context, id uuid.UUI
 		&item.BaseCityID,
 		&item.IsPrivateGuideAvailable,
 		&item.IsActivityHostAvailable,
-		&item.IsTourGuideAvailable,
+		&item.IsExcursionGuideAvailable,
 		&item.RatingAvg,
 		&item.ReviewsCount,
 		&item.CreatedAt,
@@ -120,7 +120,7 @@ func (r *PGGuideRepository) GetGuideProfileByUserID(ctx context.Context, userID 
 		SELECT
 			id, user_id, type, status, headline, about, experience_years,
 			base_city_id, is_private_guide_available, is_activity_host_available,
-			is_tour_guide_available, rating_avg, reviews_count, created_at, updated_at
+			is_excursion_guide_available, rating_avg, reviews_count, created_at, updated_at
 		FROM guide_profiles
 		WHERE user_id = $1
 		LIMIT 1
@@ -145,7 +145,7 @@ func (r *PGGuideRepository) GetGuideProfileByUserID(ctx context.Context, userID 
 		&item.BaseCityID,
 		&item.IsPrivateGuideAvailable,
 		&item.IsActivityHostAvailable,
-		&item.IsTourGuideAvailable,
+		&item.IsExcursionGuideAvailable,
 		&item.RatingAvg,
 		&item.ReviewsCount,
 		&item.CreatedAt,
@@ -176,7 +176,7 @@ func (r *PGGuideRepository) UpdateGuideProfile(ctx context.Context, profile *mod
 			base_city_id = $7,
 			is_private_guide_available = $8,
 			is_activity_host_available = $9,
-			is_tour_guide_available = $10,
+			is_excursion_guide_available = $10,
 			rating_avg = $11,
 			reviews_count = $12,
 			updated_at = $13
@@ -195,7 +195,7 @@ func (r *PGGuideRepository) UpdateGuideProfile(ctx context.Context, profile *mod
 		profile.BaseCityID,
 		profile.IsPrivateGuideAvailable,
 		profile.IsActivityHostAvailable,
-		profile.IsTourGuideAvailable,
+		profile.IsExcursionGuideAvailable,
 		profile.RatingAvg,
 		profile.ReviewsCount,
 		profile.UpdatedAt,
@@ -755,7 +755,7 @@ func (r *PGGuideRepository) ListPublicGuideProfiles(
 		SELECT
 			gp.id, gp.user_id, gp.type, gp.status, gp.headline, gp.about, gp.experience_years,
 			gp.base_city_id, gp.is_private_guide_available, gp.is_activity_host_available,
-			gp.is_tour_guide_available, gp.rating_avg, gp.reviews_count, gp.created_at, gp.updated_at
+			gp.is_excursion_guide_available, gp.rating_avg, gp.reviews_count, gp.created_at, gp.updated_at
 		FROM guide_profiles gp
 		WHERE %s
 		ORDER BY %s
@@ -787,7 +787,7 @@ func (r *PGGuideRepository) ListPublicGuideProfiles(
 			&item.BaseCityID,
 			&item.IsPrivateGuideAvailable,
 			&item.IsActivityHostAvailable,
-			&item.IsTourGuideAvailable,
+			&item.IsExcursionGuideAvailable,
 			&item.RatingAvg,
 			&item.ReviewsCount,
 			&item.CreatedAt,

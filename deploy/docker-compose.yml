@@ -165,6 +165,26 @@ services:
     networks:
       - flyfy-network
 
+  guide-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: guide-postgres-migrator
+    environment:
+      PGHOST: guide-postgres
+      PGPORT: 5432
+      POSTGRES_DB: guide_service_db
+      POSTGRES_USER: guide_service
+      POSTGRES_PASSWORD: guide_secret_dev
+    volumes:
+      - ./init-scripts/005_guide_service_migrate.sh:/usr/local/bin/005_guide_service_migrate.sh:ro
+      - ../backend/services/guide-service/migrations:/migrations/guide-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/005_guide_service_migrate.sh"]
+    depends_on:
+      guide-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
   # ============================================
   # Activity PostgreSQL
   # ============================================
@@ -211,23 +231,23 @@ services:
       - flyfy-network
 
   # ============================================
-  # Tour PostgreSQL
+  # Excursion PostgreSQL
   # ============================================
-  tour-postgres:
+  excursion-postgres:
     image: postgres:17-alpine
-    container_name: tour-postgres
+    container_name: excursion-postgres
     environment:
-      POSTGRES_DB: tour_service_db
-      POSTGRES_USER: tour_service
-      POSTGRES_PASSWORD: tour_secret_dev
+      POSTGRES_DB: excursion_service_db
+      POSTGRES_USER: excursion_service
+      POSTGRES_PASSWORD: excursion_secret_dev
     ports:
       - "5444:5432"
     volumes:
-      - tour_postgres_data:/var/lib/postgresql/data
-      - ./init-scripts/012_tour_service.sh:/docker-entrypoint-initdb.d/012_tour_service.sh
-      - ../backend/services/tour-service/migrations:/migrations/tour-service:ro
+      - excursion_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/012_excursion_service.sh:/docker-entrypoint-initdb.d/012_excursion_service.sh
+      - ../backend/services/excursion-service/migrations:/migrations/excursion-service:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tour_service -d tour_service_db"]
+      test: ["CMD-SHELL", "pg_isready -U excursion_service -d excursion_service_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -235,21 +255,21 @@ services:
     networks:
       - flyfy-network
 
-  tour-postgres-migrator:
+  excursion-postgres-migrator:
     image: postgres:17-alpine
-    container_name: tour-postgres-migrator
+    container_name: excursion-postgres-migrator
     environment:
-      PGHOST: tour-postgres
+      PGHOST: excursion-postgres
       PGPORT: 5432
-      POSTGRES_DB: tour_service_db
-      POSTGRES_USER: tour_service
-      POSTGRES_PASSWORD: tour_secret_dev
+      POSTGRES_DB: excursion_service_db
+      POSTGRES_USER: excursion_service
+      POSTGRES_PASSWORD: excursion_secret_dev
     volumes:
-      - ./init-scripts/012_tour_service_migrate.sh:/usr/local/bin/012_tour_service_migrate.sh:ro
-      - ../backend/services/tour-service/migrations:/migrations/tour-service:ro
-    entrypoint: ["/bin/sh", "/usr/local/bin/012_tour_service_migrate.sh"]
+      - ./init-scripts/012_excursion_service_migrate.sh:/usr/local/bin/012_excursion_service_migrate.sh:ro
+      - ../backend/services/excursion-service/migrations:/migrations/excursion-service:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/012_excursion_service_migrate.sh"]
     depends_on:
-      tour-postgres:
+      excursion-postgres:
         condition: service_healthy
     restart: "no"
     networks:
@@ -636,6 +656,8 @@ services:
     depends_on:
       guide-postgres:
         condition: service_healthy
+      guide-postgres-migrator:
+        condition: service_completed_successfully
       user-service:
         condition: service_started
       file-manager-service:
@@ -759,17 +781,17 @@ services:
       - flyfy-network
 
   # ============================================
-  # Tour Service
+  # Excursion Service
   # ============================================
-  tour-service:
+  excursion-service:
     build:
       context: ..
-      dockerfile: ./backend/services/tour-service/Dockerfile
-    container_name: tour-service
+      dockerfile: ./backend/services/excursion-service/Dockerfile
+    container_name: excursion-service
     depends_on:
-      tour-postgres:
+      excursion-postgres:
         condition: service_healthy
-      tour-postgres-migrator:
+      excursion-postgres-migrator:
         condition: service_completed_successfully
       guide-service:
         condition: service_started
@@ -780,16 +802,16 @@ services:
     ports:
       - "8093:8093"
     environment:
-      APP_NAME: tour-service
+      APP_NAME: excursion-service
       APP_ENV: development
 
       HTTP_PORT: 8093
 
-      DB_HOST: tour-postgres
+      DB_HOST: excursion-postgres
       DB_PORT: 5432
-      DB_NAME: tour_service_db
-      DB_USER: tour_service
-      DB_PASSWORD: tour_secret_dev
+      DB_NAME: excursion_service_db
+      DB_USER: excursion_service
+      DB_PASSWORD: excursion_secret_dev
       DB_SSLMODE: disable
       DB_MAX_CONNS: 10
       DB_MIN_CONNS: 2
@@ -1302,7 +1324,7 @@ services:
         condition: service_started
       guide-service:
         condition: service_started
-      tour-service:
+      excursion-service:
         condition: service_started
       stories-service:
         condition: service_started
@@ -1340,7 +1362,7 @@ services:
       AUTH_SERVICE_HTTP_URL: http://auth-service:8082
       USER_SERVICE_HTTP_URL: http://user-service:8084
       GUIDE_SERVICE_HTTP_URL: http://guide-service:8085
-      TOUR_SERVICE_HTTP_URL: http://tour-service:8093
+      EXCURSION_SERVICE_HTTP_URL: http://excursion-service:8093
       FILE_MANAGER_HTTP_URL: http://file-manager-service:8083
       ACTIVITY_SERVICE_HTTP_URL: http://activity-service:8086
       STORIES_SERVICE_HTTP_URL: http://stories-service:8087
@@ -1385,7 +1407,7 @@ volumes:
   user_postgres_data:
   guide_postgres_data:
   activity_postgres_data:
-  tour_postgres_data:
+  excursion_postgres_data:
   stories_postgres_data:
   chat_postgres_data:
   nats_data:

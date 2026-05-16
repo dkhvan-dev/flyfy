@@ -184,16 +184,16 @@ func (u *GuideUseCase) ResolveUserIDBySubject(ctx context.Context, subject strin
 }
 
 type UpdateGuideProfileInput struct {
-	ProfileID               uuid.UUID
-	Headline                *string
-	About                   *string
-	ExperienceYears         *int
-	BaseCityID              *uuid.UUID
-	IsPrivateGuideAvailable *bool
-	IsActivityHostAvailable *bool
-	IsTourGuideAvailable    *bool
-	Languages               []GuideLanguageInput
-	Specializations         []GuideSpecializationInput
+	ProfileID                 uuid.UUID
+	Headline                  *string
+	About                     *string
+	ExperienceYears           *int
+	BaseCityID                *uuid.UUID
+	IsPrivateGuideAvailable   *bool
+	IsActivityHostAvailable   *bool
+	IsExcursionGuideAvailable *bool
+	Languages                 []GuideLanguageInput
+	Specializations           []GuideSpecializationInput
 }
 
 type GuideLanguageInput struct {
@@ -219,13 +219,13 @@ func (u *GuideUseCase) UpdateGuideProfile(ctx context.Context, input UpdateGuide
 	}
 
 	if err = profile.ApplyUpdate(model.UpdateGuideProfileParams{
-		Headline:                input.Headline,
-		About:                   input.About,
-		ExperienceYears:         input.ExperienceYears,
-		BaseCityID:              input.BaseCityID,
-		IsPrivateGuideAvailable: input.IsPrivateGuideAvailable,
-		IsActivityHostAvailable: input.IsActivityHostAvailable,
-		IsTourGuideAvailable:    input.IsTourGuideAvailable,
+		Headline:                  input.Headline,
+		About:                     input.About,
+		ExperienceYears:           input.ExperienceYears,
+		BaseCityID:                input.BaseCityID,
+		IsPrivateGuideAvailable:   input.IsPrivateGuideAvailable,
+		IsActivityHostAvailable:   input.IsActivityHostAvailable,
+		IsExcursionGuideAvailable: input.IsExcursionGuideAvailable,
 	}); err != nil {
 		return nil, fmt.Errorf("apply guide profile update: %w", err)
 	}
@@ -330,7 +330,7 @@ type SubmitGuideApplicationInput struct {
 	BaseCityID                 *uuid.UUID
 	IsPrivateGuideAvailable    *bool
 	IsActivityHostAvailable    *bool
-	IsTourGuideAvailable       *bool
+	IsExcursionGuideAvailable  *bool
 	Comment                    *string
 	IdentityDocumentFileID     uuid.UUID
 	IdentityDocumentType       string
@@ -422,13 +422,13 @@ func (u *GuideUseCase) SubmitGuideApplication(
 	}
 
 	if err = profile.ApplyUpdate(model.UpdateGuideProfileParams{
-		Headline:                input.Headline,
-		About:                   input.About,
-		ExperienceYears:         input.ExperienceYears,
-		BaseCityID:              input.BaseCityID,
-		IsPrivateGuideAvailable: input.IsPrivateGuideAvailable,
-		IsActivityHostAvailable: input.IsActivityHostAvailable,
-		IsTourGuideAvailable:    input.IsTourGuideAvailable,
+		Headline:                  input.Headline,
+		About:                     input.About,
+		ExperienceYears:           input.ExperienceYears,
+		BaseCityID:                input.BaseCityID,
+		IsPrivateGuideAvailable:   input.IsPrivateGuideAvailable,
+		IsActivityHostAvailable:   input.IsActivityHostAvailable,
+		IsExcursionGuideAvailable: input.IsExcursionGuideAvailable,
 	}); err != nil {
 		return nil, fmt.Errorf("apply guide profile update: %w", err)
 	}

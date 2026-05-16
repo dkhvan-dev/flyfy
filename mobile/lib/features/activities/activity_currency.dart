@@ -248,9 +248,8 @@ String formatActivityMoney({
     return resolvedCurrency == null ? '0' : '0 $resolvedCurrency';
   }
 
-  final numeric = amount % 1 == 0
-      ? amount.toStringAsFixed(0)
-      : amount.toStringAsFixed(2);
+  final numeric =
+      amount % 1 == 0 ? amount.toStringAsFixed(0) : amount.toStringAsFixed(2);
   if (resolvedCurrency == null) {
     return numeric;
   }

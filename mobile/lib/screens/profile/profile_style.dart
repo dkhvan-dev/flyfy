@@ -105,14 +105,14 @@ BoxDecoration profileCardDecoration(
               profileSurface.withValues(alpha: 0.78),
             ]
           : highlighted
-          ? [
-              profileSurfaceSoft.withValues(alpha: 0.98),
-              profileSurface.withValues(alpha: 0.96),
-            ]
-          : [
-              Colors.white.withValues(alpha: 0.03),
-              Colors.white.withValues(alpha: 0.015),
-            ],
+              ? [
+                  profileSurfaceSoft.withValues(alpha: 0.98),
+                  profileSurface.withValues(alpha: 0.96),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.03),
+                  Colors.white.withValues(alpha: 0.015),
+                ],
     ),
     borderRadius: BorderRadius.circular(
       radius ?? profileScaled(context, 22, min: 18, max: 28),
@@ -121,8 +121,8 @@ BoxDecoration profileCardDecoration(
       color: disabled
           ? profileBorderSoft
           : highlighted
-          ? profileBorder
-          : Colors.white.withValues(alpha: 0.04),
+              ? profileBorder
+              : Colors.white.withValues(alpha: 0.04),
     ),
     boxShadow: [
       BoxShadow(

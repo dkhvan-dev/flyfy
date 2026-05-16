@@ -19,50 +19,50 @@ func TestStickerCatalogRouteProxiesToStickerService(t *testing.T) {
 	}
 }
 
-func TestTourRoutesProxyToTourService(t *testing.T) {
-	publicPolicy := matchRoutePolicy("/api/v1/tours/123", "/api/v1")
+func TestExcursionRoutesProxyToExcursionService(t *testing.T) {
+	publicPolicy := matchRoutePolicy("/api/v1/excursions/123", "/api/v1")
 	if publicPolicy == nil {
-		t.Fatal("expected public tour route policy")
+		t.Fatal("expected public excursion route policy")
 	}
-	if publicPolicy.Upstream != "tour" {
-		t.Fatalf("public upstream = %q, want tour", publicPolicy.Upstream)
+	if publicPolicy.Upstream != "excursion" {
+		t.Fatalf("public upstream = %q, want excursion", publicPolicy.Upstream)
 	}
 	if publicPolicy.AuthMode != RouteAuthPublic {
 		t.Fatalf("public auth mode = %q, want public", publicPolicy.AuthMode)
 	}
-	if publicPolicy.RewritePrefix != "/v1/tours" {
-		t.Fatalf("public rewrite prefix = %q, want /v1/tours", publicPolicy.RewritePrefix)
+	if publicPolicy.RewritePrefix != "/v1/excursions" {
+		t.Fatalf("public rewrite prefix = %q, want /v1/excursions", publicPolicy.RewritePrefix)
 	}
 
-	myPolicy := matchRoutePolicy("/api/v1/me/tours/123", "/api/v1")
+	myPolicy := matchRoutePolicy("/api/v1/me/excursions/123", "/api/v1")
 	if myPolicy == nil {
-		t.Fatal("expected my tour route policy")
+		t.Fatal("expected my excursion route policy")
 	}
-	if myPolicy.Upstream != "tour" {
-		t.Fatalf("my upstream = %q, want tour", myPolicy.Upstream)
+	if myPolicy.Upstream != "excursion" {
+		t.Fatalf("my upstream = %q, want excursion", myPolicy.Upstream)
 	}
 	if myPolicy.AuthMode != RouteAuthAuthenticated {
 		t.Fatalf("my auth mode = %q, want authenticated", myPolicy.AuthMode)
 	}
-	if myPolicy.RewritePrefix != "/v1/me/tours" {
-		t.Fatalf("my rewrite prefix = %q, want /v1/me/tours", myPolicy.RewritePrefix)
+	if myPolicy.RewritePrefix != "/v1/me/excursions" {
+		t.Fatalf("my rewrite prefix = %q, want /v1/me/excursions", myPolicy.RewritePrefix)
 	}
 }
 
-func TestTourProductRoutesProxyToTourService(t *testing.T) {
-	policy := matchRoutePolicy("/api/v1/tour-products/123/offers", "/api/v1")
+func TestExcursionProductRoutesProxyToExcursionService(t *testing.T) {
+	policy := matchRoutePolicy("/api/v1/excursion-products/123/offers", "/api/v1")
 
 	if policy == nil {
-		t.Fatal("expected tour product route policy")
+		t.Fatal("expected excursion product route policy")
 	}
-	if policy.Upstream != "tour" {
-		t.Fatalf("upstream = %q, want tour", policy.Upstream)
+	if policy.Upstream != "excursion" {
+		t.Fatalf("upstream = %q, want excursion", policy.Upstream)
 	}
 	if policy.AuthMode != RouteAuthPublic {
 		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
 	}
-	if policy.RewritePrefix != "/v1/tour-products" {
-		t.Fatalf("rewrite prefix = %q, want /v1/tour-products", policy.RewritePrefix)
+	if policy.RewritePrefix != "/v1/excursion-products" {
+		t.Fatalf("rewrite prefix = %q, want /v1/excursion-products", policy.RewritePrefix)
 	}
 }
 

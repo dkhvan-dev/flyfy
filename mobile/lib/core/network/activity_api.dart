@@ -19,8 +19,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -41,8 +40,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -63,8 +61,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -100,8 +97,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -130,8 +126,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -251,8 +246,7 @@ class ActivityApi {
       );
 
       final data = response.data;
-      final items =
-          (data is Map<String, dynamic>
+      final items = (data is Map<String, dynamic>
               ? data['items'] as List<dynamic>?
               : null) ??
           const [];
@@ -335,8 +329,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];

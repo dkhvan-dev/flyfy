@@ -8,7 +8,7 @@ class PublicGuideVm {
     required this.about,
     required this.isPrivateGuideAvailable,
     required this.isActivityHostAvailable,
-    required this.isTourGuideAvailable,
+    required this.isExcursionGuideAvailable,
     required this.ratingAvg,
     required this.reviewsCount,
     required this.languageCodes,
@@ -28,7 +28,7 @@ class PublicGuideVm {
   final int? experienceYears;
   final bool isPrivateGuideAvailable;
   final bool isActivityHostAvailable;
-  final bool isTourGuideAvailable;
+  final bool isExcursionGuideAvailable;
   final double ratingAvg;
   final int reviewsCount;
   final List<String> languageCodes;
@@ -57,7 +57,8 @@ class PublicGuideVm {
       experienceYears: _nullableInt(guideProfile['experienceYears']),
       isPrivateGuideAvailable: guideProfile['isPrivateGuideAvailable'] == true,
       isActivityHostAvailable: guideProfile['isActivityHostAvailable'] == true,
-      isTourGuideAvailable: guideProfile['isTourGuideAvailable'] == true,
+      isExcursionGuideAvailable:
+          guideProfile['isExcursionGuideAvailable'] == true,
       ratingAvg: _double(guideProfile['ratingAvg']),
       reviewsCount: _int(guideProfile['reviewsCount']),
       languageCodes: _codes(

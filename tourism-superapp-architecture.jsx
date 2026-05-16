@@ -66,7 +66,7 @@ const modules = [
     }
   },
   {
-    id: "tours",
+    id: "excursions",
     title: "Туры",
     icon: "🗺️",
     color: "#E0F7FA",
@@ -75,9 +75,9 @@ const modules = [
     details: {
       description: "Каталог туров от турфирм с бронированием",
       stack: ["PostgreSQL", "ElasticSearch", "Redis", "S3"],
-      goServices: ["tour-service", "tour-catalog-service", "booking-service"],
-      endpoints: ["GET /tours/search", "GET /tours/:id", "POST /tours/:id/book", "GET /agencies/:id/tours"],
-      dbTables: ["tours", "tour_schedules", "tour_agencies", "tour_bookings", "tour_media"],
+      goServices: ["excursion-service", "excursion-catalog-service", "booking-service"],
+      endpoints: ["GET /excursions/search", "GET /excursions/:id", "POST /excursions/:id/book", "GET /agencies/:id/excursions"],
+      dbTables: ["excursions", "excursion_schedules", "excursion_agencies", "excursion_bookings", "excursion_media"],
       notes: "Турфирмы — отдельная роль с панелью управления. API-интеграция для загрузки туров. Модерация контента. Мультивалютность."
     }
   },

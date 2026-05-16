@@ -13,9 +13,9 @@ class AuthProvider extends ChangeNotifier {
     ApiClient? apiClient,
     SecureStorage? secureStorage,
     BiometricAuthService? biometricAuthService,
-  }) : _apiClient = apiClient ?? ApiClient(),
-       _secureStorage = secureStorage ?? SecureStorage(),
-       _biometricAuthService = biometricAuthService ?? BiometricAuthService();
+  })  : _apiClient = apiClient ?? ApiClient(),
+        _secureStorage = secureStorage ?? SecureStorage(),
+        _biometricAuthService = biometricAuthService ?? BiometricAuthService();
 
   final ApiClient _apiClient;
   final SecureStorage _secureStorage;
