@@ -10,8 +10,8 @@ func TestDefaultTravelStickerDefinitionsAreValid(t *testing.T) {
 	t.Parallel()
 
 	defs := defaultStickerDefinitions()
-	if len(defs) < 12 {
-		t.Fatalf("expected at least 12 default stickers, got %d", len(defs))
+	if len(defs) < 32 {
+		t.Fatalf("expected at least 32 default stickers, got %d", len(defs))
 	}
 
 	seen := make(map[string]struct{}, len(defs))
@@ -51,6 +51,31 @@ func TestDefaultTravelStickerDefinitionsAreValid(t *testing.T) {
 		}
 		if got := img.Image[0].Bounds().Dy(); got != stickerCanvasSize {
 			t.Fatalf("sticker %q height = %d, want %d", def.Key, got, stickerCanvasSize)
+		}
+	}
+}
+
+func TestExpandedOfficialStickerSetIncludesTravelChatMoments(t *testing.T) {
+	t.Parallel()
+
+	defs := defaultStickerDefinitions()
+	seen := make(map[string]struct{}, len(defs))
+	for _, def := range defs {
+		seen[def.Key] = struct{}{}
+	}
+
+	for _, key := range []string{
+		"lost-but-happy",
+		"delayed-again",
+		"beach-please",
+		"mountain-call",
+		"send-location",
+		"travel-camera",
+		"globe-mode",
+		"camp-vibes",
+	} {
+		if _, ok := seen[key]; !ok {
+			t.Fatalf("expected expanded official sticker %q", key)
 		}
 	}
 }

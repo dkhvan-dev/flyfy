@@ -1,15 +1,21 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/files/chat_file_cache.dart';
 import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
+import 'widgets/chat_video_preview.dart';
+
+const _videoPreviewDownloadLimitBytes = 25 * 1024 * 1024;
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -320,11 +326,9 @@ class _ConversationTile extends StatelessWidget {
         ),
         if (lastMessage != null) ...[
           const SizedBox(height: 5),
-          Text(
-            _previewText(lastMessage, l10n),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+          _LastMessagePreviewLine(
+            message: lastMessage,
+            textStyle: TextStyle(
               fontSize: 14,
               color: Colors.white.withValues(alpha: 0.46),
               letterSpacing: -0.02 * 14,
@@ -333,19 +337,6 @@ class _ConversationTile extends StatelessWidget {
         ],
       ],
     );
-  }
-
-  String _previewText(LastMessagePreview message, AppLocalizations l10n) {
-    if (message.isDeleted) return l10n.chatMessageDeleted;
-    if (message.senderDisplayName.trim().toLowerCase() == 'system') {
-      return message.contentPreview;
-    }
-    final preview = message.isSticker
-        ? l10n.chatStickerMessage
-        : message.contentPreview.trim().isEmpty && message.hasFiles
-        ? l10n.chatAttachmentFile
-        : message.contentPreview;
-    return '${message.senderDisplayName}: $preview';
   }
 
   String _displayTitle(AppLocalizations l10n) {
@@ -390,4 +381,231 @@ class _ConversationTile extends StatelessWidget {
     }
     return DateFormat.MMMd(l10n.localeName).format(local);
   }
+}
+
+class _LastMessagePreviewLine extends StatefulWidget {
+  const _LastMessagePreviewLine({
+    required this.message,
+    required this.textStyle,
+  });
+
+  final LastMessagePreview message;
+  final TextStyle textStyle;
+
+  @override
+  State<_LastMessagePreviewLine> createState() =>
+      _LastMessagePreviewLineState();
+}
+
+class _LastMessagePreviewLineState extends State<_LastMessagePreviewLine> {
+  final _fileApi = FileApi();
+  final _fileCache = ChatFileCache();
+  Future<_LastAttachmentPreviewData?>? _attachmentFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _attachmentFuture = _loadAttachmentPreview(widget.message);
+  }
+
+  @override
+  void didUpdateWidget(covariant _LastMessagePreviewLine oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message.id != widget.message.id ||
+        oldWidget.message.fileIds.join(',') !=
+            widget.message.fileIds.join(',')) {
+      _attachmentFuture = _loadAttachmentPreview(widget.message);
+    }
+  }
+
+  Future<_LastAttachmentPreviewData?> _loadAttachmentPreview(
+    LastMessagePreview message,
+  ) async {
+    if (message.isDeleted || message.isSticker || !message.hasFiles) {
+      return null;
+    }
+
+    final fileId = message.fileIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .firstOrNull;
+    if (fileId == null) return null;
+
+    FileMetadataVm? metadata;
+    Uint8List? imageBytes;
+
+    try {
+      metadata = await _fileApi.getFileMetadata(fileId);
+      if (metadata.isImage) {
+        final downloaded = await _fileCache.downloadedFile(
+          fileId,
+          metadata: metadata,
+        );
+        if (downloaded != null) {
+          imageBytes = await downloaded.file.readAsBytes();
+        } else {
+          final content = await _fileApi.downloadContent(fileId);
+          imageBytes = content.bytes.isEmpty ? null : content.bytes;
+        }
+      }
+    } catch (_) {
+      // Keep the list readable while metadata catches up or the network is slow.
+    }
+
+    return _LastAttachmentPreviewData(
+      fileId: fileId,
+      metadata: metadata,
+      imageBytes: imageBytes,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return FutureBuilder<_LastAttachmentPreviewData?>(
+      future: _attachmentFuture,
+      builder: (context, snapshot) {
+        final attachment = snapshot.data;
+        return _buildPreviewRow(
+          text: _previewText(l10n, attachment),
+          attachment: attachment,
+        );
+      },
+    );
+  }
+
+  Widget _buildPreviewRow({
+    required String text,
+    required _LastAttachmentPreviewData? attachment,
+  }) {
+    return Row(
+      children: [
+        if (attachment?.hasThumbnail ?? false) ...[
+          _AttachmentPreviewThumb(attachment: attachment!),
+          const SizedBox(width: 7),
+        ],
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: widget.textStyle,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _previewText(
+    AppLocalizations l10n,
+    _LastAttachmentPreviewData? attachment,
+  ) {
+    final message = widget.message;
+    if (message.isDeleted) return l10n.chatMessageDeleted;
+    if (message.senderDisplayName.trim().toLowerCase() == 'system') {
+      return message.contentPreview;
+    }
+
+    final preview = _previewBody(l10n, attachment);
+    final sender = message.senderDisplayName.trim();
+    if (sender.isEmpty) return preview;
+    return '$sender: $preview';
+  }
+
+  String _previewBody(
+    AppLocalizations l10n,
+    _LastAttachmentPreviewData? attachment,
+  ) {
+    final message = widget.message;
+    if (message.isSticker) return l10n.chatStickerMessage;
+
+    final metadata = attachment?.metadata;
+    if (metadata?.isImage ?? false) return l10n.chatLastMessagePhoto;
+    if (metadata?.isVideo ?? false) return l10n.chatLastMessageVideo;
+    if (metadata != null && message.hasFiles) {
+      final name = _displayFileName(metadata);
+      return name.isEmpty
+          ? l10n.chatSharedFileFallback(_shortId(attachment!.fileId))
+          : name;
+    }
+
+    final contentPreview = message.contentPreview.trim();
+    if (contentPreview.isNotEmpty) return contentPreview;
+    if (message.hasFiles) return l10n.chatAttachmentFile;
+    return message.contentPreview;
+  }
+}
+
+class _AttachmentPreviewThumb extends StatelessWidget {
+  const _AttachmentPreviewThumb({required this.attachment});
+
+  final _LastAttachmentPreviewData attachment;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 32.0;
+    final metadata = attachment.metadata;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: metadata?.isVideo ?? false
+            ? ChatVideoPreview(
+                fileId: attachment.fileId,
+                aspectRatio: 1,
+                borderRadius: 8,
+                enablePlayback: false,
+                loadLocalPreview: true,
+                maxLocalPreviewBytes: _videoPreviewDownloadLimitBytes,
+                playBadgeSize: 18,
+              )
+            : Image.memory(
+                attachment.imageBytes!,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+              ),
+      ),
+    );
+  }
+}
+
+class _LastAttachmentPreviewData {
+  const _LastAttachmentPreviewData({
+    required this.fileId,
+    required this.metadata,
+    required this.imageBytes,
+  });
+
+  final String fileId;
+  final FileMetadataVm? metadata;
+  final Uint8List? imageBytes;
+
+  bool get hasThumbnail =>
+      (metadata?.isImage ?? false) && imageBytes != null ||
+      (metadata?.isVideo ?? false);
+}
+
+String _shortId(String id) {
+  final value = id.trim();
+  if (value.length <= 8) return value;
+  return value.substring(0, 8);
+}
+
+String _displayFileName(FileMetadataVm metadata) {
+  final name = metadata.originalName.trim();
+  if (name.isEmpty) return '';
+
+  final extension = metadata.extensionLabel.trim().toLowerCase();
+  if (extension.isEmpty || extension == 'file') return name;
+
+  final lowerName = name.toLowerCase();
+  if (lowerName.endsWith('.$extension')) return name;
+
+  final lastSegment = name.split(RegExp(r'[/\\]')).last;
+  if (lastSegment.contains('.')) return name;
+
+  return '$name.$extension';
 }

@@ -6,22 +6,27 @@ import (
 )
 
 type Message struct {
-	ID               uuid.UUID
-	ConversationID   uuid.UUID
-	SenderUserID     uuid.UUID
-	Type             string // "text", "file", "sticker", "system"
-	Content          string
-	StickerID        *uuid.UUID
-	StickerFileID    *string
-	StickerPayload   *StickerPayload
-	ReplyToMessageID *uuid.UUID
-	EditedAt         *time.Time
-	DeletedAt        *time.Time
-	SentAt           time.Time
+	ID                        uuid.UUID
+	ConversationID            uuid.UUID
+	SenderUserID              uuid.UUID
+	Type                      string // "text", "file", "sticker", "system"
+	Content                   string
+	StickerID                 *uuid.UUID
+	StickerFileID             *string
+	StickerPayload            *StickerPayload
+	ReplyToMessageID          *uuid.UUID
+	ForwardedFromMessageID    *uuid.UUID
+	ForwardedFromSenderUserID *uuid.UUID
+	ForwardedFromSenderName   string
+	ForwardCount              int
+	EditedAt                  *time.Time
+	DeletedAt                 *time.Time
+	SentAt                    time.Time
 
 	// Populated on read
 	FileIDs            []string
 	Reactions          []MessageReactionSummary
+	ReadReceipts       []MessageReadReceipt
 	SenderDisplayName  string
 	SenderAvatarFileID *string
 }
@@ -51,4 +56,17 @@ type MessageReactionSummary struct {
 	Emoji       string
 	Count       int
 	ReactedByMe bool
+	UserIDs     []string
+	Users       []MessageReactionUserSummary
+}
+
+type MessageReactionUserSummary struct {
+	UserID    string
+	ReactedAt time.Time
+}
+
+type MessageReadReceipt struct {
+	MessageID uuid.UUID
+	UserID    uuid.UUID
+	ReadAt    time.Time
 }

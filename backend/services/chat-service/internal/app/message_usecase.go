@@ -94,6 +94,13 @@ type SendMessageInput struct {
 	ReplyToMessageID    *uuid.UUID
 }
 
+type ForwardMessageInput struct {
+	SourceConversationID uuid.UUID
+	TargetConversationID uuid.UUID
+	MessageID            uuid.UUID
+	SenderUserID         uuid.UUID
+}
+
 type DeleteMessageResult struct {
 	HardDeleted bool
 	DeletedAt   *time.Time
@@ -247,17 +254,21 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 
 	go func() {
 		evt := event.New("message.sent", input.ConversationID, event.MessageSentPayload{
-			MessageID:          msg.ID,
-			SenderUserID:       msg.SenderUserID,
-			SenderDisplayName:  msg.SenderDisplayName,
-			SenderAvatarFileID: msg.SenderAvatarFileID,
-			Type:               msg.Type,
-			Content:            msg.Content,
-			FileIDs:            fileIDs,
-			StickerID:          msg.StickerID,
-			StickerFileID:      msg.StickerFileID,
-			ReplyToMessageID:   input.ReplyToMessageID,
-			SentAt:             msg.SentAt,
+			MessageID:                 msg.ID,
+			SenderUserID:              msg.SenderUserID,
+			SenderDisplayName:         msg.SenderDisplayName,
+			SenderAvatarFileID:        msg.SenderAvatarFileID,
+			Type:                      msg.Type,
+			Content:                   msg.Content,
+			FileIDs:                   fileIDs,
+			StickerID:                 msg.StickerID,
+			StickerFileID:             msg.StickerFileID,
+			ReplyToMessageID:          input.ReplyToMessageID,
+			ForwardedFromMessageID:    msg.ForwardedFromMessageID,
+			ForwardedFromSenderUserID: msg.ForwardedFromSenderUserID,
+			ForwardedFromSenderName:   msg.ForwardedFromSenderName,
+			ForwardCount:              msg.ForwardCount,
+			SentAt:                    msg.SentAt,
 		})
 		if pubErr := u.publisher.Publish(context.Background(), "chat.message.sent", evt); pubErr != nil {
 			log.Error().Err(pubErr).Msg("failed to publish message.sent event")
@@ -265,6 +276,154 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	}()
 
 	return msg, nil
+}
+
+func (u *MessageUseCase) ForwardMessage(ctx context.Context, input ForwardMessageInput) (*model.Message, error) {
+	sourceMessage, err := u.repo.GetMessageByID(ctx, input.MessageID)
+	if err != nil {
+		return nil, err
+	}
+	if sourceMessage == nil ||
+		sourceMessage.ConversationID != input.SourceConversationID ||
+		sourceMessage.DeletedAt != nil ||
+		sourceMessage.Type == "system" {
+		return nil, ErrMessageNotFound
+	}
+	sourceParticipant, err := u.repo.GetParticipant(ctx, input.SourceConversationID, input.SenderUserID)
+	if err != nil {
+		return nil, err
+	}
+	if sourceParticipant == nil || sourceParticipant.LeftAt != nil {
+		return nil, ErrNotParticipant
+	}
+
+	targetConversation, err := u.repo.GetConversationByID(ctx, input.TargetConversationID)
+	if err != nil {
+		return nil, err
+	}
+	if targetConversation == nil {
+		return nil, ErrConversationNotFound
+	}
+	targetConversation, err = refreshActivityMessagingWindow(ctx, u.repo, u.activityResolver, targetConversation, true)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	if targetConversation.IsMessagingClosed(now) {
+		return nil, ErrConversationMessagingClosed
+	}
+
+	targetParticipant, err := u.repo.GetParticipant(ctx, input.TargetConversationID, input.SenderUserID)
+	if err != nil {
+		return nil, err
+	}
+	if targetParticipant == nil || targetParticipant.LeftAt != nil {
+		return nil, ErrNotParticipant
+	}
+
+	fileIDs, err := u.repo.GetMessageFileIDs(ctx, sourceMessage.ID)
+	if err != nil {
+		return nil, err
+	}
+	sourceMessage.FileIDs = fileIDs
+	enrichMessages(ctx, u.profileResolver, []*model.Message{sourceMessage})
+
+	forwardedFromMessageID := sourceMessage.ID
+	forwardedFromSenderUserID := sourceMessage.SenderUserID
+	forwardedFromSenderName := strings.TrimSpace(sourceMessage.SenderDisplayName)
+	if sourceMessage.ForwardedFromMessageID != nil && *sourceMessage.ForwardedFromMessageID != uuid.Nil {
+		forwardedFromMessageID = *sourceMessage.ForwardedFromMessageID
+	}
+	if sourceMessage.ForwardedFromSenderUserID != nil && *sourceMessage.ForwardedFromSenderUserID != uuid.Nil {
+		forwardedFromSenderUserID = *sourceMessage.ForwardedFromSenderUserID
+	}
+	if strings.TrimSpace(sourceMessage.ForwardedFromSenderName) != "" {
+		forwardedFromSenderName = strings.TrimSpace(sourceMessage.ForwardedFromSenderName)
+	}
+	if forwardedFromSenderName == "" {
+		forwardedFromSenderName = forwardedFromSenderUserID.String()
+	}
+
+	forwarded := &model.Message{
+		ID:                        uuid.New(),
+		ConversationID:            input.TargetConversationID,
+		SenderUserID:              input.SenderUserID,
+		Type:                      sourceMessage.Type,
+		Content:                   sourceMessage.Content,
+		StickerID:                 sourceMessage.StickerID,
+		StickerFileID:             sourceMessage.StickerFileID,
+		StickerPayload:            sourceMessage.StickerPayload,
+		ForwardedFromMessageID:    &forwardedFromMessageID,
+		ForwardedFromSenderUserID: &forwardedFromSenderUserID,
+		ForwardedFromSenderName:   forwardedFromSenderName,
+		SentAt:                    now,
+	}
+
+	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
+		if err := txRepo.CreateMessage(ctx, forwarded); err != nil {
+			return err
+		}
+		if len(fileIDs) > 0 {
+			if err := txRepo.CreateMessageFiles(ctx, forwarded.ID, fileIDs); err != nil {
+				return err
+			}
+		}
+
+		sourceForUpdate := *sourceMessage
+		sourceForUpdate.ForwardCount++
+		if err := txRepo.UpdateMessage(ctx, &sourceForUpdate); err != nil {
+			return err
+		}
+		sourceMessage.ForwardCount = sourceForUpdate.ForwardCount
+
+		conv, err := txRepo.GetConversationByIDForUpdate(ctx, input.TargetConversationID)
+		if err != nil {
+			return err
+		}
+		if conv == nil {
+			return ErrConversationNotFound
+		}
+		conv.LastActivityAt = now
+		return txRepo.UpdateConversation(ctx, conv)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	forwarded.FileIDs = fileIDs
+	enrichMessages(ctx, u.profileResolver, []*model.Message{forwarded})
+
+	go func() {
+		evt := event.New("message.sent", input.TargetConversationID, event.MessageSentPayload{
+			MessageID:                 forwarded.ID,
+			SenderUserID:              forwarded.SenderUserID,
+			SenderDisplayName:         forwarded.SenderDisplayName,
+			SenderAvatarFileID:        forwarded.SenderAvatarFileID,
+			Type:                      forwarded.Type,
+			Content:                   forwarded.Content,
+			FileIDs:                   fileIDs,
+			StickerID:                 forwarded.StickerID,
+			StickerFileID:             forwarded.StickerFileID,
+			ForwardedFromMessageID:    forwarded.ForwardedFromMessageID,
+			ForwardedFromSenderUserID: forwarded.ForwardedFromSenderUserID,
+			ForwardedFromSenderName:   forwarded.ForwardedFromSenderName,
+			ForwardCount:              forwarded.ForwardCount,
+			SentAt:                    forwarded.SentAt,
+		})
+		if pubErr := u.publisher.Publish(context.Background(), "chat.message.sent", evt); pubErr != nil {
+			log.Error().Err(pubErr).Msg("failed to publish forwarded message.sent event")
+		}
+		sourceEvt := event.New("message.forwarded", input.SourceConversationID, event.MessageForwardedPayload{
+			MessageID:    sourceMessage.ID,
+			ForwardCount: sourceMessage.ForwardCount,
+		})
+		if pubErr := u.publisher.Publish(context.Background(), "chat.message.forwarded", sourceEvt); pubErr != nil {
+			log.Error().Err(pubErr).Msg("failed to publish message.forwarded event")
+		}
+	}()
+
+	return forwarded, nil
 }
 
 func normalizeMessageFileIDs(fileIDs []string) []string {
@@ -609,6 +768,15 @@ func (u *MessageUseCase) ListMessages(ctx context.Context, conversationID, actor
 		for _, msg := range msgs {
 			msg.Reactions = reactions[msg.ID]
 		}
+		readReceipts, err := u.repo.ListMessageReadReceipts(ctx, messageIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, msg := range msgs {
+			if msg.SenderUserID == actorUserID {
+				msg.ReadReceipts = readReceipts[msg.ID]
+			}
+		}
 	}
 	enrichMessages(ctx, u.profileResolver, msgs)
 
@@ -621,8 +789,23 @@ func reactionSummariesForEvent(
 	items := make([]event.MessageReactionInfo, 0, len(reactions))
 	for _, reaction := range reactions {
 		items = append(items, event.MessageReactionInfo{
-			Emoji: reaction.Emoji,
-			Count: reaction.Count,
+			Emoji:   reaction.Emoji,
+			Count:   reaction.Count,
+			UserIDs: reaction.UserIDs,
+			Users:   reactionUsersForEvent(reaction.Users),
+		})
+	}
+	return items
+}
+
+func reactionUsersForEvent(
+	users []model.MessageReactionUserSummary,
+) []event.MessageReactionUserInfo {
+	items := make([]event.MessageReactionUserInfo, 0, len(users))
+	for _, user := range users {
+		items = append(items, event.MessageReactionUserInfo{
+			UserID:    user.UserID,
+			ReactedAt: user.ReactedAt.UTC().Format(time.RFC3339Nano),
 		})
 	}
 	return items
@@ -645,10 +828,20 @@ func (u *MessageUseCase) MarkRead(ctx context.Context, conversationID, actorUser
 		return ErrNotParticipant
 	}
 
+	readAt := time.Now().UTC()
 	participant.LastReadMsgID = &lastReadMsgID
 
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
-		return txRepo.UpdateParticipant(ctx, participant)
+		if err := txRepo.UpdateParticipant(ctx, participant); err != nil {
+			return err
+		}
+		return txRepo.CreateReadReceiptsUpToMessage(
+			ctx,
+			conversationID,
+			actorUserID,
+			lastReadMsgID,
+			readAt,
+		)
 	})
 	if err != nil {
 		return err
@@ -658,6 +851,7 @@ func (u *MessageUseCase) MarkRead(ctx context.Context, conversationID, actorUser
 		evt := event.New("read.updated", conversationID, event.ReadUpdatedPayload{
 			UserID:        actorUserID,
 			LastReadMsgID: lastReadMsgID,
+			ReadAt:        readAt.Format(time.RFC3339),
 		})
 		_ = u.publisher.Publish(context.Background(), "chat.read.updated", evt)
 	}()

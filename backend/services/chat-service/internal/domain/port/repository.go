@@ -67,6 +67,13 @@ type ChatTxRepository interface {
 		messageID uuid.UUID,
 		actorUserID uuid.UUID,
 	) (bool, error)
+	CreateReadReceiptsUpToMessage(
+		ctx context.Context,
+		conversationID uuid.UUID,
+		readerUserID uuid.UUID,
+		lastReadMessageID uuid.UUID,
+		readAt time.Time,
+	) error
 	ReplaceLastReadMessageID(
 		ctx context.Context,
 		conversationID uuid.UUID,
@@ -88,6 +95,10 @@ type ChatRepository interface {
 		messageIDs []uuid.UUID,
 		actorUserID uuid.UUID,
 	) (map[uuid.UUID][]model.MessageReactionSummary, error)
+	ListMessageReadReceipts(
+		ctx context.Context,
+		messageIDs []uuid.UUID,
+	) (map[uuid.UUID][]model.MessageReadReceipt, error)
 	ListParticipantsByConversationID(ctx context.Context, conversationID uuid.UUID) ([]*model.Participant, error)
 	GetParticipant(ctx context.Context, conversationID, userID uuid.UUID) (*model.Participant, error)
 	CountActiveParticipants(ctx context.Context, conversationID uuid.UUID) (int, error)

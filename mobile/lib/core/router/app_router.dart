@@ -249,7 +249,13 @@ class AppRouter {
           path: '/activities/:activityId/chat',
           builder: (context, state) {
             final activityId = state.pathParameters['activityId'] ?? '';
-            return _withAndroidBackSwipe(ChatScreen(activityId: activityId));
+            final initialMessageId = state.uri.queryParameters['message'];
+            return _withAndroidBackSwipe(
+              ChatScreen(
+                activityId: activityId,
+                initialMessageId: initialMessageId,
+              ),
+            );
           },
         ),
         GoRoute(
@@ -398,8 +404,12 @@ class AppRouter {
           path: '/chats/:conversationId',
           builder: (context, state) {
             final conversationId = state.pathParameters['conversationId'] ?? '';
+            final initialMessageId = state.uri.queryParameters['message'];
             return _withAndroidBackSwipe(
-              ChatScreen(conversationId: conversationId),
+              ChatScreen(
+                conversationId: conversationId,
+                initialMessageId: initialMessageId,
+              ),
             );
           },
         ),

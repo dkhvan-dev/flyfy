@@ -4072,6 +4072,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatAttachmentFile => 'Файл';
 
   @override
+  String get chatLastMessagePhoto => 'Фотография';
+
+  @override
+  String get chatLastMessageVideo => 'Видео';
+
+  @override
   String get chatAttachmentLocation => 'Локация';
 
   @override
@@ -4205,6 +4211,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatCameraFlipButtonLabel => 'Переключить камеру';
 
   @override
+  String get chatCameraFlashOffButtonLabel => 'Вспышка выключена';
+
+  @override
+  String get chatCameraFlashAutoButtonLabel => 'Автовспышка';
+
+  @override
+  String get chatCameraFlashOnButtonLabel => 'Вспышка включена';
+
+  @override
   String get chatCameraCloseButtonLabel => 'Закрыть камеру';
 
   @override
@@ -4215,6 +4230,28 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get chatCameraStopRecordingButtonLabel => 'Остановить запись';
+
+  @override
+  String get chatCameraReviewCancelButtonLabel => 'Отменить';
+
+  @override
+  String get chatCameraReviewSendButtonLabel => 'Отправить';
+
+  @override
+  String get chatCameraReviewPlayButtonLabel => 'Воспроизвести видео';
+
+  @override
+  String get chatCameraReviewPauseButtonLabel => 'Поставить видео на паузу';
+
+  @override
+  String get chatCameraReviewTrimLabel => 'Обрезка';
+
+  @override
+  String get chatCameraReviewProcessing => 'Обработка...';
+
+  @override
+  String get chatCameraTrimFailed =>
+      'Не удалось обрезать это видео. Попробуйте другой диапазон или отправьте оригинал.';
 
   @override
   String get chatAttachmentUploading => 'Загрузка вложения...';
@@ -4307,6 +4344,71 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось обновить реакцию. Попробуйте еще раз.';
 
   @override
+  String get chatCopyAction => 'Скопировать';
+
+  @override
+  String get chatForwardAction => 'Переслать';
+
+  @override
+  String get chatMessageCopied => 'Текст скопирован';
+
+  @override
+  String get chatForwardSheetTitle => 'Переслать в';
+
+  @override
+  String get chatForwardFailed =>
+      'Не удалось переслать сообщение. Попробуйте еще раз.';
+
+  @override
+  String get chatForwardSuccess => 'Сообщение переслано';
+
+  @override
+  String get chatNoForwardTargets => 'Нет доступных чатов';
+
+  @override
+  String get chatForwardedLabel => 'Переслано';
+
+  @override
+  String chatForwardedFrom(Object name) {
+    return 'Переслано от $name';
+  }
+
+  @override
+  String chatForwardCount(Object count) {
+    return 'Переслали $count';
+  }
+
+  @override
+  String get chatReactionsByTitle => 'Реакции';
+
+  @override
+  String chatReactionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count реакции',
+      many: '$count реакций',
+      few: '$count реакции',
+      one: '$count реакция',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatReadByTitle => 'Прочитали';
+
+  @override
+  String chatReadByCount(Object count) {
+    return 'Прочитали: $count';
+  }
+
+  @override
+  String get chatReadAtSeparator => 'в';
+
+  @override
+  String get chatNoStatusDetails => 'Деталей статуса пока нет';
+
+  @override
   String get chatLoadFailed => 'Не удалось загрузить чат';
 
   @override
@@ -4337,6 +4439,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatSharedFilesTab => 'Файлы';
 
   @override
+  String get chatSharedVoiceTab => 'Аудиосообщения';
+
+  @override
   String get chatSharedNoMediaTitle => 'Медиа пока нет';
 
   @override
@@ -4358,12 +4463,36 @@ class AppLocalizationsRu extends AppLocalizations {
       'Документы и архивы из этого чата появятся здесь.';
 
   @override
+  String get chatSharedNoVoiceTitle => 'Голосовых пока нет';
+
+  @override
+  String get chatSharedNoVoiceSubtitle =>
+      'Голосовые сообщения из этого чата появятся здесь.';
+
+  @override
   String chatSharedFileFallback(Object id) {
     return 'Файл $id';
   }
 
   @override
   String get chatSharedUnknownFile => 'Неизвестный файл';
+
+  @override
+  String get chatSharedGoToMessageAction => 'Перейти к сообщению';
+
+  @override
+  String get chatExternalLinkTitle => 'Открыть внешнюю ссылку?';
+
+  @override
+  String chatExternalLinkMessage(Object url) {
+    return 'Эта ссылка ведет на сторонний ресурс:\n$url';
+  }
+
+  @override
+  String get chatExternalLinkOpenAction => 'Открыть';
+
+  @override
+  String get chatExternalLinkOpenFailed => 'Не удалось открыть эту ссылку.';
 
   @override
   String get chatSharedLoadFailed => 'Не удалось загрузить контент';

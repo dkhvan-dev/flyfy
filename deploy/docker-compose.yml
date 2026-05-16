@@ -351,17 +351,19 @@ services:
   nats:
     image: nats:2
     container_name: flyfy-nats
-    command: --jetstream --store_dir /data -m 8222
+    command: ["-c", "/etc/nats/nats-server.conf"]
     ports:
       - "4222:4222"
       - "8222:8222"
     volumes:
       - nats_data:/data
+      - ./nats-server.conf:/etc/nats/nats-server.conf:ro
     healthcheck:
       # The official nats:2 image is minimal and does not ship wget/curl.
       # Use the bundled nats-server binary to probe the main process instead.
+      # The config file keeps reload signals safe and avoids false failures.
       test: ["CMD", "/nats-server", "--signal", "reload=1"]
-      interval: 5s
+      interval: 30s
       timeout: 3s
       retries: 5
       start_period: 5s

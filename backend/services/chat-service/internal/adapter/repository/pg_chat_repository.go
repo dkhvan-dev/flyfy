@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -46,8 +47,8 @@ func (r *PGChatRepository) WithTx(ctx context.Context, fn func(repo port.ChatTxR
 
 const conversationColumns = `id, type, title, avatar_file_id, activity_id, pinned_message_id, messaging_available_until, created_at, last_activity_at`
 const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
-const messageColumns = `id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, edited_at, deleted_at, sent_at`
-const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.sticker_payload, m.reply_to_message_id, m.edited_at, m.deleted_at, m.sent_at`
+const messageColumns = `id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, forwarded_from_message_id, forwarded_from_sender_user_id, forwarded_from_sender_name, forward_count, edited_at, deleted_at, sent_at`
+const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.sticker_payload, m.reply_to_message_id, m.forwarded_from_message_id, m.forwarded_from_sender_user_id, m.forwarded_from_sender_name, m.forward_count, m.edited_at, m.deleted_at, m.sent_at`
 
 func scanConversation(row pgx.Row) (*model.Conversation, error) {
 	var c model.Conversation
@@ -136,10 +137,13 @@ func (r *PGChatRepository) ListConversationsByUserID(ctx context.Context, filter
 func scanMessage(row pgx.Row) (*model.Message, error) {
 	var m model.Message
 	var stickerPayload []byte
+	var forwardedFromSenderName *string
 	err := row.Scan(
 		&m.ID, &m.ConversationID, &m.SenderUserID, &m.Type, &m.Content,
 		&m.StickerID, &m.StickerFileID, &stickerPayload,
-		&m.ReplyToMessageID, &m.EditedAt, &m.DeletedAt, &m.SentAt,
+		&m.ReplyToMessageID, &m.ForwardedFromMessageID,
+		&m.ForwardedFromSenderUserID, &forwardedFromSenderName,
+		&m.ForwardCount, &m.EditedAt, &m.DeletedAt, &m.SentAt,
 	)
 	if err == pgx.ErrNoRows {
 		return nil, nil
@@ -148,6 +152,9 @@ func scanMessage(row pgx.Row) (*model.Message, error) {
 		return nil, fmt.Errorf("scan message: %w", err)
 	}
 	m.StickerPayload = decodeStickerPayload(stickerPayload)
+	if forwardedFromSenderName != nil {
+		m.ForwardedFromSenderName = *forwardedFromSenderName
+	}
 	return &m, nil
 }
 
@@ -177,6 +184,14 @@ func stickerPayloadJSON(payload *model.StickerPayload) any {
 		return nil
 	}
 	return data
+}
+
+func nullableString(value string) *string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
 }
 
 func decodeStickerPayload(data []byte) *model.StickerPayload {
@@ -234,14 +249,20 @@ func (r *PGChatRepository) ListMessages(ctx context.Context, filter port.Message
 	for rows.Next() {
 		var m model.Message
 		var stickerPayload []byte
+		var forwardedFromSenderName *string
 		if err := rows.Scan(
 			&m.ID, &m.ConversationID, &m.SenderUserID, &m.Type, &m.Content,
 			&m.StickerID, &m.StickerFileID, &stickerPayload,
-			&m.ReplyToMessageID, &m.EditedAt, &m.DeletedAt, &m.SentAt,
+			&m.ReplyToMessageID, &m.ForwardedFromMessageID,
+			&m.ForwardedFromSenderUserID, &forwardedFromSenderName,
+			&m.ForwardCount, &m.EditedAt, &m.DeletedAt, &m.SentAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan message row: %w", err)
 		}
 		m.StickerPayload = decodeStickerPayload(stickerPayload)
+		if forwardedFromSenderName != nil {
+			m.ForwardedFromSenderName = *forwardedFromSenderName
+		}
 		msgs = append(msgs, &m)
 	}
 	return msgs, rows.Err()
@@ -288,11 +309,13 @@ func (r *PGChatRepository) ListMessageReactionSummaries(
 			message_id,
 			emoji,
 			COUNT(*)::int,
-			BOOL_OR(user_id = $2) AS reacted_by_me
+			BOOL_OR(user_id = $2) AS reacted_by_me,
+			ARRAY_AGG(user_id::text ORDER BY reacted_at DESC) AS user_ids,
+			ARRAY_AGG(reacted_at ORDER BY reacted_at DESC) AS reacted_ats
 		FROM message_reactions
 		WHERE message_id = ANY($1::uuid[])
 		GROUP BY message_id, emoji
-		ORDER BY message_id, COUNT(*) DESC, MAX(reacted_at) DESC, emoji
+		ORDER BY message_id, MAX(reacted_at) DESC, COUNT(*) DESC, emoji
 	`, messageIDs, actorUserID)
 	if err != nil {
 		return nil, fmt.Errorf("list message reaction summaries: %w", err)
@@ -302,15 +325,62 @@ func (r *PGChatRepository) ListMessageReactionSummaries(
 	for rows.Next() {
 		var messageID uuid.UUID
 		var summary model.MessageReactionSummary
+		var reactedAts []time.Time
 		if err := rows.Scan(
 			&messageID,
 			&summary.Emoji,
 			&summary.Count,
 			&summary.ReactedByMe,
+			&summary.UserIDs,
+			&reactedAts,
 		); err != nil {
 			return nil, fmt.Errorf("scan message reaction summary: %w", err)
 		}
+		summary.Users = make([]model.MessageReactionUserSummary, 0, len(summary.UserIDs))
+		for i, userID := range summary.UserIDs {
+			if i >= len(reactedAts) {
+				break
+			}
+			summary.Users = append(summary.Users, model.MessageReactionUserSummary{
+				UserID:    userID,
+				ReactedAt: reactedAts[i],
+			})
+		}
 		result[messageID] = append(result[messageID], summary)
+	}
+	return result, rows.Err()
+}
+
+func (r *PGChatRepository) ListMessageReadReceipts(
+	ctx context.Context,
+	messageIDs []uuid.UUID,
+) (map[uuid.UUID][]model.MessageReadReceipt, error) {
+	result := make(map[uuid.UUID][]model.MessageReadReceipt, len(messageIDs))
+	if len(messageIDs) == 0 {
+		return result, nil
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT message_id, user_id, read_at
+		FROM message_read_receipts
+		WHERE message_id = ANY($1::uuid[])
+		ORDER BY message_id, read_at DESC, user_id
+	`, messageIDs)
+	if err != nil {
+		return nil, fmt.Errorf("list message read receipts: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var receipt model.MessageReadReceipt
+		if err := rows.Scan(
+			&receipt.MessageID,
+			&receipt.UserID,
+			&receipt.ReadAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan message read receipt: %w", err)
+		}
+		result[receipt.MessageID] = append(result[receipt.MessageID], receipt)
 	}
 	return result, rows.Err()
 }
@@ -344,6 +414,7 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 	for rows.Next() {
 		pin := &model.ConversationPin{Message: &model.Message{}}
 		var stickerPayload []byte
+		var forwardedFromSenderName *string
 		if err := rows.Scan(
 			&pin.ID,
 			&pin.ConversationID,
@@ -359,6 +430,10 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 			&pin.Message.StickerFileID,
 			&stickerPayload,
 			&pin.Message.ReplyToMessageID,
+			&pin.Message.ForwardedFromMessageID,
+			&pin.Message.ForwardedFromSenderUserID,
+			&forwardedFromSenderName,
+			&pin.Message.ForwardCount,
 			&pin.Message.EditedAt,
 			&pin.Message.DeletedAt,
 			&pin.Message.SentAt,
@@ -366,6 +441,9 @@ func (r *PGChatRepository) ListPinnedMessagesByConversationID(
 			return nil, fmt.Errorf("scan pinned message: %w", err)
 		}
 		pin.Message.StickerPayload = decodeStickerPayload(stickerPayload)
+		if forwardedFromSenderName != nil {
+			pin.Message.ForwardedFromSenderName = *forwardedFromSenderName
+		}
 		pins = append(pins, pin)
 	}
 	return pins, rows.Err()
@@ -528,17 +606,27 @@ func (tx *pgChatTxRepository) UpdateParticipant(ctx context.Context, p *model.Pa
 
 func (tx *pgChatTxRepository) CreateMessage(ctx context.Context, msg *model.Message) error {
 	_, err := tx.tx.Exec(ctx, `
-		INSERT INTO messages (id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, edited_at, deleted_at, sent_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		INSERT INTO messages (
+			id, conversation_id, sender_user_id, type, content, sticker_id,
+			sticker_file_id, sticker_payload, reply_to_message_id,
+			forwarded_from_message_id, forwarded_from_sender_user_id,
+			forwarded_from_sender_name, forward_count, edited_at, deleted_at, sent_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 	`, msg.ID, msg.ConversationID, msg.SenderUserID, msg.Type, msg.Content,
-		msg.StickerID, msg.StickerFileID, stickerPayloadJSON(msg.StickerPayload), msg.ReplyToMessageID, msg.EditedAt, msg.DeletedAt, msg.SentAt)
+		msg.StickerID, msg.StickerFileID, stickerPayloadJSON(msg.StickerPayload),
+		msg.ReplyToMessageID, msg.ForwardedFromMessageID,
+		msg.ForwardedFromSenderUserID, nullableString(msg.ForwardedFromSenderName),
+		msg.ForwardCount, msg.EditedAt, msg.DeletedAt, msg.SentAt)
 	return err
 }
 
 func (tx *pgChatTxRepository) UpdateMessage(ctx context.Context, msg *model.Message) error {
 	_, err := tx.tx.Exec(ctx, `
-		UPDATE messages SET content = $2, edited_at = $3, deleted_at = $4 WHERE id = $1
-	`, msg.ID, msg.Content, msg.EditedAt, msg.DeletedAt)
+		UPDATE messages
+		SET content = $2, edited_at = $3, deleted_at = $4, forward_count = $5
+		WHERE id = $1
+	`, msg.ID, msg.Content, msg.EditedAt, msg.DeletedAt, msg.ForwardCount)
 	return err
 }
 
@@ -688,6 +776,30 @@ func (tx *pgChatTxRepository) ReplaceLastReadMessageID(
 		WHERE conversation_id = $1
 		  AND last_read_msg_id = $2
 	`, conversationID, fromMessageID, toMessageID)
+	return err
+}
+
+func (tx *pgChatTxRepository) CreateReadReceiptsUpToMessage(
+	ctx context.Context,
+	conversationID uuid.UUID,
+	readerUserID uuid.UUID,
+	lastReadMessageID uuid.UUID,
+	readAt time.Time,
+) error {
+	_, err := tx.tx.Exec(ctx, `
+		INSERT INTO message_read_receipts (message_id, user_id, read_at)
+		SELECT m.id, $2, $4
+		FROM messages target
+		JOIN messages m
+		  ON m.conversation_id = target.conversation_id
+		 AND (m.sent_at, m.id) <= (target.sent_at, target.id)
+		WHERE target.conversation_id = $1
+		  AND target.id = $3
+		  AND m.sender_user_id <> $2
+		  AND m.type <> 'system'
+		  AND m.deleted_at IS NULL
+		ON CONFLICT (message_id, user_id) DO NOTHING
+	`, conversationID, readerUserID, lastReadMessageID, readAt)
 	return err
 }
 

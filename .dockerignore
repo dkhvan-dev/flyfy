@@ -1,0 +1,35 @@
+# VCS / IDE
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+**/.DS_Store
+
+# Flutter / mobile artifacts are not needed by backend Docker builds.
+mobile/
+
+# Local analysis, generated docs, and heavy non-runtime artifacts.
+graphify-out/
+docs/
+*.jsx
+*.pptx
+*.docx
+*.xlsx
+
+# Generic dependency/build caches.
+node_modules/
+**/node_modules/
+**/.dart_tool/
+**/build/
+**/.gradle/
+**/coverage/
+**/.pytest_cache/
+**/__pycache__/
+**/*.pyc
+
+# Local env/log/temp files.
+.env
+*.log
+tmp/
+temp/

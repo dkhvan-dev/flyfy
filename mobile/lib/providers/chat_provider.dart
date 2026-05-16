@@ -219,6 +219,41 @@ class ChatProvider extends ChangeNotifier {
     );
   }
 
+  Future<bool> forwardMessageToConversation({
+    required MessageVm message,
+    required String targetConversationId,
+  }) async {
+    final sourceConversation = _activeConversation;
+    final normalizedTargetId = targetConversationId.trim();
+    if (sourceConversation == null || normalizedTargetId.isEmpty) {
+      return false;
+    }
+
+    try {
+      final forwarded = await _chatApi.forwardMessage(
+        sourceConversationId: sourceConversation.id,
+        messageId: message.id,
+        targetConversationId: normalizedTargetId,
+      );
+      if (normalizedTargetId == sourceConversation.id) {
+        _messages = _uniqueMessages([forwarded, ..._messages]);
+      }
+      _messages = _messages
+          .map(
+            (item) => item.id == message.id
+                ? item.copyWith(forwardCount: item.forwardCount + 1)
+                : item,
+          )
+          .toList(growable: false);
+      notifyListeners();
+      unawaited(loadConversations());
+      return true;
+    } catch (e) {
+      debugPrint('forwardMessageToConversation error: $e');
+      return false;
+    }
+  }
+
   Future<DeleteMessageResultVm> deleteMessage(String messageId) async {
     if (_activeConversation == null) {
       throw StateError('No active conversation');
@@ -344,6 +379,8 @@ class ChatProvider extends ChangeNotifier {
         _onMessageReactionUpdated(event);
       case 'read_updated':
         _onReadUpdated(event);
+      case 'message_forwarded':
+        _onMessageForwarded(event);
       case 'message_pinned':
         _onMessagePinned(event);
       default:
@@ -456,6 +493,9 @@ class ChatProvider extends ChangeNotifier {
     final userId = event.payload['userId'] as String?;
     final lastReadMessageId = (event.payload['lastReadMsgId'] ??
         event.payload['lastReadMessageId']) as String?;
+    final readAt =
+        DateTime.tryParse(event.payload['readAt']?.toString() ?? '') ??
+            DateTime.now().toUtc();
     if (userId == null || lastReadMessageId == null) {
       return;
     }
@@ -487,6 +527,72 @@ class ChatProvider extends ChangeNotifier {
               : c,
         )
         .toList();
+
+    _updateMessageReadReceipts(
+      readerUserId: userId,
+      lastReadMessageId: lastReadMessageId,
+      readAt: readAt,
+    );
+  }
+
+  void _updateMessageReadReceipts({
+    required String readerUserId,
+    required String lastReadMessageId,
+    required DateTime readAt,
+  }) {
+    if (_activeConversation == null || _messages.isEmpty) return;
+
+    final readIndex = _messages.indexWhere(
+      (message) => message.id == lastReadMessageId,
+    );
+    if (readIndex < 0) return;
+
+    _messages = [
+      for (var index = 0; index < _messages.length; index++)
+        _messageWithReadReceipt(
+          message: _messages[index],
+          readerUserId: readerUserId,
+          readAt: readAt,
+          shouldAdd: readIndex <= index &&
+              _messages[index].senderUserId != readerUserId,
+        ),
+    ];
+  }
+
+  MessageVm _messageWithReadReceipt({
+    required MessageVm message,
+    required String readerUserId,
+    required DateTime readAt,
+    required bool shouldAdd,
+  }) {
+    if (!shouldAdd ||
+        message.isSystem ||
+        message.readReceipts.any((receipt) => receipt.userId == readerUserId)) {
+      return message;
+    }
+
+    final receipts = [
+      MessageReadReceiptVm(userId: readerUserId, readAt: readAt),
+      ...message.readReceipts,
+    ]..sort((a, b) => b.readAt.compareTo(a.readAt));
+
+    return message.copyWith(readReceipts: receipts);
+  }
+
+  void _onMessageForwarded(ChatEvent event) {
+    final messageId = event.payload['messageId'] as String?;
+    final forwardCount = (event.payload['forwardCount'] as num?)?.toInt();
+    if (messageId == null || messageId.trim().isEmpty || forwardCount == null) {
+      return;
+    }
+
+    _messages = _messages
+        .map(
+          (message) => message.id == messageId
+              ? message.copyWith(forwardCount: forwardCount)
+              : message,
+        )
+        .toList(growable: false);
   }
 
   void _onMessagePinned(ChatEvent event) {

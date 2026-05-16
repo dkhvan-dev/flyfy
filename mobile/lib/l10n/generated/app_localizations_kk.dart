@@ -4059,6 +4059,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatAttachmentFile => 'Файл';
 
   @override
+  String get chatLastMessagePhoto => 'Фотография';
+
+  @override
+  String get chatLastMessageVideo => 'Видео';
+
+  @override
   String get chatAttachmentLocation => 'Локация';
 
   @override
@@ -4192,6 +4198,15 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatCameraFlipButtonLabel => 'Камераны ауыстыру';
 
   @override
+  String get chatCameraFlashOffButtonLabel => 'Жарқыл өшірулі';
+
+  @override
+  String get chatCameraFlashAutoButtonLabel => 'Автоматты жарқыл';
+
+  @override
+  String get chatCameraFlashOnButtonLabel => 'Жарқыл қосулы';
+
+  @override
   String get chatCameraCloseButtonLabel => 'Камераны жабу';
 
   @override
@@ -4202,6 +4217,28 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get chatCameraStopRecordingButtonLabel => 'Жазуды тоқтату';
+
+  @override
+  String get chatCameraReviewCancelButtonLabel => 'Бас тарту';
+
+  @override
+  String get chatCameraReviewSendButtonLabel => 'Жіберу';
+
+  @override
+  String get chatCameraReviewPlayButtonLabel => 'Видеоны ойнату';
+
+  @override
+  String get chatCameraReviewPauseButtonLabel => 'Видеоны кідірту';
+
+  @override
+  String get chatCameraReviewTrimLabel => 'Қию';
+
+  @override
+  String get chatCameraReviewProcessing => 'Өңделуде...';
+
+  @override
+  String get chatCameraTrimFailed =>
+      'Бұл видеоны қию мүмкін болмады. Басқа аралықты таңдаңыз немесе түпнұсқасын жіберіңіз.';
 
   @override
   String get chatAttachmentUploading => 'Тіркеме жүктелуде...';
@@ -4294,6 +4331,69 @@ class AppLocalizationsKk extends AppLocalizations {
       'Реакцияны жаңарту мүмкін болмады. Қайта көріңіз.';
 
   @override
+  String get chatCopyAction => 'Көшіру';
+
+  @override
+  String get chatForwardAction => 'Жіберу';
+
+  @override
+  String get chatMessageCopied => 'Хабар мәтіні көшірілді';
+
+  @override
+  String get chatForwardSheetTitle => 'Қай чатқа жіберу';
+
+  @override
+  String get chatForwardFailed =>
+      'Хабарды жіберу мүмкін болмады. Қайта көріңіз.';
+
+  @override
+  String get chatForwardSuccess => 'Хабар жіберілді';
+
+  @override
+  String get chatNoForwardTargets => 'Қолжетімді чаттар жоқ';
+
+  @override
+  String get chatForwardedLabel => 'Жіберілген';
+
+  @override
+  String chatForwardedFrom(Object name) {
+    return '$name жіберген хабар';
+  }
+
+  @override
+  String chatForwardCount(Object count) {
+    return '$count рет жіберілді';
+  }
+
+  @override
+  String get chatReactionsByTitle => 'Реакциялар';
+
+  @override
+  String chatReactionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count реакция',
+      one: '1 реакция',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatReadByTitle => 'Оқығандар';
+
+  @override
+  String chatReadByCount(Object count) {
+    return 'Оқығандар: $count';
+  }
+
+  @override
+  String get chatReadAtSeparator => 'сағ.';
+
+  @override
+  String get chatNoStatusDetails => 'Статус мәліметтері әзірге жоқ';
+
+  @override
   String get chatLoadFailed => 'Чатты жүктеу мүмкін болмады';
 
   @override
@@ -4324,6 +4424,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatSharedFilesTab => 'Файлдар';
 
   @override
+  String get chatSharedVoiceTab => 'Аудиохабарлар';
+
+  @override
   String get chatSharedNoMediaTitle => 'Медиа әзірге жоқ';
 
   @override
@@ -4345,12 +4448,36 @@ class AppLocalizationsKk extends AppLocalizations {
       'Осы чаттағы құжаттар мен архивтер осында шығады.';
 
   @override
+  String get chatSharedNoVoiceTitle => 'Дауыстық хабарлар әзірге жоқ';
+
+  @override
+  String get chatSharedNoVoiceSubtitle =>
+      'Осы чаттағы дауыстық хабарлар осында шығады.';
+
+  @override
   String chatSharedFileFallback(Object id) {
     return 'Файл $id';
   }
 
   @override
   String get chatSharedUnknownFile => 'Белгісіз файл';
+
+  @override
+  String get chatSharedGoToMessageAction => 'Хабарға өту';
+
+  @override
+  String get chatExternalLinkTitle => 'Сыртқы сілтемені ашу керек пе?';
+
+  @override
+  String chatExternalLinkMessage(Object url) {
+    return 'Бұл сілтеме бөгде ресурсқа апарады:\n$url';
+  }
+
+  @override
+  String get chatExternalLinkOpenAction => 'Ашу';
+
+  @override
+  String get chatExternalLinkOpenFailed => 'Бұл сілтемені ашу мүмкін болмады.';
 
   @override
   String get chatSharedLoadFailed => 'Контентті жүктеу мүмкін болмады';

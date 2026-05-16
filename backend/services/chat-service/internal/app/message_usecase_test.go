@@ -152,12 +152,106 @@ func TestSendStickerMessageRejectsMissingStickerResolver(t *testing.T) {
 	}
 }
 
+func TestSendMessageStoresTextContent(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	senderID := uuid.New()
+	repo := newFakeMessageRepo(conversationID, senderID)
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+
+	msg, err := useCase.SendMessage(context.Background(), SendMessageInput{
+		ConversationID: conversationID,
+		SenderUserID:   senderID,
+		Type:           "text",
+		Content:        "hello",
+	})
+	if err != nil {
+		t.Fatalf("SendMessage error: %v", err)
+	}
+	if msg.Content != "hello" {
+		t.Fatalf("Content = %q, want hello", msg.Content)
+	}
+}
+
+func TestForwardMessageCreatesTargetCopyAndTracksForwardMetadata(t *testing.T) {
+	t.Parallel()
+
+	sourceConversationID := uuid.New()
+	targetConversationID := uuid.New()
+	actorUserID := uuid.New()
+	originalSenderID := uuid.New()
+	sourceMessageID := uuid.New()
+	now := time.Now().UTC()
+	repo := newFakeMessageRepo(sourceConversationID, actorUserID)
+	repo.conversationsByID = map[uuid.UUID]*model.Conversation{
+		sourceConversationID: repo.conversation,
+		targetConversationID: {
+			ID:             targetConversationID,
+			Type:           "group",
+			CreatedAt:      now,
+			LastActivityAt: now,
+		},
+	}
+	repo.participantsByConversationUser = map[[2]uuid.UUID]*model.Participant{
+		{sourceConversationID, actorUserID}: repo.participant,
+		{targetConversationID, actorUserID}: {
+			ID:             uuid.New(),
+			ConversationID: targetConversationID,
+			UserID:         actorUserID,
+			Role:           "member",
+			JoinedAt:       now,
+		},
+	}
+	repo.messagesByID = map[uuid.UUID]*model.Message{
+		sourceMessageID: {
+			ID:                sourceMessageID,
+			ConversationID:    sourceConversationID,
+			SenderUserID:      originalSenderID,
+			SenderDisplayName: "Aigerim",
+			Type:              "text",
+			Content:           "Meet near the north gate",
+			SentAt:            now.Add(-time.Minute),
+		},
+	}
+
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+	forwarded, err := useCase.ForwardMessage(context.Background(), ForwardMessageInput{
+		SourceConversationID: sourceConversationID,
+		TargetConversationID: targetConversationID,
+		MessageID:            sourceMessageID,
+		SenderUserID:         actorUserID,
+	})
+	if err != nil {
+		t.Fatalf("forward message failed: %v", err)
+	}
+
+	if forwarded.ConversationID != targetConversationID {
+		t.Fatalf("forwarded message must be created in target conversation")
+	}
+	if forwarded.Content != "Meet near the north gate" {
+		t.Fatalf("forwarded content mismatch: %q", forwarded.Content)
+	}
+	if forwarded.ForwardedFromMessageID == nil || *forwarded.ForwardedFromMessageID != sourceMessageID {
+		t.Fatalf("forwarded source message id was not preserved")
+	}
+	if forwarded.ForwardedFromSenderName != "Aigerim" {
+		t.Fatalf("forwarded source sender name mismatch: %q", forwarded.ForwardedFromSenderName)
+	}
+	if repo.messagesByID[sourceMessageID].ForwardCount != 1 {
+		t.Fatalf("source forward count = %d, want 1", repo.messagesByID[sourceMessageID].ForwardCount)
+	}
+}
+
 type fakeMessageRepo struct {
-	conversationID uuid.UUID
-	senderID       uuid.UUID
-	conversation   *model.Conversation
-	participant    *model.Participant
-	createdMessage *model.Message
+	conversationID                 uuid.UUID
+	senderID                       uuid.UUID
+	conversation                   *model.Conversation
+	participant                    *model.Participant
+	createdMessage                 *model.Message
+	conversationsByID              map[uuid.UUID]*model.Conversation
+	participantsByConversationUser map[[2]uuid.UUID]*model.Participant
+	messagesByID                   map[uuid.UUID]*model.Message
 }
 
 func newFakeMessageRepo(conversationID, senderID uuid.UUID) *fakeMessageRepo {
@@ -181,11 +275,19 @@ func newFakeMessageRepo(conversationID, senderID uuid.UUID) *fakeMessageRepo {
 	}
 }
 
-func (r *fakeMessageRepo) GetConversationByID(context.Context, uuid.UUID) (*model.Conversation, error) {
+func (r *fakeMessageRepo) GetConversationByID(_ context.Context, conversationID uuid.UUID) (*model.Conversation, error) {
+	if r.conversationsByID != nil {
+		if conv := r.conversationsByID[conversationID]; conv != nil {
+			return conv, nil
+		}
+	}
 	return r.conversation, nil
 }
 
-func (r *fakeMessageRepo) GetParticipant(context.Context, uuid.UUID, uuid.UUID) (*model.Participant, error) {
+func (r *fakeMessageRepo) GetParticipant(_ context.Context, conversationID, userID uuid.UUID) (*model.Participant, error) {
+	if r.participantsByConversationUser != nil {
+		return r.participantsByConversationUser[[2]uuid.UUID{conversationID, userID}], nil
+	}
 	return r.participant, nil
 }
 
@@ -196,6 +298,9 @@ func (r *fakeMessageRepo) WithTx(ctx context.Context, fn func(repo port.ChatTxRe
 func (r *fakeMessageRepo) CreateMessage(_ context.Context, msg *model.Message) error {
 	copyValue := *msg
 	r.createdMessage = &copyValue
+	if r.messagesByID != nil {
+		r.messagesByID[msg.ID] = &copyValue
+	}
 	return nil
 }
 
@@ -207,12 +312,18 @@ func (r *fakeMessageRepo) CreateMessageFiles(context.Context, uuid.UUID, []strin
 	return nil
 }
 
-func (r *fakeMessageRepo) GetConversationByIDForUpdate(context.Context, uuid.UUID) (*model.Conversation, error) {
+func (r *fakeMessageRepo) GetConversationByIDForUpdate(_ context.Context, conversationID uuid.UUID) (*model.Conversation, error) {
+	if r.conversationsByID != nil {
+		return r.conversationsByID[conversationID], nil
+	}
 	return r.conversation, nil
 }
 
 func (r *fakeMessageRepo) UpdateConversation(_ context.Context, conv *model.Conversation) error {
 	r.conversation = conv
+	if r.conversationsByID != nil {
+		r.conversationsByID[conv.ID] = conv
+	}
 	return nil
 }
 
@@ -228,7 +339,10 @@ func (r *fakeMessageRepo) GetConversationByActivityID(context.Context, uuid.UUID
 	return nil, nil
 }
 
-func (r *fakeMessageRepo) GetMessageByID(context.Context, uuid.UUID) (*model.Message, error) {
+func (r *fakeMessageRepo) GetMessageByID(_ context.Context, messageID uuid.UUID) (*model.Message, error) {
+	if r.messagesByID != nil {
+		return r.messagesByID[messageID], nil
+	}
 	return nil, nil
 }
 
@@ -241,6 +355,13 @@ func (r *fakeMessageRepo) ListMessageReactionSummaries(
 	[]uuid.UUID,
 	uuid.UUID,
 ) (map[uuid.UUID][]model.MessageReactionSummary, error) {
+	return nil, nil
+}
+
+func (r *fakeMessageRepo) ListMessageReadReceipts(
+	context.Context,
+	[]uuid.UUID,
+) (map[uuid.UUID][]model.MessageReadReceipt, error) {
 	return nil, nil
 }
 
@@ -260,7 +381,10 @@ func (r *fakeMessageRepo) GetLastMessage(context.Context, uuid.UUID) (*model.Mes
 	return nil, nil
 }
 
-func (r *fakeMessageRepo) GetMessageFileIDs(context.Context, uuid.UUID) ([]string, error) {
+func (r *fakeMessageRepo) GetMessageFileIDs(_ context.Context, messageID uuid.UUID) ([]string, error) {
+	if r.messagesByID != nil && r.messagesByID[messageID] != nil {
+		return r.messagesByID[messageID].FileIDs, nil
+	}
 	return nil, nil
 }
 
@@ -272,7 +396,10 @@ func (r *fakeMessageRepo) GetConversationByActivityIDForUpdate(context.Context, 
 	return nil, nil
 }
 
-func (r *fakeMessageRepo) GetParticipantForUpdate(context.Context, uuid.UUID, uuid.UUID) (*model.Participant, error) {
+func (r *fakeMessageRepo) GetParticipantForUpdate(_ context.Context, conversationID, userID uuid.UUID) (*model.Participant, error) {
+	if r.participantsByConversationUser != nil {
+		return r.participantsByConversationUser[[2]uuid.UUID{conversationID, userID}], nil
+	}
 	return r.participant, nil
 }
 
@@ -288,7 +415,11 @@ func (r *fakeMessageRepo) UpdateParticipant(context.Context, *model.Participant)
 	return nil
 }
 
-func (r *fakeMessageRepo) UpdateMessage(context.Context, *model.Message) error {
+func (r *fakeMessageRepo) UpdateMessage(_ context.Context, msg *model.Message) error {
+	if r.messagesByID != nil {
+		copyValue := *msg
+		r.messagesByID[msg.ID] = &copyValue
+	}
 	return nil
 }
 
@@ -329,6 +460,10 @@ func (r *fakeMessageRepo) HasReadByOtherParticipant(context.Context, uuid.UUID, 
 }
 
 func (r *fakeMessageRepo) ReplaceLastReadMessageID(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID) error {
+	return nil
+}
+
+func (r *fakeMessageRepo) CreateReadReceiptsUpToMessage(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time) error {
 	return nil
 }
 

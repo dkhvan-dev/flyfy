@@ -3,8 +3,10 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/files/chat_file_cache.dart';
 import '../../core/network/chat_api.dart';
@@ -12,10 +14,19 @@ import '../../core/network/file_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
+import '../../features/chat/utils/chat_link_utils.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'chat_image_viewer_screen.dart';
+import 'widgets/chat_video_preview.dart';
+import 'widgets/chat_voice_attachment_player.dart';
 
-enum _SharedTab { media, links, files }
+enum _SharedTab { media, links, files, voice }
+
+class ChatSharedContentResult {
+  const ChatSharedContentResult.goToMessage(this.messageId);
+
+  final String messageId;
+}
 
 class ChatSharedContentScreen extends StatefulWidget {
   const ChatSharedContentScreen({
@@ -199,10 +210,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
       if (!mounted) return;
       setState(() {
-        _fileDownloadedById = {
-          ..._fileDownloadedById,
-          item.fileId: true,
-        };
+        _fileDownloadedById = {..._fileDownloadedById, item.fileId: true};
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -232,10 +240,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
       if (downloaded == null) {
         setState(() {
-          _fileDownloadedById = {
-            ..._fileDownloadedById,
-            item.fileId: false,
-          };
+          _fileDownloadedById = {..._fileDownloadedById, item.fileId: false};
         });
         return;
       }
@@ -267,10 +272,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1d120b),
-        title: Text(
-          l10n.error,
-          style: const TextStyle(color: Colors.white),
-        ),
+        title: Text(l10n.error, style: const TextStyle(color: Colors.white)),
         content: Text(
           message,
           style: const TextStyle(color: Color(0xFFf5ede6)),
@@ -285,19 +287,130 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     );
   }
 
+  Future<void> _showGoToMessageAction(String messageId) async {
+    final normalizedMessageId = messageId.trim();
+    if (normalizedMessageId.isEmpty) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      isDismissible: true,
+      backgroundColor: const Color(0xFF1d120b),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.subdirectory_arrow_left_rounded,
+                  color: AppColors.accent,
+                ),
+                title: Text(
+                  l10n.chatSharedGoToMessageAction,
+                  style: const TextStyle(
+                    color: Color(0xFFf5ede6),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                onTap: () => Navigator.of(sheetContext).pop('go_to_message'),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => Navigator.of(sheetContext).pop(),
+                child: Text(l10n.cancelButton),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!mounted || action != 'go_to_message') return;
+    Navigator.of(
+      context,
+    ).pop(ChatSharedContentResult.goToMessage(normalizedMessageId));
+  }
+
+  Future<void> _handleSharedLinkTap(_SharedLinkRef item) async {
+    final internalRoute = _internalAppRouteForUrl(item.url);
+    if (internalRoute != null) {
+      context.push(internalRoute);
+      return;
+    }
+
+    final uri = _externalUriForUrl(item.url);
+    if (uri == null) return;
+
+    final confirmed = await _confirmExternalLinkOpen(uri);
+    if (!mounted || !confirmed) return;
+
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (mounted && !opened) {
+      await _showSharedFileError(
+        AppLocalizations.of(context)!.chatExternalLinkOpenFailed,
+      );
+    }
+  }
+
+  Future<bool> _confirmExternalLinkOpen(Uri uri) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1d120b),
+        title: Text(
+          l10n.chatExternalLinkTitle,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          l10n.chatExternalLinkMessage(uri.toString()),
+          style: const TextStyle(color: Color(0xFFf5ede6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.chatExternalLinkOpenAction),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final media = _sharedFiles
         .where((item) => item.metadata?.isMedia ?? false)
         .toList(growable: false);
-    final files = _sharedFiles.where((item) {
-      final metadataKnown = _fileMetaById.containsKey(item.fileId);
-      return metadataKnown && !(item.metadata?.isMedia ?? false);
-    }).toList(growable: false);
+    final voiceMessages = _sharedFiles
+        .where((item) {
+          final metadataKnown = _fileMetaById.containsKey(item.fileId);
+          return metadataKnown && (item.metadata?.isAudio ?? false);
+        })
+        .toList(growable: false);
+    final files = _sharedFiles
+        .where((item) {
+          final metadataKnown = _fileMetaById.containsKey(item.fileId);
+          return metadataKnown && !_isSharedMediaOrAudio(item.metadata);
+        })
+        .toList(growable: false);
     final links = _sharedLinks(l10n);
     final contentWidth = MediaQuery.sizeOf(context).width;
     final horizontalPadding = contentWidth < 360 ? 14.0 : 16.0;
+    final profileUserId = widget.conversation.isDirect
+        ? widget.conversation.directPeer(widget.currentUserId)?.userId.trim() ??
+              ''
+        : '';
 
     return Scaffold(
       backgroundColor: const Color(0xFF140a05),
@@ -327,7 +440,13 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
                         title: _sharedTitle(l10n),
                         participantCount:
                             widget.conversation.participants.length,
+                        showParticipantCount: !widget.conversation.isDirect,
                         horizontalPadding: horizontalPadding,
+                        onTitleTap: profileUserId.isEmpty
+                            ? null
+                            : () {
+                                context.push('/users/$profileUserId/profile');
+                              },
                       ),
                     ),
                     SliverToBoxAdapter(
@@ -349,7 +468,8 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
                     if (_error != null &&
                         (media.isNotEmpty ||
                             links.isNotEmpty ||
-                            files.isNotEmpty))
+                            files.isNotEmpty ||
+                            voiceMessages.isNotEmpty))
                       SliverToBoxAdapter(
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(
@@ -365,6 +485,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
                       media: media,
                       links: links,
                       files: files,
+                      voiceMessages: voiceMessages,
                       horizontalPadding: horizontalPadding,
                       l10n: l10n,
                     ),
@@ -387,6 +508,7 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
     required List<_SharedFileRef> media,
     required List<_SharedLinkRef> links,
     required List<_SharedFileRef> files,
+    required List<_SharedFileRef> voiceMessages,
     required double horizontalPadding,
     required AppLocalizations l10n,
   }) {
@@ -397,6 +519,8 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
         return _buildLinksSlivers(links, horizontalPadding, l10n);
       case _SharedTab.files:
         return _buildFilesSlivers(files, horizontalPadding, l10n);
+      case _SharedTab.voice:
+        return _buildVoiceSlivers(voiceMessages, horizontalPadding, l10n);
     }
   }
 
@@ -423,21 +547,18 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
       SliverPadding(
         padding: EdgeInsets.fromLTRB(
           horizontalPadding,
-          34,
+          24,
           horizontalPadding,
           0,
         ),
         sliver: SliverList.list(
-          children: _groupByDate(
-            media,
-            (item) => item.message.sentAt,
-            l10n,
-          )
+          children: _groupByDate(media, (item) => item.message.sentAt, l10n)
               .map(
                 (group) => _MediaGroup(
                   group: group,
                   busyFileIds: _busyFileIds,
                   onFileTap: _handleSharedFileTap,
+                  onGoToMessage: _showGoToMessageAction,
                 ),
               )
               .toList(growable: false),
@@ -474,11 +595,15 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
           0,
         ),
         sliver: SliverList.list(
-          children: _groupByDate(
-            links,
-            (item) => item.message.sentAt,
-            l10n,
-          ).map((group) => _LinksGroup(group: group)).toList(growable: false),
+          children: _groupByDate(links, (item) => item.message.sentAt, l10n)
+              .map(
+                (group) => _LinksGroup(
+                  group: group,
+                  onLinkTap: _handleSharedLinkTap,
+                  onGoToMessage: _showGoToMessageAction,
+                ),
+              )
+              .toList(growable: false),
         ),
       ),
     ];
@@ -512,19 +637,58 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
           0,
         ),
         sliver: SliverList.list(
-          children: _groupByDate(
-            files,
-            (item) => item.message.sentAt,
-            l10n,
-          )
+          children: _groupByDate(files, (item) => item.message.sentAt, l10n)
               .map(
                 (group) => _FilesGroup(
                   group: group,
                   busyFileIds: _busyFileIds,
                   onFileTap: _handleSharedFileTap,
+                  onGoToMessage: _showGoToMessageAction,
                 ),
               )
               .toList(growable: false),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildVoiceSlivers(
+    List<_SharedFileRef> voiceMessages,
+    double horizontalPadding,
+    AppLocalizations l10n,
+  ) {
+    if (voiceMessages.isEmpty) {
+      return [
+        SliverToBoxAdapter(
+          child: _EmptyOrLoadingState(
+            loading: _loading,
+            error: _error,
+            title: l10n.chatSharedNoVoiceTitle,
+            subtitle: l10n.chatSharedNoVoiceSubtitle,
+            onRetry: _loadSharedContent,
+          ),
+        ),
+      ];
+    }
+
+    return [
+      SliverPadding(
+        padding: EdgeInsets.fromLTRB(
+          horizontalPadding,
+          28,
+          horizontalPadding,
+          0,
+        ),
+        sliver: SliverList.list(
+          children:
+              _groupByDate(voiceMessages, (item) => item.message.sentAt, l10n)
+                  .map(
+                    (group) => _VoiceMessagesGroup(
+                      group: group,
+                      onGoToMessage: _showGoToMessageAction,
+                    ),
+                  )
+                  .toList(growable: false),
         ),
       ),
     ];
@@ -607,7 +771,8 @@ class _ChatSharedContentScreenState extends State<ChatSharedContentScreen> {
 
   String _sharedTitle(AppLocalizations l10n) {
     if (widget.conversation.isDirect) {
-      final peerName = widget.conversation
+      final peerName =
+          widget.conversation
               .directPeer(widget.currentUserId)
               ?.displayName
               .trim() ??
@@ -640,12 +805,16 @@ class _SharedHeader extends StatelessWidget {
   const _SharedHeader({
     required this.title,
     required this.participantCount,
+    required this.showParticipantCount,
     required this.horizontalPadding,
+    required this.onTitleTap,
   });
 
   final String title;
   final int participantCount;
+  final bool showParticipantCount;
   final double horizontalPadding;
+  final VoidCallback? onTitleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -677,50 +846,60 @@ class _SharedHeader extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title.trim().isEmpty ? l10n.chatFallbackTitle : title.trim(),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: MediaQuery.sizeOf(context).width < 360 ? 22 : 24,
-                    height: 1.12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.9,
-                    color: const Color(0xFFf7f4f1),
+                GestureDetector(
+                  onTap: onTitleTap,
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(
+                    title.trim().isEmpty
+                        ? l10n.chatFallbackTitle
+                        : title.trim(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: MediaQuery.sizeOf(context).width < 360
+                          ? 22
+                          : 24,
+                      height: 1.12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.9,
+                      color: const Color(0xFFf7f4f1),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.accent,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.accent.withValues(alpha: 0.08),
-                            blurRadius: 0,
-                            spreadRadius: 4,
-                          ),
-                        ],
+                if (showParticipantCount) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.accent,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.accent.withValues(alpha: 0.08),
+                              blurRadius: 0,
+                              spreadRadius: 4,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.chatParticipantsCount(participantCount),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFFf1a234),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.chatParticipantsCount(participantCount),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          height: 1,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFFf1a234),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -771,29 +950,41 @@ class _SharedTabs extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.white.withValues(alpha: 0.02)),
       ),
-      child: Row(
-        children: [
-          _SharedTabButton(
-            label: l10n.chatSharedMediaTab,
-            active: selected == _SharedTab.media,
-            compact: compact,
-            onTap: () => onChanged(_SharedTab.media),
-          ),
-          SizedBox(width: compact ? 6 : 8),
-          _SharedTabButton(
-            label: l10n.chatSharedLinksTab,
-            active: selected == _SharedTab.links,
-            compact: compact,
-            onTap: () => onChanged(_SharedTab.links),
-          ),
-          SizedBox(width: compact ? 6 : 8),
-          _SharedTabButton(
-            label: l10n.chatSharedFilesTab,
-            active: selected == _SharedTab.files,
-            compact: compact,
-            onTap: () => onChanged(_SharedTab.files),
-          ),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SharedTabButton(
+              label: l10n.chatSharedMediaTab,
+              active: selected == _SharedTab.media,
+              compact: compact,
+              onTap: () => onChanged(_SharedTab.media),
+            ),
+            SizedBox(width: compact ? 6 : 8),
+            _SharedTabButton(
+              label: l10n.chatSharedLinksTab,
+              active: selected == _SharedTab.links,
+              compact: compact,
+              onTap: () => onChanged(_SharedTab.links),
+            ),
+            SizedBox(width: compact ? 6 : 8),
+            _SharedTabButton(
+              label: l10n.chatSharedFilesTab,
+              active: selected == _SharedTab.files,
+              compact: compact,
+              onTap: () => onChanged(_SharedTab.files),
+            ),
+            SizedBox(width: compact ? 6 : 8),
+            _SharedTabButton(
+              label: l10n.chatSharedVoiceTab,
+              active: selected == _SharedTab.voice,
+              compact: compact,
+              onTap: () => onChanged(_SharedTab.voice),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -814,38 +1005,38 @@ class _SharedTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          height: compact ? 58 : 66,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: active ? AppColors.accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: active
-                ? [
-                    BoxShadow(
-                      color: AppColors.accent.withValues(alpha: 0.22),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: compact ? 14 : 16,
-              height: 1,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.6,
-              color: active ? const Color(0xFFfff7ef) : const Color(0xFFd8c2b3),
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: compact ? 58 : 66,
+        constraints: BoxConstraints(minWidth: compact ? 92 : 104),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 20),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active ? AppColors.accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: AppColors.accent.withValues(alpha: 0.22),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+          style: TextStyle(
+            fontSize: compact ? 14 : 16,
+            height: 1,
+            fontWeight: FontWeight.w800,
+            letterSpacing: compact ? 0.2 : 0.6,
+            color: active ? const Color(0xFFfff7ef) : const Color(0xFFd8c2b3),
           ),
         ),
       ),
@@ -858,11 +1049,13 @@ class _MediaGroup extends StatelessWidget {
     required this.group,
     required this.busyFileIds,
     required this.onFileTap,
+    required this.onGoToMessage,
   });
 
   final _DateGroup<_SharedFileRef> group;
   final Set<String> busyFileIds;
   final ValueChanged<_SharedFileRef> onFileTap;
+  final ValueChanged<String> onGoToMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -894,6 +1087,7 @@ class _MediaGroup extends StatelessWidget {
                 radius: radius,
                 busy: busyFileIds.contains(item.fileId),
                 onTap: () => onFileTap(item),
+                onLongPress: () => onGoToMessage(item.message.id),
               );
             },
           ),
@@ -909,17 +1103,46 @@ class _MediaTile extends StatelessWidget {
     required this.radius,
     required this.busy,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final _SharedFileRef item;
   final double radius;
   final bool busy;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final isVideo = item.metadata?.isVideo ?? false;
     final isImage = item.metadata?.isImage ?? false;
+
+    if (isVideo) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onLongPress: onLongPress,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ChatVideoPreview(
+              fileId: item.fileId,
+              aspectRatio: 1,
+              borderRadius: radius,
+              loadLocalPreview: true,
+              playBadgeSize: 44,
+            ),
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: _SharedDownloadBadge(
+                downloaded: item.downloaded,
+                busy: busy,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     final tile = ClipRRect(
       borderRadius: BorderRadius.circular(radius),
@@ -950,12 +1173,11 @@ class _MediaTile extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.white.withValues(alpha: 0.03),
-                    Colors.black.withValues(alpha: isVideo ? 0.18 : 0.08),
+                    Colors.black.withValues(alpha: 0.08),
                   ],
                 ),
               ),
             ),
-            if (isVideo) const _PlayBadge(),
             Positioned(
               right: 8,
               bottom: 8,
@@ -972,59 +1194,43 @@ class _MediaTile extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
+      onLongPress: onLongPress,
       child: tile,
     );
   }
 }
 
-class _PlayBadge extends StatelessWidget {
-  const _PlayBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xEAFFFAF2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.22),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.play_arrow_rounded,
-          size: 34,
-          color: Color(0xFFc7851d),
-        ),
-      ),
-    );
-  }
-}
-
 class _LinksGroup extends StatelessWidget {
-  const _LinksGroup({required this.group});
+  const _LinksGroup({
+    required this.group,
+    required this.onLinkTap,
+    required this.onGoToMessage,
+  });
 
   final _DateGroup<_SharedLinkRef> group;
+  final ValueChanged<_SharedLinkRef> onLinkTap;
+  final ValueChanged<String> onGoToMessage;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 34),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(group.label),
-          const SizedBox(height: 28),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: _SectionTitle(group.label),
+          ),
+          const SizedBox(height: 14),
           ...group.items.map(
             (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 34),
-              child: _LinkItem(item: item),
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _LinkItem(
+                item: item,
+                onTap: () => onLinkTap(item),
+                onLongPress: () => onGoToMessage(item.message.id),
+              ),
             ),
           ),
         ],
@@ -1034,72 +1240,140 @@ class _LinksGroup extends StatelessWidget {
 }
 
 class _LinkItem extends StatelessWidget {
-  const _LinkItem({required this.item});
+  const _LinkItem({
+    required this.item,
+    required this.onTap,
+    required this.onLongPress,
+  });
 
   final _SharedLinkRef item;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CompactLinkCard(
+      item: item,
+      hostLabel: _linkHostLabel(item.url),
+      onTap: onTap,
+      onLongPress: onLongPress,
+    );
+  }
+}
+
+class _CompactLinkCard extends StatelessWidget {
+  const _CompactLinkCard({
+    required this.item,
+    required this.hostLabel,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final _SharedLinkRef item;
+  final String hostLabel;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: compact ? 82 : 100,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: _SharedAvatar(
-              size: 64,
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          compact ? 12 : 14,
+          compact ? 11 : 12,
+          compact ? 12 : 14,
+          compact ? 11 : 12,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF21140c),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.14),
+              blurRadius: 14,
+              offset: const Offset(0, 7),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _SharedAvatar(
+              size: 40,
               name: item.senderName,
               avatarFileId: item.senderAvatarFileId,
             ),
-          ),
+            SizedBox(width: compact ? 10 : 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.link_rounded,
+                        size: compact ? 15 : 16,
+                        color: AppColors.accent,
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          hostLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: compact ? 13 : 14,
+                            height: 1.1,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    item.snippet,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compact ? 14 : 15,
+                      height: 1.25,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFf1ebe3),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.senderName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compact ? 12 : 13,
+                      height: 1.1,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.48),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(
+              Icons.open_in_new_rounded,
+              size: compact ? 18 : 20,
+              color: Colors.white.withValues(alpha: 0.44),
+            ),
+          ],
         ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.senderName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: compact ? 23 : 26,
-                  height: 1.08,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1.0,
-                  color: const Color(0xFFf2efeb),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item.snippet,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.34,
-                  letterSpacing: 0.1,
-                  color: Color(0xFF776b62),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                item.url,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.2,
-                  letterSpacing: 0.4,
-                  color: AppColors.accent,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1109,11 +1383,13 @@ class _FilesGroup extends StatelessWidget {
     required this.group,
     required this.busyFileIds,
     required this.onFileTap,
+    required this.onGoToMessage,
   });
 
   final _DateGroup<_SharedFileRef> group;
   final Set<String> busyFileIds;
   final ValueChanged<_SharedFileRef> onFileTap;
+  final ValueChanged<String> onGoToMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -1134,6 +1410,7 @@ class _FilesGroup extends StatelessWidget {
                 item: item,
                 busy: busyFileIds.contains(item.fileId),
                 onTap: () => onFileTap(item),
+                onLongPress: () => onGoToMessage(item.message.id),
               ),
             ),
           ),
@@ -1148,11 +1425,13 @@ class _FileCard extends StatelessWidget {
     required this.item,
     required this.busy,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final _SharedFileRef item;
   final bool busy;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -1170,6 +1449,7 @@ class _FileCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       behavior: HitTestBehavior.opaque,
       child: Container(
         constraints: BoxConstraints(minHeight: compact ? 136 : 148),
@@ -1236,6 +1516,78 @@ class _FileCard extends StatelessWidget {
               size: compact ? 42 : 46,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VoiceMessagesGroup extends StatelessWidget {
+  const _VoiceMessagesGroup({required this.group, required this.onGoToMessage});
+
+  final _DateGroup<_SharedFileRef> group;
+  final ValueChanged<String> onGoToMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 30),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: _SectionTitle(group.label),
+          ),
+          const SizedBox(height: 14),
+          ...group.items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: _VoiceMessageCard(
+                item: item,
+                onLongPress: () => onGoToMessage(item.message.id),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VoiceMessageCard extends StatelessWidget {
+  const _VoiceMessageCard({required this.item, required this.onLongPress});
+
+  final _SharedFileRef item;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPress: onLongPress,
+      behavior: HitTestBehavior.opaque,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF2a190e),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.025)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: ChatVoiceAttachmentPlayer(
+            fileId: item.fileId,
+            metadata: item.metadata,
+            dense: true,
+            backgroundColor: Colors.black.withValues(alpha: 0.12),
+            borderColor: Colors.white.withValues(alpha: 0.04),
+          ),
         ),
       ),
     );
@@ -1553,10 +1905,7 @@ class _DateGroup<T> {
   final List<T> items;
 }
 
-final _urlRegex = RegExp(
-  r'((?:https?:\/\/|www\.)[^\s<>()]+)',
-  caseSensitive: false,
-);
+final _urlRegex = chatUrlRegex;
 
 List<_DateGroup<T>> _groupByDate<T>(
   List<T> items,
@@ -1592,7 +1941,19 @@ String _dateLabel(DateTime value, AppLocalizations l10n) {
 }
 
 String _cleanUrl(String rawUrl) {
-  return rawUrl.trim().replaceFirst(RegExp(r'[),.;!?]+$'), '');
+  return cleanChatUrl(rawUrl);
+}
+
+Uri? _externalUriForUrl(String rawUrl) {
+  return externalUriForChatUrl(rawUrl);
+}
+
+String _linkHostLabel(String rawUrl) {
+  return chatLinkHostLabel(rawUrl);
+}
+
+String? _internalAppRouteForUrl(String rawUrl) {
+  return internalAppRouteForChatUrl(rawUrl);
 }
 
 String _snippetAroundUrl({
@@ -1650,6 +2011,10 @@ Color _fileIconColor(FileMetadataVm? metadata) {
     return const Color(0xFFf0b983);
   }
   return AppColors.accent;
+}
+
+bool _isSharedMediaOrAudio(FileMetadataVm? metadata) {
+  return (metadata?.isMedia ?? false) || (metadata?.isAudio ?? false);
 }
 
 String _formatSize(int bytes) {

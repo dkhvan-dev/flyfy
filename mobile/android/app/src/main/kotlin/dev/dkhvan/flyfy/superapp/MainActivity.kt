@@ -4,13 +4,25 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.database.Cursor
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
 import android.net.Uri
 import android.provider.OpenableColumns
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
+import java.nio.ByteBuffer
+import kotlin.math.max
 
 class MainActivity : FlutterFragmentActivity() {
+    companion object {
+        private const val MIN_TRIM_SAMPLE_BUFFER_SIZE = 16 * 1024 * 1024
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(
@@ -21,6 +33,178 @@ class MainActivity : FlutterFragmentActivity() {
                 "readImage" -> result.success(readImageFromClipboard())
                 else -> result.notImplemented()
             }
+        }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "flyfy/video_tools"
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "trimVideo" -> trimVideo(call, result)
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun trimVideo(call: MethodCall, result: MethodChannel.Result) {
+        val args = call.arguments as? Map<*, *>
+        val inputPath = args?.get("inputPath") as? String
+        val startMs = (args?.get("startMs") as? Number)?.toLong()
+        val endMs = (args?.get("endMs") as? Number)?.toLong()
+
+        if (inputPath.isNullOrBlank() || startMs == null || endMs == null || endMs <= startMs) {
+            result.error("invalid_arguments", "Invalid video trim arguments", null)
+            return
+        }
+
+        Thread {
+            try {
+                val outputPath = trimVideoFile(inputPath, startMs, endMs)
+                runOnUiThread { result.success(outputPath) }
+            } catch (error: Exception) {
+                runOnUiThread {
+                    result.error(
+                        "trim_failed",
+                        error.localizedMessage ?: "Video trim failed",
+                        null
+                    )
+                }
+            }
+        }.start()
+    }
+
+    private fun trimVideoFile(inputPath: String, startMs: Long, endMs: Long): String {
+        val inputFile = File(inputPath)
+        if (!inputFile.exists()) {
+            throw IllegalArgumentException("Input video does not exist")
+        }
+
+        val outputFile = File(cacheDir, "flyfy_trimmed_${System.currentTimeMillis()}.mp4")
+        val startUs = startMs * 1000
+        val endUs = endMs * 1000
+        val extractor = MediaExtractor()
+        var muxer: MediaMuxer? = null
+        var muxerStarted = false
+
+        try {
+            extractor.setDataSource(inputFile.absolutePath)
+            muxer = MediaMuxer(
+                outputFile.absolutePath,
+                MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
+            )
+
+            val trackIndexMap = mutableMapOf<Int, Int>()
+            var maxBufferSize = MIN_TRIM_SAMPLE_BUFFER_SIZE
+
+            for (index in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(index)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
+                if (!mime.startsWith("video/") && !mime.startsWith("audio/")) continue
+
+                if (mime.startsWith("video/") && format.containsKey(MediaFormat.KEY_ROTATION)) {
+                    muxer.setOrientationHint(format.getInteger(MediaFormat.KEY_ROTATION))
+                }
+                if (format.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
+                    maxBufferSize = max(maxBufferSize, format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE))
+                }
+
+                trackIndexMap[index] = muxer.addTrack(format)
+            }
+
+            if (trackIndexMap.isEmpty()) {
+                throw IllegalStateException("No audio or video tracks found")
+            }
+
+            muxer.start()
+            muxerStarted = true
+            var samplesWritten = 0
+
+            for ((sourceTrackIndex, targetTrackIndex) in trackIndexMap) {
+                samplesWritten += writeSelectedTrack(
+                    dataSource = inputFile.absolutePath,
+                    sourceTrackIndex = sourceTrackIndex,
+                    targetTrackIndex = targetTrackIndex,
+                    muxer = muxer,
+                    startUs = startUs,
+                    endUs = endUs,
+                    maxBufferSize = maxBufferSize
+                )
+            }
+
+            if (samplesWritten == 0) {
+                throw IllegalStateException("Trim range contains no samples")
+            }
+
+            muxer.stop()
+            muxerStarted = false
+            muxer.release()
+            muxer = null
+            return outputFile.absolutePath
+        } catch (error: Exception) {
+            outputFile.delete()
+            throw error
+        } finally {
+            extractor.release()
+            if (muxerStarted) {
+                try {
+                    muxer?.stop()
+                } catch (_: Exception) {
+                    outputFile.delete()
+                }
+            }
+            muxer?.release()
+        }
+    }
+
+    private fun writeSelectedTrack(
+        dataSource: String,
+        sourceTrackIndex: Int,
+        targetTrackIndex: Int,
+        muxer: MediaMuxer,
+        startUs: Long,
+        endUs: Long,
+        maxBufferSize: Int
+    ): Int {
+        val trackExtractor = MediaExtractor()
+        return try {
+            trackExtractor.setDataSource(dataSource)
+            trackExtractor.selectTrack(sourceTrackIndex)
+            trackExtractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+
+            val buffer = ByteBuffer.allocateDirect(maxBufferSize)
+            val info = MediaCodec.BufferInfo()
+            var firstSampleTimeUs: Long? = null
+            var samplesWritten = 0
+
+            while (true) {
+                val sampleTimeUs = trackExtractor.sampleTime
+                if (sampleTimeUs < 0 || sampleTimeUs > endUs) break
+
+                buffer.clear()
+                val sampleSize = trackExtractor.readSampleData(buffer, 0)
+                if (sampleSize < 0) break
+                if (sampleSize == 0) {
+                    trackExtractor.advance()
+                    continue
+                }
+
+                val baseSampleTimeUs = firstSampleTimeUs ?: sampleTimeUs
+                    .also { firstSampleTimeUs = it }
+                buffer.position(0)
+                buffer.limit(sampleSize)
+                info.set(
+                    0,
+                    sampleSize,
+                    max(0L, sampleTimeUs - baseSampleTimeUs),
+                    trackExtractor.sampleFlags
+                )
+                muxer.writeSampleData(targetTrackIndex, buffer, info)
+                samplesWritten++
+                trackExtractor.advance()
+            }
+
+            samplesWritten
+        } finally {
+            trackExtractor.release()
         }
     }
 

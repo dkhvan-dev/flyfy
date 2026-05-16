@@ -1,10 +1,17 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/ui/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
+import 'chat_recorded_video_review_screen.dart';
+
+const _chatCameraResolutionPreset = ResolutionPreset.veryHigh;
+const _chatCameraFps = 30;
+const _chatCameraVideoBitrate = 8 * 1000 * 1000;
+const _chatCameraAudioBitrate = 128 * 1000;
 
 enum _ChatCameraMode { photo, video }
 
@@ -26,13 +33,16 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
   CameraDescription? _selectedCamera;
   CameraController? _controller;
   Timer? _recordingTimer;
+  Timer? _focusReticleTimer;
 
   _ChatCameraMode _mode = _ChatCameraMode.photo;
   Duration _recordingDuration = Duration.zero;
+  FlashMode _flashMode = FlashMode.off;
   double _minZoom = 1;
   double _maxZoom = 1;
   double _currentZoom = 1;
   double _zoomOnScaleStart = 1;
+  Offset? _focusPoint;
   double? _pendingZoomLevel;
   bool _busy = false;
   bool _loading = true;
@@ -51,6 +61,7 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _recordingTimer?.cancel();
+    _focusReticleTimer?.cancel();
     unawaited(_controller?.dispose());
     super.dispose();
   }
@@ -119,10 +130,14 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
 
   Future<void> _initializeCamera(CameraDescription camera) async {
     final oldController = _controller;
+    final isVideoMode = _mode == _ChatCameraMode.video;
     final controller = CameraController(
       camera,
-      ResolutionPreset.high,
-      enableAudio: _mode == _ChatCameraMode.video,
+      _chatCameraResolutionPreset,
+      enableAudio: isVideoMode,
+      fps: _chatCameraFps,
+      videoBitrate: isVideoMode ? _chatCameraVideoBitrate : null,
+      audioBitrate: isVideoMode ? _chatCameraAudioBitrate : null,
     );
 
     setState(() {
@@ -140,7 +155,8 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
 
     try {
       await controller.initialize();
-      await controller.setFlashMode(FlashMode.off);
+      await _configureCameraForCapture(controller);
+      await _applyFlashMode(controller, _flashMode);
       final minZoom = await controller.getMinZoomLevel();
       final maxZoom = await controller.getMaxZoomLevel();
       final zoom = _currentZoom.clamp(minZoom, maxZoom).toDouble();
@@ -156,6 +172,7 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
         _maxZoom = maxZoom;
         _currentZoom = zoom;
         _zoomOnScaleStart = zoom;
+        _focusPoint = null;
         _loading = false;
       });
     } on CameraException catch (e) {
@@ -174,6 +191,19 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
         _loading = false;
         _errorMessage = AppLocalizations.of(context)!.chatCameraCaptureFailed;
       });
+    }
+  }
+
+  Future<void> _configureCameraForCapture(CameraController controller) async {
+    try {
+      await controller.setFocusMode(FocusMode.auto);
+    } on CameraException {
+      // Some devices expose fixed-focus lenses.
+    }
+    try {
+      await controller.setExposureMode(ExposureMode.auto);
+    } on CameraException {
+      // Exposure mode control is best-effort across Android camera HALs.
     }
   }
 
@@ -258,13 +288,113 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
     }
   }
 
+  List<double> _zoomStops() {
+    final candidates = <double>[
+      if (_minZoom < 1) _minZoom,
+      1,
+      2,
+      3,
+      5,
+      _maxZoom,
+    ];
+    final stops = <double>[];
+
+    for (final candidate in candidates) {
+      final clamped = candidate.clamp(_minZoom, _maxZoom).toDouble();
+      if (stops.any((value) => (value - clamped).abs() < 0.08)) continue;
+      stops.add(clamped);
+    }
+
+    stops.sort();
+    return stops;
+  }
+
+  Future<void> _applyFlashMode(
+    CameraController controller,
+    FlashMode mode,
+  ) async {
+    try {
+      await controller.setFlashMode(mode);
+    } on CameraException {
+      if (mode == FlashMode.off) return;
+      _flashMode = FlashMode.off;
+      try {
+        await controller.setFlashMode(FlashMode.off);
+      } catch (_) {
+        // Some front cameras do not expose flash control.
+      }
+    }
+  }
+
+  Future<void> _toggleFlash() async {
+    final controller = _controller;
+    if (_busy ||
+        controller == null ||
+        !controller.value.isInitialized ||
+        _loading) {
+      return;
+    }
+
+    final nextMode = switch (_flashMode) {
+      FlashMode.off => FlashMode.auto,
+      FlashMode.auto => FlashMode.torch,
+      FlashMode.always || FlashMode.torch => FlashMode.off,
+    };
+
+    setState(() => _flashMode = nextMode);
+    try {
+      await controller.setFlashMode(nextMode);
+    } on CameraException {
+      if (!mounted) return;
+      setState(() => _flashMode = FlashMode.off);
+      try {
+        await controller.setFlashMode(FlashMode.off);
+      } catch (_) {
+        // Leave the UI in safe "off" state when the device rejects flash.
+      }
+    }
+  }
+
+  Future<void> _handlePreviewTapDown(
+    TapDownDetails details,
+    Size previewSize,
+  ) async {
+    final controller = _controller;
+    if (_busy ||
+        previewSize.width <= 0 ||
+        previewSize.height <= 0 ||
+        controller == null ||
+        !controller.value.isInitialized ||
+        _loading) {
+      return;
+    }
+
+    final localPoint = details.localPosition;
+    final normalizedPoint = Offset(
+      (localPoint.dx / previewSize.width).clamp(0.0, 1.0),
+      (localPoint.dy / previewSize.height).clamp(0.0, 1.0),
+    );
+
+    setState(() => _focusPoint = localPoint);
+    _focusReticleTimer?.cancel();
+    _focusReticleTimer = Timer(const Duration(milliseconds: 900), () {
+      if (mounted) setState(() => _focusPoint = null);
+    });
+
+    try {
+      await controller.setFocusPoint(normalizedPoint);
+      await controller.setExposurePoint(normalizedPoint);
+    } on CameraException {
+      // Focus/exposure points are best-effort: some devices accept only center.
+    }
+  }
+
   Future<void> _flipCamera() async {
     if (_busy || _recording || _cameras.length < 2) return;
     final selected = _selectedCamera;
     final currentIndex = selected == null ? -1 : _cameras.indexOf(selected);
-    final nextIndex = currentIndex < 0
-        ? 0
-        : (currentIndex + 1) % _cameras.length;
+    final nextIndex =
+        currentIndex < 0 ? 0 : (currentIndex + 1) % _cameras.length;
     await _initializeCamera(_cameras[nextIndex]);
   }
 
@@ -366,7 +496,16 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
     try {
       final file = await controller.stopVideoRecording();
       if (!mounted) return;
-      Navigator.of(context).pop(file);
+      setState(() {
+        _busy = false;
+        _recording = false;
+        _recordingDuration = Duration.zero;
+      });
+      final reviewedFile = await _reviewRecordedVideo(file);
+      if (!mounted) return;
+      if (reviewedFile != null) {
+        Navigator.of(context).pop(reviewedFile);
+      }
     } on CameraException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -384,6 +523,15 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
         _errorMessage = AppLocalizations.of(context)!.chatCameraCaptureFailed;
       });
     }
+  }
+
+  Future<XFile?> _reviewRecordedVideo(XFile file) {
+    return Navigator.of(context).push<XFile>(
+      MaterialPageRoute<XFile>(
+        fullscreenDialog: true,
+        builder: (_) => ChatRecordedVideoReviewScreen(file: file),
+      ),
+    );
   }
 
   Future<void> _close() async {
@@ -409,7 +557,8 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
       'CameraAccessRestricted' ||
       'AudioAccessDenied' ||
       'AudioAccessDeniedWithoutPrompt' ||
-      'AudioAccessRestricted' => l10n.chatCameraPermissionDenied,
+      'AudioAccessRestricted' =>
+        l10n.chatCameraPermissionDenied,
       _ => l10n.chatCameraCaptureFailed,
     };
   }
@@ -419,24 +568,51 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
     final l10n = AppLocalizations.of(context)!;
     final controller = _controller;
     final canFlip = _cameras.length > 1 && !_recording && !_busy;
+    final canUseFlash = controller != null &&
+        controller.value.isInitialized &&
+        !_loading &&
+        !_busy;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
           Positioned.fill(
-            child:
-                controller == null ||
+            child: controller == null ||
                     _loading ||
                     !controller.value.isInitialized
                 ? const Center(
                     child: CircularProgressIndicator(color: AppColors.accent),
                   )
-                : GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onScaleStart: _handleScaleStart,
-                    onScaleUpdate: _handleScaleUpdate,
-                    child: _CameraPreviewCover(controller: controller),
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (details) => unawaited(
+                          _handlePreviewTapDown(details, constraints.biggest),
+                        ),
+                        onScaleStart: _handleScaleStart,
+                        onScaleUpdate: _handleScaleUpdate,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            _CameraPreviewCover(controller: controller),
+                            if (_focusPoint != null)
+                              Positioned(
+                                left: (_focusPoint!.dx - 38).clamp(
+                                  8.0,
+                                  math.max(8.0, constraints.maxWidth - 84),
+                                ),
+                                top: (_focusPoint!.dy - 38).clamp(
+                                  8.0,
+                                  math.max(8.0, constraints.maxHeight - 84),
+                                ),
+                                child: const _FocusReticle(),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
           ),
           Positioned.fill(
@@ -477,11 +653,18 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
                         ),
                       const Spacer(),
                       _CameraIconButton(
+                        icon: _flashIcon(_flashMode),
+                        label: _flashLabel(l10n, _flashMode),
+                        onPressed: canUseFlash
+                            ? () => unawaited(_toggleFlash())
+                            : null,
+                      ),
+                      const SizedBox(width: 10),
+                      _CameraIconButton(
                         icon: Icons.flip_camera_ios_rounded,
                         label: l10n.chatCameraFlipButtonLabel,
-                        onPressed: canFlip
-                            ? () => unawaited(_flipCamera())
-                            : null,
+                        onPressed:
+                            canFlip ? () => unawaited(_flipCamera()) : null,
                       ),
                     ],
                   ),
@@ -490,9 +673,13 @@ class _ChatCameraScreenState extends State<ChatCameraScreen>
                     _CameraErrorBanner(message: _errorMessage!),
                     const SizedBox(height: 16),
                   ],
-                  if (_maxZoom > _minZoom &&
-                      _currentZoom > _minZoom + 0.05) ...[
-                    _ZoomBadge(zoom: _currentZoom),
+                  if (_maxZoom > _minZoom) ...[
+                    _ZoomLevelSelector(
+                      levels: _zoomStops(),
+                      currentZoom: _currentZoom,
+                      enabled: !_busy,
+                      onSelected: (zoom) => unawaited(_setZoomLevel(zoom)),
+                    ),
                     const SizedBox(height: 12),
                   ],
                   _CameraModeSwitch(
@@ -532,7 +719,10 @@ class _CameraPreviewCover extends StatelessWidget {
     final mediaSize = MediaQuery.sizeOf(context);
     final previewAspectRatio = controller.value.aspectRatio;
     final screenAspectRatio = mediaSize.aspectRatio;
-    final scale = previewAspectRatio / screenAspectRatio;
+    final scale = _cameraPreviewCoverScale(
+      previewAspectRatio: previewAspectRatio,
+      screenAspectRatio: screenAspectRatio,
+    );
 
     return ClipRect(
       child: Transform.scale(
@@ -541,6 +731,18 @@ class _CameraPreviewCover extends StatelessWidget {
       ),
     );
   }
+}
+
+double _cameraPreviewCoverScale({
+  required double previewAspectRatio,
+  required double screenAspectRatio,
+}) {
+  if (previewAspectRatio <= 0 || screenAspectRatio <= 0) return 1;
+
+  final rawScale = screenAspectRatio < 1
+      ? 1 / (previewAspectRatio * screenAspectRatio)
+      : previewAspectRatio / screenAspectRatio;
+  return math.max(1, rawScale).toDouble();
 }
 
 class _CameraIconButton extends StatelessWidget {
@@ -623,10 +825,18 @@ class _RecordingBadge extends StatelessWidget {
   }
 }
 
-class _ZoomBadge extends StatelessWidget {
-  const _ZoomBadge({required this.zoom});
+class _ZoomLevelSelector extends StatelessWidget {
+  const _ZoomLevelSelector({
+    required this.levels,
+    required this.currentZoom,
+    required this.enabled,
+    required this.onSelected,
+  });
 
-  final double zoom;
+  final List<double> levels;
+  final double currentZoom;
+  final bool enabled;
+  final ValueChanged<double> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -637,14 +847,94 @@ class _ZoomBadge extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final level in levels)
+              _ZoomLevelChip(
+                level: level,
+                selected: (level - currentZoom).abs() < 0.12,
+                enabled: enabled,
+                onTap: () => onSelected(level),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ZoomLevelChip extends StatelessWidget {
+  const _ZoomLevelChip({
+    required this.level,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final double level;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = level < 1
+        ? level.toStringAsFixed(1)
+        : level.toStringAsFixed(level.roundToDouble() == level ? 0 : 1);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: enabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        width: 42,
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+        ),
         child: Text(
-          '${zoom.toStringAsFixed(1)}x',
-          style: const TextStyle(
-            color: Colors.white,
+          '${label}x',
+          style: TextStyle(
+            color: selected
+                ? Colors.black
+                : Colors.white.withValues(alpha: enabled ? 0.78 : 0.34),
             fontSize: 13,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FocusReticle extends StatelessWidget {
+  const _FocusReticle();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        width: 76,
+        height: 76,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white, width: 1.5),
+        ),
+        child: Center(
+          child: Container(
+            width: 7,
+            height: 7,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
@@ -763,8 +1053,8 @@ class _CaptureButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = videoMode
         ? recording
-              ? stopLabel
-              : recordLabel
+            ? stopLabel
+            : recordLabel
         : photoLabel;
 
     return Semantics(
@@ -838,6 +1128,22 @@ class _CameraErrorBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+IconData _flashIcon(FlashMode mode) {
+  return switch (mode) {
+    FlashMode.off => Icons.flash_off_rounded,
+    FlashMode.auto => Icons.flash_auto_rounded,
+    FlashMode.always || FlashMode.torch => Icons.flash_on_rounded,
+  };
+}
+
+String _flashLabel(AppLocalizations l10n, FlashMode mode) {
+  return switch (mode) {
+    FlashMode.off => l10n.chatCameraFlashOffButtonLabel,
+    FlashMode.auto => l10n.chatCameraFlashAutoButtonLabel,
+    FlashMode.always || FlashMode.torch => l10n.chatCameraFlashOnButtonLabel,
+  };
 }
 
 String _formatRecordingDuration(Duration duration) {

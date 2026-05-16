@@ -24,17 +24,26 @@ func New(eventType string, conversationID uuid.UUID, payload any) Event {
 }
 
 type MessageSentPayload struct {
-	MessageID          uuid.UUID  `json:"messageId"`
-	SenderUserID       uuid.UUID  `json:"senderUserId"`
-	SenderDisplayName  string     `json:"senderDisplayName"`
-	SenderAvatarFileID *string    `json:"senderAvatarFileId,omitempty"`
-	Type               string     `json:"type"`
-	Content            string     `json:"content"`
-	FileIDs            []string   `json:"fileIds,omitempty"`
-	StickerID          *uuid.UUID `json:"stickerId,omitempty"`
-	StickerFileID      *string    `json:"stickerFileId,omitempty"`
-	ReplyToMessageID   *uuid.UUID `json:"replyToMessageId,omitempty"`
-	SentAt             time.Time  `json:"sentAt"`
+	MessageID                 uuid.UUID  `json:"messageId"`
+	SenderUserID              uuid.UUID  `json:"senderUserId"`
+	SenderDisplayName         string     `json:"senderDisplayName"`
+	SenderAvatarFileID        *string    `json:"senderAvatarFileId,omitempty"`
+	Type                      string     `json:"type"`
+	Content                   string     `json:"content"`
+	FileIDs                   []string   `json:"fileIds,omitempty"`
+	StickerID                 *uuid.UUID `json:"stickerId,omitempty"`
+	StickerFileID             *string    `json:"stickerFileId,omitempty"`
+	ReplyToMessageID          *uuid.UUID `json:"replyToMessageId,omitempty"`
+	ForwardedFromMessageID    *uuid.UUID `json:"forwardedFromMessageId,omitempty"`
+	ForwardedFromSenderUserID *uuid.UUID `json:"forwardedFromSenderUserId,omitempty"`
+	ForwardedFromSenderName   string     `json:"forwardedFromSenderName,omitempty"`
+	ForwardCount              int        `json:"forwardCount"`
+	SentAt                    time.Time  `json:"sentAt"`
+}
+
+type MessageForwardedPayload struct {
+	MessageID    uuid.UUID `json:"messageId"`
+	ForwardCount int       `json:"forwardCount"`
 }
 
 type MessageEditedPayload struct {
@@ -56,13 +65,21 @@ type MessageReactionUpdatedPayload struct {
 }
 
 type MessageReactionInfo struct {
-	Emoji string `json:"emoji"`
-	Count int    `json:"count"`
+	Emoji   string                    `json:"emoji"`
+	Count   int                       `json:"count"`
+	UserIDs []string                  `json:"userIds,omitempty"`
+	Users   []MessageReactionUserInfo `json:"users,omitempty"`
+}
+
+type MessageReactionUserInfo struct {
+	UserID    string `json:"userId"`
+	ReactedAt string `json:"reactedAt"`
 }
 
 type ReadUpdatedPayload struct {
 	UserID        uuid.UUID `json:"userId"`
 	LastReadMsgID uuid.UUID `json:"lastReadMsgId"`
+	ReadAt        string    `json:"readAt"`
 }
 
 type TypingPayload struct {

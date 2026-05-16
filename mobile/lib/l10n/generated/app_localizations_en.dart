@@ -4040,6 +4040,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatAttachmentFile => 'File';
 
   @override
+  String get chatLastMessagePhoto => 'Photo';
+
+  @override
+  String get chatLastMessageVideo => 'Video';
+
+  @override
   String get chatAttachmentLocation => 'Location';
 
   @override
@@ -4173,6 +4179,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatCameraFlipButtonLabel => 'Switch camera';
 
   @override
+  String get chatCameraFlashOffButtonLabel => 'Flash off';
+
+  @override
+  String get chatCameraFlashAutoButtonLabel => 'Auto flash';
+
+  @override
+  String get chatCameraFlashOnButtonLabel => 'Flash on';
+
+  @override
   String get chatCameraCloseButtonLabel => 'Close camera';
 
   @override
@@ -4183,6 +4198,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatCameraStopRecordingButtonLabel => 'Stop recording';
+
+  @override
+  String get chatCameraReviewCancelButtonLabel => 'Cancel';
+
+  @override
+  String get chatCameraReviewSendButtonLabel => 'Send';
+
+  @override
+  String get chatCameraReviewPlayButtonLabel => 'Play video';
+
+  @override
+  String get chatCameraReviewPauseButtonLabel => 'Pause video';
+
+  @override
+  String get chatCameraReviewTrimLabel => 'Trim';
+
+  @override
+  String get chatCameraReviewProcessing => 'Processing...';
+
+  @override
+  String get chatCameraTrimFailed =>
+      'Could not trim this video. Try a different trim range or send the original.';
 
   @override
   String get chatAttachmentUploading => 'Uploading attachment...';
@@ -4272,6 +4309,69 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not update the reaction. Please try again.';
 
   @override
+  String get chatCopyAction => 'Copy';
+
+  @override
+  String get chatForwardAction => 'Forward';
+
+  @override
+  String get chatMessageCopied => 'Message copied';
+
+  @override
+  String get chatForwardSheetTitle => 'Forward to';
+
+  @override
+  String get chatForwardFailed =>
+      'Could not forward the message. Please try again.';
+
+  @override
+  String get chatForwardSuccess => 'Message forwarded';
+
+  @override
+  String get chatNoForwardTargets => 'No available chats';
+
+  @override
+  String get chatForwardedLabel => 'Forwarded';
+
+  @override
+  String chatForwardedFrom(Object name) {
+    return 'Forwarded from $name';
+  }
+
+  @override
+  String chatForwardCount(Object count) {
+    return 'Forwarded $count';
+  }
+
+  @override
+  String get chatReactionsByTitle => 'Reactions';
+
+  @override
+  String chatReactionCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reactions',
+      one: '1 reaction',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatReadByTitle => 'Read by';
+
+  @override
+  String chatReadByCount(Object count) {
+    return 'Read by $count';
+  }
+
+  @override
+  String get chatReadAtSeparator => 'at';
+
+  @override
+  String get chatNoStatusDetails => 'No status details yet';
+
+  @override
   String get chatLoadFailed => 'Failed to load chat';
 
   @override
@@ -4302,6 +4402,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatSharedFilesTab => 'Files';
 
   @override
+  String get chatSharedVoiceTab => 'Audio messages';
+
+  @override
   String get chatSharedNoMediaTitle => 'No media yet';
 
   @override
@@ -4323,12 +4426,36 @@ class AppLocalizationsEn extends AppLocalizations {
       'Documents and archives from this chat will appear here.';
 
   @override
+  String get chatSharedNoVoiceTitle => 'No voice messages yet';
+
+  @override
+  String get chatSharedNoVoiceSubtitle =>
+      'Voice messages from this chat will appear here.';
+
+  @override
   String chatSharedFileFallback(Object id) {
     return 'File $id';
   }
 
   @override
   String get chatSharedUnknownFile => 'Unknown file';
+
+  @override
+  String get chatSharedGoToMessageAction => 'Go to message';
+
+  @override
+  String get chatExternalLinkTitle => 'Open external link?';
+
+  @override
+  String chatExternalLinkMessage(Object url) {
+    return 'This link opens a third-party resource:\n$url';
+  }
+
+  @override
+  String get chatExternalLinkOpenAction => 'Open';
+
+  @override
+  String get chatExternalLinkOpenFailed => 'Could not open this link.';
 
   @override
   String get chatSharedLoadFailed => 'Could not load content';

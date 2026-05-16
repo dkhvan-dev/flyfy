@@ -22,9 +22,13 @@ class ChatParticipantsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final participants = _orderedParticipants;
     final organizer = participants.where((p) => p.role == 'admin').firstOrNull;
-    final joined = participants
-        .where((p) => organizer == null || p.userId != organizer.userId)
-        .toList(growable: false);
+    final currentUserIsOrganizer =
+        organizer?.userId.trim() == currentUserId.trim();
+    final joined = _currentUserFirstJoinedParticipants(
+      participants: participants,
+      organizer: organizer,
+      currentUserIsOrganizer: currentUserIsOrganizer,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFF1d1208),
@@ -115,6 +119,28 @@ class ChatParticipantsScreen extends StatelessWidget {
       return a.joinedAt.compareTo(b.joinedAt);
     });
     return items;
+  }
+
+  List<ParticipantInfo> _currentUserFirstJoinedParticipants({
+    required List<ParticipantInfo> participants,
+    required ParticipantInfo? organizer,
+    required bool currentUserIsOrganizer,
+  }) {
+    final joined = participants
+        .where((p) => organizer == null || p.userId != organizer.userId)
+        .toList(growable: false);
+    final currentUserId = this.currentUserId.trim();
+    if (currentUserIsOrganizer || currentUserId.isEmpty) return joined;
+
+    final currentParticipant = joined
+        .where((participant) => participant.userId.trim() == currentUserId)
+        .firstOrNull;
+    if (currentParticipant == null) return joined;
+
+    final others = joined
+        .where((participant) => participant.userId.trim() != currentUserId)
+        .toList(growable: false);
+    return [currentParticipant, ...others];
   }
 
   void _openParticipantProfile(

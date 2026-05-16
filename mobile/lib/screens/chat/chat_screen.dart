@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,8 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../core/files/chat_file_cache.dart';
 import '../../core/network/dio_error_mapper.dart';
@@ -25,6 +28,7 @@ import '../../core/ui/error_dialog.dart';
 import '../../features/chat/models/conversation_vm.dart';
 import '../../features/chat/models/message_vm.dart';
 import '../../features/chat/models/sticker_pack_vm.dart';
+import '../../features/chat/utils/chat_link_utils.dart';
 import '../../features/chat/utils/chat_presence_status.dart';
 import '../../features/chat/utils/sticker_pack_ordering.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -35,13 +39,21 @@ import 'chat_camera_screen.dart';
 import 'chat_image_viewer_screen.dart';
 import 'chat_participants_screen.dart';
 import 'chat_shared_content_screen.dart';
+import 'chat_video_viewer_screen.dart';
+import 'widgets/chat_video_preview.dart';
+import 'widgets/chat_voice_attachment_player.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, this.conversationId, this.activityId})
-      : assert(conversationId != null || activityId != null);
+  const ChatScreen({
+    super.key,
+    this.conversationId,
+    this.activityId,
+    this.initialMessageId,
+  }) : assert(conversationId != null || activityId != null);
 
   final String? conversationId;
   final String? activityId;
+  final String? initialMessageId;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -52,6 +64,7 @@ class _ChatScreenState extends State<ChatScreen> {
   static const _maxChatStickerBytes = 5 * 1024 * 1024;
   static const _stickerImageWarmupLimit = 180;
   static const _stickerImageWarmupConcurrency = 6;
+  static const _messageActionSheetMaxHeightFactor = 0.82;
 
   final _fileApi = FileApi();
   final _stickerApi = StickerApi();
@@ -87,6 +100,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _stickerWarmLocale;
   StickerPackVm? _customStickerPack;
   Future<StickerPackVm>? _customStickerPackLoad;
+  bool _initialMessageScrollHandled = false;
 
   @override
   void initState() {
@@ -163,6 +177,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markVisibleMessagesAsRead();
+      _scheduleInitialMessageScroll();
     });
   }
 
@@ -190,6 +205,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty && attachments.isEmpty) return;
 
     final l10n = AppLocalizations.of(context)!;
+    final chatProvider = context.read<ChatProvider>();
+
     final fileIds = <String>[];
 
     try {
@@ -212,14 +229,12 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       }
 
-      if (!mounted) return;
-
-      final sent = await context.read<ChatProvider>().sendMessage(
-            text,
-            type: fileIds.isEmpty ? 'text' : 'file',
-            fileIds: fileIds,
-            replyToMessageId: replyToMessageId,
-          );
+      final sent = await chatProvider.sendMessage(
+        text,
+        type: fileIds.isEmpty ? 'text' : 'file',
+        fileIds: fileIds,
+        replyToMessageId: replyToMessageId,
+      );
 
       if (!mounted || !sent) return;
 
@@ -231,7 +246,7 @@ class _ChatScreenState extends State<ChatScreen> {
       for (final attachment in attachments) {
         unawaited(_deleteLocalAttachmentFile(attachment));
       }
-      context.read<ChatProvider>().markAsRead();
+      chatProvider.markAsRead();
     } catch (e) {
       if (!mounted) return;
       final message = e is DioException
@@ -258,6 +273,7 @@ class _ChatScreenState extends State<ChatScreen> {
     FocusScope.of(context).unfocus();
     _hideComposerPanel();
     final l10n = AppLocalizations.of(context)!;
+
     try {
       final attachments = <_PickedChatAttachment>[];
 
@@ -479,6 +495,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     final l10n = AppLocalizations.of(context)!;
+
     try {
       final item = await _clipboardMediaService.readImage();
       if (!mounted) return;
@@ -1125,6 +1142,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<bool> _sendSticker(StickerVm sticker) async {
+    final l10n = AppLocalizations.of(context)!;
     final stickerId = sticker.id.trim();
     if (stickerId.isEmpty || _attachmentUploading) return false;
     if (!_canSendInActiveConversation()) {
@@ -1143,7 +1161,6 @@ class _ChatScreenState extends State<ChatScreen> {
       return true;
     }
 
-    final l10n = AppLocalizations.of(context)!;
     await showErrorDialog(
       context,
       title: l10n.error,
@@ -1190,6 +1207,58 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  Future<void> _handleMessageLinkTap(String rawUrl) async {
+    final internalRoute = internalAppRouteForChatUrl(rawUrl);
+    if (internalRoute != null) {
+      context.push(internalRoute);
+      return;
+    }
+
+    final uri = externalUriForChatUrl(rawUrl);
+    if (uri == null) return;
+
+    final confirmed = await _confirmExternalLinkOpen(uri);
+    if (!mounted || !confirmed) return;
+
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!mounted || opened) return;
+
+    await showErrorDialog(
+      context,
+      title: AppLocalizations.of(context)!.error,
+      message: AppLocalizations.of(context)!.chatExternalLinkOpenFailed,
+    );
+  }
+
+  Future<bool> _confirmExternalLinkOpen(Uri uri) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1d120b),
+        title: Text(
+          l10n.chatExternalLinkTitle,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          l10n.chatExternalLinkMessage(uri.toString()),
+          style: const TextStyle(color: Color(0xFFf5ede6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.chatExternalLinkOpenAction),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   Future<void> _showMessageActions(MessageVm message) async {
     if (message.isSystem || message.isDeleted) return;
 
@@ -1202,92 +1271,178 @@ class _ChatScreenState extends State<ChatScreen> {
     final canDelete = message.senderUserId == currentUserId;
     final canManagePins = _canManagePins(conversation, currentUserId);
     final canReact = conversation.canSendNow;
+    final canCopy = message.content.trim().isNotEmpty;
+    const canForward = true;
     final isPinned = _isMessagePinned(conversation, message.id);
-    if (!canReact && !canDelete && !canManagePins) {
-      return;
-    }
+    final reactionInfos = _reactionInfosForMessage(message, conversation);
+    final readReceipts = _readReceiptsForMessage(
+      message,
+      conversation,
+      currentUserId,
+    );
+    final hasStatusPreview = message.isForwarded ||
+        message.forwardCount > 0 ||
+        reactionInfos.isNotEmpty ||
+        readReceipts.isNotEmpty;
 
     final l10n = AppLocalizations.of(context)!;
     final action = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
       isDismissible: true,
       backgroundColor: const Color(0xFF1d120b),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (canReact) ...[
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l10n.chatReactionSheetTitle,
-                    style: TextStyle(
-                      fontSize: _scale(context, 13),
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white.withValues(alpha: 0.58),
+      builder: (sheetContext) {
+        final maxHeight = MediaQuery.sizeOf(sheetContext).height *
+            _messageActionSheetMaxHeightFactor;
+
+        return SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasStatusPreview) ...[
+                      _MessageStatusPreview(
+                        message: message,
+                        reactionInfos: reactionInfos,
+                        readReceipts: readReceipts,
+                        onReactionSummaryTap: reactionInfos.isEmpty
+                            ? null
+                            : () =>
+                                Navigator.pop(sheetContext, 'reaction_users'),
+                        onReadReceiptsTap: readReceipts.isEmpty
+                            ? null
+                            : () =>
+                                Navigator.pop(sheetContext, 'read_receipts'),
+                      ),
+                      SizedBox(height: _scale(context, 12)),
+                      Divider(color: Colors.white.withValues(alpha: 0.08)),
+                      SizedBox(height: _scale(context, 4)),
+                    ],
+                    if (canReact) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          l10n.chatReactionSheetTitle,
+                          style: TextStyle(
+                            fontSize: _scale(context, 13),
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white.withValues(alpha: 0.58),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: _scale(context, 12)),
+                      _ReactionPickerRow(
+                        selectedEmoji: message.reactions
+                            .where((reaction) => reaction.reactedByMe)
+                            .firstOrNull
+                            ?.emoji,
+                        onSelected: (emoji) =>
+                            Navigator.pop(sheetContext, 'reaction:$emoji'),
+                      ),
+                      SizedBox(height: _scale(context, 12)),
+                      Divider(color: Colors.white.withValues(alpha: 0.08)),
+                      SizedBox(height: _scale(context, 4)),
+                    ],
+                    if (canCopy)
+                      ListTile(
+                        leading: const Icon(
+                          Icons.copy_rounded,
+                          color: AppColors.accent,
+                        ),
+                        title: Text(
+                          l10n.chatCopyAction,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        onTap: () => Navigator.pop(sheetContext, 'copy'),
+                      ),
+                    if (canForward)
+                      ListTile(
+                        leading: const Icon(
+                          Icons.forward_rounded,
+                          color: AppColors.accent,
+                        ),
+                        title: Text(
+                          l10n.chatForwardAction,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        onTap: () => Navigator.pop(sheetContext, 'forward'),
+                      ),
+                    if (canManagePins)
+                      ListTile(
+                        leading: Icon(
+                          isPinned
+                              ? Icons.push_pin_outlined
+                              : Icons.push_pin_rounded,
+                          color: AppColors.accent,
+                        ),
+                        title: Text(
+                          isPinned ? l10n.chatUnpinAction : l10n.chatPinAction,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        onTap: () => Navigator.pop(
+                          sheetContext,
+                          isPinned ? 'unpin' : 'pin',
+                        ),
+                      ),
+                    if (canDelete)
+                      ListTile(
+                        leading: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Color(0xFFff6b5f),
+                        ),
+                        title: Text(
+                          l10n.chatDeleteAction,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        onTap: () => Navigator.pop(sheetContext, 'delete'),
+                      ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      child: Text(
+                        l10n.cancelButton,
+                        style: const TextStyle(color: AppColors.accent),
+                      ),
                     ),
-                  ),
-                ),
-                SizedBox(height: _scale(context, 12)),
-                _ReactionPickerRow(
-                  selectedEmoji: message.reactions
-                      .where((reaction) => reaction.reactedByMe)
-                      .firstOrNull
-                      ?.emoji,
-                  onSelected: (emoji) =>
-                      Navigator.pop(sheetContext, 'reaction:$emoji'),
-                ),
-                if (canManagePins || canDelete) ...[
-                  SizedBox(height: _scale(context, 12)),
-                  Divider(color: Colors.white.withValues(alpha: 0.08)),
-                  SizedBox(height: _scale(context, 4)),
-                ],
-              ],
-              if (canManagePins)
-                ListTile(
-                  leading: Icon(
-                    isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
-                    color: AppColors.accent,
-                  ),
-                  title: Text(
-                    isPinned ? l10n.chatUnpinAction : l10n.chatPinAction,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  onTap: () =>
-                      Navigator.pop(sheetContext, isPinned ? 'unpin' : 'pin'),
-                ),
-              if (canDelete)
-                ListTile(
-                  leading: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: Color(0xFFff6b5f),
-                  ),
-                  title: Text(
-                    l10n.chatDeleteAction,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  onTap: () => Navigator.pop(sheetContext, 'delete'),
-                ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => Navigator.pop(sheetContext),
-                child: Text(
-                  l10n.cancelButton,
-                  style: const TextStyle(color: AppColors.accent),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
 
     if (!mounted || action == null) return;
+
+    if (action == 'copy') {
+      await _copyMessageText(message);
+      return;
+    }
+
+    if (action == 'forward') {
+      await _showForwardMessageSheet(message);
+      return;
+    }
+
+    if (action == 'read_receipts') {
+      await _showReadReceiptsSheet(readReceipts);
+      return;
+    }
+
+    if (action == 'reaction_users') {
+      await _showReactionUsersSheet(reactionInfos);
+      return;
+    }
 
     if (action.startsWith('reaction:')) {
       final emoji = action.substring('reaction:'.length);
@@ -1336,6 +1491,225 @@ class _ChatScreenState extends State<ChatScreen> {
           : l10n.chatDeleteFailed;
       await showErrorDialog(context, title: l10n.error, message: messageText);
     }
+  }
+
+  Future<void> _copyMessageText(MessageVm message) async {
+    final text = message.content.trim();
+    if (text.isEmpty) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.chatMessageCopied),
+        backgroundColor: const Color(0xFF3a2415),
+      ),
+    );
+  }
+
+  Future<void> _showForwardMessageSheet(MessageVm message) async {
+    final chat = context.read<ChatProvider>();
+    final l10n = AppLocalizations.of(context)!;
+
+    if (chat.conversations.isEmpty && !chat.conversationsLoading) {
+      await chat.loadConversations();
+    }
+    if (!mounted) return;
+
+    final currentUserId =
+        context.read<SessionProvider>().profile?.userId.trim() ?? '';
+    final selected = await showModalBottomSheet<ConversationVm>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1d120b),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => _ForwardMessageSheet(
+        conversations: chat.conversations
+            .where((conversation) => conversation.canSendNow)
+            .toList(growable: false),
+        currentUserId: currentUserId,
+        activeConversationId: chat.activeConversation?.id ?? '',
+      ),
+    );
+    if (!mounted || selected == null) return;
+
+    final forwarded =
+        await context.read<ChatProvider>().forwardMessageToConversation(
+              message: message,
+              targetConversationId: selected.id,
+            );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          forwarded ? l10n.chatForwardSuccess : l10n.chatForwardFailed,
+        ),
+        backgroundColor: const Color(0xFF3a2415),
+      ),
+    );
+  }
+
+  Future<void> _showReadReceiptsSheet(List<_ReadReceiptInfo> receipts) async {
+    if (receipts.isEmpty) return;
+
+    final selectedUserId = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1d120b),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => _ReadReceiptsSheet(receipts: receipts),
+    );
+    if (!mounted || selectedUserId == null) return;
+    _openUserProfile(selectedUserId);
+  }
+
+  Future<void> _showReactionUsersSheet(
+      List<_ReactionInfo> reactionInfos) async {
+    if (reactionInfos.isEmpty) return;
+
+    final selectedUserId = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1d120b),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) =>
+          _ReactionUsersSheet(reactionInfos: reactionInfos),
+    );
+    if (!mounted || selectedUserId == null) return;
+    _openUserProfile(selectedUserId);
+  }
+
+  List<_ReactionInfo> _reactionInfosForMessage(
+    MessageVm message,
+    ConversationDetail conversation,
+  ) {
+    if (message.id.trim().isEmpty || message.reactions.isEmpty) {
+      return const [];
+    }
+
+    final participantsByUserId = {
+      for (final participant in conversation.participants)
+        participant.userId.trim(): participant,
+    };
+    final seenUserIds = <String>{};
+    final infos = <_ReactionInfo>[];
+    for (final reaction in message.reactions) {
+      final emoji = reaction.emoji.trim();
+      if (emoji.isEmpty || reaction.count <= 0) continue;
+      for (final reactionUser in reaction.users) {
+        final userId = reactionUser.userId.trim();
+        if (userId.isEmpty || !seenUserIds.add(userId)) continue;
+        final participant = participantsByUserId[userId];
+        if (participant == null) continue;
+        infos.add(
+          _ReactionInfo(
+            participant: participant,
+            emoji: emoji,
+            reactedAt: reactionUser.reactedAt,
+          ),
+        );
+      }
+    }
+    if (infos.isNotEmpty) {
+      infos.sort((a, b) => b.reactedAt.compareTo(a.reactedAt));
+      return infos;
+    }
+
+    seenUserIds.clear();
+    for (final reaction in message.reactions) {
+      final emoji = reaction.emoji.trim();
+      if (emoji.isEmpty || reaction.count <= 0) continue;
+      for (final rawUserId in reaction.userIds) {
+        final userId = rawUserId.trim();
+        if (userId.isEmpty || !seenUserIds.add(userId)) continue;
+        final participant = participantsByUserId[userId];
+        if (participant == null) continue;
+        infos.add(
+          _ReactionInfo(
+            participant: participant,
+            emoji: emoji,
+            reactedAt: message.sentAt,
+          ),
+        );
+      }
+    }
+    return infos;
+  }
+
+  List<_ReadReceiptInfo> _readReceiptsForMessage(
+    MessageVm message,
+    ConversationDetail conversation,
+    String currentUserId,
+  ) {
+    if (currentUserId.trim().isEmpty ||
+        message.senderUserId != currentUserId ||
+        message.readReceipts.isEmpty) {
+      return const [];
+    }
+
+    final participantsByUserId = {
+      for (final participant in conversation.participants)
+        participant.userId.trim(): participant,
+    };
+    final reactionEmojiByUserId = _reactionEmojiByUserIdForMessage(message);
+    final receipts = <_ReadReceiptInfo>[];
+    for (final receipt in message.readReceipts) {
+      final userId = receipt.userId.trim();
+      if (userId.isEmpty || userId == currentUserId) continue;
+      final participant = participantsByUserId[userId];
+      if (participant == null) continue;
+      receipts.add(
+        _ReadReceiptInfo(
+          participant: participant,
+          readAt: receipt.readAt,
+          reactionEmoji: _reactionEmojiForUserId(
+            reactionEmojiByUserId,
+            userId,
+          ),
+        ),
+      );
+    }
+    receipts.sort((a, b) {
+      final reactionPriority = _readReceiptReactionPriority(
+        a,
+      ).compareTo(_readReceiptReactionPriority(b));
+      if (reactionPriority != 0) return reactionPriority;
+      return b.readAt.compareTo(a.readAt);
+    });
+    return receipts;
+  }
+
+  Map<String, String> _reactionEmojiByUserIdForMessage(MessageVm message) {
+    final reactionEmojiByUserId = <String, String>{};
+    for (final reaction in message.reactions) {
+      final emoji = reaction.emoji.trim();
+      if (emoji.isEmpty || reaction.count <= 0) continue;
+      for (final userId in reaction.userIds) {
+        final normalizedUserId = userId.trim();
+        if (normalizedUserId.isEmpty) continue;
+        reactionEmojiByUserId.putIfAbsent(normalizedUserId, () => emoji);
+      }
+    }
+    return reactionEmojiByUserId;
+  }
+
+  String? _reactionEmojiForUserId(
+    Map<String, String> reactionEmojiByUserId,
+    String userId,
+  ) {
+    final emoji = reactionEmojiByUserId[userId.trim()]?.trim();
+    return emoji == null || emoji.isEmpty ? null : emoji;
+  }
+
+  int _readReceiptReactionPriority(_ReadReceiptInfo receipt) {
+    return receipt.reactionEmoji?.trim().isNotEmpty == true ? 0 : 1;
   }
 
   Future<void> _toggleMessageReaction(String messageId, String emoji) async {
@@ -1427,6 +1801,17 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  void _scheduleInitialMessageScroll() {
+    if (_initialMessageScrollHandled) return;
+    final messageId = widget.initialMessageId?.trim() ?? '';
+    if (messageId.isEmpty) return;
+    _initialMessageScrollHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_scrollToMessage(messageId));
+    });
+  }
+
   void _openParticipants(
     ConversationDetail conversation,
     String currentUserId,
@@ -1441,13 +1826,13 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _openSharedContent(
+  Future<void> _openSharedContent(
     ConversationDetail conversation,
     String currentUserId,
     List<MessageVm> messages,
-  ) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
+  ) async {
+    final result = await Navigator.of(context).push<ChatSharedContentResult>(
+      MaterialPageRoute<ChatSharedContentResult>(
         builder: (_) => ChatSharedContentScreen(
           conversation: conversation,
           currentUserId: currentUserId,
@@ -1455,6 +1840,23 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
+    if (!mounted || result == null) return;
+    await _scrollToMessage(result.messageId);
+  }
+
+  void _openUserProfile(String rawUserId) {
+    final userId = rawUserId.trim();
+    if (userId.isEmpty) return;
+
+    final currentUserId =
+        context.read<SessionProvider>().profile?.userId.trim() ?? '';
+    if (currentUserId.isNotEmpty && userId == currentUserId) {
+      context.push('/profile');
+      return;
+    }
+
+    final encodedUserId = Uri.encodeComponent(userId);
+    context.push('/users/$encodedUserId/profile');
   }
 
   @override
@@ -1501,8 +1903,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 conversation: conv,
                 currentUserId: currentUserId,
                 onParticipantsTap: () => _openParticipants(conv, currentUserId),
-                onSharedContentTap: () =>
-                    _openSharedContent(conv, currentUserId, chat.messages),
+                onDirectPeerAvatarTap: (userId) => _openUserProfile(userId),
+                onSharedContentTap: () => unawaited(
+                  _openSharedContent(conv, currentUserId, chat.messages),
+                ),
               ),
               if (conv.pinnedMessages.isNotEmpty)
                 _PinnedMessagesBar(
@@ -1530,6 +1934,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       unawaited(_toggleMessageReaction(message.id, emoji)),
                   onReplyPreviewTap: (messageId) =>
                       unawaited(_scrollToMessage(messageId)),
+                  onAvatarTap: (userId) => _openUserProfile(userId),
+                  onMessageLinkTap: (url) =>
+                      unawaited(_handleMessageLinkTap(url)),
                 ),
               ),
               if (!messagingClosed)
@@ -1710,12 +2117,14 @@ class _ChatTopBar extends StatelessWidget {
     required this.conversation,
     required this.currentUserId,
     required this.onParticipantsTap,
+    required this.onDirectPeerAvatarTap,
     required this.onSharedContentTap,
   });
 
   final ConversationDetail conversation;
   final String currentUserId;
   final VoidCallback onParticipantsTap;
+  final ValueChanged<String> onDirectPeerAvatarTap;
   final VoidCallback onSharedContentTap;
 
   @override
@@ -1759,6 +2168,7 @@ class _ChatTopBar extends StatelessWidget {
               conversation: conversation,
               currentUserId: currentUserId,
               onTap: onSharedContentTap,
+              onDirectPeerAvatarTap: onDirectPeerAvatarTap,
             )
           else ...[
             _GroupTopBarContent(
@@ -1810,11 +2220,13 @@ class _DirectTopBarContent extends StatelessWidget {
     required this.conversation,
     required this.currentUserId,
     required this.onTap,
+    required this.onDirectPeerAvatarTap,
   });
 
   final ConversationDetail conversation;
   final String currentUserId;
   final VoidCallback onTap;
+  final ValueChanged<String> onDirectPeerAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1822,6 +2234,12 @@ class _DirectTopBarContent extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final isOnline = other?.isOnline ?? false;
     final statusLabel = chatPresenceStatusLabel(l10n, other);
+    final peerUserId = other?.userId.trim() ?? '';
+    final avatar = _ChatAvatar(
+      size: _scale(context, 48),
+      name: other?.displayName ?? '',
+      avatarFileId: other?.avatarFileId,
+    );
 
     return Expanded(
       child: GestureDetector(
@@ -1829,11 +2247,14 @@ class _DirectTopBarContent extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: Row(
           children: [
-            _ChatAvatar(
-              size: _scale(context, 48),
-              name: other?.displayName ?? '',
-              avatarFileId: other?.avatarFileId,
-            ),
+            if (peerUserId.isEmpty)
+              avatar
+            else
+              GestureDetector(
+                onTap: () => onDirectPeerAvatarTap(peerUserId),
+                behavior: HitTestBehavior.opaque,
+                child: avatar,
+              ),
             SizedBox(width: _scale(context, 12)),
             Expanded(
               child: Column(
@@ -2113,6 +2534,8 @@ class _MessageList extends StatelessWidget {
     required this.onMessageLongPress,
     required this.onReactionSelected,
     required this.onReplyPreviewTap,
+    required this.onAvatarTap,
+    required this.onMessageLinkTap,
   });
 
   final List<MessageVm> messages;
@@ -2126,6 +2549,8 @@ class _MessageList extends StatelessWidget {
   final ValueChanged<MessageVm> onMessageLongPress;
   final void Function(MessageVm message, String emoji) onReactionSelected;
   final ValueChanged<String> onReplyPreviewTap;
+  final ValueChanged<String> onAvatarTap;
+  final ValueChanged<String> onMessageLinkTap;
 
   @override
   Widget build(BuildContext context) {
@@ -2197,6 +2622,8 @@ class _MessageList extends StatelessWidget {
           onReplyPreviewTap: msg.replyToMessageId == null
               ? null
               : () => onReplyPreviewTap(msg.replyToMessageId!),
+          onAvatarTap: onAvatarTap,
+          onLinkTap: onMessageLinkTap,
           l10n: l10n,
         ),
       );
@@ -2760,6 +3187,917 @@ class _ReactionChoiceButton extends StatelessWidget {
   }
 }
 
+class _MessageStatusPreview extends StatelessWidget {
+  const _MessageStatusPreview({
+    required this.message,
+    required this.reactionInfos,
+    required this.readReceipts,
+    required this.onReactionSummaryTap,
+    required this.onReadReceiptsTap,
+  });
+
+  final MessageVm message;
+  final List<_ReactionInfo> reactionInfos;
+  final List<_ReadReceiptInfo> readReceipts;
+  final VoidCallback? onReactionSummaryTap;
+  final VoidCallback? onReadReceiptsTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final hasForwardInfo = message.isForwarded || message.forwardCount > 0;
+    final hasDetails =
+        hasForwardInfo || reactionInfos.isNotEmpty || readReceipts.isNotEmpty;
+
+    if (!hasDetails) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hasForwardInfo)
+          _StatusDetailCard(
+            child: Column(
+              children: [
+                if (message.isForwarded)
+                  _StatusMetricCard(
+                    icon: Icons.forward_rounded,
+                    text: l10n.chatForwardedFrom(
+                      message.forwardedFromSenderName?.trim().isNotEmpty == true
+                          ? message.forwardedFromSenderName!.trim()
+                          : l10n.chatForwardedLabel,
+                    ),
+                  ),
+                if (message.isForwarded && message.forwardCount > 0)
+                  SizedBox(height: _scale(context, 8)),
+                if (message.forwardCount > 0)
+                  _StatusMetricCard(
+                    icon: Icons.repeat_rounded,
+                    text: l10n.chatForwardCount(message.forwardCount),
+                  ),
+              ],
+            ),
+          ),
+        if (reactionInfos.isNotEmpty) ...[
+          if (hasForwardInfo) SizedBox(height: _scale(context, 10)),
+          _ReactionSummary(
+            reactionInfos: reactionInfos,
+            onTap: onReactionSummaryTap,
+          ),
+        ],
+        if (reactionInfos.isEmpty && readReceipts.isNotEmpty) ...[
+          if (hasForwardInfo) SizedBox(height: _scale(context, 10)),
+          _ReadReceiptSummary(
+            receipts: readReceipts,
+            onTap: onReadReceiptsTap,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ReactionInfo {
+  const _ReactionInfo({
+    required this.participant,
+    required this.emoji,
+    required this.reactedAt,
+  });
+
+  final ParticipantInfo participant;
+  final String emoji;
+  final DateTime reactedAt;
+}
+
+class _ReadReceiptInfo {
+  const _ReadReceiptInfo({
+    required this.participant,
+    required this.readAt,
+    this.reactionEmoji,
+  });
+
+  final ParticipantInfo participant;
+  final DateTime readAt;
+  final String? reactionEmoji;
+}
+
+class _StatusDetailCard extends StatelessWidget {
+  const _StatusDetailCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(_scale(context, 12)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(_scale(context, 18)),
+        color: Colors.white.withValues(alpha: 0.055),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.075)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: _scale(context, 18),
+            offset: Offset(0, _scale(context, 8)),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _StatusMetricCard extends StatelessWidget {
+  const _StatusMetricCard({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: _scale(context, 30),
+          height: _scale(context, 30),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.accent.withValues(alpha: 0.16),
+          ),
+          child: Icon(icon, size: _scale(context, 16), color: AppColors.accent),
+        ),
+        SizedBox(width: _scale(context, 10)),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: _scale(context, 13),
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFFf3dfc8),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReactionSummary extends StatelessWidget {
+  const _ReactionSummary({
+    required this.reactionInfos,
+    required this.onTap,
+  });
+
+  final List<_ReactionInfo> reactionInfos;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = reactionInfos.take(3).toList(growable: false);
+    final l10n = AppLocalizations.of(context)!;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: _scale(context, 12),
+          vertical: _scale(context, 10),
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(_scale(context, 16)),
+          color: Colors.white.withValues(alpha: 0.06),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.add_reaction_rounded,
+              size: _scale(context, 17),
+              color: AppColors.accent,
+            ),
+            SizedBox(width: _scale(context, 8)),
+            Expanded(
+              child: Text(
+                l10n.chatReactionCount(reactionInfos.length),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: _scale(context, 13),
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFFf3dfc8),
+                ),
+              ),
+            ),
+            if (recent.isNotEmpty) ...[
+              SizedBox(width: _scale(context, 10)),
+              SizedBox(
+                width: _scale(context, 26 + (recent.length - 1) * 18),
+                height: _scale(context, 28),
+                child: Stack(
+                  children: [
+                    for (var i = 0; i < recent.length; i++)
+                      Positioned(
+                        right: _scale(context, i * 18),
+                        child: _ChatAvatar(
+                          size: _scale(context, 28),
+                          name: recent[i].participant.displayName,
+                          avatarFileId: recent[i].participant.avatarFileId,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(width: _scale(context, 8)),
+            Icon(
+              Icons.keyboard_arrow_right_rounded,
+              size: _scale(context, 20),
+              color: Colors.white.withValues(alpha: 0.48),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReadReceiptSummary extends StatelessWidget {
+  const _ReadReceiptSummary({
+    required this.receipts,
+    required this.onTap,
+  });
+
+  final List<_ReadReceiptInfo> receipts;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = receipts.take(3).toList(growable: false);
+    final l10n = AppLocalizations.of(context)!;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: _scale(context, 12),
+          vertical: _scale(context, 10),
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(_scale(context, 16)),
+          color: Colors.white.withValues(alpha: 0.06),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.done_all_rounded,
+              size: _scale(context, 17),
+              color: AppColors.accent,
+            ),
+            SizedBox(width: _scale(context, 8)),
+            Expanded(
+              child: Text(
+                l10n.chatReadByCount(receipts.length),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: _scale(context, 13),
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFFf3dfc8),
+                ),
+              ),
+            ),
+            if (recent.isNotEmpty) ...[
+              SizedBox(width: _scale(context, 10)),
+              SizedBox(
+                width: _scale(context, 26 + (recent.length - 1) * 18),
+                height: _scale(context, 28),
+                child: Stack(
+                  children: [
+                    for (var i = 0; i < recent.length; i++)
+                      Positioned(
+                        right: _scale(context, i * 18),
+                        child: _ChatAvatar(
+                          size: _scale(context, 28),
+                          name: recent[i].participant.displayName,
+                          avatarFileId: recent[i].participant.avatarFileId,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(width: _scale(context, 8)),
+            Icon(
+              Icons.keyboard_arrow_right_rounded,
+              size: _scale(context, 20),
+              color: Colors.white.withValues(alpha: 0.48),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReactionUsersSheet extends StatelessWidget {
+  const _ReactionUsersSheet({required this.reactionInfos});
+
+  final List<_ReactionInfo> reactionInfos;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.72;
+
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            _scale(context, 20),
+            _scale(context, 12),
+            _scale(context, 20),
+            _scale(context, 16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: _scale(context, 38),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
+                ),
+              ),
+              SizedBox(height: _scale(context, 18)),
+              Text(
+                l10n.chatReactionsByTitle,
+                style: TextStyle(
+                  fontSize: _scale(context, 20),
+                  height: 1.1,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFFf5ede6),
+                ),
+              ),
+              SizedBox(height: _scale(context, 14)),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: reactionInfos.length,
+                  separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                  itemBuilder: (context, index) {
+                    final reactionInfo = reactionInfos[index];
+                    return _ReactionUserTile(reactionInfo: reactionInfo);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReactionUserTile extends StatelessWidget {
+  const _ReactionUserTile({required this.reactionInfo});
+
+  final _ReactionInfo reactionInfo;
+
+  @override
+  Widget build(BuildContext context) {
+    final participant = reactionInfo.participant;
+    final title = participant.displayName.trim().isEmpty
+        ? participant.userId
+        : participant.displayName.trim();
+
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(vertical: _scale(context, 8)),
+      leading: _ChatAvatar(
+        size: _scale(context, 46),
+        name: title,
+        avatarFileId: participant.avatarFileId,
+      ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: _scale(context, 15),
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFFf5ede6),
+              ),
+            ),
+          ),
+          SizedBox(width: _scale(context, 8)),
+          _ReadReceiptReactionBadge(emoji: reactionInfo.emoji),
+        ],
+      ),
+      subtitle: Padding(
+        padding: EdgeInsets.only(top: _scale(context, 3)),
+        child: Text(
+          _formatReactionAt(context, reactionInfo.reactedAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: _scale(context, 12),
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withValues(alpha: 0.52),
+          ),
+        ),
+      ),
+      onTap: () => Navigator.of(context).pop(participant.userId),
+    );
+  }
+}
+
+class _ReadReceiptsSheet extends StatelessWidget {
+  const _ReadReceiptsSheet({required this.receipts});
+
+  final List<_ReadReceiptInfo> receipts;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.72;
+
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            _scale(context, 20),
+            _scale(context, 12),
+            _scale(context, 20),
+            _scale(context, 16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: _scale(context, 38),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
+                ),
+              ),
+              SizedBox(height: _scale(context, 18)),
+              Text(
+                l10n.chatReadByTitle,
+                style: TextStyle(
+                  fontSize: _scale(context, 20),
+                  height: 1.1,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFFf5ede6),
+                ),
+              ),
+              SizedBox(height: _scale(context, 14)),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: receipts.length,
+                  separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                  itemBuilder: (context, index) {
+                    final receipt = receipts[index];
+                    return _ReadReceiptTile(receipt: receipt);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReadReceiptTile extends StatelessWidget {
+  const _ReadReceiptTile({required this.receipt});
+
+  final _ReadReceiptInfo receipt;
+
+  @override
+  Widget build(BuildContext context) {
+    final participant = receipt.participant;
+    final title = participant.displayName.trim().isEmpty
+        ? participant.userId
+        : participant.displayName.trim();
+
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(vertical: _scale(context, 8)),
+      leading: _ChatAvatar(
+        size: _scale(context, 46),
+        name: title,
+        avatarFileId: participant.avatarFileId,
+      ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: _scale(context, 15),
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFFf5ede6),
+              ),
+            ),
+          ),
+          if (receipt.reactionEmoji != null) ...[
+            SizedBox(width: _scale(context, 8)),
+            _ReadReceiptReactionBadge(emoji: receipt.reactionEmoji!),
+          ],
+        ],
+      ),
+      subtitle: Padding(
+        padding: EdgeInsets.only(top: _scale(context, 3)),
+        child: Text(
+          _formatReadReceiptAt(context, receipt.readAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: _scale(context, 12),
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withValues(alpha: 0.52),
+          ),
+        ),
+      ),
+      onTap: () => Navigator.of(context).pop(participant.userId),
+    );
+  }
+}
+
+class _ReadReceiptReactionBadge extends StatelessWidget {
+  const _ReadReceiptReactionBadge({required this.emoji});
+
+  final String emoji;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(minWidth: _scale(context, 32)),
+      padding: EdgeInsets.symmetric(
+        horizontal: _scale(context, 8),
+        vertical: _scale(context, 4),
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: AppColors.accent.withValues(alpha: 0.14),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        emoji,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.clip,
+        style: TextStyle(fontSize: _scale(context, 14), height: 1),
+      ),
+    );
+  }
+}
+
+class _ForwardMessageSheet extends StatelessWidget {
+  const _ForwardMessageSheet({
+    required this.conversations,
+    required this.currentUserId,
+    required this.activeConversationId,
+  });
+
+  final List<ConversationVm> conversations;
+  final String currentUserId;
+  final String activeConversationId;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.72;
+
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(18, 12, 18, 18 + bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: Colors.white.withValues(alpha: 0.16),
+                  ),
+                ),
+              ),
+              SizedBox(height: _scale(context, 16)),
+              Text(
+                l10n.chatForwardSheetTitle,
+                style: TextStyle(
+                  fontSize: _scale(context, 20),
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFFf5ede6),
+                ),
+              ),
+              SizedBox(height: _scale(context, 14)),
+              if (conversations.isEmpty)
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: _scale(context, 24)),
+                  child: Center(
+                    child: Text(
+                      l10n.chatNoForwardTargets,
+                      style: TextStyle(
+                        fontSize: _scale(context, 14),
+                        color: Colors.white.withValues(alpha: 0.58),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: conversations.length,
+                    separatorBuilder: (_, __) =>
+                        SizedBox(height: _scale(context, 8)),
+                    itemBuilder: (context, index) {
+                      final conversation = conversations[index];
+                      final title = conversation.displayTitle(currentUserId);
+                      final isCurrent = conversation.id == activeConversationId;
+                      return _ForwardConversationTile(
+                        conversation: conversation,
+                        title: title,
+                        currentUserId: currentUserId,
+                        isCurrent: isCurrent,
+                        onTap: () => Navigator.of(context).pop(conversation),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ForwardConversationTile extends StatelessWidget {
+  const _ForwardConversationTile({
+    required this.conversation,
+    required this.title,
+    required this.currentUserId,
+    required this.isCurrent,
+    required this.onTap,
+  });
+
+  final ConversationVm conversation;
+  final String title;
+  final String currentUserId;
+  final bool isCurrent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.all(_scale(context, 12)),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(_scale(context, 18)),
+          color: isCurrent
+              ? AppColors.accent.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.045),
+          border: Border.all(
+            color: isCurrent
+                ? AppColors.accent.withValues(alpha: 0.28)
+                : Colors.white.withValues(alpha: 0.06),
+          ),
+        ),
+        child: Row(
+          children: [
+            _ChatAvatar(
+              size: _scale(context, 42),
+              name: title,
+              avatarFileId: conversation.displayAvatarFileId(currentUserId),
+            ),
+            SizedBox(width: _scale(context, 12)),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: _scale(context, 15),
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFFf5ede6),
+                ),
+              ),
+            ),
+            SizedBox(width: _scale(context, 10)),
+            Icon(
+              Icons.send_rounded,
+              size: _scale(context, 18),
+              color: AppColors.accent,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ForwardedMessageLabel extends StatelessWidget {
+  const _ForwardedMessageLabel({required this.message});
+
+  final MessageVm message;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final sourceName = message.forwardedFromSenderName?.trim();
+    final text = sourceName == null || sourceName.isEmpty
+        ? l10n.chatForwardedLabel
+        : l10n.chatForwardedFrom(sourceName);
+
+    return Row(
+      children: [
+        Icon(
+          Icons.forward_rounded,
+          size: _scale(context, 15),
+          color: AppColors.accent,
+        ),
+        SizedBox(width: _scale(context, 6)),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: _scale(context, 12),
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFFffd08a),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HyperlinkedMessageText extends StatefulWidget {
+  const _HyperlinkedMessageText({
+    required this.text,
+    required this.style,
+    required this.linkStyle,
+    required this.onLinkTap,
+  });
+
+  final String text;
+  final TextStyle style;
+  final TextStyle linkStyle;
+  final ValueChanged<String> onLinkTap;
+
+  @override
+  State<_HyperlinkedMessageText> createState() =>
+      _HyperlinkedMessageTextState();
+}
+
+class _HyperlinkedMessageTextState extends State<_HyperlinkedMessageText> {
+  List<ChatLinkMatch> _links = const [];
+  final List<TapGestureRecognizer> _recognizers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _rebuildRecognizers();
+  }
+
+  @override
+  void didUpdateWidget(covariant _HyperlinkedMessageText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _rebuildRecognizers();
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposeRecognizers();
+    super.dispose();
+  }
+
+  void _rebuildRecognizers() {
+    _disposeRecognizers();
+    _links = extractChatLinks(widget.text);
+    for (var index = 0; index < _links.length; index++) {
+      final linkIndex = index;
+      _recognizers.add(
+        TapGestureRecognizer()
+          ..onTap = () => widget.onLinkTap(_links[linkIndex].url),
+      );
+    }
+  }
+
+  void _disposeRecognizers() {
+    for (final recognizer in _recognizers) {
+      recognizer.dispose();
+    }
+    _recognizers.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_links.isEmpty) {
+      return Text(widget.text, style: widget.style);
+    }
+
+    final spans = <InlineSpan>[];
+    var cursor = 0;
+    for (var index = 0; index < _links.length; index++) {
+      final link = _links[index];
+      if (link.start > cursor) {
+        spans.add(TextSpan(text: widget.text.substring(cursor, link.start)));
+      }
+      spans.add(
+        TextSpan(
+          text: widget.text.substring(link.start, link.end),
+          style: widget.linkStyle,
+          recognizer: _recognizers[index],
+        ),
+      );
+      cursor = link.end;
+    }
+    if (cursor < widget.text.length) {
+      spans.add(TextSpan(text: widget.text.substring(cursor)));
+    }
+
+    return Text.rich(TextSpan(style: widget.style, children: spans));
+  }
+}
+
+class _ForwardCountBadge extends StatelessWidget {
+  const _ForwardCountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.repeat_rounded,
+          size: _scale(context, 13),
+          color: Colors.white.withValues(alpha: 0.38),
+        ),
+        SizedBox(width: _scale(context, 4)),
+        Text(
+          l10n.chatForwardCount(count),
+          style: TextStyle(
+            fontSize: _scale(context, 11),
+            fontWeight: FontWeight.w700,
+            color: Colors.white.withValues(alpha: 0.38),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _MessageReactionStrip extends StatelessWidget {
   const _MessageReactionStrip({
     required this.reactions,
@@ -2845,6 +4183,8 @@ class _MessageBubble extends StatelessWidget {
     required this.onLongPress,
     required this.onReactionTap,
     required this.onReplyPreviewTap,
+    required this.onAvatarTap,
+    required this.onLinkTap,
     required this.l10n,
   });
 
@@ -2861,6 +4201,8 @@ class _MessageBubble extends StatelessWidget {
   final VoidCallback? onLongPress;
   final ValueChanged<String> onReactionTap;
   final VoidCallback? onReplyPreviewTap;
+  final ValueChanged<String> onAvatarTap;
+  final ValueChanged<String> onLinkTap;
   final AppLocalizations l10n;
 
   @override
@@ -2877,17 +4219,26 @@ class _MessageBubble extends StatelessWidget {
 
     final avatarSize = _scale(context, 44);
     final gap = _scale(context, 10);
+    final senderUserId = message.senderUserId.trim();
+    final avatar = _ChatAvatar(
+      size: avatarSize,
+      name: senderName,
+      avatarFileId:
+          senderParticipant?.avatarFileId ?? message.senderAvatarFileId,
+    );
     final content = KeyedSubtree(
       key: messageKey,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _ChatAvatar(
-            size: avatarSize,
-            name: senderName,
-            avatarFileId:
-                senderParticipant?.avatarFileId ?? message.senderAvatarFileId,
-          ),
+          if (senderUserId.isEmpty)
+            avatar
+          else
+            GestureDetector(
+              onTap: () => onAvatarTap(senderUserId),
+              behavior: HitTestBehavior.opaque,
+              child: avatar,
+            ),
           SizedBox(width: gap),
           Expanded(
             child: Column(
@@ -2997,6 +4348,11 @@ class _MessageBubble extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (!isDeleted && message.isForwarded)
+                        Padding(
+                          padding: EdgeInsets.only(bottom: _scale(context, 10)),
+                          child: _ForwardedMessageLabel(message: message),
+                        ),
                       if (!isDeleted && message.replyToMessageId != null)
                         Padding(
                           padding: EdgeInsets.only(bottom: _scale(context, 12)),
@@ -3046,13 +4402,21 @@ class _MessageBubble extends StatelessWidget {
                           ),
                         )
                       else if (message.content.trim().isNotEmpty)
-                        Text(
-                          message.content,
+                        _HyperlinkedMessageText(
+                          text: message.content,
+                          onLinkTap: onLinkTap,
                           style: TextStyle(
                             fontSize: _scale(context, 16),
                             height: 1.5,
-                            letterSpacing: -0.3,
                             color: Colors.white.withValues(alpha: 0.98),
+                          ),
+                          linkStyle: TextStyle(
+                            fontSize: _scale(context, 16),
+                            height: 1.5,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFFffd08a),
+                            decoration: TextDecoration.underline,
+                            decorationColor: const Color(0xFFffd08a),
                           ),
                         ),
                     ],
@@ -3068,6 +4432,14 @@ class _MessageBubble extends StatelessWidget {
                       reactions: message.reactions,
                       onReactionTap: onReactionTap,
                     ),
+                  ),
+                if (!isDeleted && message.forwardCount > 0)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: _scale(context, 7),
+                      left: _scale(context, 4),
+                    ),
+                    child: _ForwardCountBadge(count: message.forwardCount),
                   ),
                 if (message.isEdited && !isDeleted)
                   Padding(
@@ -3592,238 +4964,28 @@ class _AttachmentTile extends StatelessWidget {
       );
     }
 
-    return _AttachmentFileRow(
-      item: item,
-      showPlay: isVideo,
-      busy: busy,
-      onTap: onTap,
-    );
+    if (isVideo) {
+      return ChatVideoPreview(
+        fileId: item.fileId,
+        borderRadius: _scale(context, 18),
+        aspectRatio: 4 / 3,
+      );
+    }
+
+    return _AttachmentFileRow(item: item, busy: busy, onTap: onTap);
   }
 }
 
-class _VoiceAttachmentPlayer extends StatefulWidget {
+class _VoiceAttachmentPlayer extends StatelessWidget {
   const _VoiceAttachmentPlayer({required this.item});
 
   final _ChatAttachmentViewData item;
 
   @override
-  State<_VoiceAttachmentPlayer> createState() => _VoiceAttachmentPlayerState();
-}
-
-class _VoiceAttachmentPlayerState extends State<_VoiceAttachmentPlayer> {
-  final _fileCache = ChatFileCache();
-  final _player = AudioPlayer();
-  bool _preparing = false;
-  int _prepareGeneration = 0;
-  String? _preparedFileId;
-
-  @override
-  void dispose() {
-    _prepareGeneration++;
-    unawaited(_player.dispose());
-    super.dispose();
-  }
-
-  Future<void> _toggle() async {
-    if (_preparing) {
-      await _stopLoading();
-      return;
-    }
-
-    int? prepareGeneration;
-    try {
-      final completed = _player.processingState == ProcessingState.completed;
-      if (_player.playing && !completed) {
-        await _player.pause();
-        return;
-      }
-
-      if (_preparedFileId != widget.item.fileId) {
-        prepareGeneration = ++_prepareGeneration;
-        setState(() => _preparing = true);
-        final downloaded = await _fileCache.download(
-          widget.item.fileId,
-          metadata: widget.item.metadata,
-        );
-        if (!mounted || prepareGeneration != _prepareGeneration) return;
-        await _player.setFilePath(downloaded.file.path);
-        if (!mounted || prepareGeneration != _prepareGeneration) return;
-        _preparedFileId = widget.item.fileId;
-        setState(() => _preparing = false);
-      }
-      if (_player.processingState == ProcessingState.completed) {
-        await _player.seek(Duration.zero);
-      }
-
-      if (!mounted || _preparing) return;
-      unawaited(_playPrepared(_prepareGeneration));
-    } catch (_) {
-      if (!mounted) return;
-      await showErrorDialog(
-        context,
-        title: AppLocalizations.of(context)!.error,
-        message: AppLocalizations.of(context)!.chatVoicePlaybackFailed,
-      );
-    } finally {
-      if (mounted &&
-          prepareGeneration != null &&
-          prepareGeneration == _prepareGeneration &&
-          _preparing) {
-        setState(() => _preparing = false);
-      }
-    }
-  }
-
-  Future<void> _stopLoading() async {
-    _prepareGeneration++;
-    if (mounted) {
-      setState(() => _preparing = false);
-    }
-    _preparedFileId = null;
-    try {
-      await _player.stop();
-    } catch (_) {
-      // The player may not have an active source yet.
-    }
-  }
-
-  Future<void> _playPrepared(int generation) async {
-    try {
-      await _player.play();
-    } catch (_) {
-      if (!mounted || generation != _prepareGeneration) return;
-      await showErrorDialog(
-        context,
-        title: AppLocalizations.of(context)!.error,
-        message: AppLocalizations.of(context)!.chatVoicePlaybackFailed,
-      );
-    }
-  }
-
-  Future<void> _seekToFraction(double fraction, Duration duration) async {
-    if (duration.inMilliseconds <= 0 || _preparing) return;
-    final target = Duration(
-      milliseconds:
-          (duration.inMilliseconds * fraction.clamp(0.0, 1.0)).round(),
-    );
-    await _player.seek(target);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Container(
-      padding: EdgeInsets.all(_scale(context, 12)),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_scale(context, 22)),
-        color: Colors.black.withValues(alpha: 0.14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        children: [
-          StreamBuilder<PlayerState>(
-            stream: _player.playerStateStream,
-            builder: (context, snapshot) {
-              final processing = snapshot.data?.processingState;
-              final busy = _preparing ||
-                  processing == ProcessingState.loading ||
-                  processing == ProcessingState.buffering;
-              final playing = (snapshot.data?.playing ?? false) &&
-                  processing != ProcessingState.completed;
-
-              return GestureDetector(
-                onTap: busy ? _stopLoading : _toggle,
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  width: _scale(context, 48),
-                  height: _scale(context, 48),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.accent,
-                  ),
-                  child: Center(
-                    child: busy
-                        ? SizedBox(
-                            width: _scale(context, 18),
-                            height: _scale(context, 18),
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2.2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Icon(
-                            playing
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                            size: _scale(context, 30),
-                            color: Colors.white,
-                          ),
-                  ),
-                ),
-              );
-            },
-          ),
-          SizedBox(width: _scale(context, 12)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.chatVoiceMessage,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: _scale(context, 15),
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFFf5ede6),
-                  ),
-                ),
-                SizedBox(height: _scale(context, 8)),
-                StreamBuilder<Duration>(
-                  stream: _player.positionStream,
-                  builder: (context, snapshot) {
-                    final position = snapshot.data ?? Duration.zero;
-                    final duration = _player.duration ?? Duration.zero;
-                    final progress = duration.inMilliseconds <= 0
-                        ? 0.0
-                        : (position.inMilliseconds / duration.inMilliseconds)
-                            .clamp(0.0, 1.0);
-
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _VoiceWaveform(
-                            progress: progress,
-                            enabled: duration.inMilliseconds > 0 && !_preparing,
-                            onSeekFraction: (fraction) =>
-                                _seekToFraction(fraction, duration),
-                          ),
-                        ),
-                        if (duration.inMilliseconds > 0) ...[
-                          SizedBox(width: _scale(context, 10)),
-                          Text(
-                            _formatVoiceDuration(
-                              position == Duration.zero ? duration : position,
-                            ),
-                            style: TextStyle(
-                              fontSize: _scale(context, 12),
-                              fontWeight: FontWeight.w700,
-                              color: const Color(
-                                0xFFc8b39a,
-                              ).withValues(alpha: 0.82),
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return ChatVoiceAttachmentPlayer(
+      fileId: item.fileId,
+      metadata: item.metadata,
     );
   }
 }
@@ -3898,13 +5060,11 @@ class _AttachmentFileRow extends StatelessWidget {
     required this.item,
     required this.busy,
     required this.onTap,
-    this.showPlay = false,
   });
 
   final _ChatAttachmentViewData item;
   final bool busy;
   final VoidCallback onTap;
-  final bool showPlay;
 
   @override
   Widget build(BuildContext context) {
@@ -3937,7 +5097,7 @@ class _AttachmentFileRow extends StatelessWidget {
                 color: const Color(0xFF3a2415),
               ),
               child: Icon(
-                showPlay ? Icons.play_arrow_rounded : _attachmentIcon(metadata),
+                _attachmentIcon(metadata),
                 color: _attachmentIconColor(metadata),
                 size: _scale(context, 26),
               ),
@@ -4081,6 +5241,25 @@ String _formatVoiceDuration(Duration duration) {
   final minutes = totalSeconds ~/ 60;
   final seconds = totalSeconds % 60;
   return '$minutes:${seconds.toString().padLeft(2, '0')}';
+}
+
+String _formatReadReceiptAt(BuildContext context, DateTime readAt) {
+  return _formatChatEventAt(context, readAt);
+}
+
+String _formatReactionAt(BuildContext context, DateTime reactedAt) {
+  return _formatChatEventAt(context, reactedAt);
+}
+
+String _formatChatEventAt(BuildContext context, DateTime happenedAt) {
+  final l10n = AppLocalizations.of(context)!;
+  final local = happenedAt.toLocal();
+  final date = DateFormat('dd.MM.yyyy', l10n.localeName).format(local);
+  final time = MaterialLocalizations.of(context).formatTimeOfDay(
+    TimeOfDay.fromDateTime(local),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return '$date ${l10n.chatReadAtSeparator} $time';
 }
 
 String _downloadStatusLabel(BuildContext context, bool downloaded, bool busy) {
@@ -4428,7 +5607,12 @@ class _PendingAttachmentChip extends StatelessWidget {
       );
     }
 
-    final width = _scale(context, attachment.isImage ? 118 : 184);
+    final l10n = AppLocalizations.of(context)!;
+    final compactMedia = attachment.isImage || attachment.isVideo;
+    final width = _scale(context, compactMedia ? 118 : 184);
+    final subtitle = attachment.isVideo
+        ? _formatAttachmentSize(attachment.bytes.lengthInBytes)
+        : '${_formatAttachmentSize(attachment.bytes.lengthInBytes)} | ${attachment.extensionLabel}';
 
     return Container(
       width: width,
@@ -4464,7 +5648,9 @@ class _PendingAttachmentChip extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  attachment.name,
+                  attachment.isVideo
+                      ? l10n.chatLastMessageVideo
+                      : attachment.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -4475,7 +5661,7 @@ class _PendingAttachmentChip extends StatelessWidget {
                 ),
                 SizedBox(height: _scale(context, 2)),
                 Text(
-                  '${_formatAttachmentSize(attachment.bytes.lengthInBytes)} | ${attachment.extensionLabel}',
+                  subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -4797,6 +5983,10 @@ class _PendingAttachmentPreview extends StatelessWidget {
       );
     }
 
+    if (attachment.isVideo) {
+      return _PendingVideoAttachmentPreview(attachment: attachment);
+    }
+
     return DecoratedBox(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -4807,12 +5997,151 @@ class _PendingAttachmentPreview extends StatelessWidget {
       ),
       child: Center(
         child: Icon(
-          attachment.isVideo
-              ? Icons.movie_rounded
-              : Icons.insert_drive_file_rounded,
+          Icons.insert_drive_file_rounded,
           size: _scale(context, 34),
           color: AppColors.accent,
         ),
+      ),
+    );
+  }
+}
+
+class _PendingVideoAttachmentPreview extends StatefulWidget {
+  const _PendingVideoAttachmentPreview({required this.attachment});
+
+  final _PickedChatAttachment attachment;
+
+  @override
+  State<_PendingVideoAttachmentPreview> createState() =>
+      _PendingVideoAttachmentPreviewState();
+}
+
+class _PendingVideoAttachmentPreviewState
+    extends State<_PendingVideoAttachmentPreview> {
+  VideoPlayerController? _controller;
+  bool _loadFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_initialize());
+  }
+
+  @override
+  void didUpdateWidget(covariant _PendingVideoAttachmentPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.attachment.localPath == widget.attachment.localPath) return;
+    unawaited(_resetController());
+    unawaited(_initialize());
+  }
+
+  @override
+  void dispose() {
+    unawaited(_resetController());
+    super.dispose();
+  }
+
+  Future<void> _initialize() async {
+    final path = widget.attachment.localPath?.trim();
+    if (path == null || path.isEmpty) {
+      if (mounted) setState(() => _loadFailed = true);
+      return;
+    }
+
+    try {
+      final file = File(path);
+      if (!await file.exists()) {
+        throw StateError('Pending video file does not exist');
+      }
+      final controller = VideoPlayerController.file(file);
+      try {
+        await controller.initialize();
+      } catch (_) {
+        await controller.dispose();
+        rethrow;
+      }
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      await _resetController();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() {
+        _controller = controller;
+        _loadFailed = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadFailed = true);
+    }
+  }
+
+  Future<void> _resetController() async {
+    final controller = _controller;
+    _controller = null;
+    await controller?.dispose();
+  }
+
+  Future<void> _openViewer() async {
+    final path = widget.attachment.localPath?.trim();
+    if (path == null || path.isEmpty) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ChatVideoViewerScreen.localFile(path: path),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    final initialized = controller?.value.isInitialized ?? false;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => unawaited(_openViewer()),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (initialized)
+            FittedBox(
+              fit: BoxFit.cover,
+              clipBehavior: Clip.hardEdge,
+              child: SizedBox(
+                width: controller!.value.size.width,
+                height: controller.value.size.height,
+                child: VideoPlayer(controller),
+              ),
+            )
+          else
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF4b2d13), Color(0xFF1c0f08)],
+                ),
+              ),
+            ),
+          Center(
+            child: Container(
+              width: _scale(context, 34),
+              height: _scale(context, 34),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.46),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+              ),
+              child: Icon(
+                _loadFailed ? Icons.movie_rounded : Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: _scale(context, 22),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

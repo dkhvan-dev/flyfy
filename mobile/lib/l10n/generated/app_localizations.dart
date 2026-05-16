@@ -7384,6 +7384,18 @@ abstract class AppLocalizations {
   /// **'File'**
   String get chatAttachmentFile;
 
+  /// No description provided for @chatLastMessagePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get chatLastMessagePhoto;
+
+  /// No description provided for @chatLastMessageVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get chatLastMessageVideo;
+
   /// No description provided for @chatAttachmentLocation.
   ///
   /// In en, this message translates to:
@@ -7636,6 +7648,24 @@ abstract class AppLocalizations {
   /// **'Switch camera'**
   String get chatCameraFlipButtonLabel;
 
+  /// No description provided for @chatCameraFlashOffButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flash off'**
+  String get chatCameraFlashOffButtonLabel;
+
+  /// No description provided for @chatCameraFlashAutoButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto flash'**
+  String get chatCameraFlashAutoButtonLabel;
+
+  /// No description provided for @chatCameraFlashOnButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flash on'**
+  String get chatCameraFlashOnButtonLabel;
+
   /// No description provided for @chatCameraCloseButtonLabel.
   ///
   /// In en, this message translates to:
@@ -7659,6 +7689,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop recording'**
   String get chatCameraStopRecordingButtonLabel;
+
+  /// No description provided for @chatCameraReviewCancelButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get chatCameraReviewCancelButtonLabel;
+
+  /// No description provided for @chatCameraReviewSendButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get chatCameraReviewSendButtonLabel;
+
+  /// No description provided for @chatCameraReviewPlayButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Play video'**
+  String get chatCameraReviewPlayButtonLabel;
+
+  /// No description provided for @chatCameraReviewPauseButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause video'**
+  String get chatCameraReviewPauseButtonLabel;
+
+  /// No description provided for @chatCameraReviewTrimLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim'**
+  String get chatCameraReviewTrimLabel;
+
+  /// No description provided for @chatCameraReviewProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing...'**
+  String get chatCameraReviewProcessing;
+
+  /// No description provided for @chatCameraTrimFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not trim this video. Try a different trim range or send the original.'**
+  String get chatCameraTrimFailed;
 
   /// No description provided for @chatAttachmentUploading.
   ///
@@ -7816,6 +7888,102 @@ abstract class AppLocalizations {
   /// **'Could not update the reaction. Please try again.'**
   String get chatReactionFailed;
 
+  /// No description provided for @chatCopyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get chatCopyAction;
+
+  /// No description provided for @chatForwardAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get chatForwardAction;
+
+  /// No description provided for @chatMessageCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Message copied'**
+  String get chatMessageCopied;
+
+  /// No description provided for @chatForwardSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward to'**
+  String get chatForwardSheetTitle;
+
+  /// No description provided for @chatForwardFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not forward the message. Please try again.'**
+  String get chatForwardFailed;
+
+  /// No description provided for @chatForwardSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Message forwarded'**
+  String get chatForwardSuccess;
+
+  /// No description provided for @chatNoForwardTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'No available chats'**
+  String get chatNoForwardTargets;
+
+  /// No description provided for @chatForwardedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Forwarded'**
+  String get chatForwardedLabel;
+
+  /// No description provided for @chatForwardedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Forwarded from {name}'**
+  String chatForwardedFrom(Object name);
+
+  /// No description provided for @chatForwardCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Forwarded {count}'**
+  String chatForwardCount(Object count);
+
+  /// No description provided for @chatReactionsByTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactions'**
+  String get chatReactionsByTitle;
+
+  /// No description provided for @chatReactionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 reaction} other{{count} reactions}}'**
+  String chatReactionCount(num count);
+
+  /// No description provided for @chatReadByTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read by'**
+  String get chatReadByTitle;
+
+  /// No description provided for @chatReadByCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Read by {count}'**
+  String chatReadByCount(Object count);
+
+  /// No description provided for @chatReadAtSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **'at'**
+  String get chatReadAtSeparator;
+
+  /// No description provided for @chatNoStatusDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'No status details yet'**
+  String get chatNoStatusDetails;
+
   /// No description provided for @chatLoadFailed.
   ///
   /// In en, this message translates to:
@@ -7876,6 +8044,12 @@ abstract class AppLocalizations {
   /// **'Files'**
   String get chatSharedFilesTab;
 
+  /// No description provided for @chatSharedVoiceTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio messages'**
+  String get chatSharedVoiceTab;
+
   /// No description provided for @chatSharedNoMediaTitle.
   ///
   /// In en, this message translates to:
@@ -7912,6 +8086,18 @@ abstract class AppLocalizations {
   /// **'Documents and archives from this chat will appear here.'**
   String get chatSharedNoFilesSubtitle;
 
+  /// No description provided for @chatSharedNoVoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No voice messages yet'**
+  String get chatSharedNoVoiceTitle;
+
+  /// No description provided for @chatSharedNoVoiceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice messages from this chat will appear here.'**
+  String get chatSharedNoVoiceSubtitle;
+
   /// No description provided for @chatSharedFileFallback.
   ///
   /// In en, this message translates to:
@@ -7923,6 +8109,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown file'**
   String get chatSharedUnknownFile;
+
+  /// No description provided for @chatSharedGoToMessageAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to message'**
+  String get chatSharedGoToMessageAction;
+
+  /// No description provided for @chatExternalLinkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open external link?'**
+  String get chatExternalLinkTitle;
+
+  /// No description provided for @chatExternalLinkMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This link opens a third-party resource:\n{url}'**
+  String chatExternalLinkMessage(Object url);
+
+  /// No description provided for @chatExternalLinkOpenAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get chatExternalLinkOpenAction;
+
+  /// No description provided for @chatExternalLinkOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this link.'**
+  String get chatExternalLinkOpenFailed;
 
   /// No description provided for @chatSharedLoadFailed.
   ///

@@ -115,6 +115,18 @@ class ChatApi {
     return MessageVm.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<MessageVm> forwardMessage({
+    required String sourceConversationId,
+    required String messageId,
+    required String targetConversationId,
+  }) async {
+    final response = await _apiClient.dio.post(
+      '/chat/conversations/$sourceConversationId/messages/$messageId/forward',
+      data: {'targetConversationId': targetConversationId},
+    );
+    return MessageVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<void> editMessage(
     String conversationId,
     String messageId, {

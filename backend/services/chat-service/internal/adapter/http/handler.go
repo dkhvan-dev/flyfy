@@ -386,6 +386,19 @@ func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Reques
 			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 			return
 		}
+		if len(parts) == 4 && parts[3] == "forward" {
+			msgID, err := uuid.Parse(parts[2])
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "invalid message id")
+				return
+			}
+			if r.Method == http.MethodPost {
+				h.ForwardMessage(w, r, convID, msgID)
+				return
+			}
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
 	case "read":
 		if r.Method == http.MethodPost {
 			h.MarkRead(w, r, convID)
@@ -675,6 +688,39 @@ func (h *Handler) ReactToMessage(w http.ResponseWriter, r *http.Request, convID,
 	})
 }
 
+func (h *Handler) ForwardMessage(w http.ResponseWriter, r *http.Request, convID, msgID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	var req dto.ForwardMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	targetConversationID, err := uuid.Parse(strings.TrimSpace(req.TargetConversationID))
+	if err != nil || targetConversationID == uuid.Nil {
+		writeError(w, http.StatusBadRequest, "invalid target conversation id")
+		return
+	}
+
+	msg, err := h.messageUC.ForwardMessage(r.Context(), app.ForwardMessageInput{
+		SourceConversationID: convID,
+		TargetConversationID: targetConversationID,
+		MessageID:            msgID,
+		SenderUserID:         actorUserID,
+	})
+	if err != nil {
+		h.writeAppError(w, err, "forward message failed")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, messageResponseFromModel(msg))
+}
+
 func (h *Handler) DeleteMessage(w http.ResponseWriter, r *http.Request, convID, msgID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
@@ -838,17 +884,25 @@ func (h *Handler) UnpinMessage(w http.ResponseWriter, r *http.Request, convID, m
 
 func messageResponseFromModel(m *model.Message) dto.MessageResponse {
 	item := dto.MessageResponse{
-		ID:                 m.ID.String(),
-		SenderUserID:       m.SenderUserID.String(),
-		SenderDisplayName:  m.SenderDisplayName,
-		SenderAvatarFileID: m.SenderAvatarFileID,
-		Type:               m.Type,
-		Content:            m.Content,
-		FileIDs:            m.FileIDs,
-		StickerID:          uuidPtrToString(m.StickerID),
-		StickerFileID:      m.StickerFileID,
-		Reactions:          reactionInfosFromModel(m.Reactions),
-		SentAt:             m.SentAt.Format(time.RFC3339),
+		ID:                        m.ID.String(),
+		SenderUserID:              m.SenderUserID.String(),
+		SenderDisplayName:         m.SenderDisplayName,
+		SenderAvatarFileID:        m.SenderAvatarFileID,
+		Type:                      m.Type,
+		Content:                   m.Content,
+		FileIDs:                   m.FileIDs,
+		StickerID:                 uuidPtrToString(m.StickerID),
+		StickerFileID:             m.StickerFileID,
+		ForwardedFromMessageID:    uuidPtrToString(m.ForwardedFromMessageID),
+		ForwardedFromSenderUserID: uuidPtrToString(m.ForwardedFromSenderUserID),
+		ForwardCount:              m.ForwardCount,
+		Reactions:                 reactionInfosFromModel(m.Reactions),
+		ReadReceipts:              readReceiptInfosFromModel(m.ReadReceipts),
+		SentAt:                    m.SentAt.Format(time.RFC3339),
+	}
+	if strings.TrimSpace(m.ForwardedFromSenderName) != "" {
+		name := strings.TrimSpace(m.ForwardedFromSenderName)
+		item.ForwardedFromSenderName = &name
 	}
 	if m.ReplyToMessageID != nil {
 		s := m.ReplyToMessageID.String()
@@ -874,6 +928,34 @@ func reactionInfosFromModel(
 			Emoji:       reaction.Emoji,
 			Count:       reaction.Count,
 			ReactedByMe: reaction.ReactedByMe,
+			UserIDs:     reaction.UserIDs,
+			Users:       reactionUserInfosFromModel(reaction.Users),
+		})
+	}
+	return items
+}
+
+func reactionUserInfosFromModel(
+	users []model.MessageReactionUserSummary,
+) []dto.MessageReactionUserInfo {
+	items := make([]dto.MessageReactionUserInfo, 0, len(users))
+	for _, user := range users {
+		items = append(items, dto.MessageReactionUserInfo{
+			UserID:    user.UserID,
+			ReactedAt: user.ReactedAt.UTC().Format(time.RFC3339Nano),
+		})
+	}
+	return items
+}
+
+func readReceiptInfosFromModel(
+	receipts []model.MessageReadReceipt,
+) []dto.MessageReadReceiptInfo {
+	items := make([]dto.MessageReadReceiptInfo, 0, len(receipts))
+	for _, receipt := range receipts {
+		items = append(items, dto.MessageReadReceiptInfo{
+			UserID: receipt.UserID.String(),
+			ReadAt: receipt.ReadAt.UTC().Format(time.RFC3339),
 		})
 	}
 	return items

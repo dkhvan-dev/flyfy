@@ -1482,6 +1482,8 @@
   "chatSystemUpdate": "System update",
   "chatAttachmentPhotoVideo": "Photo / Video",
   "chatAttachmentFile": "File",
+  "chatLastMessagePhoto": "Photo",
+  "chatLastMessageVideo": "Video",
   "chatAttachmentLocation": "Location",
   "chatAttachmentAudio": "Audio",
   "chatAttachmentTakePhoto": "Take photo",
@@ -1524,10 +1526,20 @@
   "chatCameraUnavailable": "Camera is unavailable on this device.",
   "chatCameraCaptureFailed": "Could not capture media. Please try again.",
   "chatCameraFlipButtonLabel": "Switch camera",
+  "chatCameraFlashOffButtonLabel": "Flash off",
+  "chatCameraFlashAutoButtonLabel": "Auto flash",
+  "chatCameraFlashOnButtonLabel": "Flash on",
   "chatCameraCloseButtonLabel": "Close camera",
   "chatCameraCapturePhotoButtonLabel": "Take photo",
   "chatCameraRecordVideoButtonLabel": "Record video",
   "chatCameraStopRecordingButtonLabel": "Stop recording",
+  "chatCameraReviewCancelButtonLabel": "Cancel",
+  "chatCameraReviewSendButtonLabel": "Send",
+  "chatCameraReviewPlayButtonLabel": "Play video",
+  "chatCameraReviewPauseButtonLabel": "Pause video",
+  "chatCameraReviewTrimLabel": "Trim",
+  "chatCameraReviewProcessing": "Processing...",
+  "chatCameraTrimFailed": "Could not trim this video. Try a different trim range or send the original.",
   "chatAttachmentUploading": "Uploading attachment...",
   "chatAttachmentDownloading": "Downloading...",
   "chatAttachmentDownloaded": "Downloaded. Tap again to open.",
@@ -1554,6 +1566,42 @@
   "chatVoiceTooShort": "Voice message is too short.",
   "chatReactionSheetTitle": "Reaction",
   "chatReactionFailed": "Could not update the reaction. Please try again.",
+  "chatCopyAction": "Copy",
+  "chatForwardAction": "Forward",
+  "chatMessageCopied": "Message copied",
+  "chatForwardSheetTitle": "Forward to",
+  "chatForwardFailed": "Could not forward the message. Please try again.",
+  "chatForwardSuccess": "Message forwarded",
+  "chatNoForwardTargets": "No available chats",
+  "chatForwardedLabel": "Forwarded",
+  "chatForwardedFrom": "Forwarded from {name}",
+  "@chatForwardedFrom": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "chatForwardCount": "Forwarded {count}",
+  "@chatForwardCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatReactionsByTitle": "Reactions",
+  "chatReactionCount": "{count, plural, =1{1 reaction} other{{count} reactions}}",
+  "@chatReactionCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatReadByTitle": "Read by",
+  "chatReadByCount": "Read by {count}",
+  "@chatReadByCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatReadAtSeparator": "at",
+  "chatNoStatusDetails": "No status details yet",
   "chatLoadFailed": "Failed to load chat",
   "chatParticipantsHostSection": "HOST & ORGANIZER",
   "chatParticipantsJoinedSection": "JOINED PARTICIPANTS",
@@ -1564,12 +1612,15 @@
   "chatSharedMediaTab": "Media",
   "chatSharedLinksTab": "Links",
   "chatSharedFilesTab": "Files",
+  "chatSharedVoiceTab": "Audio messages",
   "chatSharedNoMediaTitle": "No media yet",
   "chatSharedNoMediaSubtitle": "Photos and videos from this chat will appear here.",
   "chatSharedNoLinksTitle": "No links yet",
   "chatSharedNoLinksSubtitle": "Messages with links will be collected here.",
   "chatSharedNoFilesTitle": "No files yet",
   "chatSharedNoFilesSubtitle": "Documents and archives from this chat will appear here.",
+  "chatSharedNoVoiceTitle": "No voice messages yet",
+  "chatSharedNoVoiceSubtitle": "Voice messages from this chat will appear here.",
   "chatSharedFileFallback": "File {id}",
   "@chatSharedFileFallback": {
     "placeholders": {
@@ -1577,6 +1628,16 @@
     }
   },
   "chatSharedUnknownFile": "Unknown file",
+  "chatSharedGoToMessageAction": "Go to message",
+  "chatExternalLinkTitle": "Open external link?",
+  "chatExternalLinkMessage": "This link opens a third-party resource:\n{url}",
+  "@chatExternalLinkMessage": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "chatExternalLinkOpenAction": "Open",
+  "chatExternalLinkOpenFailed": "Could not open this link.",
   "chatSharedLoadFailed": "Could not load content",
   "chatSharedLoadFailedSubtitle": "Please check the connection and retry.",
   "chatSharedPartialLoadWarning": "Some older shared items could not be loaded."

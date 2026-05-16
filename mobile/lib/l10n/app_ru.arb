@@ -1482,6 +1482,8 @@
   "chatSystemUpdate": "Системное событие",
   "chatAttachmentPhotoVideo": "Фото / видео",
   "chatAttachmentFile": "Файл",
+  "chatLastMessagePhoto": "Фотография",
+  "chatLastMessageVideo": "Видео",
   "chatAttachmentLocation": "Локация",
   "chatAttachmentAudio": "Аудио",
   "chatAttachmentTakePhoto": "Сделать фото",
@@ -1524,10 +1526,20 @@
   "chatCameraUnavailable": "Камера недоступна на этом устройстве.",
   "chatCameraCaptureFailed": "Не удалось снять медиа. Попробуйте еще раз.",
   "chatCameraFlipButtonLabel": "Переключить камеру",
+  "chatCameraFlashOffButtonLabel": "Вспышка выключена",
+  "chatCameraFlashAutoButtonLabel": "Автовспышка",
+  "chatCameraFlashOnButtonLabel": "Вспышка включена",
   "chatCameraCloseButtonLabel": "Закрыть камеру",
   "chatCameraCapturePhotoButtonLabel": "Сделать фото",
   "chatCameraRecordVideoButtonLabel": "Записать видео",
   "chatCameraStopRecordingButtonLabel": "Остановить запись",
+  "chatCameraReviewCancelButtonLabel": "Отменить",
+  "chatCameraReviewSendButtonLabel": "Отправить",
+  "chatCameraReviewPlayButtonLabel": "Воспроизвести видео",
+  "chatCameraReviewPauseButtonLabel": "Поставить видео на паузу",
+  "chatCameraReviewTrimLabel": "Обрезка",
+  "chatCameraReviewProcessing": "Обработка...",
+  "chatCameraTrimFailed": "Не удалось обрезать это видео. Попробуйте другой диапазон или отправьте оригинал.",
   "chatAttachmentUploading": "Загрузка вложения...",
   "chatAttachmentDownloading": "Скачивание...",
   "chatAttachmentDownloaded": "Файл скачан. Нажмите еще раз, чтобы открыть.",
@@ -1554,6 +1566,42 @@
   "chatVoiceTooShort": "Голосовое сообщение слишком короткое.",
   "chatReactionSheetTitle": "Реакция",
   "chatReactionFailed": "Не удалось обновить реакцию. Попробуйте еще раз.",
+  "chatCopyAction": "Скопировать",
+  "chatForwardAction": "Переслать",
+  "chatMessageCopied": "Текст скопирован",
+  "chatForwardSheetTitle": "Переслать в",
+  "chatForwardFailed": "Не удалось переслать сообщение. Попробуйте еще раз.",
+  "chatForwardSuccess": "Сообщение переслано",
+  "chatNoForwardTargets": "Нет доступных чатов",
+  "chatForwardedLabel": "Переслано",
+  "chatForwardedFrom": "Переслано от {name}",
+  "@chatForwardedFrom": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "chatForwardCount": "Переслали {count}",
+  "@chatForwardCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatReactionsByTitle": "Реакции",
+  "chatReactionCount": "{count, plural, one{{count} реакция} few{{count} реакции} many{{count} реакций} other{{count} реакции}}",
+  "@chatReactionCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatReadByTitle": "Прочитали",
+  "chatReadByCount": "Прочитали: {count}",
+  "@chatReadByCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatReadAtSeparator": "в",
+  "chatNoStatusDetails": "Деталей статуса пока нет",
   "chatLoadFailed": "Не удалось загрузить чат",
   "chatParticipantsHostSection": "ОРГАНИЗАТОР",
   "chatParticipantsJoinedSection": "УЧАСТНИКИ",
@@ -1564,12 +1612,15 @@
   "chatSharedMediaTab": "Медиа",
   "chatSharedLinksTab": "Ссылки",
   "chatSharedFilesTab": "Файлы",
+  "chatSharedVoiceTab": "Аудиосообщения",
   "chatSharedNoMediaTitle": "Медиа пока нет",
   "chatSharedNoMediaSubtitle": "Фото и видео из этого чата появятся здесь.",
   "chatSharedNoLinksTitle": "Ссылок пока нет",
   "chatSharedNoLinksSubtitle": "Сообщения со ссылками будут собраны здесь.",
   "chatSharedNoFilesTitle": "Файлов пока нет",
   "chatSharedNoFilesSubtitle": "Документы и архивы из этого чата появятся здесь.",
+  "chatSharedNoVoiceTitle": "Голосовых пока нет",
+  "chatSharedNoVoiceSubtitle": "Голосовые сообщения из этого чата появятся здесь.",
   "chatSharedFileFallback": "Файл {id}",
   "@chatSharedFileFallback": {
     "placeholders": {
@@ -1577,6 +1628,16 @@
     }
   },
   "chatSharedUnknownFile": "Неизвестный файл",
+  "chatSharedGoToMessageAction": "Перейти к сообщению",
+  "chatExternalLinkTitle": "Открыть внешнюю ссылку?",
+  "chatExternalLinkMessage": "Эта ссылка ведет на сторонний ресурс:\n{url}",
+  "@chatExternalLinkMessage": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "chatExternalLinkOpenAction": "Открыть",
+  "chatExternalLinkOpenFailed": "Не удалось открыть эту ссылку.",
   "chatSharedLoadFailed": "Не удалось загрузить контент",
   "chatSharedLoadFailedSubtitle": "Проверьте подключение и попробуйте снова.",
   "chatSharedPartialLoadWarning": "Часть старых вложений не удалось загрузить."

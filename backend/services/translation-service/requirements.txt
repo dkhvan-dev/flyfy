@@ -1,5 +1,8 @@
 fastapi==0.136.1
 uvicorn[standard]==0.46.0
 transformers==4.57.6
-torch==2.12.0
+# Compose/dev runs the translation service on CPU. The default PyPI Linux
+# torch wheel pulls CUDA/NVIDIA packages and can exceed Docker Desktop storage.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.12.0+cpu
 sentencepiece==0.2.1

@@ -1482,6 +1482,8 @@
   "chatSystemUpdate": "Жүйелік оқиға",
   "chatAttachmentPhotoVideo": "Фото / видео",
   "chatAttachmentFile": "Файл",
+  "chatLastMessagePhoto": "Фотография",
+  "chatLastMessageVideo": "Видео",
   "chatAttachmentLocation": "Локация",
   "chatAttachmentAudio": "Аудио",
   "chatAttachmentTakePhoto": "Фото түсіру",
@@ -1524,10 +1526,20 @@
   "chatCameraUnavailable": "Бұл құрылғыда камера қолжетімді емес.",
   "chatCameraCaptureFailed": "Медиа түсіру мүмкін болмады. Қайта көріңіз.",
   "chatCameraFlipButtonLabel": "Камераны ауыстыру",
+  "chatCameraFlashOffButtonLabel": "Жарқыл өшірулі",
+  "chatCameraFlashAutoButtonLabel": "Автоматты жарқыл",
+  "chatCameraFlashOnButtonLabel": "Жарқыл қосулы",
   "chatCameraCloseButtonLabel": "Камераны жабу",
   "chatCameraCapturePhotoButtonLabel": "Фото түсіру",
   "chatCameraRecordVideoButtonLabel": "Видео жазу",
   "chatCameraStopRecordingButtonLabel": "Жазуды тоқтату",
+  "chatCameraReviewCancelButtonLabel": "Бас тарту",
+  "chatCameraReviewSendButtonLabel": "Жіберу",
+  "chatCameraReviewPlayButtonLabel": "Видеоны ойнату",
+  "chatCameraReviewPauseButtonLabel": "Видеоны кідірту",
+  "chatCameraReviewTrimLabel": "Қию",
+  "chatCameraReviewProcessing": "Өңделуде...",
+  "chatCameraTrimFailed": "Бұл видеоны қию мүмкін болмады. Басқа аралықты таңдаңыз немесе түпнұсқасын жіберіңіз.",
   "chatAttachmentUploading": "Тіркеме жүктелуде...",
   "chatAttachmentDownloading": "Жүктеп алынуда...",
   "chatAttachmentDownloaded": "Файл жүктелді. Ашу үшін қайта басыңыз.",
@@ -1554,6 +1566,42 @@
   "chatVoiceTooShort": "Дауыстық хабар тым қысқа.",
   "chatReactionSheetTitle": "Реакция",
   "chatReactionFailed": "Реакцияны жаңарту мүмкін болмады. Қайта көріңіз.",
+  "chatCopyAction": "Көшіру",
+  "chatForwardAction": "Жіберу",
+  "chatMessageCopied": "Хабар мәтіні көшірілді",
+  "chatForwardSheetTitle": "Қай чатқа жіберу",
+  "chatForwardFailed": "Хабарды жіберу мүмкін болмады. Қайта көріңіз.",
+  "chatForwardSuccess": "Хабар жіберілді",
+  "chatNoForwardTargets": "Қолжетімді чаттар жоқ",
+  "chatForwardedLabel": "Жіберілген",
+  "chatForwardedFrom": "{name} жіберген хабар",
+  "@chatForwardedFrom": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "chatForwardCount": "{count} рет жіберілді",
+  "@chatForwardCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatReactionsByTitle": "Реакциялар",
+  "chatReactionCount": "{count, plural, =1{1 реакция} other{{count} реакция}}",
+  "@chatReactionCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatReadByTitle": "Оқығандар",
+  "chatReadByCount": "Оқығандар: {count}",
+  "@chatReadByCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chatReadAtSeparator": "сағ.",
+  "chatNoStatusDetails": "Статус мәліметтері әзірге жоқ",
   "chatLoadFailed": "Чатты жүктеу мүмкін болмады",
   "chatParticipantsHostSection": "ҰЙЫМДАСТЫРУШЫ",
   "chatParticipantsJoinedSection": "ҚАТЫСУШЫЛАР",
@@ -1564,12 +1612,15 @@
   "chatSharedMediaTab": "Медиа",
   "chatSharedLinksTab": "Сілтемелер",
   "chatSharedFilesTab": "Файлдар",
+  "chatSharedVoiceTab": "Аудиохабарлар",
   "chatSharedNoMediaTitle": "Медиа әзірге жоқ",
   "chatSharedNoMediaSubtitle": "Осы чаттағы фото мен видеолар осында шығады.",
   "chatSharedNoLinksTitle": "Сілтемелер әзірге жоқ",
   "chatSharedNoLinksSubtitle": "Сілтемесі бар хабарлар осында жиналады.",
   "chatSharedNoFilesTitle": "Файлдар әзірге жоқ",
   "chatSharedNoFilesSubtitle": "Осы чаттағы құжаттар мен архивтер осында шығады.",
+  "chatSharedNoVoiceTitle": "Дауыстық хабарлар әзірге жоқ",
+  "chatSharedNoVoiceSubtitle": "Осы чаттағы дауыстық хабарлар осында шығады.",
   "chatSharedFileFallback": "Файл {id}",
   "@chatSharedFileFallback": {
     "placeholders": {
@@ -1577,6 +1628,16 @@
     }
   },
   "chatSharedUnknownFile": "Белгісіз файл",
+  "chatSharedGoToMessageAction": "Хабарға өту",
+  "chatExternalLinkTitle": "Сыртқы сілтемені ашу керек пе?",
+  "chatExternalLinkMessage": "Бұл сілтеме бөгде ресурсқа апарады:\n{url}",
+  "@chatExternalLinkMessage": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "chatExternalLinkOpenAction": "Ашу",
+  "chatExternalLinkOpenFailed": "Бұл сілтемені ашу мүмкін болмады.",
   "chatSharedLoadFailed": "Контентті жүктеу мүмкін болмады",
   "chatSharedLoadFailedSubtitle": "Байланысты тексеріп, қайта көріңіз.",
   "chatSharedPartialLoadWarning": "Кейбір ескі ортақ элементтерді жүктеу мүмкін болмады."
