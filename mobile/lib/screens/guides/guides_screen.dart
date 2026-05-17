@@ -11,6 +11,7 @@ import '../../core/network/reference_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
+import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
@@ -579,79 +580,12 @@ class _GuidesSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 58),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C2014),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      padding: const EdgeInsetsDirectional.fromSTEB(18, 0, 10, 0),
-      child: Row(
-        children: [
-          const Icon(Icons.search_rounded, color: AppColors.accent, size: 28),
-          const SizedBox(width: 14),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              textInputAction: TextInputAction.search,
-              style: const TextStyle(
-                color: Color(0xFFFFF3E8),
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                height: 1.2,
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: hintText,
-                hintStyle: const TextStyle(color: Color(0xFF8D7464)),
-              ),
-            ),
-          ),
-          Tooltip(
-            message: AppLocalizations.of(context)!.guidesFiltersTitle,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  onPressed: onFilterTap,
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.07),
-                    foregroundColor: AppColors.accent,
-                    minimumSize: const Size(42, 42),
-                  ),
-                  icon: const Icon(Icons.tune_rounded, size: 25),
-                ),
-                if (activeFilterCount > 0)
-                  PositionedDirectional(
-                    top: 1,
-                    end: 1,
-                    child: Container(
-                      constraints: const BoxConstraints(
-                        minWidth: 17,
-                        minHeight: 17,
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        activeFilterCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          height: 1,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return AppListSearchField(
+      controller: controller,
+      hintText: hintText,
+      filterTooltip: AppLocalizations.of(context)!.guidesFiltersTitle,
+      activeFilterCount: activeFilterCount,
+      onFilterTap: onFilterTap,
     );
   }
 }

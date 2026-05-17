@@ -10,6 +10,7 @@ import '../../core/reference/country_filter_utils.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
+import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../features/attractions/attraction_ui.dart';
@@ -381,109 +382,13 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
         a.scale(24, minFactor: 0.78),
         0,
       ),
-      child: Container(
-        constraints: BoxConstraints(
-          minHeight: a.scale(58, minFactor: 0.9, maxFactor: 1.0),
-        ),
-        padding: EdgeInsetsDirectional.fromSTEB(
-          a.scale(16, minFactor: 0.86, maxFactor: 1.0),
-          0,
-          a.scale(8, minFactor: 0.86, maxFactor: 1.0),
-          0,
-        ),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2D1C0B),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.search_rounded,
-              color: AppColors.accent,
-              size: a.scale(27, minFactor: 0.86, maxFactor: 1.0),
-            ),
-            SizedBox(width: a.scale(12, minFactor: 0.82, maxFactor: 1.0)),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: a.scale(16, minFactor: 0.9, maxFactor: 1.0),
-                  fontWeight: FontWeight.w500,
-                  height: 1.2,
-                ),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: l10n.attractionsSearchHint,
-                  hintStyle: TextStyle(
-                    color: const Color(0xFF9F8B7D),
-                    fontSize: a.scale(16, minFactor: 0.9, maxFactor: 1.0),
-                    height: 1.2,
-                  ),
-                ),
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _loadAttractions(page: 1),
-              ),
-            ),
-            Tooltip(
-              message: l10n.attractionsFiltersTitle,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  IconButton(
-                    onPressed: _openFilters,
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.accent.withValues(alpha: 0.12),
-                      foregroundColor: AppColors.accent,
-                      minimumSize: Size(
-                        a.scale(43, minFactor: 0.9, maxFactor: 1.0),
-                        a.scale(43, minFactor: 0.9, maxFactor: 1.0),
-                      ),
-                      shape: const CircleBorder(),
-                    ),
-                    icon: Icon(
-                      Icons.tune_rounded,
-                      size: a.scale(24, minFactor: 0.9, maxFactor: 1.0),
-                    ),
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  if (activeFilterCount > 0)
-                    PositionedDirectional(
-                      top: 2,
-                      end: 2,
-                      child: Container(
-                        constraints: BoxConstraints(
-                          minWidth: a.scale(16, minFactor: 0.9, maxFactor: 1.0),
-                          minHeight:
-                              a.scale(16, minFactor: 0.9, maxFactor: 1.0),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal:
-                              a.scale(4, minFactor: 0.8, maxFactor: 1.0),
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          activeFilterCount.toString(),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize:
-                                a.scale(10, minFactor: 0.9, maxFactor: 1.0),
-                            height: 1,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      child: AppListSearchField(
+        controller: _searchController,
+        hintText: l10n.attractionsSearchHint,
+        filterTooltip: l10n.attractionsFiltersTitle,
+        activeFilterCount: activeFilterCount,
+        onFilterTap: _openFilters,
+        onSubmitted: (_) => _loadAttractions(page: 1),
       ),
     );
   }

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
+import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
@@ -477,7 +478,6 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     controller: _searchController,
                                     focusNode: _searchFocusNode,
                                     hintText: l10n.activitiesSearchHint,
-                                    filtersActive: _filters.hasAnyValue,
                                     activeFilterCount:
                                         _filters.activeGroupCount,
                                     onFilterTap: () => _openDiscoverFilters(
@@ -888,7 +888,6 @@ class _DiscoverSearchField extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.hintText,
-    required this.filtersActive,
     required this.activeFilterCount,
     required this.onFilterTap,
   });
@@ -896,139 +895,20 @@ class _DiscoverSearchField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final String hintText;
-  final bool filtersActive;
   final int activeFilterCount;
   final VoidCallback onFilterTap;
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPadding = _activitiesScaled(context, 18, min: 14, max: 20);
-    final verticalPadding = _activitiesScaled(context, 14, min: 12, max: 16);
-    final searchFontSize = _activitiesScaled(context, 14, min: 13, max: 15);
-    final iconSize = _activitiesScaled(context, 20, min: 18, max: 20);
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0.035),
-            Colors.white.withValues(alpha: 0.02),
-          ],
-        ),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.14),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        onTapOutside: (_) => FocusScope.of(context).unfocus(),
-        style: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: searchFontSize,
-          fontWeight: FontWeight.w500,
-        ),
-        cursorColor: AppColors.accent,
-        decoration: InputDecoration(
-          isDense: true,
-          hintText: hintText,
-          hintStyle: TextStyle(
-            color: const Color(0x8CFFF0E0),
-            fontSize: searchFontSize,
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: verticalPadding,
-          ),
-          prefixIcon: Padding(
-            padding: EdgeInsets.only(
-              left: _activitiesScaled(context, 12, min: 10, max: 13),
-              right: _activitiesScaled(context, 10, min: 8, max: 10),
-            ),
-            child: Icon(
-              Icons.search_rounded,
-              color: AppColors.accent,
-              size: iconSize,
-            ),
-          ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 0),
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (controller.text.isNotEmpty)
-                IconButton(
-                  onPressed: controller.clear,
-                  splashRadius: 20,
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    color: Color(0x88FFF0E0),
-                  ),
-                ),
-              Padding(
-                padding: EdgeInsets.only(
-                  right: _activitiesScaled(context, 6, min: 4, max: 8),
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    IconButton(
-                      tooltip: AppLocalizations.of(
-                        context,
-                      )!
-                          .activitiesFiltersTitle,
-                      onPressed: onFilterTap,
-                      splashRadius: 20,
-                      icon: Icon(
-                        Icons.tune_rounded,
-                        color: AppColors.accent,
-                        size: iconSize,
-                      ),
-                    ),
-                    if (activeFilterCount > 0)
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: AppColors.accent,
-                              width: 1.4,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            activeFilterCount.toString(),
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 10,
-                              height: 1,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          suffixIconConstraints: const BoxConstraints(minWidth: 0),
-        ),
-      ),
+    return AppListSearchField(
+      controller: controller,
+      focusNode: focusNode,
+      hintText: hintText,
+      filterTooltip: AppLocalizations.of(context)!.activitiesFiltersTitle,
+      activeFilterCount: activeFilterCount,
+      showClearButton: true,
+      onTapOutside: (_) => FocusScope.of(context).unfocus(),
+      onFilterTap: onFilterTap,
     );
   }
 }

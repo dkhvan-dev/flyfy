@@ -11,6 +11,7 @@ import '../../core/network/story_api.dart';
 import '../../core/reference/country_filter_utils.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
@@ -582,8 +583,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               controller: _searchController,
                               hint: l10n.storySearchHint,
                               filterTooltip: l10n.storyFiltersTitle,
-                              hasActiveFilters: _selectedCategory != null ||
-                                  _selectedPlace != null,
+                              activeFilterCount:
+                                  (_selectedCategory == null ? 0 : 1) +
+                                      (_selectedPlace == null ? 0 : 1),
                               onFilterTap: _openFilters,
                             ),
                             SizedBox(height: adaptive.scale(18)),
@@ -655,121 +657,25 @@ class _StoriesSearchBar extends StatelessWidget {
     required this.controller,
     required this.hint,
     required this.filterTooltip,
-    required this.hasActiveFilters,
+    required this.activeFilterCount,
     required this.onFilterTap,
   });
 
   final TextEditingController controller;
   final String hint;
   final String filterTooltip;
-  final bool hasActiveFilters;
+  final int activeFilterCount;
   final VoidCallback onFilterTap;
 
   @override
   Widget build(BuildContext context) {
-    final adaptive = StoryAdaptive.of(context);
-    final height = adaptive.scale(52);
-
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A180D),
-        borderRadius: BorderRadius.circular(height / 2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          SizedBox(width: adaptive.scale(18)),
-          Icon(
-            Icons.search_rounded,
-            color: AppColors.accent,
-            size: adaptive.scale(20),
-          ),
-          SizedBox(width: adaptive.scale(10)),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: TextStyle(
-                color: StoryPalette.textSoft,
-                fontSize: adaptive.scale(15),
-                fontWeight: FontWeight.w500,
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: hint,
-                hintStyle: TextStyle(
-                  color: StoryPalette.textMuted,
-                  fontSize: adaptive.scale(15),
-                ),
-              ),
-            ),
-          ),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, child) {
-              if (value.text.trim().isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return IconButton(
-                onPressed: controller.clear,
-                icon: Icon(
-                  Icons.close_rounded,
-                  color: StoryPalette.textMuted,
-                  size: adaptive.scale(18),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            tooltip: filterTooltip,
-            onPressed: onFilterTap,
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.accent.withValues(alpha: 0.12),
-              foregroundColor: AppColors.accent,
-              minimumSize: Size(
-                adaptive.scale(40, minFactor: 0.9, maxFactor: 1.0),
-                adaptive.scale(40, minFactor: 0.9, maxFactor: 1.0),
-              ),
-              shape: const CircleBorder(),
-            ),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  Icons.tune_rounded,
-                  size: adaptive.scale(21),
-                ),
-                if (hasActiveFilters)
-                  Positioned(
-                    right: -1,
-                    top: -1,
-                    child: Container(
-                      width: adaptive.scale(7, minFactor: 0.9),
-                      height: adaptive.scale(7, minFactor: 0.9),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFF2A180D),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(width: adaptive.scale(6)),
-        ],
-      ),
+    return AppListSearchField(
+      controller: controller,
+      hintText: hint,
+      filterTooltip: filterTooltip,
+      activeFilterCount: activeFilterCount,
+      showClearButton: true,
+      onFilterTap: onFilterTap,
     );
   }
 }

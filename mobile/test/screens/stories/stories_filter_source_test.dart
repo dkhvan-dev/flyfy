@@ -26,15 +26,12 @@ void main() {
     expect(source, contains('showModalBottomSheet<_StoryFiltersResult>'));
     expect(source, contains('class _StoryFiltersSheet'));
     expect(searchBarSource, contains('onFilterTap'));
-    expect(searchBarSource, contains('Icons.tune_rounded'));
-    expect(searchBarSource, contains('hasActiveFilters'));
-    expect(searchBarSource, contains('IconButton.styleFrom('));
     expect(
       searchBarSource,
-      contains('backgroundColor: AppColors.accent.withValues(alpha: 0.12)'),
+      contains('AppListSearchField('),
     );
-    expect(searchBarSource, contains('foregroundColor: AppColors.accent'));
-    expect(searchBarSource, contains('minimumSize: Size('));
+    expect(searchBarSource, contains('activeFilterCount'));
+    expect(searchBarSource, contains('showClearButton: true'));
   });
 
   test(

@@ -65,21 +65,15 @@ void main() {
     expect(bodyStart, greaterThan(searchStart));
     final searchSource = source.substring(searchStart, bodyStart);
 
+    expect(
+      source,
+      contains("import '../../core/ui/app_list_search_field.dart';"),
+    );
     expect(searchSource,
         contains('final activeFilterCount = _filters.activeCount;'));
-    expect(searchSource, contains('Stack('));
-    expect(searchSource, contains('clipBehavior: Clip.none'));
-    expect(searchSource, contains('IconButton.styleFrom('));
-    expect(
-      searchSource,
-      contains('backgroundColor: AppColors.accent.withValues(alpha: 0.12)'),
-    );
-    expect(searchSource, contains('foregroundColor: AppColors.accent'));
-    expect(searchSource, contains('if (activeFilterCount > 0)'));
-    expect(searchSource, contains('activeFilterCount.toString()'));
-    expect(searchSource, contains('a.scale(27'));
-    expect(searchSource, contains('a.scale(24'));
-    expect(searchSource, contains('a.scale(16'));
+    expect(searchSource, contains('AppListSearchField('));
+    expect(searchSource, contains('activeFilterCount: activeFilterCount'));
+    expect(searchSource, contains('onSubmitted: (_) => _loadAttractions'));
     expect(searchSource, isNot(contains('size: a.scale(28)')));
     expect(searchSource, isNot(contains('fontSize: a.scale(21')));
   });

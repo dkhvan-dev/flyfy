@@ -35,6 +35,10 @@ void main() {
       );
       expect(
         source,
+        contains("import '../../core/ui/app_list_search_field.dart';"),
+      );
+      expect(
+        source,
         contains("import '../../core/ui/filter_sheet_chrome.dart';"),
       );
       expect(source, contains('AppInlineSortRow<_ExcursionsSortMode>'));
@@ -52,10 +56,7 @@ void main() {
       expect(source, contains('class _ExcursionsFilters'));
       expect(source, contains('AppFilterSheetHeader'));
       expect(source, contains('AppFilterApplyButton'));
-      expect(
-        source,
-        contains('const Icon(Icons.search_rounded, color: AppColors.accent'),
-      );
+      expect(source, contains('AppListSearchField('));
       expect(source, isNot(contains('class _ExcursionsSortTabs')));
       expect(source, isNot(contains('class _ExcursionsFilterOption')));
       expect(source, isNot(contains('_ExcursionsSortMode.popular')));
