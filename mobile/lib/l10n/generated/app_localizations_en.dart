@@ -3735,6 +3735,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storyFilterCountry => 'Country';
 
   @override
+  String get storyFilterCountryAll => 'All countries';
+
+  @override
+  String get storyFilterCountrySearchHint => 'Search country, code, or phone';
+
+  @override
+  String get storyFilterCountryNoResults => 'Country not found';
+
+  @override
   String get storyFilterAll => 'All';
 
   @override

@@ -1371,6 +1371,9 @@
   "storyFiltersTitle": "Фильтры",
   "storyFilterCategory": "Категория",
   "storyFilterCountry": "Страна",
+  "storyFilterCountryAll": "Все страны",
+  "storyFilterCountrySearchHint": "Поиск страны, кода или телефона",
+  "storyFilterCountryNoResults": "Страна не найдена",
   "storyFilterAll": "Все",
   "storiesShowResults": "Показать {count, plural, =0{0 историй} one{{count} историю} few{{count} истории} many{{count} историй} other{{count} истории}}",
   "@storiesShowResults": {

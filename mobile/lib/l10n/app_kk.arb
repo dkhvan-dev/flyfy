@@ -1371,6 +1371,9 @@
   "storyFiltersTitle": "Сүзгілер",
   "storyFilterCategory": "Санат",
   "storyFilterCountry": "Ел",
+  "storyFilterCountryAll": "Барлық елдер",
+  "storyFilterCountrySearchHint": "Ел, код немесе телефон бойынша іздеу",
+  "storyFilterCountryNoResults": "Ел табылмады",
   "storyFilterAll": "Барлығы",
   "storiesShowResults": "{count, plural, =0{0 хикаяны} =1{1 хикаяны} other{{count} хикаяны}} көрсету",
   "@storiesShowResults": {

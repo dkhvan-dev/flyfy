@@ -3756,6 +3756,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get storyFilterCountry => 'Страна';
 
   @override
+  String get storyFilterCountryAll => 'Все страны';
+
+  @override
+  String get storyFilterCountrySearchHint => 'Поиск страны, кода или телефона';
+
+  @override
+  String get storyFilterCountryNoResults => 'Страна не найдена';
+
+  @override
   String get storyFilterAll => 'Все';
 
   @override

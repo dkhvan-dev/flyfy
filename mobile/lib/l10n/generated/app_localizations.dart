@@ -6862,6 +6862,24 @@ abstract class AppLocalizations {
   /// **'Country'**
   String get storyFilterCountry;
 
+  /// No description provided for @storyFilterCountryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All countries'**
+  String get storyFilterCountryAll;
+
+  /// No description provided for @storyFilterCountrySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country, code, or phone'**
+  String get storyFilterCountrySearchHint;
+
+  /// No description provided for @storyFilterCountryNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Country not found'**
+  String get storyFilterCountryNoResults;
+
   /// No description provided for @storyFilterAll.
   ///
   /// In en, this message translates to:

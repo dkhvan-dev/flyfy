@@ -3760,6 +3760,16 @@ class AppLocalizationsKk extends AppLocalizations {
   String get storyFilterCountry => 'Ел';
 
   @override
+  String get storyFilterCountryAll => 'Барлық елдер';
+
+  @override
+  String get storyFilterCountrySearchHint =>
+      'Ел, код немесе телефон бойынша іздеу';
+
+  @override
+  String get storyFilterCountryNoResults => 'Ел табылмады';
+
+  @override
   String get storyFilterAll => 'Барлығы';
 
   @override

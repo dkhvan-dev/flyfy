@@ -1371,6 +1371,9 @@
   "storyFiltersTitle": "Filters",
   "storyFilterCategory": "Category",
   "storyFilterCountry": "Country",
+  "storyFilterCountryAll": "All countries",
+  "storyFilterCountrySearchHint": "Search country, code, or phone",
+  "storyFilterCountryNoResults": "Country not found",
   "storyFilterAll": "All",
   "storiesShowResults": "Show {count, plural, =0{0 stories} =1{1 story} other{{count} stories}}",
   "@storiesShowResults": {
