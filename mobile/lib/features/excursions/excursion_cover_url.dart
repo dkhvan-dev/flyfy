@@ -1,5 +1,6 @@
 import '../../core/network/file_api.dart';
 import '../../core/config/app_config.dart';
+import 'models/excursion_booking_vm.dart';
 import 'models/excursion_vm.dart';
 
 String? resolveExcursionCoverUrl(ExcursionVm excursion) {
@@ -9,6 +10,19 @@ String? resolveExcursionCoverUrl(ExcursionVm excursion) {
   }
 
   return resolvePublicFileContentUrl((excursion.coverFileId ?? '').trim());
+}
+
+String? resolveOwnedExcursionCoverUrl(ExcursionVm excursion) {
+  final fileUrl = resolvePublicFileContentUrl(
+    (excursion.coverFileId ?? '').trim(),
+  );
+  if (fileUrl != null) return fileUrl;
+
+  return resolveExcursionCoverUrl(excursion);
+}
+
+String? resolveExcursionBookingCoverUrl(ExcursionBookingVm booking) {
+  return resolvePublicFileContentUrl((booking.coverFileId ?? '').trim());
 }
 
 String _resolveExcursionCoverImageUrl(String value) {

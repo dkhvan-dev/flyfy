@@ -202,7 +202,7 @@ type UpdateExcursionParams struct {
 }
 
 func (t *Excursion) ApplyUpdate(params UpdateExcursionParams) error {
-	if t.Status == enum.ExcursionStatusArchived || t.DeletedAt != nil {
+	if t.DeletedAt != nil {
 		return ErrExcursionAlreadyArchived
 	}
 
@@ -337,7 +337,7 @@ func (t *Excursion) ValidatePublishable(params PublishExcursionParams) error {
 }
 
 func (t *Excursion) Publish(params PublishExcursionParams) error {
-	if t.Status == enum.ExcursionStatusArchived || t.DeletedAt != nil {
+	if t.DeletedAt != nil {
 		return ErrExcursionAlreadyArchived
 	}
 	if err := t.ValidatePublishable(params); err != nil {
@@ -351,6 +351,20 @@ func (t *Excursion) Publish(params PublishExcursionParams) error {
 	t.Status = enum.ExcursionStatusPublished
 	t.PublishedAt = &now
 	t.DeletedAt = nil
+	t.Revision++
+	t.UpdatedAt = now
+	return nil
+}
+
+func (t *Excursion) MoveToArchive() error {
+	if t.DeletedAt != nil {
+		return ErrExcursionAlreadyArchived
+	}
+	if t.Status == enum.ExcursionStatusArchived {
+		return nil
+	}
+	now := time.Now().UTC()
+	t.Status = enum.ExcursionStatusArchived
 	t.Revision++
 	t.UpdatedAt = now
 	return nil

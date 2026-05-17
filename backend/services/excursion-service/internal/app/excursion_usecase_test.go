@@ -21,6 +21,9 @@ type excursionRepoStub struct {
 	savedExcursion    *model.Excursion
 	savedRelations    port.ExcursionRelations
 	createdBooking    *model.ExcursionBooking
+	listBookingFilter port.ExcursionBookingFilter
+	listBookingItems  []*model.ExcursionBookingListItem
+	listExcursions    []*model.Excursion
 	loadedRelations   port.ExcursionRelations
 	hasGuideLandmark  bool
 	createAggregateFn func(ctx context.Context, item *model.Excursion, relations port.ExcursionRelations) error
@@ -51,7 +54,7 @@ func (s *excursionRepoStub) GetExcursionByID(ctx context.Context, excursionID uu
 }
 
 func (s *excursionRepoStub) ListExcursions(ctx context.Context, filter port.ExcursionFilter) ([]*model.Excursion, error) {
-	return nil, nil
+	return s.listExcursions, nil
 }
 
 func (s *excursionRepoStub) LoadExcursionRelations(ctx context.Context, excursionID uuid.UUID) (port.ExcursionRelations, error) {
@@ -96,7 +99,8 @@ func (s *excursionRepoStub) CreateExcursionBooking(ctx context.Context, item *mo
 }
 
 func (s *excursionRepoStub) ListExcursionBookings(ctx context.Context, filter port.ExcursionBookingFilter) ([]*model.ExcursionBookingListItem, error) {
-	return nil, nil
+	s.listBookingFilter = filter
+	return s.listBookingItems, nil
 }
 
 func (s *excursionRepoStub) GetExcursionBookingByID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionBooking, error) {
@@ -271,6 +275,52 @@ func TestCreateExcursionPersistsDraftAggregate(t *testing.T) {
 		repo.createdRelations.IncludedItems[0].Text != "food" ||
 		repo.createdRelations.IncludedItems[1].Text != "transport" {
 		t.Fatalf("included items = %#v, want stable dictionary keys", repo.createdRelations.IncludedItems)
+	}
+}
+
+func TestListMyExcursionsKeepsProductCoverFallback(t *testing.T) {
+	guideUserID := uuid.New()
+	productCoverFileID := uuid.New()
+	excursion, err := model.NewExcursion(model.NewExcursionParams{
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		Title:           "Medeu tour",
+		Summary:         "Private mountain route",
+		Description:     "A detailed mountain excursion through Medeu.",
+		CategorySlug:    "nature",
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 180,
+		MaxGroupSize:    6,
+		MeetingPoint:    "Medeu entrance",
+		PriceAmount:     120,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursion() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		listExcursions: []*model.Excursion{excursion},
+		loadedRelations: port.ExcursionRelations{
+			ProductCoverFileID: &productCoverFileID,
+		},
+	}
+	uc := NewExcursionUseCase(repo, nil, nil)
+
+	items, err := uc.ListMyExcursions(context.Background(), guideUserID, 20, 0, nil)
+
+	if err != nil {
+		t.Fatalf("ListMyExcursions() error = %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("items = %d, want 1", len(items))
+	}
+	if items[0].CoverFileID != nil {
+		t.Fatalf("cover file id = %v, want nil offer cover", items[0].CoverFileID)
+	}
+	if items[0].ProductCoverFileID == nil || *items[0].ProductCoverFileID != productCoverFileID {
+		t.Fatalf("product cover file id = %v, want %s", items[0].ProductCoverFileID, productCoverFileID)
 	}
 }
 
@@ -626,6 +676,46 @@ func TestUpdateExcursionRejectsNonOwner(t *testing.T) {
 	}
 }
 
+func TestArchiveExcursionKeepsOfferVisibleForGuideArchive(t *testing.T) {
+	ownerID := uuid.New()
+	excursion, err := model.NewExcursion(model.NewExcursionParams{
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     ownerID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		Title:           "Almaty Mountain Escape",
+		Summary:         "Private mountain route",
+		Description:     "A guided route through the most scenic mountain stops around Almaty.",
+		CategorySlug:    "nature",
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursion() error = %v", err)
+	}
+
+	repo := &excursionRepoStub{gotExcursion: excursion}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	aggregate, err := uc.ArchiveExcursion(context.Background(), excursion.ID, ownerID)
+	if err != nil {
+		t.Fatalf("ArchiveExcursion() error = %v", err)
+	}
+	if aggregate.Excursion.Status != enum.ExcursionStatusArchived {
+		t.Fatalf("status = %s, want %s", aggregate.Excursion.Status, enum.ExcursionStatusArchived)
+	}
+	if aggregate.Excursion.DeletedAt != nil {
+		t.Fatalf("DeletedAt = %v, want nil", aggregate.Excursion.DeletedAt)
+	}
+	if repo.savedExcursion == nil {
+		t.Fatal("archived excursion was not persisted")
+	}
+}
+
 func TestUpdatePublishedExcursionKeepsOriginalPublicationTime(t *testing.T) {
 	ownerID := uuid.New()
 	publishedAt := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
@@ -820,6 +910,33 @@ func TestCreateExcursionBookingPersistsRequestForSelectedOffer(t *testing.T) {
 	}
 	if booking.TotalPriceAmount <= booking.UnitPriceAmount {
 		t.Fatalf("total price = %v, want subtotal plus service fee", booking.TotalPriceAmount)
+	}
+}
+
+func TestListMyGuideExcursionBookingsFiltersByGuideUser(t *testing.T) {
+	actorUserID := uuid.New()
+	repo := &excursionRepoStub{
+		listBookingItems: []*model.ExcursionBookingListItem{
+			{Booking: &model.ExcursionBooking{ID: uuid.New(), GuideUserID: actorUserID}},
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	items, err := uc.ListMyGuideExcursionBookings(context.Background(), actorUserID, 25, 10)
+	if err != nil {
+		t.Fatalf("ListMyGuideExcursionBookings() error = %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("items len = %d, want 1", len(items))
+	}
+	if repo.listBookingFilter.GuideUserID == nil || *repo.listBookingFilter.GuideUserID != actorUserID {
+		t.Fatalf("GuideUserID filter = %v, want %s", repo.listBookingFilter.GuideUserID, actorUserID)
+	}
+	if repo.listBookingFilter.TouristUserID != nil {
+		t.Fatalf("TouristUserID filter = %v, want nil", repo.listBookingFilter.TouristUserID)
+	}
+	if repo.listBookingFilter.Limit != 25 || repo.listBookingFilter.Offset != 10 {
+		t.Fatalf("pagination = (%d,%d), want (25,10)", repo.listBookingFilter.Limit, repo.listBookingFilter.Offset)
 	}
 }
 

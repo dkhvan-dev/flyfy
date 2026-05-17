@@ -354,7 +354,23 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypePublished, actorUserID, map[string]any{"publishedAt": item.PublishedAt})
 
-	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID}, nil
+	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+}
+
+func (u *ExcursionUseCase) ArchiveExcursion(ctx context.Context, excursionID uuid.UUID, actorUserID uuid.UUID) (*ExcursionAggregate, error) {
+	item, relations, err := u.getOwnedExcursionWithRelations(ctx, excursionID, actorUserID)
+	if err != nil {
+		return nil, err
+	}
+	if err = item.MoveToArchive(); err != nil {
+		return nil, err
+	}
+	if err = u.repo.UpdateExcursionAggregate(ctx, item, relations); err != nil {
+		return nil, fmt.Errorf("archive excursion: %w", err)
+	}
+	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeArchived, actorUserID, map[string]any{"archivedAt": item.UpdatedAt})
+
+	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
 }
 
 func (u *ExcursionUseCase) DeleteExcursion(ctx context.Context, excursionID uuid.UUID, actorUserID uuid.UUID) error {
@@ -391,7 +407,7 @@ func (u *ExcursionUseCase) GetMyExcursion(ctx context.Context, excursionID uuid.
 	if err != nil {
 		return nil, err
 	}
-	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID}, nil
+	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
 }
 
 func (u *ExcursionUseCase) ListExcursions(ctx context.Context, filter port.ExcursionFilter) ([]*ExcursionAggregate, error) {
@@ -542,13 +558,36 @@ func (u *ExcursionUseCase) ListMyExcursionBookings(ctx context.Context, actorUse
 	if limit > 100 {
 		limit = 100
 	}
+	touristUserID := actorUserID
 	items, err := u.repo.ListExcursionBookings(ctx, port.ExcursionBookingFilter{
-		TouristUserID: actorUserID,
+		TouristUserID: &touristUserID,
 		Limit:         limit,
 		Offset:        offset,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list excursion bookings: %w", err)
+	}
+	return items, nil
+}
+
+func (u *ExcursionUseCase) ListMyGuideExcursionBookings(ctx context.Context, actorUserID uuid.UUID, limit int, offset int) ([]*model.ExcursionBookingListItem, error) {
+	if actorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	guideUserID := actorUserID
+	items, err := u.repo.ListExcursionBookings(ctx, port.ExcursionBookingFilter{
+		GuideUserID: &guideUserID,
+		Limit:       limit,
+		Offset:      offset,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list guide excursion bookings: %w", err)
 	}
 	return items, nil
 }
@@ -663,7 +702,7 @@ func (u *ExcursionUseCase) loadAggregate(ctx context.Context, item *model.Excurs
 	if err != nil {
 		return nil, fmt.Errorf("load excursion relations: %w", err)
 	}
-	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID}, nil
+	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
 }
 
 func (u *ExcursionUseCase) loadAggregates(ctx context.Context, items []*model.Excursion) ([]*ExcursionAggregate, error) {

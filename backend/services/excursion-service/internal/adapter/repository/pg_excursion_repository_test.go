@@ -219,6 +219,29 @@ func TestSyncExcursionMarketplaceUsesProductCoverForSharedCardAndOfferCoverForGu
 	}
 }
 
+func TestGetProductCoverFileIDUsesLegacyOfferProductCover(t *testing.T) {
+	excursionID := uuid.New()
+	productCoverFileID := uuid.New()
+	exec := &singleQueryRowExecutor{row: uuidRow{id: productCoverFileID}}
+
+	got, err := getProductCoverFileID(context.Background(), exec, excursionID)
+
+	if err != nil {
+		t.Fatalf("getProductCoverFileID() error = %v", err)
+	}
+	if got == nil || *got != productCoverFileID {
+		t.Fatalf("product cover file id = %v, want %s", got, productCoverFileID)
+	}
+	if len(exec.args) != 1 || exec.args[0] != excursionID {
+		t.Fatalf("query args = %#v, want [%s]", exec.args, excursionID)
+	}
+	if !strings.Contains(exec.query, "excursion_offers") ||
+		!strings.Contains(exec.query, "excursion_products") ||
+		!strings.Contains(exec.query, "legacy_excursion_id") {
+		t.Fatalf("query does not join offer to product cover:\n%s", exec.query)
+	}
+}
+
 func TestSyncExcursionMarketplacePersistsPreparedTranslations(t *testing.T) {
 	item := validRepositoryExcursion(t)
 	item.Translations = model.ExcursionTranslations{
@@ -561,6 +584,18 @@ func (e *marketplaceRecordingExecutor) QueryRow(_ context.Context, query string,
 	id := e.queryRows[0]
 	e.queryRows = e.queryRows[1:]
 	return uuidRow{id: id}
+}
+
+type singleQueryRowExecutor struct {
+	query string
+	args  []any
+	row   pgx.Row
+}
+
+func (e *singleQueryRowExecutor) QueryRow(_ context.Context, query string, arguments ...any) pgx.Row {
+	e.query = query
+	e.args = append([]any(nil), arguments...)
+	return e.row
 }
 
 type uuidRow struct {

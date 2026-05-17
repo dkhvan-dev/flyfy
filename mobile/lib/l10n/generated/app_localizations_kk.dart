@@ -829,6 +829,13 @@ class AppLocalizationsKk extends AppLocalizations {
       'Кәсіби гид құралдары мобильді қосымшада әзірге қолжетімді емес.';
 
   @override
+  String get profileGuideDashboardTitle => 'Гид кабинеті';
+
+  @override
+  String get profileGuideDashboardSubtitle =>
+      'Ұсыныстарды, клиент брондарын және өткен экскурсияларды басқарыңыз.';
+
+  @override
   String get profileSupportTitle => 'Көмек және қолдау';
 
   @override
@@ -3584,6 +3591,160 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get myExcursionsReviewPublish => 'Жариялау';
+
+  @override
+  String get guideDashboardTitle => 'Гид кабинеті';
+
+  @override
+  String get guideDashboardOffersStat => 'Барлық ұсыныс';
+
+  @override
+  String get guideDashboardBookingsStat => 'Брондар';
+
+  @override
+  String get guideDashboardRevenueStat => 'Түсім';
+
+  @override
+  String get guideDashboardRatingStat => 'Рейтинг';
+
+  @override
+  String get guideDashboardSearchHint =>
+      'Ұсыныс, қонақ, қала және күн бойынша іздеу';
+
+  @override
+  String get guideDashboardOffersTab => 'Ұсыныстар';
+
+  @override
+  String get guideDashboardBookingsTab => 'Брондалған';
+
+  @override
+  String get guideDashboardCompletedTab => 'Өткізілген';
+
+  @override
+  String get guideDashboardActiveTab => 'Белсенді';
+
+  @override
+  String get guideDashboardArchiveTab => 'Архив';
+
+  @override
+  String get guideDashboardReviewTab => 'Тексеру';
+
+  @override
+  String get guideDashboardRejectedTab => 'Қабылданбады';
+
+  @override
+  String get guideDashboardCancelledTab => 'Бас тартылды';
+
+  @override
+  String get guideDashboardLoadFailed => 'Гид кабинетін жүктеу мүмкін болмады';
+
+  @override
+  String get guideDashboardOffersEmpty => 'Әзірге белсенді ұсыныстар жоқ';
+
+  @override
+  String get guideDashboardOffersEmptyHint =>
+      'Саяхатшылар брондай алуы үшін алғашқы экскурсия ұсынысын жариялаңыз.';
+
+  @override
+  String get guideDashboardBookingsEmpty => 'Жақын брондар жоқ';
+
+  @override
+  String get guideDashboardBookingsEmptyHint =>
+      'Клиенттердің жаңа брондары күні, қонақ саны және сомасымен осында шығады.';
+
+  @override
+  String get guideDashboardCompletedEmpty => 'Әзірге өткізілген экскурсия жоқ';
+
+  @override
+  String get guideDashboardCompletedEmptyHint =>
+      'Аяқталған экскурсиялар жоспарланған күнінен кейін осында көшеді.';
+
+  @override
+  String get guideDashboardReviewEmpty => 'Тексеруде ештеңе жоқ';
+
+  @override
+  String get guideDashboardReviewEmptyHint =>
+      'Модерацияны немесе жариялауды күтіп тұрған ұсыныстар осында шығады.';
+
+  @override
+  String get guideDashboardArchiveEmpty => 'Архив әзірге бос';
+
+  @override
+  String get guideDashboardArchiveEmptyHint =>
+      'Уақытша өзекті емес ұсыныстарды белсенді тізімнен алып, кейін өңдеп қайта жариялау үшін архивке жіберіңіз.';
+
+  @override
+  String get guideDashboardRejectedEmpty => 'Қабылданбаған ұсыныстар жоқ';
+
+  @override
+  String get guideDashboardRejectedEmptyHint =>
+      'Модерациядан өтпеген ұсыныстар түзетуге қолжетімді болып осында шығады.';
+
+  @override
+  String get guideDashboardCancelledEmpty => 'Бас тартылған брондар жоқ';
+
+  @override
+  String get guideDashboardCancelledEmptyHint =>
+      'Клиент бас тартқан брондар тарих пен байланыс үшін осында сақталады.';
+
+  @override
+  String get guideDashboardCreateOffer => 'Ұсыныс жасау';
+
+  @override
+  String get guideDashboardEditOffer => 'Өңдеу';
+
+  @override
+  String get guideDashboardArchiveOffer => 'Архивке';
+
+  @override
+  String get guideDashboardPublishOffer => 'Жариялау';
+
+  @override
+  String get guideDashboardArchiveFailed =>
+      'Ұсынысты архивке жіберу мүмкін болмады';
+
+  @override
+  String get guideDashboardPublishFailed => 'Ұсынысты жариялау мүмкін болмады';
+
+  @override
+  String get guideDashboardViewBooking => 'Бронды ашу';
+
+  @override
+  String get guideDashboardViewDetails => 'Толығырақ';
+
+  @override
+  String get guideDashboardStatusActive => 'Белсенді';
+
+  @override
+  String get guideDashboardStatusArchived => 'Архив';
+
+  @override
+  String get guideDashboardStatusReview => 'Тексеруде';
+
+  @override
+  String get guideDashboardStatusRejected => 'Қабылданбады';
+
+  @override
+  String get guideDashboardStatusBooked => 'Брон';
+
+  @override
+  String get guideDashboardStatusCompleted => 'Өткізілді';
+
+  @override
+  String get guideDashboardStatusCancelled => 'Бас тартылды';
+
+  @override
+  String get guideDashboardFlexibleGroup => 'Икемді топ';
+
+  @override
+  String guideDashboardMaxGuests(Object count) {
+    return '$count қонаққа дейін';
+  }
+
+  @override
+  String guideDashboardBookingCount(Object count) {
+    return '$count брон';
+  }
 
   @override
   String get excursionReviewsTitle => 'Экскурсиядан кейінгі пікірлер';

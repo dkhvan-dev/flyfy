@@ -140,6 +140,32 @@ func TestExcursionPublishRejectsArchivedExcursion(t *testing.T) {
 	}
 }
 
+func TestExcursionMoveToArchiveKeepsOfferRestorable(t *testing.T) {
+	excursion := newValidExcursion(t)
+
+	if err := excursion.MoveToArchive(); err != nil {
+		t.Fatalf("MoveToArchive() error = %v", err)
+	}
+
+	if excursion.Status != enum.ExcursionStatusArchived {
+		t.Fatalf("status = %q, want %q", excursion.Status, enum.ExcursionStatusArchived)
+	}
+	if excursion.DeletedAt != nil {
+		t.Fatalf("DeletedAt = %v, want nil", excursion.DeletedAt)
+	}
+
+	err := excursion.Publish(validPublishParams(excursion.ID))
+	if err != nil {
+		t.Fatalf("Publish() from restorable archive error = %v", err)
+	}
+	if excursion.Status != enum.ExcursionStatusPublished {
+		t.Fatalf("status after publish = %q, want %q", excursion.Status, enum.ExcursionStatusPublished)
+	}
+	if excursion.PublishedAt == nil {
+		t.Fatal("PublishedAt is nil after publish from archive")
+	}
+}
+
 func newValidExcursion(t *testing.T) *Excursion {
 	t.Helper()
 	excursion, err := NewExcursion(NewExcursionParams{

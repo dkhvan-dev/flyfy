@@ -825,6 +825,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Professional guide tools are not available in the mobile app yet.';
 
   @override
+  String get profileGuideDashboardTitle => 'Guide dashboard';
+
+  @override
+  String get profileGuideDashboardSubtitle =>
+      'Manage offers, client bookings, and completed excursions.';
+
+  @override
   String get profileSupportTitle => 'Help & support';
 
   @override
@@ -3562,6 +3569,159 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get myExcursionsReviewPublish => 'Publish';
+
+  @override
+  String get guideDashboardTitle => 'Guide Dashboard';
+
+  @override
+  String get guideDashboardOffersStat => 'Total offers';
+
+  @override
+  String get guideDashboardBookingsStat => 'Bookings';
+
+  @override
+  String get guideDashboardRevenueStat => 'Revenue';
+
+  @override
+  String get guideDashboardRatingStat => 'Rating';
+
+  @override
+  String get guideDashboardSearchHint =>
+      'Search offers, guests, cities, and dates';
+
+  @override
+  String get guideDashboardOffersTab => 'Offers';
+
+  @override
+  String get guideDashboardBookingsTab => 'Booked';
+
+  @override
+  String get guideDashboardCompletedTab => 'Completed';
+
+  @override
+  String get guideDashboardActiveTab => 'Active';
+
+  @override
+  String get guideDashboardArchiveTab => 'Archive';
+
+  @override
+  String get guideDashboardReviewTab => 'Review';
+
+  @override
+  String get guideDashboardRejectedTab => 'Rejected';
+
+  @override
+  String get guideDashboardCancelledTab => 'Cancelled';
+
+  @override
+  String get guideDashboardLoadFailed => 'Failed to load guide dashboard';
+
+  @override
+  String get guideDashboardOffersEmpty => 'No active offers yet';
+
+  @override
+  String get guideDashboardOffersEmptyHint =>
+      'Publish your first excursion offer so travelers can book it.';
+
+  @override
+  String get guideDashboardBookingsEmpty => 'No upcoming bookings';
+
+  @override
+  String get guideDashboardBookingsEmptyHint =>
+      'New client bookings will appear here with date, guests, and payout amount.';
+
+  @override
+  String get guideDashboardCompletedEmpty => 'No completed excursions yet';
+
+  @override
+  String get guideDashboardCompletedEmptyHint =>
+      'Finished excursions move here after their scheduled date.';
+
+  @override
+  String get guideDashboardReviewEmpty => 'Nothing is under review';
+
+  @override
+  String get guideDashboardReviewEmptyHint =>
+      'Offers waiting for moderation or publication will appear here.';
+
+  @override
+  String get guideDashboardArchiveEmpty => 'Archive is empty';
+
+  @override
+  String get guideDashboardArchiveEmptyHint =>
+      'Archive offers that are temporarily unavailable to remove them from active lists while keeping edit and publish access.';
+
+  @override
+  String get guideDashboardRejectedEmpty => 'No rejected offers';
+
+  @override
+  String get guideDashboardRejectedEmptyHint =>
+      'Offers declined during moderation will appear here with edit access.';
+
+  @override
+  String get guideDashboardCancelledEmpty => 'No cancelled bookings';
+
+  @override
+  String get guideDashboardCancelledEmptyHint =>
+      'Cancelled client bookings are kept here for history and guest follow-up.';
+
+  @override
+  String get guideDashboardCreateOffer => 'Create offer';
+
+  @override
+  String get guideDashboardEditOffer => 'Edit offer';
+
+  @override
+  String get guideDashboardArchiveOffer => 'Archive';
+
+  @override
+  String get guideDashboardPublishOffer => 'Publish';
+
+  @override
+  String get guideDashboardArchiveFailed => 'Failed to move offer to archive';
+
+  @override
+  String get guideDashboardPublishFailed => 'Failed to publish offer';
+
+  @override
+  String get guideDashboardViewBooking => 'View booking';
+
+  @override
+  String get guideDashboardViewDetails => 'View details';
+
+  @override
+  String get guideDashboardStatusActive => 'Active';
+
+  @override
+  String get guideDashboardStatusArchived => 'Archived';
+
+  @override
+  String get guideDashboardStatusReview => 'Under review';
+
+  @override
+  String get guideDashboardStatusRejected => 'Rejected';
+
+  @override
+  String get guideDashboardStatusBooked => 'Booked';
+
+  @override
+  String get guideDashboardStatusCompleted => 'Completed';
+
+  @override
+  String get guideDashboardStatusCancelled => 'Cancelled';
+
+  @override
+  String get guideDashboardFlexibleGroup => 'Flexible group';
+
+  @override
+  String guideDashboardMaxGuests(Object count) {
+    return 'Up to $count guests';
+  }
+
+  @override
+  String guideDashboardBookingCount(Object count) {
+    return '$count bookings';
+  }
 
   @override
   String get excursionReviewsTitle => 'Reviews after excursions';

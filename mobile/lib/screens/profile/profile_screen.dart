@@ -452,7 +452,7 @@ class _ProfileBody extends StatelessWidget {
         ],
         SizedBox(height: profileScaled(context, 32, min: 24, max: 36)),
         if (isOwnProfile) ...[
-          const _OwnProfileSections(),
+          _OwnProfileSections(isGuideProfile: isGuideProfile),
         ] else ...[
           _ForeignProfileSections(isGuideProfile: isGuideProfile),
         ],
@@ -1272,7 +1272,9 @@ class _ForeignProfileActions extends StatelessWidget {
 }
 
 class _OwnProfileSections extends StatelessWidget {
-  const _OwnProfileSections();
+  const _OwnProfileSections({required this.isGuideProfile});
+
+  final bool isGuideProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -1300,6 +1302,13 @@ class _OwnProfileSections extends StatelessWidget {
           subtitle: l10n.profileMyActivitiesSubtitle,
           onTap: () => context.push('/me/activities'),
         ),
+        if (isGuideProfile)
+          _ProfileMenuTile(
+            icon: Icons.dashboard_customize_outlined,
+            title: l10n.profileGuideDashboardTitle,
+            subtitle: l10n.profileGuideDashboardSubtitle,
+            onTap: () => context.push('/profile/guide-dashboard'),
+          ),
         SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
         ProfileSectionHeading(title: l10n.profilePreferencesTitle),
         SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),

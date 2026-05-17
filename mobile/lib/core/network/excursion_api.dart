@@ -33,8 +33,7 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -92,8 +91,7 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -125,6 +123,40 @@ class ExcursionApi {
     return ExcursionVm.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<ExcursionsPage> getMyExcursions({
+    int limit = 50,
+    int offset = 0,
+    List<String> statuses = const [],
+  }) async {
+    final normalizedStatuses = statuses
+        .map((status) => status.trim().toUpperCase())
+        .where((status) => status.isNotEmpty)
+        .toList(growable: false);
+    final response = await _apiClient.dio.get(
+      '/me/excursions',
+      queryParameters: <String, dynamic>{
+        'limit': limit,
+        'offset': offset,
+        if (normalizedStatuses.isNotEmpty)
+          'status': normalizedStatuses.join(','),
+      },
+    );
+
+    final data = response.data;
+    final items = (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+
+    return ExcursionsPage(
+      items: items
+          .whereType<Map<String, dynamic>>()
+          .map(ExcursionVm.fromJson)
+          .toList(growable: false),
+      hasMore: data is Map<String, dynamic> && data['hasMore'] == true,
+    );
+  }
+
   Future<ExcursionVm> updateExcursionOffer(
     String legacyExcursionId,
     CreateExcursionRequest request,
@@ -141,6 +173,15 @@ class ExcursionApi {
   Future<ExcursionVm> publishExcursion(String excursionId) async {
     final response = await _apiClient.dio.post(
       '/me/excursions/$excursionId/publish',
+    );
+
+    return ExcursionVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<ExcursionVm> archiveExcursionOffer(String excursionId) async {
+    final encodedExcursionId = Uri.encodeComponent(excursionId);
+    final response = await _apiClient.dio.post(
+      '/me/excursions/$encodedExcursionId/archive',
     );
 
     return ExcursionVm.fromJson(response.data as Map<String, dynamic>);
@@ -167,8 +208,31 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+
+    return ExcursionBookingsPage(
+      items: items
+          .whereType<Map<String, dynamic>>()
+          .map(ExcursionBookingVm.fromJson)
+          .toList(growable: false),
+      hasMore: data is Map<String, dynamic> && data['hasMore'] == true,
+    );
+  }
+
+  Future<ExcursionBookingsPage> getMyGuideExcursionBookings({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final response = await _apiClient.dio.get(
+      '/me/guide-excursion-bookings',
+      queryParameters: <String, dynamic>{'limit': limit, 'offset': offset},
+    );
+
+    final data = response.data;
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -215,8 +279,7 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -234,6 +297,13 @@ class ExcursionOffersPage {
   const ExcursionOffersPage({required this.items, required this.hasMore});
 
   final List<ExcursionOfferVm> items;
+  final bool hasMore;
+}
+
+class ExcursionsPage {
+  const ExcursionsPage({required this.items, required this.hasMore});
+
+  final List<ExcursionVm> items;
   final bool hasMore;
 }
 

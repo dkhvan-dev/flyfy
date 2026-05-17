@@ -1570,6 +1570,18 @@ abstract class AppLocalizations {
   /// **'Professional guide tools are not available in the mobile app yet.'**
   String get profileGuideWorkspaceSubtitle;
 
+  /// No description provided for @profileGuideDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide dashboard'**
+  String get profileGuideDashboardTitle;
+
+  /// No description provided for @profileGuideDashboardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage offers, client bookings, and completed excursions.'**
+  String get profileGuideDashboardSubtitle;
+
   /// No description provided for @profileSupportTitle.
   ///
   /// In en, this message translates to:
@@ -6585,6 +6597,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Publish'**
   String get myExcursionsReviewPublish;
+
+  /// No description provided for @guideDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide Dashboard'**
+  String get guideDashboardTitle;
+
+  /// No description provided for @guideDashboardOffersStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Total offers'**
+  String get guideDashboardOffersStat;
+
+  /// No description provided for @guideDashboardBookingsStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings'**
+  String get guideDashboardBookingsStat;
+
+  /// No description provided for @guideDashboardRevenueStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get guideDashboardRevenueStat;
+
+  /// No description provided for @guideDashboardRatingStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get guideDashboardRatingStat;
+
+  /// No description provided for @guideDashboardSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search offers, guests, cities, and dates'**
+  String get guideDashboardSearchHint;
+
+  /// No description provided for @guideDashboardOffersTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Offers'**
+  String get guideDashboardOffersTab;
+
+  /// No description provided for @guideDashboardBookingsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked'**
+  String get guideDashboardBookingsTab;
+
+  /// No description provided for @guideDashboardCompletedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get guideDashboardCompletedTab;
+
+  /// No description provided for @guideDashboardActiveTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get guideDashboardActiveTab;
+
+  /// No description provided for @guideDashboardArchiveTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get guideDashboardArchiveTab;
+
+  /// No description provided for @guideDashboardReviewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get guideDashboardReviewTab;
+
+  /// No description provided for @guideDashboardRejectedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get guideDashboardRejectedTab;
+
+  /// No description provided for @guideDashboardCancelledTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get guideDashboardCancelledTab;
+
+  /// No description provided for @guideDashboardLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load guide dashboard'**
+  String get guideDashboardLoadFailed;
+
+  /// No description provided for @guideDashboardOffersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No active offers yet'**
+  String get guideDashboardOffersEmpty;
+
+  /// No description provided for @guideDashboardOffersEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish your first excursion offer so travelers can book it.'**
+  String get guideDashboardOffersEmptyHint;
+
+  /// No description provided for @guideDashboardBookingsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming bookings'**
+  String get guideDashboardBookingsEmpty;
+
+  /// No description provided for @guideDashboardBookingsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New client bookings will appear here with date, guests, and payout amount.'**
+  String get guideDashboardBookingsEmptyHint;
+
+  /// No description provided for @guideDashboardCompletedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed excursions yet'**
+  String get guideDashboardCompletedEmpty;
+
+  /// No description provided for @guideDashboardCompletedEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished excursions move here after their scheduled date.'**
+  String get guideDashboardCompletedEmptyHint;
+
+  /// No description provided for @guideDashboardReviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is under review'**
+  String get guideDashboardReviewEmpty;
+
+  /// No description provided for @guideDashboardReviewEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Offers waiting for moderation or publication will appear here.'**
+  String get guideDashboardReviewEmptyHint;
+
+  /// No description provided for @guideDashboardArchiveEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive is empty'**
+  String get guideDashboardArchiveEmpty;
+
+  /// No description provided for @guideDashboardArchiveEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive offers that are temporarily unavailable to remove them from active lists while keeping edit and publish access.'**
+  String get guideDashboardArchiveEmptyHint;
+
+  /// No description provided for @guideDashboardRejectedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No rejected offers'**
+  String get guideDashboardRejectedEmpty;
+
+  /// No description provided for @guideDashboardRejectedEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Offers declined during moderation will appear here with edit access.'**
+  String get guideDashboardRejectedEmptyHint;
+
+  /// No description provided for @guideDashboardCancelledEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No cancelled bookings'**
+  String get guideDashboardCancelledEmpty;
+
+  /// No description provided for @guideDashboardCancelledEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled client bookings are kept here for history and guest follow-up.'**
+  String get guideDashboardCancelledEmptyHint;
+
+  /// No description provided for @guideDashboardCreateOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Create offer'**
+  String get guideDashboardCreateOffer;
+
+  /// No description provided for @guideDashboardEditOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit offer'**
+  String get guideDashboardEditOffer;
+
+  /// No description provided for @guideDashboardArchiveOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get guideDashboardArchiveOffer;
+
+  /// No description provided for @guideDashboardPublishOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get guideDashboardPublishOffer;
+
+  /// No description provided for @guideDashboardArchiveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to move offer to archive'**
+  String get guideDashboardArchiveFailed;
+
+  /// No description provided for @guideDashboardPublishFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to publish offer'**
+  String get guideDashboardPublishFailed;
+
+  /// No description provided for @guideDashboardViewBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'View booking'**
+  String get guideDashboardViewBooking;
+
+  /// No description provided for @guideDashboardViewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get guideDashboardViewDetails;
+
+  /// No description provided for @guideDashboardStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get guideDashboardStatusActive;
+
+  /// No description provided for @guideDashboardStatusArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get guideDashboardStatusArchived;
+
+  /// No description provided for @guideDashboardStatusReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get guideDashboardStatusReview;
+
+  /// No description provided for @guideDashboardStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get guideDashboardStatusRejected;
+
+  /// No description provided for @guideDashboardStatusBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked'**
+  String get guideDashboardStatusBooked;
+
+  /// No description provided for @guideDashboardStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get guideDashboardStatusCompleted;
+
+  /// No description provided for @guideDashboardStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get guideDashboardStatusCancelled;
+
+  /// No description provided for @guideDashboardFlexibleGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Flexible group'**
+  String get guideDashboardFlexibleGroup;
+
+  /// No description provided for @guideDashboardMaxGuests.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {count} guests'**
+  String guideDashboardMaxGuests(Object count);
+
+  /// No description provided for @guideDashboardBookingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} bookings'**
+  String guideDashboardBookingCount(Object count);
 
   /// No description provided for @excursionReviewsTitle.
   ///

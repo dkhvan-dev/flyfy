@@ -17,7 +17,7 @@ enum ExcursionDetailState { initial, loading, success, error }
 
 class ExcursionProvider extends ChangeNotifier {
   ExcursionProvider({ExcursionApi? excursionApi})
-    : _excursionApi = excursionApi ?? ExcursionApi();
+      : _excursionApi = excursionApi ?? ExcursionApi();
 
   static const _marketplaceRefreshAttempts = 3;
   static const _marketplaceRefreshRetryDelay = Duration(milliseconds: 150);
@@ -43,6 +43,12 @@ class ExcursionProvider extends ChangeNotifier {
   String? _bookingListErrorMessage;
   bool _isBookingListRefreshing = false;
 
+  ExcursionListState _guideDashboardState = ExcursionListState.initial;
+  List<ExcursionVm> _myGuideExcursions = const [];
+  List<ExcursionBookingVm> _myGuideExcursionBookings = const [];
+  String? _guideDashboardErrorMessage;
+  bool _isGuideDashboardRefreshing = false;
+
   final Map<String, List<ExcursionReviewVm>> _reviewsByProductId = {};
   final Map<String, List<ExcursionReviewVm>> _reviewsByLandmarkId = {};
 
@@ -63,6 +69,13 @@ class ExcursionProvider extends ChangeNotifier {
   List<ExcursionBookingVm> get myExcursionBookings => _myExcursionBookings;
   String? get bookingListErrorMessage => _bookingListErrorMessage;
   bool get isBookingListRefreshing => _isBookingListRefreshing;
+
+  ExcursionListState get guideDashboardState => _guideDashboardState;
+  List<ExcursionVm> get myGuideExcursions => _myGuideExcursions;
+  List<ExcursionBookingVm> get myGuideExcursionBookings =>
+      _myGuideExcursionBookings;
+  String? get guideDashboardErrorMessage => _guideDashboardErrorMessage;
+  bool get isGuideDashboardRefreshing => _isGuideDashboardRefreshing;
 
   List<ExcursionReviewVm> excursionReviewsForProduct(String productId) {
     return _reviewsByProductId[productId.trim()] ?? const [];
@@ -163,6 +176,118 @@ class ExcursionProvider extends ChangeNotifier {
 
   Future<void> refreshMyExcursionBookings() {
     return loadMyExcursionBookings(force: true);
+  }
+
+  Future<void> loadGuideDashboardData({bool force = false}) async {
+    if (!force &&
+        (_guideDashboardState == ExcursionListState.loading ||
+            _isGuideDashboardRefreshing)) {
+      return;
+    }
+
+    final hasCachedData =
+        _myGuideExcursions.isNotEmpty || _myGuideExcursionBookings.isNotEmpty;
+    if (hasCachedData) {
+      _isGuideDashboardRefreshing = true;
+    } else {
+      _guideDashboardState = ExcursionListState.loading;
+    }
+    _guideDashboardErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final results = await Future.wait<Object>([
+        _excursionApi.getMyExcursions(limit: 100),
+        _excursionApi.getMyGuideExcursionBookings(limit: 100),
+      ]);
+      final excursionsPage = results[0] as ExcursionsPage;
+      final bookingsPage = results[1] as ExcursionBookingsPage;
+
+      _myGuideExcursions = excursionsPage.items;
+      _myGuideExcursionBookings = bookingsPage.items;
+      _guideDashboardState = ExcursionListState.success;
+    } on DioException catch (e) {
+      _guideDashboardErrorMessage = DioErrorMapper.toMessage(e);
+      if (!hasCachedData) {
+        _guideDashboardState = ExcursionListState.error;
+      }
+    } catch (_) {
+      _guideDashboardErrorMessage = 'Failed to load guide dashboard';
+      if (!hasCachedData) {
+        _guideDashboardState = ExcursionListState.error;
+      }
+    } finally {
+      _isGuideDashboardRefreshing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshGuideDashboardData() {
+    return loadGuideDashboardData(force: true);
+  }
+
+  Future<bool> publishExcursionOffer(String excursionId) async {
+    final trimmedExcursionId = excursionId.trim();
+    if (trimmedExcursionId.isEmpty) {
+      _actionErrorMessage = 'Invalid excursion id';
+      return false;
+    }
+
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final published = await _excursionApi.publishExcursion(
+        trimmedExcursionId,
+      );
+      _upsertGuideDashboardExcursion(published);
+      _actionState = ExcursionActionState.success;
+      await loadGuideDashboardData(force: true);
+      return true;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return false;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to publish excursion offer';
+      _actionState = ExcursionActionState.error;
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<bool> archiveExcursionOffer(String excursionId) async {
+    final trimmedExcursionId = excursionId.trim();
+    if (trimmedExcursionId.isEmpty) {
+      _actionErrorMessage = 'Invalid excursion id';
+      return false;
+    }
+
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final archived = await _excursionApi.archiveExcursionOffer(
+        trimmedExcursionId,
+      );
+      _upsertGuideDashboardExcursion(archived);
+      _actionState = ExcursionActionState.success;
+      await loadGuideDashboardData(force: true);
+      return true;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return false;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to archive excursion offer';
+      _actionState = ExcursionActionState.error;
+      return false;
+    } finally {
+      notifyListeners();
+    }
   }
 
   Future<void> loadExcursionDetails(
@@ -529,16 +654,30 @@ class ExcursionProvider extends ChangeNotifier {
     _listState = ExcursionListState.success;
   }
 
+  void _upsertGuideDashboardExcursion(ExcursionVm excursion) {
+    final excursionId = excursion.id.trim();
+    if (excursionId.isEmpty) return;
+
+    final nextExcursions = [..._myGuideExcursions];
+    final existingIndex = nextExcursions.indexWhere(
+      (item) => item.id == excursionId,
+    );
+    if (existingIndex >= 0) {
+      nextExcursions[existingIndex] = excursion;
+    } else {
+      nextExcursions.insert(0, excursion);
+    }
+    _myGuideExcursions = List.unmodifiable(nextExcursions);
+  }
+
   void _upsertBookingReview(String bookingId, ExcursionReviewVm review) {
     final normalizedBookingId = bookingId.trim();
     if (normalizedBookingId.isEmpty) return;
 
-    _myExcursionBookings = _myExcursionBookings
-        .map((booking) {
-          if (booking.id != normalizedBookingId) return booking;
-          return booking.copyWith(review: review);
-        })
-        .toList(growable: false);
+    _myExcursionBookings = _myExcursionBookings.map((booking) {
+      if (booking.id != normalizedBookingId) return booking;
+      return booking.copyWith(review: review);
+    }).toList(growable: false);
   }
 
   void _upsertExcursionReviewCache(ExcursionReviewVm review) {

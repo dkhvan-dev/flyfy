@@ -71,7 +71,8 @@ type ExcursionOfferRelations struct {
 }
 
 type ExcursionBookingFilter struct {
-	TouristUserID uuid.UUID
+	TouristUserID *uuid.UUID
+	GuideUserID   *uuid.UUID
 	Limit         int
 	Offset        int
 }

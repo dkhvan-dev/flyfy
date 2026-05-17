@@ -47,8 +47,10 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/me/excursions/{id}", h.GetMyExcursion)
 	mux.HandleFunc("PUT /v1/me/excursions/{id}", h.UpdateExcursion)
 	mux.HandleFunc("DELETE /v1/me/excursions/{id}", h.DeleteExcursion)
+	mux.HandleFunc("POST /v1/me/excursions/{id}/archive", h.ArchiveExcursion)
 	mux.HandleFunc("POST /v1/me/excursions/{id}/publish", h.PublishExcursion)
 	mux.HandleFunc("GET /v1/me/excursion-bookings", h.ListMyExcursionBookings)
+	mux.HandleFunc("GET /v1/me/guide-excursion-bookings", h.ListMyGuideExcursionBookings)
 	mux.HandleFunc("POST /v1/me/excursion-bookings", h.CreateExcursionBooking)
 	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/review", h.CreateExcursionReview)
 }
@@ -121,6 +123,23 @@ func (h *Handler) PublishExcursion(w http.ResponseWriter, r *http.Request) {
 	aggregate, err := h.useCase.PublishExcursion(r.Context(), excursionID, actorUserID)
 	if err != nil {
 		h.writeUseCaseError(w, r, err, "failed to publish excursion")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+}
+
+func (h *Handler) ArchiveExcursion(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	excursionID, ok := parsePathUUID(w, r, "id", "invalid excursion id")
+	if !ok {
+		return
+	}
+	aggregate, err := h.useCase.ArchiveExcursion(r.Context(), excursionID, actorUserID)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to archive excursion")
 		return
 	}
 	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
@@ -296,6 +315,25 @@ func (h *Handler) ListMyExcursionBookings(w http.ResponseWriter, r *http.Request
 	)
 	if err != nil {
 		h.writeUseCaseError(w, r, err, "failed to list excursion bookings")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionBookingListResponse(items, requestedLimit))
+}
+
+func (h *Handler) ListMyGuideExcursionBookings(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	requestedLimit := clampLimit(parseIntOrDefault(r.URL.Query().Get("limit"), 20))
+	items, err := h.useCase.ListMyGuideExcursionBookings(
+		r.Context(),
+		actorUserID,
+		requestedLimit+1,
+		parseIntOrDefault(r.URL.Query().Get("offset"), 0),
+	)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list guide excursion bookings")
 		return
 	}
 	writeJSON(w, http.StatusOK, toExcursionBookingListResponse(items, requestedLimit))
@@ -878,6 +916,10 @@ func toGuideExcursionLanguageListResponse(guideUserIDs []uuid.UUID, languages ma
 
 func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionResponse {
 	item := aggregate.Excursion
+	effectiveCoverFileID := aggregate.CoverFileID
+	if effectiveCoverFileID == nil {
+		effectiveCoverFileID = aggregate.ProductCoverFileID
+	}
 	coverImageURL := (*string)(nil)
 	if aggregate.CoverFileID != nil {
 		value := fmt.Sprintf("/api/v1/excursions/%s/cover", item.ID)
@@ -908,7 +950,7 @@ func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionRespons
 		MapURL:                   item.MapURL,
 		PriceAmount:              item.PriceAmount,
 		Currency:                 item.Currency,
-		CoverFileID:              formatOptionalUUID(aggregate.CoverFileID),
+		CoverFileID:              formatOptionalUUID(effectiveCoverFileID),
 		CoverImageURL:            coverImageURL,
 		IncludedItems:            includedItemTexts(aggregate.IncludedItems),
 		IncludedItemTranslations: includedItemTranslations(aggregate.IncludedItems),

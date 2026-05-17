@@ -827,6 +827,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Инструменты для работы гида пока недоступны в мобильной версии.';
 
   @override
+  String get profileGuideDashboardTitle => 'Кабинет гида';
+
+  @override
+  String get profileGuideDashboardSubtitle =>
+      'Управляйте предложениями, бронями клиентов и проведенными экскурсиями.';
+
+  @override
   String get profileSupportTitle => 'Помощь и поддержка';
 
   @override
@@ -3578,6 +3585,161 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get myExcursionsReviewPublish => 'Опубликовать';
+
+  @override
+  String get guideDashboardTitle => 'Кабинет гида';
+
+  @override
+  String get guideDashboardOffersStat => 'Всего предложений';
+
+  @override
+  String get guideDashboardBookingsStat => 'Брони';
+
+  @override
+  String get guideDashboardRevenueStat => 'Выручка';
+
+  @override
+  String get guideDashboardRatingStat => 'Рейтинг';
+
+  @override
+  String get guideDashboardSearchHint =>
+      'Поиск по предложениям, гостям, городам и датам';
+
+  @override
+  String get guideDashboardOffersTab => 'Предложения';
+
+  @override
+  String get guideDashboardBookingsTab => 'Брони';
+
+  @override
+  String get guideDashboardCompletedTab => 'Проведено';
+
+  @override
+  String get guideDashboardActiveTab => 'Активные';
+
+  @override
+  String get guideDashboardArchiveTab => 'Архив';
+
+  @override
+  String get guideDashboardReviewTab => 'Проверка';
+
+  @override
+  String get guideDashboardRejectedTab => 'Отклонено';
+
+  @override
+  String get guideDashboardCancelledTab => 'Отменено';
+
+  @override
+  String get guideDashboardLoadFailed => 'Не удалось загрузить кабинет гида';
+
+  @override
+  String get guideDashboardOffersEmpty => 'Активных предложений пока нет';
+
+  @override
+  String get guideDashboardOffersEmptyHint =>
+      'Опубликуйте первое предложение экскурсии, чтобы путешественники могли его забронировать.';
+
+  @override
+  String get guideDashboardBookingsEmpty => 'Нет ближайших броней';
+
+  @override
+  String get guideDashboardBookingsEmptyHint =>
+      'Новые брони клиентов появятся здесь с датой, гостями и суммой.';
+
+  @override
+  String get guideDashboardCompletedEmpty => 'Проведенных экскурсий пока нет';
+
+  @override
+  String get guideDashboardCompletedEmptyHint =>
+      'Завершенные экскурсии переместятся сюда после даты проведения.';
+
+  @override
+  String get guideDashboardReviewEmpty => 'На проверке ничего нет';
+
+  @override
+  String get guideDashboardReviewEmptyHint =>
+      'Предложения, ожидающие модерации или публикации, появятся здесь.';
+
+  @override
+  String get guideDashboardArchiveEmpty => 'В архиве пока пусто';
+
+  @override
+  String get guideDashboardArchiveEmptyHint =>
+      'Архивируйте временно неактуальные предложения, чтобы убрать их из активных, но сохранить возможность редактировать и опубликовать снова.';
+
+  @override
+  String get guideDashboardRejectedEmpty => 'Отклоненных предложений нет';
+
+  @override
+  String get guideDashboardRejectedEmptyHint =>
+      'Предложения, отклоненные на модерации, появятся здесь с доступом к правкам.';
+
+  @override
+  String get guideDashboardCancelledEmpty => 'Отмененных броней нет';
+
+  @override
+  String get guideDashboardCancelledEmptyHint =>
+      'Отмененные брони клиентов сохраняются здесь для истории и связи с гостями.';
+
+  @override
+  String get guideDashboardCreateOffer => 'Создать предложение';
+
+  @override
+  String get guideDashboardEditOffer => 'Редактировать';
+
+  @override
+  String get guideDashboardArchiveOffer => 'В архив';
+
+  @override
+  String get guideDashboardPublishOffer => 'Опубликовать';
+
+  @override
+  String get guideDashboardArchiveFailed =>
+      'Не удалось перенести предложение в архив';
+
+  @override
+  String get guideDashboardPublishFailed =>
+      'Не удалось опубликовать предложение';
+
+  @override
+  String get guideDashboardViewBooking => 'Открыть бронь';
+
+  @override
+  String get guideDashboardViewDetails => 'Подробнее';
+
+  @override
+  String get guideDashboardStatusActive => 'Активно';
+
+  @override
+  String get guideDashboardStatusArchived => 'Архив';
+
+  @override
+  String get guideDashboardStatusReview => 'На проверке';
+
+  @override
+  String get guideDashboardStatusRejected => 'Отклонено';
+
+  @override
+  String get guideDashboardStatusBooked => 'Бронь';
+
+  @override
+  String get guideDashboardStatusCompleted => 'Проведено';
+
+  @override
+  String get guideDashboardStatusCancelled => 'Отменено';
+
+  @override
+  String get guideDashboardFlexibleGroup => 'Гибкая группа';
+
+  @override
+  String guideDashboardMaxGuests(Object count) {
+    return 'До $count гостей';
+  }
+
+  @override
+  String guideDashboardBookingCount(Object count) {
+    return '$count броней';
+  }
 
   @override
   String get excursionReviewsTitle => 'Отзывы после экскурсий';

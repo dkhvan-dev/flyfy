@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:superapp/core/network/excursion_api.dart';
 import 'package:superapp/features/excursions/models/create_excursion_request.dart';
+import 'package:superapp/features/excursions/models/excursion_booking_vm.dart';
 import 'package:superapp/features/excursions/models/excursion_vm.dart';
 import 'package:superapp/providers/excursion_provider.dart';
 
@@ -89,6 +90,28 @@ void main() {
         'product-new-updated',
         'product-new-updated',
       ]);
+    },
+  );
+
+  test(
+    'loadGuideDashboardData loads guide offers and guide-side bookings',
+    () async {
+      final api = _FakeExcursionApi(
+        excursionBatches: const [],
+        createdExcursion: _createdDraft,
+        publishedExcursion: _publishedExcursion,
+        myExcursions: const [_publishedProductDetails],
+        guideBookings: [_upcomingGuideBooking],
+      );
+      final provider = ExcursionProvider(excursionApi: api);
+
+      await provider.loadGuideDashboardData();
+
+      expect(provider.guideDashboardState, ExcursionListState.success);
+      expect(provider.myGuideExcursions, const [_publishedProductDetails]);
+      expect(provider.myGuideExcursionBookings, [_upcomingGuideBooking]);
+      expect(api.getMyExcursionsCallCount, 1);
+      expect(api.getMyGuideExcursionBookingsCallCount, 1);
     },
   );
 }
@@ -206,6 +229,25 @@ const _updatedProductDetails = ExcursionVm(
   ],
 );
 
+final _upcomingGuideBooking = ExcursionBookingVm(
+  id: 'booking-guide-1',
+  productId: 'product-new',
+  offerId: 'offer-new',
+  touristUserId: 'tourist-1',
+  guideUserId: 'guide-user-1',
+  guideProfileId: 'guide-profile-1',
+  guideDisplayName: 'Aruzhan',
+  title: 'New Excursion',
+  summary: 'Published route',
+  scheduledFor: DateTime.utc(2026, 6, 1, 10),
+  adults: 2,
+  children: 0,
+  totalSeats: 2,
+  totalPriceAmount: 240,
+  currency: 'KZT',
+  status: 'REQUESTED',
+);
+
 const _request = CreateExcursionRequest(
   landmarkId: 'attraction-1',
   landmarkName: 'Medeu',
@@ -232,6 +274,8 @@ class _FakeExcursionApi extends ExcursionApi {
     required this.publishedExcursion,
     this.updatedExcursion,
     this.excursionDetails = const {},
+    this.myExcursions = const [],
+    this.guideBookings = const [],
   });
 
   final List<List<ExcursionVm>> excursionBatches;
@@ -239,7 +283,11 @@ class _FakeExcursionApi extends ExcursionApi {
   final ExcursionVm publishedExcursion;
   final ExcursionVm? updatedExcursion;
   final Map<String, ExcursionVm> excursionDetails;
+  final List<ExcursionVm> myExcursions;
+  final List<ExcursionBookingVm> guideBookings;
   int getExcursionsCallCount = 0;
+  int getMyExcursionsCallCount = 0;
+  int getMyGuideExcursionBookingsCallCount = 0;
   final List<String> getExcursionByIdCalls = [];
 
   @override
@@ -280,5 +328,24 @@ class _FakeExcursionApi extends ExcursionApi {
     CreateExcursionRequest request,
   ) async {
     return updatedExcursion ?? publishedExcursion;
+  }
+
+  @override
+  Future<ExcursionsPage> getMyExcursions({
+    int limit = 50,
+    int offset = 0,
+    List<String> statuses = const [],
+  }) async {
+    getMyExcursionsCallCount++;
+    return ExcursionsPage(items: myExcursions, hasMore: false);
+  }
+
+  @override
+  Future<ExcursionBookingsPage> getMyGuideExcursionBookings({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    getMyGuideExcursionBookingsCallCount++;
+    return ExcursionBookingsPage(items: guideBookings, hasMore: false);
   }
 }

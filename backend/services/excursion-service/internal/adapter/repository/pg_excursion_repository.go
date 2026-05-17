@@ -760,12 +760,17 @@ func (r *PGExcursionRepository) LoadExcursionRelations(ctx context.Context, excu
 	if err != nil {
 		return port.ExcursionRelations{}, err
 	}
+	productCoverFileID, err := r.getProductCoverFileID(ctx, excursionID)
+	if err != nil {
+		return port.ExcursionRelations{}, err
+	}
 	return port.ExcursionRelations{
-		Tags:          tags,
-		LanguageCodes: languages,
-		IncludedItems: includedItems,
-		Itinerary:     itinerary,
-		CoverFileID:   coverFileID,
+		Tags:               tags,
+		LanguageCodes:      languages,
+		IncludedItems:      includedItems,
+		Itinerary:          itinerary,
+		CoverFileID:        coverFileID,
+		ProductCoverFileID: productCoverFileID,
 	}, nil
 }
 
@@ -1175,7 +1180,7 @@ func (r *PGExcursionRepository) CreateExcursionBooking(ctx context.Context, item
 }
 
 func (r *PGExcursionRepository) ListExcursionBookings(ctx context.Context, filter port.ExcursionBookingFilter) ([]*model.ExcursionBookingListItem, error) {
-	const query = `
+	baseQuery := `
 		SELECT
 			b.id,
 			b.product_id, b.offer_id, b.legacy_excursion_id,
@@ -1197,15 +1202,35 @@ func (r *PGExcursionRepository) ListExcursionBookings(ctx context.Context, filte
 		JOIN excursion_products p ON p.id = b.product_id
 		JOIN excursion_offers o ON o.id = b.offer_id
 		LEFT JOIN excursion_reviews r ON r.booking_id = b.id
-		WHERE b.tourist_user_id = $1
+		WHERE 1 = 1
+	`
+	parts := []string{baseQuery}
+	args := make([]any, 0, 4)
+	argPos := 1
+	if filter.TouristUserID != nil && *filter.TouristUserID != uuid.Nil {
+		parts = append(parts, fmt.Sprintf(" AND b.tourist_user_id = $%d", argPos))
+		args = append(args, *filter.TouristUserID)
+		argPos++
+	}
+	if filter.GuideUserID != nil && *filter.GuideUserID != uuid.Nil {
+		parts = append(parts, fmt.Sprintf(" AND b.guide_user_id = $%d", argPos))
+		args = append(args, *filter.GuideUserID)
+		argPos++
+	}
+	if len(args) == 0 {
+		return nil, fmt.Errorf("list excursion bookings requires tourist or guide filter")
+	}
+	parts = append(parts, fmt.Sprintf(`
 		ORDER BY
 			CASE WHEN r.id IS NULL THEN 0 ELSE 1 END ASC,
 			b.scheduled_for DESC,
 			b.created_at DESC,
 			b.id ASC
-		LIMIT $2 OFFSET $3
-	`
-	rows, err := r.pool.Query(ctx, query, filter.TouristUserID, filter.Limit, filter.Offset)
+		LIMIT $%d OFFSET $%d
+	`, argPos, argPos+1))
+	args = append(args, filter.Limit, filter.Offset)
+
+	rows, err := r.pool.Query(ctx, strings.Join(parts, ""), args...)
 	if err != nil {
 		return nil, fmt.Errorf("query excursion bookings: %w", err)
 	}
@@ -2132,6 +2157,33 @@ func (r *PGExcursionRepository) getCoverFileID(ctx context.Context, excursionID 
 			return nil, nil
 		}
 		return nil, fmt.Errorf("get excursion cover: %w", err)
+	}
+	return &fileID, nil
+}
+
+func (r *PGExcursionRepository) getProductCoverFileID(ctx context.Context, excursionID uuid.UUID) (*uuid.UUID, error) {
+	return getProductCoverFileID(ctx, r.pool, excursionID)
+}
+
+type queryRower interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func getProductCoverFileID(ctx context.Context, queryer queryRower, excursionID uuid.UUID) (*uuid.UUID, error) {
+	const query = `
+		SELECT p.cover_file_id
+		FROM excursion_offers o
+		JOIN excursion_products p ON p.id = o.product_id
+		WHERE o.legacy_excursion_id = $1
+		  AND p.cover_file_id IS NOT NULL
+		LIMIT 1
+	`
+	var fileID uuid.UUID
+	if err := queryer.QueryRow(ctx, query, excursionID).Scan(&fileID); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion product cover: %w", err)
 	}
 	return &fileID, nil
 }

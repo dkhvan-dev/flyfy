@@ -188,6 +188,91 @@ void main() {
   );
 
   test(
+    'getMyExcursions reads authenticated guide offers endpoint with statuses',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursions': {
+          'items': [_legacyExcursionJson()],
+          'hasMore': false,
+        },
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final page = await api.getMyExcursions(
+        limit: 20,
+        offset: 40,
+        statuses: const ['PUBLISHED', 'IN_REVIEW'],
+      );
+
+      expect(adapter.requests.single.path, '/me/excursions');
+      expect(adapter.requests.single.queryParameters, {
+        'limit': 20,
+        'offset': 40,
+        'status': 'PUBLISHED,IN_REVIEW',
+      });
+      expect(page.items.single.id, 'excursion-1');
+      expect(page.hasMore, isFalse);
+    },
+  );
+
+  test('archiveExcursionOffer posts authenticated archive action', () async {
+    final adapter = _ExcursionJsonAdapter({
+      '/me/excursions/excursion-1/archive': {
+        ..._legacyExcursionJson(),
+        'status': 'ARCHIVED',
+      },
+    });
+    final api = ExcursionApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    final archived = await api.archiveExcursionOffer('excursion-1');
+
+    expect(adapter.requests.single.path, '/me/excursions/excursion-1/archive');
+    expect(adapter.lastOptions?.method, 'POST');
+    expect(archived.status, 'ARCHIVED');
+  });
+
+  test(
+    'getMyGuideExcursionBookings reads authenticated guide booking endpoint',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/guide-excursion-bookings': {
+          'items': [_bookingJson()],
+          'hasMore': false,
+        },
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final page = await api.getMyGuideExcursionBookings(limit: 25, offset: 0);
+
+      expect(adapter.requests.single.path, '/me/guide-excursion-bookings');
+      expect(adapter.requests.single.queryParameters, {
+        'limit': 25,
+        'offset': 0,
+      });
+      expect(page.items.single.guideUserId, 'guide-user-1');
+      expect(page.hasMore, isFalse);
+    },
+  );
+
+  test(
     'createExcursionReview posts rating and comment for visited booking',
     () async {
       final adapter = _ExcursionJsonAdapter({
