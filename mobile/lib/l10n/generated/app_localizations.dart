@@ -6394,6 +6394,222 @@ abstract class AppLocalizations {
   /// **'no fee'**
   String get myActivitiesPriceNoteFree;
 
+  /// No description provided for @myExcursionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Excursions'**
+  String get myExcursionsTitle;
+
+  /// No description provided for @myExcursionsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search excursions, guides, and cities'**
+  String get myExcursionsSearchHint;
+
+  /// No description provided for @myExcursionsFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion filters'**
+  String get myExcursionsFilterTitle;
+
+  /// No description provided for @myExcursionsReviewSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Review published'**
+  String get myExcursionsReviewSuccess;
+
+  /// No description provided for @myExcursionsSortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get myExcursionsSortLabel;
+
+  /// No description provided for @myExcursionsSortDate.
+  ///
+  /// In en, this message translates to:
+  /// **'By date'**
+  String get myExcursionsSortDate;
+
+  /// No description provided for @myExcursionsSortPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'By price'**
+  String get myExcursionsSortPrice;
+
+  /// No description provided for @myExcursionsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load your excursions'**
+  String get myExcursionsLoadFailed;
+
+  /// No description provided for @myExcursionsBookedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have booked excursions yet'**
+  String get myExcursionsBookedEmpty;
+
+  /// No description provided for @myExcursionsVisitedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t visited any excursions yet'**
+  String get myExcursionsVisitedEmpty;
+
+  /// No description provided for @myExcursionsBookedEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked excursions will appear here'**
+  String get myExcursionsBookedEmptyHint;
+
+  /// No description provided for @myExcursionsVisitedEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'After a visit, you can leave a review here'**
+  String get myExcursionsVisitedEmptyHint;
+
+  /// No description provided for @myExcursionsBookedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked'**
+  String get myExcursionsBookedTab;
+
+  /// No description provided for @myExcursionsVisitedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Visited'**
+  String get myExcursionsVisitedTab;
+
+  /// No description provided for @myExcursionsGuideFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'FlyFy guide'**
+  String get myExcursionsGuideFallback;
+
+  /// No description provided for @myExcursionsUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion'**
+  String get myExcursionsUntitled;
+
+  /// No description provided for @myExcursionsGuideLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide: {guide}'**
+  String myExcursionsGuideLine(Object guide);
+
+  /// No description provided for @myExcursionsGuests.
+  ///
+  /// In en, this message translates to:
+  /// **'Guests: {count}'**
+  String myExcursionsGuests(Object count);
+
+  /// No description provided for @myExcursionsReviewButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate'**
+  String get myExcursionsReviewButton;
+
+  /// No description provided for @myExcursionsReviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed'**
+  String get myExcursionsReviewed;
+
+  /// No description provided for @myExcursionsFilterStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get myExcursionsFilterStatus;
+
+  /// No description provided for @myExcursionsStatusRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked'**
+  String get myExcursionsStatusRequested;
+
+  /// No description provided for @myExcursionsFilterReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get myExcursionsFilterReview;
+
+  /// No description provided for @myExcursionsFilterReviewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get myExcursionsFilterReviewAll;
+
+  /// No description provided for @myExcursionsFilterUnreviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Without review'**
+  String get myExcursionsFilterUnreviewed;
+
+  /// No description provided for @myExcursionsFilterReviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed'**
+  String get myExcursionsFilterReviewed;
+
+  /// No description provided for @myExcursionsReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the excursion'**
+  String get myExcursionsReviewTitle;
+
+  /// No description provided for @myExcursionsReviewCommentError.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a short review'**
+  String get myExcursionsReviewCommentError;
+
+  /// No description provided for @myExcursionsReviewFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to publish review'**
+  String get myExcursionsReviewFailed;
+
+  /// No description provided for @myExcursionsReviewRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get myExcursionsReviewRating;
+
+  /// No description provided for @myExcursionsReviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What did you like, and what could be better?'**
+  String get myExcursionsReviewHint;
+
+  /// No description provided for @myExcursionsReviewPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get myExcursionsReviewPublish;
+
+  /// No description provided for @excursionReviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews after excursions'**
+  String get excursionReviewsTitle;
+
+  /// No description provided for @excursionReviewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no reviews for this excursion yet'**
+  String get excursionReviewsEmpty;
+
+  /// No description provided for @excursionReviewViaGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Via guide: {guide}'**
+  String excursionReviewViaGuide(Object guide);
+
+  /// No description provided for @excursionReviewSourceAttractionBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Review based on a visited excursion'**
+  String get excursionReviewSourceAttractionBadge;
+
   /// No description provided for @activityPerPerson.
   ///
   /// In en, this message translates to:

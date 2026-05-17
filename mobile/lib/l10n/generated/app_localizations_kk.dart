@@ -3483,6 +3483,124 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myActivitiesPriceNoteFree => 'тегін';
 
   @override
+  String get myExcursionsTitle => 'Менің экскурсияларым';
+
+  @override
+  String get myExcursionsSearchHint => 'Экскурсия, гид және қала бойынша іздеу';
+
+  @override
+  String get myExcursionsFilterTitle => 'Экскурсия сүзгілері';
+
+  @override
+  String get myExcursionsReviewSuccess => 'Пікір жарияланды';
+
+  @override
+  String get myExcursionsSortLabel => 'Сұрыптау';
+
+  @override
+  String get myExcursionsSortDate => 'Күні бойынша';
+
+  @override
+  String get myExcursionsSortPrice => 'Бағасы бойынша';
+
+  @override
+  String get myExcursionsLoadFailed =>
+      'Экскурсияларыңызды жүктеу мүмкін болмады';
+
+  @override
+  String get myExcursionsBookedEmpty => 'Сізде әлі брондалған экскурсиялар жоқ';
+
+  @override
+  String get myExcursionsVisitedEmpty => 'Сіз әлі экскурсияға барған жоқсыз';
+
+  @override
+  String get myExcursionsBookedEmptyHint =>
+      'Брондалған экскурсиялар осы жерде пайда болады';
+
+  @override
+  String get myExcursionsVisitedEmptyHint =>
+      'Экскурсиядан кейін осы жерде пікір қалдыра аласыз';
+
+  @override
+  String get myExcursionsBookedTab => 'Брондалған';
+
+  @override
+  String get myExcursionsVisitedTab => 'Барған';
+
+  @override
+  String get myExcursionsGuideFallback => 'FlyFy гиді';
+
+  @override
+  String get myExcursionsUntitled => 'Экскурсия';
+
+  @override
+  String myExcursionsGuideLine(Object guide) {
+    return 'Гид: $guide';
+  }
+
+  @override
+  String myExcursionsGuests(Object count) {
+    return 'Қонақтар: $count';
+  }
+
+  @override
+  String get myExcursionsReviewButton => 'Бағалау';
+
+  @override
+  String get myExcursionsReviewed => 'Бағаланған';
+
+  @override
+  String get myExcursionsFilterStatus => 'Мәртебе';
+
+  @override
+  String get myExcursionsStatusRequested => 'Брондалған';
+
+  @override
+  String get myExcursionsFilterReview => 'Пікірлер';
+
+  @override
+  String get myExcursionsFilterReviewAll => 'Барлығы';
+
+  @override
+  String get myExcursionsFilterUnreviewed => 'Пікірсіз';
+
+  @override
+  String get myExcursionsFilterReviewed => 'Пікір бар';
+
+  @override
+  String get myExcursionsReviewTitle => 'Экскурсияны бағалаңыз';
+
+  @override
+  String get myExcursionsReviewCommentError => 'Қысқа пікір жазыңыз';
+
+  @override
+  String get myExcursionsReviewFailed => 'Пікірді жариялау мүмкін болмады';
+
+  @override
+  String get myExcursionsReviewRating => 'Баға';
+
+  @override
+  String get myExcursionsReviewHint => 'Не ұнады, нені жақсартуға болады?';
+
+  @override
+  String get myExcursionsReviewPublish => 'Жариялау';
+
+  @override
+  String get excursionReviewsTitle => 'Экскурсиядан кейінгі пікірлер';
+
+  @override
+  String get excursionReviewsEmpty => 'Бұл экскурсия бойынша пікірлер әлі жоқ';
+
+  @override
+  String excursionReviewViaGuide(Object guide) {
+    return 'Гид арқылы: $guide';
+  }
+
+  @override
+  String get excursionReviewSourceAttractionBadge =>
+      'Пікір барған экскурсия негізінде';
+
+  @override
   String get activityPerPerson => '/ адам';
 
   @override

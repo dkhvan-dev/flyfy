@@ -138,6 +138,13 @@ type CreateExcursionBookingInput struct {
 	IdempotencyKey *string
 }
 
+type CreateExcursionReviewInput struct {
+	ActorUserID uuid.UUID
+	BookingID   uuid.UUID
+	Rating      float64
+	Comment     string
+}
+
 func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcursionInput) (*ExcursionAggregate, error) {
 	if input.ActorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
@@ -523,6 +530,85 @@ func (u *ExcursionUseCase) CreateExcursionBooking(ctx context.Context, input Cre
 		return nil, fmt.Errorf("create excursion booking: %w", err)
 	}
 	return booking, nil
+}
+
+func (u *ExcursionUseCase) ListMyExcursionBookings(ctx context.Context, actorUserID uuid.UUID, limit int, offset int) ([]*model.ExcursionBookingListItem, error) {
+	if actorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	items, err := u.repo.ListExcursionBookings(ctx, port.ExcursionBookingFilter{
+		TouristUserID: actorUserID,
+		Limit:         limit,
+		Offset:        offset,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list excursion bookings: %w", err)
+	}
+	return items, nil
+}
+
+func (u *ExcursionUseCase) CreateExcursionReview(ctx context.Context, input CreateExcursionReviewInput) (*model.ExcursionReview, error) {
+	if input.ActorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	if input.BookingID == uuid.Nil {
+		return nil, model.ErrInvalidExcursionBookingID
+	}
+	booking, err := u.repo.GetExcursionBookingByID(ctx, input.BookingID)
+	if err != nil {
+		return nil, fmt.Errorf("get excursion booking: %w", err)
+	}
+	if booking == nil || booking.TouristUserID != input.ActorUserID {
+		return nil, ErrExcursionBookingNotFound
+	}
+	if booking.Status != enum.ExcursionBookingStatusRequested ||
+		booking.CancelledAt != nil ||
+		booking.ScheduledFor.After(time.Now().UTC()) {
+		return nil, ErrExcursionBookingNotReviewable
+	}
+	existing, err := u.repo.GetExcursionReviewByBookingID(ctx, booking.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get excursion review: %w", err)
+	}
+	if existing != nil {
+		return nil, model.ErrExcursionReviewAlreadyExists
+	}
+
+	review, err := model.NewExcursionReview(model.NewExcursionReviewParams{
+		Booking: booking,
+		Rating:  input.Rating,
+		Comment: input.Comment,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err = u.repo.CreateExcursionReview(ctx, review); err != nil {
+		return nil, fmt.Errorf("create excursion review: %w", err)
+	}
+	return review, nil
+}
+
+func (u *ExcursionUseCase) ListExcursionReviews(ctx context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
+	if filter.ProductID == nil && filter.LandmarkID == nil {
+		return nil, ErrInvalidExcursionID
+	}
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+	if filter.Limit > 100 {
+		filter.Limit = 100
+	}
+	items, err := u.repo.ListExcursionReviews(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("list excursion reviews: %w", err)
+	}
+	return items, nil
 }
 
 func (u *ExcursionUseCase) ListMyExcursions(ctx context.Context, actorUserID uuid.UUID, limit int, offset int, statuses []string) ([]*ExcursionAggregate, error) {

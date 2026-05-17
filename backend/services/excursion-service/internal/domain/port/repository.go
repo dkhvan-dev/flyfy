@@ -70,6 +70,19 @@ type ExcursionOfferRelations struct {
 	Itinerary     []*model.ExcursionItineraryItem
 }
 
+type ExcursionBookingFilter struct {
+	TouristUserID uuid.UUID
+	Limit         int
+	Offset        int
+}
+
+type ExcursionReviewFilter struct {
+	ProductID  *uuid.UUID
+	LandmarkID *uuid.UUID
+	Limit      int
+	Offset     int
+}
+
 type ExcursionRepository interface {
 	CreateExcursionAggregate(ctx context.Context, item *model.Excursion, relations ExcursionRelations) error
 	UpdateExcursionAggregate(ctx context.Context, item *model.Excursion, relations ExcursionRelations) error
@@ -86,4 +99,9 @@ type ExcursionRepository interface {
 	GetExcursionOfferByID(ctx context.Context, offerID uuid.UUID) (*model.ExcursionOffer, error)
 	LoadExcursionOfferRelations(ctx context.Context, offerID uuid.UUID) (ExcursionOfferRelations, error)
 	CreateExcursionBooking(ctx context.Context, item *model.ExcursionBooking) error
+	ListExcursionBookings(ctx context.Context, filter ExcursionBookingFilter) ([]*model.ExcursionBookingListItem, error)
+	GetExcursionBookingByID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionBooking, error)
+	CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error
+	GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error)
+	ListExcursionReviews(ctx context.Context, filter ExcursionReviewFilter) ([]*model.ExcursionReview, error)
 }

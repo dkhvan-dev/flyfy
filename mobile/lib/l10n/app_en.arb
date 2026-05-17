@@ -1263,6 +1263,57 @@
   "myActivitiesOpenButton": "Open Activity",
   "myActivitiesRetryButton": "Try Again",
   "myActivitiesPriceNoteFree": "no fee",
+  "myExcursionsTitle": "My Excursions",
+  "myExcursionsSearchHint": "Search excursions, guides, and cities",
+  "myExcursionsFilterTitle": "Excursion filters",
+  "myExcursionsReviewSuccess": "Review published",
+  "myExcursionsSortLabel": "Sort",
+  "myExcursionsSortDate": "By date",
+  "myExcursionsSortPrice": "By price",
+  "myExcursionsLoadFailed": "Failed to load your excursions",
+  "myExcursionsBookedEmpty": "You don't have booked excursions yet",
+  "myExcursionsVisitedEmpty": "You haven't visited any excursions yet",
+  "myExcursionsBookedEmptyHint": "Booked excursions will appear here",
+  "myExcursionsVisitedEmptyHint": "After a visit, you can leave a review here",
+  "myExcursionsBookedTab": "Booked",
+  "myExcursionsVisitedTab": "Visited",
+  "myExcursionsGuideFallback": "FlyFy guide",
+  "myExcursionsUntitled": "Excursion",
+  "myExcursionsGuideLine": "Guide: {guide}",
+  "@myExcursionsGuideLine": {
+    "placeholders": {
+      "guide": {}
+    }
+  },
+  "myExcursionsGuests": "Guests: {count}",
+  "@myExcursionsGuests": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "myExcursionsReviewButton": "Rate",
+  "myExcursionsReviewed": "Reviewed",
+  "myExcursionsFilterStatus": "Status",
+  "myExcursionsStatusRequested": "Booked",
+  "myExcursionsFilterReview": "Reviews",
+  "myExcursionsFilterReviewAll": "All",
+  "myExcursionsFilterUnreviewed": "Without review",
+  "myExcursionsFilterReviewed": "Reviewed",
+  "myExcursionsReviewTitle": "Rate the excursion",
+  "myExcursionsReviewCommentError": "Write a short review",
+  "myExcursionsReviewFailed": "Failed to publish review",
+  "myExcursionsReviewRating": "Rating",
+  "myExcursionsReviewHint": "What did you like, and what could be better?",
+  "myExcursionsReviewPublish": "Publish",
+  "excursionReviewsTitle": "Reviews after excursions",
+  "excursionReviewsEmpty": "There are no reviews for this excursion yet",
+  "excursionReviewViaGuide": "Via guide: {guide}",
+  "@excursionReviewViaGuide": {
+    "placeholders": {
+      "guide": {}
+    }
+  },
+  "excursionReviewSourceAttractionBadge": "Review based on a visited excursion",
   "activityPerPerson": "/ person",
   "activitySpotsLeft": "{count} Spots Left",
   "@activitySpotsLeft": {

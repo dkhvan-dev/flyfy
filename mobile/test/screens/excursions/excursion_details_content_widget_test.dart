@@ -7,8 +7,9 @@ import 'package:superapp/l10n/generated/app_localizations.dart';
 import 'package:superapp/screens/excursions/excursion_details_screen.dart';
 
 void main() {
-  testWidgets('renders excursion details content and booking CTA',
-      (tester) async {
+  testWidgets('renders excursion details content and booking CTA', (
+    tester,
+  ) async {
     ExcursionOfferVm? selectedOffer = _excursion.offers.first;
 
     await tester.pumpWidget(
@@ -45,8 +46,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('English', findRichText: true), findsWidgets);
-    expect(find.text('Sadykova A.'), findsOneWidget);
-    expect(find.text('Baimukhan N.'), findsOneWidget);
+    expect(find.text('Sadykova A.', skipOffstage: false), findsOneWidget);
+    expect(find.text('Baimukhan N.', skipOffstage: false), findsOneWidget);
     expect(find.text('Guide #1'), findsNothing);
     expect(find.text('Guide #2'), findsNothing);
     expect(find.text('Message Guide'), findsOneWidget);
@@ -55,8 +56,8 @@ void main() {
     expect(find.text('Hotel departure'), findsOneWidget);
     expect(find.text('Book'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Baimukhan N.'));
-    await tester.tap(find.text('Baimukhan N.'));
+    await tester.ensureVisible(find.text('Baimukhan N.', skipOffstage: false));
+    await tester.tap(find.text('Baimukhan N.', skipOffstage: false));
     expect(selectedOffer?.id, 'offer-2');
   });
 
@@ -88,7 +89,7 @@ void main() {
 
     expect(find.text('Your Lead Guide'), findsNothing);
     expect(find.text('Verified local expert'), findsNothing);
-    expect(find.text('Sadykova A.'), findsOneWidget);
+    expect(find.text('Sadykova A.', skipOffstage: false), findsOneWidget);
     expect(find.text('Message Guide'), findsNothing);
     expect(find.text('Book'), findsNothing);
   });
@@ -231,8 +232,8 @@ void main() {
 
     await tester.pump();
 
-    final ownGuide = find.text('Baimukhan N.');
-    final otherGuide = find.text('Sadykova A.');
+    final ownGuide = find.text('Baimukhan N.', skipOffstage: false);
+    final otherGuide = find.text('Sadykova A.', skipOffstage: false);
     expect(ownGuide, findsOneWidget);
     expect(otherGuide, findsOneWidget);
     expect(
@@ -279,14 +280,14 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'nurlan');
       await tester.pump();
 
-      expect(find.text('Baimukhan N.'), findsOneWidget);
-      expect(find.text('Sadykova A.'), findsNothing);
+      expect(find.text('Baimukhan N.', skipOffstage: false), findsOneWidget);
+      expect(find.text('Sadykova A.', skipOffstage: false), findsNothing);
 
       await tester.enterText(find.byType(TextField).first, 'aru guide');
       await tester.pump();
 
-      expect(find.text('Sadykova A.'), findsOneWidget);
-      expect(find.text('Baimukhan N.'), findsNothing);
+      expect(find.text('Sadykova A.', skipOffstage: false), findsOneWidget);
+      expect(find.text('Baimukhan N.', skipOffstage: false), findsNothing);
     },
   );
 

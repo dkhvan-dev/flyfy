@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import '../core/network/dio_error_mapper.dart';
 import '../core/network/excursion_api.dart';
 import '../features/excursions/models/create_excursion_booking_request.dart';
+import '../features/excursions/models/create_excursion_review_request.dart';
 import '../features/excursions/models/create_excursion_request.dart';
+import '../features/excursions/models/excursion_booking_vm.dart';
 import '../features/excursions/models/excursion_vm.dart';
 
 enum ExcursionActionState { idle, loading, success, error }
@@ -15,7 +17,7 @@ enum ExcursionDetailState { initial, loading, success, error }
 
 class ExcursionProvider extends ChangeNotifier {
   ExcursionProvider({ExcursionApi? excursionApi})
-      : _excursionApi = excursionApi ?? ExcursionApi();
+    : _excursionApi = excursionApi ?? ExcursionApi();
 
   static const _marketplaceRefreshAttempts = 3;
   static const _marketplaceRefreshRetryDelay = Duration(milliseconds: 150);
@@ -36,6 +38,14 @@ class ExcursionProvider extends ChangeNotifier {
   String? _actionErrorMessage;
   ExcursionVm? _lastCreatedExcursion;
 
+  ExcursionListState _bookingListState = ExcursionListState.initial;
+  List<ExcursionBookingVm> _myExcursionBookings = const [];
+  String? _bookingListErrorMessage;
+  bool _isBookingListRefreshing = false;
+
+  final Map<String, List<ExcursionReviewVm>> _reviewsByProductId = {};
+  final Map<String, List<ExcursionReviewVm>> _reviewsByLandmarkId = {};
+
   ExcursionListState get listState => _listState;
   List<ExcursionVm> get excursions => _excursions;
   String? get listErrorMessage => _listErrorMessage;
@@ -48,6 +58,19 @@ class ExcursionProvider extends ChangeNotifier {
   ExcursionActionState get actionState => _actionState;
   String? get actionErrorMessage => _actionErrorMessage;
   ExcursionVm? get lastCreatedExcursion => _lastCreatedExcursion;
+
+  ExcursionListState get bookingListState => _bookingListState;
+  List<ExcursionBookingVm> get myExcursionBookings => _myExcursionBookings;
+  String? get bookingListErrorMessage => _bookingListErrorMessage;
+  bool get isBookingListRefreshing => _isBookingListRefreshing;
+
+  List<ExcursionReviewVm> excursionReviewsForProduct(String productId) {
+    return _reviewsByProductId[productId.trim()] ?? const [];
+  }
+
+  List<ExcursionReviewVm> excursionReviewsForLandmark(String landmarkId) {
+    return _reviewsByLandmarkId[landmarkId.trim()] ?? const [];
+  }
 
   Future<void> loadExcursions({
     String? query,
@@ -102,8 +125,50 @@ class ExcursionProvider extends ChangeNotifier {
     );
   }
 
-  Future<void> loadExcursionDetails(String excursionId,
-      {ExcursionVm? initialExcursion}) async {
+  Future<void> loadMyExcursionBookings({bool force = false}) async {
+    if (!force &&
+        (_bookingListState == ExcursionListState.loading ||
+            _isBookingListRefreshing)) {
+      return;
+    }
+
+    final hasCachedBookings = _myExcursionBookings.isNotEmpty;
+    if (hasCachedBookings) {
+      _isBookingListRefreshing = true;
+    } else {
+      _bookingListState = ExcursionListState.loading;
+    }
+    _bookingListErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final page = await _excursionApi.getMyExcursionBookings(limit: 100);
+      _myExcursionBookings = page.items;
+      _bookingListState = ExcursionListState.success;
+    } on DioException catch (e) {
+      _bookingListErrorMessage = DioErrorMapper.toMessage(e);
+      if (!hasCachedBookings) {
+        _bookingListState = ExcursionListState.error;
+      }
+    } catch (_) {
+      _bookingListErrorMessage = 'Failed to load excursion bookings';
+      if (!hasCachedBookings) {
+        _bookingListState = ExcursionListState.error;
+      }
+    } finally {
+      _isBookingListRefreshing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshMyExcursionBookings() {
+    return loadMyExcursionBookings(force: true);
+  }
+
+  Future<void> loadExcursionDetails(
+    String excursionId, {
+    ExcursionVm? initialExcursion,
+  }) async {
     final trimmedExcursionId = excursionId.trim();
     if (trimmedExcursionId.isEmpty) {
       _detailState = ExcursionDetailState.error;
@@ -128,8 +193,9 @@ class ExcursionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final excursion =
-          await _excursionApi.getExcursionById(trimmedExcursionId);
+      final excursion = await _excursionApi.getExcursionById(
+        trimmedExcursionId,
+      );
       if (_detailExcursionId != trimmedExcursionId) return;
 
       _selectedExcursion = excursion;
@@ -162,7 +228,8 @@ class ExcursionProvider extends ChangeNotifier {
   }
 
   Future<ExcursionVm?> createAndPublishExcursion(
-      CreateExcursionRequest request) async {
+    CreateExcursionRequest request,
+  ) async {
     _actionState = ExcursionActionState.loading;
     _actionErrorMessage = null;
     notifyListeners();
@@ -216,8 +283,10 @@ class ExcursionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final updated =
-          await _excursionApi.updateExcursionOffer(legacyExcursionId, request);
+      final updated = await _excursionApi.updateExcursionOffer(
+        legacyExcursionId,
+        request,
+      );
       final refreshedProduct = await _refreshProductAfterMutation(
         updated,
         preferredProductId: _detailExcursionId,
@@ -239,7 +308,8 @@ class ExcursionProvider extends ChangeNotifier {
   }
 
   Future<bool> createExcursionBooking(
-      CreateExcursionBookingRequest request) async {
+    CreateExcursionBookingRequest request,
+  ) async {
     _actionState = ExcursionActionState.loading;
     _actionErrorMessage = null;
     notifyListeners();
@@ -261,8 +331,67 @@ class ExcursionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _reloadExcursionsAfterMutation(
-      {ExcursionVm? fallbackExcursion}) async {
+  Future<ExcursionReviewVm?> createExcursionReview(
+    String bookingId,
+    CreateExcursionReviewRequest request,
+  ) async {
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final review = await _excursionApi.createExcursionReview(
+        bookingId,
+        request,
+      );
+      _upsertBookingReview(bookingId, review);
+      _upsertExcursionReviewCache(review);
+      _actionState = ExcursionActionState.success;
+      return review;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return null;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to publish excursion review';
+      _actionState = ExcursionActionState.error;
+      return null;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadExcursionReviews({
+    String? productId,
+    String? landmarkId,
+  }) async {
+    final normalizedProductId = (productId ?? '').trim();
+    final normalizedLandmarkId = (landmarkId ?? '').trim();
+    if (normalizedProductId.isEmpty && normalizedLandmarkId.isEmpty) {
+      return;
+    }
+
+    try {
+      final page = await _excursionApi.getExcursionReviews(
+        productId: normalizedProductId.isEmpty ? null : normalizedProductId,
+        landmarkId: normalizedLandmarkId.isEmpty ? null : normalizedLandmarkId,
+        limit: 20,
+      );
+      if (normalizedProductId.isNotEmpty) {
+        _reviewsByProductId[normalizedProductId] = page.items;
+      }
+      if (normalizedLandmarkId.isNotEmpty) {
+        _reviewsByLandmarkId[normalizedLandmarkId] = page.items;
+      }
+      notifyListeners();
+    } catch (_) {
+      // Reviews are supporting content; keep the primary detail page usable.
+    }
+  }
+
+  Future<void> _reloadExcursionsAfterMutation({
+    ExcursionVm? fallbackExcursion,
+  }) async {
     try {
       _excursions = await _excursionApi.getExcursions();
       _listState = ExcursionListState.success;
@@ -386,8 +515,9 @@ class ExcursionProvider extends ChangeNotifier {
     }
 
     final nextExcursions = [..._excursions];
-    final existingIndex =
-        nextExcursions.indexWhere((item) => item.id == excursionId);
+    final existingIndex = nextExcursions.indexWhere(
+      (item) => item.id == excursionId,
+    );
     if (existingIndex >= 0) {
       nextExcursions
         ..removeAt(existingIndex)
@@ -397,5 +527,42 @@ class ExcursionProvider extends ChangeNotifier {
     }
     _excursions = List.unmodifiable(nextExcursions);
     _listState = ExcursionListState.success;
+  }
+
+  void _upsertBookingReview(String bookingId, ExcursionReviewVm review) {
+    final normalizedBookingId = bookingId.trim();
+    if (normalizedBookingId.isEmpty) return;
+
+    _myExcursionBookings = _myExcursionBookings
+        .map((booking) {
+          if (booking.id != normalizedBookingId) return booking;
+          return booking.copyWith(review: review);
+        })
+        .toList(growable: false);
+  }
+
+  void _upsertExcursionReviewCache(ExcursionReviewVm review) {
+    final productId = review.productId.trim();
+    if (productId.isNotEmpty) {
+      final current = _reviewsByProductId[productId] ?? const [];
+      _reviewsByProductId[productId] = _replaceOrPrependReview(current, review);
+    }
+    final landmarkId = review.landmarkId?.trim() ?? '';
+    if (landmarkId.isNotEmpty) {
+      final current = _reviewsByLandmarkId[landmarkId] ?? const [];
+      _reviewsByLandmarkId[landmarkId] = _replaceOrPrependReview(
+        current,
+        review,
+      );
+    }
+  }
+
+  List<ExcursionReviewVm> _replaceOrPrependReview(
+    List<ExcursionReviewVm> current,
+    ExcursionReviewVm review,
+  ) {
+    final next = current.where((item) => item.id != review.id).toList();
+    next.insert(0, review);
+    return List.unmodifiable(next);
   }
 }

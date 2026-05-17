@@ -3,16 +3,18 @@ package app
 import "errors"
 
 var (
-	ErrInvalidActorUserID           = errors.New("invalid actor user id")
-	ErrInvalidExcursionID           = errors.New("invalid excursion id")
-	ErrExcursionNotFound            = errors.New("excursion not found")
-	ErrExcursionAccessDenied        = errors.New("excursion access denied")
-	ErrGuideNotAllowed              = errors.New("guide is not allowed to manage excursions")
-	ErrExcursionAttractionRequired  = errors.New("excursion must be based on an attraction")
-	ErrInvalidExcursionIncludedItem = errors.New("invalid excursion included item")
-	ErrExcursionOfferNotFound       = errors.New("excursion offer not found")
-	ErrExcursionOfferNotBookable    = errors.New("excursion offer is not available for booking")
-	ErrExcursionTranslationFailed   = errors.New("failed to translate excursion content")
+	ErrInvalidActorUserID            = errors.New("invalid actor user id")
+	ErrInvalidExcursionID            = errors.New("invalid excursion id")
+	ErrExcursionNotFound             = errors.New("excursion not found")
+	ErrExcursionAccessDenied         = errors.New("excursion access denied")
+	ErrGuideNotAllowed               = errors.New("guide is not allowed to manage excursions")
+	ErrExcursionAttractionRequired   = errors.New("excursion must be based on an attraction")
+	ErrInvalidExcursionIncludedItem  = errors.New("invalid excursion included item")
+	ErrExcursionOfferNotFound        = errors.New("excursion offer not found")
+	ErrExcursionOfferNotBookable     = errors.New("excursion offer is not available for booking")
+	ErrExcursionTranslationFailed    = errors.New("failed to translate excursion content")
+	ErrExcursionBookingNotFound      = errors.New("excursion booking not found")
+	ErrExcursionBookingNotReviewable = errors.New("excursion booking is not ready for review")
 
 	ErrExcursionCoverFileNotFound   = errors.New("excursion cover file not found")
 	ErrExcursionCoverFileNotReady   = errors.New("excursion cover file is not ready")

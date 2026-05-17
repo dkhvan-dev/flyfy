@@ -1263,6 +1263,57 @@
   "myActivitiesOpenButton": "Открыть активность",
   "myActivitiesRetryButton": "Повторить",
   "myActivitiesPriceNoteFree": "без оплаты",
+  "myExcursionsTitle": "Мои экскурсии",
+  "myExcursionsSearchHint": "Поиск по экскурсиям, гидам и городам",
+  "myExcursionsFilterTitle": "Фильтры экскурсий",
+  "myExcursionsReviewSuccess": "Отзыв опубликован",
+  "myExcursionsSortLabel": "Сортировка",
+  "myExcursionsSortDate": "По дате",
+  "myExcursionsSortPrice": "По цене",
+  "myExcursionsLoadFailed": "Не удалось загрузить ваши экскурсии",
+  "myExcursionsBookedEmpty": "У вас пока нет забронированных экскурсий",
+  "myExcursionsVisitedEmpty": "Вы пока не посещали экскурсии",
+  "myExcursionsBookedEmptyHint": "Забронированные экскурсии появятся здесь",
+  "myExcursionsVisitedEmptyHint": "После посещения экскурсии вы сможете оставить отзыв",
+  "myExcursionsBookedTab": "Забронированные",
+  "myExcursionsVisitedTab": "Посещенные",
+  "myExcursionsGuideFallback": "Гид FlyFy",
+  "myExcursionsUntitled": "Экскурсия",
+  "myExcursionsGuideLine": "Гид: {guide}",
+  "@myExcursionsGuideLine": {
+    "placeholders": {
+      "guide": {}
+    }
+  },
+  "myExcursionsGuests": "Гостей: {count}",
+  "@myExcursionsGuests": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "myExcursionsReviewButton": "Оценить",
+  "myExcursionsReviewed": "Оценено",
+  "myExcursionsFilterStatus": "Статус",
+  "myExcursionsStatusRequested": "Забронировано",
+  "myExcursionsFilterReview": "Отзывы",
+  "myExcursionsFilterReviewAll": "Все",
+  "myExcursionsFilterUnreviewed": "Без отзыва",
+  "myExcursionsFilterReviewed": "С отзывом",
+  "myExcursionsReviewTitle": "Оцените экскурсию",
+  "myExcursionsReviewCommentError": "Напишите короткий отзыв",
+  "myExcursionsReviewFailed": "Не удалось опубликовать отзыв",
+  "myExcursionsReviewRating": "Оценка",
+  "myExcursionsReviewHint": "Что понравилось, что можно улучшить?",
+  "myExcursionsReviewPublish": "Опубликовать",
+  "excursionReviewsTitle": "Отзывы после экскурсий",
+  "excursionReviewsEmpty": "Отзывов по этой экскурсии пока нет",
+  "excursionReviewViaGuide": "Через гида: {guide}",
+  "@excursionReviewViaGuide": {
+    "placeholders": {
+      "guide": {}
+    }
+  },
+  "excursionReviewSourceAttractionBadge": "Отзыв на основе посещенной экскурсии",
   "activityPerPerson": "/ чел.",
   "activitySpotsLeft": "Осталось мест: {count}",
   "@activitySpotsLeft": {

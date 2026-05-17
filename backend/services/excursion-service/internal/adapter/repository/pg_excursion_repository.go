@@ -1174,6 +1174,178 @@ func (r *PGExcursionRepository) CreateExcursionBooking(ctx context.Context, item
 	return nil
 }
 
+func (r *PGExcursionRepository) ListExcursionBookings(ctx context.Context, filter port.ExcursionBookingFilter) ([]*model.ExcursionBookingListItem, error) {
+	const query = `
+		SELECT
+			b.id,
+			b.product_id, b.offer_id, b.legacy_excursion_id,
+			b.guide_profile_id, b.guide_user_id, b.tourist_user_id,
+			b.scheduled_for, b.adults, b.children, b.total_seats,
+			b.unit_price_amount, b.service_fee_amount, b.total_price_amount, b.currency,
+			b.status, b.idempotency_key, b.cancelled_at, b.cancel_reason,
+			b.created_at, b.updated_at,
+			COALESCE(NULLIF(o.title, ''), p.title),
+			COALESCE(NULLIF(o.summary, ''), p.summary),
+			p.landmark_id, p.landmark_name, p.category_slug, p.country_code, p.city_name,
+			COALESCE(o.cover_file_id, p.cover_file_id),
+			o.guide_display_name,
+			r.id, r.booking_id, r.product_id, r.offer_id, r.legacy_excursion_id,
+			r.landmark_id, r.landmark_name,
+			r.guide_profile_id, r.guide_user_id, r.guide_display_name, r.tourist_user_id,
+			r.rating, r.comment, r.created_at, r.updated_at
+		FROM excursion_bookings b
+		JOIN excursion_products p ON p.id = b.product_id
+		JOIN excursion_offers o ON o.id = b.offer_id
+		LEFT JOIN excursion_reviews r ON r.booking_id = b.id
+		WHERE b.tourist_user_id = $1
+		ORDER BY
+			CASE WHEN r.id IS NULL THEN 0 ELSE 1 END ASC,
+			b.scheduled_for DESC,
+			b.created_at DESC,
+			b.id ASC
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := r.pool.Query(ctx, query, filter.TouristUserID, filter.Limit, filter.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("query excursion bookings: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*model.ExcursionBookingListItem, 0)
+	for rows.Next() {
+		item, scanErr := scanExcursionBookingListItem(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate excursion bookings: %w", err)
+	}
+	return items, nil
+}
+
+func (r *PGExcursionRepository) GetExcursionBookingByID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionBooking, error) {
+	const query = `
+		SELECT
+			id,
+			product_id, offer_id, legacy_excursion_id,
+			guide_profile_id, guide_user_id, tourist_user_id,
+			scheduled_for, adults, children, total_seats,
+			unit_price_amount, service_fee_amount, total_price_amount, currency,
+			status, idempotency_key, cancelled_at, cancel_reason,
+			created_at, updated_at
+		FROM excursion_bookings
+		WHERE id = $1
+	`
+	item, err := scanExcursionBooking(r.pool.QueryRow(ctx, query, bookingID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion booking: %w", err)
+	}
+	return item, nil
+}
+
+func (r *PGExcursionRepository) CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
+	const query = `
+		INSERT INTO excursion_reviews (
+			id,
+			booking_id, product_id, offer_id, legacy_excursion_id,
+			landmark_id, landmark_name,
+			guide_profile_id, guide_user_id, guide_display_name, tourist_user_id,
+			rating, comment, created_at, updated_at
+		)
+		SELECT
+			$1,
+			$2, $3, $4, $5,
+			p.landmark_id, p.landmark_name,
+			$6, $7, o.guide_display_name, $8,
+			$9, $10, $11, $12
+		FROM excursion_products p
+		JOIN excursion_offers o ON o.id = $4 AND o.product_id = p.id
+		WHERE p.id = $3
+		RETURNING landmark_id, landmark_name, guide_display_name
+	`
+	err := r.pool.QueryRow(
+		ctx,
+		query,
+		item.ID,
+		item.BookingID,
+		item.ProductID,
+		item.OfferID,
+		item.LegacyExcursionID,
+		item.GuideProfileID,
+		item.GuideUserID,
+		item.TouristUserID,
+		item.Rating,
+		item.Comment,
+		item.CreatedAt,
+		item.UpdatedAt,
+	).Scan(&item.LandmarkID, &item.LandmarkName, &item.GuideDisplayName)
+	if err != nil {
+		if isExcursionReviewUniqueViolation(err) {
+			return model.ErrExcursionReviewAlreadyExists
+		}
+		return fmt.Errorf("insert excursion review: %w", err)
+	}
+	return nil
+}
+
+func (r *PGExcursionRepository) GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error) {
+	const query = `
+		SELECT
+			id, booking_id, product_id, offer_id, legacy_excursion_id,
+			landmark_id, landmark_name,
+			guide_profile_id, guide_user_id, guide_display_name, tourist_user_id,
+			rating, comment, created_at, updated_at
+		FROM excursion_reviews
+		WHERE booking_id = $1
+	`
+	item, err := scanExcursionReview(r.pool.QueryRow(ctx, query, bookingID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion review: %w", err)
+	}
+	return item, nil
+}
+
+func (r *PGExcursionRepository) ListExcursionReviews(ctx context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
+	const query = `
+		SELECT
+			id, booking_id, product_id, offer_id, legacy_excursion_id,
+			landmark_id, landmark_name,
+			guide_profile_id, guide_user_id, guide_display_name, tourist_user_id,
+			rating, comment, created_at, updated_at
+		FROM excursion_reviews
+		WHERE ($1::uuid IS NULL OR product_id = $1)
+		  AND ($2::uuid IS NULL OR landmark_id = $2)
+		ORDER BY created_at DESC, id ASC
+		LIMIT $3 OFFSET $4
+	`
+	rows, err := r.pool.Query(ctx, query, filter.ProductID, filter.LandmarkID, filter.Limit, filter.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("query excursion reviews: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*model.ExcursionReview, 0)
+	for rows.Next() {
+		item, scanErr := scanExcursionReview(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate excursion reviews: %w", err)
+	}
+	return items, nil
+}
+
 type dbExecutor interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
@@ -1218,6 +1390,13 @@ func isGuideLandmarkUniqueViolation(err error) bool {
 	return errors.As(err, &pgErr) &&
 		pgErr.Code == pgUniqueViolation &&
 		pgErr.ConstraintName == activeGuideLandmarkConstraint
+}
+
+func isExcursionReviewUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) &&
+		pgErr.Code == pgUniqueViolation &&
+		pgErr.ConstraintName == "idx_excursion_reviews_booking"
 }
 
 func updateExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion) error {
@@ -2095,6 +2274,174 @@ func scanExcursionOffer(row excursionScanner) (*model.ExcursionOffer, error) {
 	item.Status = enum.ExcursionStatus(statusRaw)
 	item.Visibility = enum.ExcursionVisibility(visibilityRaw)
 	item.Translations = scanExcursionTranslations(translationsRaw)
+	return &item, nil
+}
+
+func scanExcursionBooking(row excursionScanner) (*model.ExcursionBooking, error) {
+	var (
+		item      model.ExcursionBooking
+		statusRaw string
+	)
+	if err := row.Scan(
+		&item.ID,
+		&item.ProductID,
+		&item.OfferID,
+		&item.LegacyExcursionID,
+		&item.GuideProfileID,
+		&item.GuideUserID,
+		&item.TouristUserID,
+		&item.ScheduledFor,
+		&item.Adults,
+		&item.Children,
+		&item.TotalSeats,
+		&item.UnitPriceAmount,
+		&item.ServiceFeeAmount,
+		&item.TotalPriceAmount,
+		&item.Currency,
+		&statusRaw,
+		&item.IdempotencyKey,
+		&item.CancelledAt,
+		&item.CancelReason,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	item.Status = enum.ExcursionBookingStatus(statusRaw)
+	return &item, nil
+}
+
+func scanExcursionBookingListItem(row excursionScanner) (*model.ExcursionBookingListItem, error) {
+	var (
+		booking                model.ExcursionBooking
+		statusRaw              string
+		reviewID               *uuid.UUID
+		reviewBookingID        *uuid.UUID
+		reviewProductID        *uuid.UUID
+		reviewOfferID          *uuid.UUID
+		reviewGuideProfileID   *uuid.UUID
+		reviewGuideUserID      *uuid.UUID
+		reviewGuideDisplayName *string
+		reviewTouristUserID    *uuid.UUID
+		review                 model.ExcursionReview
+		reviewRating           *float64
+		reviewComment          *string
+		reviewCreatedAt        *time.Time
+		reviewUpdatedAt        *time.Time
+		item                   model.ExcursionBookingListItem
+	)
+	if err := row.Scan(
+		&booking.ID,
+		&booking.ProductID,
+		&booking.OfferID,
+		&booking.LegacyExcursionID,
+		&booking.GuideProfileID,
+		&booking.GuideUserID,
+		&booking.TouristUserID,
+		&booking.ScheduledFor,
+		&booking.Adults,
+		&booking.Children,
+		&booking.TotalSeats,
+		&booking.UnitPriceAmount,
+		&booking.ServiceFeeAmount,
+		&booking.TotalPriceAmount,
+		&booking.Currency,
+		&statusRaw,
+		&booking.IdempotencyKey,
+		&booking.CancelledAt,
+		&booking.CancelReason,
+		&booking.CreatedAt,
+		&booking.UpdatedAt,
+		&item.Title,
+		&item.Summary,
+		&item.LandmarkID,
+		&item.LandmarkName,
+		&item.CategorySlug,
+		&item.CountryCode,
+		&item.CityName,
+		&item.CoverFileID,
+		&item.GuideDisplayName,
+		&reviewID,
+		&reviewBookingID,
+		&reviewProductID,
+		&reviewOfferID,
+		&review.LegacyExcursionID,
+		&review.LandmarkID,
+		&review.LandmarkName,
+		&reviewGuideProfileID,
+		&reviewGuideUserID,
+		&reviewGuideDisplayName,
+		&reviewTouristUserID,
+		&reviewRating,
+		&reviewComment,
+		&reviewCreatedAt,
+		&reviewUpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	booking.Status = enum.ExcursionBookingStatus(statusRaw)
+	item.Booking = &booking
+	if reviewID != nil {
+		review.ID = *reviewID
+		if reviewBookingID != nil {
+			review.BookingID = *reviewBookingID
+		}
+		if reviewProductID != nil {
+			review.ProductID = *reviewProductID
+		}
+		if reviewOfferID != nil {
+			review.OfferID = *reviewOfferID
+		}
+		if reviewGuideProfileID != nil {
+			review.GuideProfileID = *reviewGuideProfileID
+		}
+		if reviewGuideUserID != nil {
+			review.GuideUserID = *reviewGuideUserID
+		}
+		if reviewGuideDisplayName != nil {
+			review.GuideDisplayName = *reviewGuideDisplayName
+		}
+		if reviewTouristUserID != nil {
+			review.TouristUserID = *reviewTouristUserID
+		}
+		if reviewRating != nil {
+			review.Rating = *reviewRating
+		}
+		if reviewComment != nil {
+			review.Comment = *reviewComment
+		}
+		if reviewCreatedAt != nil {
+			review.CreatedAt = *reviewCreatedAt
+		}
+		if reviewUpdatedAt != nil {
+			review.UpdatedAt = *reviewUpdatedAt
+		}
+		item.Review = &review
+	}
+	return &item, nil
+}
+
+func scanExcursionReview(row excursionScanner) (*model.ExcursionReview, error) {
+	var item model.ExcursionReview
+	if err := row.Scan(
+		&item.ID,
+		&item.BookingID,
+		&item.ProductID,
+		&item.OfferID,
+		&item.LegacyExcursionID,
+		&item.LandmarkID,
+		&item.LandmarkName,
+		&item.GuideProfileID,
+		&item.GuideUserID,
+		&item.GuideDisplayName,
+		&item.TouristUserID,
+		&item.Rating,
+		&item.Comment,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
 	return &item, nil
 }
 

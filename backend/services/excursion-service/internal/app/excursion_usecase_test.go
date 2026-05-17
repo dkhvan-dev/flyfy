@@ -95,6 +95,26 @@ func (s *excursionRepoStub) CreateExcursionBooking(ctx context.Context, item *mo
 	return nil
 }
 
+func (s *excursionRepoStub) ListExcursionBookings(ctx context.Context, filter port.ExcursionBookingFilter) ([]*model.ExcursionBookingListItem, error) {
+	return nil, nil
+}
+
+func (s *excursionRepoStub) GetExcursionBookingByID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionBooking, error) {
+	return nil, nil
+}
+
+func (s *excursionRepoStub) CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
+	return nil
+}
+
+func (s *excursionRepoStub) GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error) {
+	return nil, nil
+}
+
+func (s *excursionRepoStub) ListExcursionReviews(ctx context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
+	return nil, nil
+}
+
 type guideVerifierStub struct {
 	result port.GuideExcursionPermission
 	err    error

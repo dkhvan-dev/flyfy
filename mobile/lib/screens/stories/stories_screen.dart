@@ -273,10 +273,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
           countrySearchAliases: _countrySearchAliases,
           isCountriesLoading: _isCountriesLoading,
           previewCountLoader: ({required category, required place}) =>
-              _loadStoriesPreviewCount(
-            category: category,
-            place: place,
-          ),
+              _loadStoriesPreviewCount(category: category, place: place),
         );
       },
     );
@@ -285,7 +282,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
       return;
     }
     final categoryChanged = selected.category != _selectedCategory;
-    final placeChanged = normalizeReferenceCountryCode(selected.place?.code) !=
+    final placeChanged =
+        normalizeReferenceCountryCode(selected.place?.code) !=
         normalizeReferenceCountryCode(_selectedPlace?.code);
     if (!categoryChanged && !placeChanged) {
       return;
@@ -302,8 +300,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
     required ReferenceCountry? place,
   }) async {
     final trimmedCategory = category?.trim() ?? '';
-    final categories =
-        trimmedCategory.isEmpty ? null : <String>[trimmedCategory];
+    final categories = trimmedCategory.isEmpty
+        ? null
+        : <String>[trimmedCategory];
     final page = widget.myOnly
         ? await _api.listMyStoriesPage(
             search: _searchQuery,
@@ -376,8 +375,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
       return;
     }
     setState(() {
-      final next =
-          _stories.where((item) => item.id != story.id).toList(growable: true);
+      final next = _stories
+          .where((item) => item.id != story.id)
+          .toList(growable: true);
       next.insert(0, story);
       next.sort((a, b) => b.sortDate.compareTo(a.sortDate));
       _stories = next;
@@ -531,6 +531,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
         onHomeTap: () => _runDrawerAction(() async => context.go('/')),
         onMyActivitiesTap: () =>
             _runDrawerAction(() async => context.push('/me/activities')),
+        onMyExcursionsTap: () =>
+            _runDrawerAction(() async => context.push('/me/excursions')),
         onMyStoriesTap: () =>
             _runDrawerAction(() async => context.push('/me/stories')),
         onActivitiesTap: () =>
@@ -585,7 +587,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               filterTooltip: l10n.storyFiltersTitle,
                               activeFilterCount:
                                   (_selectedCategory == null ? 0 : 1) +
-                                      (_selectedPlace == null ? 0 : 1),
+                                  (_selectedPlace == null ? 0 : 1),
                               onFilterTap: _openFilters,
                             ),
                             SizedBox(height: adaptive.scale(18)),
@@ -1064,10 +1066,11 @@ class _StoryFiltersResult {
   final ReferenceCountry? place;
 }
 
-typedef _StoryFiltersPreviewCountLoader = Future<int> Function({
-  required String? category,
-  required ReferenceCountry? place,
-});
+typedef _StoryFiltersPreviewCountLoader =
+    Future<int> Function({
+      required String? category,
+      required ReferenceCountry? place,
+    });
 
 class _StoryFiltersSheet extends StatefulWidget {
   const _StoryFiltersSheet({
@@ -1329,7 +1332,7 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
                   final country = visibleCountries[index];
                   final normalizedCode =
                       normalizeReferenceCountryCode(country.code) ??
-                          country.code.trim().toUpperCase();
+                      country.code.trim().toUpperCase();
                   final selected = countryCode == normalizedCode;
 
                   return _StoryCountryResultTile(

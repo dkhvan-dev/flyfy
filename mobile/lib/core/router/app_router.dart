@@ -29,6 +29,7 @@ import '../../screens/excursions/excursion_booking_screen.dart';
 import '../../screens/excursions/excursion_select_location_screen.dart';
 import '../../screens/excursions/excursion_details_screen.dart';
 import '../../screens/excursions/excursions_screen.dart';
+import '../../screens/excursions/my_excursions_screen.dart';
 import '../../screens/guides/guides_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
 import '../../screens/chat/conversations_screen.dart';
@@ -336,6 +337,11 @@ class AppRouter {
               ),
             );
           },
+        ),
+        GoRoute(
+          path: '/me/excursions',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const MyExcursionsScreen()),
         ),
         GoRoute(
           path: '/excursions/:excursionId',

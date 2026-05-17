@@ -212,3 +212,23 @@ func (s *excursionOffersRepoStub) LoadExcursionOfferRelations(context.Context, u
 func (s *excursionOffersRepoStub) CreateExcursionBooking(context.Context, *model.ExcursionBooking) error {
 	return nil
 }
+
+func (s *excursionOffersRepoStub) ListExcursionBookings(context.Context, port.ExcursionBookingFilter) ([]*model.ExcursionBookingListItem, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) GetExcursionBookingByID(context.Context, uuid.UUID) (*model.ExcursionBooking, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) CreateExcursionReview(context.Context, *model.ExcursionReview) error {
+	return nil
+}
+
+func (s *excursionOffersRepoStub) GetExcursionReviewByBookingID(context.Context, uuid.UUID) (*model.ExcursionReview, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) ListExcursionReviews(context.Context, port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
+	return nil, nil
+}

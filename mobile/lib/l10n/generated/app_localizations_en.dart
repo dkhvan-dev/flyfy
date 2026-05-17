@@ -3460,6 +3460,126 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myActivitiesPriceNoteFree => 'no fee';
 
   @override
+  String get myExcursionsTitle => 'My Excursions';
+
+  @override
+  String get myExcursionsSearchHint => 'Search excursions, guides, and cities';
+
+  @override
+  String get myExcursionsFilterTitle => 'Excursion filters';
+
+  @override
+  String get myExcursionsReviewSuccess => 'Review published';
+
+  @override
+  String get myExcursionsSortLabel => 'Sort';
+
+  @override
+  String get myExcursionsSortDate => 'By date';
+
+  @override
+  String get myExcursionsSortPrice => 'By price';
+
+  @override
+  String get myExcursionsLoadFailed => 'Failed to load your excursions';
+
+  @override
+  String get myExcursionsBookedEmpty => 'You don\'t have booked excursions yet';
+
+  @override
+  String get myExcursionsVisitedEmpty =>
+      'You haven\'t visited any excursions yet';
+
+  @override
+  String get myExcursionsBookedEmptyHint =>
+      'Booked excursions will appear here';
+
+  @override
+  String get myExcursionsVisitedEmptyHint =>
+      'After a visit, you can leave a review here';
+
+  @override
+  String get myExcursionsBookedTab => 'Booked';
+
+  @override
+  String get myExcursionsVisitedTab => 'Visited';
+
+  @override
+  String get myExcursionsGuideFallback => 'FlyFy guide';
+
+  @override
+  String get myExcursionsUntitled => 'Excursion';
+
+  @override
+  String myExcursionsGuideLine(Object guide) {
+    return 'Guide: $guide';
+  }
+
+  @override
+  String myExcursionsGuests(Object count) {
+    return 'Guests: $count';
+  }
+
+  @override
+  String get myExcursionsReviewButton => 'Rate';
+
+  @override
+  String get myExcursionsReviewed => 'Reviewed';
+
+  @override
+  String get myExcursionsFilterStatus => 'Status';
+
+  @override
+  String get myExcursionsStatusRequested => 'Booked';
+
+  @override
+  String get myExcursionsFilterReview => 'Reviews';
+
+  @override
+  String get myExcursionsFilterReviewAll => 'All';
+
+  @override
+  String get myExcursionsFilterUnreviewed => 'Without review';
+
+  @override
+  String get myExcursionsFilterReviewed => 'Reviewed';
+
+  @override
+  String get myExcursionsReviewTitle => 'Rate the excursion';
+
+  @override
+  String get myExcursionsReviewCommentError => 'Write a short review';
+
+  @override
+  String get myExcursionsReviewFailed => 'Failed to publish review';
+
+  @override
+  String get myExcursionsReviewRating => 'Rating';
+
+  @override
+  String get myExcursionsReviewHint =>
+      'What did you like, and what could be better?';
+
+  @override
+  String get myExcursionsReviewPublish => 'Publish';
+
+  @override
+  String get excursionReviewsTitle => 'Reviews after excursions';
+
+  @override
+  String get excursionReviewsEmpty =>
+      'There are no reviews for this excursion yet';
+
+  @override
+  String excursionReviewViaGuide(Object guide) {
+    return 'Via guide: $guide';
+  }
+
+  @override
+  String get excursionReviewSourceAttractionBadge =>
+      'Review based on a visited excursion';
+
+  @override
   String get activityPerPerson => '/ person';
 
   @override

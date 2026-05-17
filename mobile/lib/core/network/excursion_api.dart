@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 
 import '../../features/excursions/models/create_excursion_request.dart';
 import '../../features/excursions/models/create_excursion_booking_request.dart';
+import '../../features/excursions/models/create_excursion_review_request.dart';
+import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import 'api_client.dart';
 
@@ -31,7 +33,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -89,7 +92,8 @@ class ExcursionApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -114,8 +118,9 @@ class ExcursionApi {
 
   Future<ExcursionVm> getMyExcursion(String excursionId) async {
     final encodedExcursionId = Uri.encodeComponent(excursionId);
-    final response =
-        await _apiClient.dio.get('/me/excursions/$encodedExcursionId');
+    final response = await _apiClient.dio.get(
+      '/me/excursions/$encodedExcursionId',
+    );
 
     return ExcursionVm.fromJson(response.data as Map<String, dynamic>);
   }
@@ -134,8 +139,9 @@ class ExcursionApi {
   }
 
   Future<ExcursionVm> publishExcursion(String excursionId) async {
-    final response =
-        await _apiClient.dio.post('/me/excursions/$excursionId/publish');
+    final response = await _apiClient.dio.post(
+      '/me/excursions/$excursionId/publish',
+    );
 
     return ExcursionVm.fromJson(response.data as Map<String, dynamic>);
   }
@@ -150,11 +156,97 @@ class ExcursionApi {
 
     return response.data as Map<String, dynamic>;
   }
+
+  Future<ExcursionBookingsPage> getMyExcursionBookings({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final response = await _apiClient.dio.get(
+      '/me/excursion-bookings',
+      queryParameters: <String, dynamic>{'limit': limit, 'offset': offset},
+    );
+
+    final data = response.data;
+    final items =
+        (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+
+    return ExcursionBookingsPage(
+      items: items
+          .whereType<Map<String, dynamic>>()
+          .map(ExcursionBookingVm.fromJson)
+          .toList(growable: false),
+      hasMore: data is Map<String, dynamic> && data['hasMore'] == true,
+    );
+  }
+
+  Future<ExcursionReviewVm> createExcursionReview(
+    String bookingId,
+    CreateExcursionReviewRequest request,
+  ) async {
+    final encodedBookingId = Uri.encodeComponent(bookingId);
+    final response = await _apiClient.dio.post(
+      '/me/excursion-bookings/$encodedBookingId/review',
+      data: request.toJson(),
+    );
+    return ExcursionReviewVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<ExcursionReviewsPage> getExcursionReviews({
+    String? productId,
+    String? landmarkId,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final endpoint = (productId ?? '').trim().isNotEmpty
+        ? '/excursion-products/${Uri.encodeComponent(productId!.trim())}/reviews'
+        : '/excursion-reviews';
+    final response = await _apiClient.dio.get(
+      endpoint,
+      queryParameters: <String, dynamic>{
+        if ((landmarkId ?? '').trim().isNotEmpty)
+          'landmarkId': landmarkId!.trim(),
+        'limit': limit,
+        'offset': offset,
+      },
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    final data = response.data;
+    final items =
+        (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+    return ExcursionReviewsPage(
+      items: items
+          .whereType<Map<String, dynamic>>()
+          .map(ExcursionReviewVm.fromJson)
+          .toList(growable: false),
+      hasMore: data is Map<String, dynamic> && data['hasMore'] == true,
+    );
+  }
 }
 
 class ExcursionOffersPage {
   const ExcursionOffersPage({required this.items, required this.hasMore});
 
   final List<ExcursionOfferVm> items;
+  final bool hasMore;
+}
+
+class ExcursionBookingsPage {
+  const ExcursionBookingsPage({required this.items, required this.hasMore});
+
+  final List<ExcursionBookingVm> items;
+  final bool hasMore;
+}
+
+class ExcursionReviewsPage {
+  const ExcursionReviewsPage({required this.items, required this.hasMore});
+
+  final List<ExcursionReviewVm> items;
   final bool hasMore;
 }

@@ -3477,6 +3477,124 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myActivitiesPriceNoteFree => 'без оплаты';
 
   @override
+  String get myExcursionsTitle => 'Мои экскурсии';
+
+  @override
+  String get myExcursionsSearchHint => 'Поиск по экскурсиям, гидам и городам';
+
+  @override
+  String get myExcursionsFilterTitle => 'Фильтры экскурсий';
+
+  @override
+  String get myExcursionsReviewSuccess => 'Отзыв опубликован';
+
+  @override
+  String get myExcursionsSortLabel => 'Сортировка';
+
+  @override
+  String get myExcursionsSortDate => 'По дате';
+
+  @override
+  String get myExcursionsSortPrice => 'По цене';
+
+  @override
+  String get myExcursionsLoadFailed => 'Не удалось загрузить ваши экскурсии';
+
+  @override
+  String get myExcursionsBookedEmpty =>
+      'У вас пока нет забронированных экскурсий';
+
+  @override
+  String get myExcursionsVisitedEmpty => 'Вы пока не посещали экскурсии';
+
+  @override
+  String get myExcursionsBookedEmptyHint =>
+      'Забронированные экскурсии появятся здесь';
+
+  @override
+  String get myExcursionsVisitedEmptyHint =>
+      'После посещения экскурсии вы сможете оставить отзыв';
+
+  @override
+  String get myExcursionsBookedTab => 'Забронированные';
+
+  @override
+  String get myExcursionsVisitedTab => 'Посещенные';
+
+  @override
+  String get myExcursionsGuideFallback => 'Гид FlyFy';
+
+  @override
+  String get myExcursionsUntitled => 'Экскурсия';
+
+  @override
+  String myExcursionsGuideLine(Object guide) {
+    return 'Гид: $guide';
+  }
+
+  @override
+  String myExcursionsGuests(Object count) {
+    return 'Гостей: $count';
+  }
+
+  @override
+  String get myExcursionsReviewButton => 'Оценить';
+
+  @override
+  String get myExcursionsReviewed => 'Оценено';
+
+  @override
+  String get myExcursionsFilterStatus => 'Статус';
+
+  @override
+  String get myExcursionsStatusRequested => 'Забронировано';
+
+  @override
+  String get myExcursionsFilterReview => 'Отзывы';
+
+  @override
+  String get myExcursionsFilterReviewAll => 'Все';
+
+  @override
+  String get myExcursionsFilterUnreviewed => 'Без отзыва';
+
+  @override
+  String get myExcursionsFilterReviewed => 'С отзывом';
+
+  @override
+  String get myExcursionsReviewTitle => 'Оцените экскурсию';
+
+  @override
+  String get myExcursionsReviewCommentError => 'Напишите короткий отзыв';
+
+  @override
+  String get myExcursionsReviewFailed => 'Не удалось опубликовать отзыв';
+
+  @override
+  String get myExcursionsReviewRating => 'Оценка';
+
+  @override
+  String get myExcursionsReviewHint => 'Что понравилось, что можно улучшить?';
+
+  @override
+  String get myExcursionsReviewPublish => 'Опубликовать';
+
+  @override
+  String get excursionReviewsTitle => 'Отзывы после экскурсий';
+
+  @override
+  String get excursionReviewsEmpty => 'Отзывов по этой экскурсии пока нет';
+
+  @override
+  String excursionReviewViaGuide(Object guide) {
+    return 'Через гида: $guide';
+  }
+
+  @override
+  String get excursionReviewSourceAttractionBadge =>
+      'Отзыв на основе посещенной экскурсии';
+
+  @override
   String get activityPerPerson => '/ чел.';
 
   @override

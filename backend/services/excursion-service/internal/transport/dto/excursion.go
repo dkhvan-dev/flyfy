@@ -192,22 +192,66 @@ type CreateExcursionBookingRequest struct {
 }
 
 type ExcursionBookingResponse struct {
+	ID                string                   `json:"id"`
+	ProductID         string                   `json:"productId"`
+	OfferID           string                   `json:"offerId"`
+	LegacyExcursionID *string                  `json:"legacyExcursionId,omitempty"`
+	GuideProfileID    string                   `json:"guideProfileId"`
+	GuideUserID       string                   `json:"guideUserId"`
+	GuideDisplayName  string                   `json:"guideDisplayName,omitempty"`
+	TouristUserID     string                   `json:"touristUserId"`
+	Title             string                   `json:"title,omitempty"`
+	Summary           string                   `json:"summary,omitempty"`
+	LandmarkID        *string                  `json:"landmarkId,omitempty"`
+	LandmarkName      *string                  `json:"landmarkName,omitempty"`
+	CategorySlug      string                   `json:"categorySlug,omitempty"`
+	CountryCode       *string                  `json:"countryCode,omitempty"`
+	CityName          *string                  `json:"cityName,omitempty"`
+	CoverFileID       *string                  `json:"coverFileId,omitempty"`
+	ScheduledFor      string                   `json:"scheduledFor"`
+	Adults            int                      `json:"adults"`
+	Children          int                      `json:"children"`
+	TotalSeats        int                      `json:"totalSeats"`
+	UnitPriceAmount   float64                  `json:"unitPriceAmount"`
+	ServiceFeeAmount  float64                  `json:"serviceFeeAmount"`
+	TotalPriceAmount  float64                  `json:"totalPriceAmount"`
+	Currency          string                   `json:"currency"`
+	Status            string                   `json:"status"`
+	CreatedAt         string                   `json:"createdAt"`
+	UpdatedAt         string                   `json:"updatedAt"`
+	Review            *ExcursionReviewResponse `json:"review,omitempty"`
+}
+
+type ExcursionBookingListResponse struct {
+	Items   []ExcursionBookingResponse `json:"items"`
+	HasMore bool                       `json:"hasMore"`
+}
+
+type CreateExcursionReviewRequest struct {
+	Rating  float64 `json:"rating"`
+	Comment string  `json:"comment"`
+}
+
+type ExcursionReviewResponse struct {
 	ID                string  `json:"id"`
+	BookingID         string  `json:"bookingId"`
 	ProductID         string  `json:"productId"`
 	OfferID           string  `json:"offerId"`
 	LegacyExcursionID *string `json:"legacyExcursionId,omitempty"`
+	LandmarkID        *string `json:"landmarkId,omitempty"`
+	LandmarkName      *string `json:"landmarkName,omitempty"`
 	GuideProfileID    string  `json:"guideProfileId"`
 	GuideUserID       string  `json:"guideUserId"`
+	GuideDisplayName  string  `json:"guideDisplayName,omitempty"`
 	TouristUserID     string  `json:"touristUserId"`
-	ScheduledFor      string  `json:"scheduledFor"`
-	Adults            int     `json:"adults"`
-	Children          int     `json:"children"`
-	TotalSeats        int     `json:"totalSeats"`
-	UnitPriceAmount   float64 `json:"unitPriceAmount"`
-	ServiceFeeAmount  float64 `json:"serviceFeeAmount"`
-	TotalPriceAmount  float64 `json:"totalPriceAmount"`
-	Currency          string  `json:"currency"`
-	Status            string  `json:"status"`
+	Rating            float64 `json:"rating"`
+	Comment           string  `json:"comment"`
+	SourceLabel       string  `json:"sourceLabel"`
 	CreatedAt         string  `json:"createdAt"`
 	UpdatedAt         string  `json:"updatedAt"`
+}
+
+type ExcursionReviewListResponse struct {
+	Items   []ExcursionReviewResponse `json:"items"`
+	HasMore bool                      `json:"hasMore"`
 }

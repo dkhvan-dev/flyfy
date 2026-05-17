@@ -346,11 +346,13 @@ class _HomeScreenState extends State<HomeScreen> {
         final iconSize = (isCompact ? 50.0 : 58.0) * visualScale;
         final topPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 28.0);
         final bottomPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 30.0);
-        final handleToIconGap =
-            isShortLayout ? 20.0 : (isCompact ? 26.0 : 34.0);
+        final handleToIconGap = isShortLayout
+            ? 20.0
+            : (isCompact ? 26.0 : 34.0);
         final iconToTitleGap = isShortLayout ? 18.0 : (isCompact ? 22.0 : 26.0);
-        final titleToOptionsGap =
-            isShortLayout ? 22.0 : (isCompact ? 28.0 : 34.0);
+        final titleToOptionsGap = isShortLayout
+            ? 22.0
+            : (isCompact ? 28.0 : 34.0);
         final optionGap = isShortLayout ? 12.0 : (isCompact ? 14.0 : 16.0);
 
         return SafeArea(
@@ -727,10 +729,7 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.account_balance_rounded,
         onTap: _openAttractions,
       ),
-      _QuickActionData(
-        title: l10n.homeServiceStays,
-        icon: Icons.bed_rounded,
-      ),
+      _QuickActionData(title: l10n.homeServiceStays, icon: Icons.bed_rounded),
       _QuickActionData(
         title: l10n.serviceTransport,
         icon: Icons.directions_car_filled_rounded,
@@ -765,6 +764,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onLanguageTap: () => _runDrawerAction(_showLanguageSheet),
         onHomeTap: () => _runDrawerAction(() => context.go('/')),
         onMyActivitiesTap: () => _runDrawerAction(_openMyActivities),
+        onMyExcursionsTap: () =>
+            _runDrawerAction(() => context.push('/me/excursions')),
         onMyStoriesTap: () =>
             _runDrawerAction(() => context.push('/me/stories')),
         onActivitiesTap: () => _runDrawerAction(_openActivities),
@@ -974,10 +975,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
         vertical: 24,
       ),
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 386,
-          maxHeight: maxDialogHeight,
-        ),
+        constraints: BoxConstraints(maxWidth: 386, maxHeight: maxDialogHeight),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(28),
           child: DecoratedBox(
@@ -1089,9 +1087,9 @@ class _LogoutConfirmDialog extends StatelessWidget {
                         Text(
                           message,
                           style: TextStyle(
-                            color: const Color(0xFFE0D4C6).withValues(
-                              alpha: 0.88,
-                            ),
+                            color: const Color(
+                              0xFFE0D4C6,
+                            ).withValues(alpha: 0.88),
                             fontSize: isCompact ? 14 : 15,
                             height: 1.45,
                             fontWeight: FontWeight.w500,
@@ -1157,8 +1155,9 @@ class _LogoutDialogActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foregroundColor =
-        isPrimary ? const Color(0xFF1D1711) : const Color(0xFFFFE9C8);
+    final foregroundColor = isPrimary
+        ? const Color(0xFF1D1711)
+        : const Color(0xFFFFE9C8);
 
     return Material(
       color: Colors.transparent,
@@ -1486,8 +1485,9 @@ class _QuickActionsGrid extends StatelessWidget {
         final minContentHeight =
             iconSize + iconLabelGap + 13 + verticalPadding * 2;
         final visualHeight = tileWidth * (isCompact ? 0.82 : 0.76);
-        final tileHeight =
-            visualHeight < minContentHeight ? minContentHeight : visualHeight;
+        final tileHeight = visualHeight < minContentHeight
+            ? minContentHeight
+            : visualHeight;
 
         return GridView.builder(
           shrinkWrap: true,
@@ -1502,12 +1502,15 @@ class _QuickActionsGrid extends StatelessWidget {
           itemBuilder: (context, index) {
             final action = actions[index];
             final isEnabled = action.onTap != null;
-            final foregroundColor =
-                isEnabled ? AppColors.accent : const Color(0xFF8E8A84);
-            final textColor =
-                isEnabled ? const Color(0xFFF2E5D7) : const Color(0xFFB1AAA2);
-            final backgroundColor =
-                isEnabled ? const Color(0xFF43280D) : const Color(0xFF3D3935);
+            final foregroundColor = isEnabled
+                ? AppColors.accent
+                : const Color(0xFF8E8A84);
+            final textColor = isEnabled
+                ? const Color(0xFFF2E5D7)
+                : const Color(0xFFB1AAA2);
+            final backgroundColor = isEnabled
+                ? const Color(0xFF43280D)
+                : const Color(0xFF3D3935);
 
             return Material(
               color: Colors.transparent,
@@ -1588,8 +1591,9 @@ class _PromoCarousel extends StatelessWidget {
         final cardWidth = viewportWidth * (isCompact ? 0.86 : 0.84);
         final visualHeight = cardWidth * 0.63;
         final minContentHeight = (isCompact ? 190.0 : 204.0) * textScale;
-        final cardHeight =
-            visualHeight < minContentHeight ? minContentHeight : visualHeight;
+        final cardHeight = visualHeight < minContentHeight
+            ? minContentHeight
+            : visualHeight;
 
         return MediaQuery(
           data: MediaQuery.of(
@@ -2673,9 +2677,7 @@ class _FeatureEntriesGrid extends StatelessWidget {
         return Row(
           children: [
             for (var index = 0; index < entries.length; index++) ...[
-              Expanded(
-                child: _TravelEntryCard(data: entries[index]),
-              ),
+              Expanded(child: _TravelEntryCard(data: entries[index])),
               if (index != entries.length - 1) SizedBox(width: gap),
             ],
           ],
@@ -2806,7 +2808,8 @@ class _RecommendedActivitiesSection extends StatelessWidget {
       publicItems: provider.items,
       currentUserId: currentUserId,
     );
-    final isLoadingPublic = provider.state == ActivitiesState.loading ||
+    final isLoadingPublic =
+        provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
     final hasLoadError = provider.state == ActivitiesState.error;
 
@@ -2966,8 +2969,9 @@ class _RecommendedActivityCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 360;
-    final buttonLabel =
-        isJoined ? l10n.activityDetailsJoinedBadge : l10n.activityJoinSession;
+    final buttonLabel = isJoined
+        ? l10n.activityDetailsJoinedBadge
+        : l10n.activityJoinSession;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -3526,11 +3530,7 @@ class _FeatureEntryData {
 }
 
 class _QuickActionData {
-  const _QuickActionData({
-    required this.title,
-    required this.icon,
-    this.onTap,
-  });
+  const _QuickActionData({required this.title, required this.icon, this.onTap});
 
   final String title;
   final IconData icon;

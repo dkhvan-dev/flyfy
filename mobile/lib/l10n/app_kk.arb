@@ -1263,6 +1263,57 @@
   "myActivitiesOpenButton": "Белсенділікті ашу",
   "myActivitiesRetryButton": "Қайталау",
   "myActivitiesPriceNoteFree": "тегін",
+  "myExcursionsTitle": "Менің экскурсияларым",
+  "myExcursionsSearchHint": "Экскурсия, гид және қала бойынша іздеу",
+  "myExcursionsFilterTitle": "Экскурсия сүзгілері",
+  "myExcursionsReviewSuccess": "Пікір жарияланды",
+  "myExcursionsSortLabel": "Сұрыптау",
+  "myExcursionsSortDate": "Күні бойынша",
+  "myExcursionsSortPrice": "Бағасы бойынша",
+  "myExcursionsLoadFailed": "Экскурсияларыңызды жүктеу мүмкін болмады",
+  "myExcursionsBookedEmpty": "Сізде әлі брондалған экскурсиялар жоқ",
+  "myExcursionsVisitedEmpty": "Сіз әлі экскурсияға барған жоқсыз",
+  "myExcursionsBookedEmptyHint": "Брондалған экскурсиялар осы жерде пайда болады",
+  "myExcursionsVisitedEmptyHint": "Экскурсиядан кейін осы жерде пікір қалдыра аласыз",
+  "myExcursionsBookedTab": "Брондалған",
+  "myExcursionsVisitedTab": "Барған",
+  "myExcursionsGuideFallback": "FlyFy гиді",
+  "myExcursionsUntitled": "Экскурсия",
+  "myExcursionsGuideLine": "Гид: {guide}",
+  "@myExcursionsGuideLine": {
+    "placeholders": {
+      "guide": {}
+    }
+  },
+  "myExcursionsGuests": "Қонақтар: {count}",
+  "@myExcursionsGuests": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "myExcursionsReviewButton": "Бағалау",
+  "myExcursionsReviewed": "Бағаланған",
+  "myExcursionsFilterStatus": "Мәртебе",
+  "myExcursionsStatusRequested": "Брондалған",
+  "myExcursionsFilterReview": "Пікірлер",
+  "myExcursionsFilterReviewAll": "Барлығы",
+  "myExcursionsFilterUnreviewed": "Пікірсіз",
+  "myExcursionsFilterReviewed": "Пікір бар",
+  "myExcursionsReviewTitle": "Экскурсияны бағалаңыз",
+  "myExcursionsReviewCommentError": "Қысқа пікір жазыңыз",
+  "myExcursionsReviewFailed": "Пікірді жариялау мүмкін болмады",
+  "myExcursionsReviewRating": "Баға",
+  "myExcursionsReviewHint": "Не ұнады, нені жақсартуға болады?",
+  "myExcursionsReviewPublish": "Жариялау",
+  "excursionReviewsTitle": "Экскурсиядан кейінгі пікірлер",
+  "excursionReviewsEmpty": "Бұл экскурсия бойынша пікірлер әлі жоқ",
+  "excursionReviewViaGuide": "Гид арқылы: {guide}",
+  "@excursionReviewViaGuide": {
+    "placeholders": {
+      "guide": {}
+    }
+  },
+  "excursionReviewSourceAttractionBadge": "Пікір барған экскурсия негізінде",
   "activityPerPerson": "/ адам",
   "activitySpotsLeft": "{count} орын қалды",
   "@activitySpotsLeft": {

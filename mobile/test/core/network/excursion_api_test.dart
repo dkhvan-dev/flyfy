@@ -8,6 +8,7 @@ import 'package:superapp/core/network/api_client.dart';
 import 'package:superapp/core/network/excursion_api.dart';
 import 'package:superapp/core/storage/secure_storage.dart';
 import 'package:superapp/features/excursions/models/create_excursion_booking_request.dart';
+import 'package:superapp/features/excursions/models/create_excursion_review_request.dart';
 import 'package:superapp/features/excursions/models/create_excursion_request.dart';
 
 void main() {
@@ -97,7 +98,9 @@ void main() {
       );
 
       expect(
-          adapter.requests.single.path, '/excursion-products/product-1/offers');
+        adapter.requests.single.path,
+        '/excursion-products/product-1/offers',
+      );
       expect(adapter.requests.single.extra['requiresAuth'], isFalse);
       expect(adapter.requests.single.queryParameters, {
         'limit': 12,
@@ -154,10 +157,110 @@ void main() {
   );
 
   test(
+    'getMyExcursionBookings reads authenticated booking list endpoint',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursion-bookings': {
+          'items': [_bookingJson()],
+          'hasMore': false,
+        },
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final page = await api.getMyExcursionBookings(limit: 12, offset: 24);
+
+      expect(adapter.requests.single.path, '/me/excursion-bookings');
+      expect(adapter.requests.single.queryParameters, {
+        'limit': 12,
+        'offset': 24,
+      });
+      expect(page.items.single.id, 'booking-1');
+      expect(page.items.single.title, 'Medeu sunrise walk');
+      expect(page.items.single.review?.rating, 4.5);
+      expect(page.hasMore, isFalse);
+    },
+  );
+
+  test(
+    'createExcursionReview posts rating and comment for visited booking',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursion-bookings/booking-1/review': _reviewJson(),
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final review = await api.createExcursionReview(
+        'booking-1',
+        const CreateExcursionReviewRequest(
+          rating: 4.5,
+          comment: 'Warm guide and a smooth route.',
+        ),
+      );
+
+      expect(
+        adapter.requests.single.path,
+        '/me/excursion-bookings/booking-1/review',
+      );
+      expect(adapter.lastOptions?.method, 'POST');
+      expect(adapter.lastJsonBody?['rating'], 4.5);
+      expect(
+        adapter.lastJsonBody?['comment'],
+        'Warm guide and a smooth route.',
+      );
+      expect(review.id, 'review-1');
+      expect(review.guideDisplayName, 'Aruzhan');
+    },
+  );
+
+  test('getExcursionReviews can filter public reviews by attraction', () async {
+    final adapter = _ExcursionJsonAdapter({
+      '/excursion-reviews': {
+        'items': [_reviewJson()],
+        'hasMore': false,
+      },
+    });
+    final api = ExcursionApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    final page = await api.getExcursionReviews(
+      landmarkId: 'attraction-1',
+      limit: 5,
+      offset: 0,
+    );
+
+    expect(adapter.requests.single.path, '/excursion-reviews');
+    expect(adapter.requests.single.extra['requiresAuth'], isFalse);
+    expect(adapter.requests.single.queryParameters, {
+      'landmarkId': 'attraction-1',
+      'limit': 5,
+      'offset': 0,
+    });
+    expect(page.items.single.sourceLabel, 'EXCURSION');
+  });
+
+  test(
     'updateExcursionOffer uses legacy my excursion endpoint for the guide offer',
     () async {
-      final adapter = _ExcursionJsonAdapter(
-          {'/me/excursions/excursion-1': _legacyExcursionJson()});
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursions/excursion-1': _legacyExcursionJson(),
+      });
       final api = ExcursionApi(
         apiClient: ApiClient(
           dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
@@ -251,6 +354,49 @@ Map<String, Object?> _legacyExcursionJson() {
     'meetingPoint': 'Medeu entrance',
     'priceAmount': 130,
     'currency': 'KZT',
+  };
+}
+
+Map<String, Object?> _bookingJson() {
+  return {
+    'id': 'booking-1',
+    'productId': 'product-1',
+    'offerId': 'offer-1',
+    'touristUserId': 'tourist-1',
+    'guideProfileId': 'guide-profile-1',
+    'guideUserId': 'guide-user-1',
+    'guideDisplayName': 'Aruzhan',
+    'title': 'Medeu sunrise walk',
+    'summary': 'Private city-to-mountain route',
+    'landmarkId': 'attraction-1',
+    'landmarkName': 'Medeu',
+    'scheduledFor': '2026-05-01T08:00:00Z',
+    'adults': 2,
+    'children': 1,
+    'totalSeats': 3,
+    'totalPriceAmount': 45000,
+    'currency': 'KZT',
+    'status': 'REQUESTED',
+    'review': _reviewJson(),
+  };
+}
+
+Map<String, Object?> _reviewJson() {
+  return {
+    'id': 'review-1',
+    'bookingId': 'booking-1',
+    'productId': 'product-1',
+    'offerId': 'offer-1',
+    'touristUserId': 'tourist-1',
+    'guideProfileId': 'guide-profile-1',
+    'guideUserId': 'guide-user-1',
+    'guideDisplayName': 'Aruzhan',
+    'landmarkId': 'attraction-1',
+    'landmarkName': 'Medeu',
+    'rating': 4.5,
+    'comment': 'Warm guide and a smooth route.',
+    'createdAt': '2026-05-02T10:00:00Z',
+    'updatedAt': '2026-05-02T10:00:00Z',
   };
 }
 

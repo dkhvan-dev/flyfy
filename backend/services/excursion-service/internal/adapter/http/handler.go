@@ -33,7 +33,9 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/excursion-products", h.ListExcursionProducts)
 	mux.HandleFunc("GET /v1/excursion-products/{id}", h.GetExcursionProduct)
 	mux.HandleFunc("GET /v1/excursion-products/{id}/offers", h.ListExcursionProductOffers)
+	mux.HandleFunc("GET /v1/excursion-products/{id}/reviews", h.ListExcursionProductReviews)
 	mux.HandleFunc("GET /v1/excursion-products/{id}/cover", h.GetExcursionProductCover)
+	mux.HandleFunc("GET /v1/excursion-reviews", h.ListExcursionReviews)
 
 	mux.HandleFunc("GET /v1/excursions", h.ListExcursions)
 	mux.HandleFunc("GET /v1/excursions/{id}", h.GetExcursion)
@@ -46,7 +48,9 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /v1/me/excursions/{id}", h.UpdateExcursion)
 	mux.HandleFunc("DELETE /v1/me/excursions/{id}", h.DeleteExcursion)
 	mux.HandleFunc("POST /v1/me/excursions/{id}/publish", h.PublishExcursion)
+	mux.HandleFunc("GET /v1/me/excursion-bookings", h.ListMyExcursionBookings)
 	mux.HandleFunc("POST /v1/me/excursion-bookings", h.CreateExcursionBooking)
+	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/review", h.CreateExcursionReview)
 }
 
 func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
@@ -276,6 +280,93 @@ func (h *Handler) CreateExcursionBooking(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusCreated, toExcursionBookingResponse(booking))
+}
+
+func (h *Handler) ListMyExcursionBookings(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	requestedLimit := clampLimit(parseIntOrDefault(r.URL.Query().Get("limit"), 20))
+	items, err := h.useCase.ListMyExcursionBookings(
+		r.Context(),
+		actorUserID,
+		requestedLimit+1,
+		parseIntOrDefault(r.URL.Query().Get("offset"), 0),
+	)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list excursion bookings")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionBookingListResponse(items, requestedLimit))
+}
+
+func (h *Handler) CreateExcursionReview(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	bookingID, ok := parsePathUUID(w, r, "id", "invalid excursion booking id")
+	if !ok {
+		return
+	}
+	var req dto.CreateExcursionReviewRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	review, err := h.useCase.CreateExcursionReview(r.Context(), app.CreateExcursionReviewInput{
+		ActorUserID: actorUserID,
+		BookingID:   bookingID,
+		Rating:      req.Rating,
+		Comment:     req.Comment,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to create excursion review")
+		return
+	}
+	writeJSON(w, http.StatusCreated, toExcursionReviewResponse(review, ""))
+}
+
+func (h *Handler) ListExcursionProductReviews(w http.ResponseWriter, r *http.Request) {
+	productID, ok := parsePathUUID(w, r, "id", "invalid excursion product id")
+	if !ok {
+		return
+	}
+	h.writeExcursionReviews(w, r, port.ExcursionReviewFilter{ProductID: &productID})
+}
+
+func (h *Handler) ListExcursionReviews(w http.ResponseWriter, r *http.Request) {
+	var filter port.ExcursionReviewFilter
+	if rawProductID := strings.TrimSpace(r.URL.Query().Get("productId")); rawProductID != "" {
+		productID, err := uuid.Parse(rawProductID)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid excursion product id")
+			return
+		}
+		filter.ProductID = &productID
+	}
+	if rawLandmarkID := strings.TrimSpace(r.URL.Query().Get("landmarkId")); rawLandmarkID != "" {
+		landmarkID, err := uuid.Parse(rawLandmarkID)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid landmark id")
+			return
+		}
+		filter.LandmarkID = &landmarkID
+	}
+	h.writeExcursionReviews(w, r, filter)
+}
+
+func (h *Handler) writeExcursionReviews(w http.ResponseWriter, r *http.Request, filter port.ExcursionReviewFilter) {
+	requestedLimit := clampLimit(parseIntOrDefault(r.URL.Query().Get("limit"), 20))
+	filter.Limit = requestedLimit + 1
+	filter.Offset = parseIntOrDefault(r.URL.Query().Get("offset"), 0)
+	items, err := h.useCase.ListExcursionReviews(r.Context(), filter)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list excursion reviews")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionReviewListResponse(items, requestedLimit))
 }
 
 func (h *Handler) GetExcursionCover(w http.ResponseWriter, r *http.Request) {
@@ -853,6 +944,85 @@ func toExcursionBookingResponse(item *model.ExcursionBooking) dto.ExcursionBooki
 	}
 }
 
+func toExcursionBookingListResponse(items []*model.ExcursionBookingListItem, requestedLimit int) dto.ExcursionBookingListResponse {
+	hasMore := len(items) > requestedLimit
+	if hasMore {
+		items = items[:requestedLimit]
+	}
+	result := make([]dto.ExcursionBookingResponse, 0, len(items))
+	for _, item := range items {
+		if item == nil || item.Booking == nil {
+			continue
+		}
+		result = append(result, toExcursionBookingListItemResponse(item))
+	}
+	return dto.ExcursionBookingListResponse{Items: result, HasMore: hasMore}
+}
+
+func toExcursionBookingListItemResponse(item *model.ExcursionBookingListItem) dto.ExcursionBookingResponse {
+	response := toExcursionBookingResponse(item.Booking)
+	response.GuideDisplayName = strings.TrimSpace(item.GuideDisplayName)
+	response.Title = strings.TrimSpace(item.Title)
+	response.Summary = strings.TrimSpace(item.Summary)
+	response.LandmarkID = formatOptionalUUID(item.LandmarkID)
+	response.LandmarkName = formatOptionalString(item.LandmarkName)
+	response.CategorySlug = strings.TrimSpace(item.CategorySlug)
+	response.CountryCode = formatOptionalString(item.CountryCode)
+	response.CityName = formatOptionalString(item.CityName)
+	response.CoverFileID = formatOptionalUUID(item.CoverFileID)
+	if item.Review != nil {
+		response.Review = toExcursionReviewResponse(item.Review, response.GuideDisplayName)
+	}
+	return response
+}
+
+func toExcursionReviewListResponse(items []*model.ExcursionReview, requestedLimit int) dto.ExcursionReviewListResponse {
+	hasMore := len(items) > requestedLimit
+	if hasMore {
+		items = items[:requestedLimit]
+	}
+	result := make([]dto.ExcursionReviewResponse, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		response := toExcursionReviewResponse(item, item.GuideDisplayName)
+		if response == nil {
+			continue
+		}
+		result = append(result, *response)
+	}
+	return dto.ExcursionReviewListResponse{Items: result, HasMore: hasMore}
+}
+
+func toExcursionReviewResponse(item *model.ExcursionReview, guideDisplayName string) *dto.ExcursionReviewResponse {
+	if item == nil {
+		return nil
+	}
+	resolvedGuideDisplayName := strings.TrimSpace(guideDisplayName)
+	if resolvedGuideDisplayName == "" {
+		resolvedGuideDisplayName = strings.TrimSpace(item.GuideDisplayName)
+	}
+	return &dto.ExcursionReviewResponse{
+		ID:                item.ID.String(),
+		BookingID:         item.BookingID.String(),
+		ProductID:         item.ProductID.String(),
+		OfferID:           item.OfferID.String(),
+		LegacyExcursionID: formatOptionalUUID(item.LegacyExcursionID),
+		LandmarkID:        formatOptionalUUID(item.LandmarkID),
+		LandmarkName:      formatOptionalString(item.LandmarkName),
+		GuideProfileID:    item.GuideProfileID.String(),
+		GuideUserID:       item.GuideUserID.String(),
+		GuideDisplayName:  resolvedGuideDisplayName,
+		TouristUserID:     item.TouristUserID.String(),
+		Rating:            item.Rating,
+		Comment:           item.Comment,
+		SourceLabel:       "EXCURSION",
+		CreatedAt:         item.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:         item.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
 func toItineraryResponse(items []*model.ExcursionItineraryItem) []dto.ExcursionItineraryItemResponse {
 	result := make([]dto.ExcursionItineraryItemResponse, 0, len(items))
 	for _, item := range items {
@@ -880,10 +1050,12 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		writeError(w, http.StatusForbidden, err.Error())
 	case errors.Is(err, app.ErrExcursionNotFound),
 		errors.Is(err, app.ErrExcursionOfferNotFound),
+		errors.Is(err, app.ErrExcursionBookingNotFound),
 		errors.Is(err, app.ErrExcursionCoverFileNotFound):
 		writeError(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, model.ErrExcursionAlreadyArchived),
-		errors.Is(err, model.ErrExcursionGuideLandmarkAlreadyExists):
+		errors.Is(err, model.ErrExcursionGuideLandmarkAlreadyExists),
+		errors.Is(err, model.ErrExcursionReviewAlreadyExists):
 		writeError(w, http.StatusConflict, err.Error())
 	case errors.Is(err, app.ErrExcursionTranslationFailed):
 		writeError(w, http.StatusServiceUnavailable, err.Error())
@@ -920,6 +1092,12 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, model.ErrInvalidExcursionBookingGuests),
 		errors.Is(err, model.ErrInvalidExcursionBookingPrice),
 		errors.Is(err, model.ErrInvalidExcursionBookingStatus),
+		errors.Is(err, model.ErrInvalidExcursionReviewID),
+		errors.Is(err, model.ErrInvalidExcursionReviewBooking),
+		errors.Is(err, model.ErrInvalidExcursionReviewUser),
+		errors.Is(err, model.ErrInvalidExcursionReviewRating),
+		errors.Is(err, model.ErrInvalidExcursionReviewComment),
+		errors.Is(err, app.ErrExcursionBookingNotReviewable),
 		errors.Is(err, app.ErrExcursionOfferNotBookable):
 		writeError(w, http.StatusBadRequest, err.Error())
 	default:
@@ -1100,6 +1278,17 @@ func formatOptionalUUID(v *uuid.UUID) *string {
 		return nil
 	}
 	value := v.String()
+	return &value
+}
+
+func formatOptionalString(v *string) *string {
+	if v == nil {
+		return nil
+	}
+	value := strings.TrimSpace(*v)
+	if value == "" {
+		return nil
+	}
 	return &value
 }
 

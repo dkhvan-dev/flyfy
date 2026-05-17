@@ -13,7 +13,9 @@ import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_review_vm.dart';
 import '../../features/attractions/models/attraction_vm.dart';
+import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/excursion_provider.dart';
 import '../../providers/session_provider.dart';
 import '../map/map_screen.dart';
 
@@ -78,17 +80,20 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
 
     try {
       final locale = Localizations.localeOf(context).languageCode;
+      final excursionProvider = context.read<ExcursionProvider>();
       final results = await Future.wait([
         _api.getAttraction(widget.attractionId, locale: locale),
         _api.getReviews(widget.attractionId, limit: 5),
         _loadCurrentUserReview(currentUserId),
+        excursionProvider.loadExcursionReviews(landmarkId: widget.attractionId),
       ]);
 
       if (!mounted) return;
       final attraction = results[0] as AttractionVm;
       final reviewResult =
           results[1] as ({List<AttractionReviewVm> items, int total});
-      final currentUserReview = (results[2] as AttractionReviewVm?) ??
+      final currentUserReview =
+          (results[2] as AttractionReviewVm?) ??
           _findReviewByAuthor(reviewResult.items, currentUserId);
       final locationLabel = await _resolveLocationLabel(attraction, locale);
       final mediaCount = attraction.media.length;
@@ -374,41 +379,39 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
                         ),
                       )
                     : _error != null && _attraction == null
-                        ? _buildError(l10n, adaptive)
-                        : Stack(
-                            children: [
-                              Positioned.fill(
-                                child: Column(
-                                  children: [
-                                    _buildTopBar(adaptive, l10n),
-                                    Expanded(
-                                      child: RefreshIndicator(
-                                        color: AppColors.accent,
-                                        backgroundColor:
-                                            const Color(0xFF271609),
-                                        onRefresh: _loadData,
-                                        child: CustomScrollView(
-                                          controller: _scrollController,
-                                          physics:
-                                              const AlwaysScrollableScrollPhysics(),
-                                          slivers: [
-                                            SliverToBoxAdapter(
-                                              child: _buildHero(adaptive, l10n),
-                                            ),
-                                            SliverToBoxAdapter(
-                                              child:
-                                                  _buildContent(adaptive, l10n),
-                                            ),
-                                          ],
+                    ? _buildError(l10n, adaptive)
+                    : Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Column(
+                              children: [
+                                _buildTopBar(adaptive, l10n),
+                                Expanded(
+                                  child: RefreshIndicator(
+                                    color: AppColors.accent,
+                                    backgroundColor: const Color(0xFF271609),
+                                    onRefresh: _loadData,
+                                    child: CustomScrollView(
+                                      controller: _scrollController,
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(),
+                                      slivers: [
+                                        SliverToBoxAdapter(
+                                          child: _buildHero(adaptive, l10n),
                                         ),
-                                      ),
+                                        SliverToBoxAdapter(
+                                          child: _buildContent(adaptive, l10n),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                              _buildBottomCta(adaptive, l10n),
-                            ],
+                              ],
+                            ),
                           ),
+                          _buildBottomCta(adaptive, l10n),
+                        ],
+                      ),
               ),
             ),
           );
@@ -548,7 +551,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     final heroHeight = (available * 0.42).clamp(240.0, 360.0);
     final media = attraction.media.isNotEmpty
         ? (List<AttractionMediaVm>.from(attraction.media)
-          ..sort((x, y) => x.position.compareTo(y.position)))
+            ..sort((x, y) => x.position.compareTo(y.position)))
         : <AttractionMediaVm>[];
 
     final padX = a.scale(28);
@@ -1148,6 +1151,11 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
   // ---------------------------------------------------------------------------
 
   Widget _buildReviews(AttractionAdaptive a, AppLocalizations l10n) {
+    final excursionReviews = context
+        .watch<ExcursionProvider>()
+        .excursionReviewsForLandmark(widget.attractionId);
+    final hasAnyReviews = _reviews.isNotEmpty || excursionReviews.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1196,7 +1204,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
           ],
         ),
         SizedBox(height: a.scale(20)),
-        if (_reviews.isEmpty)
+        if (!hasAnyReviews)
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -1227,7 +1235,17 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
             children: [
               for (var i = 0; i < _reviews.length; i++) ...[
                 _ReviewCard(review: _reviews[i], l10n: l10n, adaptive: a),
-                if (i < _reviews.length - 1) SizedBox(height: a.scale(14)),
+                if (i < _reviews.length - 1 || excursionReviews.isNotEmpty)
+                  SizedBox(height: a.scale(14)),
+              ],
+              for (var i = 0; i < excursionReviews.length; i++) ...[
+                _ExcursionAttractionReviewCard(
+                  review: excursionReviews[i],
+                  l10n: l10n,
+                  adaptive: a,
+                ),
+                if (i < excursionReviews.length - 1)
+                  SizedBox(height: a.scale(14)),
               ],
             ],
           ),
@@ -1323,8 +1341,9 @@ class _AttractionImageGalleryState extends State<_AttractionImageGallery> {
   @override
   void initState() {
     super.initState();
-    _currentIndex =
-        widget.initialIndex.clamp(0, widget.media.length - 1).toInt();
+    _currentIndex = widget.initialIndex
+        .clamp(0, widget.media.length - 1)
+        .toInt();
     _controller = PageController(initialPage: _currentIndex);
   }
 
@@ -1680,8 +1699,9 @@ List<_VisitPlanItem> _visitPlanItems(
     _VisitPlanItem(
       icon: Icons.schedule_rounded,
       label: l10n.attractionVisitDurationLabel,
-      value:
-          duration.isNotEmpty ? duration : l10n.attractionVisitDurationFlexible,
+      value: duration.isNotEmpty
+          ? duration
+          : l10n.attractionVisitDurationFlexible,
     ),
     _VisitPlanItem(
       icon: Icons.confirmation_number_outlined,
@@ -1738,7 +1758,8 @@ String _localizedFlyFyTip(
   }
 
   final category = attraction.category.toUpperCase();
-  final isLongRoute = attraction.durationUnit?.toUpperCase() == 'DAYS' ||
+  final isLongRoute =
+      attraction.durationUnit?.toUpperCase() == 'DAYS' ||
       (attraction.durationValue ?? 0) >= 6;
   if (_isNatureLikeCategory(category) || isLongRoute) {
     return l10n.attractionVisitTipNature;
@@ -1944,8 +1965,9 @@ class _ReviewCard extends StatelessWidget {
                     CircleAvatar(
                       radius: adaptive.scale(19),
                       backgroundColor: const Color(0xFF245163),
-                      backgroundImage:
-                          avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      backgroundImage: avatarUrl != null
+                          ? NetworkImage(avatarUrl)
+                          : null,
                       child: avatarUrl == null
                           ? Icon(
                               Icons.person_rounded,
@@ -2068,34 +2090,34 @@ class _ReviewCard extends StatelessWidget {
                 ],
               )
             : (url == null
-                ? Icon(
-                    Icons.image_rounded,
-                    color: AppColors.textCaption,
-                    size: a.scale(28),
-                  )
-                : Image.network(
-                    url,
-                    headers: attractionImageRequestHeaders(url),
-                    fit: BoxFit.cover,
-                    cacheWidth: imageTargetWidth,
-                    filterQuality: FilterQuality.medium,
-                    gaplessPlayback: true,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) {
-                        return child;
-                      }
-                      return Icon(
-                        Icons.image_rounded,
-                        color: AppColors.textCaption,
-                        size: a.scale(28),
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => Icon(
-                      Icons.image_not_supported_rounded,
+                  ? Icon(
+                      Icons.image_rounded,
                       color: AppColors.textCaption,
                       size: a.scale(28),
-                    ),
-                  )),
+                    )
+                  : Image.network(
+                      url,
+                      headers: attractionImageRequestHeaders(url),
+                      fit: BoxFit.cover,
+                      cacheWidth: imageTargetWidth,
+                      filterQuality: FilterQuality.medium,
+                      gaplessPlayback: true,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) {
+                          return child;
+                        }
+                        return Icon(
+                          Icons.image_rounded,
+                          color: AppColors.textCaption,
+                          size: a.scale(28),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.image_not_supported_rounded,
+                        color: AppColors.textCaption,
+                        size: a.scale(28),
+                      ),
+                    )),
       ),
     );
   }
@@ -2130,11 +2152,152 @@ class _ReviewCard extends StatelessWidget {
   }
 }
 
-typedef _SubmitReviewCallback = Future<bool> Function(
-  double rating,
-  String comment,
-  List<_ReviewDraftMedia> media,
-);
+class _ExcursionAttractionReviewCard extends StatelessWidget {
+  const _ExcursionAttractionReviewCard({
+    required this.review,
+    required this.l10n,
+    required this.adaptive,
+  });
+
+  final ExcursionReviewVm review;
+  final AppLocalizations l10n;
+  final AttractionAdaptive adaptive;
+
+  @override
+  Widget build(BuildContext context) {
+    final guideName = review.guideDisplayName.trim().isEmpty
+        ? l10n.myExcursionsGuideFallback
+        : review.guideDisplayName.trim();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF3B2B1C),
+        borderRadius: BorderRadius.circular(adaptive.radius(15)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            top: adaptive.scale(8),
+            bottom: adaptive.scale(8),
+            child: Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: AppColors.accent,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              adaptive.scale(26, minFactor: 0.7),
+              adaptive.scale(22),
+              adaptive.scale(22, minFactor: 0.78),
+              adaptive.scale(22),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: adaptive.scale(8),
+                  runSpacing: adaptive.scale(8),
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: adaptive.scale(10),
+                        vertical: adaptive.scale(6),
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Text(
+                        l10n.excursionReviewSourceAttractionBadge,
+                        style: TextStyle(
+                          color: AppColors.accent,
+                          fontSize: adaptive.scale(10),
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                    _buildExcursionStars(review.rating, adaptive),
+                  ],
+                ),
+                SizedBox(height: adaptive.scale(12)),
+                Text(
+                  l10n.excursionReviewViaGuide(guideName),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: adaptive.scale(14),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                SizedBox(height: adaptive.scale(12)),
+                Text(
+                  '"${review.comment}"',
+                  style: TextStyle(
+                    color: const Color(0xFFD7BFAA),
+                    fontSize: adaptive.scale(14),
+                    fontWeight: FontWeight.w500,
+                    fontStyle: FontStyle.italic,
+                    height: 1.55,
+                  ),
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _buildExcursionStars(double rating, AttractionAdaptive adaptive) {
+  final fullStars = rating.floor();
+  final hasHalf = (rating - fullStars) >= 0.5;
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: List.generate(5, (index) {
+      if (index < fullStars) {
+        return Icon(
+          Icons.star_rounded,
+          color: AppColors.accent,
+          size: adaptive.scale(13),
+        );
+      }
+      if (index == fullStars && hasHalf) {
+        return Icon(
+          Icons.star_half_rounded,
+          color: AppColors.accent,
+          size: adaptive.scale(13),
+        );
+      }
+      return Icon(
+        Icons.star_border_rounded,
+        color: AppColors.accent.withValues(alpha: 0.4),
+        size: adaptive.scale(13),
+      );
+    }),
+  );
+}
+
+typedef _SubmitReviewCallback =
+    Future<bool> Function(
+      double rating,
+      String comment,
+      List<_ReviewDraftMedia> media,
+    );
 
 class _ReviewDraftMedia {
   const _ReviewDraftMedia({
