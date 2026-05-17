@@ -505,7 +505,10 @@ class ExcursionDetailsContent extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _ExcursionStatsGrid(excursion: excursion),
+                              _ExcursionStatsGrid(
+                                excursion: excursion,
+                                selectedOffer: activeSelectedOffer,
+                              ),
                               const SizedBox(height: 40),
                               _ExcursionExperienceSection(
                                 excursion: excursion,
@@ -890,14 +893,19 @@ class _ExcursionHeroPainter extends CustomPainter {
 }
 
 class _ExcursionStatsGrid extends StatelessWidget {
-  const _ExcursionStatsGrid({required this.excursion});
+  const _ExcursionStatsGrid({required this.excursion, this.selectedOffer});
 
   final ExcursionVm excursion;
+  final ExcursionOfferVm? selectedOffer;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final language = _formatLanguageLabels(l10n, excursion.languageCodes);
+    final selectedOfferLanguages = selectedOffer?.languageCodes ?? const [];
+    final languageCodes = selectedOfferLanguages.isNotEmpty
+        ? selectedOfferLanguages
+        : excursion.languageCodes;
+    final language = _formatLanguageLabels(l10n, languageCodes);
     final cards = [
       _ExcursionStatData(
         label: l10n.excursionDetailsPrice,
@@ -915,7 +923,11 @@ class _ExcursionStatsGrid extends StatelessWidget {
             ? l10n.excursionDetailsGroupSizeUpTo(excursion.maxGroupSize)
             : '-',
       ),
-      _ExcursionStatData(label: l10n.excursionDetailsLanguage, value: language),
+      _ExcursionStatData(
+        label: l10n.excursionDetailsLanguage,
+        value: language,
+        allowMultiline: true,
+      ),
     ];
 
     return LayoutBuilder(
@@ -945,12 +957,14 @@ class _ExcursionStatData {
     required this.value,
     this.suffix,
     this.accent = false,
+    this.allowMultiline = false,
   });
 
   final String label;
   final String value;
   final String? suffix;
   final bool accent;
+  final bool allowMultiline;
 }
 
 class _ExcursionStatCard extends StatelessWidget {
@@ -985,15 +999,21 @@ class _ExcursionStatCard extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           RichText(
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            maxLines: data.allowMultiline ? null : 2,
+            overflow: data.allowMultiline
+                ? TextOverflow.visible
+                : TextOverflow.ellipsis,
             text: TextSpan(
               text: data.value,
               style: TextStyle(
                 color: data.accent ? AppColors.accent : AppColors.textPrimary,
-                fontSize: data.accent ? 24 : 20,
+                fontSize: data.accent
+                    ? 24
+                    : data.allowMultiline
+                        ? 18
+                        : 20,
                 fontWeight: FontWeight.w800,
-                height: 1.08,
+                height: data.allowMultiline ? 1.16 : 1.08,
               ),
               children: [
                 if (data.suffix != null)
@@ -1023,9 +1043,20 @@ class _ExcursionExperienceSection extends StatelessWidget {
   final ExcursionVm excursion;
   final AttractionVm? localizedLandmark;
 
+  void _openLandmarkDetails(BuildContext context) {
+    final landmarkId = (excursion.landmarkId ?? '').trim();
+    if (landmarkId.isEmpty) return;
+
+    context.push(
+      '/attractions/${Uri.encodeComponent(landmarkId)}',
+      extra: localizedLandmark,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final hasLandmarkId = (excursion.landmarkId ?? '').trim().isNotEmpty;
     final description = localizedExcursionDescription(
       languageCode: Localizations.localeOf(context).languageCode,
       excursion: excursion,
@@ -1035,6 +1066,8 @@ class _ExcursionExperienceSection extends StatelessWidget {
 
     return _ExcursionSection(
       title: l10n.excursionDetailsExperience,
+      actionLabel: hasLandmarkId ? l10n.detailsButton : null,
+      onActionTap: hasLandmarkId ? () => _openLandmarkDetails(context) : null,
       child: Text(
         description,
         style: const TextStyle(
@@ -2677,6 +2710,7 @@ class _ExcursionOfferCard extends StatelessWidget {
                           _OfferMetaChip(
                             icon: Icons.translate_rounded,
                             label: language,
+                            allowMultiline: true,
                           ),
                       ],
                     ),
@@ -2769,7 +2803,7 @@ class _ExcursionOfferCard extends StatelessWidget {
 
   String _offerGuideName(AppLocalizations l10n) {
     final profileName =
-        profile == null ? '' : _formatGuideSurnameInitials(profile!).trim();
+        profile == null ? '' : _formatGuideFullName(profile!).trim();
     if (profileName.isNotEmpty) {
       return profileName;
     }
@@ -2810,11 +2844,13 @@ class _OfferMetaChip extends StatelessWidget {
     required this.icon,
     required this.label,
     this.accent = false,
+    this.allowMultiline = false,
   });
 
   final IconData icon;
   final String label;
   final bool accent;
+  final bool allowMultiline;
 
   @override
   Widget build(BuildContext context) {
@@ -2827,23 +2863,29 @@ class _OfferMetaChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              color: accent ? AppColors.accent : const Color(0xFFB9A99A),
-              size: 14,
+            Padding(
+              padding: EdgeInsets.only(top: allowMultiline ? 1 : 0),
+              child: Icon(
+                icon,
+                color: accent ? AppColors.accent : const Color(0xFFB9A99A),
+                size: 14,
+              ),
             ),
             const SizedBox(width: 5),
             Flexible(
               child: Text(
                 label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: allowMultiline ? null : 1,
+                overflow: allowMultiline
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
                 style: TextStyle(
                   color: accent ? AppColors.accent : const Color(0xFFE8DDD2),
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  height: 1,
+                  height: allowMultiline ? 1.18 : 1,
                 ),
               ),
             ),
@@ -3245,10 +3287,17 @@ ExcursionItineraryLocalizedCopyVm? _itineraryTranslationFor(
 }
 
 class _ExcursionSection extends StatelessWidget {
-  const _ExcursionSection({required this.title, required this.child});
+  const _ExcursionSection({
+    required this.title,
+    required this.child,
+    this.actionLabel,
+    this.onActionTap,
+  });
 
   final String title;
   final Widget child;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -3281,6 +3330,31 @@ class _ExcursionSection extends StatelessWidget {
                 ),
               ),
             ),
+            if (actionLabel != null && onActionTap != null) ...[
+              const SizedBox(width: 12),
+              TextButton(
+                onPressed: onActionTap,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.accent,
+                  minimumSize: const Size(0, 34),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                child: Text(
+                  actionLabel!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 18),
@@ -3457,12 +3531,12 @@ String _formatLanguageLabels(
   return formatLocalizedExcursionLanguages(l10n, languageCodes);
 }
 
-String _formatGuideSurnameInitials(UserProfileVm profile) {
+String _formatGuideFullName(UserProfileVm profile) {
   final lastName = (profile.lastName ?? '').trim();
   final firstName = (profile.firstName ?? '').trim();
 
   if (lastName.isNotEmpty && firstName.isNotEmpty) {
-    return '$lastName ${firstName.substring(0, 1).toUpperCase()}.';
+    return '$lastName $firstName';
   }
   if (lastName.isNotEmpty) {
     return lastName;

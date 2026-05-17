@@ -2143,6 +2143,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get excursionsFilterLanguage => 'Язык';
 
   @override
+  String get excursionsFilterLanguageAll => 'Все языки';
+
+  @override
+  String get excursionsFilterLanguageSearchHint => 'Поиск языка или кода';
+
+  @override
+  String get excursionsFilterLanguageNoResults => 'Язык не найден';
+
+  @override
   String get excursionsLoadFailed => 'Не удалось загрузить экскурсии';
 
   @override
@@ -2181,10 +2190,28 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guidesFiltersClear => 'Очистить';
 
   @override
+  String get guidesFilterCountryAll => 'Все страны';
+
+  @override
+  String get guidesFilterCountrySearchHint => 'Поиск страны, кода или телефона';
+
+  @override
+  String get guidesFilterCountryNoResults => 'Страна не найдена';
+
+  @override
   String get guidesFilterExpertise => 'Экспертиза';
 
   @override
   String get guidesFilterLanguage => 'Язык';
+
+  @override
+  String get guidesFilterLanguageAll => 'Все языки';
+
+  @override
+  String get guidesFilterLanguageSearchHint => 'Поиск языка или кода';
+
+  @override
+  String get guidesFilterLanguageNoResults => 'Язык не найден';
 
   @override
   String get guidesFilterRating => 'Рейтинг';
@@ -2655,8 +2682,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createExcursionAddTimeSlot => 'Добавить слот';
 
   @override
+  String get createExcursionEditTimeSlot => 'Редактировать слот';
+
+  @override
   String get createExcursionItineraryEmpty =>
-      'Добавьте хотя бы один пункт маршрута. Он будет показан туристам в деталях экскурсии.';
+      'Добавьте минимум два пункта маршрута. Они будут показаны туристам в деталях экскурсии.';
 
   @override
   String get createExcursionAutosaveHint =>
@@ -2664,7 +2694,40 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createExcursionItineraryValidation =>
-      'Добавьте хотя бы один полный слот маршрута';
+      'Заполните время, название и описание пункта маршрута';
+
+  @override
+  String createExcursionItineraryMinSlotsValidation(Object count) {
+    return 'Добавьте минимум $count пункта маршрута';
+  }
+
+  @override
+  String createExcursionItineraryDescriptionMinLengthValidation(Object count) {
+    return 'Описание пункта маршрута должно быть не короче $count символов';
+  }
+
+  @override
+  String get createExcursionStartOffsetValidation =>
+      'Укажите время начала пункта маршрута';
+
+  @override
+  String get createExcursionItineraryTitleValidation =>
+      'Название пункта маршрута должно быть не короче 2 символов';
+
+  @override
+  String createExcursionOffsetMinutesShort(Object minutes) {
+    return '+$minutes мин';
+  }
+
+  @override
+  String createExcursionOffsetHoursShort(Object hours) {
+    return '+$hours ч';
+  }
+
+  @override
+  String createExcursionOffsetHoursMinutesShort(Object hours, Object minutes) {
+    return '+$hours ч $minutes мин';
+  }
 
   @override
   String get createExcursionDurationLabel => 'Длительность';
@@ -2713,6 +2776,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String createExcursionLanguagesPickerHint(Object count) {
     return 'Можно выбрать до $count языков';
   }
+
+  @override
+  String get createExcursionLanguagesSearchHint => 'Поиск языка или кода';
+
+  @override
+  String get createExcursionLanguagesNoResults => 'Язык не найден';
 
   @override
   String createExcursionLanguagesLimitValidation(Object count) {

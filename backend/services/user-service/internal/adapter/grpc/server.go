@@ -397,6 +397,8 @@ func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
 
 	return &userv1.PublicProfile{
 		UserId:       profile.UserID.String(),
+		FirstName:    valueOrEmpty(profile.FirstName),
+		LastName:     valueOrEmpty(profile.LastName),
 		DisplayName:  valueOrEmpty(profile.DisplayName),
 		Bio:          valueOrEmpty(profile.Bio),
 		AvatarFileId: avatarFileID,

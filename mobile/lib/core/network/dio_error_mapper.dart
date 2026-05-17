@@ -18,7 +18,7 @@ class DioErrorMapper {
         if (data is Map<String, dynamic>) {
           final message = data['error'] ?? data['message'] ?? data['detail'];
           if (message is String && message.trim().isNotEmpty) {
-            return message;
+            return _localizedBackendMessage(message.trim());
           }
         }
 
@@ -53,5 +53,15 @@ class DioErrorMapper {
       case DioExceptionType.unknown:
         return 'Произошла непредвиденная ошибка сети.';
     }
+  }
+
+  static String _localizedBackendMessage(String message) {
+    return switch (message) {
+      'invalid excursion itinerary description' =>
+        'Описание каждого этапа маршрута должно быть не короче 5 символов.',
+      'excursion already exists for this guide and attraction' =>
+        'У вас уже есть экскурсия по этой достопримечательности.',
+      _ => message,
+    };
   }
 }

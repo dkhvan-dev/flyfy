@@ -163,7 +163,7 @@ String localizedExcursionLanguageLabel(AppLocalizations l10n, String code) {
 String formatLocalizedExcursionLanguages(
   AppLocalizations l10n,
   List<String> languageCodes, {
-  int maxItems = 2,
+  int? maxItems,
 }) {
   final labels = languageCodes
       .map((code) => code.trim())
@@ -172,7 +172,8 @@ String formatLocalizedExcursionLanguages(
       .toList(growable: false);
 
   if (labels.isEmpty) return '-';
-  return labels.take(maxItems).join(', ');
+  final visibleLabels = maxItems == null ? labels : labels.take(maxItems);
+  return visibleLabels.join(', ');
 }
 
 String localizedExcursionCategoryLabel(

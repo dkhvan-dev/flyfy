@@ -221,11 +221,21 @@ void main() {
       expect(source, contains('static const int _maxExcursionLanguages = 5'));
       expect(source, contains('Set<String> _selectedLanguageCodes'));
       expect(source, contains('class _ExcursionLanguagePickerField'));
+      expect(source, contains('_languageSearchController'));
+      expect(source, contains('_handleLanguageSearchChanged'));
+      expect(source, contains('_visibleLanguages(AppLocalizations l10n)'));
+      expect(source, contains('_languageSearchHaystack('));
+      expect(source, contains('createExcursionLanguagesSearchHint'));
+      expect(source, contains('createExcursionLanguagesNoResults'));
+      expect(source, contains('_ExcursionLanguageOptionRow'));
+      expect(source, contains('TextField'));
       expect(source, contains('_toggleLanguageCode'));
       expect(
         source,
         contains('_selectedLanguageCodes.length >= _maxExcursionLanguages'),
       );
+      expect(
+          source, contains('createExcursionLanguagesPickerHint(maxSelected)'));
       expect(source, contains('languageCodes: _selectedLanguageCodes.toList'));
       expect(source, isNot(contains('_languagesCtrl')));
     },
@@ -275,6 +285,113 @@ void main() {
     },
   );
 
+  test('create excursion validates itinerary description before submit',
+      () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('_isCompleteItineraryDraft('));
+    expect(source, contains("item.description.trim().length >= 5"));
+    expect(source, contains('_validateAllStepsBeforeSubmit'));
+    expect(source, contains('_isCompleteItineraryDraft(draft)'));
+  });
+
+  test('create excursion shows specific itinerary validation messages',
+      () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('_minItinerarySlots = 2'));
+    expect(source, contains('_itinerary.length < _minItinerarySlots'));
+    expect(source, contains('createExcursionItineraryMinSlotsValidation'));
+    expect(
+      source,
+      contains('createExcursionItineraryDescriptionMinLengthValidation'),
+    );
+    expect(source, contains('errorText: _descriptionErrorText'));
+  });
+
+  test('create excursion shows validation errors next to invalid fields',
+      () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
+
+    for (final fieldError in [
+      '_countryErrorText',
+      '_landmarkErrorText',
+      '_itineraryErrorText',
+      '_durationErrorText',
+      '_groupSizeErrorText',
+      '_languagesErrorText',
+      '_meetingPointErrorText',
+      '_priceErrorText',
+      '_currencyErrorText',
+    ]) {
+      expect(source, contains(fieldError));
+    }
+
+    expect(source, contains('errorText: _durationErrorText'));
+    expect(source, contains('errorText: _groupSizeErrorText'));
+    expect(source, contains('errorText: _languagesErrorText'));
+    expect(source, contains('errorText: _meetingPointErrorText'));
+    expect(source, contains('errorText: _priceErrorText'));
+    expect(source, contains('errorText: _currencyErrorText'));
+    expect(source, contains('hasError: !_isCompleteItineraryDraft(item)'));
+    expect(source, contains('errorText: _itineraryErrorText'));
+    expect(
+      source,
+      contains('if (_stepErrorText != null && !_hasFieldValidationErrors)'),
+    );
+  });
+
+  test('create excursion validates itinerary editor fields individually',
+      () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('_offsetErrorText'));
+    expect(source, contains('_titleErrorText'));
+    expect(source, contains('createExcursionStartOffsetValidation'));
+    expect(source, contains('createExcursionItineraryTitleValidation'));
+    expect(source, contains('errorText: _offsetErrorText'));
+    expect(source, contains('errorText: _titleErrorText'));
+    expect(source, contains('errorText: _descriptionErrorText'));
+  });
+
+  test('create excursion localizes itinerary offset labels', () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
+    final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+    expect(source, contains('_formatOffset(context, item.startOffsetMinutes)'));
+    expect(source, contains('createExcursionOffsetHoursShort'));
+    expect(source, contains('createExcursionOffsetMinutesShort'));
+    expect(source, contains('createExcursionOffsetHoursMinutesShort'));
+    expect(ruSource, contains('"+{hours} ч"'));
+  });
+
+  test('create excursion lets guides edit an added itinerary slot by tap',
+      () async {
+    final source = await File(
+      'lib/screens/excursions/create_excursion_screen.dart',
+    ).readAsString();
+
+    expect(
+      source,
+      contains(
+          'Future<void> _openItineraryEditor({_ExcursionItineraryDraft? item})'),
+    );
+    expect(source, contains('initialItem: item'));
+    expect(source, contains('_itinerary[itemIndex] = result'));
+    expect(source, contains('onTap: () => _openItineraryEditor(item: item)'));
+    expect(source, contains('final _ExcursionItineraryDraft? initialItem'));
+  });
+
   test(
     'create excursion can upload a custom cover or reuse selected attraction cover',
     () async {
@@ -302,6 +419,37 @@ void main() {
       expect(selectorSource, contains('coverFileId'));
       expect(selectorSource, contains('coverImageUrl'));
       expect(selectorSource, contains('resolveAttractionMediaUrl'));
+    },
+  );
+
+  test(
+    'create excursion replaces custom cover when attraction is selected',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('_replaceCustomCoverWithAttractionCover'));
+      expect(source, contains('_coverPreviewBytes = null'));
+      expect(source, contains('_coverFileId = null'));
+      expect(source, contains('_coverChanged = false'));
+      expect(source, contains('_coverUploadGeneration'));
+
+      final selectorStart =
+          source.indexOf('Future<void> _openLocationSelector');
+      final selectorEnd = source.indexOf(
+        'Future<void> _openItineraryEditor',
+        selectorStart,
+      );
+      expect(selectorStart, isNonNegative);
+      expect(selectorEnd, greaterThan(selectorStart));
+
+      final selectorSource = source.substring(selectorStart, selectorEnd);
+      expect(selectorSource, contains('_selectedAttractionCoverFileId ='));
+      expect(
+        selectorSource,
+        contains('_replaceCustomCoverWithAttractionCover();'),
+      );
     },
   );
 

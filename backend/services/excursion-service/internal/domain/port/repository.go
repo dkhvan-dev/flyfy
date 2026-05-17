@@ -81,6 +81,8 @@ type ExcursionRepository interface {
 	ListExcursionProductCards(ctx context.Context, filter ExcursionProductFilter) ([]*model.ExcursionProductCard, error)
 	GetExcursionProductCardByID(ctx context.Context, productID uuid.UUID) (*model.ExcursionProductCard, error)
 	ListExcursionOffers(ctx context.Context, filter ExcursionOfferFilter) ([]*model.ExcursionOffer, error)
+	ListExcursionLanguageCodesByGuideUserIDs(ctx context.Context, guideUserIDs []uuid.UUID) (map[uuid.UUID][]string, error)
+	HasActiveExcursionForGuideLandmark(ctx context.Context, guideUserID uuid.UUID, landmarkID uuid.UUID) (bool, error)
 	GetExcursionOfferByID(ctx context.Context, offerID uuid.UUID) (*model.ExcursionOffer, error)
 	LoadExcursionOfferRelations(ctx context.Context, offerID uuid.UUID) (ExcursionOfferRelations, error)
 	CreateExcursionBooking(ctx context.Context, item *model.ExcursionBooking) error

@@ -2139,6 +2139,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionsFilterLanguage => 'Language';
 
   @override
+  String get excursionsFilterLanguageAll => 'All languages';
+
+  @override
+  String get excursionsFilterLanguageSearchHint => 'Search language or code';
+
+  @override
+  String get excursionsFilterLanguageNoResults => 'Language not found';
+
+  @override
   String get excursionsLoadFailed => 'Failed to load excursions';
 
   @override
@@ -2177,10 +2186,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidesFiltersClear => 'Clear';
 
   @override
+  String get guidesFilterCountryAll => 'All countries';
+
+  @override
+  String get guidesFilterCountrySearchHint => 'Search country, code, or phone';
+
+  @override
+  String get guidesFilterCountryNoResults => 'Country not found';
+
+  @override
   String get guidesFilterExpertise => 'Expertise';
 
   @override
   String get guidesFilterLanguage => 'Language';
+
+  @override
+  String get guidesFilterLanguageAll => 'All languages';
+
+  @override
+  String get guidesFilterLanguageSearchHint => 'Search language or code';
+
+  @override
+  String get guidesFilterLanguageNoResults => 'Language not found';
 
   @override
   String get guidesFilterRating => 'Rating';
@@ -2641,8 +2668,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createExcursionAddTimeSlot => 'Add Time Slot';
 
   @override
+  String get createExcursionEditTimeSlot => 'Edit Time Slot';
+
+  @override
   String get createExcursionItineraryEmpty =>
-      'Add at least one route point. It will be shown to tourists in the excursion details.';
+      'Add at least two route points. They will be shown to tourists in the excursion details.';
 
   @override
   String get createExcursionAutosaveHint =>
@@ -2650,7 +2680,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createExcursionItineraryValidation =>
-      'Add at least one complete itinerary slot';
+      'Fill in the route point time, title, and description';
+
+  @override
+  String createExcursionItineraryMinSlotsValidation(Object count) {
+    return 'Add at least $count route points';
+  }
+
+  @override
+  String createExcursionItineraryDescriptionMinLengthValidation(Object count) {
+    return 'Route point description must be at least $count characters';
+  }
+
+  @override
+  String get createExcursionStartOffsetValidation =>
+      'Enter the route point start time';
+
+  @override
+  String get createExcursionItineraryTitleValidation =>
+      'Route point title must be at least 2 characters';
+
+  @override
+  String createExcursionOffsetMinutesShort(Object minutes) {
+    return '+${minutes}m';
+  }
+
+  @override
+  String createExcursionOffsetHoursShort(Object hours) {
+    return '+${hours}h';
+  }
+
+  @override
+  String createExcursionOffsetHoursMinutesShort(Object hours, Object minutes) {
+    return '+${hours}h ${minutes}m';
+  }
 
   @override
   String get createExcursionDurationLabel => 'Duration';
@@ -2698,6 +2761,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String createExcursionLanguagesPickerHint(Object count) {
     return 'Select up to $count languages';
   }
+
+  @override
+  String get createExcursionLanguagesSearchHint => 'Search language or code';
+
+  @override
+  String get createExcursionLanguagesNoResults => 'Language not found';
 
   @override
   String createExcursionLanguagesLimitValidation(Object count) {

@@ -81,3 +81,19 @@ func TestPublicGuidesRouteDoesNotRequireBearerToken(t *testing.T) {
 		t.Fatalf("rewrite prefix = %q, want /v1/guides/public", policy.RewritePrefix)
 	}
 }
+
+func TestGuideExcursionLanguagesRouteProxiesToExcursionService(t *testing.T) {
+	policy := matchRoutePolicy("/api/v1/guides/excursion-languages", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected guide excursion languages route policy")
+	}
+	if policy.Upstream != "excursion" {
+		t.Fatalf("upstream = %q, want excursion", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/guides/excursion-languages" {
+		t.Fatalf("rewrite prefix = %q, want /v1/guides/excursion-languages", policy.RewritePrefix)
+	}
+}

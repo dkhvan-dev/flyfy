@@ -72,7 +72,16 @@ const _categoryFilterOptions = [
   _CategoryFilterOption(slug: 'wellness', icon: Icons.spa_rounded),
 ];
 
-const _languageFilterCodes = ['en', 'ru', 'kk'];
+const _languageFilterCodes = [
+  'en',
+  'ru',
+  'kk',
+  'fr',
+  'ja',
+  'de',
+  'es',
+  'tr',
+];
 
 String? _normalizeExcursionCountryCode(String? code) {
   final normalized = code?.trim().toUpperCase() ?? '';
@@ -1288,9 +1297,11 @@ class _ExcursionsFiltersSheet extends StatefulWidget {
 class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
   late _ExcursionsFilters _filters;
   late final TextEditingController _countrySearchController;
+  late final TextEditingController _languageSearchController;
   late final TextEditingController _priceFromController;
   late final TextEditingController _priceToController;
   String _countrySearchQuery = '';
+  String _languageSearchQuery = '';
 
   @override
   void initState() {
@@ -1298,6 +1309,8 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     _filters = widget.initialFilters;
     _countrySearchController = TextEditingController()
       ..addListener(_handleCountrySearchChanged);
+    _languageSearchController = TextEditingController()
+      ..addListener(_handleLanguageSearchChanged);
     _priceFromController = TextEditingController(
       text: _formatExcursionPriceInput(widget.initialFilters.priceMin),
     )..addListener(_handlePriceRangeChanged);
@@ -1310,6 +1323,9 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
   void dispose() {
     _countrySearchController
       ..removeListener(_handleCountrySearchChanged)
+      ..dispose();
+    _languageSearchController
+      ..removeListener(_handleLanguageSearchChanged)
       ..dispose();
     _priceFromController
       ..removeListener(_handlePriceRangeChanged)
@@ -1327,13 +1343,22 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     setState(() => _countrySearchQuery = nextQuery);
   }
 
+  void _handleLanguageSearchChanged() {
+    final nextQuery = _languageSearchController.text.trim();
+    if (nextQuery == _languageSearchQuery) return;
+
+    setState(() => _languageSearchQuery = nextQuery);
+  }
+
   void _clear() {
     _countrySearchController.clear();
+    _languageSearchController.clear();
     _priceFromController.clear();
     _priceToController.clear();
     setState(() {
       _filters = const _ExcursionsFilters();
       _countrySearchQuery = '';
+      _languageSearchQuery = '';
     });
   }
 
@@ -1360,12 +1385,17 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     });
   }
 
-  void _toggleLanguage(String code) {
-    final next = Set<String>.of(_filters.languageCodes);
-    if (!next.remove(code)) next.add(code);
+  void _selectLanguage(String code) {
+    final normalized = code.trim().toLowerCase();
+    if (normalized.isEmpty) return;
+    final isSelected = _filters.languageCodes.contains(normalized);
 
     setState(() {
-      _filters = _filters.copyWith(languageCodes: next);
+      _filters = _filters.copyWith(
+        languageCodes: isSelected ? const <String>{} : {normalized},
+      );
+      _languageSearchController.clear();
+      _languageSearchQuery = '';
     });
   }
 
@@ -1433,6 +1463,44 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     ].map((value) => value.trim().toLowerCase()).join(' ');
   }
 
+  String? _selectedLanguage(AppLocalizations l10n) {
+    if (_filters.languageCodes.isEmpty) return null;
+    return localizedExcursionLanguageLabel(l10n, _filters.languageCodes.first);
+  }
+
+  List<String> _visibleLanguages(AppLocalizations l10n) {
+    final query = _normalizeExcursionSearchText(_languageSearchQuery);
+    if (query.isEmpty) return const [];
+
+    final tokens = query
+        .split(' ')
+        .where((token) => token.trim().isNotEmpty)
+        .toList(growable: false);
+
+    return _languageFilterCodes.where((code) {
+      final haystack = _languageSearchHaystack(l10n, code);
+      return tokens.every(haystack.contains);
+    }).toList(growable: false);
+  }
+
+  String _languageSearchHaystack(AppLocalizations l10n, String code) {
+    final aliases = switch (code.trim().toLowerCase()) {
+      'en' => 'eng english английский анг ағылшын',
+      'ru' => 'rus russian русский рус орыс',
+      'kk' => 'kz kaz kazakh казахский қазақ қазақша',
+      'fr' => 'fre french французский француз',
+      'ja' => 'jp japanese японский япон жапон',
+      'de' => 'ger german немецкий неміс',
+      'es' => 'spa spanish испанский испан',
+      'tr' => 'tur turkish турецкий түрік',
+      _ => '',
+    };
+
+    return _normalizeExcursionSearchText(
+      '$code ${localizedExcursionLanguageLabel(l10n, code)} $aliases',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1440,6 +1508,8 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     final resultCount = widget.resultCountBuilder(_filters);
     final selectedCountry = _selectedCountry();
     final visibleCountries = _visibleCountries();
+    final selectedLanguage = _selectedLanguage(l10n);
+    final visibleLanguages = _visibleLanguages(l10n);
 
     return AppDismissibleModalSheet(
       child: ConstrainedBox(
@@ -1751,17 +1821,145 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                       const SizedBox(height: 30),
                       _ExcursionsFilterSection(
                         title: l10n.excursionsFilterLanguage,
-                        child: Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            for (final code in _languageFilterCodes)
-                              _ExcursionsFilterChip(
-                                label:
-                                    localizedExcursionLanguageLabel(l10n, code),
-                                selected: _filters.languageCodes.contains(code),
-                                onTap: () => _toggleLanguage(code),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2C2118),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                ),
                               ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.translate_rounded,
+                                      color: AppColors.accent,
+                                      size: 21,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        selectedLanguage ??
+                                            l10n.excursionsFilterLanguageAll,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    if (selectedLanguage != null)
+                                      IconButton(
+                                        tooltip: l10n.excursionsFiltersClear,
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed: () => setState(() {
+                                          _filters = _filters.copyWith(
+                                            languageCodes: const <String>{},
+                                          );
+                                        }),
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          color: Color(0xFFBDAA98),
+                                          size: 20,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _languageSearchController,
+                              cursorColor: AppColors.accent,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              decoration: InputDecoration(
+                                hintText:
+                                    l10n.excursionsFilterLanguageSearchHint,
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF9D8877),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: AppColors.accent,
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFF171009),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.accent,
+                                    width: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (_languageSearchQuery.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              if (visibleLanguages.isEmpty)
+                                Text(
+                                  l10n.excursionsFilterLanguageNoResults,
+                                  style: const TextStyle(
+                                    color: Color(0xFFBDAA98),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                )
+                              else
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 224,
+                                  ),
+                                  child: ListView.separated(
+                                    shrinkWrap: true,
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: visibleLanguages.length,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 8),
+                                    itemBuilder: (context, index) {
+                                      final code = visibleLanguages[index];
+                                      return _ExcursionsLanguageOptionRow(
+                                        label: localizedExcursionLanguageLabel(
+                                          l10n,
+                                          code,
+                                        ),
+                                        code: code.toUpperCase(),
+                                        selected: _filters.languageCodes
+                                            .contains(code),
+                                        onTap: () => _selectLanguage(code),
+                                      );
+                                    },
+                                  ),
+                                ),
+                            ],
                           ],
                         ),
                       ),
@@ -1915,6 +2113,80 @@ class _ExcursionsPriceInputField extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExcursionsLanguageOptionRow extends StatelessWidget {
+  const _ExcursionsLanguageOptionRow({
+    required this.label,
+    required this.code,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String code;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.18)
+                : const Color(0xFF2C2118),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent
+                  : Colors.white.withValues(alpha: 0.07),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  code,
+                  style: const TextStyle(
+                    color: Color(0xFFBDAA98),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (selected) ...[
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.accent,
+                    size: 18,
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

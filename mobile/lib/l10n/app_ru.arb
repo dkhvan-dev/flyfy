@@ -756,6 +756,9 @@
   "excursionsFilterFullDayDuration": "День (6 ч+)",
   "excursionsFilterMultiDayDuration": "Несколько дней",
   "excursionsFilterLanguage": "Язык",
+  "excursionsFilterLanguageAll": "Все языки",
+  "excursionsFilterLanguageSearchHint": "Поиск языка или кода",
+  "excursionsFilterLanguageNoResults": "Язык не найден",
   "excursionsLoadFailed": "Не удалось загрузить экскурсии",
   "excursionsEmptyTitle": "Экскурсий пока нет",
   "excursionsEmptySubtitle": "Здесь появятся маршруты проверенных гидов.",
@@ -768,8 +771,14 @@
   "guidesViewProfile": "Профиль",
   "guidesFiltersTitle": "Фильтры",
   "guidesFiltersClear": "Очистить",
+  "guidesFilterCountryAll": "Все страны",
+  "guidesFilterCountrySearchHint": "Поиск страны, кода или телефона",
+  "guidesFilterCountryNoResults": "Страна не найдена",
   "guidesFilterExpertise": "Экспертиза",
   "guidesFilterLanguage": "Язык",
+  "guidesFilterLanguageAll": "Все языки",
+  "guidesFilterLanguageSearchHint": "Поиск языка или кода",
+  "guidesFilterLanguageNoResults": "Язык не найден",
   "guidesFilterRating": "Рейтинг",
   "guidesFilterExperience": "Опыт",
   "guidesFilterRatingAtLeast": "{value}+ звезд",
@@ -953,9 +962,43 @@
   "createExcursionCategoryWellness": "Велнес",
   "createExcursionDetailedItinerary": "Детальный маршрут",
   "createExcursionAddTimeSlot": "Добавить слот",
-  "createExcursionItineraryEmpty": "Добавьте хотя бы один пункт маршрута. Он будет показан туристам в деталях экскурсии.",
+  "createExcursionEditTimeSlot": "Редактировать слот",
+  "createExcursionItineraryEmpty": "Добавьте минимум два пункта маршрута. Они будут показаны туристам в деталях экскурсии.",
   "createExcursionAutosaveHint": "Прогресс автосохраняется в профиль гида",
-  "createExcursionItineraryValidation": "Добавьте хотя бы один полный слот маршрута",
+  "createExcursionItineraryValidation": "Заполните время, название и описание пункта маршрута",
+  "createExcursionItineraryMinSlotsValidation": "Добавьте минимум {count} пункта маршрута",
+  "@createExcursionItineraryMinSlotsValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionItineraryDescriptionMinLengthValidation": "Описание пункта маршрута должно быть не короче {count} символов",
+  "@createExcursionItineraryDescriptionMinLengthValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionStartOffsetValidation": "Укажите время начала пункта маршрута",
+  "createExcursionItineraryTitleValidation": "Название пункта маршрута должно быть не короче 2 символов",
+  "createExcursionOffsetMinutesShort": "+{minutes} мин",
+  "@createExcursionOffsetMinutesShort": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "createExcursionOffsetHoursShort": "+{hours} ч",
+  "@createExcursionOffsetHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "createExcursionOffsetHoursMinutesShort": "+{hours} ч {minutes} мин",
+  "@createExcursionOffsetHoursMinutesShort": {
+    "placeholders": {
+      "hours": {},
+      "minutes": {}
+    }
+  },
   "createExcursionDurationLabel": "Длительность",
   "createExcursionDurationHint": "Например, 4 часа",
   "createExcursionDurationUnitLabel": "Единица",
@@ -975,6 +1018,8 @@
       "count": {}
     }
   },
+  "createExcursionLanguagesSearchHint": "Поиск языка или кода",
+  "createExcursionLanguagesNoResults": "Язык не найден",
   "createExcursionLanguagesLimitValidation": "Можно выбрать до {count} языков",
   "@createExcursionLanguagesLimitValidation": {
     "placeholders": {

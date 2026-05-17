@@ -756,6 +756,9 @@
   "excursionsFilterFullDayDuration": "Full Day (6h+)",
   "excursionsFilterMultiDayDuration": "Multi-day",
   "excursionsFilterLanguage": "Language",
+  "excursionsFilterLanguageAll": "All languages",
+  "excursionsFilterLanguageSearchHint": "Search language or code",
+  "excursionsFilterLanguageNoResults": "Language not found",
   "excursionsLoadFailed": "Failed to load excursions",
   "excursionsEmptyTitle": "No excursions yet",
   "excursionsEmptySubtitle": "Verified guide routes will appear here.",
@@ -768,8 +771,14 @@
   "guidesViewProfile": "View Profile",
   "guidesFiltersTitle": "Filters",
   "guidesFiltersClear": "Clear",
+  "guidesFilterCountryAll": "All countries",
+  "guidesFilterCountrySearchHint": "Search country, code, or phone",
+  "guidesFilterCountryNoResults": "Country not found",
   "guidesFilterExpertise": "Expertise",
   "guidesFilterLanguage": "Language",
+  "guidesFilterLanguageAll": "All languages",
+  "guidesFilterLanguageSearchHint": "Search language or code",
+  "guidesFilterLanguageNoResults": "Language not found",
   "guidesFilterRating": "Rating",
   "guidesFilterExperience": "Experience",
   "guidesFilterRatingAtLeast": "{value}+ stars",
@@ -953,9 +962,43 @@
   "createExcursionCategoryWellness": "Wellness",
   "createExcursionDetailedItinerary": "Detailed Itinerary",
   "createExcursionAddTimeSlot": "Add Time Slot",
-  "createExcursionItineraryEmpty": "Add at least one route point. It will be shown to tourists in the excursion details.",
+  "createExcursionEditTimeSlot": "Edit Time Slot",
+  "createExcursionItineraryEmpty": "Add at least two route points. They will be shown to tourists in the excursion details.",
   "createExcursionAutosaveHint": "Auto-saving progress to your guide profile",
-  "createExcursionItineraryValidation": "Add at least one complete itinerary slot",
+  "createExcursionItineraryValidation": "Fill in the route point time, title, and description",
+  "createExcursionItineraryMinSlotsValidation": "Add at least {count} route points",
+  "@createExcursionItineraryMinSlotsValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionItineraryDescriptionMinLengthValidation": "Route point description must be at least {count} characters",
+  "@createExcursionItineraryDescriptionMinLengthValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionStartOffsetValidation": "Enter the route point start time",
+  "createExcursionItineraryTitleValidation": "Route point title must be at least 2 characters",
+  "createExcursionOffsetMinutesShort": "+{minutes}m",
+  "@createExcursionOffsetMinutesShort": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "createExcursionOffsetHoursShort": "+{hours}h",
+  "@createExcursionOffsetHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "createExcursionOffsetHoursMinutesShort": "+{hours}h {minutes}m",
+  "@createExcursionOffsetHoursMinutesShort": {
+    "placeholders": {
+      "hours": {},
+      "minutes": {}
+    }
+  },
   "createExcursionDurationLabel": "Duration",
   "createExcursionDurationHint": "e.g. 4 hours",
   "createExcursionDurationUnitLabel": "Unit",
@@ -975,6 +1018,8 @@
       "count": {}
     }
   },
+  "createExcursionLanguagesSearchHint": "Search language or code",
+  "createExcursionLanguagesNoResults": "Language not found",
   "createExcursionLanguagesLimitValidation": "You can select up to {count} languages",
   "@createExcursionLanguagesLimitValidation": {
     "placeholders": {

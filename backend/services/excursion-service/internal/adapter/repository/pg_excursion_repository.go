@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -25,6 +26,11 @@ type PGExcursionRepository struct {
 func NewPGExcursionRepository(pool *pgxpool.Pool) *PGExcursionRepository {
 	return &PGExcursionRepository{pool: pool}
 }
+
+const (
+	pgUniqueViolation             = "23505"
+	activeGuideLandmarkConstraint = "uq_excursions_active_guide_landmark"
+)
 
 const excursionSelectColumns = `
 	id, guide_profile_id, guide_user_id,
@@ -605,6 +611,27 @@ func (r *PGExcursionRepository) GetExcursionByID(ctx context.Context, excursionI
 	return item, nil
 }
 
+func (r *PGExcursionRepository) HasActiveExcursionForGuideLandmark(ctx context.Context, guideUserID uuid.UUID, landmarkID uuid.UUID) (bool, error) {
+	if guideUserID == uuid.Nil || landmarkID == uuid.Nil {
+		return false, nil
+	}
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM excursions
+			WHERE guide_user_id = $1
+				AND landmark_id = $2
+				AND deleted_at IS NULL
+				AND status <> 'ARCHIVED'
+		)
+	`
+	var exists bool
+	if err := r.pool.QueryRow(ctx, query, guideUserID, landmarkID).Scan(&exists); err != nil {
+		return false, fmt.Errorf("check guide landmark excursion: %w", err)
+	}
+	return exists, nil
+}
+
 func (r *PGExcursionRepository) ListExcursions(ctx context.Context, filter port.ExcursionFilter) ([]*model.Excursion, error) {
 	base := `
 		SELECT ` + excursionSelectColumns + `
@@ -965,6 +992,69 @@ func (r *PGExcursionRepository) ListExcursionOffers(ctx context.Context, filter 
 	return items, rows.Err()
 }
 
+func (r *PGExcursionRepository) ListExcursionLanguageCodesByGuideUserIDs(ctx context.Context, guideUserIDs []uuid.UUID) (map[uuid.UUID][]string, error) {
+	if len(guideUserIDs) == 0 {
+		return map[uuid.UUID][]string{}, nil
+	}
+
+	placeholders := make([]string, 0, len(guideUserIDs))
+	args := make([]any, 0, len(guideUserIDs))
+	for _, guideUserID := range guideUserIDs {
+		if guideUserID == uuid.Nil {
+			continue
+		}
+		placeholders = append(placeholders, fmt.Sprintf("$%d", len(args)+1))
+		args = append(args, guideUserID)
+	}
+	if len(args) == 0 {
+		return map[uuid.UUID][]string{}, nil
+	}
+
+	query := `
+		SELECT source.guide_user_id, source.language_code
+		FROM (
+			SELECT o.guide_user_id, l.language_code, l.sort_order
+			FROM excursions o
+			JOIN excursion_languages l ON l.excursion_id = o.id
+			WHERE o.guide_user_id IN (` + strings.Join(placeholders, ",") + `)
+			  AND o.deleted_at IS NULL
+
+			UNION ALL
+
+			SELECT o.guide_user_id, l.language_code, l.sort_order
+			FROM excursion_offers o
+			JOIN excursion_offer_languages l ON l.offer_id = o.id
+			WHERE o.guide_user_id IN (` + strings.Join(placeholders, ",") + `)
+			  AND o.deleted_at IS NULL
+		) source
+		GROUP BY source.guide_user_id, source.language_code
+		ORDER BY source.guide_user_id, MIN(source.sort_order), source.language_code
+	`
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list guide excursion languages: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[uuid.UUID][]string, len(guideUserIDs))
+	for rows.Next() {
+		var guideUserID uuid.UUID
+		var languageCode string
+		if err = rows.Scan(&guideUserID, &languageCode); err != nil {
+			return nil, fmt.Errorf("scan guide excursion language: %w", err)
+		}
+		languageCode = strings.ToLower(strings.TrimSpace(languageCode))
+		if languageCode == "" {
+			continue
+		}
+		result[guideUserID] = append(result[guideUserID], languageCode)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func excursionOfferOrderBy(sort string, direction string) string {
 	dir := "DESC"
 	if strings.EqualFold(strings.TrimSpace(direction), "asc") {
@@ -1115,9 +1205,19 @@ func insertExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion
 	`
 	_, err := exec.Exec(ctx, query, excursionArgs(item)...)
 	if err != nil {
+		if isGuideLandmarkUniqueViolation(err) {
+			return model.ErrExcursionGuideLandmarkAlreadyExists
+		}
 		return fmt.Errorf("insert excursion: %w", err)
 	}
 	return nil
+}
+
+func isGuideLandmarkUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) &&
+		pgErr.Code == pgUniqueViolation &&
+		pgErr.ConstraintName == activeGuideLandmarkConstraint
 }
 
 func updateExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion) error {
@@ -1154,6 +1254,9 @@ func updateExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion
 	`
 	tag, err := exec.Exec(ctx, query, updateExcursionArgs(item)...)
 	if err != nil {
+		if isGuideLandmarkUniqueViolation(err) {
+			return model.ErrExcursionGuideLandmarkAlreadyExists
+		}
 		return fmt.Errorf("update excursion: %w", err)
 	}
 	if tag.RowsAffected() == 0 {

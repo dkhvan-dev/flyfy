@@ -22,6 +22,7 @@ type excursionRepoStub struct {
 	savedRelations    port.ExcursionRelations
 	createdBooking    *model.ExcursionBooking
 	loadedRelations   port.ExcursionRelations
+	hasGuideLandmark  bool
 	createAggregateFn func(ctx context.Context, item *model.Excursion, relations port.ExcursionRelations) error
 }
 
@@ -71,6 +72,14 @@ func (s *excursionRepoStub) GetExcursionProductCardByID(ctx context.Context, pro
 
 func (s *excursionRepoStub) ListExcursionOffers(ctx context.Context, filter port.ExcursionOfferFilter) ([]*model.ExcursionOffer, error) {
 	return nil, nil
+}
+
+func (s *excursionRepoStub) ListExcursionLanguageCodesByGuideUserIDs(ctx context.Context, guideUserIDs []uuid.UUID) (map[uuid.UUID][]string, error) {
+	return nil, nil
+}
+
+func (s *excursionRepoStub) HasActiveExcursionForGuideLandmark(ctx context.Context, guideUserID uuid.UUID, landmarkID uuid.UUID) (bool, error) {
+	return s.hasGuideLandmark, nil
 }
 
 func (s *excursionRepoStub) GetExcursionOfferByID(ctx context.Context, offerID uuid.UUID) (*model.ExcursionOffer, error) {
@@ -242,6 +251,42 @@ func TestCreateExcursionPersistsDraftAggregate(t *testing.T) {
 		repo.createdRelations.IncludedItems[0].Text != "food" ||
 		repo.createdRelations.IncludedItems[1].Text != "transport" {
 		t.Fatalf("included items = %#v, want stable dictionary keys", repo.createdRelations.IncludedItems)
+	}
+}
+
+func TestCreateExcursionRejectsDuplicateGuideLandmark(t *testing.T) {
+	repo := &excursionRepoStub{hasGuideLandmark: true}
+	guideUserID := uuid.New()
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			Allowed:        true,
+		},
+	}, nil)
+
+	_, err := uc.CreateExcursion(context.Background(), CreateExcursionInput{
+		ActorUserID:     guideUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Katon-Karagay National Park"),
+		CategorySlug:    "nature",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"ru"},
+		MeetingPoint:    "Visitor center",
+		PriceAmount:     120,
+		Currency:        "USD",
+		Itinerary: []ExcursionItineraryItemInput{
+			{StartOffsetMinutes: 0, Title: "Start", Description: "Meet your guide."},
+		},
+	})
+
+	if !errors.Is(err, model.ErrExcursionGuideLandmarkAlreadyExists) {
+		t.Fatalf("error = %v, want %v", err, model.ErrExcursionGuideLandmarkAlreadyExists)
+	}
+	if repo.createdExcursion != nil {
+		t.Fatal("duplicate guide landmark excursion was persisted")
 	}
 }
 

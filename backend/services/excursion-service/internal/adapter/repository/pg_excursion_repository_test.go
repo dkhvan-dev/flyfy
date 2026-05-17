@@ -3,7 +3,9 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -56,6 +58,34 @@ func TestExcursionMarketplaceCanonicalKeyPrefersLandmarkID(t *testing.T) {
 
 	if got != want {
 		t.Fatalf("canonical key = %q, want %q", got, want)
+	}
+}
+
+func TestInsertExcursionMapsGuideLandmarkUniqueViolation(t *testing.T) {
+	item := validRepositoryExcursion(t)
+
+	err := insertExcursion(
+		context.Background(),
+		uniqueViolationExecutor{constraintName: "uq_excursions_active_guide_landmark"},
+		item,
+	)
+
+	if !errors.Is(err, model.ErrExcursionGuideLandmarkAlreadyExists) {
+		t.Fatalf("error = %v, want %v", err, model.ErrExcursionGuideLandmarkAlreadyExists)
+	}
+}
+
+func TestGuideLandmarkUniquenessMigrationExists(t *testing.T) {
+	source, err := os.ReadFile("../../../migrations/009_unique_active_guide_landmark.up.sql")
+	if err != nil {
+		t.Fatalf("read uniqueness migration: %v", err)
+	}
+
+	migration := string(source)
+	if !strings.Contains(migration, "uq_excursions_active_guide_landmark") ||
+		!strings.Contains(migration, "guide_user_id, landmark_id") ||
+		!strings.Contains(migration, "deleted_at IS NULL") {
+		t.Fatalf("migration does not enforce active guide landmark uniqueness:\n%s", migration)
 	}
 }
 
@@ -467,6 +497,21 @@ func (placeholderCheckingExecutor) Exec(_ context.Context, query string, argumen
 }
 
 func (placeholderCheckingExecutor) QueryRow(context.Context, string, ...any) pgx.Row {
+	return nil
+}
+
+type uniqueViolationExecutor struct {
+	constraintName string
+}
+
+func (e uniqueViolationExecutor) Exec(context.Context, string, ...any) (pgconn.CommandTag, error) {
+	return pgconn.CommandTag{}, &pgconn.PgError{
+		Code:           pgUniqueViolation,
+		ConstraintName: e.constraintName,
+	}
+}
+
+func (uniqueViolationExecutor) QueryRow(context.Context, string, ...any) pgx.Row {
 	return nil
 }
 

@@ -756,6 +756,9 @@
   "excursionsFilterFullDayDuration": "Толық күн (6 сағ+)",
   "excursionsFilterMultiDayDuration": "Бірнеше күн",
   "excursionsFilterLanguage": "Тіл",
+  "excursionsFilterLanguageAll": "Барлық тілдер",
+  "excursionsFilterLanguageSearchHint": "Тіл немесе код бойынша іздеу",
+  "excursionsFilterLanguageNoResults": "Тіл табылмады",
   "excursionsLoadFailed": "Экскурсияларды жүктеу мүмкін болмады",
   "excursionsEmptyTitle": "Әзірге экскурсиялар жоқ",
   "excursionsEmptySubtitle": "Мұнда тексерілген гидтердің маршруттары пайда болады.",
@@ -768,8 +771,14 @@
   "guidesViewProfile": "Профильді көру",
   "guidesFiltersTitle": "Сүзгілер",
   "guidesFiltersClear": "Тазалау",
+  "guidesFilterCountryAll": "Барлық елдер",
+  "guidesFilterCountrySearchHint": "Ел, код немесе телефон бойынша іздеу",
+  "guidesFilterCountryNoResults": "Ел табылмады",
   "guidesFilterExpertise": "Мамандану",
   "guidesFilterLanguage": "Тіл",
+  "guidesFilterLanguageAll": "Барлық тілдер",
+  "guidesFilterLanguageSearchHint": "Тілді немесе кодты іздеу",
+  "guidesFilterLanguageNoResults": "Тіл табылмады",
   "guidesFilterRating": "Рейтинг",
   "guidesFilterExperience": "Тәжірибе",
   "guidesFilterRatingAtLeast": "{value}+ жұлдыз",
@@ -953,9 +962,43 @@
   "createExcursionCategoryWellness": "Wellness",
   "createExcursionDetailedItinerary": "Толық маршрут",
   "createExcursionAddTimeSlot": "Уақыт слотын қосу",
-  "createExcursionItineraryEmpty": "Маршруттың кемінде бір пунктін қосыңыз. Ол туристерге экскурсия мәліметінде көрсетіледі.",
+  "createExcursionEditTimeSlot": "Уақыт слотын өңдеу",
+  "createExcursionItineraryEmpty": "Кемінде екі маршрут пунктін қосыңыз. Олар туристерге экскурсия мәліметінде көрсетіледі.",
   "createExcursionAutosaveHint": "Прогресс гид профиліне автоматты сақталады",
-  "createExcursionItineraryValidation": "Маршруттың кемінде бір толық слотын қосыңыз",
+  "createExcursionItineraryValidation": "Маршрут пунктінің уақытын, атауын және сипаттамасын толтырыңыз",
+  "createExcursionItineraryMinSlotsValidation": "Кемінде {count} маршрут пунктін қосыңыз",
+  "@createExcursionItineraryMinSlotsValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionItineraryDescriptionMinLengthValidation": "Маршрут пунктінің сипаттамасы кемінде {count} таңба болуы керек",
+  "@createExcursionItineraryDescriptionMinLengthValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionStartOffsetValidation": "Маршрут пунктінің басталу уақытын көрсетіңіз",
+  "createExcursionItineraryTitleValidation": "Маршрут пунктінің атауы кемінде 2 таңба болуы керек",
+  "createExcursionOffsetMinutesShort": "+{minutes} мин",
+  "@createExcursionOffsetMinutesShort": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "createExcursionOffsetHoursShort": "+{hours} сағ",
+  "@createExcursionOffsetHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "createExcursionOffsetHoursMinutesShort": "+{hours} сағ {minutes} мин",
+  "@createExcursionOffsetHoursMinutesShort": {
+    "placeholders": {
+      "hours": {},
+      "minutes": {}
+    }
+  },
   "createExcursionDurationLabel": "Ұзақтығы",
   "createExcursionDurationHint": "Мысалы, 4 сағат",
   "createExcursionDurationUnitLabel": "Бірлік",
@@ -975,6 +1018,8 @@
       "count": {}
     }
   },
+  "createExcursionLanguagesSearchHint": "Тіл немесе код бойынша іздеу",
+  "createExcursionLanguagesNoResults": "Тіл табылмады",
   "createExcursionLanguagesLimitValidation": "{count} тілге дейін таңдауға болады",
   "@createExcursionLanguagesLimitValidation": {
     "placeholders": {

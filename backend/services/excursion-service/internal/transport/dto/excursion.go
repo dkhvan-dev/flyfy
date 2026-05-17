@@ -173,6 +173,15 @@ type ExcursionOfferListResponse struct {
 	HasMore bool                     `json:"hasMore"`
 }
 
+type GuideExcursionLanguageResponse struct {
+	GuideUserID   string   `json:"guideUserId"`
+	LanguageCodes []string `json:"languageCodes"`
+}
+
+type GuideExcursionLanguageListResponse struct {
+	Items []GuideExcursionLanguageResponse `json:"items"`
+}
+
 type CreateExcursionBookingRequest struct {
 	ProductID      string  `json:"productId"`
 	OfferID        string  `json:"offerId"`

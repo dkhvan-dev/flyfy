@@ -13,7 +13,10 @@ class PublicGuideVm {
     required this.reviewsCount,
     required this.languageCodes,
     required this.specializationCodes,
+    this.excursionLanguageCodes = const [],
     this.experienceYears,
+    this.firstName,
+    this.lastName,
     this.displayName,
     this.avatarFileId,
     this.countryCode,
@@ -33,6 +36,9 @@ class PublicGuideVm {
   final int reviewsCount;
   final List<String> languageCodes;
   final List<String> specializationCodes;
+  final List<String> excursionLanguageCodes;
+  final String? firstName;
+  final String? lastName;
   final String? displayName;
   final String? avatarFileId;
   final String? countryCode;
@@ -67,19 +73,63 @@ class PublicGuideVm {
             guideProfile['languageCodes'],
         preferredKey: 'languageCode',
       ),
+      excursionLanguageCodes: _codes(
+        json['excursionLanguageCodes'] ??
+            json['excursionLanguages'] ??
+            guideProfile['excursionLanguageCodes'] ??
+            guideProfile['excursionLanguages'],
+        preferredKey: 'languageCode',
+        normalizeLowercase: true,
+      ),
       specializationCodes: _codes(
         json['specializations'] ??
             guideProfile['specializations'] ??
             guideProfile['specializationCodes'],
         preferredKey: 'specializationCode',
       ),
+      firstName: _nullableString(userProfile['firstName']),
+      lastName: _nullableString(userProfile['lastName']),
       displayName: _nullableString(userProfile['displayName']),
       avatarFileId: _nullableString(userProfile['avatarFileId']),
       countryCode: _nullableString(userProfile['countryCode']),
     );
   }
 
+  PublicGuideVm copyWith({
+    List<String>? excursionLanguageCodes,
+  }) {
+    return PublicGuideVm(
+      id: id,
+      userId: userId,
+      type: type,
+      status: status,
+      headline: headline,
+      about: about,
+      experienceYears: experienceYears,
+      isPrivateGuideAvailable: isPrivateGuideAvailable,
+      isActivityHostAvailable: isActivityHostAvailable,
+      isExcursionGuideAvailable: isExcursionGuideAvailable,
+      ratingAvg: ratingAvg,
+      reviewsCount: reviewsCount,
+      languageCodes: languageCodes,
+      specializationCodes: specializationCodes,
+      excursionLanguageCodes:
+          excursionLanguageCodes ?? this.excursionLanguageCodes,
+      firstName: firstName,
+      lastName: lastName,
+      displayName: displayName,
+      avatarFileId: avatarFileId,
+      countryCode: countryCode,
+    );
+  }
+
   String get preferredName {
+    final first = firstName?.trim() ?? '';
+    final last = lastName?.trim() ?? '';
+    final legalName =
+        [last, first].where((value) => value.isNotEmpty).join(' ');
+    if (legalName.isNotEmpty) return legalName;
+
     final display = displayName?.trim() ?? '';
     if (display.isNotEmpty) return display;
 
@@ -123,13 +173,17 @@ double _double(dynamic value) {
   return double.tryParse(value?.toString() ?? '') ?? 0;
 }
 
-List<String> _codes(dynamic raw, {required String preferredKey}) {
+List<String> _codes(
+  dynamic raw, {
+  required String preferredKey,
+  bool normalizeLowercase = false,
+}) {
   if (raw is! List) return const [];
 
   final values = <String>{};
   for (final item in raw) {
     if (item is String) {
-      final code = item.trim();
+      final code = _normalizeCode(item, normalizeLowercase);
       if (code.isNotEmpty) values.add(code);
       continue;
     }
@@ -138,9 +192,15 @@ List<String> _codes(dynamic raw, {required String preferredKey}) {
       final code = _string(item[preferredKey]).isNotEmpty
           ? _string(item[preferredKey])
           : _string(item['code']);
-      if (code.isNotEmpty) values.add(code);
+      final normalizedCode = _normalizeCode(code, normalizeLowercase);
+      if (normalizedCode.isNotEmpty) values.add(normalizedCode);
     }
   }
 
   return values.toList(growable: false);
+}
+
+String _normalizeCode(String value, bool normalizeLowercase) {
+  final code = value.trim();
+  return normalizeLowercase ? code.toLowerCase() : code;
 }

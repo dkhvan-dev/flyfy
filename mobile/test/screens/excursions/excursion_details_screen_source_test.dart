@@ -70,6 +70,68 @@ void main() {
   );
 
   test(
+    'excursion details displays every selected offer language',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+      final localizationSource = await File(
+        'lib/features/excursions/excursion_localization.dart',
+      ).readAsString();
+
+      expect(source, contains('_ExcursionStatsGrid('));
+      expect(source, contains('selectedOffer: activeSelectedOffer'));
+      expect(source, contains('selectedOffer?.languageCodes'));
+      expect(
+          source, contains('_formatLanguageLabels(l10n, offer.languageCodes)'));
+      expect(localizationSource, contains('int? maxItems'));
+      expect(localizationSource, contains('maxItems == null'));
+      expect(localizationSource, isNot(contains('int maxItems = 2')));
+    },
+  );
+
+  test(
+    'excursion details does not truncate language labels',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('allowMultiline: true'));
+      expect(
+        source,
+        contains('maxLines: data.allowMultiline ? null : 2'),
+      );
+      expect(
+        source,
+        contains('overflow: data.allowMultiline'),
+      );
+      expect(source, contains('? TextOverflow.visible'));
+      expect(source, contains('maxLines: allowMultiline ? null : 1'));
+    },
+  );
+
+  test(
+    'excursion details links description section to attraction details',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('_openLandmarkDetails'));
+      expect(source, contains('context.push('));
+      expect(
+        source,
+        contains("'/attractions/\${Uri.encodeComponent(landmarkId)}'"),
+      );
+      expect(source, contains('extra: localizedLandmark'));
+      expect(source, contains('actionLabel:'));
+      expect(source, contains('l10n.detailsButton'));
+      expect(source, contains('AppColors.accent'));
+    },
+  );
+
+  test(
     'excursion details resolves guide profile and hides guide chat for author',
     () async {
       final source = await File(
@@ -82,7 +144,9 @@ void main() {
       expect(source, contains('excursion.guideUserId'));
       expect(source, contains('context.push('));
       expect(source, contains("'/users/\$guideUserId/profile'"));
-      expect(source, contains('_formatGuideSurnameInitials'));
+      expect(source, contains('_formatGuideFullName'));
+      expect(source, contains("return '\$lastName \$firstName';"));
+      expect(source, isNot(contains('_formatGuideSurnameInitials')));
       expect(source, contains('showMessageGuide: !isAuthor'));
       expect(source, contains('showMessageGuide'));
       expect(source, isNot(contains('l10n.excursionDetailsGuideName,')));

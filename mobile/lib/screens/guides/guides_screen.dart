@@ -105,6 +105,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
 
   List<PublicGuideVm> _guides = const [];
   List<ReferenceCountry> _countries = const [];
+  Map<String, Set<String>> _countrySearchAliases = const {};
   int _totalGuides = 0;
   bool _loading = true;
   bool _isCountriesLoading = false;
@@ -171,19 +172,72 @@ class _GuidesScreenState extends State<GuidesScreen> {
     final defaultCountryCode = _defaultCountryCode();
 
     try {
-      final countries = await _referenceApi.listCountries(lang: lang);
+      final countries = _withDefaultCountry(
+        await _referenceApi.listCountries(lang: lang),
+        defaultCountryCode,
+      );
+      final countrySearchAliases = await _loadCountrySearchAliases(
+        countries,
+        lang,
+      );
       if (!mounted) return;
       setState(() {
-        _countries = _withDefaultCountry(countries, defaultCountryCode);
+        _countries = countries;
+        _countrySearchAliases = countrySearchAliases;
         _isCountriesLoading = false;
       });
     } catch (_) {
       if (!mounted) return;
+      final countries = _withDefaultCountry(const [], defaultCountryCode);
       setState(() {
-        _countries = _withDefaultCountry(const [], defaultCountryCode);
+        _countries = countries;
+        _countrySearchAliases = _countrySearchAliasMap(countries);
         _isCountriesLoading = false;
       });
     }
+  }
+
+  Future<Map<String, Set<String>>> _loadCountrySearchAliases(
+    List<ReferenceCountry> countries,
+    String currentLang,
+  ) async {
+    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
+    final localizedLists = await Future.wait(
+      languages.map((lang) async {
+        try {
+          return await _referenceApi.listCountries(lang: lang);
+        } catch (_) {
+          return const <ReferenceCountry>[];
+        }
+      }),
+    );
+
+    return _countrySearchAliasMap([
+      ...countries,
+      for (final localizedCountries in localizedLists) ...localizedCountries,
+    ]);
+  }
+
+  Map<String, Set<String>> _countrySearchAliasMap(
+    List<ReferenceCountry> countries,
+  ) {
+    final aliases = <String, Set<String>>{};
+    for (final country in countries) {
+      final code = _normalizeCountryCode(country.code);
+      if (code == null) continue;
+
+      final countryAliases = aliases.putIfAbsent(code, () => <String>{});
+      countryAliases
+        ..add(code)
+        ..add(country.code.trim())
+        ..add(country.name.trim());
+
+      final phoneCode = country.phoneCode?.trim();
+      if (phoneCode != null && phoneCode.isNotEmpty) {
+        countryAliases.add(phoneCode);
+      }
+    }
+    return aliases;
   }
 
   void _onSearchChanged() {
@@ -280,6 +334,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
       builder: (context) => _GuidesFiltersSheet(
         initialFilters: _filters,
         countries: _countries,
+        countrySearchAliases: _countrySearchAliases,
         isCountriesLoading: _isCountriesLoading,
         fallbackResultCount: _totalGuides,
         resultCountLoader: (filters) async {
@@ -654,8 +709,8 @@ class _GuidesGrid extends StatelessWidget {
         final spacing = constraints.crossAxisExtent < 370 ? 12.0 : 16.0;
         final cardWidth =
             (constraints.crossAxisExtent - spacing * (columns - 1)) / columns;
-        final imageHeight = (cardWidth * 1.46).clamp(205.0, 252.0);
-        final cardHeight = imageHeight + 156;
+        final imageHeight = (cardWidth * 0.82).clamp(118.0, 156.0);
+        final cardHeight = imageHeight + _guideCardBodyHeight(context);
 
         return SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -678,6 +733,44 @@ class _GuidesGrid extends StatelessWidget {
   }
 }
 
+const double _guideCardBodyMinHeight = 122;
+const double _guideCardBodyHorizontalPadding = 15;
+const double _guideCardBodyVerticalPadding = 12;
+const double _guideCardNameFontSize = 18;
+const double _guideCardNameLineHeight = 1.08;
+const double _guideCardLanguageFontSize = 14;
+const double _guideCardLanguageLineHeight = 1.18;
+const double _guideCardLanguageGap = 6;
+const double _guideCardButtonTopGap = 8;
+const double _guideCardButtonMinHeight = 36;
+const double _guideCardButtonHorizontalPadding = 12;
+const double _guideCardButtonVerticalPadding = 8;
+const double _guideCardButtonFontSize = 12;
+const double _guideCardMinFlexibleGap = 4;
+
+double _guideCardBodyHeight(BuildContext context) {
+  final textScaler = MediaQuery.textScalerOf(context);
+  final nameHeight =
+      textScaler.scale(_guideCardNameFontSize) * _guideCardNameLineHeight;
+  final languageHeight = textScaler.scale(_guideCardLanguageFontSize) *
+      _guideCardLanguageLineHeight;
+  final buttonHeight = math.max(
+    _guideCardButtonMinHeight,
+    textScaler.scale(_guideCardButtonFontSize) +
+        _guideCardButtonVerticalPadding * 2,
+  );
+
+  final contentHeight = _guideCardBodyVerticalPadding * 2 +
+      nameHeight +
+      _guideCardLanguageGap +
+      languageHeight +
+      _guideCardButtonTopGap +
+      buttonHeight +
+      _guideCardMinFlexibleGap;
+
+  return math.max(_guideCardBodyMinHeight, contentHeight);
+}
+
 class _GuideCard extends StatelessWidget {
   const _GuideCard({
     required this.guide,
@@ -692,7 +785,7 @@ class _GuideCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final role = guideRoleLabel(l10n, guide);
+    final languageLabel = guideExcursionLanguageLabel(l10n, guide);
     final avatarUrl = guide.avatarFileId == null
         ? null
         : resolvePublicFileContentUrl(guide.avatarFileId!);
@@ -748,7 +841,10 @@ class _GuideCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(17, 18, 17, 18),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: _guideCardBodyHorizontalPadding,
+                      vertical: _guideCardBodyVerticalPadding,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -758,28 +854,29 @@ class _GuideCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xFFFFF3E8),
-                            fontSize: 20,
+                            fontSize: _guideCardNameFontSize,
                             fontWeight: FontWeight.w900,
-                            height: 1.08,
+                            height: _guideCardNameLineHeight,
                             letterSpacing: 0,
                           ),
                         ),
-                        const SizedBox(height: 13),
-                        Expanded(
-                          child: Text(
-                            role,
-                            maxLines: 2,
+                        if (languageLabel.isNotEmpty) ...[
+                          const SizedBox(height: _guideCardLanguageGap),
+                          Text(
+                            languageLabel,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Color(0xFFD9C4B5),
-                              fontSize: 17,
+                              fontSize: _guideCardLanguageFontSize,
                               fontWeight: FontWeight.w500,
-                              height: 1.28,
+                              height: _guideCardLanguageLineHeight,
                               letterSpacing: 0,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 14),
+                        ],
+                        const Spacer(),
+                        const SizedBox(height: _guideCardButtonTopGap),
                         _ViewProfileButton(label: l10n.guidesViewProfile),
                       ],
                     ),
@@ -795,7 +892,7 @@ class _GuideCard extends StatelessWidget {
 
   int _imageCacheWidth(BuildContext context) {
     final dpr = MediaQuery.devicePixelRatioOf(context).clamp(1.0, 3.0);
-    return (260 * dpr).round();
+    return (190 * dpr).round();
   }
 }
 
@@ -880,13 +977,16 @@ class _ViewProfileButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 41),
+      constraints: const BoxConstraints(minHeight: _guideCardButtonMinHeight),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(9),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      padding: const EdgeInsets.symmetric(
+        horizontal: _guideCardButtonHorizontalPadding,
+        vertical: _guideCardButtonVerticalPadding,
+      ),
       child: Text(
         label.toUpperCase(),
         maxLines: 1,
@@ -894,8 +994,9 @@ class _ViewProfileButton extends StatelessWidget {
         textAlign: TextAlign.center,
         style: const TextStyle(
           color: AppColors.accent,
-          fontSize: 13,
+          fontSize: _guideCardButtonFontSize,
           fontWeight: FontWeight.w900,
+          height: 1,
           letterSpacing: 1.7,
         ),
       ),
@@ -990,6 +1091,7 @@ class _GuidesFiltersSheet extends StatefulWidget {
   const _GuidesFiltersSheet({
     required this.initialFilters,
     required this.countries,
+    required this.countrySearchAliases,
     required this.isCountriesLoading,
     required this.fallbackResultCount,
     required this.resultCountLoader,
@@ -997,6 +1099,7 @@ class _GuidesFiltersSheet extends StatefulWidget {
 
   final _GuideFilters initialFilters;
   final List<ReferenceCountry> countries;
+  final Map<String, Set<String>> countrySearchAliases;
   final bool isCountriesLoading;
   final int fallbackResultCount;
   final Future<int> Function(_GuideFilters filters) resultCountLoader;
@@ -1010,15 +1113,23 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
   static const _experienceYears = [1, 3, 5];
 
   late _GuideFilters _filters;
+  late final TextEditingController _countrySearchController;
+  late final TextEditingController _languageSearchController;
   Timer? _resultCountDebounce;
   int? _resultCount;
   bool _isLoadingResultCount = false;
   int _resultCountRequestId = 0;
+  String _countrySearchQuery = '';
+  String _languageSearchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _filters = widget.initialFilters;
+    _countrySearchController = TextEditingController()
+      ..addListener(_handleCountrySearchChanged);
+    _languageSearchController = TextEditingController()
+      ..addListener(_handleLanguageSearchChanged);
     _resultCount = widget.fallbackResultCount;
     _loadResultCount();
   }
@@ -1026,16 +1137,39 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
   @override
   void dispose() {
     _resultCountDebounce?.cancel();
+    _countrySearchController
+      ..removeListener(_handleCountrySearchChanged)
+      ..dispose();
+    _languageSearchController
+      ..removeListener(_handleLanguageSearchChanged)
+      ..dispose();
     super.dispose();
   }
 
+  void _handleCountrySearchChanged() {
+    final nextQuery = _countrySearchController.text.trim();
+    if (nextQuery == _countrySearchQuery) return;
+
+    setState(() => _countrySearchQuery = nextQuery);
+  }
+
+  void _handleLanguageSearchChanged() {
+    final nextQuery = _languageSearchController.text.trim();
+    if (nextQuery == _languageSearchQuery) return;
+
+    setState(() => _languageSearchQuery = nextQuery);
+  }
+
   void _clear() {
+    _countrySearchController.clear();
+    _languageSearchController.clear();
     _setFilters(const _GuideFilters());
   }
 
   void _selectCountry(String code) {
     final normalized = _normalizeCountryCode(code);
     if (normalized == null) return;
+    _countrySearchController.clear();
     _setFilters(_filters.copyWith(countryCodes: {normalized}));
   }
 
@@ -1046,11 +1180,17 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
     _setFilters(_filters.copyWith(specializations: next));
   }
 
-  void _toggleLanguage(String code) {
+  void _selectLanguage(String code) {
     final normalized = code.trim().toLowerCase();
-    final next = Set<String>.of(_filters.languageCodes);
-    if (!next.remove(normalized)) next.add(normalized);
-    _setFilters(_filters.copyWith(languageCodes: next));
+    if (normalized.isEmpty) return;
+    final selectedCode =
+        _filters.languageCodes.contains(normalized) ? null : normalized;
+    _languageSearchController.clear();
+    _setFilters(
+      _filters.copyWith(
+        languageCodes: selectedCode == null ? const <String>{} : {selectedCode},
+      ),
+    );
   }
 
   void _setRating(double rating) {
@@ -1106,11 +1246,85 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
     return country.code.trim().toUpperCase();
   }
 
+  ReferenceCountry? _selectedCountry() {
+    final countryCode =
+        _filters.countryCodes.isEmpty ? null : _filters.countryCodes.first;
+    if (countryCode == null) return null;
+
+    for (final country in widget.countries) {
+      if (_normalizeCountryCode(country.code) == countryCode) {
+        return country;
+      }
+    }
+    return null;
+  }
+
+  List<ReferenceCountry> _visibleCountries() {
+    final query = _countrySearchQuery.trim();
+    if (query.isEmpty) return const [];
+
+    return widget.countries
+        .where((country) => guideSearchMatches(
+              query,
+              [
+                country.code,
+                country.name,
+                if (country.phoneCode != null) country.phoneCode!,
+                ..._countrySearchAliasesFor(country),
+              ],
+            ))
+        .take(24)
+        .toList(growable: false);
+  }
+
+  Set<String> _countrySearchAliasesFor(ReferenceCountry country) {
+    final countryCode = _normalizeCountryCode(country.code);
+    if (countryCode == null) return const <String>{};
+    return widget.countrySearchAliases[countryCode] ?? const <String>{};
+  }
+
+  String? _selectedLanguage(AppLocalizations l10n) {
+    if (_filters.languageCodes.isEmpty) return null;
+    return localizedGuideLanguageLabel(l10n, _filters.languageCodes.first);
+  }
+
+  List<String> _visibleLanguages(AppLocalizations l10n) {
+    final query = _languageSearchQuery.trim();
+    if (query.isEmpty) return const [];
+
+    return _guideLanguageFilterCodes
+        .where((code) => guideSearchMatches(
+              query,
+              _languageSearchHaystack(l10n, code),
+            ))
+        .toList(growable: false);
+  }
+
+  List<String> _languageSearchHaystack(AppLocalizations l10n, String code) {
+    final aliases = switch (code.trim().toLowerCase()) {
+      'en' => const ['english', 'английский', 'ағылшын'],
+      'ru' => const ['russian', 'русский', 'орыс'],
+      'kk' || 'kz' => const ['kazakh', 'казахский', 'қазақ'],
+      _ => const <String>[],
+    };
+    return [
+      code,
+      localizedGuideLanguageLabel(l10n, code),
+      ...aliases,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final resultCount = _resultCount ?? widget.fallbackResultCount;
+    final selectedCountry = _selectedCountry();
+    final selectedCountryCode =
+        _filters.countryCodes.isEmpty ? null : _filters.countryCodes.first;
+    final visibleCountries = _visibleCountries();
+    final selectedLanguage = _selectedLanguage(l10n);
+    final visibleLanguages = _visibleLanguages(l10n);
 
     return AppDismissibleModalSheet(
       child: ConstrainedBox(
@@ -1144,9 +1358,113 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                     children: [
                       _GuideFilterSection(
                         title: l10n.profileCountry,
-                        child: widget.isCountriesLoading &&
-                                widget.countries.isEmpty
-                            ? const Align(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2C2118),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.public_rounded,
+                                      color: AppColors.accent,
+                                      size: 21,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        selectedCountry == null
+                                            ? selectedCountryCode ??
+                                                l10n.guidesFilterCountryAll
+                                            : _countryLabel(selectedCountry),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    if (selectedCountryCode != null)
+                                      IconButton(
+                                        tooltip: l10n.guidesFiltersClear,
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed: () => _setFilters(
+                                          _filters.copyWith(
+                                            countryCodes: const <String>{},
+                                          ),
+                                        ),
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          color: Color(0xFFBDAA98),
+                                          size: 20,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _countrySearchController,
+                              enabled: widget.countries.isNotEmpty,
+                              cursorColor: AppColors.accent,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: l10n.guidesFilterCountrySearchHint,
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF9D8877),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: AppColors.accent,
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFF171009),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.accent,
+                                    width: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (widget.isCountriesLoading &&
+                                widget.countries.isEmpty) ...[
+                              const SizedBox(height: 12),
+                              const Align(
                                 alignment: Alignment.centerLeft,
                                 child: SizedBox(
                                   width: 24,
@@ -1156,22 +1474,101 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                                     color: AppColors.accent,
                                   ),
                                 ),
-                              )
-                            : Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: [
-                                  for (final country in widget.countries)
-                                    _GuideFilterChip(
-                                      label: _countryLabel(country),
-                                      selected: _filters.countryCodes
-                                          .contains(_normalizeCountryCode(
-                                        country.code,
-                                      )),
-                                      onTap: () => _selectCountry(country.code),
-                                    ),
-                                ],
                               ),
+                            ] else if (_countrySearchQuery.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              if (visibleCountries.isEmpty)
+                                Text(
+                                  l10n.guidesFilterCountryNoResults,
+                                  style: const TextStyle(
+                                    color: Color(0xFFBDAA98),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                )
+                              else
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 224,
+                                  ),
+                                  child: ListView.separated(
+                                    shrinkWrap: true,
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: visibleCountries.length,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 8),
+                                    itemBuilder: (context, index) {
+                                      final country = visibleCountries[index];
+                                      final code =
+                                          _normalizeCountryCode(country.code) ??
+                                              country.code.trim().toUpperCase();
+                                      final selected =
+                                          selectedCountryCode == code;
+
+                                      return InkWell(
+                                        onTap: () =>
+                                            _selectCountry(country.code),
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: selected
+                                                ? AppColors.accent.withValues(
+                                                    alpha: 0.18,
+                                                  )
+                                                : const Color(0xFF2C2118),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            border: Border.all(
+                                              color: selected
+                                                  ? AppColors.accent
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.07,
+                                                    ),
+                                            ),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 13,
+                                              vertical: 11,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    _countryLabel(country),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      color:
+                                                          AppColors.textPrimary,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Text(
+                                                  code,
+                                                  style: const TextStyle(
+                                                    color: Color(0xFFBDAA98),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                            ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 30),
                       _GuideFilterSection(
@@ -1197,21 +1594,139 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                       const SizedBox(height: 30),
                       _GuideFilterSection(
                         title: l10n.guidesFilterLanguage,
-                        child: Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            for (final code in _guideLanguageFilterCodes)
-                              _GuideFilterChip(
-                                label: localizedGuideLanguageLabel(
-                                  l10n,
-                                  code,
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2C2118),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
                                 ),
-                                selected: _filters.languageCodes.contains(
-                                  code,
-                                ),
-                                onTap: () => _toggleLanguage(code),
                               ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.translate_rounded,
+                                      color: AppColors.accent,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        selectedLanguage ??
+                                            l10n.guidesFilterLanguageAll,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_filters.languageCodes.isNotEmpty)
+                                      IconButton(
+                                        tooltip: l10n.guidesFiltersClear,
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed: () => _setFilters(
+                                          _filters.copyWith(
+                                            languageCodes: const <String>{},
+                                          ),
+                                        ),
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          color: Color(0xFFBDAA98),
+                                          size: 20,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _languageSearchController,
+                              cursorColor: AppColors.accent,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: l10n.guidesFilterLanguageSearchHint,
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF9D8877),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: AppColors.accent,
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFF171009),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.accent,
+                                    width: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (_languageSearchQuery.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              if (visibleLanguages.isEmpty)
+                                Text(
+                                  l10n.guidesFilterLanguageNoResults,
+                                  style: const TextStyle(
+                                    color: Color(0xFFBDAA98),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                )
+                              else
+                                Column(
+                                  children: [
+                                    for (final code in visibleLanguages) ...[
+                                      _GuideLanguageOptionRow(
+                                        label: localizedGuideLanguageLabel(
+                                          l10n,
+                                          code,
+                                        ),
+                                        code: code.toUpperCase(),
+                                        selected:
+                                            _filters.languageCodes.contains(
+                                          code,
+                                        ),
+                                        onTap: () => _selectLanguage(code),
+                                      ),
+                                      if (code != visibleLanguages.last)
+                                        const SizedBox(height: 8),
+                                    ],
+                                  ],
+                                ),
+                            ],
                           ],
                         ),
                       ),
@@ -1332,6 +1847,69 @@ class _GuideFilterChip extends StatelessWidget {
               fontSize: 15,
               fontWeight: FontWeight.w800,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GuideLanguageOptionRow extends StatelessWidget {
+  const _GuideLanguageOptionRow({
+    required this.label,
+    required this.code,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String code;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.accent.withValues(alpha: 0.18)
+              : const Color(0xFF2C2118),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected
+                ? AppColors.accent
+                : Colors.white.withValues(alpha: 0.07),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                code,
+                style: const TextStyle(
+                  color: Color(0xFFBDAA98),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
         ),
       ),

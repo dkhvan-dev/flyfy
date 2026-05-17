@@ -2151,6 +2151,16 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionsFilterLanguage => 'Тіл';
 
   @override
+  String get excursionsFilterLanguageAll => 'Барлық тілдер';
+
+  @override
+  String get excursionsFilterLanguageSearchHint =>
+      'Тіл немесе код бойынша іздеу';
+
+  @override
+  String get excursionsFilterLanguageNoResults => 'Тіл табылмады';
+
+  @override
   String get excursionsLoadFailed => 'Экскурсияларды жүктеу мүмкін болмады';
 
   @override
@@ -2189,10 +2199,29 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guidesFiltersClear => 'Тазалау';
 
   @override
+  String get guidesFilterCountryAll => 'Барлық елдер';
+
+  @override
+  String get guidesFilterCountrySearchHint =>
+      'Ел, код немесе телефон бойынша іздеу';
+
+  @override
+  String get guidesFilterCountryNoResults => 'Ел табылмады';
+
+  @override
   String get guidesFilterExpertise => 'Мамандану';
 
   @override
   String get guidesFilterLanguage => 'Тіл';
+
+  @override
+  String get guidesFilterLanguageAll => 'Барлық тілдер';
+
+  @override
+  String get guidesFilterLanguageSearchHint => 'Тілді немесе кодты іздеу';
+
+  @override
+  String get guidesFilterLanguageNoResults => 'Тіл табылмады';
 
   @override
   String get guidesFilterRating => 'Рейтинг';
@@ -2657,8 +2686,11 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createExcursionAddTimeSlot => 'Уақыт слотын қосу';
 
   @override
+  String get createExcursionEditTimeSlot => 'Уақыт слотын өңдеу';
+
+  @override
   String get createExcursionItineraryEmpty =>
-      'Маршруттың кемінде бір пунктін қосыңыз. Ол туристерге экскурсия мәліметінде көрсетіледі.';
+      'Кемінде екі маршрут пунктін қосыңыз. Олар туристерге экскурсия мәліметінде көрсетіледі.';
 
   @override
   String get createExcursionAutosaveHint =>
@@ -2666,7 +2698,40 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createExcursionItineraryValidation =>
-      'Маршруттың кемінде бір толық слотын қосыңыз';
+      'Маршрут пунктінің уақытын, атауын және сипаттамасын толтырыңыз';
+
+  @override
+  String createExcursionItineraryMinSlotsValidation(Object count) {
+    return 'Кемінде $count маршрут пунктін қосыңыз';
+  }
+
+  @override
+  String createExcursionItineraryDescriptionMinLengthValidation(Object count) {
+    return 'Маршрут пунктінің сипаттамасы кемінде $count таңба болуы керек';
+  }
+
+  @override
+  String get createExcursionStartOffsetValidation =>
+      'Маршрут пунктінің басталу уақытын көрсетіңіз';
+
+  @override
+  String get createExcursionItineraryTitleValidation =>
+      'Маршрут пунктінің атауы кемінде 2 таңба болуы керек';
+
+  @override
+  String createExcursionOffsetMinutesShort(Object minutes) {
+    return '+$minutes мин';
+  }
+
+  @override
+  String createExcursionOffsetHoursShort(Object hours) {
+    return '+$hours сағ';
+  }
+
+  @override
+  String createExcursionOffsetHoursMinutesShort(Object hours, Object minutes) {
+    return '+$hours сағ $minutes мин';
+  }
 
   @override
   String get createExcursionDurationLabel => 'Ұзақтығы';
@@ -2714,6 +2779,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String createExcursionLanguagesPickerHint(Object count) {
     return '$count тілге дейін таңдауға болады';
   }
+
+  @override
+  String get createExcursionLanguagesSearchHint =>
+      'Тіл немесе код бойынша іздеу';
+
+  @override
+  String get createExcursionLanguagesNoResults => 'Тіл табылмады';
 
   @override
   String createExcursionLanguagesLimitValidation(Object count) {

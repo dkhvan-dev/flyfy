@@ -150,6 +150,48 @@ void main() {
     },
   );
 
+  test('excursions language filter uses searchable single-select field',
+      () async {
+    final source = await File(
+      'lib/screens/excursions/excursions_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('_languageSearchController'));
+    expect(source, contains('_handleLanguageSearchChanged'));
+    expect(source, contains('_selectLanguage(String code)'));
+    expect(source, contains('_selectedLanguage(AppLocalizations l10n)'));
+    expect(source, contains('_visibleLanguages(AppLocalizations l10n)'));
+    expect(source, contains('_languageSearchHaystack('));
+    expect(source, contains('excursionsFilterLanguageAll'));
+    expect(source, contains('excursionsFilterLanguageSearchHint'));
+    expect(source, contains('excursionsFilterLanguageNoResults'));
+    expect(source, contains('_ExcursionsLanguageOptionRow'));
+    expect(source, isNot(contains('void _toggleLanguage(String code)')));
+
+    final languageSectionStart = source.indexOf(
+      'title: l10n.excursionsFilterLanguage',
+    );
+    final endMarker = source.indexOf(
+      'Padding(\n                padding: EdgeInsets.fromLTRB',
+      languageSectionStart,
+    );
+    expect(languageSectionStart, isNonNegative);
+    expect(endMarker, greaterThan(languageSectionStart));
+
+    final languageSection = source.substring(
+      languageSectionStart,
+      endMarker,
+    );
+    expect(languageSection, contains('TextField'));
+    expect(languageSection, contains('selectedLanguage ??'));
+    expect(languageSection, contains('l10n.excursionsFilterLanguageAll'));
+    expect(
+        languageSection, contains('l10n.excursionsFilterLanguageSearchHint'));
+    expect(languageSection, contains('l10n.excursionsFilterLanguageNoResults'));
+    expect(languageSection, contains('_ExcursionsLanguageOptionRow'));
+    expect(languageSection, isNot(contains('Wrap(')));
+  });
+
   test('router exposes excursions list as a public route', () async {
     final routerSource = await File(
       'lib/core/router/app_router.dart',

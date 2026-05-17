@@ -51,6 +51,19 @@ String guideRoleLabel(AppLocalizations l10n, PublicGuideVm guide) {
   return l10n.guidesRoleLocalExpert;
 }
 
+String guideExcursionLanguageLabel(AppLocalizations l10n, PublicGuideVm guide) {
+  final labels = <String>[];
+  final seenCodes = <String>{};
+
+  for (final rawCode in guide.excursionLanguageCodes) {
+    final code = rawCode.trim().toLowerCase();
+    if (code.isEmpty || !seenCodes.add(code)) continue;
+    labels.add(localizedGuideLanguageLabel(l10n, code));
+  }
+
+  return labels.join(', ');
+}
+
 List<String> guideServiceLabels(AppLocalizations l10n, PublicGuideVm guide) {
   return [
     if (guide.isPrivateGuideAvailable) l10n.guidesFilterPrivateExcursions,

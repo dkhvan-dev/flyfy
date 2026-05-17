@@ -71,22 +71,75 @@ class GuideDiscoveryApi {
         .whereType<Map<String, dynamic>>()
         .map(PublicGuideVm.fromJson)
         .toList(growable: false);
+    final enrichedGuides = await _withExcursionLanguageCodes(guides);
 
     if (data is! Map<String, dynamic>) {
       return PublicGuidesPage(
-        items: guides,
-        total: guides.length,
+        items: enrichedGuides,
+        total: enrichedGuides.length,
         limit: limit,
         offset: offset,
       );
     }
 
     return PublicGuidesPage(
-      items: guides,
-      total: _int(data['total']) ?? guides.length,
+      items: enrichedGuides,
+      total: _int(data['total']) ?? enrichedGuides.length,
       limit: _int(data['limit']) ?? limit,
       offset: _int(data['offset']) ?? offset,
     );
+  }
+
+  Future<List<PublicGuideVm>> _withExcursionLanguageCodes(
+    List<PublicGuideVm> guides,
+  ) async {
+    final guideUserIds = _compactCodes(guides.map((guide) => guide.userId));
+    if (guideUserIds.isEmpty) return guides;
+
+    try {
+      final response = await _apiClient.dio.get(
+        '/guides/excursion-languages',
+        queryParameters: {'guideUserIds': guideUserIds.join(',')},
+        options: Options(extra: const {'requiresAuth': false}),
+      );
+      final languagesByGuideUserId =
+          _parseExcursionLanguageResponse(response.data);
+      if (languagesByGuideUserId.isEmpty) return guides;
+
+      return guides.map((guide) {
+        final languages = languagesByGuideUserId[guide.userId.trim()];
+        if (languages == null) return guide;
+        return guide.copyWith(excursionLanguageCodes: languages);
+      }).toList(growable: false);
+    } on DioException {
+      return guides;
+    } on FormatException {
+      return guides;
+    }
+  }
+
+  Map<String, List<String>> _parseExcursionLanguageResponse(dynamic data) {
+    final items = data is Map<String, dynamic>
+        ? data['items'] as List<dynamic>? ?? const []
+        : const [];
+    final result = <String, List<String>>{};
+
+    for (final item in items.whereType<Map<String, dynamic>>()) {
+      final guideUserId = item['guideUserId']?.toString().trim() ?? '';
+      if (guideUserId.isEmpty) continue;
+
+      final rawLanguageCodes = item['languageCodes'];
+      if (rawLanguageCodes is! List) continue;
+
+      final languages = _compactCodes(
+        rawLanguageCodes.map((value) => value.toString()),
+        lowercase: true,
+      );
+      if (languages.isEmpty) continue;
+      result[guideUserId] = languages;
+    }
+
+    return result;
   }
 }
 
@@ -104,11 +157,12 @@ class PublicGuidesPage {
   final int offset;
 }
 
-List<String> _compactCodes(Iterable<String> codes) {
+List<String> _compactCodes(Iterable<String> codes, {bool lowercase = false}) {
   final result = <String>[];
   final seen = <String>{};
   for (final code in codes) {
-    final normalized = code.trim();
+    final trimmed = code.trim();
+    final normalized = lowercase ? trimmed.toLowerCase() : trimmed;
     if (normalized.isEmpty || !seen.add(normalized)) continue;
     result.add(normalized);
   }

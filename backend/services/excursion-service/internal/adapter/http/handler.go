@@ -38,6 +38,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/excursions", h.ListExcursions)
 	mux.HandleFunc("GET /v1/excursions/{id}", h.GetExcursion)
 	mux.HandleFunc("GET /v1/excursions/{id}/cover", h.GetExcursionCover)
+	mux.HandleFunc("GET /v1/guides/excursion-languages", h.ListGuideExcursionLanguages)
 
 	mux.HandleFunc("POST /v1/me/excursions", h.CreateExcursion)
 	mux.HandleFunc("GET /v1/me/excursions", h.ListMyExcursions)
@@ -218,6 +219,19 @@ func (h *Handler) ListExcursionProductOffers(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	writeJSON(w, http.StatusOK, toExcursionOfferListResponse(aggregates, requestedLimit))
+}
+
+func (h *Handler) ListGuideExcursionLanguages(w http.ResponseWriter, r *http.Request) {
+	guideUserIDs, ok := parseGuideUserIDs(w, r.URL.Query().Get("guideUserIds"))
+	if !ok {
+		return
+	}
+	languages, err := h.useCase.ListGuideExcursionLanguageCodes(r.Context(), guideUserIDs)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list guide excursion languages")
+		return
+	}
+	writeJSON(w, http.StatusOK, toGuideExcursionLanguageListResponse(guideUserIDs, languages))
 }
 
 func (h *Handler) ListMyExcursions(w http.ResponseWriter, r *http.Request) {
@@ -754,6 +768,23 @@ func toExcursionOfferResponse(aggregate *app.ExcursionOfferAggregate) dto.Excurs
 	}
 }
 
+func toGuideExcursionLanguageListResponse(guideUserIDs []uuid.UUID, languages map[uuid.UUID][]string) dto.GuideExcursionLanguageListResponse {
+	resp := dto.GuideExcursionLanguageListResponse{
+		Items: make([]dto.GuideExcursionLanguageResponse, 0, len(guideUserIDs)),
+	}
+	for _, guideUserID := range guideUserIDs {
+		codes := languages[guideUserID]
+		if len(codes) == 0 {
+			continue
+		}
+		resp.Items = append(resp.Items, dto.GuideExcursionLanguageResponse{
+			GuideUserID:   guideUserID.String(),
+			LanguageCodes: append([]string(nil), codes...),
+		})
+	}
+	return resp
+}
+
 func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionResponse {
 	item := aggregate.Excursion
 	coverImageURL := (*string)(nil)
@@ -851,7 +882,8 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, app.ErrExcursionOfferNotFound),
 		errors.Is(err, app.ErrExcursionCoverFileNotFound):
 		writeError(w, http.StatusNotFound, err.Error())
-	case errors.Is(err, model.ErrExcursionAlreadyArchived):
+	case errors.Is(err, model.ErrExcursionAlreadyArchived),
+		errors.Is(err, model.ErrExcursionGuideLandmarkAlreadyExists):
 		writeError(w, http.StatusConflict, err.Error())
 	case errors.Is(err, app.ErrExcursionTranslationFailed):
 		writeError(w, http.StatusServiceUnavailable, err.Error())
@@ -1022,6 +1054,37 @@ func splitCSV(v string) []string {
 		result = append(result, part)
 	}
 	return result
+}
+
+func parseGuideUserIDs(w http.ResponseWriter, value string) ([]uuid.UUID, bool) {
+	const maxGuideUserIDs = 100
+	parts := strings.Split(value, ",")
+	result := make([]uuid.UUID, 0, len(parts))
+	seen := make(map[uuid.UUID]struct{}, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		guideUserID, err := uuid.Parse(part)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid guide user id")
+			return nil, false
+		}
+		if guideUserID == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[guideUserID]; ok {
+			continue
+		}
+		if len(result) >= maxGuideUserIDs {
+			writeError(w, http.StatusBadRequest, "too many guide user ids")
+			return nil, false
+		}
+		seen[guideUserID] = struct{}{}
+		result = append(result, guideUserID)
+	}
+	return result, true
 }
 
 func formatOptionalTime(v *time.Time) *string {

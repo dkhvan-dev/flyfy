@@ -218,6 +218,8 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 
 		result[userID] = app.PublicUserProfile{
 			UserID:       userID,
+			FirstName:    optionalString(item.GetFirstName()),
+			LastName:     optionalString(item.GetLastName()),
 			DisplayName:  optionalString(item.GetDisplayName()),
 			AvatarFileID: avatarFileID,
 			CountryCode:  optionalString(item.GetCountryCode()),

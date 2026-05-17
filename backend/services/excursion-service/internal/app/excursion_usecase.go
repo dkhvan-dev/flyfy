@@ -153,6 +153,13 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 	if input.LandmarkID == nil || *input.LandmarkID == uuid.Nil {
 		return nil, ErrExcursionAttractionRequired
 	}
+	exists, err := u.repo.HasActiveExcursionForGuideLandmark(ctx, permission.GuideUserID, *input.LandmarkID)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, model.ErrExcursionGuideLandmarkAlreadyExists
+	}
 
 	if err = u.validateCoverFiles(ctx, input.CoverFileID, input.ProductCoverFileID); err != nil {
 		return nil, err
@@ -454,6 +461,18 @@ func (u *ExcursionUseCase) ListExcursionProductOffers(ctx context.Context, filte
 		})
 	}
 	return result, nil
+}
+
+func (u *ExcursionUseCase) ListGuideExcursionLanguageCodes(ctx context.Context, guideUserIDs []uuid.UUID) (map[uuid.UUID][]string, error) {
+	normalizedIDs := uniqueUUIDs(guideUserIDs)
+	if len(normalizedIDs) == 0 {
+		return map[uuid.UUID][]string{}, nil
+	}
+	languages, err := u.repo.ListExcursionLanguageCodesByGuideUserIDs(ctx, normalizedIDs)
+	if err != nil {
+		return nil, fmt.Errorf("list guide excursion languages: %w", err)
+	}
+	return languages, nil
 }
 
 func (u *ExcursionUseCase) CreateExcursionBooking(ctx context.Context, input CreateExcursionBookingInput) (*model.ExcursionBooking, error) {
@@ -908,6 +927,22 @@ func normalizeUniqueLower(values []string) []string {
 		result = append(result, normalized)
 	}
 	sort.Strings(result)
+	return result
+}
+
+func uniqueUUIDs(values []uuid.UUID) []uuid.UUID {
+	result := make([]uuid.UUID, 0, len(values))
+	seen := make(map[uuid.UUID]struct{}, len(values))
+	for _, value := range values {
+		if value == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
 	return result
 }
 

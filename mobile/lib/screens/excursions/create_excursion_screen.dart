@@ -39,6 +39,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   static const double _stepBackSwipeMinVelocity = 700;
   static const int _maxCoverUploadBytes = 20 * 1024 * 1024;
   static const int _maxExcursionLanguages = 5;
+  static const int _minItinerarySlots = 2;
 
   final _pageController = PageController();
   final _imagePicker = ImagePicker();
@@ -74,10 +75,20 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   bool _coverChanged = false;
   bool _isCoverUploading = false;
   String? _coverUploadErrorMessage;
+  int _coverUploadGeneration = 0;
   bool _isTrackingStepBackSwipe = false;
   double _stepBackSwipeDistance = 0;
   int _mapSelectionRequestSerial = 0;
   String? _stepErrorText;
+  String? _countryErrorText;
+  String? _landmarkErrorText;
+  String? _itineraryErrorText;
+  String? _durationErrorText;
+  String? _groupSizeErrorText;
+  String? _languagesErrorText;
+  String? _meetingPointErrorText;
+  String? _priceErrorText;
+  String? _currencyErrorText;
   final Set<String> _selectedLanguageCodes = {'en', 'ru'};
   final List<_ExcursionIncludedItemDraft> _includedItems = [];
 
@@ -119,6 +130,47 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   bool get _isEditMode => (widget.excursionId ?? '').trim().isNotEmpty;
+
+  bool get _hasFieldValidationErrors =>
+      _countryErrorText != null ||
+      _landmarkErrorText != null ||
+      _itineraryErrorText != null ||
+      _durationErrorText != null ||
+      _groupSizeErrorText != null ||
+      _languagesErrorText != null ||
+      _meetingPointErrorText != null ||
+      _priceErrorText != null ||
+      _currencyErrorText != null;
+
+  void _clearFieldValidationErrors() {
+    _countryErrorText = null;
+    _landmarkErrorText = null;
+    _itineraryErrorText = null;
+    _durationErrorText = null;
+    _groupSizeErrorText = null;
+    _languagesErrorText = null;
+    _meetingPointErrorText = null;
+    _priceErrorText = null;
+    _currencyErrorText = null;
+  }
+
+  void _clearOfferMediaErrors() {
+    _countryErrorText = null;
+    _landmarkErrorText = null;
+    _itineraryErrorText = null;
+  }
+
+  void _clearLogisticsErrors() {
+    _durationErrorText = null;
+    _groupSizeErrorText = null;
+    _languagesErrorText = null;
+  }
+
+  void _clearStoryAndPriceErrors() {
+    _meetingPointErrorText = null;
+    _priceErrorText = null;
+    _currencyErrorText = null;
+  }
 
   List<Widget> _visibleStepPages(AppLocalizations l10n, double bottomInset) {
     if (_isEditMode) {
@@ -251,6 +303,15 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   bool _validateCurrentStep() {
     final l10n = AppLocalizations.of(context)!;
+    if (_isEditMode && _currentStep == 0) {
+      _clearOfferMediaErrors();
+    } else if (!_isEditMode && _currentStep == 0) {
+      _clearOfferMediaErrors();
+    } else if (_currentStep == 1) {
+      _clearLogisticsErrors();
+    } else {
+      _clearStoryAndPriceErrors();
+    }
     final error = _isEditMode
         ? _validateEditStep(l10n)
         : switch (_currentStep) {
@@ -277,22 +338,36 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     if (_coverChanged && (_coverFileId ?? '').trim().isEmpty) {
       return l10n.createCoverUploadRetryRequired;
     }
-    if (_itinerary.isEmpty ||
-        _itinerary.any(
-          (item) =>
-              item.title.trim().isEmpty || item.description.trim().isEmpty,
-        )) {
-      return l10n.createExcursionItineraryValidation;
+    return _validateItinerary(l10n);
+  }
+
+  String? _validateItinerary(AppLocalizations l10n) {
+    if (_itinerary.any((item) => item.description.trim().length < 5)) {
+      _itineraryErrorText =
+          l10n.createExcursionItineraryDescriptionMinLengthValidation(5);
+      return _itineraryErrorText;
+    }
+    if (_itinerary.any((item) => item.title.trim().length < 2)) {
+      _itineraryErrorText = l10n.createExcursionItineraryValidation;
+      return _itineraryErrorText;
+    }
+    if (_itinerary.length < _minItinerarySlots) {
+      _itineraryErrorText = l10n.createExcursionItineraryMinSlotsValidation(
+        _minItinerarySlots,
+      );
+      return _itineraryErrorText;
     }
     return null;
   }
 
   String? _validateLandmarkStep(AppLocalizations l10n) {
     if (!_hasSelectedCountry) {
-      return l10n.createExcursionCountryValidation;
+      _countryErrorText = l10n.createExcursionCountryValidation;
+      return _countryErrorText;
     }
     if (!_hasSelectedAttraction) {
-      return l10n.createExcursionLandmarkValidation;
+      _landmarkErrorText = l10n.createExcursionLandmarkValidation;
+      return _landmarkErrorText;
     }
     final offerMediaError = _validateOfferMediaAndItineraryStep(l10n);
     if (offerMediaError != null) {
@@ -306,13 +381,16 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     final groupSize = int.tryParse(_maxGroupSizeCtrl.text.trim());
 
     if (durationMinutes == null || durationMinutes < 15) {
-      return l10n.createExcursionDurationValidation;
+      _durationErrorText = l10n.createExcursionDurationValidation;
+      return _durationErrorText;
     }
     if (groupSize == null || groupSize < 1 || groupSize > 100) {
-      return l10n.createExcursionGroupSizeValidation;
+      _groupSizeErrorText = l10n.createExcursionGroupSizeValidation;
+      return _groupSizeErrorText;
     }
     if (_selectedLanguageCodes.isEmpty) {
-      return l10n.createExcursionLanguagesValidation;
+      _languagesErrorText = l10n.createExcursionLanguagesValidation;
+      return _languagesErrorText;
     }
     return null;
   }
@@ -325,20 +403,47 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       return l10n.createCoverUploadRetryRequired;
     }
     if (_meetingPointCtrl.text.trim().isEmpty) {
-      return l10n.createLocationValidation;
+      _meetingPointErrorText = l10n.createLocationValidation;
+      return _meetingPointErrorText;
     }
     final price = double.tryParse(_priceAmountCtrl.text.trim());
     if (price == null || price < 0) {
-      return l10n.createPriceValidation;
+      _priceErrorText = l10n.createPriceValidation;
+      return _priceErrorText;
     }
     if (_selectedCurrencyCode.trim().isEmpty) {
-      return l10n.createExcursionCurrencyValidation;
+      _currencyErrorText = l10n.createExcursionCurrencyValidation;
+      return _currencyErrorText;
     }
     return null;
   }
 
+  String? _validateAllStepsBeforeSubmit(AppLocalizations l10n) {
+    if (_isEditMode) {
+      final offerMediaError = _validateOfferMediaAndItineraryStep(l10n);
+      if (offerMediaError != null) {
+        return offerMediaError;
+      }
+    } else {
+      final landmarkError = _validateLandmarkStep(l10n);
+      if (landmarkError != null) {
+        return landmarkError;
+      }
+    }
+
+    final logisticsError = _validateLogisticsStep(l10n);
+    if (logisticsError != null) {
+      return logisticsError;
+    }
+    return _validateStoryAndPriceStep(l10n);
+  }
+
   Future<void> _submit() async {
-    if (!_validateCurrentStep() || _isSubmitting) {
+    final l10n = AppLocalizations.of(context)!;
+    _clearFieldValidationErrors();
+    final validationError = _validateAllStepsBeforeSubmit(l10n);
+    if (validationError != null || _isSubmitting) {
+      setState(() => _stepErrorText = validationError);
       return;
     }
 
@@ -353,7 +458,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     if (!mounted) return;
     setState(() => _isSubmitting = false);
 
-    final l10n = AppLocalizations.of(context)!;
     if (saved != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -519,6 +623,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     setState(() {
       if (_selectedLanguageCodes.contains(normalized)) {
         _selectedLanguageCodes.remove(normalized);
+        _languagesErrorText = null;
         _stepErrorText = null;
         return;
       }
@@ -532,6 +637,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       }
 
       _selectedLanguageCodes.add(normalized);
+      _languagesErrorText = null;
       _stepErrorText = null;
     });
   }
@@ -597,6 +703,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _landmarkNameCtrl.clear();
       _cityNameCtrl.clear();
       _mapUrlCtrl.clear();
+      _countryErrorText = null;
+      _landmarkErrorText = null;
       _stepErrorText = null;
     });
   }
@@ -609,6 +717,15 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   bool get _hasSelectedAttraction =>
       (_selectedLandmarkId ?? '').trim().isNotEmpty;
+
+  void _replaceCustomCoverWithAttractionCover() {
+    _coverUploadGeneration += 1;
+    _coverPreviewBytes = null;
+    _coverFileId = null;
+    _coverChanged = false;
+    _coverUploadErrorMessage = null;
+    _isCoverUploading = false;
+  }
 
   String? get _effectiveCoverFileId {
     final customCover = (_coverFileId ?? '').trim();
@@ -729,6 +846,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _selectedLongitude = position.longitude;
       _mapUrlCtrl.text = mapUrl;
       _meetingPointCtrl.text = coordinateLabel;
+      _meetingPointErrorText = null;
       _stepErrorText = null;
     });
     _mapController.move(position, 15);
@@ -745,6 +863,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         if (address.isNotEmpty) {
           setState(() {
             _meetingPointCtrl.text = address;
+            _meetingPointErrorText = null;
             _stepErrorText = null;
           });
         }
@@ -791,8 +910,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     }
 
     final normalizedName = _normalizeCoverFileName(picked.name, contentType);
+    final uploadGeneration = _coverUploadGeneration + 1;
 
     setState(() {
+      _coverUploadGeneration = uploadGeneration;
       _coverChanged = true;
       _coverPreviewBytes = bytes;
       _coverFileId = null;
@@ -815,20 +936,20 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       );
       await _fileApi.completeUpload(upload.fileId);
 
-      if (!mounted) return;
+      if (!mounted || uploadGeneration != _coverUploadGeneration) return;
       setState(() {
         _coverFileId = upload.fileId;
         _coverUploadErrorMessage = null;
         _isCoverUploading = false;
       });
     } on DioException catch (e) {
-      if (!mounted) return;
+      if (!mounted || uploadGeneration != _coverUploadGeneration) return;
       setState(() {
         _coverUploadErrorMessage = DioErrorMapper.toMessage(e);
         _isCoverUploading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || uploadGeneration != _coverUploadGeneration) return;
       setState(() {
         _coverUploadErrorMessage = l10n.createCoverUploadFailed;
         _isCoverUploading = false;
@@ -891,7 +1012,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
     final l10n = AppLocalizations.of(context)!;
     if (!_hasSelectedCountry) {
-      setState(() => _stepErrorText = l10n.createExcursionCountryValidation);
+      setState(() {
+        _countryErrorText = l10n.createExcursionCountryValidation;
+        _stepErrorText = l10n.createExcursionCountryValidation;
+      });
       return;
     }
 
@@ -932,6 +1056,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           (result.coverImageUrl ?? '').trim().isEmpty
               ? null
               : result.coverImageUrl!.trim();
+      _replaceCustomCoverWithAttractionCover();
       _productTranslations = _copyLocationTranslations(result.translations);
       if (result.categorySlug.trim().isNotEmpty) {
         _selectedCategorySlug = result.categorySlug.trim();
@@ -944,28 +1069,39 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       if (_meetingPointCtrl.text.trim().isEmpty) {
         _meetingPointCtrl.text = result.name;
       }
+      _countryErrorText = null;
+      _landmarkErrorText = null;
       _stepErrorText = null;
     });
     _moveMapToSelection();
   }
 
-  Future<void> _openItineraryEditor() async {
+  Future<void> _openItineraryEditor({_ExcursionItineraryDraft? item}) async {
     final l10n = AppLocalizations.of(context)!;
+    final itemIndex = item == null ? -1 : _itinerary.indexOf(item);
     final result = await showModalBottomSheet<_ExcursionItineraryDraft>(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _AddItinerarySlotSheet(l10n: l10n),
+      builder: (context) => _AddItinerarySlotSheet(
+        l10n: l10n,
+        initialItem: item,
+      ),
     );
     if (result == null) return;
 
     setState(() {
-      _itinerary.add(result);
+      if (itemIndex >= 0 && itemIndex < _itinerary.length) {
+        _itinerary[itemIndex] = result;
+      } else {
+        _itinerary.add(result);
+      }
       _itinerary.sort(
         (left, right) =>
             left.startOffsetMinutes.compareTo(right.startOffsetMinutes),
       );
+      _itineraryErrorText = null;
       _stepErrorText = null;
     });
   }
@@ -1063,7 +1199,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
                           }
                         },
                       ),
-                      if (_stepErrorText != null)
+                      if (_stepErrorText != null && !_hasFieldValidationErrors)
                         _InlineError(message: _stepErrorText!),
                       Expanded(
                         child: PageView(
@@ -1149,7 +1285,10 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _SectionHeader(title: l10n.createExcursionDetailedItinerary),
       const SizedBox(height: 12),
       if (_itinerary.isEmpty) ...[
-        _ItineraryEmptyState(message: l10n.createExcursionItineraryEmpty),
+        _ItineraryEmptyState(
+          message: l10n.createExcursionItineraryEmpty,
+          errorText: _itineraryErrorText,
+        ),
         const SizedBox(height: 12),
       ],
       ..._itinerary.map(
@@ -1157,10 +1296,16 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           padding: const EdgeInsets.only(bottom: 10),
           child: _ItinerarySlotCard(
             item: item,
+            hasError: !_isCompleteItineraryDraft(item),
+            onTap: () => _openItineraryEditor(item: item),
             onDelete: () => setState(() => _itinerary.remove(item)),
           ),
         ),
       ),
+      if (_itinerary.isNotEmpty && _itineraryErrorText != null) ...[
+        _InlineFieldError(message: _itineraryErrorText!),
+        const SizedBox(height: 12),
+      ],
       const SizedBox(height: 6),
       _OutlineActionButton(
         icon: Icons.add_rounded,
@@ -1178,6 +1323,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         const SizedBox(height: 12),
         _ExcursionCountryPickerField(
           selectedCode: _selectedCountryCode,
+          errorText: _countryErrorText,
           onTap: _openCountryPicker,
         ),
         const SizedBox(height: 12),
@@ -1185,6 +1331,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           landmarkName: _landmarkNameCtrl.text,
           cityName: _cityNameCtrl.text,
           hasSelection: _hasSelectedAttraction,
+          errorText: _landmarkErrorText,
           onSelectLocation: _hasSelectedCountry ? _openLocationSelector : null,
         ),
         const SizedBox(height: 24),
@@ -1208,8 +1355,14 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
         _ExcursionDurationPickerRow(
           controller: _durationValueCtrl,
           selectedUnit: _selectedDurationUnit,
+          errorText: _durationErrorText,
+          onChanged: (_) => setState(() {
+            _durationErrorText = null;
+            _stepErrorText = null;
+          }),
           onUnitChanged: (unit) => setState(() {
             _selectedDurationUnit = unit;
+            _durationErrorText = null;
             _stepErrorText = null;
           }),
         ),
@@ -1221,6 +1374,11 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           icon: Icons.group_outlined,
           iconColor: AppColors.accent,
           keyboardType: TextInputType.number,
+          errorText: _groupSizeErrorText,
+          onChanged: (_) => setState(() {
+            _groupSizeErrorText = null;
+            _stepErrorText = null;
+          }),
         ),
         const SizedBox(height: 16),
         _ExcursionLanguagePickerField(
@@ -1228,6 +1386,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           maxSelected: _maxExcursionLanguages,
           onToggle: _toggleLanguageCode,
           label: l10n.createExcursionLanguagesLabel,
+          errorText: _languagesErrorText,
         ),
         const SizedBox(height: 26),
         _SectionHeader(title: l10n.createExcursionVisibilityTitle),
@@ -1264,6 +1423,11 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           icon: Icons.location_on_outlined,
           iconColor: AppColors.accent,
           horizontalScroll: true,
+          errorText: _meetingPointErrorText,
+          onChanged: (_) => setState(() {
+            _meetingPointErrorText = null;
+            _stepErrorText = null;
+          }),
         ),
         const SizedBox(height: 12),
         _ExcursionTextField(
@@ -1297,13 +1461,20 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           icon: Icons.payments_outlined,
           iconColor: AppColors.accent,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          errorText: _priceErrorText,
+          onChanged: (_) => setState(() {
+            _priceErrorText = null;
+            _stepErrorText = null;
+          }),
         ),
         const SizedBox(height: 12),
         _CurrencyPickerField(
           label: l10n.createCurrencyLabel,
           selectedCode: _selectedCurrencyCode,
+          errorText: _currencyErrorText,
           onChanged: (value) => setState(() {
             _selectedCurrencyCode = value;
+            _currencyErrorText = null;
             _stepErrorText = null;
           }),
         ),
@@ -1348,11 +1519,15 @@ class _ExcursionDurationPickerRow extends StatelessWidget {
     required this.controller,
     required this.selectedUnit,
     required this.onUnitChanged,
+    this.errorText,
+    this.onChanged,
   });
 
   final TextEditingController controller;
   final _ExcursionDurationUnit selectedUnit;
   final ValueChanged<_ExcursionDurationUnit> onUnitChanged;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1368,6 +1543,8 @@ class _ExcursionDurationPickerRow extends StatelessWidget {
           icon: Icons.schedule_rounded,
           iconColor: AppColors.accent,
           keyboardType: TextInputType.number,
+          errorText: errorText,
+          onChanged: onChanged,
         );
         final unitField = _DurationUnitPickerField(
           label: l10n.createExcursionDurationUnitLabel,
@@ -1498,6 +1675,10 @@ class _ExcursionItineraryDraft {
   final int? durationMinutes;
   final String title;
   final String description;
+}
+
+bool _isCompleteItineraryDraft(_ExcursionItineraryDraft item) {
+  return item.title.trim().length >= 2 && item.description.trim().length >= 5;
 }
 
 enum _ExcursionIncludedItemType {
@@ -1702,62 +1883,347 @@ ExcursionCountryOption? findExcursionCountryOption(String? code) {
   return null;
 }
 
-class _ExcursionLanguagePickerField extends StatelessWidget {
+const _excursionLanguagePickerCodes = [
+  'en',
+  'ru',
+  'kk',
+  'fr',
+  'ja',
+  'de',
+  'es',
+  'tr',
+];
+
+String _normalizeLanguageSearchText(String value) {
+  return value
+      .trim()
+      .toLowerCase()
+      .replaceAll('ё', 'е')
+      .replaceAll(RegExp(r'[@_.,;:\/\\|()\[\]{}<>+\-=]+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+String _languageSearchHaystack(AppLocalizations l10n, String code) {
+  final aliases = switch (code.trim().toLowerCase()) {
+    'en' => 'eng english английский анг ағылшын',
+    'ru' => 'rus russian русский рус орыс',
+    'kk' => 'kz kaz kazakh казахский қазақ қазақша',
+    'fr' => 'fre french французский француз',
+    'ja' => 'jp japanese японский япон жапон',
+    'de' => 'ger german немецкий неміс',
+    'es' => 'spa spanish испанский испан',
+    'tr' => 'tur turkish турецкий түрік',
+    _ => '',
+  };
+
+  return _normalizeLanguageSearchText(
+    '$code ${localizedExcursionLanguageLabel(l10n, code)} $aliases',
+  );
+}
+
+class _ExcursionLanguagePickerField extends StatefulWidget {
   const _ExcursionLanguagePickerField({
     required this.selectedCodes,
     required this.maxSelected,
     required this.onToggle,
     required this.label,
+    this.errorText,
   });
-
-  static const _availableCodes = ['en', 'ru', 'kk', 'fr', 'ja'];
 
   final Set<String> selectedCodes;
   final int maxSelected;
   final ValueChanged<String> onToggle;
   final String label;
+  final String? errorText;
+
+  @override
+  State<_ExcursionLanguagePickerField> createState() =>
+      _ExcursionLanguagePickerFieldState();
+}
+
+class _ExcursionLanguagePickerFieldState
+    extends State<_ExcursionLanguagePickerField> {
+  late final TextEditingController _languageSearchController;
+  String _languageSearchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _languageSearchController = TextEditingController()
+      ..addListener(_handleLanguageSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _languageSearchController
+      ..removeListener(_handleLanguageSearchChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleLanguageSearchChanged() {
+    final nextQuery = _languageSearchController.text.trim();
+    if (nextQuery == _languageSearchQuery) return;
+
+    setState(() => _languageSearchQuery = nextQuery);
+  }
+
+  List<String> _visibleLanguages(AppLocalizations l10n) {
+    final query = _normalizeLanguageSearchText(_languageSearchQuery);
+    if (query.isEmpty) return const [];
+
+    final tokens = query
+        .split(' ')
+        .where((token) => token.trim().isNotEmpty)
+        .toList(growable: false);
+
+    return _excursionLanguagePickerCodes.where((code) {
+      final haystack = _languageSearchHaystack(l10n, code);
+      return tokens.every(haystack.contains);
+    }).toList(growable: false);
+  }
+
+  List<String> _selectedLanguages() {
+    final ordered = [
+      for (final code in _excursionLanguagePickerCodes)
+        if (widget.selectedCodes.contains(code)) code,
+    ];
+    final known = ordered.toSet();
+    ordered.addAll(
+      widget.selectedCodes
+          .where((code) => !known.contains(code))
+          .map((code) => code.trim().toLowerCase())
+          .where((code) => code.isNotEmpty),
+    );
+    return ordered;
+  }
+
+  void _selectLanguage(String code) {
+    final normalized = code.trim().toLowerCase();
+    if (normalized.isEmpty) return;
+
+    final isSelected = widget.selectedCodes.contains(normalized);
+    final canChange =
+        isSelected || widget.selectedCodes.length < widget.maxSelected;
+
+    widget.onToggle(normalized);
+
+    if (!canChange) return;
+    _languageSearchController.clear();
+    setState(() => _languageSearchQuery = '');
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final visibleLanguages = _visibleLanguages(l10n);
+    final selectedLanguages = _selectedLanguages();
+    final maxSelected = widget.maxSelected;
 
     return _ExcursionFieldShell(
-      label: label,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFF2D2115),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.10)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+      label: widget.label,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFF2D2115),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: widget.errorText == null
+                    ? AppColors.accent.withValues(alpha: 0.10)
+                    : const Color(0xFFFFB199),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final code in _availableCodes)
-                    _ExcursionLanguageChip(
-                      label: localizedExcursionLanguageLabel(l10n, code),
-                      selected: selectedCodes.contains(code),
-                      disabled: !selectedCodes.contains(code) &&
-                          selectedCodes.length >= maxSelected,
-                      onTap: () => onToggle(code),
+                  TextField(
+                    controller: _languageSearchController,
+                    cursorColor: AppColors.accent,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
+                    decoration: InputDecoration(
+                      hintText: l10n.createExcursionLanguagesSearchHint,
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF9D8877),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: AppColors.accent,
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFF171009),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.06),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                          color: AppColors.accent,
+                          width: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_languageSearchQuery.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    if (visibleLanguages.isEmpty)
+                      Text(
+                        l10n.createExcursionLanguagesNoResults,
+                        style: const TextStyle(
+                          color: Color(0xFFBDAA98),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    else
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 224),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: visibleLanguages.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final code = visibleLanguages[index];
+                            final selected =
+                                widget.selectedCodes.contains(code);
+                            return _ExcursionLanguageOptionRow(
+                              label: localizedExcursionLanguageLabel(
+                                l10n,
+                                code,
+                              ),
+                              code: code.toUpperCase(),
+                              selected: selected,
+                              onTap: () => _selectLanguage(code),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                  if (selectedLanguages.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final code in selectedLanguages)
+                          _ExcursionLanguageChip(
+                            label: localizedExcursionLanguageLabel(l10n, code),
+                            selected: true,
+                            disabled: false,
+                            onTap: () => _selectLanguage(code),
+                          ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Text(
+                    l10n.createExcursionLanguagesPickerHint(maxSelected),
+                    style: const TextStyle(
+                      color: Color(0xFFA99683),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 10),
-              Text(
-                l10n.createExcursionLanguagesPickerHint(maxSelected),
-                style: const TextStyle(
-                  color: Color(0xFFA99683),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (widget.errorText != null)
+            _InlineFieldError(message: widget.errorText!),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExcursionLanguageOptionRow extends StatelessWidget {
+  const _ExcursionLanguageOptionRow({
+    required this.label,
+    required this.code,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String code;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.18)
+                : const Color(0xFF2C2118),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent
+                  : Colors.white.withValues(alpha: 0.07),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Text(
+                  code,
+                  style: const TextStyle(
+                    color: Color(0xFFBDAA98),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (selected) ...[
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.accent,
+                    size: 18,
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -2305,6 +2771,41 @@ class _InlineError extends StatelessWidget {
   }
 }
 
+class _InlineFieldError extends StatelessWidget {
+  const _InlineFieldError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Color(0xFFFFB199),
+            size: 16,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Color(0xFFFFB199),
+                fontSize: 12,
+                height: 1.3,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.title,
@@ -2349,10 +2850,12 @@ class _ExcursionCountryPickerField extends StatelessWidget {
   const _ExcursionCountryPickerField({
     required this.selectedCode,
     required this.onTap,
+    this.errorText,
   });
 
   final String? selectedCode;
   final VoidCallback onTap;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -2362,47 +2865,56 @@ class _ExcursionCountryPickerField extends StatelessWidget {
 
     return _ExcursionFieldShell(
       label: l10n.createCountryLabel,
-      child: Material(
-        color: const Color(0xFF2D2115),
-        borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 62),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            decoration: BoxDecoration(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Material(
+            color: const Color(0xFF2D2115),
+            borderRadius: BorderRadius.circular(24),
+            child: InkWell(
+              onTap: onTap,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.10),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.public_rounded, color: AppColors.accent),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    selectedLabel ?? l10n.createExcursionSelectCountryFirst,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: selectedLabel == null
-                          ? const Color(0xFFA99683)
-                          : const Color(0xFFFFF8F0),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 62),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: errorText == null
+                        ? AppColors.accent.withValues(alpha: 0.10)
+                        : const Color(0xFFFFB199),
                   ),
                 ),
-                const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: Color(0xFFA99683),
+                child: Row(
+                  children: [
+                    const Icon(Icons.public_rounded, color: AppColors.accent),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        selectedLabel ?? l10n.createExcursionSelectCountryFirst,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selectedLabel == null
+                              ? const Color(0xFFA99683)
+                              : const Color(0xFFFFF8F0),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(0xFFA99683),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+          if (errorText != null) _InlineFieldError(message: errorText!),
+        ],
       ),
     );
   }
@@ -2600,12 +3112,14 @@ class _LandmarkSelectionCard extends StatelessWidget {
     required this.cityName,
     required this.hasSelection,
     required this.onSelectLocation,
+    this.errorText,
   });
 
   final String landmarkName;
   final String cityName;
   final bool hasSelection;
   final VoidCallback? onSelectLocation;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -2623,121 +3137,132 @@ class _LandmarkSelectionCard extends StatelessWidget {
             ? l10n.createExcursionSelectCountryFirst
             : l10n.createExcursionAttractionCatalogHint;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF9A673A), Color(0xFF533018)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.24),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.12),
-                  ),
-                  child: const Icon(
-                    Icons.place_rounded,
-                    color: Color(0xFFFFE5C2),
-                    size: 40,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFFFF5E8),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          height: 1.16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFFFE5C2),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          height: 1.28,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF9A673A), Color(0xFF533018)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: onSelectLocation,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.10),
-                  disabledForegroundColor: Colors.white.withValues(alpha: 0.42),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+            border: errorText == null
+                ? null
+                : Border.all(color: const Color(0xFFFFB199), width: 1.4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.24),
+                blurRadius: 28,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.travel_explore_rounded),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        hasSelection
-                            ? l10n.change
-                            : l10n.excursionSelectLocationAttractionSection,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                      child: const Icon(
+                        Icons.place_rounded,
+                        color: Color(0xFFFFE5C2),
+                        size: 40,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFFFFF5E8),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              height: 1.16,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFFFFE5C2),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              height: 1.28,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onSelectLocation,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      disabledBackgroundColor:
+                          Colors.white.withValues(alpha: 0.10),
+                      disabledForegroundColor:
+                          Colors.white.withValues(alpha: 0.42),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.travel_explore_rounded),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            hasSelection
+                                ? l10n.change
+                                : l10n.excursionSelectLocationAttractionSection,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        if (errorText != null) _InlineFieldError(message: errorText!),
+      ],
     );
   }
 }
@@ -3041,144 +3566,171 @@ class _DashedExcursionCoverBorderPainter extends CustomPainter {
 }
 
 class _ItineraryEmptyState extends StatelessWidget {
-  const _ItineraryEmptyState({required this.message});
+  const _ItineraryEmptyState({required this.message, this.errorText});
 
   final String message;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF4A321D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.route_rounded,
-                color: AppColors.accent,
-                size: 20,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFF4A321D),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: errorText == null
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0xFFFFB199),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(
-                  color: Color(0xFFFFE3B8),
-                  fontSize: 14,
-                  height: 1.35,
-                  fontWeight: FontWeight.w700,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.route_rounded,
+                    color: AppColors.accent,
+                    size: 20,
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(
+                      color: Color(0xFFFFE3B8),
+                      fontSize: 14,
+                      height: 1.35,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        if (errorText != null) _InlineFieldError(message: errorText!),
+      ],
     );
   }
 }
 
 class _ItinerarySlotCard extends StatelessWidget {
-  const _ItinerarySlotCard({required this.item, this.onDelete});
+  const _ItinerarySlotCard({
+    required this.item,
+    required this.onTap,
+    this.hasError = false,
+    this.onDelete,
+  });
 
   final _ExcursionItineraryDraft item;
+  final VoidCallback onTap;
+  final bool hasError;
   final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF4A321D),
+    return Material(
+      color: const Color(0xFF4A321D),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                _formatOffset(item.startOffsetMinutes),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFFFFDEB6),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: hasError
+                ? Border.all(color: const Color(0xFFFFB199), width: 1.2)
+                : null,
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  _formatOffset(context, item.startOffsetMinutes),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFFFFDEB6),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFC4A27D),
-                      fontSize: 12,
-                      height: 1.25,
+                    const SizedBox(height: 4),
+                    Text(
+                      item.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFC4A27D),
+                        fontSize: 12,
+                        height: 1.25,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            IconButton(
-              onPressed: onDelete,
-              icon: const Icon(Icons.close_rounded),
-              color: onDelete == null
-                  ? const Color(0xFF8F765B)
-                  : const Color(0xFFFFDEB6),
-              tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-            ),
-          ],
+              IconButton(
+                onPressed: onDelete,
+                icon: const Icon(Icons.close_rounded),
+                color: onDelete == null
+                    ? const Color(0xFF8F765B)
+                    : const Color(0xFFFFDEB6),
+                tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  static String _formatOffset(int minutes) {
+  static String _formatOffset(BuildContext context, int minutes) {
+    final l10n = AppLocalizations.of(context)!;
     final hours = minutes ~/ 60;
     final rest = minutes % 60;
     if (hours == 0) {
-      return '+${rest}m';
+      return l10n.createExcursionOffsetMinutesShort(rest);
     }
     if (rest == 0) {
-      return '+${hours}h';
+      return l10n.createExcursionOffsetHoursShort(hours);
     }
-    return '+${hours}h ${rest}m';
+    return l10n.createExcursionOffsetHoursMinutesShort(hours, rest);
   }
 }
 
@@ -3216,6 +3768,8 @@ class _ExcursionTextField extends StatelessWidget {
     required this.hint,
     required this.icon,
     this.iconColor,
+    this.errorText,
+    this.onChanged,
     this.keyboardType,
     this.minLines = 1,
     this.maxLines = 1,
@@ -3227,6 +3781,8 @@ class _ExcursionTextField extends StatelessWidget {
   final String hint;
   final IconData icon;
   final Color? iconColor;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
   final TextInputType? keyboardType;
   final int minLines;
   final int maxLines;
@@ -3243,6 +3799,7 @@ class _ExcursionTextField extends StatelessWidget {
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
+        onChanged: onChanged,
         minLines: effectiveMinLines,
         maxLines: effectiveMaxLines,
         scrollPhysics: horizontalScroll ? const BouncingScrollPhysics() : null,
@@ -3254,8 +3811,15 @@ class _ExcursionTextField extends StatelessWidget {
         ),
         decoration: InputDecoration(
           hintText: hint,
+          errorText: errorText,
+          errorMaxLines: 3,
           prefixIcon: Icon(icon, color: effectiveIconColor),
           hintStyle: const TextStyle(color: Color(0xFFA99683)),
+          errorStyle: const TextStyle(
+            color: Color(0xFFFFB199),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
           floatingLabelBehavior: FloatingLabelBehavior.never,
           filled: true,
           fillColor: const Color(0xFF2D2115),
@@ -3276,6 +3840,14 @@ class _ExcursionTextField extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
             borderSide: const BorderSide(color: AppColors.accent, width: 1.4),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: const BorderSide(color: Color(0xFFFFB199), width: 1.2),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: const BorderSide(color: Color(0xFFFFB199), width: 1.4),
           ),
         ),
       ),
@@ -3343,11 +3915,13 @@ class _CurrencyPickerField extends StatelessWidget {
     required this.label,
     required this.selectedCode,
     required this.onChanged,
+    this.errorText,
   });
 
   final String label;
   final String selectedCode;
   final ValueChanged<String> onChanged;
+  final String? errorText;
 
   _CurrencyOption get _selectedOption {
     return _currencyOptions.firstWhere(
@@ -3430,52 +4004,61 @@ class _CurrencyPickerField extends StatelessWidget {
 
     return _ExcursionFieldShell(
       label: label,
-      child: Material(
-        color: const Color(0xFF2D2115),
-        borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          onTap: () => _openPicker(context),
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 62),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            decoration: BoxDecoration(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Material(
+            color: const Color(0xFF2D2115),
+            borderRadius: BorderRadius.circular(24),
+            child: InkWell(
+              onTap: () => _openPicker(context),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.10),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 62),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: errorText == null
+                        ? AppColors.accent.withValues(alpha: 0.10)
+                        : const Color(0xFFFFB199),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      selectedOption.symbol,
+                      style: const TextStyle(
+                        color: AppColors.accent,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        selectedOption.label(l10n),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFFFF8F0),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(0xFFA99683),
+                    ),
+                  ],
+                ),
               ),
             ),
-            child: Row(
-              children: [
-                Text(
-                  selectedOption.symbol,
-                  style: const TextStyle(
-                    color: AppColors.accent,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    selectedOption.label(l10n),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFFFF8F0),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: Color(0xFFA99683),
-                ),
-              ],
-            ),
           ),
-        ),
+          if (errorText != null) _InlineFieldError(message: errorText!),
+        ],
       ),
     );
   }
@@ -3703,9 +4286,13 @@ class _ExcursionBottomActionBar extends StatelessWidget {
 }
 
 class _AddItinerarySlotSheet extends StatefulWidget {
-  const _AddItinerarySlotSheet({required this.l10n});
+  const _AddItinerarySlotSheet({
+    required this.l10n,
+    this.initialItem,
+  });
 
   final AppLocalizations l10n;
+  final _ExcursionItineraryDraft? initialItem;
 
   @override
   State<_AddItinerarySlotSheet> createState() => _AddItinerarySlotSheetState();
@@ -3717,6 +4304,22 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
   final _titleCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
   String? _errorText;
+  String? _offsetErrorText;
+  String? _titleErrorText;
+  String? _descriptionErrorText;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialItem = widget.initialItem;
+    if (initialItem == null) {
+      return;
+    }
+    _offsetCtrl.text = initialItem.startOffsetMinutes.toString();
+    _durationCtrl.text = initialItem.durationMinutes?.toString() ?? '';
+    _titleCtrl.text = initialItem.title;
+    _descriptionCtrl.text = initialItem.description;
+  }
 
   @override
   void dispose() {
@@ -3730,19 +4333,40 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
   void _submit() {
     final offset = int.tryParse(_offsetCtrl.text.trim());
     final duration = int.tryParse(_durationCtrl.text.trim());
-    if (offset == null || offset < 0 || _titleCtrl.text.trim().isEmpty) {
-      setState(
-          () => _errorText = widget.l10n.createExcursionItineraryValidation);
+    final draft = _ExcursionItineraryDraft(
+      startOffsetMinutes: offset ?? 0,
+      durationMinutes: duration,
+      title: _titleCtrl.text.trim(),
+      description: _descriptionCtrl.text.trim(),
+    );
+    String? formErrorText;
+    String? offsetErrorText;
+    String? titleErrorText;
+    String? descriptionErrorText;
+    final isCompleteDraft = _isCompleteItineraryDraft(draft);
+    if (offset == null || offset < 0) {
+      offsetErrorText = widget.l10n.createExcursionStartOffsetValidation;
+    }
+    if (draft.title.trim().length < 2) {
+      titleErrorText = widget.l10n.createExcursionItineraryTitleValidation;
+    }
+    if (!isCompleteDraft && draft.description.trim().length < 5) {
+      descriptionErrorText =
+          widget.l10n.createExcursionItineraryDescriptionMinLengthValidation(5);
+    }
+    if (offsetErrorText != null ||
+        titleErrorText != null ||
+        descriptionErrorText != null) {
+      formErrorText = null;
+      setState(() {
+        _errorText = formErrorText;
+        _offsetErrorText = offsetErrorText;
+        _titleErrorText = titleErrorText;
+        _descriptionErrorText = descriptionErrorText;
+      });
       return;
     }
-    Navigator.of(context).pop(
-      _ExcursionItineraryDraft(
-        startOffsetMinutes: offset,
-        durationMinutes: duration,
-        title: _titleCtrl.text.trim(),
-        description: _descriptionCtrl.text.trim(),
-      ),
-    );
+    Navigator.of(context).pop(draft);
   }
 
   @override
@@ -3763,7 +4387,11 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionHeader(title: widget.l10n.createExcursionAddTimeSlot),
+                  _SectionHeader(
+                    title: widget.initialItem == null
+                        ? widget.l10n.createExcursionAddTimeSlot
+                        : widget.l10n.createExcursionEditTimeSlot,
+                  ),
                   const SizedBox(height: 14),
                   Row(
                     children: [
@@ -3774,6 +4402,12 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                           hint: '120',
                           icon: Icons.schedule_rounded,
                           keyboardType: TextInputType.number,
+                          errorText: _offsetErrorText,
+                          onChanged: (_) {
+                            if (_offsetErrorText != null) {
+                              setState(() => _offsetErrorText = null);
+                            }
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -3794,6 +4428,12 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                     label: widget.l10n.createExcursionItineraryTitleLabel,
                     hint: widget.l10n.createExcursionItineraryTitleHint,
                     icon: Icons.route_outlined,
+                    errorText: _titleErrorText,
+                    onChanged: (_) {
+                      if (_titleErrorText != null) {
+                        setState(() => _titleErrorText = null);
+                      }
+                    },
                   ),
                   const SizedBox(height: 12),
                   _ExcursionTextField(
@@ -3801,6 +4441,12 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
                     label: widget.l10n.createExcursionItineraryDescriptionLabel,
                     hint: widget.l10n.createExcursionItineraryDescriptionHint,
                     icon: Icons.notes_rounded,
+                    errorText: _descriptionErrorText,
+                    onChanged: (_) {
+                      if (_descriptionErrorText != null) {
+                        setState(() => _descriptionErrorText = null);
+                      }
+                    },
                     minLines: 3,
                     maxLines: 5,
                   ),

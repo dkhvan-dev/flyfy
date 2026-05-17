@@ -3,8 +3,10 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -73,8 +75,80 @@ func TestListExcursionProductOffersParsesSearchSortPaginationAndPinnedGuide(t *t
 	}
 }
 
+func TestListGuideExcursionLanguagesParsesGuideUserIDsAndReturnsLanguages(t *testing.T) {
+	guideUserID := uuid.New()
+	repo := &excursionOffersRepoStub{
+		guideLanguageCodes: map[uuid.UUID][]string{
+			guideUserID: []string{"kk", "ru"},
+		},
+	}
+	handler := NewHandler(app.NewExcursionUseCase(repo, nil, nil), nil)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/v1/guides/excursion-languages?guideUserIds="+guideUserID.String()+","+guideUserID.String(),
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	handler.ListGuideExcursionLanguages(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if len(repo.lastGuideUserIDs) != 1 || repo.lastGuideUserIDs[0] != guideUserID {
+		t.Fatalf("guide user ids = %#v, want only %s", repo.lastGuideUserIDs, guideUserID)
+	}
+
+	var payload struct {
+		Items []struct {
+			GuideUserID   string   `json:"guideUserId"`
+			LanguageCodes []string `json:"languageCodes"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(payload.Items) != 1 {
+		t.Fatalf("items = %d, want 1: %s", len(payload.Items), rec.Body.String())
+	}
+	if payload.Items[0].GuideUserID != guideUserID.String() {
+		t.Fatalf("guide user id = %q, want %s", payload.Items[0].GuideUserID, guideUserID)
+	}
+	if got := fmt.Sprint(payload.Items[0].LanguageCodes); got != "[kk ru]" {
+		t.Fatalf("languages = %s, want [kk ru]", got)
+	}
+}
+
+func TestListGuideExcursionLanguagesRejectsTooManyGuideUserIDs(t *testing.T) {
+	repo := &excursionOffersRepoStub{}
+	handler := NewHandler(app.NewExcursionUseCase(repo, nil, nil), nil)
+
+	ids := make([]string, 0, 101)
+	for i := 0; i < 101; i++ {
+		ids = append(ids, uuid.NewString())
+	}
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/v1/guides/excursion-languages?guideUserIds="+strings.Join(ids, ","),
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	handler.ListGuideExcursionLanguages(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rec.Code)
+	}
+	if len(repo.lastGuideUserIDs) != 0 {
+		t.Fatalf("repository was called with %#v", repo.lastGuideUserIDs)
+	}
+}
+
 type excursionOffersRepoStub struct {
-	lastOfferFilter port.ExcursionOfferFilter
+	lastOfferFilter    port.ExcursionOfferFilter
+	lastGuideUserIDs   []uuid.UUID
+	guideLanguageCodes map[uuid.UUID][]string
 }
 
 func (s *excursionOffersRepoStub) CreateExcursionAggregate(context.Context, *model.Excursion, port.ExcursionRelations) error {
@@ -116,6 +190,15 @@ func (s *excursionOffersRepoStub) GetExcursionProductCardByID(context.Context, u
 func (s *excursionOffersRepoStub) ListExcursionOffers(_ context.Context, filter port.ExcursionOfferFilter) ([]*model.ExcursionOffer, error) {
 	s.lastOfferFilter = filter
 	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) ListExcursionLanguageCodesByGuideUserIDs(_ context.Context, guideUserIDs []uuid.UUID) (map[uuid.UUID][]string, error) {
+	s.lastGuideUserIDs = append([]uuid.UUID(nil), guideUserIDs...)
+	return s.guideLanguageCodes, nil
+}
+
+func (s *excursionOffersRepoStub) HasActiveExcursionForGuideLandmark(context.Context, uuid.UUID, uuid.UUID) (bool, error) {
+	return false, nil
 }
 
 func (s *excursionOffersRepoStub) GetExcursionOfferByID(context.Context, uuid.UUID) (*model.ExcursionOffer, error) {

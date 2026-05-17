@@ -26,6 +26,8 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 	headline := "Almaty mountain guide"
 	about := "Trail, city, and cultural routes"
 	displayName := "Aruzhan Guide"
+	firstName := "Aruzhan"
+	lastName := "Tulegenova"
 
 	repo := &publicGuideRepositoryStub{
 		result: port.PublicGuideListResult{
@@ -77,6 +79,8 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 			profiles: map[uuid.UUID]app.PublicUserProfile{
 				userID: {
 					UserID:      userID,
+					FirstName:   &firstName,
+					LastName:    &lastName,
 					DisplayName: &displayName,
 					Locale:      "en",
 					Timezone:    "Asia/Almaty",
@@ -134,6 +138,8 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 			} `json:"guideProfile"`
 			UserProfile *struct {
 				UserID      string  `json:"userId"`
+				FirstName   *string `json:"firstName"`
+				LastName    *string `json:"lastName"`
 				DisplayName *string `json:"displayName"`
 			} `json:"userProfile"`
 			Languages []struct {
@@ -163,6 +169,12 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 	if payload.Items[0].UserProfile == nil || payload.Items[0].UserProfile.DisplayName == nil ||
 		*payload.Items[0].UserProfile.DisplayName != displayName {
 		t.Fatalf("expected public user profile, got %#v", payload.Items[0].UserProfile)
+	}
+	if payload.Items[0].UserProfile.FirstName == nil ||
+		*payload.Items[0].UserProfile.FirstName != firstName ||
+		payload.Items[0].UserProfile.LastName == nil ||
+		*payload.Items[0].UserProfile.LastName != lastName {
+		t.Fatalf("expected public first and last name, got %#v", payload.Items[0].UserProfile)
 	}
 	if len(payload.Items[0].Languages) != 1 || payload.Items[0].Languages[0].LanguageCode != "en" {
 		t.Fatalf("expected language metadata, got %#v", payload.Items[0].Languages)

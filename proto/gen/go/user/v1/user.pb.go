@@ -1397,6 +1397,8 @@ type PublicProfile struct {
 	IsPublic      bool                   `protobuf:"varint,8,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
 	IsOnline      bool                   `protobuf:"varint,9,opt,name=is_online,json=isOnline,proto3" json:"is_online,omitempty"`
 	LastSeenAt    string                 `protobuf:"bytes,10,opt,name=last_seen_at,json=lastSeenAt,proto3" json:"last_seen_at,omitempty"`
+	FirstName     string                 `protobuf:"bytes,11,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName      string                 `protobuf:"bytes,12,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1497,6 +1499,20 @@ func (x *PublicProfile) GetIsOnline() bool {
 func (x *PublicProfile) GetLastSeenAt() string {
 	if x != nil {
 		return x.LastSeenAt
+	}
+	return ""
+}
+
+func (x *PublicProfile) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *PublicProfile) GetLastName() string {
+	if x != nil {
+		return x.LastName
 	}
 	return ""
 }
@@ -1905,7 +1921,7 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x05R\x06offset\"J\n" +
 	"\x1aListPublicProfilesResponse\x12,\n" +
-	"\x05items\x18\x01 \x03(\v2\x16.user.v1.PublicProfileR\x05items\"\xb6\x02\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.user.v1.PublicProfileR\x05items\"\xf2\x02\n" +
 	"\rPublicProfile\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x10\n" +
@@ -1918,7 +1934,10 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\tis_online\x18\t \x01(\bR\bisOnline\x12 \n" +
 	"\flast_seen_at\x18\n" +
 	" \x01(\tR\n" +
-	"lastSeenAt\">\n" +
+	"lastSeenAt\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\v \x01(\tR\tfirstName\x12\x1b\n" +
+	"\tlast_name\x18\f \x01(\tR\blastName\">\n" +
 	"!GetPublicProfilesByUserIdsRequest\x12\x19\n" +
 	"\buser_ids\x18\x01 \x03(\tR\auserIds\"R\n" +
 	"\"GetPublicProfilesByUserIdsResponse\x12,\n" +

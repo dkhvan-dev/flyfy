@@ -535,6 +535,8 @@ func toPublicGuideCardResponse(item *app.PublicGuideCard) dto.PublicGuideCardRes
 
 		card.UserProfile = &dto.PublicUserCard{
 			UserID:       item.UserProfile.UserID.String(),
+			FirstName:    item.UserProfile.FirstName,
+			LastName:     item.UserProfile.LastName,
 			DisplayName:  item.UserProfile.DisplayName,
 			AvatarFileID: avatarFileID,
 			CountryCode:  item.UserProfile.CountryCode,

@@ -4006,6 +4006,24 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get excursionsFilterLanguage;
 
+  /// No description provided for @excursionsFilterLanguageAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All languages'**
+  String get excursionsFilterLanguageAll;
+
+  /// No description provided for @excursionsFilterLanguageSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search language or code'**
+  String get excursionsFilterLanguageSearchHint;
+
+  /// No description provided for @excursionsFilterLanguageNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Language not found'**
+  String get excursionsFilterLanguageNoResults;
+
   /// No description provided for @excursionsLoadFailed.
   ///
   /// In en, this message translates to:
@@ -4078,6 +4096,24 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get guidesFiltersClear;
 
+  /// No description provided for @guidesFilterCountryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All countries'**
+  String get guidesFilterCountryAll;
+
+  /// No description provided for @guidesFilterCountrySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country, code, or phone'**
+  String get guidesFilterCountrySearchHint;
+
+  /// No description provided for @guidesFilterCountryNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Country not found'**
+  String get guidesFilterCountryNoResults;
+
   /// No description provided for @guidesFilterExpertise.
   ///
   /// In en, this message translates to:
@@ -4089,6 +4125,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Language'**
   String get guidesFilterLanguage;
+
+  /// No description provided for @guidesFilterLanguageAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All languages'**
+  String get guidesFilterLanguageAll;
+
+  /// No description provided for @guidesFilterLanguageSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search language or code'**
+  String get guidesFilterLanguageSearchHint;
+
+  /// No description provided for @guidesFilterLanguageNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Language not found'**
+  String get guidesFilterLanguageNoResults;
 
   /// No description provided for @guidesFilterRating.
   ///
@@ -4900,10 +4954,16 @@ abstract class AppLocalizations {
   /// **'Add Time Slot'**
   String get createExcursionAddTimeSlot;
 
+  /// No description provided for @createExcursionEditTimeSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Time Slot'**
+  String get createExcursionEditTimeSlot;
+
   /// No description provided for @createExcursionItineraryEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Add at least one route point. It will be shown to tourists in the excursion details.'**
+  /// **'Add at least two route points. They will be shown to tourists in the excursion details.'**
   String get createExcursionItineraryEmpty;
 
   /// No description provided for @createExcursionAutosaveHint.
@@ -4915,8 +4975,50 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionItineraryValidation.
   ///
   /// In en, this message translates to:
-  /// **'Add at least one complete itinerary slot'**
+  /// **'Fill in the route point time, title, and description'**
   String get createExcursionItineraryValidation;
+
+  /// No description provided for @createExcursionItineraryMinSlotsValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least {count} route points'**
+  String createExcursionItineraryMinSlotsValidation(Object count);
+
+  /// No description provided for @createExcursionItineraryDescriptionMinLengthValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Route point description must be at least {count} characters'**
+  String createExcursionItineraryDescriptionMinLengthValidation(Object count);
+
+  /// No description provided for @createExcursionStartOffsetValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the route point start time'**
+  String get createExcursionStartOffsetValidation;
+
+  /// No description provided for @createExcursionItineraryTitleValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Route point title must be at least 2 characters'**
+  String get createExcursionItineraryTitleValidation;
+
+  /// No description provided for @createExcursionOffsetMinutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'+{minutes}m'**
+  String createExcursionOffsetMinutesShort(Object minutes);
+
+  /// No description provided for @createExcursionOffsetHoursShort.
+  ///
+  /// In en, this message translates to:
+  /// **'+{hours}h'**
+  String createExcursionOffsetHoursShort(Object hours);
+
+  /// No description provided for @createExcursionOffsetHoursMinutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'+{hours}h {minutes}m'**
+  String createExcursionOffsetHoursMinutesShort(Object hours, Object minutes);
 
   /// No description provided for @createExcursionDurationLabel.
   ///
@@ -5001,6 +5103,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select up to {count} languages'**
   String createExcursionLanguagesPickerHint(Object count);
+
+  /// No description provided for @createExcursionLanguagesSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search language or code'**
+  String get createExcursionLanguagesSearchHint;
+
+  /// No description provided for @createExcursionLanguagesNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Language not found'**
+  String get createExcursionLanguagesNoResults;
 
   /// No description provided for @createExcursionLanguagesLimitValidation.
   ///
