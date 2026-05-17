@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/network/reference_api.dart';
+import '../../core/reference/country_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../features/attractions/attraction_ui.dart';
@@ -12,6 +14,7 @@ import '../../l10n/generated/app_localizations.dart';
 /// Result handed back to the discover screen when the user taps "Show N spots".
 class AttractionFilterResult {
   const AttractionFilterResult({
+    this.countryCode,
     this.category,
     this.minRating,
     this.durationMin,
@@ -21,6 +24,7 @@ class AttractionFilterResult {
     this.priceMax,
   });
 
+  final String? countryCode;
   final String? category;
   final double? minRating;
   final int? durationMin;
@@ -30,6 +34,7 @@ class AttractionFilterResult {
   final double? priceMax;
 
   bool get isEmpty =>
+      countryCode == null &&
       category == null &&
       minRating == null &&
       durationMin == null &&
@@ -37,6 +42,16 @@ class AttractionFilterResult {
       durationUnit == null &&
       priceMin == null &&
       priceMax == null;
+
+  int get activeCount =>
+      (countryCode == null ? 0 : 1) +
+      (category == null ? 0 : 1) +
+      (minRating == null ? 0 : 1) +
+      (durationMin == null && durationMax == null && durationUnit == null
+          ? 0
+          : 1) +
+      (priceMin == null ? 0 : 1) +
+      (priceMax == null ? 0 : 1);
 
   static const empty = AttractionFilterResult();
 }
@@ -76,13 +91,19 @@ class AttractionsFilterSheet extends StatefulWidget {
   const AttractionsFilterSheet({
     super.key,
     required this.initial,
+    required this.countries,
+    required this.countrySearchAliases,
     this.api,
     this.searchQuery,
+    this.isCountriesLoading = false,
   });
 
   final AttractionFilterResult initial;
+  final List<ReferenceCountry> countries;
+  final Map<String, Set<String>> countrySearchAliases;
   final AttractionApi? api;
   final String? searchQuery;
+  final bool isCountriesLoading;
 
   @override
   State<AttractionsFilterSheet> createState() => _AttractionsFilterSheetState();
@@ -94,13 +115,16 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
   static const _defaultRange = RangeValues(2.0, 8.0);
 
   late final AttractionApi _api;
+  late final TextEditingController _countrySearchController;
   late final TextEditingController _minPriceController;
   late final TextEditingController _maxPriceController;
 
+  String? _countryCode;
   String? _category;
   double? _minRating;
   _DurationPreset _preset = _DurationPreset.none;
   RangeValues _hours = _defaultRange;
+  String _countrySearchQuery = '';
   Timer? _previewDebounce;
   int _previewCount = 0;
   bool _previewLoading = false;
@@ -111,6 +135,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
     _api = widget.api ?? AttractionApi();
 
     final initial = widget.initial;
+    _countryCode = normalizeReferenceCountryCode(initial.countryCode);
     _category = initial.category;
     _minRating = initial.minRating;
 
@@ -135,6 +160,8 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
       }
     }
 
+    _countrySearchController = TextEditingController()
+      ..addListener(_handleCountrySearchChanged);
     _minPriceController = TextEditingController(
       text: _formatInitial(initial.priceMin),
     );
@@ -148,6 +175,9 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
   @override
   void dispose() {
     _previewDebounce?.cancel();
+    _countrySearchController
+      ..removeListener(_handleCountrySearchChanged)
+      ..dispose();
     _minPriceController.dispose();
     _maxPriceController.dispose();
     super.dispose();
@@ -174,6 +204,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
         search: widget.searchQuery?.trim().isNotEmpty == true
             ? widget.searchQuery!.trim()
             : null,
+        countryCode: staged.countryCode,
         category: staged.category,
         minRating: staged.minRating,
         durationMin: staged.durationMin,
@@ -216,6 +247,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
     }
 
     return AttractionFilterResult(
+      countryCode: _countryCode,
       category: _category,
       minRating: _minRating,
       durationMin: durationMin,
@@ -227,6 +259,26 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
   }
 
   // ---- handlers -----------------------------------------------------------
+
+  void _handleCountrySearchChanged() {
+    final nextQuery = _countrySearchController.text.trim();
+    if (nextQuery == _countrySearchQuery) return;
+
+    setState(() => _countrySearchQuery = nextQuery);
+  }
+
+  void _selectCountry(String code) {
+    final normalized = normalizeReferenceCountryCode(code);
+    if (normalized == null) return;
+
+    final nextCountryCode = _countryCode == normalized ? null : normalized;
+    _countrySearchController.clear();
+    setState(() {
+      _countryCode = nextCountryCode;
+      _countrySearchQuery = '';
+    });
+    _schedulePreview();
+  }
 
   void _setCategory(String? value) {
     setState(() => _category = value);
@@ -262,15 +314,51 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
   }
 
   void _clearAll() {
+    _countrySearchController.clear();
     setState(() {
+      _countryCode = null;
       _category = null;
       _minRating = null;
       _preset = _DurationPreset.none;
       _hours = _defaultRange;
+      _countrySearchQuery = '';
       _minPriceController.clear();
       _maxPriceController.clear();
     });
     _schedulePreview();
+  }
+
+  String _countryLabel(ReferenceCountry country) {
+    final name = country.name.trim();
+    if (name.isNotEmpty) return name;
+    return country.code.trim().toUpperCase();
+  }
+
+  ReferenceCountry? _selectedCountry() {
+    final countryCode = _countryCode;
+    if (countryCode == null) return null;
+
+    for (final country in widget.countries) {
+      if (normalizeReferenceCountryCode(country.code) == countryCode) {
+        return country;
+      }
+    }
+    return null;
+  }
+
+  List<ReferenceCountry> _visibleCountries() {
+    final query = normalizeCountrySearchText(_countrySearchQuery);
+    if (query.isEmpty) return const [];
+
+    return widget.countries
+        .where(
+          (country) => countryFilterSearchHaystack(
+            country,
+            widget.countrySearchAliases,
+          ).contains(query),
+        )
+        .take(24)
+        .toList(growable: false);
   }
 
   // ---- build --------------------------------------------------------------
@@ -285,6 +373,8 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
           final size = MediaQuery.sizeOf(context);
           final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
           final padX = adaptive.scale(22, minFactor: 0.82, maxFactor: 1.05);
+          final selectedCountry = _selectedCountry();
+          final visibleCountries = _visibleCountries();
           final sideInset = adaptive.scale(
             16,
             minFactor: 0.62,
@@ -345,6 +435,13 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    _buildCountrySection(
+                                      l10n,
+                                      adaptive,
+                                      selectedCountry,
+                                      visibleCountries,
+                                    ),
+                                    SizedBox(height: adaptive.scale(38)),
                                     _buildCategoriesSection(l10n, adaptive),
                                     SizedBox(height: adaptive.scale(38)),
                                     _buildRatingSection(l10n, adaptive),
@@ -389,6 +486,218 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
     );
   }
 
+  Widget _buildCountrySection(
+    AppLocalizations l10n,
+    AttractionAdaptive adaptive,
+    ReferenceCountry? selectedCountry,
+    List<ReferenceCountry> visibleCountries,
+  ) {
+    return _SectionContainer(
+      adaptive: adaptive,
+      header: l10n.attractionFilterCountrySection,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFF2D1F11),
+              borderRadius: BorderRadius.circular(adaptive.radius(18)),
+              border: Border.all(color: const Color(0xFF443121)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: adaptive.scale(14),
+                vertical: adaptive.scale(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.public_rounded,
+                    color: AppColors.accent,
+                    size: adaptive.scale(21),
+                  ),
+                  SizedBox(width: adaptive.scale(10)),
+                  Expanded(
+                    child: Text(
+                      selectedCountry == null
+                          ? _countryCode ?? l10n.attractionFilterCountryAll
+                          : _countryLabel(selectedCountry),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: adaptive.scale(15),
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  if (_countryCode != null)
+                    IconButton(
+                      tooltip: l10n.attractionFilterClear,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        setState(() => _countryCode = null);
+                        _schedulePreview();
+                      },
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: const Color(0xFFD6BDAB),
+                        size: adaptive.scale(20),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: adaptive.scale(12)),
+          TextField(
+            controller: _countrySearchController,
+            enabled: widget.countries.isNotEmpty,
+            cursorColor: AppColors.accent,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: adaptive.scale(14),
+              fontWeight: FontWeight.w800,
+            ),
+            decoration: InputDecoration(
+              hintText: l10n.attractionFilterCountrySearchHint,
+              hintStyle: TextStyle(
+                color: const Color(0xFF8F8378),
+                fontSize: adaptive.scale(13),
+                fontWeight: FontWeight.w800,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: AppColors.accent,
+              ),
+              filled: true,
+              fillColor: const Color(0xFF171009),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: adaptive.scale(14),
+                vertical: adaptive.scale(12),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(adaptive.radius(16)),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(adaptive.radius(16)),
+                borderSide: const BorderSide(color: Color(0xFF3B260D)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(adaptive.radius(16)),
+                borderSide: const BorderSide(
+                  color: AppColors.accent,
+                  width: 1.2,
+                ),
+              ),
+            ),
+          ),
+          if (widget.isCountriesLoading && widget.countries.isEmpty) ...[
+            SizedBox(height: adaptive.scale(12)),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: adaptive.scale(24),
+                height: adaptive.scale(24),
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: AppColors.accent,
+                ),
+              ),
+            ),
+          ] else if (_countrySearchQuery.isNotEmpty) ...[
+            SizedBox(height: adaptive.scale(12)),
+            if (visibleCountries.isEmpty)
+              Text(
+                l10n.attractionFilterCountryNoResults,
+                style: TextStyle(
+                  color: const Color(0xFFD6BDAB),
+                  fontSize: adaptive.scale(13),
+                  fontWeight: FontWeight.w700,
+                ),
+              )
+            else
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: adaptive.scale(224)),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: visibleCountries.length,
+                  separatorBuilder: (_, _) =>
+                      SizedBox(height: adaptive.scale(8)),
+                  itemBuilder: (context, index) {
+                    final country = visibleCountries[index];
+                    final code = normalizeReferenceCountryCode(country.code) ??
+                        country.code.trim().toUpperCase();
+                    final selected = _countryCode == code;
+
+                    return InkWell(
+                      onTap: () => _selectCountry(country.code),
+                      borderRadius: BorderRadius.circular(adaptive.radius(14)),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppColors.accent.withValues(alpha: 0.18)
+                              : const Color(0xFF2D1F11),
+                          borderRadius:
+                              BorderRadius.circular(adaptive.radius(14)),
+                          border: Border.all(
+                            color: selected
+                                ? AppColors.accent
+                                : const Color(0xFF443121),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: adaptive.scale(13),
+                            vertical: adaptive.scale(11),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _countryLabel(country),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: adaptive.scale(14),
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: adaptive.scale(10)),
+                              Text(
+                                code,
+                                style: TextStyle(
+                                  color: const Color(0xFFD6BDAB),
+                                  fontSize: adaptive.scale(12),
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              if (selected) ...[
+                                SizedBox(width: adaptive.scale(8)),
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.accent,
+                                  size: adaptive.scale(18),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoriesSection(
     AppLocalizations l10n,
     AttractionAdaptive adaptive,
@@ -399,13 +708,23 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
         value: null,
         wide: true,
       ),
-      _ChipModel(label: l10n.attractionFilterCategoryParks, value: 'PARKS'),
-      _ChipModel(label: l10n.attractionFilterCategoryMuseums, value: 'MUSEUMS'),
+      _ChipModel(label: l10n.attractionFilterCategoryParks, value: 'PARK'),
+      _ChipModel(label: l10n.attractionFilterCategoryMuseums, value: 'MUSEUM'),
       _ChipModel(label: l10n.attractionFilterCategoryNature, value: 'NATURE'),
-      _ChipModel(label: l10n.attractionFilterCategoryHistory, value: 'HISTORY'),
       _ChipModel(
-        label: l10n.attractionFilterCategoryAdventure,
-        value: 'ADVENTURE',
+        label: l10n.attractionFilterCategoryArchitecture,
+        value: 'ARCHITECTURE',
+      ),
+      _ChipModel(label: l10n.attractionFilterCategoryBeach, value: 'BEACH'),
+      _ChipModel(label: l10n.attractionFilterCategoryTemple, value: 'TEMPLE'),
+      _ChipModel(
+        label: l10n.attractionFilterCategoryEntertainment,
+        value: 'ENTERTAINMENT',
+      ),
+      _ChipModel(label: l10n.attractionFilterCategoryFood, value: 'FOOD'),
+      _ChipModel(
+        label: l10n.attractionFilterCategoryShopping,
+        value: 'SHOPPING',
       ),
     ];
 

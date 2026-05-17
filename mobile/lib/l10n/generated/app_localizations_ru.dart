@@ -1650,10 +1650,44 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attractionFilterCategoryNature => 'Природа';
 
   @override
+  String get attractionFilterCategoryArchitecture => 'Архитектура';
+
+  @override
+  String get attractionFilterCategoryBeach => 'Пляж';
+
+  @override
+  String get attractionFilterCategoryTemple => 'Храмы';
+
+  @override
+  String get attractionFilterCategoryEntertainment => 'Развлечения';
+
+  @override
+  String get attractionFilterCategoryFood => 'Еда';
+
+  @override
+  String get attractionFilterCategoryShopping => 'Шопинг';
+
+  @override
+  String get attractionFilterCategoryOther => 'Другое';
+
+  @override
   String get attractionFilterCategoryHistory => 'История';
 
   @override
   String get attractionFilterCategoryAdventure => 'Приключения';
+
+  @override
+  String get attractionFilterCountrySection => 'Страна';
+
+  @override
+  String get attractionFilterCountryAll => 'Все страны';
+
+  @override
+  String get attractionFilterCountrySearchHint =>
+      'Поиск страны, кода или телефона';
+
+  @override
+  String get attractionFilterCountryNoResults => 'Страна не найдена';
 
   @override
   String get attractionFilterMinRatingSection => 'Минимальный рейтинг';

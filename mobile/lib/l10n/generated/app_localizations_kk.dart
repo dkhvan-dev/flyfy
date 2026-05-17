@@ -1661,10 +1661,44 @@ class AppLocalizationsKk extends AppLocalizations {
   String get attractionFilterCategoryNature => 'Табиғат';
 
   @override
+  String get attractionFilterCategoryArchitecture => 'Сәулет';
+
+  @override
+  String get attractionFilterCategoryBeach => 'Жағажай';
+
+  @override
+  String get attractionFilterCategoryTemple => 'Ғибадат орындары';
+
+  @override
+  String get attractionFilterCategoryEntertainment => 'Ойын-сауық';
+
+  @override
+  String get attractionFilterCategoryFood => 'Тағам';
+
+  @override
+  String get attractionFilterCategoryShopping => 'Шопинг';
+
+  @override
+  String get attractionFilterCategoryOther => 'Басқа';
+
+  @override
   String get attractionFilterCategoryHistory => 'Тарих';
 
   @override
   String get attractionFilterCategoryAdventure => 'Шытырман';
+
+  @override
+  String get attractionFilterCountrySection => 'Ел';
+
+  @override
+  String get attractionFilterCountryAll => 'Барлық елдер';
+
+  @override
+  String get attractionFilterCountrySearchHint =>
+      'Ел, код немесе телефон бойынша іздеу';
+
+  @override
+  String get attractionFilterCountryNoResults => 'Ел табылмады';
 
   @override
   String get attractionFilterMinRatingSection => 'Минимум рейтинг';

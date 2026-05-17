@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/network/reference_api.dart';
+import '../../core/reference/country_filter_utils.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
@@ -13,6 +16,7 @@ import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/session_provider.dart';
 import 'attractions_filter_sheet.dart';
 
 enum _AttractionSortField { rating, duration, price }
@@ -65,14 +69,20 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   static const int _pageSize = 8;
 
   final AttractionApi _api = AttractionApi();
+  final ReferenceApi _referenceApi = ReferenceApi();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   List<AttractionVm> _attractions = [];
+  List<ReferenceCountry> _countries = const [];
+  Map<String, Set<String>> _countrySearchAliases = const {};
   bool _loading = true;
+  bool _isCountriesLoading = false;
+  bool _hasAppliedDefaultCountryFilter = false;
   String? _error;
   AttractionFilterResult _filters = AttractionFilterResult.empty;
   Timer? _searchDebounce;
+  Future<void>? _countriesLoadFuture;
   int _currentPage = 1;
   int _totalAttractions = 0;
   _AttractionSortField _sortField = _AttractionSortField.rating;
@@ -89,6 +99,8 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyDefaultCountryFilter();
+      unawaited(_loadCountries());
       _loadAttractions();
     });
     _searchController.addListener(_onSearchChanged);
@@ -110,6 +122,100 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     );
   }
 
+  String? _defaultCountryCode() {
+    return normalizeReferenceCountryCode(
+      context.read<SessionProvider>().profile?.countryCode,
+    );
+  }
+
+  void _applyDefaultCountryFilter() {
+    if (!mounted || _hasAppliedDefaultCountryFilter) return;
+    _hasAppliedDefaultCountryFilter = true;
+
+    final defaultCountryCode = _defaultCountryCode();
+    if (defaultCountryCode == null || _filters.countryCode != null) return;
+
+    setState(() {
+      _filters = AttractionFilterResult(
+        countryCode: defaultCountryCode,
+        category: _filters.category,
+        minRating: _filters.minRating,
+        durationMin: _filters.durationMin,
+        durationMax: _filters.durationMax,
+        durationUnit: _filters.durationUnit,
+        priceMin: _filters.priceMin,
+        priceMax: _filters.priceMax,
+      );
+    });
+  }
+
+  Future<void> _loadCountries() {
+    if (_countries.isNotEmpty) return Future.value();
+    final inFlight = _countriesLoadFuture;
+    if (inFlight != null) return inFlight;
+
+    final future = _loadCountriesInner();
+    _countriesLoadFuture = future;
+    return future.whenComplete(() => _countriesLoadFuture = null);
+  }
+
+  Future<void> _loadCountriesInner() async {
+    if (!mounted) return;
+
+    setState(() => _isCountriesLoading = true);
+    final lang = Localizations.localeOf(context).languageCode;
+    final defaultCountryCode = _defaultCountryCode();
+
+    try {
+      final countries = withDefaultReferenceCountry(
+        await _referenceApi.listCountries(lang: lang),
+        defaultCountryCode,
+      );
+      final countrySearchAliases = await _loadCountrySearchAliases(
+        countries,
+        lang,
+      );
+      if (!mounted) return;
+      setState(() {
+        _countries = countries;
+        _countrySearchAliases = countrySearchAliases;
+        _isCountriesLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      final countries = withDefaultReferenceCountry(
+        const [],
+        defaultCountryCode,
+      );
+      setState(() {
+        _countries = countries;
+        _countrySearchAliases = countrySearchAliasMap(countries);
+        _isCountriesLoading = false;
+      });
+    }
+  }
+
+  Future<Map<String, Set<String>>> _loadCountrySearchAliases(
+    List<ReferenceCountry> countries,
+    String currentLang,
+  ) async {
+    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
+    final localizedLists = await Future.wait(
+      languages.map((lang) async {
+        try {
+          return await _referenceApi.listCountries(lang: lang);
+        } catch (_) {
+          return const <ReferenceCountry>[];
+        }
+      }),
+    );
+
+    return countrySearchAliasMap([
+      ...countries,
+      for (final localizedCountries in localizedLists) ...localizedCountries,
+    ]);
+  }
+
   Future<void> _loadAttractions({int page = 1}) async {
     if (!mounted) return;
     final normalizedPage = page < 1 ? 1 : page;
@@ -123,6 +229,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
       final search = _searchController.text.trim();
       final result = await _api.getAttractions(
         search: search.isEmpty ? null : search,
+        countryCode: _filters.countryCode,
         category: _filters.category,
         minRating: _filters.minRating,
         priceMin: _filters.priceMin,
@@ -153,6 +260,9 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
 
   Future<void> _openFilters() async {
     FocusScope.of(context).unfocus();
+    await _loadCountries();
+    if (!mounted) return;
+
     final result = await showModalBottomSheet<AttractionFilterResult>(
       context: context,
       isDismissible: true,
@@ -163,6 +273,9 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
         initial: _filters,
         api: _api,
         searchQuery: _searchController.text,
+        countries: _countries,
+        countrySearchAliases: _countrySearchAliases,
+        isCountriesLoading: _isCountriesLoading,
       ),
     );
     if (result == null || !mounted) return;
@@ -259,6 +372,8 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   }
 
   Widget _buildSearchBar(AttractionAdaptive a, AppLocalizations l10n) {
+    final activeFilterCount = _filters.activeCount;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         a.scale(24, minFactor: 0.78),
@@ -267,8 +382,15 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
         0,
       ),
       child: Container(
-        height: a.scale(60, minFactor: 0.9),
-        padding: EdgeInsets.fromLTRB(a.scale(28), 0, a.scale(10), 0),
+        constraints: BoxConstraints(
+          minHeight: a.scale(58, minFactor: 0.9, maxFactor: 1.0),
+        ),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          a.scale(16, minFactor: 0.86, maxFactor: 1.0),
+          0,
+          a.scale(8, minFactor: 0.86, maxFactor: 1.0),
+          0,
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFF2D1C0B),
           borderRadius: BorderRadius.circular(999),
@@ -278,43 +400,87 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
             Icon(
               Icons.search_rounded,
               color: AppColors.accent,
-              size: a.scale(28),
+              size: a.scale(27, minFactor: 0.86, maxFactor: 1.0),
             ),
-            SizedBox(width: a.scale(20, minFactor: 0.7)),
+            SizedBox(width: a.scale(12, minFactor: 0.82, maxFactor: 1.0)),
             Expanded(
               child: TextField(
                 controller: _searchController,
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: a.scale(21, minFactor: 0.8),
+                  fontSize: a.scale(16, minFactor: 0.9, maxFactor: 1.0),
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
                 ),
                 decoration: InputDecoration(
-                  isCollapsed: true,
                   border: InputBorder.none,
                   hintText: l10n.attractionsSearchHint,
                   hintStyle: TextStyle(
-                    color: const Color(0xFFB9AA9D),
-                    fontSize: a.scale(21, minFactor: 0.8),
+                    color: const Color(0xFF9F8B7D),
+                    fontSize: a.scale(16, minFactor: 0.9, maxFactor: 1.0),
+                    height: 1.2,
                   ),
                 ),
                 textInputAction: TextInputAction.search,
                 onSubmitted: (_) => _loadAttractions(page: 1),
               ),
             ),
-            IconButton(
-              tooltip: l10n.attractionsFiltersTitle,
-              onPressed: _openFilters,
-              icon: Icon(
-                Icons.tune_rounded,
-                color: AppColors.accent,
-                size: a.scale(28),
+            Tooltip(
+              message: l10n.attractionsFiltersTitle,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    onPressed: _openFilters,
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.accent.withValues(alpha: 0.12),
+                      foregroundColor: AppColors.accent,
+                      minimumSize: Size(
+                        a.scale(43, minFactor: 0.9, maxFactor: 1.0),
+                        a.scale(43, minFactor: 0.9, maxFactor: 1.0),
+                      ),
+                      shape: const CircleBorder(),
+                    ),
+                    icon: Icon(
+                      Icons.tune_rounded,
+                      size: a.scale(24, minFactor: 0.9, maxFactor: 1.0),
+                    ),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  if (activeFilterCount > 0)
+                    PositionedDirectional(
+                      top: 2,
+                      end: 2,
+                      child: Container(
+                        constraints: BoxConstraints(
+                          minWidth: a.scale(16, minFactor: 0.9, maxFactor: 1.0),
+                          minHeight:
+                              a.scale(16, minFactor: 0.9, maxFactor: 1.0),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal:
+                              a.scale(4, minFactor: 0.8, maxFactor: 1.0),
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          activeFilterCount.toString(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize:
+                                a.scale(10, minFactor: 0.9, maxFactor: 1.0),
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              constraints: BoxConstraints(
-                minWidth: a.scale(40),
-                minHeight: a.scale(40),
-              ),
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
             ),
           ],
         ),
@@ -579,12 +745,11 @@ class _DiscoverCard extends StatelessWidget {
                         right: adaptive.scale(8),
                         child: _saveButton(),
                       ),
-                      if (_categoryLabel(attraction.category) != null)
-                        Positioned(
-                          left: adaptive.scale(32, minFactor: 0.48),
-                          bottom: adaptive.scale(28, minFactor: 0.5),
-                          child: _categoryTag(),
-                        ),
+                      Positioned(
+                        left: adaptive.scale(32, minFactor: 0.48),
+                        bottom: adaptive.scale(28, minFactor: 0.5),
+                        child: _categoryTag(),
+                      ),
                     ],
                   ),
                 ),
@@ -640,22 +805,28 @@ class _DiscoverCard extends StatelessWidget {
   }
 
   Widget _saveButton() {
-    final size = adaptive.scale(56, minFactor: 0.78);
+    final size = adaptive.scale(42, minFactor: 0.86);
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(0xCC122D37),
+        color: const Color(0xB71B211F),
         shape: BoxShape.circle,
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-          width: 2,
+          color: Colors.white.withValues(alpha: 0.14),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Icon(
         Icons.bookmark_border_rounded,
         color: Colors.white,
-        size: adaptive.scale(27, minFactor: 0.78),
+        size: adaptive.scale(19, minFactor: 0.86),
       ),
     );
   }
@@ -670,7 +841,7 @@ class _DiscoverCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        _categoryLabel(attraction.category)!.toUpperCase(),
+        _categoryLabel(attraction.category).toUpperCase(),
         style: TextStyle(
           color: AppColors.accent,
           fontSize: adaptive.scale(12, minFactor: 0.84),
@@ -680,20 +851,46 @@ class _DiscoverCard extends StatelessWidget {
     );
   }
 
-  String? _categoryLabel(String category) {
-    switch (category.toUpperCase()) {
+  String _categoryLabel(String category) {
+    final normalized = category.trim().toUpperCase();
+    switch (normalized) {
+      case 'PARK':
       case 'PARKS':
         return l10n.attractionFilterCategoryParks;
+      case 'MUSEUM':
       case 'MUSEUMS':
         return l10n.attractionFilterCategoryMuseums;
       case 'NATURE':
         return l10n.attractionFilterCategoryNature;
+      case 'ARCHITECTURE':
+        return l10n.attractionFilterCategoryArchitecture;
+      case 'BEACH':
+        return l10n.attractionFilterCategoryBeach;
+      case 'TEMPLE':
+        return l10n.attractionFilterCategoryTemple;
+      case 'ENTERTAINMENT':
+        return l10n.attractionFilterCategoryEntertainment;
+      case 'FOOD':
+        return l10n.attractionFilterCategoryFood;
+      case 'SHOPPING':
+        return l10n.attractionFilterCategoryShopping;
+      case 'OTHER':
+        return l10n.attractionFilterCategoryOther;
       case 'HISTORY':
         return l10n.attractionFilterCategoryHistory;
       case 'ADVENTURE':
         return l10n.attractionFilterCategoryAdventure;
     }
-    return null;
+    if (normalized.isEmpty) return l10n.attractionFilterCategoryOther;
+    return normalized
+        .split(RegExp(r'[_\s-]+'))
+        .where((part) => part.isNotEmpty)
+        .map(
+          (part) => part.length == 1
+              ? part
+              : '${part.substring(0, 1)}${part.substring(1).toLowerCase()}',
+        )
+        .join(' ');
   }
 
   Widget _placeholder() => Container(

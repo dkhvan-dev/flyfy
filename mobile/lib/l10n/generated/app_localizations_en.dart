@@ -1651,10 +1651,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attractionFilterCategoryNature => 'Nature';
 
   @override
+  String get attractionFilterCategoryArchitecture => 'Architecture';
+
+  @override
+  String get attractionFilterCategoryBeach => 'Beach';
+
+  @override
+  String get attractionFilterCategoryTemple => 'Temple';
+
+  @override
+  String get attractionFilterCategoryEntertainment => 'Entertainment';
+
+  @override
+  String get attractionFilterCategoryFood => 'Food';
+
+  @override
+  String get attractionFilterCategoryShopping => 'Shopping';
+
+  @override
+  String get attractionFilterCategoryOther => 'Other';
+
+  @override
   String get attractionFilterCategoryHistory => 'History';
 
   @override
   String get attractionFilterCategoryAdventure => 'Adventure';
+
+  @override
+  String get attractionFilterCountrySection => 'Country';
+
+  @override
+  String get attractionFilterCountryAll => 'All countries';
+
+  @override
+  String get attractionFilterCountrySearchHint =>
+      'Search country, code, or phone';
+
+  @override
+  String get attractionFilterCountryNoResults => 'Country not found';
 
   @override
   String get attractionFilterMinRatingSection => 'Minimum rating';

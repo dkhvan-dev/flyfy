@@ -3088,6 +3088,48 @@ abstract class AppLocalizations {
   /// **'Nature'**
   String get attractionFilterCategoryNature;
 
+  /// No description provided for @attractionFilterCategoryArchitecture.
+  ///
+  /// In en, this message translates to:
+  /// **'Architecture'**
+  String get attractionFilterCategoryArchitecture;
+
+  /// No description provided for @attractionFilterCategoryBeach.
+  ///
+  /// In en, this message translates to:
+  /// **'Beach'**
+  String get attractionFilterCategoryBeach;
+
+  /// No description provided for @attractionFilterCategoryTemple.
+  ///
+  /// In en, this message translates to:
+  /// **'Temple'**
+  String get attractionFilterCategoryTemple;
+
+  /// No description provided for @attractionFilterCategoryEntertainment.
+  ///
+  /// In en, this message translates to:
+  /// **'Entertainment'**
+  String get attractionFilterCategoryEntertainment;
+
+  /// No description provided for @attractionFilterCategoryFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get attractionFilterCategoryFood;
+
+  /// No description provided for @attractionFilterCategoryShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping'**
+  String get attractionFilterCategoryShopping;
+
+  /// No description provided for @attractionFilterCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get attractionFilterCategoryOther;
+
   /// No description provided for @attractionFilterCategoryHistory.
   ///
   /// In en, this message translates to:
@@ -3099,6 +3141,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adventure'**
   String get attractionFilterCategoryAdventure;
+
+  /// No description provided for @attractionFilterCountrySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get attractionFilterCountrySection;
+
+  /// No description provided for @attractionFilterCountryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All countries'**
+  String get attractionFilterCountryAll;
+
+  /// No description provided for @attractionFilterCountrySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country, code, or phone'**
+  String get attractionFilterCountrySearchHint;
+
+  /// No description provided for @attractionFilterCountryNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Country not found'**
+  String get attractionFilterCountryNoResults;
 
   /// No description provided for @attractionFilterMinRatingSection.
   ///
