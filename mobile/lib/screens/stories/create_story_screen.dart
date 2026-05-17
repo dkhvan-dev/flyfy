@@ -121,8 +121,9 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   void _prefill(StoryVm story) {
     _titleController.text = story.title;
     _setComposerSectionsFromContent((story.content ?? '').trim());
-    _selectedCategory =
-        story.category.trim().isEmpty ? 'JOURNAL' : story.category.trim();
+    _selectedCategory = story.category.trim().isEmpty
+        ? 'JOURNAL'
+        : story.category.trim();
     _coverFileId = (story.coverFileId ?? '').trim().isEmpty
         ? null
         : story.coverFileId!.trim();
@@ -444,9 +445,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
           : targetIndex + 1;
       setState(() {
         _sections[targetIndex].images.add(
-              _StoryInlineImageDraft(
-                  fileId: upload.fileId, previewBytes: bytes),
-            );
+          _StoryInlineImageDraft(fileId: upload.fileId, previewBytes: bytes),
+        );
         _contentError = null;
         _ensureTrailingSectionAfter(targetIndex);
         _activeSectionIndex = nextIndex.clamp(0, _sections.length - 1);
@@ -563,6 +563,17 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     return contentError == null;
   }
 
+  void _goToStep(int step) {
+    if (step < 0 || step > 1 || step == _step) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _step = step;
+    });
+  }
+
   Future<void> _saveStory(String status) async {
     if (_isSaving) {
       return;
@@ -570,15 +581,11 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     final stepOneValid = _validateStepOne();
     final stepTwoValid = _validateStepTwo();
     if (!stepOneValid) {
-      setState(() {
-        _step = 0;
-      });
+      _goToStep(0);
       return;
     }
     if (!stepTwoValid) {
-      setState(() {
-        _step = 1;
-      });
+      _goToStep(1);
       return;
     }
 
@@ -599,8 +606,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
     try {
       if (widget.isEditMode) {
-        final storyId =
-            (widget.storyId ?? widget.initialStory?.id ?? '').trim();
+        final storyId = (widget.storyId ?? widget.initialStory?.id ?? '')
+            .trim();
         if (storyId.isEmpty) {
           throw StateError('Missing story id');
         }
@@ -718,9 +725,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                             title: l10n.storyCreateTitle,
                             onBackTap: () {
                               if (_step == 1) {
-                                setState(() {
-                                  _step = 0;
-                                });
+                                _goToStep(0);
                                 return;
                               }
                               context.pop();
@@ -799,9 +804,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                               isLoading: false,
                               onTap: () {
                                 if (_validateStepOne()) {
-                                  setState(() {
-                                    _step = 1;
-                                  });
+                                  _goToStep(1);
                                 }
                               },
                             )
@@ -821,8 +824,9 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                               ),
                             ),
                             TextButton(
-                              onPressed:
-                                  _isSaving ? null : () => _saveStory('DRAFT'),
+                              onPressed: _isSaving
+                                  ? null
+                                  : () => _saveStory('DRAFT'),
                               child: Text(
                                 l10n.storySaveDraftAction,
                                 textAlign: TextAlign.center,
@@ -939,8 +943,8 @@ class _CreateStoryStepper extends StatelessWidget {
           color: isDone
               ? doneColor
               : (isCurrent
-                  ? currentColor
-                  : currentColor.withValues(alpha: 0.18)),
+                    ? currentColor
+                    : currentColor.withValues(alpha: 0.18)),
           boxShadow: isCurrent || isDone
               ? [
                   BoxShadow(
@@ -1191,7 +1195,7 @@ class _CreateStoryStepTwo extends StatelessWidget {
   final ValueChanged<int> onSectionFocused;
   final Future<void> Function({int? sectionIndex}) onPickExtraMedia;
   final void Function(int sectionIndex, _StoryInlineImageDraft image)
-      onRemoveImage;
+  onRemoveImage;
 
   @override
   Widget build(BuildContext context) {
@@ -1406,9 +1410,9 @@ class _StoryComposerSection {
   _StoryComposerSection({
     String initialText = '',
     List<_StoryInlineImageDraft> images = const <_StoryInlineImageDraft>[],
-  })  : controller = TextEditingController(text: initialText),
-        focusNode = FocusNode(),
-        images = List<_StoryInlineImageDraft>.from(images);
+  }) : controller = TextEditingController(text: initialText),
+       focusNode = FocusNode(),
+       images = List<_StoryInlineImageDraft>.from(images);
 
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -1632,24 +1636,24 @@ class _InlineImageCard extends StatelessWidget {
             child: image.previewBytes != null
                 ? Image.memory(image.previewBytes!, fit: BoxFit.cover)
                 : (imageUrl == null
-                    ? const Center(
-                        child: Icon(
-                          Icons.image_outlined,
-                          color: Colors.white54,
-                        ),
-                      )
-                    : Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) {
-                          return const Center(
-                            child: Icon(
-                              Icons.broken_image_outlined,
-                              color: Colors.white54,
-                            ),
-                          );
-                        },
-                      )),
+                      ? const Center(
+                          child: Icon(
+                            Icons.image_outlined,
+                            color: Colors.white54,
+                          ),
+                        )
+                      : Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) {
+                            return const Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                color: Colors.white54,
+                              ),
+                            );
+                          },
+                        )),
           ),
           Positioned(
             top: adaptive.scale(8),
@@ -1750,7 +1754,8 @@ class _CoverUploadBox extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final adaptive = StoryAdaptive.of(context);
     final normalizedCoverUrl = (coverImageUrl ?? '').trim();
-    final hasCover = (coverFileId ?? '').trim().isNotEmpty ||
+    final hasCover =
+        (coverFileId ?? '').trim().isNotEmpty ||
         coverPreviewBytes != null ||
         normalizedCoverUrl.isNotEmpty;
     final minHeight = adaptive.scale(
@@ -1793,26 +1798,11 @@ class _CoverUploadBox extends StatelessWidget {
                                   fit: BoxFit.cover,
                                 )
                               : normalizedCoverUrl.isNotEmpty
-                                  ? Image.network(
-                                      normalizedCoverUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return const DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            color: Color(0xFF2A1708),
-                                          ),
-                                          child: Center(
-                                            child: Icon(
-                                              Icons.image_rounded,
-                                              color: Colors.white54,
-                                              size: 34,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    )
-                                  : const DecoratedBox(
+                              ? Image.network(
+                                  normalizedCoverUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const DecoratedBox(
                                       decoration: BoxDecoration(
                                         color: Color(0xFF2A1708),
                                       ),
@@ -1823,7 +1813,21 @@ class _CoverUploadBox extends StatelessWidget {
                                           size: 34,
                                         ),
                                       ),
+                                    );
+                                  },
+                                )
+                              : const DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF2A1708),
+                                  ),
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.image_rounded,
+                                      color: Colors.white54,
+                                      size: 34,
                                     ),
+                                  ),
+                                ),
                         ),
                         if (isUploading)
                           const Positioned.fill(

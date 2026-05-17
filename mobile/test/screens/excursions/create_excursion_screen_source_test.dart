@@ -3,28 +3,46 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('create excursion screen keeps a responsive three-step guide flow',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion screen keeps a responsive three-step guide flow',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('class CreateExcursionScreen'));
-    expect(source, contains('PageView('));
-    expect(source, contains('_ExcursionStepIndicator'));
-    expect(source, contains('_buildStepLandmark'));
-    expect(source, contains('_buildStepLogistics'));
-    expect(source, contains('_buildStepStoryAndPrice'));
-    expect(source, contains('_openLocationSelector'));
-    expect(source, contains("context.push<ExcursionLocationSelection>"));
-    expect(source, contains("'/excursions/create/location'"));
-    expect(source, contains('landmarkId: _selectedLandmarkId'));
-    expect(source, contains('latitude: _selectedLatitude'));
-    expect(source, contains('longitude: _selectedLongitude'));
-    expect(source, contains('MediaQuery.viewInsetsOf(context).bottom'));
-    expect(source, contains('ListView('));
-    expect(source, isNot(contains('height: 500')));
-  });
+      expect(source, contains('class CreateExcursionScreen'));
+      expect(source, contains('PageView('));
+      expect(source, contains('_ExcursionStepIndicator'));
+      expect(source, contains('_buildStepLandmark'));
+      expect(source, contains('_buildStepLogistics'));
+      expect(source, contains('_buildStepStoryAndPrice'));
+      expect(source, contains('_openLocationSelector'));
+      expect(source, contains("context.push<ExcursionLocationSelection>"));
+      expect(source, contains("'/excursions/create/location'"));
+      expect(source, contains('landmarkId: _selectedLandmarkId'));
+      expect(source, contains('latitude: _selectedLatitude'));
+      expect(source, contains('longitude: _selectedLongitude'));
+      expect(source, contains('MediaQuery.viewInsetsOf(context).bottom'));
+      expect(source, contains('ListView('));
+      expect(source, isNot(contains('height: 500')));
+    },
+  );
+
+  test(
+    'create excursion clears keyboard focus before switching steps',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('void _goToStep(int step)'));
+      expect(
+        source,
+        contains('FocusManager.instance.primaryFocus?.unfocus();'),
+      );
+      expect(source, contains('_pageController.animateToPage('));
+    },
+  );
 
   test(
     'create excursion stepper marks completed steps with success color',
@@ -65,20 +83,22 @@ void main() {
     },
   );
 
-  test('create excursion form fields keep labels outside filled inputs',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion form fields keep labels outside filled inputs',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('class _ExcursionFieldShell'));
-    expect(
-      source,
-      contains('floatingLabelBehavior: FloatingLabelBehavior.never'),
-    );
-    expect(source, contains('Text(label,'));
-    expect(source, contains('fillColor: const Color(0xFF2D2115)'));
-  });
+      expect(source, contains('class _ExcursionFieldShell'));
+      expect(
+        source,
+        contains('floatingLabelBehavior: FloatingLabelBehavior.never'),
+      );
+      expect(source, contains('Text(label,'));
+      expect(source, contains('fillColor: const Color(0xFF2D2115)'));
+    },
+  );
 
   test('create excursion uses a real map picker for meeting point', () async {
     final source = await File(
@@ -113,7 +133,9 @@ void main() {
       expect(source, contains('label: l10n.createMapLinkLabel'));
       expect(source, isNot(contains('label: l10n.createExcursionNameLabel')));
       expect(
-          source, isNot(contains('label: l10n.createExcursionSummaryLabel')));
+        source,
+        isNot(contains('label: l10n.createExcursionSummaryLabel')),
+      );
       expect(source, isNot(contains('label: l10n.createTagsLabel')));
     },
   );
@@ -171,18 +193,21 @@ void main() {
       expect(source, contains('icon: Icons.schedule_rounded'));
       expect(source, contains('icon: Icons.group_outlined'));
       expect(
-        RegExp(r'Icons\.schedule_rounded,[\s\S]*?iconColor: AppColors\.accent')
-            .hasMatch(source),
+        RegExp(
+          r'Icons\.schedule_rounded,[\s\S]*?iconColor: AppColors\.accent',
+        ).hasMatch(source),
         isTrue,
       );
       expect(
-        RegExp(r'Icons\.group_outlined,[\s\S]*?iconColor: AppColors\.accent')
-            .hasMatch(source),
+        RegExp(
+          r'Icons\.group_outlined,[\s\S]*?iconColor: AppColors\.accent',
+        ).hasMatch(source),
         isTrue,
       );
       expect(
-        RegExp(r'Icons\.timelapse_rounded,[\s\S]*?color: AppColors\.accent')
-            .hasMatch(source),
+        RegExp(
+          r'Icons\.timelapse_rounded,[\s\S]*?color: AppColors\.accent',
+        ).hasMatch(source),
         isTrue,
       );
       expect(
@@ -235,33 +260,37 @@ void main() {
         contains('_selectedLanguageCodes.length >= _maxExcursionLanguages'),
       );
       expect(
-          source, contains('createExcursionLanguagesPickerHint(maxSelected)'));
+        source,
+        contains('createExcursionLanguagesPickerHint(maxSelected)'),
+      );
       expect(source, contains('languageCodes: _selectedLanguageCodes.toList'));
       expect(source, isNot(contains('_languagesCtrl')));
     },
   );
 
-  test('create excursion selects included item types without free text',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion selects included item types without free text',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('class _ExcursionIncludedItemDraft'));
-    expect(source, contains('class _ExcursionIncludedItemsEditorSheet'));
-    expect(source, contains('enum _ExcursionIncludedItemType'));
-    expect(source, contains('_openIncludedItemsEditor'));
-    expect(
-      source,
-      contains('showModalBottomSheet<List<_ExcursionIncludedItemDraft>>'),
-    );
-    expect(source, contains('includedItems: _includedItems'));
-    expect(source, contains('String toPayload() => type.name'));
-    expect(source, contains('selectedTypes'));
-    expect(source, isNot(contains('_includedItemsCtrl')));
-    expect(source, isNot(contains('createExcursionIncludedItemsValueLabel')));
-    expect(source, isNot(contains('TextEditingController(text: title)')));
-  });
+      expect(source, contains('class _ExcursionIncludedItemDraft'));
+      expect(source, contains('class _ExcursionIncludedItemsEditorSheet'));
+      expect(source, contains('enum _ExcursionIncludedItemType'));
+      expect(source, contains('_openIncludedItemsEditor'));
+      expect(
+        source,
+        contains('showModalBottomSheet<List<_ExcursionIncludedItemDraft>>'),
+      );
+      expect(source, contains('includedItems: _includedItems'));
+      expect(source, contains('String toPayload() => type.name'));
+      expect(source, contains('selectedTypes'));
+      expect(source, isNot(contains('_includedItemsCtrl')));
+      expect(source, isNot(contains('createExcursionIncludedItemsValueLabel')));
+      expect(source, isNot(contains('TextEditingController(text: title)')));
+    },
+  );
 
   test(
     'create excursion starts with empty itinerary and lets guides delete any slot',
@@ -285,82 +314,90 @@ void main() {
     },
   );
 
-  test('create excursion validates itinerary description before submit',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion validates itinerary description before submit',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('_isCompleteItineraryDraft('));
-    expect(source, contains("item.description.trim().length >= 5"));
-    expect(source, contains('_validateAllStepsBeforeSubmit'));
-    expect(source, contains('_isCompleteItineraryDraft(draft)'));
-  });
+      expect(source, contains('_isCompleteItineraryDraft('));
+      expect(source, contains("item.description.trim().length >= 5"));
+      expect(source, contains('_validateAllStepsBeforeSubmit'));
+      expect(source, contains('_isCompleteItineraryDraft(draft)'));
+    },
+  );
 
-  test('create excursion shows specific itinerary validation messages',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion shows specific itinerary validation messages',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('_minItinerarySlots = 2'));
-    expect(source, contains('_itinerary.length < _minItinerarySlots'));
-    expect(source, contains('createExcursionItineraryMinSlotsValidation'));
-    expect(
-      source,
-      contains('createExcursionItineraryDescriptionMinLengthValidation'),
-    );
-    expect(source, contains('errorText: _descriptionErrorText'));
-  });
+      expect(source, contains('_minItinerarySlots = 2'));
+      expect(source, contains('_itinerary.length < _minItinerarySlots'));
+      expect(source, contains('createExcursionItineraryMinSlotsValidation'));
+      expect(
+        source,
+        contains('createExcursionItineraryDescriptionMinLengthValidation'),
+      );
+      expect(source, contains('errorText: _descriptionErrorText'));
+    },
+  );
 
-  test('create excursion shows validation errors next to invalid fields',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion shows validation errors next to invalid fields',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    for (final fieldError in [
-      '_countryErrorText',
-      '_landmarkErrorText',
-      '_itineraryErrorText',
-      '_durationErrorText',
-      '_groupSizeErrorText',
-      '_languagesErrorText',
-      '_meetingPointErrorText',
-      '_priceErrorText',
-      '_currencyErrorText',
-    ]) {
-      expect(source, contains(fieldError));
-    }
+      for (final fieldError in [
+        '_countryErrorText',
+        '_landmarkErrorText',
+        '_itineraryErrorText',
+        '_durationErrorText',
+        '_groupSizeErrorText',
+        '_languagesErrorText',
+        '_meetingPointErrorText',
+        '_priceErrorText',
+        '_currencyErrorText',
+      ]) {
+        expect(source, contains(fieldError));
+      }
 
-    expect(source, contains('errorText: _durationErrorText'));
-    expect(source, contains('errorText: _groupSizeErrorText'));
-    expect(source, contains('errorText: _languagesErrorText'));
-    expect(source, contains('errorText: _meetingPointErrorText'));
-    expect(source, contains('errorText: _priceErrorText'));
-    expect(source, contains('errorText: _currencyErrorText'));
-    expect(source, contains('hasError: !_isCompleteItineraryDraft(item)'));
-    expect(source, contains('errorText: _itineraryErrorText'));
-    expect(
-      source,
-      contains('if (_stepErrorText != null && !_hasFieldValidationErrors)'),
-    );
-  });
+      expect(source, contains('errorText: _durationErrorText'));
+      expect(source, contains('errorText: _groupSizeErrorText'));
+      expect(source, contains('errorText: _languagesErrorText'));
+      expect(source, contains('errorText: _meetingPointErrorText'));
+      expect(source, contains('errorText: _priceErrorText'));
+      expect(source, contains('errorText: _currencyErrorText'));
+      expect(source, contains('hasError: !_isCompleteItineraryDraft(item)'));
+      expect(source, contains('errorText: _itineraryErrorText'));
+      expect(
+        source,
+        contains('if (_stepErrorText != null && !_hasFieldValidationErrors)'),
+      );
+    },
+  );
 
-  test('create excursion validates itinerary editor fields individually',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion validates itinerary editor fields individually',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('_offsetErrorText'));
-    expect(source, contains('_titleErrorText'));
-    expect(source, contains('createExcursionStartOffsetValidation'));
-    expect(source, contains('createExcursionItineraryTitleValidation'));
-    expect(source, contains('errorText: _offsetErrorText'));
-    expect(source, contains('errorText: _titleErrorText'));
-    expect(source, contains('errorText: _descriptionErrorText'));
-  });
+      expect(source, contains('_offsetErrorText'));
+      expect(source, contains('_titleErrorText'));
+      expect(source, contains('createExcursionStartOffsetValidation'));
+      expect(source, contains('createExcursionItineraryTitleValidation'));
+      expect(source, contains('errorText: _offsetErrorText'));
+      expect(source, contains('errorText: _titleErrorText'));
+      expect(source, contains('errorText: _descriptionErrorText'));
+    },
+  );
 
   test('create excursion localizes itinerary offset labels', () async {
     final source = await File(
@@ -375,22 +412,25 @@ void main() {
     expect(ruSource, contains('"+{hours} ч"'));
   });
 
-  test('create excursion lets guides edit an added itinerary slot by tap',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion lets guides edit an added itinerary slot by tap',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    expect(
-      source,
-      contains(
-          'Future<void> _openItineraryEditor({_ExcursionItineraryDraft? item})'),
-    );
-    expect(source, contains('initialItem: item'));
-    expect(source, contains('_itinerary[itemIndex] = result'));
-    expect(source, contains('onTap: () => _openItineraryEditor(item: item)'));
-    expect(source, contains('final _ExcursionItineraryDraft? initialItem'));
-  });
+      expect(
+        source,
+        contains(
+          'Future<void> _openItineraryEditor({_ExcursionItineraryDraft? item})',
+        ),
+      );
+      expect(source, contains('initialItem: item'));
+      expect(source, contains('_itinerary[itemIndex] = result'));
+      expect(source, contains('onTap: () => _openItineraryEditor(item: item)'));
+      expect(source, contains('final _ExcursionItineraryDraft? initialItem'));
+    },
+  );
 
   test(
     'create excursion can upload a custom cover or reuse selected attraction cover',
@@ -435,8 +475,9 @@ void main() {
       expect(source, contains('_coverChanged = false'));
       expect(source, contains('_coverUploadGeneration'));
 
-      final selectorStart =
-          source.indexOf('Future<void> _openLocationSelector');
+      final selectorStart = source.indexOf(
+        'Future<void> _openLocationSelector',
+      );
       final selectorEnd = source.indexOf(
         'Future<void> _openItineraryEditor',
         selectorStart,
@@ -491,42 +532,48 @@ void main() {
     },
   );
 
-  test('create excursion itinerary cards use unselected category color',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion itinerary cards use unselected category color',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('class _ItinerarySlotCard'));
-    expect(source, contains('color: const Color(0xFF4A321D)'));
-    expect(source, isNot(contains('color: const Color(0xFFF1E4D3)')));
-  });
+      expect(source, contains('class _ItinerarySlotCard'));
+      expect(source, contains('color: const Color(0xFF4A321D)'));
+      expect(source, isNot(contains('color: const Color(0xFFF1E4D3)')));
+    },
+  );
 
-  test('create excursion uses country picker before attraction selection',
-      () async {
-    final source = await File(
-      'lib/screens/excursions/create_excursion_screen.dart',
-    ).readAsString();
+  test(
+    'create excursion uses country picker before attraction selection',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
 
-    expect(source, contains('class _ExcursionCountryPickerField'));
-    expect(source, contains('class _ExcursionCountryPickerSheet'));
-    expect(source, contains('class _LandmarkSelectionCard'));
-    expect(source, contains('_openCountryPicker'));
-    expect(source, contains('String? _selectedCountryCode'));
-    expect(source, contains('_hasSelectedCountry'));
-    expect(source, contains('l10n.excursionSelectLocationAttractionSection'));
-    expect(source, contains('context.push<ExcursionLocationSelection>'));
-    expect(source, contains('countryCode: _selectedCountryCode!'));
-    expect(
-      source,
-      contains('onSelectLocation: _hasSelectedCountry ? _openLocationSelector'),
-    );
-    expect(source, isNot(contains('countryCodeController')));
-    expect(source, isNot(contains('actionLabel: _hasSelectedCountry')));
-    expect(source, isNot(contains('_isLocationEditingEnabled')));
-    expect(source, isNot(contains('enabled: isEditable')));
-    expect(source, isNot(contains('class _TransparentTextField')));
-  });
+      expect(source, contains('class _ExcursionCountryPickerField'));
+      expect(source, contains('class _ExcursionCountryPickerSheet'));
+      expect(source, contains('class _LandmarkSelectionCard'));
+      expect(source, contains('_openCountryPicker'));
+      expect(source, contains('String? _selectedCountryCode'));
+      expect(source, contains('_hasSelectedCountry'));
+      expect(source, contains('l10n.excursionSelectLocationAttractionSection'));
+      expect(source, contains('context.push<ExcursionLocationSelection>'));
+      expect(source, contains('countryCode: _selectedCountryCode!'));
+      expect(
+        source,
+        contains(
+          'onSelectLocation: _hasSelectedCountry ? _openLocationSelector',
+        ),
+      );
+      expect(source, isNot(contains('countryCodeController')));
+      expect(source, isNot(contains('actionLabel: _hasSelectedCountry')));
+      expect(source, isNot(contains('_isLocationEditingEnabled')));
+      expect(source, isNot(contains('enabled: isEditable')));
+      expect(source, isNot(contains('class _TransparentTextField')));
+    },
+  );
 
   test('router exposes create excursion as an authenticated route', () async {
     final routerSource = await File(

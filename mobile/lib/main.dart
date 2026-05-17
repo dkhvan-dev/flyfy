@@ -11,6 +11,7 @@ import 'providers/auth_provider.dart';
 import 'providers/session_provider.dart';
 import 'providers/locale_provider.dart';
 import 'core/router/app_router.dart';
+import 'core/ui/keyboard_dismiss_on_scroll.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'providers/activity_provider.dart';
 import 'providers/chat_provider.dart';
@@ -76,9 +77,11 @@ class _SuperAppState extends State<SuperApp> {
             locale: localeProvider.locale,
             builder: (context, child) {
               return _DismissKeyboardOnTap(
-                child: _PresenceHeartbeatBridge(
-                  child: _AttendanceSyncBridge(
-                    child: child ?? const SizedBox.shrink(),
+                child: AppKeyboardDismissOnScroll(
+                  child: _PresenceHeartbeatBridge(
+                    child: _AttendanceSyncBridge(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               );

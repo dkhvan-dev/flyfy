@@ -22,8 +22,11 @@ import '../../providers/excursion_provider.dart';
 import 'excursion_select_location_screen.dart';
 
 class CreateExcursionScreen extends StatefulWidget {
-  const CreateExcursionScreen(
-      {super.key, this.excursionId, this.initialExcursion});
+  const CreateExcursionScreen({
+    super.key,
+    this.excursionId,
+    this.initialExcursion,
+  });
 
   final String? excursionId;
   final ExcursionVm? initialExcursion;
@@ -278,7 +281,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     if (step < 0 || step >= _totalSteps || step == _currentStep) {
       return;
     }
-    FocusScope.of(context).unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _currentStep = step;
       _stepErrorText = null;
@@ -343,8 +346,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   String? _validateItinerary(AppLocalizations l10n) {
     if (_itinerary.any((item) => item.description.trim().length < 5)) {
-      _itineraryErrorText =
-          l10n.createExcursionItineraryDescriptionMinLengthValidation(5);
+      _itineraryErrorText = l10n
+          .createExcursionItineraryDescriptionMinLengthValidation(5);
       return _itineraryErrorText;
     }
     if (_itinerary.any((item) => item.title.trim().length < 2)) {
@@ -452,7 +455,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     final request = _buildRequest();
     final saved = _isEditMode
         ? await provider.updateExcursionOffer(
-            widget.excursionId!.trim(), request)
+            widget.excursionId!.trim(),
+            request,
+          )
         : await provider.createAndPublishExcursion(request);
 
     if (!mounted) return;
@@ -479,7 +484,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     await showErrorDialog(
       context,
       title: l10n.error,
-      message: provider.actionErrorMessage ??
+      message:
+          provider.actionErrorMessage ??
           (_isEditMode
               ? l10n.createExcursionUpdateFailed
               : l10n.createExcursionFailed),
@@ -526,7 +532,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   Map<String, CreateExcursionLocalizedCopyRequest>
-      _productTranslationsForRequest() {
+  _productTranslationsForRequest() {
     if (_selectedLandmarkId == null) {
       return const {};
     }
@@ -577,7 +583,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   Map<String, CreateExcursionItineraryLocalizedCopyRequest>
-      _itineraryTranslationsForRequest(_ExcursionItineraryDraft item) {
+  _itineraryTranslationsForRequest(_ExcursionItineraryDraft item) {
     final locale = Localizations.localeOf(
       context,
     ).languageCode.trim().toLowerCase();
@@ -631,8 +637,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       if (_selectedLanguageCodes.length >= _maxExcursionLanguages) {
         _stepErrorText = AppLocalizations.of(
           context,
-        )!
-            .createExcursionLanguagesLimitValidation(_maxExcursionLanguages);
+        )!.createExcursionLanguagesLimitValidation(_maxExcursionLanguages);
         return;
       }
 
@@ -645,13 +650,13 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   Future<void> _openIncludedItemsEditor() async {
     final result =
         await showModalBottomSheet<List<_ExcursionIncludedItemDraft>>(
-      context: context,
-      isDismissible: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) =>
-          _ExcursionIncludedItemsEditorSheet(initialItems: _includedItems),
-    );
+          context: context,
+          isDismissible: true,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) =>
+              _ExcursionIncludedItemsEditorSheet(initialItems: _includedItems),
+        );
 
     if (result == null || !mounted) return;
     setState(() {
@@ -663,7 +668,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   List<_ExcursionIncludedItemDraft> _uniqueIncludedItemDrafts(
-      List<String> values) {
+    List<String> values,
+  ) {
     final seen = <_ExcursionIncludedItemType>{};
     final items = <_ExcursionIncludedItemDraft>[];
     for (final value in values) {
@@ -1054,8 +1060,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           : result.coverFileId!.trim();
       _selectedAttractionCoverImageUrl =
           (result.coverImageUrl ?? '').trim().isEmpty
-              ? null
-              : result.coverImageUrl!.trim();
+          ? null
+          : result.coverImageUrl!.trim();
       _replaceCustomCoverWithAttractionCover();
       _productTranslations = _copyLocationTranslations(result.translations);
       if (result.categorySlug.trim().isNotEmpty) {
@@ -1084,10 +1090,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _AddItinerarySlotSheet(
-        l10n: l10n,
-        initialItem: item,
-      ),
+      builder: (context) =>
+          _AddItinerarySlotSheet(l10n: l10n, initialItem: item),
     );
     if (result == null) return;
 
@@ -1141,7 +1145,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
 
   void _handleStepBackSwipeEnd(DragEndDetails details) {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldGoBack = _isTrackingStepBackSwipe &&
+    final shouldGoBack =
+        _isTrackingStepBackSwipe &&
         _currentStep > 0 &&
         (_stepBackSwipeDistance >= _stepBackSwipeMinDistance ||
             primaryVelocity >= _stepBackSwipeMinVelocity);
@@ -1211,8 +1216,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
                       _ExcursionBottomActionBar(
                         label: _currentStep == _totalSteps - 1
                             ? (_isEditMode
-                                ? l10n.createExcursionSaveChanges
-                                : l10n.createExcursionSubmit)
+                                  ? l10n.createExcursionSaveChanges
+                                  : l10n.createExcursionSubmit)
                             : l10n.createStepNext,
                         isSubmitting: _isSubmitting || _isCoverUploading,
                         onPressed: _nextStep,
@@ -1634,10 +1639,7 @@ class _DurationUnitPickerField extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(
-                Icons.timelapse_rounded,
-                color: AppColors.accent,
-              ),
+              const Icon(Icons.timelapse_rounded, color: AppColors.accent),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -1733,40 +1735,40 @@ extension _ExcursionIncludedItemTypeUi on _ExcursionIncludedItemType {
     final normalized = languageCode.trim().toLowerCase();
     final labels = switch (this) {
       _ExcursionIncludedItemType.transport => const {
-          'en': 'Transport',
-          'ru': 'Транспорт',
-          'kk': 'Көлік',
-        },
+        'en': 'Transport',
+        'ru': 'Транспорт',
+        'kk': 'Көлік',
+      },
       _ExcursionIncludedItemType.food => const {
-          'en': 'Food',
-          'ru': 'Питание',
-          'kk': 'Тамақ',
-        },
+        'en': 'Food',
+        'ru': 'Питание',
+        'kk': 'Тамақ',
+      },
       _ExcursionIncludedItemType.tickets => const {
-          'en': 'Tickets',
-          'ru': 'Билеты',
-          'kk': 'Билеттер',
-        },
+        'en': 'Tickets',
+        'ru': 'Билеты',
+        'kk': 'Билеттер',
+      },
       _ExcursionIncludedItemType.equipment => const {
-          'en': 'Equipment',
-          'ru': 'Снаряжение',
-          'kk': 'Жабдық',
-        },
+        'en': 'Equipment',
+        'ru': 'Снаряжение',
+        'kk': 'Жабдық',
+      },
       _ExcursionIncludedItemType.guide => const {
-          'en': 'Guide',
-          'ru': 'Гид',
-          'kk': 'Гид',
-        },
+        'en': 'Guide',
+        'ru': 'Гид',
+        'kk': 'Гид',
+      },
       _ExcursionIncludedItemType.photo => const {
-          'en': 'Photo',
-          'ru': 'Фото',
-          'kk': 'Фото',
-        },
+        'en': 'Photo',
+        'ru': 'Фото',
+        'kk': 'Фото',
+      },
       _ExcursionIncludedItemType.other => const {
-          'en': 'Other',
-          'ru': 'Другое',
-          'kk': 'Басқа',
-        },
+        'en': 'Other',
+        'ru': 'Другое',
+        'kk': 'Басқа',
+      },
     };
     return labels[normalized] ?? labels[normalized.split('-').first] ?? name;
   }
@@ -1785,7 +1787,8 @@ class _ExcursionIncludedItemDraft {
       return _ExcursionIncludedItemDraft(type: type);
     }
     return _ExcursionIncludedItemDraft(
-        type: _excursionIncludedItemTypeFromName(value));
+      type: _excursionIncludedItemTypeFromName(value),
+    );
   }
 
   final _ExcursionIncludedItemType type;
@@ -1810,26 +1813,22 @@ _ExcursionIncludedItemType _excursionIncludedItemTypeFromName(String rawValue) {
   return switch (normalizedWords) {
     'transport' ||
     'транспорт' ||
-    'көлік' =>
-      _ExcursionIncludedItemType.transport,
+    'көлік' => _ExcursionIncludedItemType.transport,
     'food' ||
     'meal' ||
     'meals' ||
     'питание' ||
     'еда' ||
-    'тамақ' =>
-      _ExcursionIncludedItemType.food,
+    'тамақ' => _ExcursionIncludedItemType.food,
     'tickets' ||
     'ticket' ||
     'билеты' ||
     'билет' ||
-    'билеттер' =>
-      _ExcursionIncludedItemType.tickets,
+    'билеттер' => _ExcursionIncludedItemType.tickets,
     'equipment' ||
     'gear' ||
     'снаряжение' ||
-    'жабдық' =>
-      _ExcursionIncludedItemType.equipment,
+    'жабдық' => _ExcursionIncludedItemType.equipment,
     'guide' || 'гид' => _ExcursionIncludedItemType.guide,
     'photo' || 'photos' || 'фото' => _ExcursionIncludedItemType.photo,
     _ => _ExcursionIncludedItemType.other,
@@ -1837,8 +1836,10 @@ _ExcursionIncludedItemType _excursionIncludedItemTypeFromName(String rawValue) {
 }
 
 class ExcursionCountryOption {
-  const ExcursionCountryOption(
-      {required this.code, required this.searchAliases});
+  const ExcursionCountryOption({
+    required this.code,
+    required this.searchAliases,
+  });
 
   final String code;
   final List<String> searchAliases;
@@ -1870,7 +1871,9 @@ const excursionCountryOptions = [
   ),
   ExcursionCountryOption(code: 'FR', searchAliases: ['France', 'Франция']),
   ExcursionCountryOption(
-      code: 'JP', searchAliases: ['Japan', 'Япония', 'Жапония']),
+    code: 'JP',
+    searchAliases: ['Japan', 'Япония', 'Жапония'],
+  ),
   ExcursionCountryOption(code: 'IT', searchAliases: ['Italy', 'Италия']),
 ];
 
@@ -1978,10 +1981,12 @@ class _ExcursionLanguagePickerFieldState
         .where((token) => token.trim().isNotEmpty)
         .toList(growable: false);
 
-    return _excursionLanguagePickerCodes.where((code) {
-      final haystack = _languageSearchHaystack(l10n, code);
-      return tokens.every(haystack.contains);
-    }).toList(growable: false);
+    return _excursionLanguagePickerCodes
+        .where((code) {
+          final haystack = _languageSearchHaystack(l10n, code);
+          return tokens.every(haystack.contains);
+        })
+        .toList(growable: false);
   }
 
   List<String> _selectedLanguages() {
@@ -2105,8 +2110,9 @@ class _ExcursionLanguagePickerFieldState
                           separatorBuilder: (_, _) => const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             final code = visibleLanguages[index];
-                            final selected =
-                                widget.selectedCodes.contains(code);
+                            final selected = widget.selectedCodes.contains(
+                              code,
+                            );
                             return _ExcursionLanguageOptionRow(
                               label: localizedExcursionLanguageLabel(
                                 l10n,
@@ -2249,8 +2255,8 @@ class _ExcursionLanguageChip extends StatelessWidget {
     final foreground = disabled
         ? const Color(0xFF806F5E)
         : selected
-            ? Colors.white
-            : const Color(0xFFFFF8F0);
+        ? Colors.white
+        : const Color(0xFFFFF8F0);
 
     return Material(
       color: selected ? AppColors.accent : const Color(0xFF3A2A1D),
@@ -2284,8 +2290,10 @@ class _ExcursionLanguageChip extends StatelessWidget {
 }
 
 class _ExcursionIncludedItemsPreview extends StatelessWidget {
-  const _ExcursionIncludedItemsPreview(
-      {required this.items, required this.onTap});
+  const _ExcursionIncludedItemsPreview({
+    required this.items,
+    required this.onTap,
+  });
 
   final List<_ExcursionIncludedItemDraft> items;
   final VoidCallback onTap;
@@ -2414,14 +2422,15 @@ class _ExcursionIncludedItemsEditorSheetState
   }
 
   void _submit() {
-    final items = selectedTypes
-        .map((type) => _ExcursionIncludedItemDraft(type: type))
-        .toList(growable: false)
-      ..sort(
-        (a, b) => _selectableIncludedItemTypes
-            .indexOf(a.type)
-            .compareTo(_selectableIncludedItemTypes.indexOf(b.type)),
-      );
+    final items =
+        selectedTypes
+            .map((type) => _ExcursionIncludedItemDraft(type: type))
+            .toList(growable: false)
+          ..sort(
+            (a, b) => _selectableIncludedItemTypes
+                .indexOf(a.type)
+                .compareTo(_selectableIncludedItemTypes.indexOf(b.type)),
+          );
     Navigator.of(context).pop(items);
   }
 
@@ -2680,8 +2689,8 @@ class _ExcursionStepIndicator extends StatelessWidget {
                   color: isDone
                       ? AppColors.success
                       : isActive
-                          ? AppColors.accent
-                          : const Color(0xFF5A370D),
+                      ? AppColors.accent
+                      : const Color(0xFF5A370D),
                   boxShadow: isDone
                       ? [
                           BoxShadow(
@@ -2691,14 +2700,14 @@ class _ExcursionStepIndicator extends StatelessWidget {
                           ),
                         ]
                       : isActive
-                          ? [
-                              BoxShadow(
-                                color: AppColors.accent.withValues(alpha: 0.24),
-                                blurRadius: 22,
-                                offset: const Offset(0, 10),
-                              ),
-                            ]
-                          : null,
+                      ? [
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.24),
+                            blurRadius: 22,
+                            offset: const Offset(0, 10),
+                          ),
+                        ]
+                      : null,
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.08),
                   ),
@@ -2876,8 +2885,10 @@ class _ExcursionCountryPickerField extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
               child: Container(
                 constraints: const BoxConstraints(minHeight: 62),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
@@ -3018,7 +3029,8 @@ class _ExcursionCountryPickerSheetState
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final country = _visibleCountries[index];
-                      final selected = country.code ==
+                      final selected =
+                          country.code ==
                           (widget.selectedCode ?? '').trim().toUpperCase();
                       return ListTile(
                         onTap: () => Navigator.of(context).pop(country.code),
@@ -3131,11 +3143,11 @@ class _LandmarkSelectionCard extends StatelessWidget {
         : l10n.createExcursionLandmarkValidation;
     final subtitle = hasSelection
         ? (displayCity.isNotEmpty
-            ? displayCity
-            : l10n.createExcursionAttractionCatalogSource)
+              ? displayCity
+              : l10n.createExcursionAttractionCatalogSource)
         : onSelectLocation == null
-            ? l10n.createExcursionSelectCountryFirst
-            : l10n.createExcursionAttractionCatalogHint;
+        ? l10n.createExcursionSelectCountryFirst
+        : l10n.createExcursionAttractionCatalogHint;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3220,10 +3232,12 @@ class _LandmarkSelectionCard extends StatelessWidget {
                     onPressed: onSelectLocation,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.accent,
-                      disabledBackgroundColor:
-                          Colors.white.withValues(alpha: 0.10),
-                      disabledForegroundColor:
-                          Colors.white.withValues(alpha: 0.42),
+                      disabledBackgroundColor: Colors.white.withValues(
+                        alpha: 0.10,
+                      ),
+                      disabledForegroundColor: Colors.white.withValues(
+                        alpha: 0.42,
+                      ),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -3959,8 +3973,9 @@ class _CurrencyPickerField extends StatelessWidget {
                   return ListTile(
                     onTap: () => Navigator.of(context).pop(option.code),
                     leading: CircleAvatar(
-                      backgroundColor:
-                          selected ? AppColors.accent : const Color(0xFF3A2A1D),
+                      backgroundColor: selected
+                          ? AppColors.accent
+                          : const Color(0xFF3A2A1D),
                       foregroundColor: Colors.white,
                       child: Text(option.symbol),
                     ),
@@ -4015,8 +4030,10 @@ class _CurrencyPickerField extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
               child: Container(
                 constraints: const BoxConstraints(minHeight: 62),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
@@ -4113,8 +4130,9 @@ class _VisibilityCard extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        color:
-                            selected ? Colors.white : const Color(0xFFFFE3B8),
+                        color: selected
+                            ? Colors.white
+                            : const Color(0xFFFFE3B8),
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
@@ -4286,10 +4304,7 @@ class _ExcursionBottomActionBar extends StatelessWidget {
 }
 
 class _AddItinerarySlotSheet extends StatefulWidget {
-  const _AddItinerarySlotSheet({
-    required this.l10n,
-    this.initialItem,
-  });
+  const _AddItinerarySlotSheet({required this.l10n, this.initialItem});
 
   final AppLocalizations l10n;
   final _ExcursionItineraryDraft? initialItem;
@@ -4351,8 +4366,8 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
       titleErrorText = widget.l10n.createExcursionItineraryTitleValidation;
     }
     if (!isCompleteDraft && draft.description.trim().length < 5) {
-      descriptionErrorText =
-          widget.l10n.createExcursionItineraryDescriptionMinLengthValidation(5);
+      descriptionErrorText = widget.l10n
+          .createExcursionItineraryDescriptionMinLengthValidation(5);
     }
     if (offsetErrorText != null ||
         titleErrorText != null ||

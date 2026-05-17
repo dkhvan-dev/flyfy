@@ -45,6 +45,7 @@ class AppRouter {
     return GoRouter(
       initialLocation: '/',
       refreshListenable: authProvider,
+      observers: [KeyboardDismissRouteObserver()],
       redirect: (context, state) {
         final authState = authProvider.state;
         final location = state.uri.path;
@@ -97,8 +98,9 @@ class AppRouter {
         GoRoute(
           path: '/stories/create',
           builder: (context, state) {
-            final initialStory =
-                state.extra is StoryVm ? state.extra! as StoryVm : null;
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(initialStory: initialStory),
             );
@@ -108,8 +110,9 @@ class AppRouter {
           path: '/stories/:storyId/edit',
           builder: (context, state) {
             final storyId = state.pathParameters['storyId'] ?? '';
-            final initialStory =
-                state.extra is StoryVm ? state.extra! as StoryVm : null;
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
             return _withAndroidBackSwipe(
               CreateStoryScreen(storyId: storyId, initialStory: initialStory),
             );
@@ -120,8 +123,9 @@ class AppRouter {
           builder: (context, state) {
             final slug = state.pathParameters['slug'] ?? '';
             final initialCommentId = state.uri.queryParameters['comment'];
-            final initialStory =
-                state.extra is StoryVm ? state.extra! as StoryVm : null;
+            final initialStory = state.extra is StoryVm
+                ? state.extra! as StoryVm
+                : null;
             return _withAndroidBackSwipe(
               StoryDetailsScreen(
                 slug: slug,
@@ -280,7 +284,8 @@ class AppRouter {
             final args = state.extra is ExcursionLocationPickerArgs
                 ? state.extra! as ExcursionLocationPickerArgs
                 : null;
-            final initialSelection = args?.initialSelection ??
+            final initialSelection =
+                args?.initialSelection ??
                 (state.extra is ExcursionLocationSelection
                     ? state.extra! as ExcursionLocationSelection
                     : null);
@@ -299,12 +304,15 @@ class AppRouter {
           path: '/excursions/:excursionId/edit',
           pageBuilder: (context, state) {
             final excursionId = state.pathParameters['excursionId'] ?? '';
-            final initialExcursion =
-                state.extra is ExcursionVm ? state.extra! as ExcursionVm : null;
+            final initialExcursion = state.extra is ExcursionVm
+                ? state.extra! as ExcursionVm
+                : null;
             return _buildActivityEditorPage(
               state: state,
               child: CreateExcursionScreen(
-                  excursionId: excursionId, initialExcursion: initialExcursion),
+                excursionId: excursionId,
+                initialExcursion: initialExcursion,
+              ),
             );
           },
         ),
@@ -315,7 +323,8 @@ class AppRouter {
             final args = state.extra is ExcursionBookingRouteArgs
                 ? state.extra! as ExcursionBookingRouteArgs
                 : null;
-            final initialExcursion = args?.excursion ??
+            final initialExcursion =
+                args?.excursion ??
                 (state.extra is ExcursionVm
                     ? state.extra! as ExcursionVm
                     : null);
@@ -332,11 +341,14 @@ class AppRouter {
           path: '/excursions/:excursionId',
           builder: (context, state) {
             final excursionId = state.pathParameters['excursionId'] ?? '';
-            final initialExcursion =
-                state.extra is ExcursionVm ? state.extra! as ExcursionVm : null;
+            final initialExcursion = state.extra is ExcursionVm
+                ? state.extra! as ExcursionVm
+                : null;
             return _withAndroidBackSwipe(
               ExcursionDetailsScreen(
-                  excursionId: excursionId, initialExcursion: initialExcursion),
+                excursionId: excursionId,
+                initialExcursion: initialExcursion,
+              ),
             );
           },
         ),
@@ -373,8 +385,9 @@ class AppRouter {
         GoRoute(
           path: '/map',
           builder: (context, state) {
-            final initialTarget =
-                state.extra is MapTarget ? state.extra! as MapTarget : null;
+            final initialTarget = state.extra is MapTarget
+                ? state.extra! as MapTarget
+                : null;
             return _withAndroidBackSwipe(
               MapScreen(initialTarget: initialTarget),
             );
@@ -501,6 +514,36 @@ class AppRouter {
     }
 
     return false;
+  }
+}
+
+class KeyboardDismissRouteObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _dismissKeyboard();
+    super.didPush(route, previousRoute);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _dismissKeyboard();
+    super.didPop(route, previousRoute);
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _dismissKeyboard();
+    super.didRemove(route, previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _dismissKeyboard();
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+  }
+
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 }
 

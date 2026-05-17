@@ -277,11 +277,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         : (profileCountryCode ?? currentCountryCode);
     final initialCurrencyCode = widget.hasInitialActivity
         ? (currentCurrencyCode ??
-            _currencyForCountryCode(initialCountryCode) ??
-            profileCurrencyCode)
+              _currencyForCountryCode(initialCountryCode) ??
+              profileCurrencyCode)
         : (profileCurrencyCode ??
-            _currencyForCountryCode(initialCountryCode) ??
-            currentCurrencyCode);
+              _currencyForCountryCode(initialCountryCode) ??
+              currentCurrencyCode);
 
     if (mounted) {
       setState(() {
@@ -326,7 +326,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
     final resolvedCurrencyCode =
         _currencyForCountryCode(normalizedCountryCode) ??
-            _normalizeCurrencyCode(fallbackCurrency);
+        _normalizeCurrencyCode(fallbackCurrency);
     if (resolvedCurrencyCode != null) {
       _currencyCtrl.text = resolvedCurrencyCode;
     }
@@ -734,8 +734,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       nextMonth.month + 1,
       0,
     ).day;
-    final clampedDay =
-        value.day > lastDayOfNextMonth ? lastDayOfNextMonth : value.day;
+    final clampedDay = value.day > lastDayOfNextMonth
+        ? lastDayOfNextMonth
+        : value.day;
     return DateTime(
       nextMonth.year,
       nextMonth.month,
@@ -881,6 +882,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     if (step < 0 || step >= _totalSteps) return;
     if (_currentStep == step && _pendingProgrammaticStep == null) return;
 
+    FocusManager.instance.primaryFocus?.unfocus();
     _pendingProgrammaticStep = step;
     setState(() => _currentStep = step);
 
@@ -950,7 +952,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   void _handleStepBackSwipeEnd(DragEndDetails details) {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldGoBack = _isTrackingStepBackSwipe &&
+    final shouldGoBack =
+        _isTrackingStepBackSwipe &&
         _currentStep > 0 &&
         (_stepBackSwipeDistance >= _stepBackSwipeMinDistance ||
             primaryVelocity >= _stepBackSwipeMinVelocity);
@@ -1009,11 +1012,13 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         if (!_validateScheduleStep(l10n)) {
           return false;
         }
-        final meetingUrlError = (_format == 'ONLINE' || _format == 'HYBRID') &&
+        final meetingUrlError =
+            (_format == 'ONLINE' || _format == 'HYBRID') &&
                 _meetingUrlCtrl.text.trim().isEmpty
             ? l10n.createMeetingUrlValidation
             : null;
-        final addressError = (_format == 'OFFLINE' || _format == 'HYBRID') &&
+        final addressError =
+            (_format == 'OFFLINE' || _format == 'HYBRID') &&
                 _cityNameCtrl.text.trim().isEmpty &&
                 _addressTextCtrl.text.trim().isEmpty
             ? l10n.createLocationValidation
@@ -1303,8 +1308,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       longitude: _longitudeValue,
       mapUrl: _mapUrlValue,
       meetingUrl: _meetingUrlValue,
-      visibilityPassword:
-          _visibility == 'PRIVATE' ? _visibilityPasswordValue : null,
+      visibilityPassword: _visibility == 'PRIVATE'
+          ? _visibilityPasswordValue
+          : null,
       coverFileId: _coverFileId,
     );
   }
@@ -1700,18 +1706,19 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                     onPrimaryAction: widget.isRepeatMode
                         ? _submitAndPublish
                         : _shouldRepublishCancelledActivity
-                            ? _submit
-                            : widget.isEditMode
-                                ? _submit
-                                : _submitAndPublish,
+                        ? _submit
+                        : widget.isEditMode
+                        ? _submit
+                        : _submitAndPublish,
                     primaryLabel: widget.isRepeatMode
                         ? l10n.activityPublishButton
                         : _shouldRepublishCancelledActivity
-                            ? l10n.activityPublishButton
-                            : widget.isEditMode
-                                ? l10n.editActivitySubmit
-                                : l10n.createPublishActivityCta,
-                    showPrimaryIcon: !widget.isEditMode ||
+                        ? l10n.activityPublishButton
+                        : widget.isEditMode
+                        ? l10n.editActivitySubmit
+                        : l10n.createPublishActivityCta,
+                    showPrimaryIcon:
+                        !widget.isEditMode ||
                         widget.isRepeatMode ||
                         _shouldRepublishCancelledActivity,
                   )
@@ -1833,7 +1840,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               if (provider.categoryState == ActivitiesState.error &&
                   items.isEmpty) {
                 return _CategoryCatalogState(
-                  message: provider.categoryErrorMessage ??
+                  message:
+                      provider.categoryErrorMessage ??
                       l10n.createCategoryLoadFailed,
                   trailing: TextButton(
                     onPressed: () => context
@@ -1989,8 +1997,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             locationLocked
                 ? l10n.editLocationLocked
                 : (_isResolvingMapSelection
-                    ? l10n.createMapResolvingHint
-                    : l10n.createMapTapHint),
+                      ? l10n.createMapResolvingHint
+                      : l10n.createMapTapHint),
             style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
           ),
           const SizedBox(height: 18),
@@ -2206,8 +2214,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMinShort,
-                            controller:
-                                isUnlimited ? null : _minParticipantsCtrl,
+                            controller: isUnlimited
+                                ? null
+                                : _minParticipantsCtrl,
                             placeholder: '$_minActivityParticipants',
                             readOnly: isUnlimited,
                             readOnlyValue: '$_minActivityParticipants',
@@ -2219,8 +2228,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         Expanded(
                           child: _Step3LimitField(
                             label: l10n.createParticipantsMaxShort,
-                            controller:
-                                isUnlimited ? null : _maxParticipantsCtrl,
+                            controller: isUnlimited
+                                ? null
+                                : _maxParticipantsCtrl,
                             placeholder: l10n.createNoLimitPlaceholder,
                             readOnly: isUnlimited,
                             readOnlyValue: l10n.createNoLimitPlaceholder,
@@ -2387,8 +2397,8 @@ class _StepIndicator extends StatelessWidget {
                     color: isDone
                         ? AppColors.success
                         : isActive
-                            ? AppColors.accent
-                            : const Color(0xFF6B4208),
+                        ? AppColors.accent
+                        : const Color(0xFF6B4208),
                   ),
                   child: Center(child: stepChild),
                 ),
@@ -3019,18 +3029,20 @@ class _DateTimeInputFormatter extends TextInputFormatter {
     final selectionOffset = rawSelectionOffset < 0
         ? 0
         : rawSelectionOffset > newValue.text.length
-            ? newValue.text.length
-            : rawSelectionOffset;
+        ? newValue.text.length
+        : rawSelectionOffset;
     final selectionDigitCount = _countDigitsBeforeOffset(
       newValue.text,
       selectionOffset,
     );
-    final selectionFollowsSeparator = selectionOffset > 0 &&
+    final selectionFollowsSeparator =
+        selectionOffset > 0 &&
         !_isDigit(newValue.text.codeUnitAt(selectionOffset - 1));
 
     final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final trimmed =
-        digits.length > _maxDigits ? digits.substring(0, _maxDigits) : digits;
+    final trimmed = digits.length > _maxDigits
+        ? digits.substring(0, _maxDigits)
+        : digits;
     final clampedSelectionDigitCount = selectionDigitCount > trimmed.length
         ? trimmed.length
         : selectionDigitCount;
@@ -3282,8 +3294,9 @@ class _Step3PriceField extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.2,
                   ),
-                  hintText:
-                      hasValue ? placeholder : '$currencyCode $placeholder',
+                  hintText: hasValue
+                      ? placeholder
+                      : '$currencyCode $placeholder',
                   hintStyle: const TextStyle(
                     color: Color(0xFF9F8D78),
                     fontSize: 20,
@@ -3698,8 +3711,8 @@ class _Step1TextFieldState extends State<_Step1TextField> {
               color: widget.errorText != null
                   ? _inlineValidationColor
                   : (_focusNode.hasFocus
-                      ? AppColors.accent
-                      : Colors.white.withValues(alpha: 0.02)),
+                        ? AppColors.accent
+                        : Colors.white.withValues(alpha: 0.02)),
               width: widget.errorText != null
                   ? 1.3
                   : (_focusNode.hasFocus ? 1.5 : 1),
@@ -3710,13 +3723,13 @@ class _Step1TextFieldState extends State<_Step1TextField> {
             focusNode: _focusNode,
             onChanged: widget.onChanged,
             maxLength: widget.maxLength,
-            buildCounter: (
-              context, {
-              required int currentLength,
-              required bool isFocused,
-              int? maxLength,
-            }) =>
-                null,
+            buildCounter:
+                (
+                  context, {
+                  required int currentLength,
+                  required bool isFocused,
+                  int? maxLength,
+                }) => null,
             maxLines: widget.maxLines,
             minLines: widget.isMultiline ? widget.maxLines : 1,
             keyboardType: widget.isMultiline
@@ -3799,8 +3812,8 @@ class _CategorySelectorField extends StatelessWidget {
                 color: errorText != null
                     ? _inlineValidationColor
                     : (isPlaceholder
-                        ? Colors.white.withValues(alpha: 0.02)
-                        : AppColors.accent.withValues(alpha: 0.3)),
+                          ? Colors.white.withValues(alpha: 0.02)
+                          : AppColors.accent.withValues(alpha: 0.3)),
               ),
             ),
             child: Row(
