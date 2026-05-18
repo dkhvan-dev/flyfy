@@ -152,15 +152,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileCurrency => 'Валюта';
 
   @override
-  String get profileVisibility => 'Видимость профиля';
-
-  @override
-  String get profilePublic => 'Публичный';
-
-  @override
-  String get profilePrivate => 'Приватный';
-
-  @override
   String get editProfileButton => 'Редактировать профиль';
 
   @override

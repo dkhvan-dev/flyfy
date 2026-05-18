@@ -370,24 +370,6 @@ abstract class AppLocalizations {
   /// **'Currency'**
   String get profileCurrency;
 
-  /// No description provided for @profileVisibility.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile visibility'**
-  String get profileVisibility;
-
-  /// No description provided for @profilePublic.
-  ///
-  /// In en, this message translates to:
-  /// **'Public'**
-  String get profilePublic;
-
-  /// No description provided for @profilePrivate.
-  ///
-  /// In en, this message translates to:
-  /// **'Private'**
-  String get profilePrivate;
-
   /// No description provided for @editProfileButton.
   ///
   /// In en, this message translates to:

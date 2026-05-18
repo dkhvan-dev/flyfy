@@ -44,6 +44,8 @@ message GetUserProfileResponse {
 }
 
 message UpdateUserProfileRequest {
+  reserved 13;
+
   string user_id = 1;
   string first_name = 2;
   string last_name = 3;
@@ -56,7 +58,6 @@ message UpdateUserProfileRequest {
   string locale = 10;
   string timezone = 11;
   string currency = 12;
-  optional bool is_public = 13;
 }
 
 message UpdateUserProfileResponse {
@@ -85,6 +86,8 @@ message User {
 }
 
 message UserProfile {
+  reserved 13;
+
   string user_id = 1;
   string first_name = 2;
   string last_name = 3;
@@ -97,7 +100,6 @@ message UserProfile {
   string locale = 10;
   string timezone = 11;
   string currency = 12;
-  bool is_public = 13;
   string created_at = 14;
   string updated_at = 15;
   bool is_online = 16;
@@ -160,6 +162,8 @@ message ListPublicProfilesResponse {
 }
 
 message PublicProfile {
+  reserved 8;
+
   string user_id = 1;
   string display_name = 2;
   string bio = 3;
@@ -167,7 +171,6 @@ message PublicProfile {
   string country_code = 5;
   string locale = 6;
   string timezone = 7;
-  bool is_public = 8;
   bool is_online = 9;
   string last_seen_at = 10;
   string first_name = 11;

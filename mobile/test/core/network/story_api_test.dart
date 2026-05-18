@@ -10,12 +10,10 @@ import 'package:superapp/core/storage/secure_storage.dart';
 
 void main() {
   test('listStoriesPage exposes backend total when it is present', () async {
-    final adapter = _JsonAdapter(
-      {
-        'items': [_storyJson('one'), _storyJson('two')],
-        'total': 42,
-      },
-    );
+    final adapter = _JsonAdapter({
+      'items': [_storyJson('one'), _storyJson('two')],
+      'total': 42,
+    });
     final api = StoryApi(
       apiClient: ApiClient(
         dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
@@ -31,25 +29,27 @@ void main() {
     expect(page.total, 42);
   });
 
-  test('listStoriesPage falls back to parsed item count without total',
-      () async {
-    final adapter = _JsonAdapter({
-      'items': [_storyJson('one')],
-    });
-    final api = StoryApi(
-      apiClient: ApiClient(
-        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
-          ..httpClientAdapter = adapter,
-        secureStorage: _FakeSecureStorage(),
-      ),
-    );
+  test(
+    'listStoriesPage falls back to parsed item count without total',
+    () async {
+      final adapter = _JsonAdapter({
+        'items': [_storyJson('one')],
+      });
+      final api = StoryApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
 
-    final page = await api.listStoriesPage(limit: 8);
+      final page = await api.listStoriesPage(limit: 8);
 
-    expect(page.items, hasLength(1));
-    expect(page.hasMore, isFalse);
-    expect(page.total, 1);
-  });
+      expect(page.items, hasLength(1));
+      expect(page.hasMore, isFalse);
+      expect(page.total, 1);
+    },
+  );
 }
 
 Map<String, Object?> _storyJson(String id) {
@@ -66,7 +66,6 @@ Map<String, Object?> _storyJson(String id) {
       'userId': 'author-$id',
       'locale': 'en',
       'timezone': 'Asia/Almaty',
-      'isPublic': true,
     },
     'likedByViewer': false,
     'shareUrl': '',

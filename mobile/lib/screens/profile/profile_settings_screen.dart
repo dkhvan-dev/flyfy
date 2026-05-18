@@ -311,10 +311,6 @@ class _ProfileSettingsHero extends StatelessWidget {
                     : l10n.profileTitle,
                 highlighted: profile.isGuide,
               ),
-              _MiniPill(
-                text:
-                    profile.isPublic ? l10n.profilePublic : l10n.profilePrivate,
-              ),
             ],
           ),
           SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),

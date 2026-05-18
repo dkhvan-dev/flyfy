@@ -4,7 +4,6 @@ class UserProfileVm {
     required this.status,
     required this.locale,
     required this.timezone,
-    required this.isPublic,
     required this.isProfileCompleted,
     required this.roles,
     required this.followersCount,
@@ -27,7 +26,6 @@ class UserProfileVm {
   final String status;
   final String locale;
   final String timezone;
-  final bool isPublic;
   final bool isProfileCompleted;
   final List<String> roles;
   final int followersCount;
@@ -69,7 +67,6 @@ class UserProfileVm {
       locale: profile['locale']?.toString() ?? 'ru',
       timezone: profile['timezone']?.toString() ?? 'Asia/Almaty',
       currency: profile['currency']?.toString(),
-      isPublic: profile['isPublic'] == true,
       isProfileCompleted: profile['isProfileCompleted'] == true,
       roles: rawRoles is List
           ? rawRoles.map((item) => item.toString()).toList(growable: false)
@@ -77,8 +74,9 @@ class UserProfileVm {
       followersCount: int.tryParse(followers['count']?.toString() ?? '') ?? 0,
       isFollowedByMe: followers['isFollowedByMe'] == true,
       settings: settings == null ? null : UserSettingsVm.fromJson(settings),
-      reputation:
-          reputation == null ? null : UserReputationVm.fromJson(reputation),
+      reputation: reputation == null
+          ? null
+          : UserReputationVm.fromJson(reputation),
     );
   }
 
@@ -88,7 +86,6 @@ class UserProfileVm {
       status: status,
       locale: locale,
       timezone: timezone,
-      isPublic: isPublic,
       isProfileCompleted: isProfileCompleted,
       roles: roles,
       followersCount: followersCount ?? this.followersCount,

@@ -88,22 +88,22 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
   void initState() {
     super.initState();
     final profile = context.read<SessionProvider>().profile;
-    _fullNameController = TextEditingController(
-      text: _composeFullName(profile),
-    )..addListener(() {
+    _fullNameController = TextEditingController(text: _composeFullName(profile))
+      ..addListener(() {
         if (_fullNameError != null && mounted) {
           setState(() => _fullNameError = null);
         }
       });
     _birthDate = profile?.birthDate;
-    _birthDateController = TextEditingController(
-      text: _birthDate == null ? '' : _formatBirthDate(_birthDate!),
-    )..addListener(() {
-        _birthDate = _tryParseBirthDate(_birthDateController.text);
-        if (_birthDateError != null && mounted) {
-          setState(() => _birthDateError = null);
-        }
-      });
+    _birthDateController =
+        TextEditingController(
+          text: _birthDate == null ? '' : _formatBirthDate(_birthDate!),
+        )..addListener(() {
+          _birthDate = _tryParseBirthDate(_birthDateController.text);
+          if (_birthDateError != null && mounted) {
+            setState(() => _birthDateError = null);
+          }
+        });
     _countryCode = _normalizeCountryCode(profile?.countryCode) ?? 'KZ';
     _loadExistingApplication();
   }
@@ -156,12 +156,12 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
           _application = application;
           _identityDocumentType =
               identityDoc?.documentType.trim().isNotEmpty == true
-                  ? identityDoc!.documentType
-                  : _identityDocumentType;
+              ? identityDoc!.documentType
+              : _identityDocumentType;
           _professionalDocumentType =
               professionalDoc?.documentType.trim().isNotEmpty == true
-                  ? professionalDoc!.documentType
-                  : _professionalDocumentType;
+              ? professionalDoc!.documentType
+              : _professionalDocumentType;
           _identityDocument = _identityDocument.copyWith(
             fileId: identityDoc?.fileId,
             name: identityDoc == null
@@ -222,7 +222,8 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
 
     final file = result.files.single;
     final fileName = file.name.trim();
-    final fileBytes = file.bytes ??
+    final fileBytes =
+        file.bytes ??
         (file.path != null ? await File(file.path!).readAsBytes() : null);
     if (!mounted) return;
     final extension = _fileExtension(fileName);
@@ -341,7 +342,8 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
         return SafeArea(
           child: Container(
             margin: EdgeInsets.all(
-                profileScaled(sheetContext, 16, min: 12, max: 18)),
+              profileScaled(sheetContext, 16, min: 12, max: 18),
+            ),
             decoration: profileCardDecoration(
               sheetContext,
               highlighted: true,
@@ -364,8 +366,12 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                           l10n.guideVerificationSelectCountry,
                           style: TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: profileScaled(sheetContext, 18,
-                                min: 16, max: 20),
+                            fontSize: profileScaled(
+                              sheetContext,
+                              18,
+                              min: 16,
+                              max: 20,
+                            ),
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -376,24 +382,30 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                 Flexible(
                   child: ListView(
                     shrinkWrap: true,
-                    children: _countryOptions.map((item) {
-                      final isSelected = item.code == _countryCode;
-                      return ListTile(
-                        onTap: () => Navigator.of(sheetContext).pop(item.code),
-                        title: Text(
-                          item.labelFor(localeCode),
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight:
-                                isSelected ? FontWeight.w800 : FontWeight.w600,
-                          ),
-                        ),
-                        trailing: isSelected
-                            ? const Icon(Icons.check_circle,
-                                color: AppColors.accent)
-                            : null,
-                      );
-                    }).toList(growable: false),
+                    children: _countryOptions
+                        .map((item) {
+                          final isSelected = item.code == _countryCode;
+                          return ListTile(
+                            onTap: () =>
+                                Navigator.of(sheetContext).pop(item.code),
+                            title: Text(
+                              item.labelFor(localeCode),
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontWeight: isSelected
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                              ),
+                            ),
+                            trailing: isSelected
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: AppColors.accent,
+                                  )
+                                : null,
+                          );
+                        })
+                        .toList(growable: false),
                   ),
                 ),
               ],
@@ -495,21 +507,19 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
   void _scrollToFirstError() {
     final keys = switch (_step) {
       _GuideVerificationStep.identity => [
-          if (_fullNameError != null) _fullNameKey,
-          if (_birthDateError != null) _birthDateKey,
-          if (_countryError != null) _countryKey,
-        ],
+        if (_fullNameError != null) _fullNameKey,
+        if (_birthDateError != null) _birthDateKey,
+        if (_countryError != null) _countryKey,
+      ],
       _GuideVerificationStep.identityDocument => [
-          if (_identityDocumentError != null) _identityDocumentKey,
-          if (_identityConfirmError != null) _identityConfirmKey,
-        ],
+        if (_identityDocumentError != null) _identityDocumentKey,
+        if (_identityConfirmError != null) _identityConfirmKey,
+      ],
       _GuideVerificationStep.professional => [
-          if (_professionalDocumentError != null) _professionalDocumentKey,
-          if (_professionalConfirmError != null) _professionalConfirmKey,
-        ],
-      _GuideVerificationStep.review => [
-          if (_termsError != null) _termsKey,
-        ],
+        if (_professionalDocumentError != null) _professionalDocumentKey,
+        if (_professionalConfirmError != null) _professionalConfirmKey,
+      ],
+      _GuideVerificationStep.review => [if (_termsError != null) _termsKey],
     };
 
     if (keys.isEmpty) return;
@@ -571,7 +581,6 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
           locale: profile.locale,
           timezone: profile.timezone,
           currency: profile.currency,
-          isPublic: profile.isPublic,
         ),
       );
 
@@ -663,7 +672,8 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
             child: isPending
                 ? _StatusScreen(
                     title: l10n.guideVerificationPendingTitle,
-                    subtitle: application?.verificationRequest?.reviewComment
+                    subtitle:
+                        application?.verificationRequest?.reviewComment
                                 ?.trim()
                                 .isNotEmpty ==
                             true
@@ -672,12 +682,12 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                     buttonLabel: l10n.guideVerificationBackToProfile,
                   )
                 : isVerified
-                    ? _StatusScreen(
-                        title: l10n.guideVerificationActiveTitle,
-                        subtitle: l10n.guideVerificationActiveSubtitle,
-                        buttonLabel: l10n.guideVerificationBackToProfile,
-                      )
-                    : _buildWizard(context),
+                ? _StatusScreen(
+                    title: l10n.guideVerificationActiveTitle,
+                    subtitle: l10n.guideVerificationActiveSubtitle,
+                    buttonLabel: l10n.guideVerificationBackToProfile,
+                  )
+                : _buildWizard(context),
           ),
         ),
       ),
@@ -754,8 +764,9 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                 _GuideVerificationStep.identity => _buildIdentityStep(context),
                 _GuideVerificationStep.identityDocument =>
                   _buildIdentityDocumentStep(context),
-                _GuideVerificationStep.professional =>
-                  _buildProfessionalStep(context),
+                _GuideVerificationStep.professional => _buildProfessionalStep(
+                  context,
+                ),
                 _GuideVerificationStep.review => _buildReviewStep(context),
               },
             ],
@@ -902,7 +913,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
           icon: Icons.photo_camera_outlined,
           title: _identityDocument.hasFile
               ? (_identityDocument.name ??
-                  l10n.guideVerificationTapToCapturePassport)
+                    l10n.guideVerificationTapToCapturePassport)
               : l10n.guideVerificationTapToCapturePassport,
           subtitle: l10n.guideVerificationFileFormatsShort,
           buttonLabel: l10n.guideVerificationChooseFile,
@@ -966,7 +977,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
           icon: Icons.cloud_upload_outlined,
           title: _professionalDocument.hasFile
               ? (_professionalDocument.name ??
-                  l10n.guideVerificationUploadLicenseTitle)
+                    l10n.guideVerificationUploadLicenseTitle)
               : l10n.guideVerificationUploadLicenseTitle,
           subtitle: l10n.guideVerificationUploadLicenseSubtitle,
           buttonLabel: l10n.guideVerificationChooseFile,
@@ -998,7 +1009,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
             icon: Icons.medical_services_outlined,
             title: _firstAidDocument.hasFile
                 ? (_firstAidDocument.name ??
-                    l10n.guideVerificationUploadFirstAidTitle)
+                      l10n.guideVerificationUploadFirstAidTitle)
                 : l10n.guideVerificationUploadFirstAidTitle,
             subtitle: l10n.guideVerificationUploadFirstAidSubtitle,
             buttonLabel: l10n.guideVerificationChooseFile,
@@ -1026,7 +1037,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
             icon: Icons.translate_outlined,
             title: _languageCertificateDocument.hasFile
                 ? (_languageCertificateDocument.name ??
-                    l10n.guideVerificationUploadLanguageTitle)
+                      l10n.guideVerificationUploadLanguageTitle)
                 : l10n.guideVerificationUploadLanguageTitle,
             subtitle: l10n.guideVerificationUploadLanguageSubtitle,
             buttonLabel: l10n.guideVerificationChooseFile,
@@ -1348,18 +1359,27 @@ class _GuideCountry {
 const List<_GuideCountry> _countryOptions = [
   _GuideCountry(code: 'KZ', ru: 'Казахстан', en: 'Kazakhstan', kk: 'Қазақстан'),
   _GuideCountry(
-      code: 'KG', ru: 'Кыргызстан', en: 'Kyrgyzstan', kk: 'Қырғызстан'),
+    code: 'KG',
+    ru: 'Кыргызстан',
+    en: 'Kyrgyzstan',
+    kk: 'Қырғызстан',
+  ),
   _GuideCountry(
-      code: 'UZ', ru: 'Узбекистан', en: 'Uzbekistan', kk: 'Өзбекстан'),
+    code: 'UZ',
+    ru: 'Узбекистан',
+    en: 'Uzbekistan',
+    kk: 'Өзбекстан',
+  ),
   _GuideCountry(code: 'AE', ru: 'ОАЭ', en: 'United Arab Emirates', kk: 'БАӘ'),
   _GuideCountry(code: 'TR', ru: 'Турция', en: 'Turkey', kk: 'Түркия'),
   _GuideCountry(code: 'GE', ru: 'Грузия', en: 'Georgia', kk: 'Грузия'),
   _GuideCountry(code: 'US', ru: 'США', en: 'United States', kk: 'АҚШ'),
   _GuideCountry(
-      code: 'GB',
-      ru: 'Великобритания',
-      en: 'United Kingdom',
-      kk: 'Ұлыбритания'),
+    code: 'GB',
+    ru: 'Великобритания',
+    en: 'United Kingdom',
+    kk: 'Ұлыбритания',
+  ),
   _GuideCountry(code: 'DE', ru: 'Германия', en: 'Germany', kk: 'Германия'),
   _GuideCountry(code: 'FR', ru: 'Франция', en: 'France', kk: 'Франция'),
 ];
@@ -1448,8 +1468,9 @@ class _HeroBanner extends StatelessWidget {
       const [Color(0xFF6B2F15), Color(0xFFEF9943), Color(0xFF1F120A)],
     ];
     final colors = gradientSets[variant.clamp(0, gradientSets.length - 1)];
-    final borderRadius =
-        BorderRadius.circular(profileScaled(context, 24, min: 18, max: 28));
+    final borderRadius = BorderRadius.circular(
+      profileScaled(context, 24, min: 18, max: 28),
+    );
 
     return Container(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -1487,13 +1508,15 @@ class _HeroBanner extends StatelessWidget {
               ),
             ),
             Padding(
-              padding:
-                  EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
+              padding: EdgeInsets.all(
+                profileScaled(context, 18, min: 14, max: 20),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment:
-                    compact ? MainAxisAlignment.end : MainAxisAlignment.start,
+                mainAxisAlignment: compact
+                    ? MainAxisAlignment.end
+                    : MainAxisAlignment.start,
                 children: [
                   Text(
                     title,
@@ -1537,9 +1560,11 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon,
-            color: AppColors.accent,
-            size: profileScaled(context, 24, min: 20, max: 26)),
+        Icon(
+          icon,
+          color: AppColors.accent,
+          size: profileScaled(context, 24, min: 20, max: 26),
+        ),
         SizedBox(width: profileScaled(context, 10, min: 8, max: 10)),
         Expanded(
           child: Text(
@@ -1576,7 +1601,8 @@ class _ProgressTitle extends StatelessWidget {
         if ((eyebrow ?? '').trim().isNotEmpty)
           Padding(
             padding: EdgeInsets.only(
-                bottom: profileScaled(context, 10, min: 8, max: 12)),
+              bottom: profileScaled(context, 10, min: 8, max: 12),
+            ),
             child: Text(
               eyebrow!,
               style: TextStyle(
@@ -1656,8 +1682,9 @@ class _FieldBlock extends StatelessWidget {
         child,
         if ((errorText ?? '').trim().isNotEmpty)
           Padding(
-            padding:
-                EdgeInsets.only(top: profileScaled(context, 8, min: 6, max: 8)),
+            padding: EdgeInsets.only(
+              top: profileScaled(context, 8, min: 6, max: 8),
+            ),
             child: Text(
               errorText!,
               style: TextStyle(
@@ -1709,7 +1736,8 @@ class _DarkInput extends StatelessWidget {
         fillColor: const Color(0xFF1F140D),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(
-              profileScaled(context, 16, min: 14, max: 18)),
+            profileScaled(context, 16, min: 14, max: 18),
+          ),
           borderSide: BorderSide.none,
         ),
         contentPadding: EdgeInsets.symmetric(
@@ -1763,12 +1791,14 @@ class _DarkTappableField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: const Color(0xFF1F140D),
-      borderRadius:
-          BorderRadius.circular(profileScaled(context, 16, min: 14, max: 18)),
+      borderRadius: BorderRadius.circular(
+        profileScaled(context, 16, min: 14, max: 18),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius:
-            BorderRadius.circular(profileScaled(context, 16, min: 14, max: 18)),
+        borderRadius: BorderRadius.circular(
+          profileScaled(context, 16, min: 14, max: 18),
+        ),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: profileScaled(context, 18, min: 16, max: 20),
@@ -1807,8 +1837,9 @@ class _NoticeCard extends StatelessWidget {
       padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
       decoration: BoxDecoration(
         color: AppColors.accent.withValues(alpha: 0.05),
-        borderRadius:
-            BorderRadius.circular(profileScaled(context, 20, min: 18, max: 24)),
+        borderRadius: BorderRadius.circular(
+          profileScaled(context, 20, min: 18, max: 24),
+        ),
         border: Border.all(color: AppColors.accent.withValues(alpha: 0.18)),
       ),
       child: Row(
@@ -1870,7 +1901,8 @@ class _DarkDropdown extends StatelessWidget {
           fillColor: profileSurface,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(
-                profileScaled(context, 18, min: 16, max: 20)),
+              profileScaled(context, 18, min: 16, max: 20),
+            ),
             borderSide: BorderSide.none,
           ),
           contentPadding: EdgeInsets.symmetric(
@@ -2017,14 +2049,17 @@ class _UploadCard extends StatelessWidget {
           child: InkWell(
             onTap: isUploading ? null : onTap,
             borderRadius: BorderRadius.circular(
-                profileScaled(context, 26, min: 22, max: 28)),
+              profileScaled(context, 26, min: 22, max: 28),
+            ),
             child: Container(
               width: double.infinity,
-              padding:
-                  EdgeInsets.all(profileScaled(context, 24, min: 20, max: 28)),
+              padding: EdgeInsets.all(
+                profileScaled(context, 24, min: 20, max: 28),
+              ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(
-                    profileScaled(context, 26, min: 22, max: 28)),
+                  profileScaled(context, 26, min: 22, max: 28),
+                ),
                 border: Border.all(
                   color: AppColors.accent.withValues(alpha: 0.34),
                   width: 1.6,
@@ -2044,7 +2079,8 @@ class _UploadCard extends StatelessWidget {
                     child: isUploading
                         ? Padding(
                             padding: EdgeInsets.all(
-                                profileScaled(context, 26, min: 20, max: 28)),
+                              profileScaled(context, 26, min: 20, max: 28),
+                            ),
                             child: const CircularProgressIndicator(
                               strokeWidth: 2.2,
                               color: AppColors.accent,
@@ -2057,7 +2093,8 @@ class _UploadCard extends StatelessWidget {
                           ),
                   ),
                   SizedBox(
-                      height: profileScaled(context, 18, min: 16, max: 20)),
+                    height: profileScaled(context, 18, min: 16, max: 20),
+                  ),
                   Text(
                     title,
                     textAlign: TextAlign.center,
@@ -2080,15 +2117,20 @@ class _UploadCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(
-                      height: profileScaled(context, 22, min: 18, max: 24)),
+                    height: profileScaled(context, 22, min: 18, max: 24),
+                  ),
                   FilledButton(
                     onPressed: isUploading ? null : onTap,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.accent,
                       foregroundColor: Colors.white,
                       padding: EdgeInsets.symmetric(
-                        horizontal:
-                            profileScaled(context, 28, min: 24, max: 32),
+                        horizontal: profileScaled(
+                          context,
+                          28,
+                          min: 24,
+                          max: 32,
+                        ),
                         vertical: profileScaled(context, 14, min: 12, max: 14),
                       ),
                     ),
@@ -2101,8 +2143,9 @@ class _UploadCard extends StatelessWidget {
         ),
         if ((errorText ?? '').trim().isNotEmpty)
           Padding(
-            padding:
-                EdgeInsets.only(top: profileScaled(context, 8, min: 6, max: 8)),
+            padding: EdgeInsets.only(
+              top: profileScaled(context, 8, min: 6, max: 8),
+            ),
             child: Text(
               errorText!,
               style: TextStyle(
@@ -2165,17 +2208,29 @@ class _ConfirmCard extends StatelessWidget {
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.22),
-                          blurRadius:
-                              profileScaled(context, 24, min: 16, max: 28),
+                          blurRadius: profileScaled(
+                            context,
+                            24,
+                            min: 16,
+                            max: 28,
+                          ),
                           offset: Offset(
-                              0, profileScaled(context, 10, min: 6, max: 12)),
+                            0,
+                            profileScaled(context, 10, min: 6, max: 12),
+                          ),
                         ),
                         BoxShadow(
                           color: const Color(0x66B9584B),
-                          blurRadius:
-                              profileScaled(context, 20, min: 14, max: 24),
+                          blurRadius: profileScaled(
+                            context,
+                            20,
+                            min: 14,
+                            max: 24,
+                          ),
                           offset: Offset(
-                              0, profileScaled(context, 6, min: 4, max: 8)),
+                            0,
+                            profileScaled(context, 6, min: 4, max: 8),
+                          ),
                         ),
                       ],
                     )
@@ -2200,8 +2255,12 @@ class _ConfirmCard extends StatelessWidget {
                         text,
                         style: TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize:
-                              profileScaled(context, 14, min: 13, max: 15),
+                          fontSize: profileScaled(
+                            context,
+                            14,
+                            min: 13,
+                            max: 15,
+                          ),
                           height: 1.45,
                           fontWeight: FontWeight.w600,
                         ),
@@ -2215,8 +2274,9 @@ class _ConfirmCard extends StatelessWidget {
         ),
         if ((errorText ?? '').trim().isNotEmpty)
           Padding(
-            padding:
-                EdgeInsets.only(top: profileScaled(context, 8, min: 6, max: 8)),
+            padding: EdgeInsets.only(
+              top: profileScaled(context, 8, min: 6, max: 8),
+            ),
             child: Text(
               errorText!,
               style: TextStyle(
@@ -2343,13 +2403,18 @@ class _OptionalCertificateCard extends StatelessWidget {
                     ),
                     if (isUploaded) ...[
                       SizedBox(
-                          height: profileScaled(context, 8, min: 6, max: 8)),
+                        height: profileScaled(context, 8, min: 6, max: 8),
+                      ),
                       Text(
                         l10n.guideVerificationVerifiedUpload,
                         style: TextStyle(
                           color: AppColors.accent,
-                          fontSize:
-                              profileScaled(context, 12, min: 11, max: 12),
+                          fontSize: profileScaled(
+                            context,
+                            12,
+                            min: 11,
+                            max: 12,
+                          ),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -2419,10 +2484,7 @@ class _TimelineCard extends StatelessWidget {
 }
 
 class _ReviewDocumentCard extends StatelessWidget {
-  const _ReviewDocumentCard({
-    required this.label,
-    required this.title,
-  });
+  const _ReviewDocumentCard({required this.label, required this.title});
 
   final String label;
   final String title;
@@ -2439,7 +2501,8 @@ class _ReviewDocumentCard extends StatelessWidget {
             height: profileScaled(context, 72, min: 56, max: 86),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(
-                  profileScaled(context, 16, min: 14, max: 18)),
+                profileScaled(context, 16, min: 14, max: 18),
+              ),
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -2449,8 +2512,10 @@ class _ReviewDocumentCard extends StatelessWidget {
                 ],
               ),
             ),
-            child:
-                const Icon(Icons.description_outlined, color: AppColors.accent),
+            child: const Icon(
+              Icons.description_outlined,
+              color: AppColors.accent,
+            ),
           ),
           SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
           Expanded(
@@ -2486,13 +2551,17 @@ class _ReviewDocumentCard extends StatelessWidget {
                         color: Color(0xFF18D26E),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check,
-                          size: 12, color: Color(0xFF0D2417)),
+                      child: const Icon(
+                        Icons.check,
+                        size: 12,
+                        color: Color(0xFF0D2417),
+                      ),
                     ),
                     SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
                     Text(
-                      AppLocalizations.of(context)!
-                          .guideVerificationVerifiedUpload,
+                      AppLocalizations.of(
+                        context,
+                      )!.guideVerificationVerifiedUpload,
                       style: TextStyle(
                         color: profileTextMuted,
                         fontSize: profileScaled(context, 12, min: 11, max: 12),
@@ -2504,9 +2573,11 @@ class _ReviewDocumentCard extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.chevron_right_rounded,
-              color: profileDisabled,
-              size: profileScaled(context, 28, min: 24, max: 30)),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: profileDisabled,
+            size: profileScaled(context, 28, min: 24, max: 30),
+          ),
         ],
       ),
     );
@@ -2529,8 +2600,9 @@ class _TermsCard extends StatelessWidget {
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.02),
-        borderRadius:
-            BorderRadius.circular(profileScaled(context, 22, min: 18, max: 24)),
+        borderRadius: BorderRadius.circular(
+          profileScaled(context, 22, min: 18, max: 24),
+        ),
         border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
       ),
       child: SingleChildScrollView(
@@ -2582,8 +2654,9 @@ class _BottomActionBar extends StatelessWidget {
         FilledButton(
           onPressed: onPressed,
           style: FilledButton.styleFrom(
-            minimumSize:
-                Size.fromHeight(profileScaled(context, 60, min: 50, max: 68)),
+            minimumSize: Size.fromHeight(
+              profileScaled(context, 60, min: 50, max: 68),
+            ),
             backgroundColor: AppColors.accent,
             foregroundColor: Colors.white,
             textStyle: TextStyle(
@@ -2606,13 +2679,16 @@ class _BottomActionBar extends StatelessWidget {
         if ((note ?? '').trim().isNotEmpty)
           Padding(
             padding: EdgeInsets.only(
-                top: profileScaled(context, 12, min: 10, max: 14)),
+              top: profileScaled(context, 12, min: 10, max: 14),
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.schedule_outlined,
-                    color: profileDisabled,
-                    size: profileScaled(context, 18, min: 16, max: 18)),
+                Icon(
+                  Icons.schedule_outlined,
+                  color: profileDisabled,
+                  size: profileScaled(context, 18, min: 16, max: 18),
+                ),
                 SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
                 Expanded(
                   child: Text(
@@ -2684,17 +2760,14 @@ class _StatusScreen extends StatelessWidget {
             padding: EdgeInsets.all(padding),
             child: Column(
               children: [
-                _HeroBanner(
-                  title: title,
-                  subtitle: subtitle,
-                  variant: 3,
-                ),
+                _HeroBanner(title: title, subtitle: subtitle, variant: 3),
                 const Spacer(),
                 FilledButton(
                   onPressed: () => context.pop(),
                   style: FilledButton.styleFrom(
                     minimumSize: Size.fromHeight(
-                        profileScaled(context, 60, min: 50, max: 68)),
+                      profileScaled(context, 60, min: 50, max: 68),
+                    ),
                     backgroundColor: AppColors.accent,
                     foregroundColor: Colors.white,
                   ),

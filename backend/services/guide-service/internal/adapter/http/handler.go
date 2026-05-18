@@ -542,7 +542,6 @@ func toPublicGuideCardResponse(item *app.PublicGuideCard) dto.PublicGuideCardRes
 			CountryCode:  item.UserProfile.CountryCode,
 			Locale:       item.UserProfile.Locale,
 			Timezone:     item.UserProfile.Timezone,
-			IsPublic:     item.UserProfile.IsPublic,
 		}
 	}
 

@@ -340,10 +340,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           isOwnProfile: isOwnProfile,
           isFollowActionLoading: _isFollowActionLoading,
           isMessageActionLoading: _isMessageActionLoading,
-          onToggleFollow:
-              isOwnProfile ? null : () => _toggleFollow(effectiveProfile),
-          onMessageTap:
-              isOwnProfile ? null : () => _openDirectChat(effectiveProfile),
+          onToggleFollow: isOwnProfile
+              ? null
+              : () => _toggleFollow(effectiveProfile),
+          onMessageTap: isOwnProfile
+              ? null
+              : () => _openDirectChat(effectiveProfile),
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
@@ -562,14 +564,6 @@ class _ProfileHero extends StatelessWidget {
             ),
           ),
         ],
-        if (!profile.isPublic) ...[
-          SizedBox(height: profileScaled(context, 10, min: 8, max: 10)),
-          _ProfilePill(
-            text: l10n.profilePrivate,
-            icon: Icons.lock_outline_rounded,
-            highlighted: false,
-          ),
-        ],
         if (badges.isNotEmpty) ...[
           SizedBox(height: profileScaled(context, 18, min: 14, max: 20)),
           Wrap(
@@ -644,7 +638,6 @@ class _ProfileHero extends StatelessWidget {
       if (currency.isNotEmpty) {
         values.add(currency);
       }
-      values.add(profile.isPublic ? l10n.profilePublic : l10n.profilePrivate);
     }
 
     return values.toSet().toList(growable: false);
@@ -657,10 +650,13 @@ class _ProfileHero extends StatelessWidget {
     }
     final normalized = value.replaceAll(RegExp(r'[_-]+'), ' ');
     final words = normalized.split(RegExp(r'\s+'));
-    return words.where((word) => word.isNotEmpty).map((word) {
-      final lower = word.toLowerCase();
-      return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
-    }).join(' ');
+    return words
+        .where((word) => word.isNotEmpty)
+        .map((word) {
+          final lower = word.toLowerCase();
+          return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+        })
+        .join(' ');
   }
 }
 
@@ -796,11 +792,9 @@ class _ProfileAvatar extends StatelessWidget {
 }
 
 class _ProfilePill extends StatelessWidget {
-  const _ProfilePill({required this.text, this.icon, this.highlighted = true});
+  const _ProfilePill({required this.text});
 
   final String text;
-  final IconData? icon;
-  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -810,31 +804,17 @@ class _ProfilePill extends StatelessWidget {
         vertical: profileScaled(context, 8, min: 7, max: 10),
       ),
       decoration: BoxDecoration(
-        color: highlighted
-            ? AppColors.accent.withValues(alpha: 0.08)
-            : Colors.white.withValues(alpha: 0.04),
+        color: AppColors.accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: highlighted
-              ? AppColors.accent.withValues(alpha: 0.24)
-              : Colors.white.withValues(alpha: 0.06),
-        ),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(
-              icon,
-              size: profileScaled(context, 14, min: 12, max: 14),
-              color: highlighted ? AppColors.accent : profileTextSoft,
-            ),
-            SizedBox(width: profileScaled(context, 8, min: 6, max: 8)),
-          ],
           Text(
             text,
             style: TextStyle(
-              color: highlighted ? AppColors.accent : profileTextSoft,
+              color: AppColors.accent,
               fontSize: profileScaled(context, 12, min: 11, max: 12),
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8,
@@ -929,20 +909,20 @@ class _BecomeGuideCard extends StatelessWidget {
     final title = isPending
         ? l10n.guideVerificationPendingTitle
         : isRejected
-            ? l10n.guideVerificationRejectedTitle
-            : l10n.profileBecomeGuideTitle;
+        ? l10n.guideVerificationRejectedTitle
+        : l10n.profileBecomeGuideTitle;
     final subtitle = isPending
         ? l10n.guideVerificationPendingSubtitle
         : isRejected
-            ? l10n.guideVerificationRejectedSubtitle
-            : isDraft
-                ? l10n.guideVerificationDraftSubtitle
-                : l10n.profileBecomeGuideSubtitle;
+        ? l10n.guideVerificationRejectedSubtitle
+        : isDraft
+        ? l10n.guideVerificationDraftSubtitle
+        : l10n.profileBecomeGuideSubtitle;
     final buttonLabel = isPending
         ? l10n.guideVerificationViewApplicationButton
         : isRejected || isDraft
-            ? l10n.guideVerificationContinueButton
-            : l10n.becomeGuideButton;
+        ? l10n.guideVerificationContinueButton
+        : l10n.becomeGuideButton;
 
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
@@ -1409,8 +1389,9 @@ class _ProfileMenuTile extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color:
-                        effectiveDisabled ? profileDisabled : AppColors.accent,
+                    color: effectiveDisabled
+                        ? profileDisabled
+                        : AppColors.accent,
                   ),
                 ),
                 SizedBox(width: profileScaled(context, 14, min: 12, max: 14)),

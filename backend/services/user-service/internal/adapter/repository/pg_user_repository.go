@@ -60,11 +60,11 @@ func (r *PGUserRepository) CreateUserAggregate(
 		INSERT INTO user_profiles (
 			user_id, first_name, last_name, display_name, bio, birth_date,
 			avatar_file_id, city_id, country_code, locale, timezone, currency,
-			is_public, is_profile_completed, created_at, updated_at
+			is_profile_completed, created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6,
 			$7, $8, $9, $10, $11, $12,
-			$13, $14, NOW(), NOW()
+			$13, NOW(), NOW()
 		)
 	`
 	if _, err = tx.Exec(
@@ -82,7 +82,6 @@ func (r *PGUserRepository) CreateUserAggregate(
 		profile.Locale,
 		profile.Timezone,
 		profile.Currency,
-		profile.IsPublic,
 		profile.IsProfileCompleted,
 	); err != nil {
 		return fmt.Errorf("insert profile: %w", err)
@@ -263,7 +262,7 @@ func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.U
 		SELECT
 			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
-			p.is_public, p.is_profile_completed,
+			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
 			u.last_seen_at,
 			p.created_at, p.updated_at
@@ -286,7 +285,6 @@ func (r *PGUserRepository) GetProfileByUserID(ctx context.Context, userID uuid.U
 		&profile.Locale,
 		&profile.Timezone,
 		&profile.Currency,
-		&profile.IsPublic,
 		&profile.IsProfileCompleted,
 		&profile.IsOnline,
 		&profile.LastSeenAt,
@@ -507,8 +505,7 @@ func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.Use
 			locale = $10,
 			timezone = $11,
 			currency = $12,
-			is_public = $13,
-			is_profile_completed = $14,
+			is_profile_completed = $13,
 			updated_at = NOW()
 		WHERE user_id = $1
 	`
@@ -528,7 +525,6 @@ func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.Use
 		profile.Locale,
 		profile.Timezone,
 		profile.Currency,
-		profile.IsPublic,
 		profile.IsProfileCompleted,
 	)
 	if err != nil {
@@ -669,13 +665,13 @@ func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, of
 		SELECT
 			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
-			p.is_public, p.is_profile_completed,
+			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
 			u.last_seen_at,
 			p.created_at, p.updated_at
 		FROM user_profiles p
 		JOIN users u ON u.id = p.user_id
-		WHERE p.is_public = TRUE
+		WHERE u.is_deleted = FALSE
 		ORDER BY p.created_at DESC
 		LIMIT $1 OFFSET $2
 	`
@@ -702,7 +698,6 @@ func (r *PGUserRepository) ListPublicProfiles(ctx context.Context, limit int, of
 			&profile.Locale,
 			&profile.Timezone,
 			&profile.Currency,
-			&profile.IsPublic,
 			&profile.IsProfileCompleted,
 			&profile.IsOnline,
 			&profile.LastSeenAt,
@@ -726,14 +721,14 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 		SELECT
 			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
-			p.is_public, p.is_profile_completed,
+			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
 			u.last_seen_at,
 			p.created_at, p.updated_at
 		FROM user_profiles p
 		JOIN users u ON u.id = p.user_id
-		WHERE p.is_public = TRUE
-		  AND p.user_id = ANY($1)
+		WHERE p.user_id = ANY($1)
+		  AND u.is_deleted = FALSE
 	`
 
 	rows, err := r.pool.Query(ctx, query, userIDs)
@@ -758,7 +753,6 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 			&item.Locale,
 			&item.Timezone,
 			&item.Currency,
-			&item.IsPublic,
 			&item.IsProfileCompleted,
 			&item.IsOnline,
 			&item.LastSeenAt,
@@ -785,8 +779,7 @@ func (r *PGUserRepository) ListPublicUserIDsByCountryCodes(
 		SELECT p.user_id
 		FROM user_profiles p
 		JOIN users u ON u.id = p.user_id
-		WHERE p.is_public = TRUE
-		  AND u.is_deleted = FALSE
+		WHERE u.is_deleted = FALSE
 		  AND UPPER(COALESCE(p.country_code, '')) = ANY($1)
 		ORDER BY p.created_at DESC, p.user_id ASC
 	`
@@ -820,7 +813,7 @@ func (r *PGUserRepository) ListFollowersByUserID(
 		SELECT
 			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
 			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
-			p.is_public, p.is_profile_completed,
+			p.is_profile_completed,
 			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
 			u.last_seen_at,
 			p.created_at, p.updated_at
@@ -872,7 +865,6 @@ func (r *PGUserRepository) ListFollowersByUserID(
 			&item.Locale,
 			&item.Timezone,
 			&item.Currency,
-			&item.IsPublic,
 			&item.IsProfileCompleted,
 			&item.IsOnline,
 			&item.LastSeenAt,

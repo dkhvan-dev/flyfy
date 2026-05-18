@@ -264,7 +264,6 @@ func toProtoPublicUserProfile(profile *app.PublicUserProfile) *guidev1.PublicUse
 		CountryCode:  valueOrEmpty(profile.CountryCode),
 		Locale:       profile.Locale,
 		Timezone:     profile.Timezone,
-		IsPublic:     profile.IsPublic,
 		FirstName:    valueOrEmpty(profile.FirstName),
 		LastName:     valueOrEmpty(profile.LastName),
 	}

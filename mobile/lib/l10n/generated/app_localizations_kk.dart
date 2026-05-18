@@ -154,15 +154,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileCurrency => 'Валюта';
 
   @override
-  String get profileVisibility => 'Профиль көрінуі';
-
-  @override
-  String get profilePublic => 'Ашық';
-
-  @override
-  String get profilePrivate => 'Жабық';
-
-  @override
   String get editProfileButton => 'Профильді өңдеу';
 
   @override

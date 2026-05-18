@@ -576,7 +576,6 @@ func toAuthorResponse(author app.StoryAuthor) dto.AuthorResponse {
 		CountryCode:  author.CountryCode,
 		Locale:       author.Locale,
 		Timezone:     author.Timezone,
-		IsPublic:     author.IsPublic,
 	}
 }
 

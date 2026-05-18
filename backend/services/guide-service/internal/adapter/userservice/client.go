@@ -137,7 +137,6 @@ func (c *Client) GetUserProfile(ctx context.Context, userID uuid.UUID) (*app.Pub
 		CountryCode:  optionalString(profile.GetCountryCode()),
 		Locale:       profile.GetLocale(),
 		Timezone:     profile.GetTimezone(),
-		IsPublic:     profile.GetIsPublic(),
 	}, nil
 }
 
@@ -225,7 +224,6 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 			CountryCode:  optionalString(item.GetCountryCode()),
 			Locale:       item.GetLocale(),
 			Timezone:     item.GetTimezone(),
-			IsPublic:     item.GetIsPublic(),
 		}
 	}
 

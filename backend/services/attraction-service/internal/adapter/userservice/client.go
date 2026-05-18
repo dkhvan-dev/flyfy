@@ -148,7 +148,6 @@ func (c *Client) GetPublicUserProfiles(ctx context.Context, userIDs []uuid.UUID)
 			CountryCode:  countryCode,
 			Locale:       item.GetLocale(),
 			Timezone:     item.GetTimezone(),
-			IsPublic:     item.GetIsPublic(),
 		}
 	}
 

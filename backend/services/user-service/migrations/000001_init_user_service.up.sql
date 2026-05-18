@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     locale VARCHAR(16) NOT NULL DEFAULT 'ru',
     timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Almaty',
     currency VARCHAR(16) NOT NULL DEFAULT 'KZT',
-    is_public BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

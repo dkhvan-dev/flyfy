@@ -10,7 +10,6 @@ class UpdateProfileRequest {
     this.locale,
     this.timezone,
     this.currency,
-    this.isPublic,
   });
 
   final String firstName;
@@ -23,7 +22,6 @@ class UpdateProfileRequest {
   final String? locale;
   final String? timezone;
   final String? currency;
-  final bool? isPublic;
 
   Map<String, dynamic> toJson() {
     return {
@@ -42,7 +40,6 @@ class UpdateProfileRequest {
       if ((locale ?? '').trim().isNotEmpty) 'locale': locale!.trim(),
       if ((timezone ?? '').trim().isNotEmpty) 'timezone': timezone!.trim(),
       if ((currency ?? '').trim().isNotEmpty) 'currency': currency!.trim(),
-      if (isPublic != null) 'isPublic': isPublic,
     };
   }
 }

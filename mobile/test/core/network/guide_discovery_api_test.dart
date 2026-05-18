@@ -41,7 +41,6 @@ void main() {
                 'avatarFileId': 'avatar-file-id',
                 'locale': 'en',
                 'timezone': 'Asia/Almaty',
-                'isPublic': true,
               },
               'languages': [
                 {'languageCode': 'en'},
@@ -81,10 +80,10 @@ void main() {
         specializationCodes: const ['mountain_guide'],
       );
 
-      expect(
-        adapter.requests.map((request) => request.path),
-        ['/guides/public', '/guides/excursion-languages'],
-      );
+      expect(adapter.requests.map((request) => request.path), [
+        '/guides/public',
+        '/guides/excursion-languages',
+      ]);
       final publicRequest = adapter.requests.first;
       final languageRequest = adapter.requests.last;
       expect(publicRequest.extra['requiresAuth'], isFalse);

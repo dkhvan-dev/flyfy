@@ -13,7 +13,6 @@ type PublicUserProfile struct {
 	CountryCode  *string
 	Locale       string
 	Timezone     string
-	IsPublic     bool
 }
 
 type UserServiceClient interface {

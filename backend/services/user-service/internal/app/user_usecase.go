@@ -71,7 +71,6 @@ func (u *UserUseCase) GetOrCreateBySubject(ctx context.Context, input InitUserIn
 		Locale:             defaultLocale,
 		Timezone:           defaultTimezone,
 		Currency:           &defaultCurrency,
-		IsPublic:           true,
 		IsProfileCompleted: false,
 		CreatedAt:          now,
 		UpdatedAt:          now,
@@ -299,7 +298,6 @@ type UpdateProfileInput struct {
 	Locale       *string
 	Timezone     *string
 	Currency     *string
-	IsPublic     *bool
 }
 
 func (u *UserUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, input UpdateProfileInput) (*UserAggregate, error) {
@@ -358,10 +356,6 @@ func (u *UserUseCase) UpdateProfile(ctx context.Context, userID uuid.UUID, input
 	}
 
 	profile.Currency = normalizeOptionalString(input.Currency)
-
-	if input.IsPublic != nil {
-		profile.IsPublic = *input.IsPublic
-	}
 
 	profile.IsProfileCompleted = computeProfileCompleted(profile)
 	profile.UpdatedAt = time.Now().UTC()

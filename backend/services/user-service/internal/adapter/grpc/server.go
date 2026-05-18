@@ -123,7 +123,6 @@ func (s *Server) UpdateUserProfile(
 		Locale:       stringPtrOrNil(req.GetLocale()),
 		Timezone:     stringPtrOrNil(req.GetTimezone()),
 		Currency:     stringPtrOrNil(req.GetCurrency()),
-		IsPublic:     req.IsPublic,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -349,7 +348,6 @@ func toProtoProfile(profile *model.UserProfile) *userv1.UserProfile {
 		Locale:       profile.Locale,
 		Timezone:     profile.Timezone,
 		Currency:     valueOrEmpty(profile.Currency),
-		IsPublic:     profile.IsPublic,
 		CreatedAt:    profile.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:    profile.UpdatedAt.UTC().Format(time.RFC3339),
 		IsOnline:     profile.IsOnline,
@@ -405,7 +403,6 @@ func toProtoPublicProfile(profile *model.UserProfile) *userv1.PublicProfile {
 		CountryCode:  valueOrEmpty(profile.CountryCode),
 		Locale:       profile.Locale,
 		Timezone:     profile.Timezone,
-		IsPublic:     profile.IsPublic,
 		IsOnline:     profile.IsOnline,
 		LastSeenAt:   lastSeenAt,
 	}

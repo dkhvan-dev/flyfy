@@ -143,5 +143,4 @@ type PublicUserCard struct {
 	CountryCode  *string `json:"countryCode,omitempty"`
 	Locale       string  `json:"locale"`
 	Timezone     string  `json:"timezone"`
-	IsPublic     bool    `json:"isPublic"`
 }

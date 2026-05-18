@@ -84,7 +84,6 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 					DisplayName: &displayName,
 					Locale:      "en",
 					Timezone:    "Asia/Almaty",
-					IsPublic:    true,
 				},
 			},
 		},

@@ -20,7 +20,6 @@ func TestToProtoPublicProfileIncludesLegalNameFields(t *testing.T) {
 		DisplayName: &displayName,
 		Locale:      "ru",
 		Timezone:    "Asia/Almaty",
-		IsPublic:    true,
 	})
 
 	if got.GetFirstName() != firstName {

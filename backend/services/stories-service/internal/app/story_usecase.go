@@ -42,7 +42,6 @@ type StoryAuthor struct {
 	CountryCode  *string
 	Locale       string
 	Timezone     string
-	IsPublic     bool
 }
 
 type StoryView struct {
@@ -1036,7 +1035,6 @@ func toStoryAuthor(userID uuid.UUID, profile PublicUserProfile) StoryAuthor {
 		CountryCode:  profile.CountryCode,
 		Locale:       profile.Locale,
 		Timezone:     profile.Timezone,
-		IsPublic:     profile.IsPublic,
 	}
 }
 

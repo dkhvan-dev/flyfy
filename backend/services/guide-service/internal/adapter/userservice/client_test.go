@@ -29,7 +29,6 @@ func TestGetPublicUserProfilesMapsLegalNameFields(t *testing.T) {
 				DisplayName: "@nomad_aru",
 				Locale:      "ru",
 				Timezone:    "Asia/Almaty",
-				IsPublic:    true,
 			},
 		},
 	})

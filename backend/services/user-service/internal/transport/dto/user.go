@@ -40,7 +40,6 @@ type UserProfileResponse struct {
 	Locale             string  `json:"locale"`
 	Timezone           string  `json:"timezone"`
 	Currency           *string `json:"currency,omitempty"`
-	IsPublic           bool    `json:"isPublic"`
 	IsProfileCompleted bool    `json:"isProfileCompleted"`
 	CreatedAt          string  `json:"createdAt"`
 	UpdatedAt          string  `json:"updatedAt"`
@@ -81,7 +80,6 @@ type UpdateMyProfileRequest struct {
 	Locale       *string `json:"locale,omitempty"`
 	Timezone     *string `json:"timezone,omitempty"`
 	Currency     *string `json:"currency,omitempty"`
-	IsPublic     *bool   `json:"isPublic,omitempty"`
 }
 
 type UpdateMySettingsRequest struct {
@@ -104,7 +102,6 @@ type PublicProfileResponse struct {
 	CountryCode  *string `json:"countryCode,omitempty"`
 	Locale       string  `json:"locale"`
 	Timezone     string  `json:"timezone"`
-	IsPublic     bool    `json:"isPublic"`
 	IsOnline     bool    `json:"isOnline"`
 	LastSeenAt   *string `json:"lastSeenAt,omitempty"`
 }

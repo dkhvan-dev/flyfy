@@ -222,13 +222,14 @@ message PublicGuideCard {
 }
 
 message PublicUserProfile {
+  reserved 7;
+
   string user_id = 1;
   string display_name = 2;
   string avatar_file_id = 3;
   string country_code = 4;
   string locale = 5;
   string timezone = 6;
-  bool is_public = 7;
   string first_name = 8;
   string last_name = 9;
 }

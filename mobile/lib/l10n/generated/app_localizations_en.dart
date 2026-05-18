@@ -151,15 +151,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileCurrency => 'Currency';
 
   @override
-  String get profileVisibility => 'Profile visibility';
-
-  @override
-  String get profilePublic => 'Public';
-
-  @override
-  String get profilePrivate => 'Private';
-
-  @override
   String get editProfileButton => 'Edit profile';
 
   @override

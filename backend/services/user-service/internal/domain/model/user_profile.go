@@ -28,7 +28,6 @@ type UserProfile struct {
 	Locale             string     `json:"locale"`
 	Timezone           string     `json:"timezone"`
 	Currency           *string    `json:"currency,omitempty"`
-	IsPublic           bool       `json:"is_public"`
 	IsProfileCompleted bool       `json:"is_profile_completed"`
 	IsOnline           bool       `json:"is_online"`
 	LastSeenAt         *time.Time `json:"last_seen_at,omitempty"`
@@ -49,7 +48,6 @@ func NewUserProfile(params NewUserProfileParams) (*UserProfile, error) {
 		Locale:             "ru",
 		Timezone:           "Asia/Almaty",
 		Currency:           &defaultCurrency,
-		IsPublic:           true,
 		IsProfileCompleted: false,
 		CreatedAt:          now,
 		UpdatedAt:          now,
@@ -90,7 +88,6 @@ type UpdateUserProfileParams struct {
 	Locale       *string
 	Timezone     *string
 	Currency     *string
-	IsPublic     *bool
 }
 
 func (p *UserProfile) ApplyUpdate(params UpdateUserProfileParams) error {
@@ -115,9 +112,6 @@ func (p *UserProfile) ApplyUpdate(params UpdateUserProfileParams) error {
 	}
 	if params.Currency != nil {
 		p.Currency = normalizeOptionalString(params.Currency)
-	}
-	if params.IsPublic != nil {
-		p.IsPublic = *params.IsPublic
 	}
 
 	p.UpdatedAt = time.Now().UTC()

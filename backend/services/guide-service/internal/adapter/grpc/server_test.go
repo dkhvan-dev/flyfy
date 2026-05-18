@@ -30,7 +30,6 @@ func TestToProtoAggregateIncludesPublicUserProfile(t *testing.T) {
 			FirstName:   &firstName,
 			LastName:    &lastName,
 			DisplayName: &displayName,
-			IsPublic:    true,
 		},
 	})
 

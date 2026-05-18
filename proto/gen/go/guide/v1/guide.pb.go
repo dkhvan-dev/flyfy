@@ -2053,7 +2053,6 @@ type PublicUserProfile struct {
 	CountryCode   string                 `protobuf:"bytes,4,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
 	Locale        string                 `protobuf:"bytes,5,opt,name=locale,proto3" json:"locale,omitempty"`
 	Timezone      string                 `protobuf:"bytes,6,opt,name=timezone,proto3" json:"timezone,omitempty"`
-	IsPublic      bool                   `protobuf:"varint,7,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
 	FirstName     string                 `protobuf:"bytes,8,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
 	LastName      string                 `protobuf:"bytes,9,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2130,13 +2129,6 @@ func (x *PublicUserProfile) GetTimezone() string {
 		return x.Timezone
 	}
 	return ""
-}
-
-func (x *PublicUserProfile) GetIsPublic() bool {
-	if x != nil {
-		return x.IsPublic
-	}
-	return false
 }
 
 func (x *PublicUserProfile) GetFirstName() string {
@@ -2313,18 +2305,17 @@ const file_guide_v1_guide_proto_rawDesc = "" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\"\x8e\x01\n" +
 	"\x0fPublicGuideCard\x12;\n" +
 	"\rguide_profile\x18\x01 \x01(\v2\x16.guide.v1.GuideProfileR\fguideProfile\x12>\n" +
-	"\fuser_profile\x18\x02 \x01(\v2\x1b.guide.v1.PublicUserProfileR\vuserProfile\"\xa5\x02\n" +
+	"\fuser_profile\x18\x02 \x01(\v2\x1b.guide.v1.PublicUserProfileR\vuserProfile\"\x8e\x02\n" +
 	"\x11PublicUserProfile\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12$\n" +
 	"\x0eavatar_file_id\x18\x03 \x01(\tR\favatarFileId\x12!\n" +
 	"\fcountry_code\x18\x04 \x01(\tR\vcountryCode\x12\x16\n" +
 	"\x06locale\x18\x05 \x01(\tR\x06locale\x12\x1a\n" +
-	"\btimezone\x18\x06 \x01(\tR\btimezone\x12\x1b\n" +
-	"\tis_public\x18\a \x01(\bR\bisPublic\x12\x1d\n" +
+	"\btimezone\x18\x06 \x01(\tR\btimezone\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\b \x01(\tR\tfirstName\x12\x1b\n" +
-	"\tlast_name\x18\t \x01(\tR\blastName2\xc0\n" +
+	"\tlast_name\x18\t \x01(\tR\blastNameJ\x04\b\a\x10\b2\xc0\n" +
 	"\n" +
 	"\fGuideService\x12n\n" +
 	"\x17GetOrCreateGuideProfile\x12(.guide.v1.GetOrCreateGuideProfileRequest\x1a).guide.v1.GetOrCreateGuideProfileResponse\x12b\n" +

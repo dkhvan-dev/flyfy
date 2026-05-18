@@ -41,7 +41,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _currencyController;
 
   late String _localeCode;
-  late bool _isPublic;
   String? _avatarFileId;
 
   Future<String?>? _avatarFuture;
@@ -79,7 +78,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       profile?.locale,
       fallback: appLocaleCode,
     );
-    _isPublic = profile?.isPublic ?? true;
     _avatarFileId = (profile?.avatarFileId ?? '').trim().isEmpty
         ? null
         : profile!.avatarFileId!.trim();
@@ -232,7 +230,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           locale: _localeCode,
           timezone: _timezoneController.text,
           currency: _currencyController.text,
-          isPublic: _isPublic,
         ),
       );
 
@@ -699,17 +696,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 : const Icon(Icons.my_location_outlined),
                             label: Text(l10n.detectLocationButton),
                           ),
-                        ),
-                        SizedBox(
-                          height: profileScaled(context, 18, min: 16, max: 20),
-                        ),
-                        _VisibilityToggleRow(
-                          value: _isPublic,
-                          onChanged: (value) {
-                            setState(() {
-                              _isPublic = value;
-                            });
-                          },
                         ),
                       ],
                     ),
@@ -1305,63 +1291,6 @@ class _StyledTextField extends StatelessWidget {
   }
 }
 
-class _VisibilityToggleRow extends StatelessWidget {
-  const _VisibilityToggleRow({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Container(
-      padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.035),
-        borderRadius: BorderRadius.circular(
-          profileScaled(context, 18, min: 16, max: 20),
-        ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.profileVisibility,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: profileScaled(context, 15, min: 14, max: 16),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: profileScaled(context, 4, min: 4, max: 6)),
-                Text(
-                  value ? l10n.profilePublic : l10n.profilePrivate,
-                  style: TextStyle(
-                    color: profileTextMuted,
-                    fontSize: profileScaled(context, 13, min: 12, max: 13),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.accent,
-            activeTrackColor: AppColors.accent.withValues(alpha: 0.38),
-            inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ServiceChip extends StatelessWidget {
   const _ServiceChip({
     required this.text,
@@ -1378,8 +1307,8 @@ class _ServiceChip extends StatelessWidget {
     final color = disabled
         ? profileDisabled
         : active
-            ? AppColors.accent
-            : profileTextSoft;
+        ? AppColors.accent
+        : profileTextSoft;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -1390,15 +1319,15 @@ class _ServiceChip extends StatelessWidget {
         color: disabled
             ? Colors.white.withValues(alpha: 0.03)
             : active
-                ? AppColors.accent.withValues(alpha: 0.12)
-                : Colors.white.withValues(alpha: 0.04),
+            ? AppColors.accent.withValues(alpha: 0.12)
+            : Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: disabled
               ? Colors.white.withValues(alpha: 0.04)
               : active
-                  ? AppColors.accent.withValues(alpha: 0.18)
-                  : Colors.white.withValues(alpha: 0.05),
+              ? AppColors.accent.withValues(alpha: 0.18)
+              : Colors.white.withValues(alpha: 0.05),
         ),
       ),
       child: Text(

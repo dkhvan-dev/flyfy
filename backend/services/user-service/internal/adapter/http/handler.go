@@ -309,7 +309,6 @@ func (h *Handler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
 		Locale:       req.Locale,
 		Timezone:     req.Timezone,
 		Currency:     req.Currency,
-		IsPublic:     req.IsPublic,
 	})
 	if err != nil {
 		switch {
@@ -411,7 +410,6 @@ func toUserProfileResponse(profile *model.UserProfile) dto.UserProfileResponse {
 		Locale:             profile.Locale,
 		Timezone:           profile.Timezone,
 		Currency:           profile.Currency,
-		IsPublic:           profile.IsPublic,
 		IsProfileCompleted: profile.IsProfileCompleted,
 		CreatedAt:          profile.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:          profile.UpdatedAt.UTC().Format(time.RFC3339),
@@ -722,7 +720,6 @@ func (h *Handler) ListPublicProfiles(w http.ResponseWriter, r *http.Request) {
 			CountryCode:  item.CountryCode,
 			Locale:       item.Locale,
 			Timezone:     item.Timezone,
-			IsPublic:     item.IsPublic,
 			IsOnline:     item.IsOnline,
 			LastSeenAt:   lastSeenAt,
 		})
