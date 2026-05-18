@@ -29,7 +29,16 @@ class ExcursionBookingVm {
     this.countryCode,
     this.cityName,
     this.coverFileId,
+    this.author = const ExcursionReviewAuthorVm(userId: ''),
     this.review,
+    this.cancelledAt,
+    this.cancelledBy,
+    this.cancelReason,
+    this.refundPercent = 0,
+    this.refundAmount = 0,
+    this.refundCurrency,
+    this.refundPolicyCode,
+    this.refundStatus,
     this.createdAt,
     this.updatedAt,
   });
@@ -51,6 +60,7 @@ class ExcursionBookingVm {
   final String? countryCode;
   final String? cityName;
   final String? coverFileId;
+  final ExcursionReviewAuthorVm author;
   final DateTime scheduledFor;
   final int adults;
   final int children;
@@ -60,6 +70,14 @@ class ExcursionBookingVm {
   final String currency;
   final String status;
   final ExcursionReviewVm? review;
+  final DateTime? cancelledAt;
+  final String? cancelledBy;
+  final String? cancelReason;
+  final int refundPercent;
+  final double refundAmount;
+  final String? refundCurrency;
+  final String? refundPolicyCode;
+  final String? refundStatus;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -77,7 +95,35 @@ class ExcursionBookingVm {
 
   bool canReview(DateTime now) => isVisited(now) && !isReviewed;
 
-  ExcursionBookingVm copyWith({ExcursionReviewVm? review}) {
+  bool canBeCancelledByGuide(DateTime now) {
+    return !isCancelled && scheduledFor.toUtc().isAfter(now.toUtc());
+  }
+
+  bool canBeCancelledByTourist(DateTime now) {
+    return !isCancelled && scheduledFor.toUtc().isAfter(now.toUtc());
+  }
+
+  ExcursionBookingCancellationQuote estimateCancellationRefund(DateTime now) {
+    return ExcursionBookingCancellationQuote.fromBooking(
+      totalAmount: totalPriceAmount,
+      currency: currency,
+      scheduledFor: scheduledFor,
+      now: now,
+    );
+  }
+
+  ExcursionBookingVm copyWith({
+    ExcursionReviewVm? review,
+    String? status,
+    DateTime? cancelledAt,
+    String? cancelledBy,
+    String? cancelReason,
+    int? refundPercent,
+    double? refundAmount,
+    String? refundCurrency,
+    String? refundPolicyCode,
+    String? refundStatus,
+  }) {
     return ExcursionBookingVm(
       id: id,
       productId: productId,
@@ -96,6 +142,7 @@ class ExcursionBookingVm {
       countryCode: countryCode,
       cityName: cityName,
       coverFileId: coverFileId,
+      author: author,
       scheduledFor: scheduledFor,
       adults: adults,
       children: children,
@@ -103,8 +150,16 @@ class ExcursionBookingVm {
       maxGroupSize: maxGroupSize,
       totalPriceAmount: totalPriceAmount,
       currency: currency,
-      status: status,
+      status: status ?? this.status,
       review: review ?? this.review,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      cancelledBy: cancelledBy ?? this.cancelledBy,
+      cancelReason: cancelReason ?? this.cancelReason,
+      refundPercent: refundPercent ?? this.refundPercent,
+      refundAmount: refundAmount ?? this.refundAmount,
+      refundCurrency: refundCurrency ?? this.refundCurrency,
+      refundPolicyCode: refundPolicyCode ?? this.refundPolicyCode,
+      refundStatus: refundStatus ?? this.refundStatus,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
@@ -129,6 +184,12 @@ class ExcursionBookingVm {
       countryCode: _nullableString(json['countryCode']),
       cityName: _nullableString(json['cityName']),
       coverFileId: _nullableString(json['coverFileId']),
+      author: json['author'] is Map<String, dynamic>
+          ? ExcursionReviewAuthorVm.fromJson(
+              json['author'] as Map<String, dynamic>,
+              fallbackUserId: _string(json['touristUserId']),
+            )
+          : ExcursionReviewAuthorVm(userId: _string(json['touristUserId'])),
       scheduledFor: _date(json['scheduledFor']) ?? DateTime.now().toUtc(),
       adults: _int(json['adults']),
       children: _int(json['children']),
@@ -143,8 +204,68 @@ class ExcursionBookingVm {
       review: json['review'] is Map<String, dynamic>
           ? ExcursionReviewVm.fromJson(json['review'] as Map<String, dynamic>)
           : null,
+      cancelledAt: _date(json['cancelledAt']),
+      cancelledBy: _nullableString(json['cancelledBy']),
+      cancelReason: _nullableString(json['cancelReason']),
+      refundPercent: _int(json['refundPercent']),
+      refundAmount: _double(json['refundAmount']),
+      refundCurrency: _nullableString(json['refundCurrency']),
+      refundPolicyCode: _nullableString(json['refundPolicyCode']),
+      refundStatus: _nullableString(json['refundStatus']),
       createdAt: _date(json['createdAt']),
       updatedAt: _date(json['updatedAt']),
+    );
+  }
+}
+
+class ExcursionBookingCancellationQuote {
+  const ExcursionBookingCancellationQuote({
+    required this.percent,
+    required this.amount,
+    required this.currency,
+    required this.policyCode,
+    required this.status,
+  });
+
+  final int percent;
+  final double amount;
+  final String currency;
+  final String policyCode;
+  final String status;
+
+  bool get hasRefund => amount > 0;
+
+  factory ExcursionBookingCancellationQuote.fromBooking({
+    required double totalAmount,
+    required String currency,
+    required DateTime scheduledFor,
+    required DateTime now,
+  }) {
+    final untilStart = scheduledFor.toUtc().difference(now.toUtc());
+    var percent = 0;
+    var policyCode = 'NO_REFUND_INSIDE_2H';
+
+    if (untilStart >= const Duration(hours: 24)) {
+      percent = 100;
+      policyCode = 'FULL_REFUND_BEFORE_24H';
+    } else if (untilStart >= const Duration(hours: 12)) {
+      percent = 75;
+      policyCode = 'PARTIAL_REFUND_BEFORE_12H';
+    } else if (untilStart >= const Duration(hours: 6)) {
+      percent = 50;
+      policyCode = 'PARTIAL_REFUND_BEFORE_6H';
+    } else if (untilStart >= const Duration(hours: 2)) {
+      percent = 25;
+      policyCode = 'PARTIAL_REFUND_BEFORE_2H';
+    }
+
+    final amount = ((totalAmount * percent / 100) * 100).roundToDouble() / 100;
+    return ExcursionBookingCancellationQuote(
+      percent: percent,
+      amount: amount,
+      currency: currency.trim().isEmpty ? 'KZT' : currency.trim(),
+      policyCode: policyCode,
+      status: amount > 0 ? 'PENDING_PAYMENT_INTEGRATION' : 'NOT_REFUNDABLE',
     );
   }
 }
@@ -163,6 +284,7 @@ class ExcursionReviewVm {
     required this.comment,
     required this.createdAt,
     required this.updatedAt,
+    this.author = const ExcursionReviewAuthorVm(userId: ''),
     this.legacyExcursionId,
     this.landmarkId,
     this.landmarkName,
@@ -180,6 +302,7 @@ class ExcursionReviewVm {
   final String guideUserId;
   final String guideProfileId;
   final String guideDisplayName;
+  final ExcursionReviewAuthorVm author;
   final double rating;
   final String comment;
   final String sourceLabel;
@@ -187,6 +310,13 @@ class ExcursionReviewVm {
   final DateTime updatedAt;
 
   factory ExcursionReviewVm.fromJson(Map<String, dynamic> json) {
+    final touristUserId = _string(json['touristUserId']);
+    final author = json['author'] is Map<String, dynamic>
+        ? ExcursionReviewAuthorVm.fromJson(
+            json['author'] as Map<String, dynamic>,
+            fallbackUserId: touristUserId,
+          )
+        : ExcursionReviewAuthorVm(userId: touristUserId);
     return ExcursionReviewVm(
       id: _string(json['id']),
       bookingId: _string(json['bookingId']),
@@ -195,10 +325,11 @@ class ExcursionReviewVm {
       legacyExcursionId: _nullableString(json['legacyExcursionId']),
       landmarkId: _nullableString(json['landmarkId']),
       landmarkName: _nullableString(json['landmarkName']),
-      touristUserId: _string(json['touristUserId']),
+      touristUserId: touristUserId,
       guideUserId: _string(json['guideUserId']),
       guideProfileId: _string(json['guideProfileId']),
       guideDisplayName: _string(json['guideDisplayName']),
+      author: author,
       rating: _double(json['rating']),
       comment: _string(json['comment']),
       sourceLabel: _string(json['sourceLabel']).isEmpty
@@ -208,6 +339,33 @@ class ExcursionReviewVm {
       updatedAt: _date(json['updatedAt']) ?? DateTime.now().toUtc(),
     );
   }
+}
+
+class ExcursionReviewAuthorVm {
+  const ExcursionReviewAuthorVm({
+    required this.userId,
+    this.displayName,
+    this.avatarFileId,
+  });
+
+  final String userId;
+  final String? displayName;
+  final String? avatarFileId;
+
+  factory ExcursionReviewAuthorVm.fromJson(
+    Map<String, dynamic> json, {
+    String fallbackUserId = '',
+  }) {
+    final userId = _string(json['userId']);
+    return ExcursionReviewAuthorVm(
+      userId: userId.isEmpty ? fallbackUserId : userId,
+      displayName: _nullableString(json['displayName']),
+      avatarFileId: _nullableString(json['avatarFileId']),
+    );
+  }
+
+  String get resolvedDisplayName => (displayName ?? '').trim();
+  String get resolvedAvatarFileId => (avatarFileId ?? '').trim();
 }
 
 List<ExcursionBookingVm> filterMyExcursionBookings(
@@ -222,7 +380,8 @@ List<ExcursionBookingVm> filterMyExcursionBookings(
 }) {
   final normalizedQuery = query.trim().toLowerCase();
   return items.where((item) {
-    if (tab == MyExcursionsTab.booked && !item.isBooked(now)) {
+    final isUpcoming = item.scheduledFor.toUtc().isAfter(now.toUtc());
+    if (tab == MyExcursionsTab.booked && !isUpcoming) {
       return false;
     }
     if (tab == MyExcursionsTab.visited && !item.isVisited(now)) {

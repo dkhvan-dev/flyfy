@@ -13,7 +13,8 @@ RUN go mod download
 COPY backend/services/excursion-service ./
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="-s -w" -o /bin/excursion-service ./cmd
+    go build -ldflags="-s -w" -o /bin/excursion-service ./cmd && \
+    go build -ldflags="-s -w" -o /bin/recalculate-guide-ratings ./cmd/recalculate-guide-ratings
 
 FROM alpine:3.21
 
@@ -24,6 +25,7 @@ RUN apk add --no-cache ca-certificates tzdata wget \
 WORKDIR /app
 
 COPY --from=builder /bin/excursion-service /app/excursion-service
+COPY --from=builder /bin/recalculate-guide-ratings /app/recalculate-guide-ratings
 COPY --from=builder /app/backend/services/excursion-service/migrations /app/migrations
 
 USER appuser

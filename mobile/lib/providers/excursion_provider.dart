@@ -10,6 +10,8 @@ import '../features/excursions/models/create_excursion_request.dart';
 import '../features/excursions/models/excursion_booking_vm.dart';
 import '../features/excursions/models/excursion_schedule_vm.dart';
 import '../features/excursions/models/excursion_vm.dart';
+import '../features/profile/data/guide_api.dart';
+import '../features/profile/models/guide_profile_vm.dart';
 
 enum ExcursionActionState { idle, loading, success, error }
 
@@ -21,13 +23,16 @@ class ExcursionProvider extends ChangeNotifier {
   ExcursionProvider({
     ExcursionApi? excursionApi,
     ExcursionScheduleApi? scheduleApi,
+    GuideApi? guideApi,
   })  : _excursionApi = excursionApi ?? ExcursionApi(),
+        _guideApi = guideApi ?? GuideApi(),
         _scheduleApi = scheduleApi ?? ExcursionScheduleApi();
 
   static const _marketplaceRefreshAttempts = 3;
   static const _marketplaceRefreshRetryDelay = Duration(milliseconds: 150);
 
   final ExcursionApi _excursionApi;
+  final GuideApi _guideApi;
   final ExcursionScheduleApi _scheduleApi;
 
   ExcursionListState _listState = ExcursionListState.initial;
@@ -55,6 +60,7 @@ class ExcursionProvider extends ChangeNotifier {
   ExcursionListState _guideDashboardState = ExcursionListState.initial;
   List<ExcursionVm> _myGuideExcursions = const [];
   List<ExcursionBookingVm> _myGuideExcursionBookings = const [];
+  GuideProfileVm? _myGuideProfile;
   String? _guideDashboardErrorMessage;
   bool _isGuideDashboardRefreshing = false;
 
@@ -108,6 +114,7 @@ class ExcursionProvider extends ChangeNotifier {
   List<ExcursionVm> get myGuideExcursions => _myGuideExcursions;
   List<ExcursionBookingVm> get myGuideExcursionBookings =>
       _myGuideExcursionBookings;
+  GuideProfileVm? get myGuideProfile => _myGuideProfile;
   String? get guideDashboardErrorMessage => _guideDashboardErrorMessage;
   bool get isGuideDashboardRefreshing => _isGuideDashboardRefreshing;
 
@@ -121,6 +128,7 @@ class ExcursionProvider extends ChangeNotifier {
 
   Future<void> loadExcursions({
     String? query,
+    String? landmarkId,
     String? categorySlug,
     String? cityName,
   }) async {
@@ -140,6 +148,7 @@ class ExcursionProvider extends ChangeNotifier {
     try {
       _excursions = await _excursionApi.getExcursions(
         query: query,
+        landmarkId: landmarkId,
         categorySlug: categorySlug,
         cityName: cityName,
       );
@@ -162,14 +171,29 @@ class ExcursionProvider extends ChangeNotifier {
 
   Future<void> refreshExcursions({
     String? query,
+    String? landmarkId,
     String? categorySlug,
     String? cityName,
   }) {
     return loadExcursions(
       query: query,
+      landmarkId: landmarkId,
       categorySlug: categorySlug,
       cityName: cityName,
     );
+  }
+
+  Future<ExcursionVm?> findFirstExcursionForAttraction(
+    String attractionId,
+  ) async {
+    final trimmedAttractionId = attractionId.trim();
+    if (trimmedAttractionId.isEmpty) return null;
+
+    final items = await _excursionApi.getExcursions(
+      limit: 1,
+      landmarkId: trimmedAttractionId,
+    );
+    return items.isEmpty ? null : items.first;
   }
 
   Future<void> loadMyExcursionBookings({bool force = false}) async {
@@ -219,8 +243,9 @@ class ExcursionProvider extends ChangeNotifier {
       return;
     }
 
-    final hasCachedData =
-        _myGuideExcursions.isNotEmpty || _myGuideExcursionBookings.isNotEmpty;
+    final hasCachedData = _myGuideProfile != null ||
+        _myGuideExcursions.isNotEmpty ||
+        _myGuideExcursionBookings.isNotEmpty;
     if (hasCachedData) {
       _isGuideDashboardRefreshing = true;
     } else {
@@ -230,15 +255,18 @@ class ExcursionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final results = await Future.wait<Object>([
+      final results = await Future.wait<Object?>([
         _excursionApi.getMyExcursions(limit: 100),
         _excursionApi.getMyGuideExcursionBookings(limit: 100),
+        _guideApi.getMyGuideProfileOrNull(),
       ]);
       final excursionsPage = results[0] as ExcursionsPage;
       final bookingsPage = results[1] as ExcursionBookingsPage;
+      final guideProfile = results[2] as GuideProfileVm?;
 
       _myGuideExcursions = excursionsPage.items;
       _myGuideExcursionBookings = bookingsPage.items;
+      _myGuideProfile = guideProfile;
       _guideDashboardState = ExcursionListState.success;
     } on DioException catch (e) {
       _guideDashboardErrorMessage = DioErrorMapper.toMessage(e);
@@ -274,6 +302,47 @@ class ExcursionProvider extends ChangeNotifier {
       to: to,
       seats: seats,
     );
+  }
+
+  Future<bool> cancelGuideExcursionSlot(
+    String slotId, {
+    required String reason,
+  }) async {
+    final trimmedSlotId = slotId.trim();
+    final trimmedReason = reason.trim();
+    if (trimmedSlotId.isEmpty) {
+      _actionErrorMessage = 'Invalid excursion schedule slot id';
+      return false;
+    }
+    if (trimmedReason.isEmpty) {
+      _actionErrorMessage = 'Cancellation reason is required';
+      return false;
+    }
+
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      await _scheduleApi.cancelSlot(trimmedSlotId, trimmedReason);
+      _myGuideExcursionBookings = _myGuideExcursionBookings.map((booking) {
+        final bookingSlotId = (booking.scheduleSlotId ?? '').trim();
+        if (bookingSlotId != trimmedSlotId) return booking;
+        return booking.copyWith(status: 'CANCELLED');
+      }).toList(growable: false);
+      _actionState = ExcursionActionState.success;
+      return true;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return false;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to cancel excursion';
+      _actionState = ExcursionActionState.error;
+      return false;
+    } finally {
+      notifyListeners();
+    }
   }
 
   Future<bool> publishExcursionOffer(String excursionId) async {
@@ -556,6 +625,42 @@ class ExcursionProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> cancelExcursionBooking(
+    String bookingId, {
+    String reason = '',
+  }) async {
+    final trimmedBookingId = bookingId.trim();
+    if (trimmedBookingId.isEmpty) {
+      _actionErrorMessage = 'Invalid excursion booking id';
+      return false;
+    }
+
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final booking = await _excursionApi.cancelExcursionBooking(
+        trimmedBookingId,
+        reason: reason.trim(),
+      );
+      _upsertMyExcursionBooking(booking);
+      _actionState = ExcursionActionState.success;
+      await loadMyExcursionBookings(force: true);
+      return true;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return false;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to cancel excursion booking';
+      _actionState = ExcursionActionState.error;
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
   Future<ExcursionReviewVm?> createExcursionReview(
     String bookingId,
     CreateExcursionReviewRequest request,
@@ -778,8 +883,9 @@ class ExcursionProvider extends ChangeNotifier {
     if (bookingId.isEmpty) return;
 
     final nextBookings = [..._myExcursionBookings];
-    final existingIndex =
-        nextBookings.indexWhere((item) => item.id == bookingId);
+    final existingIndex = nextBookings.indexWhere(
+      (item) => item.id == bookingId,
+    );
     if (existingIndex >= 0) {
       nextBookings[existingIndex] = booking;
     } else {

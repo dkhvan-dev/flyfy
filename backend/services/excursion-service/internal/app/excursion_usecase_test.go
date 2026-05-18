@@ -47,6 +47,17 @@ type excursionRepoStub struct {
 	updatedBooking                  *model.ExcursionBooking
 	updatedBookingSeatDelta         int
 	updateBookingGuestsErr          error
+	cancelledBooking                *model.ExcursionBooking
+	cancelledBookingReleaseSeats    int
+	cancelBookingErr                error
+	createdReview                   *model.ExcursionReview
+	createReviewFn                  func(item *model.ExcursionReview)
+	landmarkReviewStatsID           uuid.UUID
+	landmarkRatingAvg               float64
+	landmarkReviewsCount            int
+	existingReview                  *model.ExcursionReview
+	listReviewFilter                port.ExcursionReviewFilter
+	listReviewItems                 []*model.ExcursionReview
 	listScheduleFilter              port.ExcursionScheduleFilter
 	listScheduleSlots               []*model.ExcursionScheduleSlot
 	listExcursions                  []*model.Excursion
@@ -195,16 +206,34 @@ func (s *excursionRepoStub) UpdateExcursionBookingGuests(ctx context.Context, it
 	return s.updateBookingGuestsErr
 }
 
+func (s *excursionRepoStub) CancelExcursionBooking(ctx context.Context, item *model.ExcursionBooking) error {
+	s.cancelledBooking = item
+	if item != nil && item.ScheduleSlotID != nil {
+		s.cancelledBookingReleaseSeats = item.TotalSeats
+	}
+	return s.cancelBookingErr
+}
+
 func (s *excursionRepoStub) CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
+	s.createdReview = item
+	if s.createReviewFn != nil {
+		s.createReviewFn(item)
+	}
 	return nil
 }
 
 func (s *excursionRepoStub) GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error) {
-	return nil, nil
+	return s.existingReview, nil
 }
 
 func (s *excursionRepoStub) ListExcursionReviews(ctx context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
-	return nil, nil
+	s.listReviewFilter = filter
+	return s.listReviewItems, nil
+}
+
+func (s *excursionRepoStub) CalculateLandmarkReviewStats(ctx context.Context, landmarkID uuid.UUID) (float64, int, error) {
+	s.landmarkReviewStatsID = landmarkID
+	return s.landmarkRatingAvg, s.landmarkReviewsCount, nil
 }
 
 type guideVerifierStub struct {
@@ -244,6 +273,26 @@ type translatorStub struct {
 func (s *translatorStub) TranslateTexts(ctx context.Context, input port.TranslationRequest) (port.TranslationResult, error) {
 	s.calls = append(s.calls, input)
 	return s.result, s.err
+}
+
+type attractionRatingUpdaterStub struct {
+	snapshots []port.AttractionRatingSnapshot
+}
+
+func (s *attractionRatingUpdaterStub) ApplyAttractionRatingSnapshot(ctx context.Context, snapshot port.AttractionRatingSnapshot) error {
+	s.snapshots = append(s.snapshots, snapshot)
+	return nil
+}
+
+type userProfileResolverStub struct {
+	profiles map[uuid.UUID]port.UserProfileProjection
+	requests [][]uuid.UUID
+}
+
+func (s *userProfileResolverStub) GetUserProfileProjections(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]port.UserProfileProjection, error) {
+	copied := append([]uuid.UUID(nil), userIDs...)
+	s.requests = append(s.requests, copied)
+	return s.profiles, nil
 }
 
 func TestCreateExcursionRequiresActiveExcursionGuide(t *testing.T) {
@@ -1001,6 +1050,185 @@ func TestCreateExcursionBookingPersistsRequestForSelectedOffer(t *testing.T) {
 	}
 }
 
+func TestCreateExcursionReviewRequestsAttractionRatingRecalculation(t *testing.T) {
+	productID := uuid.New()
+	offerID := uuid.New()
+	landmarkID := uuid.New()
+	touristUserID := uuid.New()
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       productID,
+		OfferID:         offerID,
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     uuid.New(),
+		TouristUserID:   touristUserID,
+		ScheduledFor:    time.Now().UTC().Add(-24 * time.Hour),
+		Adults:          1,
+		Children:        0,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotBooking:           booking,
+		landmarkRatingAvg:    4.7,
+		landmarkReviewsCount: 9,
+		createReviewFn: func(item *model.ExcursionReview) {
+			item.LandmarkID = &landmarkID
+		},
+	}
+	ratings := &attractionRatingUpdaterStub{}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithAttractionRatingUpdater(ratings)
+
+	_, err = uc.CreateExcursionReview(context.Background(), CreateExcursionReviewInput{
+		ActorUserID: touristUserID,
+		BookingID:   booking.ID,
+		Rating:      5,
+		Comment:     "Excellent route and guide",
+	})
+	if err != nil {
+		t.Fatalf("CreateExcursionReview() error = %v", err)
+	}
+	if repo.landmarkReviewStatsID != landmarkID {
+		t.Fatalf("landmark stats id = %s, want %s", repo.landmarkReviewStatsID, landmarkID)
+	}
+	if len(ratings.snapshots) != 1 {
+		t.Fatalf("snapshots count = %d, want 1", len(ratings.snapshots))
+	}
+	got := ratings.snapshots[0]
+	if got.AttractionID != landmarkID ||
+		got.Source != attractionRatingSourceExcursionReviews ||
+		got.RatingAvg != 4.7 ||
+		got.ReviewCount != 9 {
+		t.Fatalf("snapshot = %+v, want attraction %s source %s rating 4.7 count 9",
+			got, landmarkID, attractionRatingSourceExcursionReviews)
+	}
+}
+
+func TestListExcursionReviewsProjectsAuthorFromUnifiedProfile(t *testing.T) {
+	touristUserID := uuid.New()
+	avatarFileID := uuid.New()
+	displayName := "@nomad_aru"
+	review := &model.ExcursionReview{
+		ID:             uuid.New(),
+		BookingID:      uuid.New(),
+		ProductID:      uuid.New(),
+		OfferID:        uuid.New(),
+		GuideProfileID: uuid.New(),
+		GuideUserID:    uuid.New(),
+		TouristUserID:  touristUserID,
+		Rating:         4.5,
+		Comment:        "Calm pace and beautiful viewpoints",
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
+	}
+	repo := &excursionRepoStub{listReviewItems: []*model.ExcursionReview{review}}
+	profiles := &userProfileResolverStub{
+		profiles: map[uuid.UUID]port.UserProfileProjection{
+			touristUserID: {
+				UserID:       touristUserID,
+				DisplayName:  &displayName,
+				AvatarFileID: &avatarFileID,
+			},
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithUserProfileResolver(profiles)
+
+	items, err := uc.ListExcursionReviews(context.Background(), port.ExcursionReviewFilter{
+		ProductID: uuidPtr(review.ProductID),
+		Limit:     20,
+	})
+	if err != nil {
+		t.Fatalf("ListExcursionReviews() error = %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("items len = %d, want 1", len(items))
+	}
+	got := items[0].Author
+	if got.UserID != touristUserID {
+		t.Fatalf("author user id = %s, want %s", got.UserID, touristUserID)
+	}
+	if got.DisplayName == nil || *got.DisplayName != displayName {
+		t.Fatalf("author display name = %v, want %s", got.DisplayName, displayName)
+	}
+	if got.AvatarFileID == nil || *got.AvatarFileID != avatarFileID {
+		t.Fatalf("author avatar file id = %v, want %s", got.AvatarFileID, avatarFileID)
+	}
+	if len(profiles.requests) != 1 || len(profiles.requests[0]) != 1 || profiles.requests[0][0] != touristUserID {
+		t.Fatalf("profile requests = %v, want one batched tourist id", profiles.requests)
+	}
+}
+
+func TestListMyGuideExcursionBookingsProjectsAuthorFromUnifiedProfile(t *testing.T) {
+	guideUserID := uuid.New()
+	touristUserID := uuid.New()
+	avatarFileID := uuid.New()
+	displayName := "@booking_author"
+	booking := &model.ExcursionBooking{
+		ID:               uuid.New(),
+		ProductID:        uuid.New(),
+		OfferID:          uuid.New(),
+		GuideProfileID:   uuid.New(),
+		GuideUserID:      guideUserID,
+		TouristUserID:    touristUserID,
+		ScheduledFor:     time.Now().UTC().Add(24 * time.Hour),
+		Adults:           2,
+		Children:         1,
+		TotalSeats:       3,
+		UnitPriceAmount:  100,
+		TotalPriceAmount: 315,
+		Currency:         "KZT",
+		Status:           enum.ExcursionBookingStatusRequested,
+		CreatedAt:        time.Now().UTC(),
+		UpdatedAt:        time.Now().UTC(),
+	}
+	repo := &excursionRepoStub{
+		listBookingItems: []*model.ExcursionBookingListItem{
+			{Booking: booking},
+		},
+	}
+	profiles := &userProfileResolverStub{
+		profiles: map[uuid.UUID]port.UserProfileProjection{
+			touristUserID: {
+				UserID:       touristUserID,
+				DisplayName:  &displayName,
+				AvatarFileID: &avatarFileID,
+			},
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithUserProfileResolver(profiles)
+
+	items, err := uc.ListMyGuideExcursionBookings(
+		context.Background(),
+		guideUserID,
+		20,
+		0,
+	)
+	if err != nil {
+		t.Fatalf("ListMyGuideExcursionBookings() error = %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("items len = %d, want 1", len(items))
+	}
+	got := items[0].Author
+	if got.UserID != touristUserID {
+		t.Fatalf("author user id = %s, want %s", got.UserID, touristUserID)
+	}
+	if got.DisplayName == nil || *got.DisplayName != displayName {
+		t.Fatalf("author display name = %v, want %s", got.DisplayName, displayName)
+	}
+	if got.AvatarFileID == nil || *got.AvatarFileID != avatarFileID {
+		t.Fatalf("author avatar file id = %v, want %s", got.AvatarFileID, avatarFileID)
+	}
+	if len(profiles.requests) != 1 || len(profiles.requests[0]) != 1 || profiles.requests[0][0] != touristUserID {
+		t.Fatalf("profile requests = %v, want one batched tourist id", profiles.requests)
+	}
+}
+
 func TestCreateExcursionBookingReturnsExistingForIdempotencyRetry(t *testing.T) {
 	productID := uuid.New()
 	offerID := uuid.New()
@@ -1747,6 +1975,137 @@ func TestUpdateExcursionBookingGuestsRejectsSlotCapacityOverflow(t *testing.T) {
 	}
 	if repo.updatedBooking != nil {
 		t.Fatal("booking was persisted despite capacity overflow")
+	}
+}
+
+func TestExcursionBookingCancellationRefundPolicyTiers(t *testing.T) {
+	now := time.Date(2026, time.May, 18, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name          string
+		untilStart    time.Duration
+		wantPercent   int
+		wantAmount    float64
+		wantPolicy    string
+		wantRefunding bool
+	}{
+		{
+			name:          "full refund at least twenty four hours before start",
+			untilStart:    24 * time.Hour,
+			wantPercent:   100,
+			wantAmount:    10500,
+			wantPolicy:    "FULL_REFUND_BEFORE_24H",
+			wantRefunding: true,
+		},
+		{
+			name:          "seventy five percent from twelve to twenty four hours",
+			untilStart:    12 * time.Hour,
+			wantPercent:   75,
+			wantAmount:    7875,
+			wantPolicy:    "PARTIAL_REFUND_BEFORE_12H",
+			wantRefunding: true,
+		},
+		{
+			name:          "half refund from six to twelve hours",
+			untilStart:    6 * time.Hour,
+			wantPercent:   50,
+			wantAmount:    5250,
+			wantPolicy:    "PARTIAL_REFUND_BEFORE_6H",
+			wantRefunding: true,
+		},
+		{
+			name:          "quarter refund from two to six hours",
+			untilStart:    2 * time.Hour,
+			wantPercent:   25,
+			wantAmount:    2625,
+			wantPolicy:    "PARTIAL_REFUND_BEFORE_2H",
+			wantRefunding: true,
+		},
+		{
+			name:          "no refund inside two hours",
+			untilStart:    time.Hour + 59*time.Minute,
+			wantPercent:   0,
+			wantAmount:    0,
+			wantPolicy:    "NO_REFUND_INSIDE_2H",
+			wantRefunding: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			quote := excursionBookingCancellationRefundQuote(10500, "KZT", now.Add(tt.untilStart), now)
+
+			if quote.Percent != tt.wantPercent {
+				t.Fatalf("percent = %d, want %d", quote.Percent, tt.wantPercent)
+			}
+			if quote.Amount != tt.wantAmount {
+				t.Fatalf("amount = %v, want %v", quote.Amount, tt.wantAmount)
+			}
+			if quote.PolicyCode != tt.wantPolicy {
+				t.Fatalf("policy = %q, want %q", quote.PolicyCode, tt.wantPolicy)
+			}
+			if (quote.Status == "PENDING_PAYMENT_INTEGRATION") != tt.wantRefunding {
+				t.Fatalf("status = %q, want refunding %v", quote.Status, tt.wantRefunding)
+			}
+		})
+	}
+}
+
+func TestCancelExcursionBookingMarksTouristCancellationAndReleasesSlotSeats(t *testing.T) {
+	touristUserID := uuid.New()
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       productID,
+		OfferID:         offerID,
+		ScheduleSlotID:  &slotID,
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		TouristUserID:   touristUserID,
+		ScheduledFor:    scheduledFor,
+		Adults:          2,
+		Children:        1,
+		UnitPriceAmount: 10000,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{gotBooking: booking}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	cancelled, err := uc.CancelExcursionBooking(context.Background(), CancelExcursionBookingInput{
+		ActorUserID: touristUserID,
+		BookingID:   booking.ID,
+		Reason:      "Планы изменились",
+	})
+	if err != nil {
+		t.Fatalf("CancelExcursionBooking() error = %v", err)
+	}
+
+	if cancelled.Status != enum.ExcursionBookingStatusCancelled {
+		t.Fatalf("status = %q, want %q", cancelled.Status, enum.ExcursionBookingStatusCancelled)
+	}
+	if cancelled.CancelledAt == nil {
+		t.Fatal("cancelled_at was not set")
+	}
+	if cancelled.CancelledBy == nil || *cancelled.CancelledBy != enum.ExcursionBookingCancelledByTourist {
+		t.Fatalf("cancelled_by = %v, want tourist", cancelled.CancelledBy)
+	}
+	if cancelled.CancelReason == nil || *cancelled.CancelReason != "Планы изменились" {
+		t.Fatalf("cancel reason = %v", cancelled.CancelReason)
+	}
+	if cancelled.RefundPercent != 100 || cancelled.RefundAmount != cancelled.TotalPriceAmount {
+		t.Fatalf("refund = %d/%v, want 100/%v", cancelled.RefundPercent, cancelled.RefundAmount, cancelled.TotalPriceAmount)
+	}
+	if repo.cancelledBooking == nil || repo.cancelledBooking.ID != booking.ID {
+		t.Fatal("cancelled booking was not persisted")
+	}
+	if repo.cancelledBookingReleaseSeats != 3 {
+		t.Fatalf("release seats = %d, want 3", repo.cancelledBookingReleaseSeats)
 	}
 }
 

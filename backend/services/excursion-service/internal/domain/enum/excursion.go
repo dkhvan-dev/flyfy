@@ -72,3 +72,22 @@ func (s ExcursionBookingStatus) IsValid() bool {
 		return false
 	}
 }
+
+type ExcursionBookingCancelledBy string
+
+const (
+	ExcursionBookingCancelledByTourist ExcursionBookingCancelledBy = "TOURIST"
+	ExcursionBookingCancelledByGuide   ExcursionBookingCancelledBy = "GUIDE"
+	ExcursionBookingCancelledBySystem  ExcursionBookingCancelledBy = "SYSTEM"
+)
+
+func (s ExcursionBookingCancelledBy) IsValid() bool {
+	switch s {
+	case ExcursionBookingCancelledByTourist,
+		ExcursionBookingCancelledByGuide,
+		ExcursionBookingCancelledBySystem:
+		return true
+	default:
+		return false
+	}
+}

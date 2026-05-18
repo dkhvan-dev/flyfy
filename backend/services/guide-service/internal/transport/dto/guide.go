@@ -16,6 +16,20 @@ type UpdateGuideProfileRequest struct {
 	Specializations           []GuideSpecializationRequest `json:"specializations,omitempty"`
 }
 
+type ApplyGuideRatingSnapshotsRequest struct {
+	Items []GuideRatingSnapshotRequest `json:"items"`
+}
+
+type GuideRatingSnapshotRequest struct {
+	GuideProfileID string  `json:"guideProfileId"`
+	RatingAvg      float64 `json:"ratingAvg"`
+	ReviewsCount   int     `json:"reviewsCount"`
+}
+
+type ApplyGuideRatingSnapshotsResponse struct {
+	Updated int `json:"updated"`
+}
+
 type GuideLanguageRequest struct {
 	LanguageCode     string `json:"languageCode"`
 	ProficiencyLevel string `json:"proficiencyLevel"`

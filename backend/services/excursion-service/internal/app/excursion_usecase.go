@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -37,16 +38,28 @@ type ExcursionOfferAggregate struct {
 }
 
 type ExcursionUseCase struct {
-	repo          port.ExcursionRepository
-	guideVerifier port.GuideVerifier
-	fileManager   port.ExcursionCoverFileManager
-	translator    port.ExcursionTranslator
+	repo                    port.ExcursionRepository
+	guideVerifier           port.GuideVerifier
+	fileManager             port.ExcursionCoverFileManager
+	translator              port.ExcursionTranslator
+	userProfiles            port.UserProfileResolver
+	attractionRatingUpdater port.AttractionRatingUpdater
 }
 
 const (
 	excursionScheduleBookingLeadTime            = 2 * time.Hour
 	excursionScheduleSetupLeadTime              = 3 * time.Hour
 	excursionScheduleAutoCancelReasonNoBookings = "NO_BOOKINGS_BEFORE_START_2H"
+	attractionRatingSourceExcursionReviews      = "excursion_reviews"
+
+	excursionBookingRefundPolicyFull24H    = "FULL_REFUND_BEFORE_24H"
+	excursionBookingRefundPolicyPartial12H = "PARTIAL_REFUND_BEFORE_12H"
+	excursionBookingRefundPolicyPartial6H  = "PARTIAL_REFUND_BEFORE_6H"
+	excursionBookingRefundPolicyPartial2H  = "PARTIAL_REFUND_BEFORE_2H"
+	excursionBookingRefundPolicyNoRefund2H = "NO_REFUND_INSIDE_2H"
+
+	excursionBookingRefundStatusPendingPaymentIntegration = "PENDING_PAYMENT_INTEGRATION"
+	excursionBookingRefundStatusNotRefundable             = "NOT_REFUNDABLE"
 )
 
 func NewExcursionUseCase(
@@ -65,6 +78,16 @@ func NewExcursionUseCase(
 		fileManager:   fileManager,
 		translator:    translator,
 	}
+}
+
+func (u *ExcursionUseCase) WithUserProfileResolver(resolver port.UserProfileResolver) *ExcursionUseCase {
+	u.userProfiles = resolver
+	return u
+}
+
+func (u *ExcursionUseCase) WithAttractionRatingUpdater(updater port.AttractionRatingUpdater) *ExcursionUseCase {
+	u.attractionRatingUpdater = updater
+	return u
 }
 
 type ExcursionItineraryItemInput struct {
@@ -151,6 +174,20 @@ type UpdateExcursionBookingGuestsInput struct {
 	BookingID   uuid.UUID
 	Adults      int
 	Children    int
+}
+
+type CancelExcursionBookingInput struct {
+	ActorUserID uuid.UUID
+	BookingID   uuid.UUID
+	Reason      string
+}
+
+type ExcursionBookingCancellationRefundQuote struct {
+	Percent    int
+	Amount     float64
+	Currency   string
+	PolicyCode string
+	Status     string
 }
 
 type CreateGuideScheduleSlotInput struct {
@@ -1139,6 +1176,7 @@ func (u *ExcursionUseCase) ListMyExcursionBookings(ctx context.Context, actorUse
 	if err != nil {
 		return nil, fmt.Errorf("list excursion bookings: %w", err)
 	}
+	u.enrichExcursionBookingAuthors(ctx, items)
 	return items, nil
 }
 
@@ -1161,6 +1199,7 @@ func (u *ExcursionUseCase) ListMyGuideExcursionBookings(ctx context.Context, act
 	if err != nil {
 		return nil, fmt.Errorf("list guide excursion bookings: %w", err)
 	}
+	u.enrichExcursionBookingAuthors(ctx, items)
 	return items, nil
 }
 
@@ -1223,6 +1262,99 @@ func (u *ExcursionUseCase) UpdateExcursionBookingGuests(ctx context.Context, inp
 	return booking, nil
 }
 
+func (u *ExcursionUseCase) CancelExcursionBooking(ctx context.Context, input CancelExcursionBookingInput) (*model.ExcursionBooking, error) {
+	if input.ActorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	if input.BookingID == uuid.Nil {
+		return nil, model.ErrInvalidExcursionBookingID
+	}
+
+	booking, err := u.repo.GetExcursionBookingByID(ctx, input.BookingID)
+	if err != nil {
+		return nil, fmt.Errorf("get excursion booking: %w", err)
+	}
+	if booking == nil || booking.TouristUserID != input.ActorUserID {
+		return nil, ErrExcursionBookingNotFound
+	}
+
+	now := time.Now().UTC()
+	if booking.Status != enum.ExcursionBookingStatusRequested ||
+		booking.CancelledAt != nil ||
+		!booking.ScheduledFor.After(now) {
+		return nil, ErrExcursionBookingNotEditable
+	}
+
+	quote := excursionBookingCancellationRefundQuote(
+		booking.TotalPriceAmount,
+		booking.Currency,
+		booking.ScheduledFor,
+		now,
+	)
+	if err = booking.Cancel(
+		enum.ExcursionBookingCancelledByTourist,
+		input.Reason,
+		quote.Percent,
+		quote.Amount,
+		quote.Currency,
+		quote.PolicyCode,
+		quote.Status,
+	); err != nil {
+		return nil, err
+	}
+
+	if err = u.repo.CancelExcursionBooking(ctx, booking); err != nil {
+		if errors.Is(err, port.ErrExcursionBookingNotEditable) {
+			return nil, ErrExcursionBookingNotEditable
+		}
+		if errors.Is(err, port.ErrExcursionScheduleUnavailable) {
+			return nil, ErrExcursionScheduleUnavailable
+		}
+		return nil, fmt.Errorf("cancel excursion booking: %w", err)
+	}
+	return booking, nil
+}
+
+func excursionBookingCancellationRefundQuote(
+	totalAmount float64,
+	currency string,
+	scheduledFor time.Time,
+	now time.Time,
+) ExcursionBookingCancellationRefundQuote {
+	untilStart := scheduledFor.UTC().Sub(now.UTC())
+	percent := 0
+	policyCode := excursionBookingRefundPolicyNoRefund2H
+
+	switch {
+	case untilStart >= 24*time.Hour:
+		percent = 100
+		policyCode = excursionBookingRefundPolicyFull24H
+	case untilStart >= 12*time.Hour:
+		percent = 75
+		policyCode = excursionBookingRefundPolicyPartial12H
+	case untilStart >= 6*time.Hour:
+		percent = 50
+		policyCode = excursionBookingRefundPolicyPartial6H
+	case untilStart >= 2*time.Hour:
+		percent = 25
+		policyCode = excursionBookingRefundPolicyPartial2H
+	}
+
+	amount := math.Round((totalAmount*float64(percent)/100)*100) / 100
+	status := excursionBookingRefundStatusNotRefundable
+	if amount > 0 {
+		status = excursionBookingRefundStatusPendingPaymentIntegration
+	}
+
+	return ExcursionBookingCancellationRefundQuote{
+		Percent:    percent,
+		Amount:     amount,
+		Currency:   strings.ToUpper(strings.TrimSpace(currency)),
+		PolicyCode: policyCode,
+		Status:     status,
+	}
+}
+
 func (u *ExcursionUseCase) CreateExcursionReview(ctx context.Context, input CreateExcursionReviewInput) (*model.ExcursionReview, error) {
 	if input.ActorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
@@ -1261,11 +1393,29 @@ func (u *ExcursionUseCase) CreateExcursionReview(ctx context.Context, input Crea
 	if err = u.repo.CreateExcursionReview(ctx, review); err != nil {
 		return nil, fmt.Errorf("create excursion review: %w", err)
 	}
+	u.enrichExcursionReviewAuthors(ctx, []*model.ExcursionReview{review})
+	u.applyAttractionRatingSnapshot(ctx, review)
 	return review, nil
 }
 
+func (u *ExcursionUseCase) applyAttractionRatingSnapshot(ctx context.Context, review *model.ExcursionReview) {
+	if review == nil || review.LandmarkID == nil || *review.LandmarkID == uuid.Nil || u.attractionRatingUpdater == nil {
+		return
+	}
+	ratingAvg, reviewsCount, err := u.repo.CalculateLandmarkReviewStats(ctx, *review.LandmarkID)
+	if err != nil {
+		return
+	}
+	_ = u.attractionRatingUpdater.ApplyAttractionRatingSnapshot(ctx, port.AttractionRatingSnapshot{
+		AttractionID: *review.LandmarkID,
+		Source:       attractionRatingSourceExcursionReviews,
+		RatingAvg:    ratingAvg,
+		ReviewCount:  reviewsCount,
+	})
+}
+
 func (u *ExcursionUseCase) ListExcursionReviews(ctx context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
-	if filter.ProductID == nil && filter.LandmarkID == nil {
+	if filter.ProductID == nil && filter.LandmarkID == nil && filter.GuideUserID == nil {
 		return nil, ErrInvalidExcursionID
 	}
 	if filter.Limit <= 0 {
@@ -1274,11 +1424,98 @@ func (u *ExcursionUseCase) ListExcursionReviews(ctx context.Context, filter port
 	if filter.Limit > 100 {
 		filter.Limit = 100
 	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+	if filter.Sort == "" {
+		filter.Sort = port.ExcursionReviewSortLatest
+	}
 	items, err := u.repo.ListExcursionReviews(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("list excursion reviews: %w", err)
 	}
+	u.enrichExcursionReviewAuthors(ctx, items)
 	return items, nil
+}
+
+func (u *ExcursionUseCase) enrichExcursionReviewAuthors(ctx context.Context, items []*model.ExcursionReview) {
+	if len(items) == 0 {
+		return
+	}
+
+	ids := make([]uuid.UUID, 0, len(items))
+	seen := make(map[uuid.UUID]struct{}, len(items))
+	for _, item := range items {
+		if item == nil || item.TouristUserID == uuid.Nil {
+			continue
+		}
+		item.Author.UserID = item.TouristUserID
+		if _, ok := seen[item.TouristUserID]; ok {
+			continue
+		}
+		seen[item.TouristUserID] = struct{}{}
+		ids = append(ids, item.TouristUserID)
+	}
+	if len(ids) == 0 || u.userProfiles == nil {
+		return
+	}
+
+	profiles, err := u.userProfiles.GetUserProfileProjections(ctx, ids)
+	if err != nil {
+		return
+	}
+	for _, item := range items {
+		if item == nil || item.TouristUserID == uuid.Nil {
+			continue
+		}
+		profile, ok := profiles[item.TouristUserID]
+		if !ok {
+			continue
+		}
+		item.Author.UserID = item.TouristUserID
+		item.Author.DisplayName = profile.DisplayName
+		item.Author.AvatarFileID = profile.AvatarFileID
+	}
+}
+
+func (u *ExcursionUseCase) enrichExcursionBookingAuthors(ctx context.Context, items []*model.ExcursionBookingListItem) {
+	if len(items) == 0 {
+		return
+	}
+
+	ids := make([]uuid.UUID, 0, len(items))
+	seen := make(map[uuid.UUID]struct{}, len(items))
+	for _, item := range items {
+		if item == nil || item.Booking == nil || item.Booking.TouristUserID == uuid.Nil {
+			continue
+		}
+		item.Author.UserID = item.Booking.TouristUserID
+		if _, ok := seen[item.Booking.TouristUserID]; ok {
+			continue
+		}
+		seen[item.Booking.TouristUserID] = struct{}{}
+		ids = append(ids, item.Booking.TouristUserID)
+	}
+	if len(ids) == 0 || u.userProfiles == nil {
+		return
+	}
+
+	profiles, err := u.userProfiles.GetUserProfileProjections(ctx, ids)
+	if err != nil {
+		return
+	}
+	for _, item := range items {
+		if item == nil || item.Booking == nil || item.Booking.TouristUserID == uuid.Nil {
+			continue
+		}
+		profile, ok := profiles[item.Booking.TouristUserID]
+		if !ok {
+			continue
+		}
+		item.Author.UserID = item.Booking.TouristUserID
+		item.Author.DisplayName = profile.DisplayName
+		item.Author.AvatarFileID = profile.AvatarFileID
+	}
 }
 
 func (u *ExcursionUseCase) ListMyExcursions(ctx context.Context, actorUserID uuid.UUID, limit int, offset int, statuses []string) ([]*ExcursionAggregate, error) {

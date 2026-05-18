@@ -278,6 +278,10 @@ func (s *excursionScheduleHTTPRepoStub) UpdateExcursionBookingGuests(context.Con
 	return nil
 }
 
+func (s *excursionScheduleHTTPRepoStub) CancelExcursionBooking(context.Context, *model.ExcursionBooking) error {
+	return nil
+}
+
 func (s *excursionScheduleHTTPRepoStub) CreateExcursionReview(context.Context, *model.ExcursionReview) error {
 	return nil
 }
@@ -288,6 +292,10 @@ func (s *excursionScheduleHTTPRepoStub) GetExcursionReviewByBookingID(context.Co
 
 func (s *excursionScheduleHTTPRepoStub) ListExcursionReviews(context.Context, port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
 	return nil, nil
+}
+
+func (s *excursionScheduleHTTPRepoStub) CalculateLandmarkReviewStats(context.Context, uuid.UUID) (float64, int, error) {
+	return 0, 0, nil
 }
 
 func (s *excursionScheduleHTTPRepoStub) CreateExcursionScheduleSlot(_ context.Context, slot *model.ExcursionScheduleSlot) error {

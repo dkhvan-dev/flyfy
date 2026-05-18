@@ -197,6 +197,10 @@ type UpdateExcursionBookingGuestsRequest struct {
 	Children int `json:"children"`
 }
 
+type CancelExcursionBookingRequest struct {
+	Reason string `json:"reason,omitempty"`
+}
+
 type CreateGuideScheduleSlotRequest struct {
 	OfferID  string `json:"offerId"`
 	StartAt  string `json:"startAt"`
@@ -274,6 +278,15 @@ type ExcursionBookingResponse struct {
 	TotalPriceAmount  float64                  `json:"totalPriceAmount"`
 	Currency          string                   `json:"currency"`
 	Status            string                   `json:"status"`
+	CancelledAt       *string                  `json:"cancelledAt,omitempty"`
+	CancelledBy       *string                  `json:"cancelledBy,omitempty"`
+	CancelReason      *string                  `json:"cancelReason,omitempty"`
+	RefundPercent     int                      `json:"refundPercent,omitempty"`
+	RefundAmount      float64                  `json:"refundAmount,omitempty"`
+	RefundCurrency    *string                  `json:"refundCurrency,omitempty"`
+	RefundPolicyCode  *string                  `json:"refundPolicyCode,omitempty"`
+	RefundStatus      *string                  `json:"refundStatus,omitempty"`
+	Author            *ReviewAuthorResponse    `json:"author,omitempty"`
 	CreatedAt         string                   `json:"createdAt"`
 	UpdatedAt         string                   `json:"updatedAt"`
 	Review            *ExcursionReviewResponse `json:"review,omitempty"`
@@ -290,22 +303,29 @@ type CreateExcursionReviewRequest struct {
 }
 
 type ExcursionReviewResponse struct {
-	ID                string  `json:"id"`
-	BookingID         string  `json:"bookingId"`
-	ProductID         string  `json:"productId"`
-	OfferID           string  `json:"offerId"`
-	LegacyExcursionID *string `json:"legacyExcursionId,omitempty"`
-	LandmarkID        *string `json:"landmarkId,omitempty"`
-	LandmarkName      *string `json:"landmarkName,omitempty"`
-	GuideProfileID    string  `json:"guideProfileId"`
-	GuideUserID       string  `json:"guideUserId"`
-	GuideDisplayName  string  `json:"guideDisplayName,omitempty"`
-	TouristUserID     string  `json:"touristUserId"`
-	Rating            float64 `json:"rating"`
-	Comment           string  `json:"comment"`
-	SourceLabel       string  `json:"sourceLabel"`
-	CreatedAt         string  `json:"createdAt"`
-	UpdatedAt         string  `json:"updatedAt"`
+	ID                string               `json:"id"`
+	BookingID         string               `json:"bookingId"`
+	ProductID         string               `json:"productId"`
+	OfferID           string               `json:"offerId"`
+	LegacyExcursionID *string              `json:"legacyExcursionId,omitempty"`
+	LandmarkID        *string              `json:"landmarkId,omitempty"`
+	LandmarkName      *string              `json:"landmarkName,omitempty"`
+	GuideProfileID    string               `json:"guideProfileId"`
+	GuideUserID       string               `json:"guideUserId"`
+	GuideDisplayName  string               `json:"guideDisplayName,omitempty"`
+	TouristUserID     string               `json:"touristUserId"`
+	Author            ReviewAuthorResponse `json:"author"`
+	Rating            float64              `json:"rating"`
+	Comment           string               `json:"comment"`
+	SourceLabel       string               `json:"sourceLabel"`
+	CreatedAt         string               `json:"createdAt"`
+	UpdatedAt         string               `json:"updatedAt"`
+}
+
+type ReviewAuthorResponse struct {
+	UserID       string  `json:"userId"`
+	DisplayName  *string `json:"displayName,omitempty"`
+	AvatarFileID *string `json:"avatarFileId,omitempty"`
 }
 
 type ExcursionReviewListResponse struct {

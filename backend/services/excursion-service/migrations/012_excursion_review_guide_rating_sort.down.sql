@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_excursion_reviews_guide_rating_created;

@@ -33,6 +33,7 @@ type ExcursionReview struct {
 	GuideUserID      uuid.UUID
 	GuideDisplayName string
 	TouristUserID    uuid.UUID
+	Author           ExcursionReviewAuthor
 
 	Rating    float64
 	Comment   string
@@ -40,9 +41,16 @@ type ExcursionReview struct {
 	UpdatedAt time.Time
 }
 
+type ExcursionReviewAuthor struct {
+	UserID       uuid.UUID
+	DisplayName  *string
+	AvatarFileID *uuid.UUID
+}
+
 type ExcursionBookingListItem struct {
 	Booking *ExcursionBooking
 	Review  *ExcursionReview
+	Author  ExcursionReviewAuthor
 
 	Title            string
 	Summary          string
@@ -77,10 +85,13 @@ func NewExcursionReview(params NewExcursionReviewParams) (*ExcursionReview, erro
 		GuideProfileID:    booking.GuideProfileID,
 		GuideUserID:       booking.GuideUserID,
 		TouristUserID:     booking.TouristUserID,
-		Rating:            params.Rating,
-		Comment:           strings.TrimSpace(params.Comment),
-		CreatedAt:         now,
-		UpdatedAt:         now,
+		Author: ExcursionReviewAuthor{
+			UserID: booking.TouristUserID,
+		},
+		Rating:    params.Rating,
+		Comment:   strings.TrimSpace(params.Comment),
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	if err := item.Validate(); err != nil {
 		return nil, err

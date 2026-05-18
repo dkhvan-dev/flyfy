@@ -36,6 +36,32 @@ void main() {
     expect(excursions.single.publishedOffersCount, 2);
   });
 
+  test('getExcursions can narrow public products by landmark id', () async {
+    final adapter = _ExcursionJsonAdapter({
+      '/excursion-products': {
+        'items': [_productJson()],
+        'hasMore': false,
+      },
+    });
+    final api = ExcursionApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    await api.getExcursions(limit: 1, landmarkId: ' landmark-1 ');
+
+    expect(adapter.requests.single.path, '/excursion-products');
+    expect(adapter.requests.single.extra['requiresAuth'], isFalse);
+    expect(adapter.requests.single.queryParameters, {
+      'limit': 1,
+      'offset': 0,
+      'landmarkId': 'landmark-1',
+    });
+  });
+
   test('getExcursionById loads product details and public offers', () async {
     final adapter = _ExcursionJsonAdapter({
       '/excursion-products/product-1': _productJson(),
@@ -365,6 +391,38 @@ void main() {
       'offset': 0,
     });
     expect(page.items.single.sourceLabel, 'EXCURSION');
+  });
+
+  test('getGuideExcursionReviews sends guide filter and sort mode', () async {
+    final adapter = _ExcursionJsonAdapter({
+      '/excursion-reviews': {
+        'items': [_reviewJson()],
+        'hasMore': false,
+      },
+    });
+    final api = ExcursionApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    final page = await api.getGuideExcursionReviews(
+      guideUserId: 'guide-user-1',
+      limit: 10,
+      sort: 'rating_desc',
+    );
+
+    expect(adapter.requests.single.path, '/excursion-reviews');
+    expect(adapter.requests.single.extra['requiresAuth'], isFalse);
+    expect(adapter.requests.single.queryParameters, {
+      'guideUserId': 'guide-user-1',
+      'sort': 'rating_desc',
+      'limit': 10,
+      'offset': 0,
+    });
+    expect(page.items.single.guideUserId, 'guide-user-1');
   });
 
   test(

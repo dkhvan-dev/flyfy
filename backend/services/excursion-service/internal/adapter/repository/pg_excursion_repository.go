@@ -27,6 +27,79 @@ func NewPGExcursionRepository(pool *pgxpool.Pool) *PGExcursionRepository {
 	return &PGExcursionRepository{pool: pool}
 }
 
+type GuideReviewStats struct {
+	GuideProfileID uuid.UUID
+	GuideUserID    uuid.UUID
+	RatingAvg      float64
+	ReviewsCount   int
+}
+
+func (r *PGExcursionRepository) CalculateGuideReviewStats(ctx context.Context, from time.Time, to time.Time) ([]GuideReviewStats, error) {
+	const query = `
+		WITH guide_scope AS (
+			SELECT DISTINCT guide_profile_id, guide_user_id
+			FROM excursion_offers
+			WHERE deleted_at IS NULL
+
+			UNION
+
+			SELECT DISTINCT guide_profile_id, guide_user_id
+			FROM excursion_bookings
+
+			UNION
+
+			SELECT DISTINCT guide_profile_id, guide_user_id
+			FROM excursion_reviews
+		),
+		review_scope AS (
+			SELECT
+				er.guide_profile_id,
+				er.guide_user_id,
+				er.rating
+			FROM excursion_reviews er
+			JOIN excursion_bookings b ON b.id = er.booking_id
+			WHERE b.scheduled_for >= $1
+			  AND b.scheduled_for < $2
+			  AND b.cancelled_at IS NULL
+			  AND b.status = 'REQUESTED'
+		)
+		SELECT
+			gs.guide_profile_id,
+			gs.guide_user_id,
+			COALESCE(ROUND(AVG(rs.rating)::numeric, 2)::float8, 0) AS rating_avg,
+			COUNT(rs.rating)::int AS reviews_count
+		FROM guide_scope gs
+		LEFT JOIN review_scope rs
+		  ON rs.guide_profile_id = gs.guide_profile_id
+		 AND rs.guide_user_id = gs.guide_user_id
+		GROUP BY gs.guide_profile_id, gs.guide_user_id
+		ORDER BY gs.guide_profile_id
+	`
+	rows, err := r.pool.Query(ctx, query, from, to)
+	if err != nil {
+		return nil, fmt.Errorf("query guide review stats: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]GuideReviewStats, 0)
+	for rows.Next() {
+		var item GuideReviewStats
+		if err = rows.Scan(
+			&item.GuideProfileID,
+			&item.GuideUserID,
+			&item.RatingAvg,
+			&item.ReviewsCount,
+		); err != nil {
+			return nil, fmt.Errorf("scan guide review stats: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate guide review stats: %w", err)
+	}
+	return items, nil
+}
+
 const (
 	pgUniqueViolation             = "23505"
 	pgExclusionViolation          = "23P01"
@@ -833,6 +906,11 @@ func (r *PGExcursionRepository) ListExcursionProductCards(ctx context.Context, f
 		args = append(args, model.NormalizeSlug(*filter.CategorySlug))
 		argPos++
 	}
+	if filter.LandmarkID != nil && *filter.LandmarkID != uuid.Nil {
+		parts = append(parts, fmt.Sprintf(" AND landmark_id = $%d", argPos))
+		args = append(args, *filter.LandmarkID)
+		argPos++
+	}
 	if filter.CountryCode != nil && strings.TrimSpace(*filter.CountryCode) != "" {
 		parts = append(parts, fmt.Sprintf(" AND country_code = $%d", argPos))
 		args = append(args, strings.ToUpper(strings.TrimSpace(*filter.CountryCode)))
@@ -1199,7 +1277,8 @@ func insertExcursionBooking(ctx context.Context, exec dbExecutor, item *model.Ex
 			guide_profile_id, guide_user_id, tourist_user_id,
 			scheduled_for, adults, children, total_seats,
 			unit_price_amount, service_fee_amount, total_price_amount, currency,
-			status, idempotency_key, cancelled_at, cancel_reason,
+			status, idempotency_key, cancelled_at, cancelled_by, cancel_reason,
+			refund_percent, refund_amount, refund_currency, refund_policy_code, refund_status,
 			created_at, updated_at
 		) VALUES (
 			$1,
@@ -1207,10 +1286,16 @@ func insertExcursionBooking(ctx context.Context, exec dbExecutor, item *model.Ex
 			$6, $7, $8,
 			$9, $10, $11, $12,
 			$13, $14, $15, $16,
-			$17, $18, $19, $20,
-			$21, $22
+			$17, $18, $19, $20, $21,
+			$22, $23, $24, $25, $26,
+			$27, $28
 		)
 	`
+	var cancelledBy *string
+	if item.CancelledBy != nil {
+		value := string(*item.CancelledBy)
+		cancelledBy = &value
+	}
 	_, err := exec.Exec(
 		ctx,
 		query,
@@ -1233,7 +1318,13 @@ func insertExcursionBooking(ctx context.Context, exec dbExecutor, item *model.Ex
 		string(item.Status),
 		item.IdempotencyKey,
 		item.CancelledAt,
+		cancelledBy,
 		item.CancelReason,
+		item.RefundPercent,
+		item.RefundAmount,
+		item.RefundCurrency,
+		item.RefundPolicyCode,
+		item.RefundStatus,
 		item.CreatedAt,
 		item.UpdatedAt,
 	)
@@ -1254,7 +1345,8 @@ func (r *PGExcursionRepository) ListExcursionBookings(ctx context.Context, filte
 			b.guide_profile_id, b.guide_user_id, b.tourist_user_id,
 			b.scheduled_for, b.adults, b.children, b.total_seats,
 			b.unit_price_amount, b.service_fee_amount, b.total_price_amount, b.currency,
-			b.status, b.idempotency_key, b.cancelled_at, b.cancel_reason,
+			b.status, b.idempotency_key, b.cancelled_at, b.cancelled_by, b.cancel_reason,
+			b.refund_percent, b.refund_amount, b.refund_currency, b.refund_policy_code, b.refund_status,
 			b.created_at, b.updated_at,
 			COALESCE(NULLIF(o.title, ''), p.title),
 			COALESCE(NULLIF(o.summary, ''), p.summary),
@@ -1326,7 +1418,8 @@ func (r *PGExcursionRepository) GetExcursionBookingByID(ctx context.Context, boo
 			guide_profile_id, guide_user_id, tourist_user_id,
 			scheduled_for, adults, children, total_seats,
 			unit_price_amount, service_fee_amount, total_price_amount, currency,
-			status, idempotency_key, cancelled_at, cancel_reason,
+			status, idempotency_key, cancelled_at, cancelled_by, cancel_reason,
+			refund_percent, refund_amount, refund_currency, refund_policy_code, refund_status,
 			created_at, updated_at
 		FROM excursion_bookings
 		WHERE id = $1
@@ -1353,7 +1446,8 @@ func (r *PGExcursionRepository) GetExcursionBookingByTouristIDAndIdempotencyKey(
 			guide_profile_id, guide_user_id, tourist_user_id,
 			scheduled_for, adults, children, total_seats,
 			unit_price_amount, service_fee_amount, total_price_amount, currency,
-			status, idempotency_key, cancelled_at, cancel_reason,
+			status, idempotency_key, cancelled_at, cancelled_by, cancel_reason,
+			refund_percent, refund_amount, refund_currency, refund_policy_code, refund_status,
 			created_at, updated_at
 		FROM excursion_bookings
 		WHERE tourist_user_id = $1 AND idempotency_key = $2
@@ -1393,6 +1487,29 @@ func (r *PGExcursionRepository) UpdateExcursionBookingGuests(ctx context.Context
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit update excursion booking guests: %w", err)
+	}
+	return nil
+}
+
+func (r *PGExcursionRepository) CancelExcursionBooking(ctx context.Context, item *model.ExcursionBooking) error {
+	if item.ScheduleSlotID == nil {
+		return cancelExcursionBooking(ctx, r.pool, item)
+	}
+
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin cancel excursion booking: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if err = cancelExcursionBooking(ctx, tx, item); err != nil {
+		return err
+	}
+	if err = releaseExcursionScheduleSlotSeats(ctx, tx, *item.ScheduleSlotID, item.TotalSeats); err != nil {
+		return err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit cancel excursion booking: %w", err)
 	}
 	return nil
 }
@@ -1634,7 +1751,11 @@ func (r *PGExcursionRepository) GetExcursionReviewByBookingID(ctx context.Contex
 }
 
 func (r *PGExcursionRepository) ListExcursionReviews(ctx context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
-	const query = `
+	orderBy := "created_at DESC, id ASC"
+	if filter.Sort == port.ExcursionReviewSortRatingDesc {
+		orderBy = "rating DESC, created_at DESC, id ASC"
+	}
+	query := `
 		SELECT
 			id, booking_id, product_id, offer_id, legacy_excursion_id,
 			landmark_id, landmark_name,
@@ -1643,10 +1764,11 @@ func (r *PGExcursionRepository) ListExcursionReviews(ctx context.Context, filter
 		FROM excursion_reviews
 		WHERE ($1::uuid IS NULL OR product_id = $1)
 		  AND ($2::uuid IS NULL OR landmark_id = $2)
-		ORDER BY created_at DESC, id ASC
-		LIMIT $3 OFFSET $4
+		  AND ($3::uuid IS NULL OR guide_user_id = $3)
+		ORDER BY ` + orderBy + `
+		LIMIT $4 OFFSET $5
 	`
-	rows, err := r.pool.Query(ctx, query, filter.ProductID, filter.LandmarkID, filter.Limit, filter.Offset)
+	rows, err := r.pool.Query(ctx, query, filter.ProductID, filter.LandmarkID, filter.GuideUserID, filter.Limit, filter.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("query excursion reviews: %w", err)
 	}
@@ -1664,6 +1786,22 @@ func (r *PGExcursionRepository) ListExcursionReviews(ctx context.Context, filter
 		return nil, fmt.Errorf("iterate excursion reviews: %w", err)
 	}
 	return items, nil
+}
+
+func (r *PGExcursionRepository) CalculateLandmarkReviewStats(ctx context.Context, landmarkID uuid.UUID) (float64, int, error) {
+	const query = `
+		SELECT
+			COALESCE(ROUND(AVG(rating)::numeric, 1)::float8, 0) AS rating_avg,
+			COUNT(*)::int AS reviews_count
+		FROM excursion_reviews
+		WHERE landmark_id = $1
+	`
+	var ratingAvg float64
+	var reviewsCount int
+	if err := r.pool.QueryRow(ctx, query, landmarkID).Scan(&ratingAvg, &reviewsCount); err != nil {
+		return 0, 0, fmt.Errorf("calculate landmark review stats: %w", err)
+	}
+	return ratingAvg, reviewsCount, nil
 }
 
 type dbExecutor interface {
@@ -1934,6 +2072,53 @@ func updateExcursionBookingGuests(ctx context.Context, exec dbExecutor, item *mo
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("update excursion booking guests: booking %s was not found", item.ID)
+	}
+	return nil
+}
+
+func cancelExcursionBooking(ctx context.Context, exec dbExecutor, item *model.ExcursionBooking) error {
+	var cancelledBy *string
+	if item.CancelledBy != nil {
+		value := string(*item.CancelledBy)
+		cancelledBy = &value
+	}
+	const query = `
+		UPDATE excursion_bookings
+		SET
+			status = $2,
+			cancelled_at = $3,
+			cancelled_by = $4,
+			cancel_reason = $5,
+			refund_percent = $6,
+			refund_amount = $7,
+			refund_currency = $8,
+			refund_policy_code = $9,
+			refund_status = $10,
+			updated_at = $11
+		WHERE id = $1
+		  AND status = 'REQUESTED'
+		  AND cancelled_at IS NULL
+	`
+	tag, err := exec.Exec(
+		ctx,
+		query,
+		item.ID,
+		string(item.Status),
+		item.CancelledAt,
+		cancelledBy,
+		item.CancelReason,
+		item.RefundPercent,
+		item.RefundAmount,
+		item.RefundCurrency,
+		item.RefundPolicyCode,
+		item.RefundStatus,
+		item.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("cancel excursion booking: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return port.ErrExcursionBookingNotEditable
 	}
 	return nil
 }
@@ -2856,8 +3041,9 @@ func scanExcursionOffer(row excursionScanner) (*model.ExcursionOffer, error) {
 
 func scanExcursionBooking(row excursionScanner) (*model.ExcursionBooking, error) {
 	var (
-		item      model.ExcursionBooking
-		statusRaw string
+		item           model.ExcursionBooking
+		statusRaw      string
+		cancelledByRaw *string
 	)
 	if err := row.Scan(
 		&item.ID,
@@ -2879,13 +3065,23 @@ func scanExcursionBooking(row excursionScanner) (*model.ExcursionBooking, error)
 		&statusRaw,
 		&item.IdempotencyKey,
 		&item.CancelledAt,
+		&cancelledByRaw,
 		&item.CancelReason,
+		&item.RefundPercent,
+		&item.RefundAmount,
+		&item.RefundCurrency,
+		&item.RefundPolicyCode,
+		&item.RefundStatus,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
 	item.Status = enum.ExcursionBookingStatus(statusRaw)
+	if cancelledByRaw != nil {
+		value := enum.ExcursionBookingCancelledBy(*cancelledByRaw)
+		item.CancelledBy = &value
+	}
 	return &item, nil
 }
 
@@ -2958,6 +3154,7 @@ func scanExcursionBookingListItem(row excursionScanner) (*model.ExcursionBooking
 	var (
 		booking                model.ExcursionBooking
 		statusRaw              string
+		cancelledByRaw         *string
 		reviewID               *uuid.UUID
 		reviewBookingID        *uuid.UUID
 		reviewProductID        *uuid.UUID
@@ -2993,7 +3190,13 @@ func scanExcursionBookingListItem(row excursionScanner) (*model.ExcursionBooking
 		&statusRaw,
 		&booking.IdempotencyKey,
 		&booking.CancelledAt,
+		&cancelledByRaw,
 		&booking.CancelReason,
+		&booking.RefundPercent,
+		&booking.RefundAmount,
+		&booking.RefundCurrency,
+		&booking.RefundPolicyCode,
+		&booking.RefundStatus,
 		&booking.CreatedAt,
 		&booking.UpdatedAt,
 		&item.Title,
@@ -3025,6 +3228,10 @@ func scanExcursionBookingListItem(row excursionScanner) (*model.ExcursionBooking
 		return nil, err
 	}
 	booking.Status = enum.ExcursionBookingStatus(statusRaw)
+	if cancelledByRaw != nil {
+		value := enum.ExcursionBookingCancelledBy(*cancelledByRaw)
+		booking.CancelledBy = &value
+	}
 	item.Booking = &booking
 	if reviewID != nil {
 		review.ID = *reviewID

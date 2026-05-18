@@ -23,13 +23,25 @@ void main() {
       'totalPriceAmount': 45000,
       'currency': 'KZT',
       'status': 'REQUESTED',
+      'author': {
+        'userId': 'tourist-1',
+        'displayName': '@booking_author',
+        'avatarFileId': 'booking-avatar-1',
+      },
       'review': {
         'id': 'review-1',
         'bookingId': 'booking-1',
         'productId': 'product-1',
         'landmarkId': 'attraction-1',
+        'touristUserId': 'tourist-1',
         'guideUserId': 'guide-user-1',
+        'guideProfileId': 'guide-profile-1',
         'guideDisplayName': 'Aruzhan',
+        'author': {
+          'userId': 'tourist-1',
+          'displayName': '@nomad_aru',
+          'avatarFileId': 'avatar-1',
+        },
         'rating': 4.5,
         'comment': 'Warm guide and a smooth route.',
         'createdAt': '2026-05-02T10:00:00Z',
@@ -40,6 +52,12 @@ void main() {
     expect(booking.isReviewed, isTrue);
     expect(booking.review?.rating, 4.5);
     expect(booking.review?.guideDisplayName, 'Aruzhan');
+    expect(booking.review?.author.userId, 'tourist-1');
+    expect(booking.review?.author.displayName, '@nomad_aru');
+    expect(booking.review?.author.avatarFileId, 'avatar-1');
+    expect(booking.author.userId, 'tourist-1');
+    expect(booking.author.displayName, '@booking_author');
+    expect(booking.author.avatarFileId, 'booking-avatar-1');
     expect(booking.landmarkId, 'attraction-1');
     expect(booking.scheduleSlotId, 'slot-1');
     expect(booking.scheduledFor, DateTime.utc(2026, 5, 1, 8));

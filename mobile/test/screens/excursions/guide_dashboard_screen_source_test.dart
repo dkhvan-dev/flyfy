@@ -7,6 +7,9 @@ void main() {
     final source = await File(
       'lib/screens/excursions/guide_dashboard_screen.dart',
     ).readAsString();
+    final formatterSource = await File(
+      'lib/features/excursions/guide_dashboard_formatters.dart',
+    ).readAsString();
 
     expect(source, contains('class GuideDashboardScreen'));
     expect(source, contains('GuideDashboardSection.offers'));
@@ -34,7 +37,9 @@ void main() {
     expect(source, contains('guideDashboardArchiveTab'));
     expect(source, contains('guideDashboardArchiveOffer'));
     expect(
-        source, contains('imageUrl: resolveOwnedExcursionCoverUrl(excursion)'));
+      source,
+      contains('imageUrl: resolveOwnedExcursionCoverUrl(excursion)'),
+    );
     expect(source, isNot(contains('guideDashboardHeroTitle')));
     expect(source, isNot(contains('guideDashboardOfferCount')));
     expect(source, contains('MediaQuery.sizeOf(context)'));
@@ -43,6 +48,35 @@ void main() {
     expect(source, contains('AspectRatio('));
     expect(source, contains('RefreshIndicator('));
     expect(source, contains('FlyfyPaginationBar('));
+    expect(source, contains('guideDashboardReviewsTitle'));
+    expect(
+      source,
+      contains("context.push('/profile/guide-dashboard/reviews')"),
+    );
+    expect(source, contains('class _GuideDashboardQuickActions'));
+    expect(source, contains('class _GuideDashboardActionTile'));
+    expect(source, contains('rating: provider.myGuideProfile?.ratingAvg ?? 0'));
+    expect(source, contains('formatGuideDashboardRevenue'));
+    expect(formatterSource, contains('useExcursionListCurrencyFormat: true'));
+    expect(source, isNot(contains('compact: true')));
+    expect(source, contains('_openBookingDetailsSheet'));
+    expect(source, contains('class _GuideBookingDetailsSheet'));
+    expect(source, contains('class _GuideBookingGuestBreakdown'));
+    expect(source, contains('class _GuideCancelExcursionSheet'));
+    expect(source, contains('cancelGuideExcursionSlot'));
+    expect(source, contains('guideDashboardCancelExcursion'));
+    expect(source, contains('guideDashboardRefundAmount'));
+    expect(source, contains('booking.canBeCancelledByGuide(now)'));
+    expect(
+      source,
+      isNot(contains('_averageRating(provider.myGuideExcursions)')),
+    );
+    expect(
+      source,
+      isNot(contains(
+          "context.push('/excursions/\${Uri.encodeComponent(productId)}')")),
+    );
+    expect(source, isNot(contains('Icons.more_vert_rounded')));
     expect(source, isNot(contains('bottomNavigationBar:')));
     expect(source, isNot(contains('CommonBottomNavigationBar')));
   });
@@ -64,18 +98,22 @@ void main() {
     final enSource = await File('lib/l10n/app_en.arb').readAsString();
     final kkSource = await File('lib/l10n/app_kk.arb').readAsString();
 
-    expect(ruSource,
-        contains('"guideDashboardCancelledEmpty": "Отмененных броней нет"'));
+    expect(
+      ruSource,
+      contains('"guideDashboardCancelledEmpty": "Отмененных броней нет"'),
+    );
     expect(ruSource, isNot(contains('Отмененных предложений и броней')));
     expect(ruSource, isNot(contains('закрытые предложения')));
-    expect(enSource,
-        contains('"guideDashboardCancelledEmpty": "No cancelled bookings"'));
+    expect(
+      enSource,
+      contains('"guideDashboardCancelledEmpty": "No cancelled bookings"'),
+    );
     expect(enSource, isNot(contains('No cancelled offers or bookings')));
     expect(enSource, isNot(contains('closed offers')));
     expect(
-        kkSource,
-        contains(
-            '"guideDashboardCancelledEmpty": "Бас тартылған брондар жоқ"'));
+      kkSource,
+      contains('"guideDashboardCancelledEmpty": "Бас тартылған брондар жоқ"'),
+    );
     expect(kkSource, isNot(contains('ұсыныс немесе брон')));
   });
 
@@ -101,22 +139,34 @@ void main() {
     expect(bookingCardSource, isNot(contains('imageUrl: null')));
   });
 
-  test('profile and router expose guide dashboard only from guide profile',
-      () async {
-    final profileSource = await File(
-      'lib/screens/profile/profile_screen.dart',
-    ).readAsString();
-    final routerSource = await File(
-      'lib/core/router/app_router.dart',
-    ).readAsString();
+  test(
+    'profile and router expose guide dashboard only from guide profile',
+    () async {
+      final profileSource = await File(
+        'lib/screens/profile/profile_screen.dart',
+      ).readAsString();
+      final routerSource = await File(
+        'lib/core/router/app_router.dart',
+      ).readAsString();
 
-    expect(routerSource, contains("path: '/profile/guide-dashboard'"));
-    expect(routerSource, contains('GuideDashboardScreen'));
-    expect(routerSource,
-        isNot(contains("location == '/profile/guide-dashboard'")));
-    expect(profileSource, contains('isGuideProfile: isGuideProfile'));
-    expect(profileSource, contains("context.push('/profile/guide-dashboard')"));
-    expect(profileSource, contains('profileGuideDashboardTitle'));
-    expect(profileSource, contains('profileGuideDashboardSubtitle'));
-  });
+      expect(routerSource, contains("path: '/profile/guide-dashboard'"));
+      expect(
+        routerSource,
+        contains("path: '/profile/guide-dashboard/reviews'"),
+      );
+      expect(routerSource, contains('GuideDashboardScreen'));
+      expect(routerSource, contains('GuideReviewsScreen'));
+      expect(
+        routerSource,
+        isNot(contains("location == '/profile/guide-dashboard'")),
+      );
+      expect(profileSource, contains('isGuideProfile: isGuideProfile'));
+      expect(
+        profileSource,
+        contains("context.push('/profile/guide-dashboard')"),
+      );
+      expect(profileSource, contains('profileGuideDashboardTitle'));
+      expect(profileSource, contains('profileGuideDashboardSubtitle'));
+    },
+  );
 }

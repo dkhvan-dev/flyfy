@@ -3682,6 +3682,42 @@ abstract class AppLocalizations {
   /// **'Traveler'**
   String get attractionTravelerFallback;
 
+  /// No description provided for @profileGuideReviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Best excursion reviews'**
+  String get profileGuideReviewsTitle;
+
+  /// No description provided for @profileGuideReviewsLatestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest excursion reviews'**
+  String get profileGuideReviewsLatestTitle;
+
+  /// No description provided for @profileGuideReviewsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No reviews yet'**
+  String get profileGuideReviewsEmptyTitle;
+
+  /// No description provided for @profileGuideReviewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews will appear here after travelers rate completed excursions.'**
+  String get profileGuideReviewsEmpty;
+
+  /// No description provided for @profileGuideReviewsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load reviews'**
+  String get profileGuideReviewsLoadFailed;
+
+  /// No description provided for @profileGuideReviewsLoadFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull to refresh or open the profile again.'**
+  String get profileGuideReviewsLoadFailedHint;
+
   /// No description provided for @attractionPriceVaries.
   ///
   /// In en, this message translates to:
@@ -4107,6 +4143,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try another destination, category, or excursion name.'**
   String get excursionsEmptySearchSubtitle;
+
+  /// No description provided for @excursionsNoAttractionExcursionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No excursions for this attraction yet'**
+  String get excursionsNoAttractionExcursionsTitle;
+
+  /// No description provided for @excursionsNoAttractionExcursionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing other available excursions. When guides add a route for this attraction, it will appear here.'**
+  String get excursionsNoAttractionExcursionsSubtitle;
 
   /// No description provided for @guidesTitle.
   ///
@@ -6646,6 +6694,120 @@ abstract class AppLocalizations {
   /// **'Refund and save'**
   String get myExcursionsRefundAndSaveGuests;
 
+  /// No description provided for @myExcursionsCancelBookingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel booking'**
+  String get myExcursionsCancelBookingButton;
+
+  /// No description provided for @myExcursionsCancelBookingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel booking?'**
+  String get myExcursionsCancelBookingTitle;
+
+  /// No description provided for @myExcursionsCancelBookingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'We will cancel your place and show the guide that the booking was cancelled by you.'**
+  String get myExcursionsCancelBookingHint;
+
+  /// No description provided for @myExcursionsCancelBookingRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund: {amount} ({percent}%)'**
+  String myExcursionsCancelBookingRefund(Object amount, int percent);
+
+  /// No description provided for @myExcursionsCancelBookingNoRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund is not available'**
+  String get myExcursionsCancelBookingNoRefund;
+
+  /// No description provided for @myExcursionsCancelBookingRefundHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The server will fix the final refund amount. Real payment refund will be connected through the payment service.'**
+  String get myExcursionsCancelBookingRefundHint;
+
+  /// No description provided for @myExcursionsCancelPolicyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation policy'**
+  String get myExcursionsCancelPolicyTitle;
+
+  /// No description provided for @myExcursionsCancelPolicyFull.
+  ///
+  /// In en, this message translates to:
+  /// **'24+ hours before start: 100%'**
+  String get myExcursionsCancelPolicyFull;
+
+  /// No description provided for @myExcursionsCancelPolicySeventyFive.
+  ///
+  /// In en, this message translates to:
+  /// **'12-24 hours before start: 75%'**
+  String get myExcursionsCancelPolicySeventyFive;
+
+  /// No description provided for @myExcursionsCancelPolicyHalf.
+  ///
+  /// In en, this message translates to:
+  /// **'6-12 hours before start: 50%'**
+  String get myExcursionsCancelPolicyHalf;
+
+  /// No description provided for @myExcursionsCancelPolicyQuarter.
+  ///
+  /// In en, this message translates to:
+  /// **'2-6 hours before start: 25%'**
+  String get myExcursionsCancelPolicyQuarter;
+
+  /// No description provided for @myExcursionsCancelPolicyZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Less than 2 hours before start: 0%'**
+  String get myExcursionsCancelPolicyZero;
+
+  /// No description provided for @myExcursionsCancelBookingReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional)'**
+  String get myExcursionsCancelBookingReasonLabel;
+
+  /// No description provided for @myExcursionsCancelBookingReasonPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: plans changed'**
+  String get myExcursionsCancelBookingReasonPlaceholder;
+
+  /// No description provided for @myExcursionsCancelBookingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel booking'**
+  String get myExcursionsCancelBookingConfirm;
+
+  /// No description provided for @myExcursionsCancelBookingSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking cancelled'**
+  String get myExcursionsCancelBookingSuccess;
+
+  /// No description provided for @myExcursionsCancelBookingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel booking'**
+  String get myExcursionsCancelBookingFailed;
+
+  /// No description provided for @myExcursionsCancelledWithRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled. Refund: {amount} ({percent}%)'**
+  String myExcursionsCancelledWithRefund(Object amount, int percent);
+
+  /// No description provided for @myExcursionsCancelledWithoutRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled without refund'**
+  String get myExcursionsCancelledWithoutRefund;
+
   /// No description provided for @myExcursionsFilterStatus.
   ///
   /// In en, this message translates to:
@@ -6723,6 +6885,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Guide Dashboard'**
   String get guideDashboardTitle;
+
+  /// No description provided for @guideDashboardReviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get guideDashboardReviewsTitle;
 
   /// No description provided for @guideDashboardOffersStat.
   ///
@@ -6939,6 +7107,130 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View details'**
   String get guideDashboardViewDetails;
+
+  /// No description provided for @guideDashboardCancelExcursion.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel excursion'**
+  String get guideDashboardCancelExcursion;
+
+  /// No description provided for @guideDashboardCancelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this excursion?'**
+  String get guideDashboardCancelTitle;
+
+  /// No description provided for @guideDashboardCancelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'We will cancel this slot for guests and show the amount that must be refunded for affected bookings.'**
+  String get guideDashboardCancelDescription;
+
+  /// No description provided for @guideDashboardCancelReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reason'**
+  String get guideDashboardCancelReasonLabel;
+
+  /// No description provided for @guideDashboardCancelReasonPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'For example: the guide is sick or weather makes the route unsafe'**
+  String get guideDashboardCancelReasonPlaceholder;
+
+  /// No description provided for @guideDashboardCancelReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a cancellation reason'**
+  String get guideDashboardCancelReasonRequired;
+
+  /// No description provided for @guideDashboardCancelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm cancellation'**
+  String get guideDashboardCancelConfirm;
+
+  /// No description provided for @guideDashboardCancelSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion cancelled'**
+  String get guideDashboardCancelSuccess;
+
+  /// No description provided for @guideDashboardCancelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel excursion'**
+  String get guideDashboardCancelFailed;
+
+  /// No description provided for @guideDashboardCancelNoSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'This booking does not have a schedule slot to cancel'**
+  String get guideDashboardCancelNoSlot;
+
+  /// No description provided for @guideDashboardRefundAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund to guests: {amount}'**
+  String guideDashboardRefundAmount(Object amount);
+
+  /// No description provided for @guideDashboardCancelledByTourist.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled by tourist'**
+  String get guideDashboardCancelledByTourist;
+
+  /// No description provided for @guideDashboardCancelledByGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled by guide'**
+  String get guideDashboardCancelledByGuide;
+
+  /// No description provided for @guideDashboardCancellationReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String guideDashboardCancellationReason(Object reason);
+
+  /// No description provided for @guideDashboardBookingSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking details'**
+  String get guideDashboardBookingSheetTitle;
+
+  /// No description provided for @guideDashboardBookingAuthorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking authors'**
+  String get guideDashboardBookingAuthorsTitle;
+
+  /// No description provided for @guideDashboardAdults.
+  ///
+  /// In en, this message translates to:
+  /// **'Adults'**
+  String get guideDashboardAdults;
+
+  /// No description provided for @guideDashboardChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Children'**
+  String get guideDashboardChildren;
+
+  /// No description provided for @guideDashboardTotalGuests.
+  ///
+  /// In en, this message translates to:
+  /// **'Total guests'**
+  String get guideDashboardTotalGuests;
+
+  /// No description provided for @guideDashboardGuestBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Adults: {adults} · Children: {children} · Total: {total}'**
+  String guideDashboardGuestBreakdown(
+    Object adults,
+    Object children,
+    Object total,
+  );
 
   /// No description provided for @guideDashboardStatusActive.
   ///

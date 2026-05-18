@@ -3757,6 +3757,12 @@ class _ExcursionReviewCard extends StatelessWidget {
     final guideName = review.guideDisplayName.trim().isEmpty
         ? l10n.myExcursionsGuideFallback
         : review.guideDisplayName.trim();
+    final authorName = review.author.resolvedDisplayName.isEmpty
+        ? l10n.attractionTravelerFallback
+        : review.author.resolvedDisplayName;
+    final authorAvatarUrl = review.author.resolvedAvatarFileId.isEmpty
+        ? null
+        : resolvePublicFileContentUrl(review.author.resolvedAvatarFileId);
 
     return Container(
       width: double.infinity,
@@ -3770,32 +3776,67 @@ class _ExcursionReviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFF245163),
+                backgroundImage: authorAvatarUrl != null
+                    ? NetworkImage(authorAvatarUrl)
+                    : null,
+                child: authorAvatarUrl == null
+                    ? const Icon(
+                        Icons.person_rounded,
+                        color: Colors.white,
+                        size: 19,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  l10n.excursionReviewViaGuide(guideName),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      authorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      l10n.excursionReviewViaGuide(guideName),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFD8C2AD),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(5, (index) {
-                  return Icon(
-                    index < review.rating.round()
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    color: AppColors.accent,
-                    size: 18,
-                  );
-                }),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) {
+                    return Icon(
+                      index < review.rating.round()
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color: AppColors.accent,
+                      size: 18,
+                    );
+                  }),
+                ),
               ),
             ],
           ),

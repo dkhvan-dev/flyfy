@@ -683,6 +683,12 @@
   "attractionVerifiedNomad": "Тексерілген саяхатшы",
   "attractionReviewsTitle": "Пікірлер",
   "attractionTravelerFallback": "Саяхатшы",
+  "profileGuideReviewsTitle": "Экскурсиялар бойынша үздік пікірлер",
+  "profileGuideReviewsLatestTitle": "Экскурсиялар бойынша соңғы пікірлер",
+  "profileGuideReviewsEmptyTitle": "Әзірге пікір жоқ",
+  "profileGuideReviewsEmpty": "Саяхатшылар өткізілген экскурсияларды бағалағаннан кейін пікірлер осында шығады.",
+  "profileGuideReviewsLoadFailed": "Пікірлерді жүктеу мүмкін болмады",
+  "profileGuideReviewsLoadFailedHint": "Жаңарту үшін төмен тартыңыз немесе профильді қайта ашыңыз.",
   "attractionPriceVaries": "Баға өзгеруі мүмкін",
   "attractionPriceVariesShort": "Өзгеруі мүмкін",
   "attractionDurationHours": "{hours} сағ",
@@ -773,6 +779,8 @@
   "excursionsEmptyTitle": "Әзірге экскурсиялар жоқ",
   "excursionsEmptySubtitle": "Мұнда тексерілген гидтердің маршруттары пайда болады.",
   "excursionsEmptySearchSubtitle": "Басқа қала, санат немесе экскурсия атауын қолданып көріңіз.",
+  "excursionsNoAttractionExcursionsTitle": "Бұл көрікті орын бойынша экскурсиялар әзірге жоқ",
+  "excursionsNoAttractionExcursionsSubtitle": "Басқа қолжетімді экскурсияларды көрсетіп тұрмыз. Гидтер осы көрікті орынға маршрут қосқанда, ол осында пайда болады.",
   "guidesTitle": "Гидтер",
   "guidesSearchHint": "Гидтерді іздеу",
   "guidesSortLabel": "Сұрыптау",
@@ -1330,6 +1338,41 @@
   "myExcursionsGuestsPaymentMockHint": "Әзірге бұл мок-есеп: нақты қосымша төлем немесе қайтарым төлем сервисі арқылы қосылады.",
   "myExcursionsPayAndSaveGuests": "Төлеп сақтау",
   "myExcursionsRefundAndSaveGuests": "Қайтарып сақтау",
+  "myExcursionsCancelBookingButton": "Броньды болдырмау",
+  "myExcursionsCancelBookingTitle": "Броньды болдырмау керек пе?",
+  "myExcursionsCancelBookingHint": "Біз сіздің орныңызды болдырмаймыз және гидке броньды сіз болдырмағаныңызды көрсетеміз.",
+  "myExcursionsCancelBookingRefund": "Қайтарым: {amount} ({percent}%)",
+  "@myExcursionsCancelBookingRefund": {
+    "placeholders": {
+      "amount": {},
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "myExcursionsCancelBookingNoRefund": "Қайтарым қолжетімсіз",
+  "myExcursionsCancelBookingRefundHint": "Соңғы қайтарым сомасын сервер бекітеді. Нақты ақша қайтару төлем сервисі арқылы қосылады.",
+  "myExcursionsCancelPolicyTitle": "Болдырмау ережелері",
+  "myExcursionsCancelPolicyFull": "Басталуына 24+ сағат қалғанда: 100%",
+  "myExcursionsCancelPolicySeventyFive": "Басталуына 12-24 сағат қалғанда: 75%",
+  "myExcursionsCancelPolicyHalf": "Басталуына 6-12 сағат қалғанда: 50%",
+  "myExcursionsCancelPolicyQuarter": "Басталуына 2-6 сағат қалғанда: 25%",
+  "myExcursionsCancelPolicyZero": "Басталуына 2 сағаттан аз қалғанда: 0%",
+  "myExcursionsCancelBookingReasonLabel": "Себебі (міндетті емес)",
+  "myExcursionsCancelBookingReasonPlaceholder": "Мысалы: жоспар өзгерді",
+  "myExcursionsCancelBookingConfirm": "Броньды болдырмау",
+  "myExcursionsCancelBookingSuccess": "Бронь болдырылмады",
+  "myExcursionsCancelBookingFailed": "Броньды болдырмау мүмкін болмады",
+  "myExcursionsCancelledWithRefund": "Болдырылмады. Қайтарым: {amount} ({percent}%)",
+  "@myExcursionsCancelledWithRefund": {
+    "placeholders": {
+      "amount": {},
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "myExcursionsCancelledWithoutRefund": "Қайтарымсыз болдырылмады",
   "myExcursionsFilterStatus": "Мәртебе",
   "myExcursionsStatusRequested": "Брондалған",
   "myExcursionsFilterReview": "Пікірлер",
@@ -1343,6 +1386,7 @@
   "myExcursionsReviewHint": "Не ұнады, нені жақсартуға болады?",
   "myExcursionsReviewPublish": "Жариялау",
   "guideDashboardTitle": "Гид кабинеті",
+  "guideDashboardReviewsTitle": "Пікірлер",
   "guideDashboardOffersStat": "Барлық ұсыныс",
   "guideDashboardBookingsStat": "Брондар",
   "guideDashboardRevenueStat": "Түсім",
@@ -1379,6 +1423,43 @@
   "guideDashboardPublishFailed": "Ұсынысты жариялау мүмкін болмады",
   "guideDashboardViewBooking": "Бронды ашу",
   "guideDashboardViewDetails": "Толығырақ",
+  "guideDashboardCancelExcursion": "Экскурсиядан бас тарту",
+  "guideDashboardCancelTitle": "Экскурсиядан бас тартасыз ба?",
+  "guideDashboardCancelDescription": "Бұл слот қонақтар үшін тоқтатылады және әсер еткен брондар бойынша қайтарылатын сома көрсетіледі.",
+  "guideDashboardCancelReasonLabel": "Бас тарту себебі",
+  "guideDashboardCancelReasonPlaceholder": "Мысалы: гид ауырып қалды немесе ауа райы маршрутты өткізуге мүмкіндік бермейді",
+  "guideDashboardCancelReasonRequired": "Бас тарту себебін көрсетіңіз",
+  "guideDashboardCancelConfirm": "Бас тартуды растау",
+  "guideDashboardCancelSuccess": "Экскурсия тоқтатылды",
+  "guideDashboardCancelFailed": "Экскурсиядан бас тарту мүмкін болмады",
+  "guideDashboardCancelNoSlot": "Бұл бронда бас тартатын кесте слоты жоқ",
+  "guideDashboardRefundAmount": "Қонақтарға қайтару: {amount}",
+  "@guideDashboardRefundAmount": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "guideDashboardCancelledByTourist": "Турист болдырмады",
+  "guideDashboardCancelledByGuide": "Гид болдырмады",
+  "guideDashboardCancellationReason": "Себебі: {reason}",
+  "@guideDashboardCancellationReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "guideDashboardBookingSheetTitle": "Брон туралы ақпарат",
+  "guideDashboardBookingAuthorsTitle": "Брон авторлары",
+  "guideDashboardAdults": "Ересектер",
+  "guideDashboardChildren": "Балалар",
+  "guideDashboardTotalGuests": "Барлық қонақ",
+  "guideDashboardGuestBreakdown": "Ересектер: {adults} · Балалар: {children} · Барлығы: {total}",
+  "@guideDashboardGuestBreakdown": {
+    "placeholders": {
+      "adults": {},
+      "children": {},
+      "total": {}
+    }
+  },
   "guideDashboardStatusActive": "Белсенді",
   "guideDashboardStatusArchived": "Архив",
   "guideDashboardStatusReview": "Тексеруде",

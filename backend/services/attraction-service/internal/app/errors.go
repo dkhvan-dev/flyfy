@@ -16,6 +16,7 @@ var (
 	ErrInvalidCountryCode     = errors.New("country code must be an ISO-2 reference country code")
 	ErrInvalidCityID          = errors.New("city id must be a reference city id")
 	ErrInvalidRating          = errors.New("rating must be between 1.0 and 5.0")
+	ErrInvalidRatingSource    = errors.New("invalid rating source snapshot")
 	ErrInvalidMediaType       = errors.New("media type must be PHOTO or VIDEO")
 	ErrInvalidDuration        = errors.New("invalid duration: value and unit must both be set or both be empty")
 	ErrInvalidPrice           = errors.New("invalid price: amount and currency must both be set or both be empty")

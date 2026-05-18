@@ -47,7 +47,13 @@ type ExcursionBooking struct {
 	Status           enum.ExcursionBookingStatus
 	IdempotencyKey   *string
 	CancelledAt      *time.Time
+	CancelledBy      *enum.ExcursionBookingCancelledBy
 	CancelReason     *string
+	RefundPercent    int
+	RefundAmount     float64
+	RefundCurrency   *string
+	RefundPolicyCode *string
+	RefundStatus     *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -124,6 +130,12 @@ func (b *ExcursionBooking) Validate() error {
 	if !b.Status.IsValid() {
 		return ErrInvalidExcursionBookingStatus
 	}
+	if b.CancelledBy != nil && !b.CancelledBy.IsValid() {
+		return ErrInvalidExcursionBookingStatus
+	}
+	if b.RefundPercent < 0 || b.RefundPercent > 100 || b.RefundAmount < 0 {
+		return ErrInvalidExcursionBookingPrice
+	}
 	return nil
 }
 
@@ -138,6 +150,35 @@ func (b *ExcursionBooking) UpdateGuests(adults int, children int) error {
 	b.ServiceFeeAmount = serviceFee
 	b.TotalPriceAmount = roundMoney(subtotal + serviceFee)
 	b.UpdatedAt = time.Now().UTC()
+
+	return b.Validate()
+}
+
+func (b *ExcursionBooking) Cancel(
+	cancelledBy enum.ExcursionBookingCancelledBy,
+	reason string,
+	refundPercent int,
+	refundAmount float64,
+	refundCurrency string,
+	refundPolicyCode string,
+	refundStatus string,
+) error {
+	now := time.Now().UTC()
+	normalizedReason := strings.TrimSpace(reason)
+	normalizedRefundCurrency := strings.ToUpper(strings.TrimSpace(refundCurrency))
+	normalizedPolicy := strings.TrimSpace(refundPolicyCode)
+	normalizedRefundStatus := strings.TrimSpace(refundStatus)
+
+	b.Status = enum.ExcursionBookingStatusCancelled
+	b.CancelledAt = &now
+	b.CancelledBy = &cancelledBy
+	b.CancelReason = NormalizeOptionalString(&normalizedReason)
+	b.RefundPercent = refundPercent
+	b.RefundAmount = roundMoney(refundAmount)
+	b.RefundCurrency = NormalizeOptionalString(&normalizedRefundCurrency)
+	b.RefundPolicyCode = NormalizeOptionalString(&normalizedPolicy)
+	b.RefundStatus = NormalizeOptionalString(&normalizedRefundStatus)
+	b.UpdatedAt = now
 
 	return b.Validate()
 }

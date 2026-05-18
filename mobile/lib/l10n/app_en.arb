@@ -683,6 +683,12 @@
   "attractionVerifiedNomad": "Verified nomad",
   "attractionReviewsTitle": "Reviews",
   "attractionTravelerFallback": "Traveler",
+  "profileGuideReviewsTitle": "Best excursion reviews",
+  "profileGuideReviewsLatestTitle": "Latest excursion reviews",
+  "profileGuideReviewsEmptyTitle": "No reviews yet",
+  "profileGuideReviewsEmpty": "Reviews will appear here after travelers rate completed excursions.",
+  "profileGuideReviewsLoadFailed": "Could not load reviews",
+  "profileGuideReviewsLoadFailedHint": "Pull to refresh or open the profile again.",
   "attractionPriceVaries": "Price varies",
   "attractionPriceVariesShort": "Varies",
   "attractionDurationHours": "{hours} h",
@@ -773,6 +779,8 @@
   "excursionsEmptyTitle": "No excursions yet",
   "excursionsEmptySubtitle": "Verified guide routes will appear here.",
   "excursionsEmptySearchSubtitle": "Try another destination, category, or excursion name.",
+  "excursionsNoAttractionExcursionsTitle": "No excursions for this attraction yet",
+  "excursionsNoAttractionExcursionsSubtitle": "Showing other available excursions. When guides add a route for this attraction, it will appear here.",
   "guidesTitle": "Travel Guides",
   "guidesSearchHint": "Search guides",
   "guidesSortLabel": "Sort by",
@@ -1330,6 +1338,41 @@
   "myExcursionsGuestsPaymentMockHint": "This is a mock settlement for now: real charges or refunds will be connected through the payment service.",
   "myExcursionsPayAndSaveGuests": "Pay and save",
   "myExcursionsRefundAndSaveGuests": "Refund and save",
+  "myExcursionsCancelBookingButton": "Cancel booking",
+  "myExcursionsCancelBookingTitle": "Cancel booking?",
+  "myExcursionsCancelBookingHint": "We will cancel your place and show the guide that the booking was cancelled by you.",
+  "myExcursionsCancelBookingRefund": "Refund: {amount} ({percent}%)",
+  "@myExcursionsCancelBookingRefund": {
+    "placeholders": {
+      "amount": {},
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "myExcursionsCancelBookingNoRefund": "Refund is not available",
+  "myExcursionsCancelBookingRefundHint": "The server will fix the final refund amount. Real payment refund will be connected through the payment service.",
+  "myExcursionsCancelPolicyTitle": "Cancellation policy",
+  "myExcursionsCancelPolicyFull": "24+ hours before start: 100%",
+  "myExcursionsCancelPolicySeventyFive": "12-24 hours before start: 75%",
+  "myExcursionsCancelPolicyHalf": "6-12 hours before start: 50%",
+  "myExcursionsCancelPolicyQuarter": "2-6 hours before start: 25%",
+  "myExcursionsCancelPolicyZero": "Less than 2 hours before start: 0%",
+  "myExcursionsCancelBookingReasonLabel": "Reason (optional)",
+  "myExcursionsCancelBookingReasonPlaceholder": "For example: plans changed",
+  "myExcursionsCancelBookingConfirm": "Cancel booking",
+  "myExcursionsCancelBookingSuccess": "Booking cancelled",
+  "myExcursionsCancelBookingFailed": "Failed to cancel booking",
+  "myExcursionsCancelledWithRefund": "Cancelled. Refund: {amount} ({percent}%)",
+  "@myExcursionsCancelledWithRefund": {
+    "placeholders": {
+      "amount": {},
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "myExcursionsCancelledWithoutRefund": "Cancelled without refund",
   "myExcursionsFilterStatus": "Status",
   "myExcursionsStatusRequested": "Booked",
   "myExcursionsFilterReview": "Reviews",
@@ -1343,6 +1386,7 @@
   "myExcursionsReviewHint": "What did you like, and what could be better?",
   "myExcursionsReviewPublish": "Publish",
   "guideDashboardTitle": "Guide Dashboard",
+  "guideDashboardReviewsTitle": "Reviews",
   "guideDashboardOffersStat": "Total offers",
   "guideDashboardBookingsStat": "Bookings",
   "guideDashboardRevenueStat": "Revenue",
@@ -1379,6 +1423,43 @@
   "guideDashboardPublishFailed": "Failed to publish offer",
   "guideDashboardViewBooking": "View booking",
   "guideDashboardViewDetails": "View details",
+  "guideDashboardCancelExcursion": "Cancel excursion",
+  "guideDashboardCancelTitle": "Cancel this excursion?",
+  "guideDashboardCancelDescription": "We will cancel this slot for guests and show the amount that must be refunded for affected bookings.",
+  "guideDashboardCancelReasonLabel": "Cancellation reason",
+  "guideDashboardCancelReasonPlaceholder": "For example: the guide is sick or weather makes the route unsafe",
+  "guideDashboardCancelReasonRequired": "Enter a cancellation reason",
+  "guideDashboardCancelConfirm": "Confirm cancellation",
+  "guideDashboardCancelSuccess": "Excursion cancelled",
+  "guideDashboardCancelFailed": "Failed to cancel excursion",
+  "guideDashboardCancelNoSlot": "This booking does not have a schedule slot to cancel",
+  "guideDashboardRefundAmount": "Refund to guests: {amount}",
+  "@guideDashboardRefundAmount": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "guideDashboardCancelledByTourist": "Cancelled by tourist",
+  "guideDashboardCancelledByGuide": "Cancelled by guide",
+  "guideDashboardCancellationReason": "Reason: {reason}",
+  "@guideDashboardCancellationReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "guideDashboardBookingSheetTitle": "Booking details",
+  "guideDashboardBookingAuthorsTitle": "Booking authors",
+  "guideDashboardAdults": "Adults",
+  "guideDashboardChildren": "Children",
+  "guideDashboardTotalGuests": "Total guests",
+  "guideDashboardGuestBreakdown": "Adults: {adults} · Children: {children} · Total: {total}",
+  "@guideDashboardGuestBreakdown": {
+    "placeholders": {
+      "adults": {},
+      "children": {},
+      "total": {}
+    }
+  },
   "guideDashboardStatusActive": "Active",
   "guideDashboardStatusArchived": "Archived",
   "guideDashboardStatusReview": "Under review",

@@ -1964,6 +1964,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attractionTravelerFallback => 'Traveler';
 
   @override
+  String get profileGuideReviewsTitle => 'Best excursion reviews';
+
+  @override
+  String get profileGuideReviewsLatestTitle => 'Latest excursion reviews';
+
+  @override
+  String get profileGuideReviewsEmptyTitle => 'No reviews yet';
+
+  @override
+  String get profileGuideReviewsEmpty =>
+      'Reviews will appear here after travelers rate completed excursions.';
+
+  @override
+  String get profileGuideReviewsLoadFailed => 'Could not load reviews';
+
+  @override
+  String get profileGuideReviewsLoadFailedHint =>
+      'Pull to refresh or open the profile again.';
+
+  @override
   String get attractionPriceVaries => 'Price varies';
 
   @override
@@ -2192,6 +2212,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get excursionsEmptySearchSubtitle =>
       'Try another destination, category, or excursion name.';
+
+  @override
+  String get excursionsNoAttractionExcursionsTitle =>
+      'No excursions for this attraction yet';
+
+  @override
+  String get excursionsNoAttractionExcursionsSubtitle =>
+      'Showing other available excursions. When guides add a route for this attraction, it will appear here.';
 
   @override
   String get guidesTitle => 'Travel Guides';
@@ -3609,6 +3637,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myExcursionsRefundAndSaveGuests => 'Refund and save';
 
   @override
+  String get myExcursionsCancelBookingButton => 'Cancel booking';
+
+  @override
+  String get myExcursionsCancelBookingTitle => 'Cancel booking?';
+
+  @override
+  String get myExcursionsCancelBookingHint =>
+      'We will cancel your place and show the guide that the booking was cancelled by you.';
+
+  @override
+  String myExcursionsCancelBookingRefund(Object amount, int percent) {
+    return 'Refund: $amount ($percent%)';
+  }
+
+  @override
+  String get myExcursionsCancelBookingNoRefund => 'Refund is not available';
+
+  @override
+  String get myExcursionsCancelBookingRefundHint =>
+      'The server will fix the final refund amount. Real payment refund will be connected through the payment service.';
+
+  @override
+  String get myExcursionsCancelPolicyTitle => 'Cancellation policy';
+
+  @override
+  String get myExcursionsCancelPolicyFull => '24+ hours before start: 100%';
+
+  @override
+  String get myExcursionsCancelPolicySeventyFive =>
+      '12-24 hours before start: 75%';
+
+  @override
+  String get myExcursionsCancelPolicyHalf => '6-12 hours before start: 50%';
+
+  @override
+  String get myExcursionsCancelPolicyQuarter => '2-6 hours before start: 25%';
+
+  @override
+  String get myExcursionsCancelPolicyZero =>
+      'Less than 2 hours before start: 0%';
+
+  @override
+  String get myExcursionsCancelBookingReasonLabel => 'Reason (optional)';
+
+  @override
+  String get myExcursionsCancelBookingReasonPlaceholder =>
+      'For example: plans changed';
+
+  @override
+  String get myExcursionsCancelBookingConfirm => 'Cancel booking';
+
+  @override
+  String get myExcursionsCancelBookingSuccess => 'Booking cancelled';
+
+  @override
+  String get myExcursionsCancelBookingFailed => 'Failed to cancel booking';
+
+  @override
+  String myExcursionsCancelledWithRefund(Object amount, int percent) {
+    return 'Cancelled. Refund: $amount ($percent%)';
+  }
+
+  @override
+  String get myExcursionsCancelledWithoutRefund => 'Cancelled without refund';
+
+  @override
   String get myExcursionsFilterStatus => 'Status';
 
   @override
@@ -3647,6 +3741,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideDashboardTitle => 'Guide Dashboard';
+
+  @override
+  String get guideDashboardReviewsTitle => 'Reviews';
 
   @override
   String get guideDashboardOffersStat => 'Total offers';
@@ -3763,6 +3860,80 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideDashboardViewDetails => 'View details';
+
+  @override
+  String get guideDashboardCancelExcursion => 'Cancel excursion';
+
+  @override
+  String get guideDashboardCancelTitle => 'Cancel this excursion?';
+
+  @override
+  String get guideDashboardCancelDescription =>
+      'We will cancel this slot for guests and show the amount that must be refunded for affected bookings.';
+
+  @override
+  String get guideDashboardCancelReasonLabel => 'Cancellation reason';
+
+  @override
+  String get guideDashboardCancelReasonPlaceholder =>
+      'For example: the guide is sick or weather makes the route unsafe';
+
+  @override
+  String get guideDashboardCancelReasonRequired =>
+      'Enter a cancellation reason';
+
+  @override
+  String get guideDashboardCancelConfirm => 'Confirm cancellation';
+
+  @override
+  String get guideDashboardCancelSuccess => 'Excursion cancelled';
+
+  @override
+  String get guideDashboardCancelFailed => 'Failed to cancel excursion';
+
+  @override
+  String get guideDashboardCancelNoSlot =>
+      'This booking does not have a schedule slot to cancel';
+
+  @override
+  String guideDashboardRefundAmount(Object amount) {
+    return 'Refund to guests: $amount';
+  }
+
+  @override
+  String get guideDashboardCancelledByTourist => 'Cancelled by tourist';
+
+  @override
+  String get guideDashboardCancelledByGuide => 'Cancelled by guide';
+
+  @override
+  String guideDashboardCancellationReason(Object reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get guideDashboardBookingSheetTitle => 'Booking details';
+
+  @override
+  String get guideDashboardBookingAuthorsTitle => 'Booking authors';
+
+  @override
+  String get guideDashboardAdults => 'Adults';
+
+  @override
+  String get guideDashboardChildren => 'Children';
+
+  @override
+  String get guideDashboardTotalGuests => 'Total guests';
+
+  @override
+  String guideDashboardGuestBreakdown(
+    Object adults,
+    Object children,
+    Object total,
+  ) {
+    return 'Adults: $adults · Children: $children · Total: $total';
+  }
 
   @override
   String get guideDashboardStatusActive => 'Active';

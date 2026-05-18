@@ -26,8 +26,31 @@ import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
 
+class ExcursionsRouteArgs {
+  const ExcursionsRouteArgs({
+    this.showNoAttractionExcursionsNotice = false,
+    this.attractionId,
+    this.attractionTitle,
+  });
+
+  const ExcursionsRouteArgs.noAttractionExcursions({
+    required String attractionId,
+    String? attractionTitle,
+  }) : this(
+          showNoAttractionExcursionsNotice: true,
+          attractionId: attractionId,
+          attractionTitle: attractionTitle,
+        );
+
+  final bool showNoAttractionExcursionsNotice;
+  final String? attractionId;
+  final String? attractionTitle;
+}
+
 class ExcursionsScreen extends StatefulWidget {
-  const ExcursionsScreen({super.key});
+  const ExcursionsScreen({super.key, this.routeArgs});
+
+  final ExcursionsRouteArgs? routeArgs;
 
   @override
   State<ExcursionsScreen> createState() => _ExcursionsScreenState();
@@ -774,6 +797,12 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
                                   direction: _sortDirection,
                                   onChanged: _onSortTap,
                                 ),
+                                if (widget.routeArgs
+                                        ?.showNoAttractionExcursionsNotice ==
+                                    true) ...[
+                                  const SizedBox(height: 14),
+                                  _buildNoAttractionExcursionsNotice(l10n),
+                                ],
                               ],
                             ),
                           ),
@@ -893,6 +922,65 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     });
 
     return sorted;
+  }
+
+  Widget _buildNoAttractionExcursionsNotice(AppLocalizations l10n) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.accent.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.16),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.info_outline_rounded,
+                color: AppColors.accent,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.excursionsNoAttractionExcursionsTitle,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    l10n.excursionsNoAttractionExcursionsSubtitle,
+                    style: const TextStyle(
+                      color: Color(0xFFD6C5B8),
+                      fontSize: 13,
+                      height: 1.28,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _excursionSearchHaystack(

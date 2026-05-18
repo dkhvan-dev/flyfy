@@ -148,6 +148,7 @@ func TestListGuideExcursionLanguagesRejectsTooManyGuideUserIDs(t *testing.T) {
 
 type excursionOffersRepoStub struct {
 	lastOfferFilter    port.ExcursionOfferFilter
+	listReviewFilter   port.ExcursionReviewFilter
 	lastGuideUserIDs   []uuid.UUID
 	guideLanguageCodes map[uuid.UUID][]string
 }
@@ -234,6 +235,10 @@ func (s *excursionOffersRepoStub) UpdateExcursionBookingGuests(context.Context, 
 	return nil
 }
 
+func (s *excursionOffersRepoStub) CancelExcursionBooking(context.Context, *model.ExcursionBooking) error {
+	return nil
+}
+
 func (s *excursionOffersRepoStub) CreateExcursionReview(context.Context, *model.ExcursionReview) error {
 	return nil
 }
@@ -242,8 +247,13 @@ func (s *excursionOffersRepoStub) GetExcursionReviewByBookingID(context.Context,
 	return nil, nil
 }
 
-func (s *excursionOffersRepoStub) ListExcursionReviews(context.Context, port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
+func (s *excursionOffersRepoStub) ListExcursionReviews(_ context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
+	s.listReviewFilter = filter
 	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) CalculateLandmarkReviewStats(context.Context, uuid.UUID) (float64, int, error) {
+	return 0, 0, nil
 }
 
 func (s *excursionOffersRepoStub) CreateExcursionScheduleSlot(context.Context, *model.ExcursionScheduleSlot) error {

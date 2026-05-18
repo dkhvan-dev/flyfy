@@ -31,6 +31,7 @@ import '../../screens/excursions/excursion_details_screen.dart';
 import '../../screens/excursions/excursions_screen.dart';
 import '../../screens/excursions/guide_calendar_screen.dart';
 import '../../screens/excursions/guide_dashboard_screen.dart';
+import '../../screens/excursions/guide_reviews_screen.dart';
 import '../../screens/excursions/my_excursions_screen.dart';
 import '../../screens/guides/guides_screen.dart';
 import '../../screens/attendance/attendance_scanner_screen.dart';
@@ -171,6 +172,11 @@ class AppRouter {
               _withAndroidBackSwipe(const GuideCalendarScreen()),
         ),
         GoRoute(
+          path: '/profile/guide-dashboard/reviews',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const GuideReviewsScreen()),
+        ),
+        GoRoute(
           path: '/users/:userId/profile',
           builder: (context, state) {
             final userId = state.pathParameters['userId'] ?? '';
@@ -271,8 +277,12 @@ class AppRouter {
         ),
         GoRoute(
           path: '/excursions',
-          builder: (context, state) =>
-              _withAndroidBackSwipe(const ExcursionsScreen()),
+          builder: (context, state) {
+            final args = state.extra is ExcursionsRouteArgs
+                ? state.extra! as ExcursionsRouteArgs
+                : null;
+            return _withAndroidBackSwipe(ExcursionsScreen(routeArgs: args));
+          },
         ),
         GoRoute(
           path: '/guides',

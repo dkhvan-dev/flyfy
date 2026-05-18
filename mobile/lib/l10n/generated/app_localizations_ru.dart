@@ -1966,6 +1966,26 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attractionTravelerFallback => 'Путешественник';
 
   @override
+  String get profileGuideReviewsTitle => 'Лучшие отзывы об экскурсиях';
+
+  @override
+  String get profileGuideReviewsLatestTitle => 'Последние отзывы об экскурсиях';
+
+  @override
+  String get profileGuideReviewsEmptyTitle => 'Отзывов пока нет';
+
+  @override
+  String get profileGuideReviewsEmpty =>
+      'Отзывы появятся здесь после того, как путешественники оценят проведенные экскурсии.';
+
+  @override
+  String get profileGuideReviewsLoadFailed => 'Не удалось загрузить отзывы';
+
+  @override
+  String get profileGuideReviewsLoadFailedHint =>
+      'Потяните для обновления или откройте профиль снова.';
+
+  @override
   String get attractionPriceVaries => 'Цена варьируется';
 
   @override
@@ -2196,6 +2216,14 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get excursionsEmptySearchSubtitle =>
       'Попробуйте другой город, категорию или название экскурсии.';
+
+  @override
+  String get excursionsNoAttractionExcursionsTitle =>
+      'Экскурсий по этой достопримечательности пока нет';
+
+  @override
+  String get excursionsNoAttractionExcursionsSubtitle =>
+      'Показываем другие доступные экскурсии. Как только гиды добавят маршрут по этой достопримечательности, он появится здесь.';
 
   @override
   String get guidesTitle => 'Гиды';
@@ -3626,6 +3654,72 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myExcursionsRefundAndSaveGuests => 'Вернуть и сохранить';
 
   @override
+  String get myExcursionsCancelBookingButton => 'Отменить бронь';
+
+  @override
+  String get myExcursionsCancelBookingTitle => 'Отменить бронь?';
+
+  @override
+  String get myExcursionsCancelBookingHint =>
+      'Мы отменим ваше место и покажем гиду, что бронь отменена вами.';
+
+  @override
+  String myExcursionsCancelBookingRefund(Object amount, int percent) {
+    return 'К возврату: $amount ($percent%)';
+  }
+
+  @override
+  String get myExcursionsCancelBookingNoRefund => 'Возврат недоступен';
+
+  @override
+  String get myExcursionsCancelBookingRefundHint =>
+      'Итоговую сумму возврата зафиксирует сервер. Реальный возврат средств будет подключен через платежный сервис.';
+
+  @override
+  String get myExcursionsCancelPolicyTitle => 'Правила отмены';
+
+  @override
+  String get myExcursionsCancelPolicyFull => 'За 24+ часа до начала: 100%';
+
+  @override
+  String get myExcursionsCancelPolicySeventyFive =>
+      'За 12-24 часа до начала: 75%';
+
+  @override
+  String get myExcursionsCancelPolicyHalf => 'За 6-12 часов до начала: 50%';
+
+  @override
+  String get myExcursionsCancelPolicyQuarter => 'За 2-6 часов до начала: 25%';
+
+  @override
+  String get myExcursionsCancelPolicyZero =>
+      'Менее чем за 2 часа до начала: 0%';
+
+  @override
+  String get myExcursionsCancelBookingReasonLabel => 'Причина (необязательно)';
+
+  @override
+  String get myExcursionsCancelBookingReasonPlaceholder =>
+      'Например: изменились планы';
+
+  @override
+  String get myExcursionsCancelBookingConfirm => 'Отменить бронь';
+
+  @override
+  String get myExcursionsCancelBookingSuccess => 'Бронь отменена';
+
+  @override
+  String get myExcursionsCancelBookingFailed => 'Не удалось отменить бронь';
+
+  @override
+  String myExcursionsCancelledWithRefund(Object amount, int percent) {
+    return 'Отменено. К возврату: $amount ($percent%)';
+  }
+
+  @override
+  String get myExcursionsCancelledWithoutRefund => 'Отменено без возврата';
+
+  @override
   String get myExcursionsFilterStatus => 'Статус';
 
   @override
@@ -3663,6 +3757,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideDashboardTitle => 'Кабинет гида';
+
+  @override
+  String get guideDashboardReviewsTitle => 'Отзывы';
 
   @override
   String get guideDashboardOffersStat => 'Всего предложений';
@@ -3781,6 +3878,79 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideDashboardViewDetails => 'Подробнее';
+
+  @override
+  String get guideDashboardCancelExcursion => 'Отменить экскурсию';
+
+  @override
+  String get guideDashboardCancelTitle => 'Отменить экскурсию?';
+
+  @override
+  String get guideDashboardCancelDescription =>
+      'Мы отменим этот слот для гостей и покажем сумму, которую нужно вернуть по затронутым броням.';
+
+  @override
+  String get guideDashboardCancelReasonLabel => 'Причина отмены';
+
+  @override
+  String get guideDashboardCancelReasonPlaceholder =>
+      'Например: гид заболел или погодные условия не позволяют провести маршрут';
+
+  @override
+  String get guideDashboardCancelReasonRequired => 'Укажите причину отмены';
+
+  @override
+  String get guideDashboardCancelConfirm => 'Подтвердить отмену';
+
+  @override
+  String get guideDashboardCancelSuccess => 'Экскурсия отменена';
+
+  @override
+  String get guideDashboardCancelFailed => 'Не удалось отменить экскурсию';
+
+  @override
+  String get guideDashboardCancelNoSlot =>
+      'У этой брони нет слота расписания для отмены';
+
+  @override
+  String guideDashboardRefundAmount(Object amount) {
+    return 'К возврату гостям: $amount';
+  }
+
+  @override
+  String get guideDashboardCancelledByTourist => 'Отменено туристом';
+
+  @override
+  String get guideDashboardCancelledByGuide => 'Отменено гидом';
+
+  @override
+  String guideDashboardCancellationReason(Object reason) {
+    return 'Причина: $reason';
+  }
+
+  @override
+  String get guideDashboardBookingSheetTitle => 'Информация по бронированию';
+
+  @override
+  String get guideDashboardBookingAuthorsTitle => 'Авторы бронирования';
+
+  @override
+  String get guideDashboardAdults => 'Взрослые';
+
+  @override
+  String get guideDashboardChildren => 'Дети';
+
+  @override
+  String get guideDashboardTotalGuests => 'Итого гостей';
+
+  @override
+  String guideDashboardGuestBreakdown(
+    Object adults,
+    Object children,
+    Object total,
+  ) {
+    return 'Взрослые: $adults · Дети: $children · Итого: $total';
+  }
 
   @override
   String get guideDashboardStatusActive => 'Активно';

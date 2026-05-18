@@ -1976,6 +1976,28 @@ class AppLocalizationsKk extends AppLocalizations {
   String get attractionTravelerFallback => 'Саяхатшы';
 
   @override
+  String get profileGuideReviewsTitle => 'Экскурсиялар бойынша үздік пікірлер';
+
+  @override
+  String get profileGuideReviewsLatestTitle =>
+      'Экскурсиялар бойынша соңғы пікірлер';
+
+  @override
+  String get profileGuideReviewsEmptyTitle => 'Әзірге пікір жоқ';
+
+  @override
+  String get profileGuideReviewsEmpty =>
+      'Саяхатшылар өткізілген экскурсияларды бағалағаннан кейін пікірлер осында шығады.';
+
+  @override
+  String get profileGuideReviewsLoadFailed =>
+      'Пікірлерді жүктеу мүмкін болмады';
+
+  @override
+  String get profileGuideReviewsLoadFailedHint =>
+      'Жаңарту үшін төмен тартыңыз немесе профильді қайта ашыңыз.';
+
+  @override
   String get attractionPriceVaries => 'Баға өзгеруі мүмкін';
 
   @override
@@ -2205,6 +2227,14 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get excursionsEmptySearchSubtitle =>
       'Басқа қала, санат немесе экскурсия атауын қолданып көріңіз.';
+
+  @override
+  String get excursionsNoAttractionExcursionsTitle =>
+      'Бұл көрікті орын бойынша экскурсиялар әзірге жоқ';
+
+  @override
+  String get excursionsNoAttractionExcursionsSubtitle =>
+      'Басқа қолжетімді экскурсияларды көрсетіп тұрмыз. Гидтер осы көрікті орынға маршрут қосқанда, ол осында пайда болады.';
 
   @override
   String get guidesTitle => 'Гидтер';
@@ -3632,6 +3662,76 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myExcursionsRefundAndSaveGuests => 'Қайтарып сақтау';
 
   @override
+  String get myExcursionsCancelBookingButton => 'Броньды болдырмау';
+
+  @override
+  String get myExcursionsCancelBookingTitle => 'Броньды болдырмау керек пе?';
+
+  @override
+  String get myExcursionsCancelBookingHint =>
+      'Біз сіздің орныңызды болдырмаймыз және гидке броньды сіз болдырмағаныңызды көрсетеміз.';
+
+  @override
+  String myExcursionsCancelBookingRefund(Object amount, int percent) {
+    return 'Қайтарым: $amount ($percent%)';
+  }
+
+  @override
+  String get myExcursionsCancelBookingNoRefund => 'Қайтарым қолжетімсіз';
+
+  @override
+  String get myExcursionsCancelBookingRefundHint =>
+      'Соңғы қайтарым сомасын сервер бекітеді. Нақты ақша қайтару төлем сервисі арқылы қосылады.';
+
+  @override
+  String get myExcursionsCancelPolicyTitle => 'Болдырмау ережелері';
+
+  @override
+  String get myExcursionsCancelPolicyFull =>
+      'Басталуына 24+ сағат қалғанда: 100%';
+
+  @override
+  String get myExcursionsCancelPolicySeventyFive =>
+      'Басталуына 12-24 сағат қалғанда: 75%';
+
+  @override
+  String get myExcursionsCancelPolicyHalf =>
+      'Басталуына 6-12 сағат қалғанда: 50%';
+
+  @override
+  String get myExcursionsCancelPolicyQuarter =>
+      'Басталуына 2-6 сағат қалғанда: 25%';
+
+  @override
+  String get myExcursionsCancelPolicyZero =>
+      'Басталуына 2 сағаттан аз қалғанда: 0%';
+
+  @override
+  String get myExcursionsCancelBookingReasonLabel => 'Себебі (міндетті емес)';
+
+  @override
+  String get myExcursionsCancelBookingReasonPlaceholder =>
+      'Мысалы: жоспар өзгерді';
+
+  @override
+  String get myExcursionsCancelBookingConfirm => 'Броньды болдырмау';
+
+  @override
+  String get myExcursionsCancelBookingSuccess => 'Бронь болдырылмады';
+
+  @override
+  String get myExcursionsCancelBookingFailed =>
+      'Броньды болдырмау мүмкін болмады';
+
+  @override
+  String myExcursionsCancelledWithRefund(Object amount, int percent) {
+    return 'Болдырылмады. Қайтарым: $amount ($percent%)';
+  }
+
+  @override
+  String get myExcursionsCancelledWithoutRefund => 'Қайтарымсыз болдырылмады';
+
+  @override
   String get myExcursionsFilterStatus => 'Мәртебе';
 
   @override
@@ -3669,6 +3769,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideDashboardTitle => 'Гид кабинеті';
+
+  @override
+  String get guideDashboardReviewsTitle => 'Пікірлер';
 
   @override
   String get guideDashboardOffersStat => 'Барлық ұсыныс';
@@ -3786,6 +3889,81 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideDashboardViewDetails => 'Толығырақ';
+
+  @override
+  String get guideDashboardCancelExcursion => 'Экскурсиядан бас тарту';
+
+  @override
+  String get guideDashboardCancelTitle => 'Экскурсиядан бас тартасыз ба?';
+
+  @override
+  String get guideDashboardCancelDescription =>
+      'Бұл слот қонақтар үшін тоқтатылады және әсер еткен брондар бойынша қайтарылатын сома көрсетіледі.';
+
+  @override
+  String get guideDashboardCancelReasonLabel => 'Бас тарту себебі';
+
+  @override
+  String get guideDashboardCancelReasonPlaceholder =>
+      'Мысалы: гид ауырып қалды немесе ауа райы маршрутты өткізуге мүмкіндік бермейді';
+
+  @override
+  String get guideDashboardCancelReasonRequired =>
+      'Бас тарту себебін көрсетіңіз';
+
+  @override
+  String get guideDashboardCancelConfirm => 'Бас тартуды растау';
+
+  @override
+  String get guideDashboardCancelSuccess => 'Экскурсия тоқтатылды';
+
+  @override
+  String get guideDashboardCancelFailed =>
+      'Экскурсиядан бас тарту мүмкін болмады';
+
+  @override
+  String get guideDashboardCancelNoSlot =>
+      'Бұл бронда бас тартатын кесте слоты жоқ';
+
+  @override
+  String guideDashboardRefundAmount(Object amount) {
+    return 'Қонақтарға қайтару: $amount';
+  }
+
+  @override
+  String get guideDashboardCancelledByTourist => 'Турист болдырмады';
+
+  @override
+  String get guideDashboardCancelledByGuide => 'Гид болдырмады';
+
+  @override
+  String guideDashboardCancellationReason(Object reason) {
+    return 'Себебі: $reason';
+  }
+
+  @override
+  String get guideDashboardBookingSheetTitle => 'Брон туралы ақпарат';
+
+  @override
+  String get guideDashboardBookingAuthorsTitle => 'Брон авторлары';
+
+  @override
+  String get guideDashboardAdults => 'Ересектер';
+
+  @override
+  String get guideDashboardChildren => 'Балалар';
+
+  @override
+  String get guideDashboardTotalGuests => 'Барлық қонақ';
+
+  @override
+  String guideDashboardGuestBreakdown(
+    Object adults,
+    Object children,
+    Object total,
+  ) {
+    return 'Ересектер: $adults · Балалар: $children · Барлығы: $total';
+  }
 
   @override
   String get guideDashboardStatusActive => 'Белсенді';

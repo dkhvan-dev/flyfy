@@ -228,6 +228,37 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
       );
   }
 
+  Future<void> _openCancelBookingSheet(ExcursionBookingVm booking) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ExcursionProvider>();
+    final success = await showModalBottomSheet<bool>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return _CancelExcursionBookingSheet(
+          l10n: l10n,
+          booking: booking,
+          onSubmit: (reason) {
+            return provider.cancelExcursionBooking(
+              booking.id,
+              reason: reason,
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || success != true) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(l10n.myExcursionsCancelBookingSuccess)),
+      );
+  }
+
   void _openDetails(ExcursionBookingVm booking) {
     context.push('/excursions/${Uri.encodeComponent(booking.productId)}');
   }
@@ -394,6 +425,10 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
                                   onEditGuestsTap: booking.isBooked(now)
                                       ? () => _openEditGuestsSheet(booking)
                                       : null,
+                                  onCancelTap: booking
+                                          .canBeCancelledByTourist(now)
+                                      ? () => _openCancelBookingSheet(booking)
+                                      : null,
                                   onReviewTap: booking.canReview(now)
                                       ? () => _openReviewSheet(booking)
                                       : null,
@@ -518,12 +553,14 @@ class _MyExcursionBookingCard extends StatelessWidget {
     required this.booking,
     required this.onTap,
     required this.onEditGuestsTap,
+    required this.onCancelTap,
     required this.onReviewTap,
   });
 
   final ExcursionBookingVm booking;
   final VoidCallback onTap;
   final VoidCallback? onEditGuestsTap;
+  final VoidCallback? onCancelTap;
   final VoidCallback? onReviewTap;
 
   @override
@@ -536,11 +573,12 @@ class _MyExcursionBookingCard extends StatelessWidget {
     final guide = booking.guideDisplayName.trim().isEmpty
         ? l10n.myExcursionsGuideFallback
         : booking.guideDisplayName.trim();
-    final price = NumberFormat.compactCurrency(
-      locale: localeName,
-      name: booking.currency,
-      symbol: booking.currency,
-    ).format(booking.totalPriceAmount);
+    final price = formatLocalizedExcursionMoney(
+      amount: booking.totalPriceAmount,
+      currency: booking.currency,
+      localeName: localeName,
+      useExcursionListCurrencyFormat: true,
+    );
 
     return Material(
       color: Colors.transparent,
@@ -633,7 +671,9 @@ class _MyExcursionBookingCard extends StatelessWidget {
                 ),
               ],
               if (onEditGuestsTap != null ||
+                  onCancelTap != null ||
                   onReviewTap != null ||
+                  booking.isCancelled ||
                   booking.isReviewed) ...[
                 const SizedBox(height: 14),
                 Wrap(
@@ -646,6 +686,11 @@ class _MyExcursionBookingCard extends StatelessWidget {
                         width: double.infinity,
                         child: _ReviewedBadge(rating: booking.review!.rating),
                       ),
+                    if (booking.isCancelled)
+                      SizedBox(
+                        width: double.infinity,
+                        child: _CancelledBookingBadge(booking: booking),
+                      ),
                     if (onEditGuestsTap != null)
                       OutlinedButton.icon(
                         onPressed: onEditGuestsTap,
@@ -655,6 +700,24 @@ class _MyExcursionBookingCard extends StatelessWidget {
                           foregroundColor: AppColors.accent,
                           side: BorderSide(
                             color: AppColors.accent.withValues(alpha: 0.45),
+                          ),
+                          minimumSize: const Size(0, 42),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    if (onCancelTap != null)
+                      OutlinedButton.icon(
+                        onPressed: onCancelTap,
+                        icon: const Icon(Icons.event_busy_rounded, size: 18),
+                        label: Text(l10n.myExcursionsCancelBookingButton),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFFFB49A),
+                          side: BorderSide(
+                            color: const Color(
+                              0xFFFFB49A,
+                            ).withValues(alpha: 0.42),
                           ),
                           minimumSize: const Size(0, 42),
                           shape: RoundedRectangleBorder(
@@ -749,6 +812,380 @@ class _ReviewedBadge extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CancelledBookingBadge extends StatelessWidget {
+  const _CancelledBookingBadge({required this.booking});
+
+  final ExcursionBookingVm booking;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).toString();
+    final refundAmount = booking.refundAmount;
+    final refundCurrency = (booking.refundCurrency ?? booking.currency).trim();
+    final refundLabel = formatLocalizedExcursionMoney(
+      amount: refundAmount,
+      currency: refundCurrency.isEmpty ? booking.currency : refundCurrency,
+      localeName: localeName,
+      useExcursionListCurrencyFormat: true,
+    );
+    final text = refundAmount > 0
+        ? l10n.myExcursionsCancelledWithRefund(
+            refundLabel,
+            booking.refundPercent,
+          )
+        : l10n.myExcursionsCancelledWithoutRefund;
+
+    return Row(
+      children: [
+        const Icon(
+          Icons.event_busy_rounded,
+          color: Color(0xFFFFB49A),
+          size: 18,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFFFFD0C1),
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CancelExcursionBookingSheet extends StatefulWidget {
+  const _CancelExcursionBookingSheet({
+    required this.l10n,
+    required this.booking,
+    required this.onSubmit,
+  });
+
+  final AppLocalizations l10n;
+  final ExcursionBookingVm booking;
+  final Future<bool> Function(String reason) onSubmit;
+
+  @override
+  State<_CancelExcursionBookingSheet> createState() =>
+      _CancelExcursionBookingSheetState();
+}
+
+class _CancelExcursionBookingSheetState
+    extends State<_CancelExcursionBookingSheet> {
+  final TextEditingController _reasonController = TextEditingController();
+  final FocusNode _reasonFocusNode = FocusNode();
+  bool _isSubmitting = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    _reasonFocusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    final success = await widget.onSubmit(_reasonController.text);
+    if (!mounted) return;
+    if (success) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = false;
+      _errorMessage = widget.l10n.myExcursionsCancelBookingFailed;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final localeName = Localizations.localeOf(context).toString();
+    final quote = widget.booking.estimateCancellationRefund(DateTime.now());
+    final refund = formatLocalizedExcursionMoney(
+      amount: quote.amount,
+      currency: quote.currency,
+      localeName: localeName,
+      useExcursionListCurrencyFormat: true,
+    );
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          12,
+          0,
+          12,
+          math.max(12, mediaQuery.viewInsets.bottom + 12),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: mediaQuery.size.height * 0.86),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFF21150D),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.l10n.myExcursionsCancelBookingTitle,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                        color: const Color(0xFFDCCAB7),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.l10n.myExcursionsCancelBookingHint,
+                    style: const TextStyle(
+                      color: Color(0xFFCBB8A3),
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _CancelRefundPanel(
+                    amount: refund,
+                    percent: quote.percent,
+                    hasRefund: quote.hasRefund,
+                  ),
+                  const SizedBox(height: 14),
+                  _CancelPolicyPanel(l10n: widget.l10n),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _reasonController,
+                    focusNode: _reasonFocusNode,
+                    enabled: !_isSubmitting,
+                    minLines: 2,
+                    maxLines: 4,
+                    textInputAction: TextInputAction.newline,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    decoration: InputDecoration(
+                      labelText:
+                          widget.l10n.myExcursionsCancelBookingReasonLabel,
+                      hintText: widget
+                          .l10n.myExcursionsCancelBookingReasonPlaceholder,
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                        color: Color(0xFFFFC1A8),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    onPressed: _isSubmitting ? null : _submit,
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: AppColors.textPrimary,
+                            ),
+                          )
+                        : const Icon(Icons.event_busy_rounded),
+                    label: Text(widget.l10n.myExcursionsCancelBookingConfirm),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFD85B3E),
+                      foregroundColor: AppColors.textPrimary,
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CancelRefundPanel extends StatelessWidget {
+  const _CancelRefundPanel({
+    required this.amount,
+    required this.percent,
+    required this.hasRefund,
+  });
+
+  final String amount;
+  final int percent;
+  final bool hasRefund;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final color = hasRefund ? const Color(0xFF7ED7B5) : const Color(0xFFFFB49A);
+    final title = hasRefund
+        ? l10n.myExcursionsCancelBookingRefund(amount, percent)
+        : l10n.myExcursionsCancelBookingNoRefund;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            hasRefund ? Icons.savings_rounded : Icons.info_outline_rounded,
+            color: color,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  l10n.myExcursionsCancelBookingRefundHint,
+                  style: const TextStyle(
+                    color: Color(0xFFCBB8A3),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CancelPolicyPanel extends StatelessWidget {
+  const _CancelPolicyPanel({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.myExcursionsCancelPolicyTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _CancelPolicyRow(text: l10n.myExcursionsCancelPolicyFull),
+          _CancelPolicyRow(text: l10n.myExcursionsCancelPolicySeventyFive),
+          _CancelPolicyRow(text: l10n.myExcursionsCancelPolicyHalf),
+          _CancelPolicyRow(text: l10n.myExcursionsCancelPolicyQuarter),
+          _CancelPolicyRow(text: l10n.myExcursionsCancelPolicyZero),
+        ],
+      ),
+    );
+  }
+}
+
+class _CancelPolicyRow extends StatelessWidget {
+  const _CancelPolicyRow({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '-',
+            style: TextStyle(
+              color: AppColors.accent,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFFDCCAB7),
+                height: 1.3,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -854,6 +1291,7 @@ class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
       amount: amount.abs(),
       currency: widget.booking.currency,
       localeName: widget.l10n.localeName,
+      useExcursionListCurrencyFormat: true,
     );
   }
 

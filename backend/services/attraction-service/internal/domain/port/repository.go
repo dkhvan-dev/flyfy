@@ -32,4 +32,5 @@ type AttractionRepository interface {
 
 	// Rating
 	RecalcRating(ctx context.Context, attractionID uuid.UUID) (float64, int, error)
+	ApplyRatingSourceSnapshot(ctx context.Context, attractionID uuid.UUID, source string, ratingAvg float64, reviewCount int) (float64, int, error)
 }

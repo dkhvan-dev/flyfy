@@ -1017,18 +1017,99 @@ func insertReviewMedia(ctx context.Context, tx pgx.Tx, reviewID uuid.UUID, media
 // ---------------------------------------------------------------------------
 
 func (r *PGAttractionRepository) RecalcRating(ctx context.Context, attractionID uuid.UUID) (float64, int, error) {
+	return recalcAttractionRating(ctx, r.pool, attractionID)
+}
+
+func (r *PGAttractionRepository) ApplyRatingSourceSnapshot(
+	ctx context.Context,
+	attractionID uuid.UUID,
+	source string,
+	ratingAvg float64,
+	reviewCount int,
+) (float64, int, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	ratingSum := 0.0
+	if reviewCount > 0 {
+		ratingSum = ratingAvg * float64(reviewCount)
+	}
+
+	const upsertQuery = `
+		INSERT INTO attraction_rating_sources (
+			attraction_id, source, rating_sum, review_count, updated_at
+		)
+		SELECT $1, $2, $3, $4, NOW()
+		WHERE EXISTS (SELECT 1 FROM attractions WHERE id = $1)
+		ON CONFLICT (attraction_id, source)
+		DO UPDATE SET
+			rating_sum = EXCLUDED.rating_sum,
+			review_count = EXCLUDED.review_count,
+			updated_at = NOW()
+	`
+	tag, err := tx.Exec(ctx, upsertQuery, attractionID, source, ratingSum, reviewCount)
+	if err != nil {
+		return 0, 0, fmt.Errorf("upsert attraction rating source: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return 0, 0, ErrNotFound
+	}
+
+	rating, count, err := recalcAttractionRating(ctx, tx, attractionID)
+	if err != nil {
+		return 0, 0, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return 0, 0, fmt.Errorf("commit rating source snapshot: %w", err)
+	}
+	return rating, count, nil
+}
+
+type ratingQueryRower interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func recalcAttractionRating(ctx context.Context, q ratingQueryRower, attractionID uuid.UUID) (float64, int, error) {
 	const query = `
+		WITH direct_reviews AS (
+			SELECT
+				COALESCE(SUM(rating), 0)::numeric AS rating_sum,
+				COUNT(*)::int AS review_count
+			FROM attraction_reviews
+			WHERE attraction_id = $1
+			  AND deleted_at IS NULL
+		),
+		external_sources AS (
+			SELECT
+				COALESCE(SUM(rating_sum), 0)::numeric AS rating_sum,
+				COALESCE(SUM(review_count), 0)::int AS review_count
+			FROM attraction_rating_sources
+			WHERE attraction_id = $1
+		),
+		total_rating AS (
+			SELECT
+				direct_reviews.rating_sum + external_sources.rating_sum AS rating_sum,
+				direct_reviews.review_count + external_sources.review_count AS review_count
+			FROM direct_reviews, external_sources
+		)
 		UPDATE attractions
 		SET
-			rating = COALESCE((SELECT ROUND(AVG(rating)::numeric, 1) FROM attraction_reviews WHERE attraction_id = $1 AND deleted_at IS NULL), 0),
-			review_count = (SELECT COUNT(*) FROM attraction_reviews WHERE attraction_id = $1 AND deleted_at IS NULL),
+			rating = CASE
+				WHEN total_rating.review_count = 0 THEN 0
+				ELSE ROUND((total_rating.rating_sum / total_rating.review_count)::numeric, 1)
+			END,
+			review_count = total_rating.review_count,
 			updated_at = NOW()
+		FROM total_rating
 		WHERE id = $1
 		RETURNING rating, review_count
 	`
 	var rating float64
 	var count int
-	err := r.pool.QueryRow(ctx, query, attractionID).Scan(&rating, &count)
+	err := q.QueryRow(ctx, query, attractionID).Scan(&rating, &count)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, 0, ErrNotFound

@@ -63,6 +63,10 @@ class DioErrorMapper {
         'У вас уже есть экскурсия по этой достопримечательности.',
       'excursion schedule slot must start at least 3 hours from now' =>
         'Выберите дату и время минимум за 3 часа до начала.',
+      'excursion booking cannot be edited' =>
+        'Эту бронь уже нельзя изменить или отменить.',
+      'excursion schedule slot is unavailable' =>
+        'В этом слоте уже нет доступных мест.',
       _ => message,
     };
   }

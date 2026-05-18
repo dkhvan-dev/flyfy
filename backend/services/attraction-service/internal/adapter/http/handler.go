@@ -41,6 +41,10 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/attractions/{id}/reviews/me", h.GetMyReview)
 	mux.HandleFunc("POST /v1/attractions/{id}/reviews", h.CreateReview)
 	mux.HandleFunc("DELETE /v1/reviews/{id}", h.DeleteReview)
+
+	// Internal commands
+	mux.HandleFunc("POST /internal/v1/attractions/{id}/rating/recalculate", h.RecalculateRating)
+	mux.HandleFunc("POST /internal/v1/attractions/{id}/rating/sources", h.ApplyRatingSourceSnapshot)
 }
 
 func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
@@ -385,6 +389,57 @@ func (h *Handler) DeleteReview(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *Handler) RecalculateRating(w http.ResponseWriter, r *http.Request) {
+	attractionID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid attraction id")
+		return
+	}
+
+	rating, reviewCount, err := h.useCase.RecalculateRating(r.Context(), attractionID)
+	if err != nil {
+		h.writeUseCaseError(w, err, "failed to recalculate attraction rating")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.RecalculateRatingResponse{
+		AttractionID: attractionID.String(),
+		Rating:       rating,
+		ReviewCount:  reviewCount,
+	})
+}
+
+func (h *Handler) ApplyRatingSourceSnapshot(w http.ResponseWriter, r *http.Request) {
+	attractionID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid attraction id")
+		return
+	}
+
+	var req dto.ApplyRatingSourceSnapshotRequest
+	if err = decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	rating, reviewCount, err := h.useCase.ApplyRatingSourceSnapshot(r.Context(), app.RatingSourceSnapshotInput{
+		AttractionID: attractionID,
+		Source:       req.Source,
+		RatingAvg:    req.RatingAvg,
+		ReviewCount:  req.ReviewCount,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, err, "failed to apply attraction rating source snapshot")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.RecalculateRatingResponse{
+		AttractionID: attractionID.String(),
+		Rating:       rating,
+		ReviewCount:  reviewCount,
+	})
+}
+
 // ---------------------------------------------------------------------------
 // Error mapping
 // ---------------------------------------------------------------------------
@@ -398,6 +453,7 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, err error, fallback s
 		errors.Is(err, app.ErrInvalidCountryCode),
 		errors.Is(err, app.ErrInvalidCityID),
 		errors.Is(err, app.ErrInvalidRating),
+		errors.Is(err, app.ErrInvalidRatingSource),
 		errors.Is(err, app.ErrInvalidMediaType),
 		errors.Is(err, app.ErrInvalidDuration),
 		errors.Is(err, app.ErrInvalidPrice),

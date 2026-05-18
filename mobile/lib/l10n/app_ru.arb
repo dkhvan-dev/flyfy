@@ -683,6 +683,12 @@
   "attractionVerifiedNomad": "Проверенный путешественник",
   "attractionReviewsTitle": "Отзывы",
   "attractionTravelerFallback": "Путешественник",
+  "profileGuideReviewsTitle": "Лучшие отзывы об экскурсиях",
+  "profileGuideReviewsLatestTitle": "Последние отзывы об экскурсиях",
+  "profileGuideReviewsEmptyTitle": "Отзывов пока нет",
+  "profileGuideReviewsEmpty": "Отзывы появятся здесь после того, как путешественники оценят проведенные экскурсии.",
+  "profileGuideReviewsLoadFailed": "Не удалось загрузить отзывы",
+  "profileGuideReviewsLoadFailedHint": "Потяните для обновления или откройте профиль снова.",
   "attractionPriceVaries": "Цена варьируется",
   "attractionPriceVariesShort": "Варьируется",
   "attractionDurationHours": "{hours} ч",
@@ -773,6 +779,8 @@
   "excursionsEmptyTitle": "Экскурсий пока нет",
   "excursionsEmptySubtitle": "Здесь появятся маршруты проверенных гидов.",
   "excursionsEmptySearchSubtitle": "Попробуйте другой город, категорию или название экскурсии.",
+  "excursionsNoAttractionExcursionsTitle": "Экскурсий по этой достопримечательности пока нет",
+  "excursionsNoAttractionExcursionsSubtitle": "Показываем другие доступные экскурсии. Как только гиды добавят маршрут по этой достопримечательности, он появится здесь.",
   "guidesTitle": "Гиды",
   "guidesSearchHint": "Поиск гидов",
   "guidesSortLabel": "Сортировать",
@@ -1330,6 +1338,41 @@
   "myExcursionsGuestsPaymentMockHint": "Пока это мок-расчет: реальная доплата или возврат подключатся через платежный сервис.",
   "myExcursionsPayAndSaveGuests": "Доплатить и сохранить",
   "myExcursionsRefundAndSaveGuests": "Вернуть и сохранить",
+  "myExcursionsCancelBookingButton": "Отменить бронь",
+  "myExcursionsCancelBookingTitle": "Отменить бронь?",
+  "myExcursionsCancelBookingHint": "Мы отменим ваше место и покажем гиду, что бронь отменена вами.",
+  "myExcursionsCancelBookingRefund": "К возврату: {amount} ({percent}%)",
+  "@myExcursionsCancelBookingRefund": {
+    "placeholders": {
+      "amount": {},
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "myExcursionsCancelBookingNoRefund": "Возврат недоступен",
+  "myExcursionsCancelBookingRefundHint": "Итоговую сумму возврата зафиксирует сервер. Реальный возврат средств будет подключен через платежный сервис.",
+  "myExcursionsCancelPolicyTitle": "Правила отмены",
+  "myExcursionsCancelPolicyFull": "За 24+ часа до начала: 100%",
+  "myExcursionsCancelPolicySeventyFive": "За 12-24 часа до начала: 75%",
+  "myExcursionsCancelPolicyHalf": "За 6-12 часов до начала: 50%",
+  "myExcursionsCancelPolicyQuarter": "За 2-6 часов до начала: 25%",
+  "myExcursionsCancelPolicyZero": "Менее чем за 2 часа до начала: 0%",
+  "myExcursionsCancelBookingReasonLabel": "Причина (необязательно)",
+  "myExcursionsCancelBookingReasonPlaceholder": "Например: изменились планы",
+  "myExcursionsCancelBookingConfirm": "Отменить бронь",
+  "myExcursionsCancelBookingSuccess": "Бронь отменена",
+  "myExcursionsCancelBookingFailed": "Не удалось отменить бронь",
+  "myExcursionsCancelledWithRefund": "Отменено. К возврату: {amount} ({percent}%)",
+  "@myExcursionsCancelledWithRefund": {
+    "placeholders": {
+      "amount": {},
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "myExcursionsCancelledWithoutRefund": "Отменено без возврата",
   "myExcursionsFilterStatus": "Статус",
   "myExcursionsStatusRequested": "Забронировано",
   "myExcursionsFilterReview": "Отзывы",
@@ -1343,6 +1386,7 @@
   "myExcursionsReviewHint": "Что понравилось, что можно улучшить?",
   "myExcursionsReviewPublish": "Опубликовать",
   "guideDashboardTitle": "Кабинет гида",
+  "guideDashboardReviewsTitle": "Отзывы",
   "guideDashboardOffersStat": "Всего предложений",
   "guideDashboardBookingsStat": "Брони",
   "guideDashboardRevenueStat": "Выручка",
@@ -1379,6 +1423,43 @@
   "guideDashboardPublishFailed": "Не удалось опубликовать предложение",
   "guideDashboardViewBooking": "Открыть бронь",
   "guideDashboardViewDetails": "Подробнее",
+  "guideDashboardCancelExcursion": "Отменить экскурсию",
+  "guideDashboardCancelTitle": "Отменить экскурсию?",
+  "guideDashboardCancelDescription": "Мы отменим этот слот для гостей и покажем сумму, которую нужно вернуть по затронутым броням.",
+  "guideDashboardCancelReasonLabel": "Причина отмены",
+  "guideDashboardCancelReasonPlaceholder": "Например: гид заболел или погодные условия не позволяют провести маршрут",
+  "guideDashboardCancelReasonRequired": "Укажите причину отмены",
+  "guideDashboardCancelConfirm": "Подтвердить отмену",
+  "guideDashboardCancelSuccess": "Экскурсия отменена",
+  "guideDashboardCancelFailed": "Не удалось отменить экскурсию",
+  "guideDashboardCancelNoSlot": "У этой брони нет слота расписания для отмены",
+  "guideDashboardRefundAmount": "К возврату гостям: {amount}",
+  "@guideDashboardRefundAmount": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "guideDashboardCancelledByTourist": "Отменено туристом",
+  "guideDashboardCancelledByGuide": "Отменено гидом",
+  "guideDashboardCancellationReason": "Причина: {reason}",
+  "@guideDashboardCancellationReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "guideDashboardBookingSheetTitle": "Информация по бронированию",
+  "guideDashboardBookingAuthorsTitle": "Авторы бронирования",
+  "guideDashboardAdults": "Взрослые",
+  "guideDashboardChildren": "Дети",
+  "guideDashboardTotalGuests": "Итого гостей",
+  "guideDashboardGuestBreakdown": "Взрослые: {adults} · Дети: {children} · Итого: {total}",
+  "@guideDashboardGuestBreakdown": {
+    "placeholders": {
+      "adults": {},
+      "children": {},
+      "total": {}
+    }
+  },
   "guideDashboardStatusActive": "Активно",
   "guideDashboardStatusArchived": "Архив",
   "guideDashboardStatusReview": "На проверке",

@@ -4,11 +4,13 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
 import '../../features/excursions/excursion_cover_url.dart';
 import '../../features/excursions/excursion_currency.dart';
+import '../../features/excursions/guide_dashboard_formatters.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -142,17 +144,91 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     context.push('/excursions/create');
   }
 
+  void _openGuideCalendar() {
+    context.push('/profile/guide-dashboard/calendar');
+  }
+
+  void _openGuideReviews() {
+    context.push('/profile/guide-dashboard/reviews');
+  }
+
   void _openOfferEditor(ExcursionVm excursion) {
     final editId = _editableExcursionId(excursion);
     if (editId.isEmpty) return;
-    context.push('/excursions/${Uri.encodeComponent(editId)}/edit',
-        extra: excursion);
+    context.push(
+      '/excursions/${Uri.encodeComponent(editId)}/edit',
+      extra: excursion,
+    );
   }
 
-  void _openBookingDetails(ExcursionBookingVm booking) {
-    final productId = booking.productId.trim();
-    if (productId.isEmpty) return;
-    context.push('/excursions/${Uri.encodeComponent(productId)}');
+  Future<void> _openBookingDetailsSheet(
+    ExcursionBookingVm booking,
+    List<ExcursionBookingVm> relatedBookings,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GuideBookingDetailsSheet(
+        booking: booking,
+        relatedBookings: relatedBookings,
+      ),
+    );
+  }
+
+  Future<void> _cancelBookedExcursion(
+    ExcursionBookingVm booking,
+    List<ExcursionBookingVm> relatedBookings,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final slotId = (booking.scheduleSlotId ?? '').trim();
+    if (slotId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.guideDashboardCancelNoSlot)),
+      );
+      return;
+    }
+
+    final refundAmount = _totalRevenue(relatedBookings);
+    final refundCurrency = _primaryCurrency(relatedBookings);
+    final reason = await showModalBottomSheet<String>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GuideCancelExcursionSheet(
+        refundAmount: refundAmount,
+        refundCurrency: refundCurrency,
+      ),
+    );
+    if (!mounted || reason == null) return;
+
+    final cancelled = await context
+        .read<ExcursionProvider>()
+        .cancelGuideExcursionSlot(slotId, reason: reason);
+    if (!mounted) return;
+
+    if (cancelled) {
+      setState(() {
+        _activeSection = GuideDashboardSection.bookings;
+        _activeBookingTab = GuideBookingDashboardTab.cancelled;
+        _bookingPages[GuideBookingDashboardTab.cancelled] = 1;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.guideDashboardCancelSuccess)),
+      );
+      return;
+    }
+
+    final provider = context.read<ExcursionProvider>();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          provider.actionErrorMessage ?? l10n.guideDashboardCancelFailed,
+        ),
+      ),
+    );
   }
 
   Future<void> _archiveOffer(ExcursionVm excursion) async {
@@ -172,9 +248,9 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       });
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.guideDashboardArchiveFailed)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardArchiveFailed)));
   }
 
   Future<void> _publishOffer(ExcursionVm excursion) async {
@@ -194,9 +270,9 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
       });
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.guideDashboardPublishFailed)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardPublishFailed)));
   }
 
   @override
@@ -238,10 +314,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
               final archivedOffers = _archivedOffers(filteredExcursions);
               final reviewOffers = _reviewOffers(filteredExcursions);
               final rejectedOffers = _rejectedOffers(filteredExcursions);
-              final upcomingBookings = _upcomingBookings(
-                filteredBookings,
-                now,
-              );
+              final upcomingBookings = _upcomingBookings(filteredBookings, now);
               final completedBookings = _completedBookings(
                 filteredBookings,
                 now,
@@ -297,10 +370,11 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                           horizontalPadding: 0,
                         ),
                         const SizedBox(height: 14),
-                        _GuideDashboardCalendarButton(
-                          label: l10n.guideCalendarTitle,
-                          onPressed: () =>
-                              context.push('/profile/guide-dashboard/calendar'),
+                        _GuideDashboardQuickActions(
+                          calendarLabel: l10n.guideCalendarTitle,
+                          reviewsLabel: l10n.guideDashboardReviewsTitle,
+                          onCalendarTap: _openGuideCalendar,
+                          onReviewsTap: _openGuideReviews,
                         ),
                         const SizedBox(height: 22),
                         _GuideDashboardStats(
@@ -315,7 +389,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                           revenueCurrency: _primaryCurrency(
                             provider.myGuideExcursionBookings,
                           ),
-                          rating: _averageRating(provider.myGuideExcursions),
+                          rating: provider.myGuideProfile?.ratingAvg ?? 0,
                         ),
                         const SizedBox(height: 22),
                         _GuideDashboardSearchField(
@@ -403,6 +477,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                         ] else ...[
                           ..._activeCards(
                             l10n: l10n,
+                            now: now,
                             pageIndexes: page.items,
                             activeOffers: activeOffers,
                             archivedOffers: archivedOffers,
@@ -460,6 +535,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
 
   List<Widget> _activeCards({
     required AppLocalizations l10n,
+    required DateTime now,
     required List<int> pageIndexes,
     required List<ExcursionVm> activeOffers,
     required List<ExcursionVm> archivedOffers,
@@ -484,10 +560,12 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           ),
         GuideDashboardSection.bookings => _bookingCardForActiveTab(
             l10n: l10n,
+            now: now,
             index: index,
             upcomingBookings: upcomingBookings,
             completedBookings: completedBookings,
             cancelledBookings: cancelledBookings,
+            guideBookings: guideBookings,
           ),
       };
       cards.add(card);
@@ -520,8 +598,10 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
         ),
       GuideOfferDashboardTab.archive => _GuideOfferCard(
           excursion: archivedOffers[index],
-          bookingCount:
-              _bookingCountForOffer(archivedOffers[index], guideBookings),
+          bookingCount: _bookingCountForOffer(
+            archivedOffers[index],
+            guideBookings,
+          ),
           statusLabel: l10n.guideDashboardStatusArchived,
           actionLabel: l10n.guideDashboardEditOffer,
           secondaryActionLabel: l10n.guideDashboardPublishOffer,
@@ -531,8 +611,10 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
         ),
       GuideOfferDashboardTab.rejected => _GuideOfferCard(
           excursion: rejectedOffers[index],
-          bookingCount:
-              _bookingCountForOffer(rejectedOffers[index], guideBookings),
+          bookingCount: _bookingCountForOffer(
+            rejectedOffers[index],
+            guideBookings,
+          ),
           statusLabel: l10n.guideDashboardStatusRejected,
           actionLabel: l10n.guideDashboardViewDetails,
           muted: true,
@@ -552,33 +634,54 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
 
   Widget _bookingCardForActiveTab({
     required AppLocalizations l10n,
+    required DateTime now,
     required int index,
     required List<ExcursionBookingVm> upcomingBookings,
     required List<ExcursionBookingVm> completedBookings,
     required List<ExcursionBookingVm> cancelledBookings,
+    required List<ExcursionBookingVm> guideBookings,
   }) {
-    return switch (_activeBookingTab) {
-      GuideBookingDashboardTab.active => _GuideBookingCard(
-          booking: upcomingBookings[index],
+    switch (_activeBookingTab) {
+      case GuideBookingDashboardTab.active:
+        final booking = upcomingBookings[index];
+        final relatedBookings = _relatedBookingsFor(booking, guideBookings);
+        final canCancel = booking.canBeCancelledByGuide(now);
+        return _GuideBookingCard(
+          booking: booking,
           statusLabel: l10n.guideDashboardStatusBooked,
           actionLabel: l10n.guideDashboardViewBooking,
-          onTap: () => _openBookingDetails(upcomingBookings[index]),
-        ),
-      GuideBookingDashboardTab.cancelled => _GuideBookingCard(
-          booking: cancelledBookings[index],
+          secondaryActionLabel:
+              canCancel ? l10n.guideDashboardCancelExcursion : null,
+          onSecondaryActionTap: canCancel
+              ? () => _cancelBookedExcursion(booking, relatedBookings)
+              : null,
+          onTap: () => _openBookingDetailsSheet(booking, relatedBookings),
+        );
+      case GuideBookingDashboardTab.cancelled:
+        final booking = cancelledBookings[index];
+        return _GuideBookingCard(
+          booking: booking,
           statusLabel: l10n.guideDashboardStatusCancelled,
           actionLabel: l10n.guideDashboardViewDetails,
           muted: true,
-          onTap: () => _openBookingDetails(cancelledBookings[index]),
-        ),
-      GuideBookingDashboardTab.completed => _GuideBookingCard(
-          booking: completedBookings[index],
+          onTap: () => _openBookingDetailsSheet(
+            booking,
+            _relatedBookingsFor(booking, guideBookings),
+          ),
+        );
+      case GuideBookingDashboardTab.completed:
+        final booking = completedBookings[index];
+        return _GuideBookingCard(
+          booking: booking,
           statusLabel: l10n.guideDashboardStatusCompleted,
           actionLabel: l10n.guideDashboardViewDetails,
           muted: true,
-          onTap: () => _openBookingDetails(completedBookings[index]),
-        ),
-    };
+          onTap: () => _openBookingDetailsSheet(
+            booking,
+            _relatedBookingsFor(booking, guideBookings),
+          ),
+        );
+    }
   }
 }
 
@@ -641,10 +744,34 @@ List<ExcursionBookingVm> _cancelledBookings(List<ExcursionBookingVm> items) {
   return result;
 }
 
-List<ExcursionVm> _filterOffersBySearch(
-  List<ExcursionVm> items,
-  String query,
+List<ExcursionBookingVm> _relatedBookingsFor(
+  ExcursionBookingVm booking,
+  List<ExcursionBookingVm> bookings,
 ) {
+  final slotId = (booking.scheduleSlotId ?? '').trim();
+  final related = bookings.where((item) {
+    if (slotId.isNotEmpty) {
+      return (item.scheduleSlotId ?? '').trim() == slotId;
+    }
+    return item.productId == booking.productId &&
+        item.offerId == booking.offerId &&
+        item.scheduledFor.toUtc().isAtSameMomentAs(
+              booking.scheduledFor.toUtc(),
+            );
+  }).toList(growable: false);
+
+  if (related.isEmpty) return [booking];
+  related.sort((a, b) {
+    return _bookingCreatedAtOrEpoch(a).compareTo(_bookingCreatedAtOrEpoch(b));
+  });
+  return related;
+}
+
+DateTime _bookingCreatedAtOrEpoch(ExcursionBookingVm booking) {
+  return booking.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+List<ExcursionVm> _filterOffersBySearch(List<ExcursionVm> items, String query) {
   if (query.trim().isEmpty) return items;
   return items.where((item) {
     return _matchesSmartQuery(query, [
@@ -754,10 +881,9 @@ int _bookingCountForOffer(
 }
 
 bool _matchesSmartQuery(String query, Iterable<Object?> values) {
-  final tokens = _normalizeGuideDashboardSearchText(query)
-      .split(' ')
-      .where((token) => token.isNotEmpty)
-      .toList(growable: false);
+  final tokens = _normalizeGuideDashboardSearchText(
+    query,
+  ).split(' ').where((token) => token.isNotEmpty).toList(growable: false);
   if (tokens.isEmpty) return true;
 
   final haystack = values
@@ -788,19 +914,6 @@ String _primaryCurrency(List<ExcursionBookingVm> bookings) {
     if (currency.isNotEmpty) return currency;
   }
   return 'KZT';
-}
-
-double _averageRating(List<ExcursionVm> excursions) {
-  final ratings = <double>[];
-  for (final excursion in excursions) {
-    for (final offer in excursion.offers) {
-      if (offer.guideRatingAvg > 0) {
-        ratings.add(offer.guideRatingAvg);
-      }
-    }
-  }
-  if (ratings.isEmpty) return 0;
-  return ratings.reduce((a, b) => a + b) / ratings.length;
 }
 
 IconData _emptyIconFor({
@@ -891,11 +1004,10 @@ class _GuideDashboardStats extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
-    final revenue = formatLocalizedExcursionMoney(
+    final revenue = formatGuideDashboardRevenue(
       amount: revenueAmount,
       currency: revenueCurrency,
       localeName: localeName,
-      compact: true,
     );
     final ratingLabel = rating <= 0 ? '0.0' : rating.toStringAsFixed(1);
 
@@ -948,11 +1060,7 @@ class _GuideDashboardStats extends StatelessWidget {
 }
 
 class _GuideStatCard extends StatelessWidget {
-  const _GuideStatCard({
-    required this.label,
-    required this.value,
-    this.suffix,
-  });
+  const _GuideStatCard({required this.label, required this.value, this.suffix});
 
   final String label;
   final String value;
@@ -990,13 +1098,13 @@ class _GuideStatCard extends StatelessWidget {
               Flexible(
                 child: Text(
                   value,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 30,
+                    fontSize: 28,
                     fontWeight: FontWeight.w900,
-                    height: 1,
+                    height: 1.08,
                   ),
                 ),
               ),
@@ -1035,11 +1143,7 @@ class _GuideDashboardSearchField extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 16),
-          const Icon(
-            Icons.search_rounded,
-            color: AppColors.accent,
-            size: 22,
-          ),
+          const Icon(Icons.search_rounded, color: AppColors.accent, size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -1084,32 +1188,117 @@ class _GuideDashboardSearchField extends StatelessWidget {
   }
 }
 
-class _GuideDashboardCalendarButton extends StatelessWidget {
-  const _GuideDashboardCalendarButton({
-    required this.label,
-    required this.onPressed,
+class _GuideDashboardQuickActions extends StatelessWidget {
+  const _GuideDashboardQuickActions({
+    required this.calendarLabel,
+    required this.reviewsLabel,
+    required this.onCalendarTap,
+    required this.onReviewsTap,
   });
 
-  final String label;
-  final VoidCallback onPressed;
+  final String calendarLabel;
+  final String reviewsLabel;
+  final VoidCallback onCalendarTap;
+  final VoidCallback onReviewsTap;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: FilledButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.calendar_month_rounded),
-        label: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.textPrimary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackActions = constraints.maxWidth < 380;
+        final tiles = [
+          _GuideDashboardActionTile(
+            icon: Icons.calendar_month_rounded,
+            label: calendarLabel,
+            onTap: onCalendarTap,
+          ),
+          _GuideDashboardActionTile(
+            icon: Icons.reviews_rounded,
+            label: reviewsLabel,
+            onTap: onReviewsTap,
+          ),
+        ];
+
+        if (stackActions) {
+          return Column(
+            children: [
+              for (var i = 0; i < tiles.length; i++) ...[
+                tiles[i],
+                if (i != tiles.length - 1) const SizedBox(height: 10),
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: tiles[0]),
+            const SizedBox(width: 12),
+            Expanded(child: tiles[1]),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _GuideDashboardActionTile extends StatelessWidget {
+  const _GuideDashboardActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2A1D13),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.20)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppColors.accent, size: 21),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFFD3BFA9),
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1133,11 +1322,7 @@ class _GuideDashboardSectionTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final tabs = [
-      (
-        GuideDashboardSection.offers,
-        l10n.guideDashboardOffersTab,
-        offersCount,
-      ),
+      (GuideDashboardSection.offers, l10n.guideDashboardOffersTab, offersCount),
       (
         GuideDashboardSection.bookings,
         l10n.guideDashboardBookingsTab,
@@ -1236,10 +1421,7 @@ class _GuideHorizontalTabs extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         child: Row(
           children: [
-            for (final child in children) ...[
-              child,
-              const SizedBox(width: 24),
-            ],
+            for (final child in children) ...[child, const SizedBox(width: 24)],
           ],
         ),
       ),
@@ -1340,7 +1522,7 @@ class _GuideOfferCard extends StatelessWidget {
       amount: excursion.priceAmount,
       currency: excursion.currency,
       localeName: localeName,
-      compact: true,
+      useExcursionListCurrencyFormat: true,
     );
     final maxGroupLabel = excursion.maxGroupSize > 0
         ? l10n.guideDashboardMaxGuests(excursion.maxGroupSize)
@@ -1377,6 +1559,8 @@ class _GuideBookingCard extends StatelessWidget {
     required this.statusLabel,
     required this.actionLabel,
     required this.onTap,
+    this.secondaryActionLabel,
+    this.onSecondaryActionTap,
     this.muted = false,
   });
 
@@ -1384,6 +1568,8 @@ class _GuideBookingCard extends StatelessWidget {
   final String statusLabel;
   final String actionLabel;
   final VoidCallback onTap;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryActionTap;
   final bool muted;
 
   @override
@@ -1397,7 +1583,7 @@ class _GuideBookingCard extends StatelessWidget {
       amount: booking.totalPriceAmount,
       currency: booking.currency,
       localeName: localeName,
-      compact: true,
+      useExcursionListCurrencyFormat: true,
     );
 
     return _GuideJourneyCard(
@@ -1413,6 +1599,9 @@ class _GuideBookingCard extends StatelessWidget {
       categorySlug: booking.categorySlug,
       seed: booking.productId.hashCode,
       onTap: onTap,
+      secondaryActionLabel: secondaryActionLabel,
+      onSecondaryActionTap: onSecondaryActionTap,
+      stackSecondaryAction: true,
       meta: [
         _GuideMetaData(icon: Icons.event_rounded, label: dateLabel),
         _GuideMetaData(
@@ -1422,6 +1611,728 @@ class _GuideBookingCard extends StatelessWidget {
         _GuideMetaData(icon: Icons.payments_outlined, label: price),
       ],
       subtitle: (booking.landmarkName ?? '').trim(),
+    );
+  }
+}
+
+class _GuideBookingDetailsSheet extends StatelessWidget {
+  const _GuideBookingDetailsSheet({
+    required this.booking,
+    required this.relatedBookings,
+  });
+
+  final ExcursionBookingVm booking;
+  final List<ExcursionBookingVm> relatedBookings;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).toString();
+    final mediaQuery = MediaQuery.of(context);
+    final compact = mediaQuery.size.width < 390;
+    final bookings = relatedBookings.isEmpty ? [booking] : relatedBookings;
+    final adults = bookings.fold<int>(0, (sum, item) => sum + item.adults);
+    final children = bookings.fold<int>(0, (sum, item) => sum + item.children);
+    final totalSeats = bookings.fold<int>(
+      0,
+      (sum, item) => sum + item.totalSeats,
+    );
+    final totalAmount = bookings.fold<double>(
+      0,
+      (sum, item) => sum + item.totalPriceAmount,
+    );
+    final dateLabel = DateFormat.yMMMd(
+      localeName,
+    ).add_Hm().format(booking.scheduledFor.toLocal());
+    final totalPrice = formatLocalizedExcursionMoney(
+      amount: totalAmount,
+      currency: _primaryCurrency(bookings),
+      localeName: localeName,
+      useExcursionListCurrencyFormat: true,
+    );
+
+    return AppDismissibleModalSheet(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.only(
+          left: 12,
+          right: 12,
+          bottom: mediaQuery.viewInsets.bottom,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 540,
+            maxHeight: mediaQuery.size.height * 0.86,
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xF92A190D), Color(0xFA180E08)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.34),
+                  blurRadius: 36,
+                  offset: const Offset(0, -18),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 16 : 20,
+                14,
+                compact ? 16 : 20,
+                22,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 52,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    l10n.guideDashboardBookingSheetTitle,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: compact ? 21 : 23,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    booking.title.trim().isEmpty
+                        ? l10n.myExcursionsUntitled
+                        : booking.title.trim(),
+                    style: const TextStyle(
+                      color: Color(0xFFD3BFA9),
+                      fontSize: 14,
+                      height: 1.35,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _GuideBookingInfoPill(
+                        icon: Icons.event_rounded,
+                        label: dateLabel,
+                      ),
+                      _GuideBookingInfoPill(
+                        icon: Icons.group_rounded,
+                        label: l10n.myExcursionsGuests(totalSeats),
+                      ),
+                      _GuideBookingInfoPill(
+                        icon: Icons.payments_outlined,
+                        label: totalPrice,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  if (booking.isCancelled) ...[
+                    _GuideBookingCancellationPanel(booking: booking),
+                    const SizedBox(height: 22),
+                  ],
+                  _GuideBookingGuestBreakdown(
+                    adults: adults,
+                    children: children,
+                    totalSeats: totalSeats,
+                  ),
+                  const SizedBox(height: 22),
+                  Text(
+                    l10n.guideDashboardBookingAuthorsTitle,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final item in bookings) ...[
+                    _GuideBookingAuthorRow(booking: item),
+                    if (item != bookings.last) const SizedBox(height: 10),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GuideBookingGuestBreakdown extends StatelessWidget {
+  const _GuideBookingGuestBreakdown({
+    required this.adults,
+    required this.children,
+    required this.totalSeats,
+  });
+
+  final int adults;
+  final int children;
+  final int totalSeats;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        children: [
+          _GuideBookingBreakdownRow(
+            label: l10n.guideDashboardAdults,
+            value: '$adults',
+          ),
+          const SizedBox(height: 10),
+          _GuideBookingBreakdownRow(
+            label: l10n.guideDashboardChildren,
+            value: '$children',
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: Color(0x33FFFFFF)),
+          ),
+          _GuideBookingBreakdownRow(
+            label: l10n.guideDashboardTotalGuests,
+            value: '$totalSeats',
+            emphasized: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GuideBookingCancellationPanel extends StatelessWidget {
+  const _GuideBookingCancellationPanel({required this.booking});
+
+  final ExcursionBookingVm booking;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).toString();
+    final refundCurrency = (booking.refundCurrency ?? booking.currency).trim();
+    final refund = formatLocalizedExcursionMoney(
+      amount: booking.refundAmount,
+      currency: refundCurrency.isEmpty ? booking.currency : refundCurrency,
+      localeName: localeName,
+      useExcursionListCurrencyFormat: true,
+    );
+    final cancelledBy = (booking.cancelledBy ?? '').trim().toUpperCase();
+    final title = switch (cancelledBy) {
+      'TOURIST' => l10n.guideDashboardCancelledByTourist,
+      'GUIDE' => l10n.guideDashboardCancelledByGuide,
+      _ => l10n.guideDashboardStatusCancelled,
+    };
+    final reason = (booking.cancelReason ?? '').trim();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFB49A).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFFFB49A).withValues(alpha: 0.22),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.event_busy_rounded,
+                color: Color(0xFFFFB49A),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            booking.refundAmount > 0
+                ? l10n.myExcursionsCancelledWithRefund(
+                    refund,
+                    booking.refundPercent,
+                  )
+                : l10n.myExcursionsCancelledWithoutRefund,
+            style: const TextStyle(
+              color: Color(0xFFFFD0C1),
+              fontWeight: FontWeight.w800,
+              height: 1.3,
+            ),
+          ),
+          if (reason.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.guideDashboardCancellationReason(reason),
+              style: const TextStyle(
+                color: Color(0xFFD3BFA9),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _GuideCancelExcursionSheet extends StatefulWidget {
+  const _GuideCancelExcursionSheet({
+    required this.refundAmount,
+    required this.refundCurrency,
+  });
+
+  final double refundAmount;
+  final String refundCurrency;
+
+  @override
+  State<_GuideCancelExcursionSheet> createState() =>
+      _GuideCancelExcursionSheetState();
+}
+
+class _GuideCancelExcursionSheetState
+    extends State<_GuideCancelExcursionSheet> {
+  final TextEditingController _reasonController = TextEditingController();
+  final FocusNode _reasonFocusNode = FocusNode();
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    _reasonFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      setState(() {
+        _errorText =
+            AppLocalizations.of(context)!.guideDashboardCancelReasonRequired;
+      });
+      _reasonFocusNode.requestFocus();
+      return;
+    }
+    Navigator.of(context).pop(reason);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final mediaQuery = MediaQuery.of(context);
+    final localeName = Localizations.localeOf(context).toString();
+    final compact = mediaQuery.size.width < 390;
+    final refund = formatLocalizedExcursionMoney(
+      amount: widget.refundAmount,
+      currency: widget.refundCurrency,
+      localeName: localeName,
+      useExcursionListCurrencyFormat: true,
+    );
+
+    return AppDismissibleModalSheet(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.only(
+          left: 12,
+          right: 12,
+          bottom: mediaQuery.viewInsets.bottom,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 540,
+            maxHeight: mediaQuery.size.height * 0.88,
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xF92A190D), Color(0xFA180E08)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.34),
+                  blurRadius: 36,
+                  offset: const Offset(0, -18),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 16 : 20,
+                14,
+                compact ? 16 : 20,
+                22,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 52,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    l10n.guideDashboardCancelTitle,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: compact ? 21 : 23,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    l10n.guideDashboardCancelDescription,
+                    style: const TextStyle(
+                      color: Color(0xFFD3BFA9),
+                      fontSize: 14,
+                      height: 1.42,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.11),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.accent.withValues(alpha: 0.22),
+                      ),
+                    ),
+                    child: Text(
+                      l10n.guideDashboardRefundAmount(refund),
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    l10n.guideDashboardCancelReasonLabel,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: _errorText == null
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : const Color(0x88FF8A65),
+                      ),
+                    ),
+                    child: TextField(
+                      controller: _reasonController,
+                      focusNode: _reasonFocusNode,
+                      maxLines: 4,
+                      minLines: 3,
+                      maxLength: 160,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: l10n.guideDashboardCancelReasonPlaceholder,
+                        hintStyle: TextStyle(
+                          color: const Color(0xFFD3BFA9).withValues(
+                            alpha: 0.72,
+                          ),
+                          fontSize: 14,
+                        ),
+                        border: InputBorder.none,
+                        counterStyle: const TextStyle(
+                          color: Color(0xFFD3BFA9),
+                          fontSize: 12,
+                        ),
+                        contentPadding: const EdgeInsets.fromLTRB(
+                          14,
+                          12,
+                          14,
+                          8,
+                        ),
+                      ),
+                      onChanged: (_) {
+                        if (_errorText != null &&
+                            _reasonController.text.trim().isNotEmpty) {
+                          setState(() => _errorText = null);
+                        }
+                      },
+                      onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                    ),
+                  ),
+                  if (_errorText != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _errorText!,
+                      style: const TextStyle(
+                        color: Color(0xFFFF8A65),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final stack = constraints.maxWidth < 360;
+                      final keep = OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary,
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.12),
+                          ),
+                          minimumSize: const Size(0, 50),
+                        ),
+                        child: Text(l10n.cancelButton),
+                      );
+                      final confirm = FilledButton.icon(
+                        onPressed: _submit,
+                        icon: const Icon(Icons.event_busy_rounded),
+                        label: Text(l10n.guideDashboardCancelConfirm),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.accent,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 50),
+                        ),
+                      );
+
+                      if (stack) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            keep,
+                            const SizedBox(height: 10),
+                            confirm,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(child: keep),
+                          const SizedBox(width: 12),
+                          Expanded(child: confirm),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GuideBookingAuthorRow extends StatelessWidget {
+  const _GuideBookingAuthorRow({required this.booking});
+
+  final ExcursionBookingVm booking;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final displayName = booking.author.resolvedDisplayName.isNotEmpty
+        ? booking.author.resolvedDisplayName
+        : booking.touristUserId;
+    final initial = displayName.trim().isEmpty
+        ? '?'
+        : displayName.trim().characters.first.toUpperCase();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 21,
+            backgroundColor: AppColors.accent.withValues(alpha: 0.16),
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: AppColors.accent,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.guideDashboardGuestBreakdown(
+                    booking.adults,
+                    booking.children,
+                    booking.totalSeats,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFD3BFA9),
+                    fontSize: 12,
+                    height: 1.25,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GuideBookingInfoPill extends StatelessWidget {
+  const _GuideBookingInfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: AppColors.accent, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GuideBookingBreakdownRow extends StatelessWidget {
+  const _GuideBookingBreakdownRow({
+    required this.label,
+    required this.value,
+    this.emphasized = false,
+  });
+
+  final String label;
+  final String value;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color:
+                  emphasized ? AppColors.textPrimary : const Color(0xFFD3BFA9),
+              fontSize: emphasized ? 15 : 14,
+              fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: emphasized ? 18 : 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1440,6 +2351,7 @@ class _GuideJourneyCard extends StatelessWidget {
     this.onSecondaryActionTap,
     this.subtitle = '',
     this.muted = false,
+    this.stackSecondaryAction = false,
   });
 
   final String title;
@@ -1454,6 +2366,7 @@ class _GuideJourneyCard extends StatelessWidget {
   final VoidCallback? onSecondaryActionTap;
   final String subtitle;
   final bool muted;
+  final bool stackSecondaryAction;
 
   @override
   Widget build(BuildContext context) {
@@ -1517,28 +2430,16 @@ class _GuideJourneyCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 23,
-                              height: 1.08,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Icon(
-                          Icons.more_vert_rounded,
-                          color: const Color(0xFFD3BFA9).withValues(alpha: 0.9),
-                        ),
-                      ],
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 23,
+                        height: 1.08,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     if (subtitle.trim().isNotEmpty) ...[
                       const SizedBox(height: 8),
@@ -1601,8 +2502,9 @@ class _GuideJourneyCard extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFFFFD6A3),
                             side: BorderSide(
-                              color: const Color(0xFFFFD6A3)
-                                  .withValues(alpha: 0.38),
+                              color: const Color(
+                                0xFFFFD6A3,
+                              ).withValues(alpha: 0.38),
                             ),
                             minimumSize: const Size(0, 48),
                             shape: RoundedRectangleBorder(
@@ -1620,7 +2522,7 @@ class _GuideJourneyCard extends StatelessWidget {
                           ),
                         );
 
-                        if (stackActions) {
+                        if (stackActions || stackSecondaryAction) {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [

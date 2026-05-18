@@ -203,6 +203,24 @@ void main() {
     expect(routerSource, contains("location == '/excursions'"));
   });
 
+  test('excursions list can show attraction-specific empty notice', () async {
+    final source = await File(
+      'lib/screens/excursions/excursions_screen.dart',
+    ).readAsString();
+    final routerSource = await File(
+      'lib/core/router/app_router.dart',
+    ).readAsString();
+
+    expect(source, contains('class ExcursionsRouteArgs'));
+    expect(source, contains('ExcursionsRouteArgs.noAttractionExcursions'));
+    expect(source, contains('_buildNoAttractionExcursionsNotice'));
+    expect(source, contains('excursionsNoAttractionExcursionsTitle'));
+    expect(source, contains('excursionsNoAttractionExcursionsSubtitle'));
+    expect(source, contains('showNoAttractionExcursionsNotice =='));
+    expect(routerSource, contains('ExcursionsRouteArgs'));
+    expect(routerSource, contains('ExcursionsScreen(routeArgs: args)'));
+  });
+
   test('excursion provider has list loading and refresh states', () async {
     final providerSource = await File(
       'lib/providers/excursion_provider.dart',

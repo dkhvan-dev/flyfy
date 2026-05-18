@@ -205,6 +205,12 @@ type GuideSpecializationInput struct {
 	SpecializationCode string
 }
 
+type GuideRatingSnapshotInput struct {
+	GuideProfileID uuid.UUID
+	RatingAvg      float64
+	ReviewsCount   int
+}
+
 func (u *GuideUseCase) UpdateGuideProfile(ctx context.Context, input UpdateGuideProfileInput) (*GuideAggregate, error) {
 	if input.ProfileID == uuid.Nil {
 		return nil, ErrInvalidGuideProfileID
@@ -272,6 +278,24 @@ func (u *GuideUseCase) UpdateGuideProfile(ctx context.Context, input UpdateGuide
 	}
 
 	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+}
+
+func (u *GuideUseCase) ApplyGuideRatingSnapshots(ctx context.Context, items []GuideRatingSnapshotInput) error {
+	for _, item := range items {
+		if item.GuideProfileID == uuid.Nil {
+			return ErrInvalidGuideProfileID
+		}
+		if item.RatingAvg < 0 || item.RatingAvg > 5 {
+			return model.ErrInvalidRatingAverage
+		}
+		if item.ReviewsCount < 0 {
+			return model.ErrInvalidReviewsCount
+		}
+		if err := u.repo.UpdateGuideRatingSnapshot(ctx, item.GuideProfileID, item.RatingAvg, item.ReviewsCount); err != nil {
+			return fmt.Errorf("update guide rating snapshot: %w", err)
+		}
+	}
+	return nil
 }
 
 type CreateVerificationRequestInput struct {

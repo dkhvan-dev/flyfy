@@ -15,6 +15,7 @@ var (
 	ErrExcursionScheduleConflict           = errors.New("excursion schedule conflict")
 	ErrExcursionScheduleUnavailable        = errors.New("excursion schedule slot is unavailable")
 	ErrExcursionBookingIdempotencyConflict = errors.New("excursion booking idempotency conflict")
+	ErrExcursionBookingNotEditable         = errors.New("excursion booking cannot be edited")
 )
 
 type ExcursionFilter struct {
@@ -46,6 +47,7 @@ type ExcursionRelations struct {
 
 type ExcursionProductFilter struct {
 	CategorySlug    *string
+	LandmarkID      *uuid.UUID
 	CountryCode     *string
 	CityName        *string
 	LanguageCode    *string
@@ -87,11 +89,20 @@ type ExcursionBookingFilter struct {
 }
 
 type ExcursionReviewFilter struct {
-	ProductID  *uuid.UUID
-	LandmarkID *uuid.UUID
-	Limit      int
-	Offset     int
+	ProductID   *uuid.UUID
+	LandmarkID  *uuid.UUID
+	GuideUserID *uuid.UUID
+	Sort        ExcursionReviewSort
+	Limit       int
+	Offset      int
 }
+
+type ExcursionReviewSort string
+
+const (
+	ExcursionReviewSortLatest     ExcursionReviewSort = "latest"
+	ExcursionReviewSortRatingDesc ExcursionReviewSort = "rating_desc"
+)
 
 type ExcursionScheduleFilter struct {
 	GuideUserID *uuid.UUID
@@ -125,9 +136,11 @@ type ExcursionRepository interface {
 	GetExcursionBookingByID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionBooking, error)
 	GetExcursionBookingByTouristIDAndIdempotencyKey(ctx context.Context, touristUserID uuid.UUID, idempotencyKey string) (*model.ExcursionBooking, error)
 	UpdateExcursionBookingGuests(ctx context.Context, item *model.ExcursionBooking, seatDelta int) error
+	CancelExcursionBooking(ctx context.Context, item *model.ExcursionBooking) error
 	CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error
 	GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error)
 	ListExcursionReviews(ctx context.Context, filter ExcursionReviewFilter) ([]*model.ExcursionReview, error)
+	CalculateLandmarkReviewStats(ctx context.Context, landmarkID uuid.UUID) (float64, int, error)
 	CreateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error
 	CreateExcursionScheduleSeriesWithSlots(ctx context.Context, series *model.ExcursionScheduleSeries, slots []*model.ExcursionScheduleSlot) error
 	UpdateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error

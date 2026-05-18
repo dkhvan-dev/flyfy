@@ -628,6 +628,54 @@ func (u *AttractionUseCase) DeleteReview(ctx context.Context, subject string, re
 	return nil
 }
 
+func (u *AttractionUseCase) RecalculateRating(ctx context.Context, attractionID uuid.UUID) (float64, int, error) {
+	if attractionID == uuid.Nil {
+		return 0, 0, ErrAttractionNotFound
+	}
+	rating, reviewCount, err := u.repo.RecalcRating(ctx, attractionID)
+	if err != nil {
+		return 0, 0, fmt.Errorf("recalculate attraction rating: %w", err)
+	}
+	return rating, reviewCount, nil
+}
+
+type RatingSourceSnapshotInput struct {
+	AttractionID uuid.UUID
+	Source       string
+	RatingAvg    float64
+	ReviewCount  int
+}
+
+func (u *AttractionUseCase) ApplyRatingSourceSnapshot(ctx context.Context, input RatingSourceSnapshotInput) (float64, int, error) {
+	if input.AttractionID == uuid.Nil {
+		return 0, 0, ErrAttractionNotFound
+	}
+	source := strings.TrimSpace(input.Source)
+	if source == "" || len(source) > 64 {
+		return 0, 0, ErrInvalidRatingSource
+	}
+	if input.ReviewCount < 0 || input.RatingAvg > 5 {
+		return 0, 0, ErrInvalidRatingSource
+	}
+	if input.ReviewCount == 0 {
+		input.RatingAvg = 0
+	} else if input.RatingAvg < 1 {
+		return 0, 0, ErrInvalidRatingSource
+	}
+
+	rating, reviewCount, err := u.repo.ApplyRatingSourceSnapshot(
+		ctx,
+		input.AttractionID,
+		source,
+		input.RatingAvg,
+		input.ReviewCount,
+	)
+	if err != nil {
+		return 0, 0, fmt.Errorf("apply attraction rating source snapshot: %w", err)
+	}
+	return rating, reviewCount, nil
+}
+
 func (u *AttractionUseCase) ListReviews(ctx context.Context, attractionID uuid.UUID, limit, offset int) ([]*ReviewView, int, error) {
 	if limit <= 0 {
 		limit = defaultReviewLimit

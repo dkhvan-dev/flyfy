@@ -25,10 +25,19 @@ String formatLocalizedExcursionMoney({
   required String? currency,
   required String localeName,
   bool compact = false,
+  bool useExcursionListCurrencyFormat = false,
 }) {
   final currencyCode = normalizeExcursionCurrencyCode(currency);
   final symbol = localizedExcursionCurrencySymbol(currencyCode);
   final decimalDigits = amount == amount.truncateToDouble() ? 0 : 2;
+
+  if (useExcursionListCurrencyFormat) {
+    return _formatExcursionListMoney(
+      amount,
+      currencyCode: currencyCode,
+      decimalDigits: decimalDigits,
+    );
+  }
 
   try {
     final formatter = compact
@@ -51,6 +60,21 @@ String formatLocalizedExcursionMoney({
       decimalDigits: decimalDigits,
     );
     return '$numeric $symbol';
+  }
+}
+
+String _formatExcursionListMoney(
+  num amount, {
+  required String currencyCode,
+  required int decimalDigits,
+}) {
+  try {
+    return NumberFormat.simpleCurrency(
+      name: currencyCode,
+      decimalDigits: decimalDigits,
+    ).format(amount);
+  } catch (_) {
+    return '${amount.toStringAsFixed(decimalDigits)} $currencyCode';
   }
 }
 

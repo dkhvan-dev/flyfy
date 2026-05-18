@@ -161,3 +161,15 @@ type ReviewListResponse struct {
 	Items []*ReviewResponse `json:"items"`
 	Total int               `json:"total"`
 }
+
+type RecalculateRatingResponse struct {
+	AttractionID string  `json:"attractionId"`
+	Rating       float64 `json:"rating"`
+	ReviewCount  int     `json:"reviewCount"`
+}
+
+type ApplyRatingSourceSnapshotRequest struct {
+	Source      string  `json:"source"`
+	RatingAvg   float64 `json:"ratingAvg"`
+	ReviewCount int     `json:"reviewCount"`
+}

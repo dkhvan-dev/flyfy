@@ -14,9 +14,11 @@ import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_review_vm.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
+import '../../features/excursions/models/excursion_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
 import '../../providers/session_provider.dart';
+import '../excursions/excursions_screen.dart';
 import '../map/map_screen.dart';
 
 class AttractionDetailsScreen extends StatefulWidget {
@@ -48,6 +50,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
   bool _loading = true;
   bool _submittingReview = false;
   bool _checkingCurrentUserReview = false;
+  bool _isOpeningExcursions = false;
   String? _error;
   String? _locationLabel;
   int _currentImageIndex = 0;
@@ -92,8 +95,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
       final attraction = results[0] as AttractionVm;
       final reviewResult =
           results[1] as ({List<AttractionReviewVm> items, int total});
-      final currentUserReview =
-          (results[2] as AttractionReviewVm?) ??
+      final currentUserReview = (results[2] as AttractionReviewVm?) ??
           _findReviewByAuthor(reviewResult.items, currentUserId);
       final locationLabel = await _resolveLocationLabel(attraction, locale);
       final mediaCount = attraction.media.length;
@@ -203,6 +205,56 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
         attraction.countryCode.trim().toUpperCase(),
     ];
     return parts.join(', ');
+  }
+
+  Future<void> _openExcursionsForAttraction() async {
+    final attraction = _attraction;
+    if (attraction == null || _isOpeningExcursions) return;
+
+    final attractionId = attraction.id.trim().isNotEmpty
+        ? attraction.id.trim()
+        : widget.attractionId.trim();
+    if (attractionId.isEmpty) {
+      context.push('/excursions');
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _isOpeningExcursions = true);
+
+    ExcursionVm? excursion;
+    var didFail = false;
+    try {
+      excursion = await context
+          .read<ExcursionProvider>()
+          .findFirstExcursionForAttraction(attractionId);
+    } catch (_) {
+      didFail = true;
+    }
+
+    if (!mounted) return;
+    setState(() => _isOpeningExcursions = false);
+
+    if (didFail) {
+      _showSnack(l10n.excursionsLoadFailed);
+      context.push('/excursions');
+      return;
+    }
+
+    final excursionId = excursion?.id.trim() ?? '';
+    if (excursionId.isNotEmpty) {
+      context.push('/excursions/${Uri.encodeComponent(excursionId)}',
+          extra: excursion);
+      return;
+    }
+
+    context.push(
+      '/excursions',
+      extra: ExcursionsRouteArgs.noAttractionExcursions(
+        attractionId: attractionId,
+        attractionTitle: attraction.title.trim(),
+      ),
+    );
   }
 
   Future<void> _openReviewSheet() async {
@@ -379,39 +431,41 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
                         ),
                       )
                     : _error != null && _attraction == null
-                    ? _buildError(l10n, adaptive)
-                    : Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Column(
-                              children: [
-                                _buildTopBar(adaptive, l10n),
-                                Expanded(
-                                  child: RefreshIndicator(
-                                    color: AppColors.accent,
-                                    backgroundColor: const Color(0xFF271609),
-                                    onRefresh: _loadData,
-                                    child: CustomScrollView(
-                                      controller: _scrollController,
-                                      physics:
-                                          const AlwaysScrollableScrollPhysics(),
-                                      slivers: [
-                                        SliverToBoxAdapter(
-                                          child: _buildHero(adaptive, l10n),
+                        ? _buildError(l10n, adaptive)
+                        : Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Column(
+                                  children: [
+                                    _buildTopBar(adaptive, l10n),
+                                    Expanded(
+                                      child: RefreshIndicator(
+                                        color: AppColors.accent,
+                                        backgroundColor:
+                                            const Color(0xFF271609),
+                                        onRefresh: _loadData,
+                                        child: CustomScrollView(
+                                          controller: _scrollController,
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          slivers: [
+                                            SliverToBoxAdapter(
+                                              child: _buildHero(adaptive, l10n),
+                                            ),
+                                            SliverToBoxAdapter(
+                                              child:
+                                                  _buildContent(adaptive, l10n),
+                                            ),
+                                          ],
                                         ),
-                                        SliverToBoxAdapter(
-                                          child: _buildContent(adaptive, l10n),
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              _buildBottomCta(adaptive, l10n),
+                            ],
                           ),
-                          _buildBottomCta(adaptive, l10n),
-                        ],
-                      ),
               ),
             ),
           );
@@ -551,7 +605,7 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     final heroHeight = (available * 0.42).clamp(240.0, 360.0);
     final media = attraction.media.isNotEmpty
         ? (List<AttractionMediaVm>.from(attraction.media)
-            ..sort((x, y) => x.position.compareTo(y.position)))
+          ..sort((x, y) => x.position.compareTo(y.position)))
         : <AttractionMediaVm>[];
 
     final padX = a.scale(28);
@@ -1287,7 +1341,8 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed:
+                _isOpeningExcursions ? null : _openExcursionsForAttraction,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.accent,
               foregroundColor: Colors.white,
@@ -1301,16 +1356,33 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  l10n.attractionFindExcursions.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: a.scale(13),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.6,
+                if (_isOpeningExcursions) ...[
+                  SizedBox(
+                    width: a.scale(18),
+                    height: a.scale(18),
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  SizedBox(width: a.scale(12)),
+                ],
+                Flexible(
+                  child: Text(
+                    l10n.attractionFindExcursions.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: a.scale(13),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.6,
+                    ),
                   ),
                 ),
-                SizedBox(width: a.scale(12)),
-                Icon(Icons.arrow_forward_rounded, size: a.scale(20)),
+                if (!_isOpeningExcursions) ...[
+                  SizedBox(width: a.scale(12)),
+                  Icon(Icons.arrow_forward_rounded, size: a.scale(20)),
+                ],
               ],
             ),
           ),
@@ -1341,9 +1413,8 @@ class _AttractionImageGalleryState extends State<_AttractionImageGallery> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex
-        .clamp(0, widget.media.length - 1)
-        .toInt();
+    _currentIndex =
+        widget.initialIndex.clamp(0, widget.media.length - 1).toInt();
     _controller = PageController(initialPage: _currentIndex);
   }
 
@@ -1699,9 +1770,8 @@ List<_VisitPlanItem> _visitPlanItems(
     _VisitPlanItem(
       icon: Icons.schedule_rounded,
       label: l10n.attractionVisitDurationLabel,
-      value: duration.isNotEmpty
-          ? duration
-          : l10n.attractionVisitDurationFlexible,
+      value:
+          duration.isNotEmpty ? duration : l10n.attractionVisitDurationFlexible,
     ),
     _VisitPlanItem(
       icon: Icons.confirmation_number_outlined,
@@ -1758,8 +1828,7 @@ String _localizedFlyFyTip(
   }
 
   final category = attraction.category.toUpperCase();
-  final isLongRoute =
-      attraction.durationUnit?.toUpperCase() == 'DAYS' ||
+  final isLongRoute = attraction.durationUnit?.toUpperCase() == 'DAYS' ||
       (attraction.durationValue ?? 0) >= 6;
   if (_isNatureLikeCategory(category) || isLongRoute) {
     return l10n.attractionVisitTipNature;
@@ -1965,9 +2034,8 @@ class _ReviewCard extends StatelessWidget {
                     CircleAvatar(
                       radius: adaptive.scale(19),
                       backgroundColor: const Color(0xFF245163),
-                      backgroundImage: avatarUrl != null
-                          ? NetworkImage(avatarUrl)
-                          : null,
+                      backgroundImage:
+                          avatarUrl != null ? NetworkImage(avatarUrl) : null,
                       child: avatarUrl == null
                           ? Icon(
                               Icons.person_rounded,
@@ -2090,34 +2158,34 @@ class _ReviewCard extends StatelessWidget {
                 ],
               )
             : (url == null
-                  ? Icon(
-                      Icons.image_rounded,
-                      color: AppColors.textCaption,
-                      size: a.scale(28),
-                    )
-                  : Image.network(
-                      url,
-                      headers: attractionImageRequestHeaders(url),
-                      fit: BoxFit.cover,
-                      cacheWidth: imageTargetWidth,
-                      filterQuality: FilterQuality.medium,
-                      gaplessPlayback: true,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) {
-                          return child;
-                        }
-                        return Icon(
-                          Icons.image_rounded,
-                          color: AppColors.textCaption,
-                          size: a.scale(28),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.image_not_supported_rounded,
+                ? Icon(
+                    Icons.image_rounded,
+                    color: AppColors.textCaption,
+                    size: a.scale(28),
+                  )
+                : Image.network(
+                    url,
+                    headers: attractionImageRequestHeaders(url),
+                    fit: BoxFit.cover,
+                    cacheWidth: imageTargetWidth,
+                    filterQuality: FilterQuality.medium,
+                    gaplessPlayback: true,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) {
+                        return child;
+                      }
+                      return Icon(
+                        Icons.image_rounded,
                         color: AppColors.textCaption,
                         size: a.scale(28),
-                      ),
-                    )),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.image_not_supported_rounded,
+                      color: AppColors.textCaption,
+                      size: a.scale(28),
+                    ),
+                  )),
       ),
     );
   }
@@ -2168,6 +2236,12 @@ class _ExcursionAttractionReviewCard extends StatelessWidget {
     final guideName = review.guideDisplayName.trim().isEmpty
         ? l10n.myExcursionsGuideFallback
         : review.guideDisplayName.trim();
+    final authorName = review.author.resolvedDisplayName.isEmpty
+        ? l10n.attractionTravelerFallback
+        : review.author.resolvedDisplayName;
+    final authorAvatarUrl = review.author.resolvedAvatarFileId.isEmpty
+        ? null
+        : resolvePublicFileContentUrl(review.author.resolvedAvatarFileId);
 
     return Container(
       decoration: BoxDecoration(
@@ -2230,16 +2304,55 @@ class _ExcursionAttractionReviewCard extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: adaptive.scale(12)),
-                Text(
-                  l10n.excursionReviewViaGuide(guideName),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: adaptive.scale(14),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.2,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: adaptive.scale(18),
+                      backgroundColor: const Color(0xFF245163),
+                      backgroundImage: authorAvatarUrl != null
+                          ? NetworkImage(authorAvatarUrl)
+                          : null,
+                      child: authorAvatarUrl == null
+                          ? Icon(
+                              Icons.person_rounded,
+                              color: Colors.white.withValues(alpha: 0.85),
+                              size: adaptive.scale(19),
+                            )
+                          : null,
+                    ),
+                    SizedBox(width: adaptive.scale(12)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            authorName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: adaptive.scale(14),
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                          SizedBox(height: adaptive.scale(3)),
+                          Text(
+                            l10n.excursionReviewViaGuide(guideName),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: const Color(0xFFD8C2AD),
+                              fontSize: adaptive.scale(11),
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: adaptive.scale(12)),
                 Text(
@@ -2292,12 +2405,11 @@ Widget _buildExcursionStars(double rating, AttractionAdaptive adaptive) {
   );
 }
 
-typedef _SubmitReviewCallback =
-    Future<bool> Function(
-      double rating,
-      String comment,
-      List<_ReviewDraftMedia> media,
-    );
+typedef _SubmitReviewCallback = Future<bool> Function(
+  double rating,
+  String comment,
+  List<_ReviewDraftMedia> media,
+);
 
 class _ReviewDraftMedia {
   const _ReviewDraftMedia({

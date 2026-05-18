@@ -16,6 +16,7 @@ class ExcursionApi {
     int limit = 50,
     int offset = 0,
     String? query,
+    String? landmarkId,
     String? categorySlug,
     String? cityName,
   }) async {
@@ -25,6 +26,8 @@ class ExcursionApi {
         'limit': limit,
         'offset': offset,
         if ((query ?? '').trim().isNotEmpty) 'q': query!.trim(),
+        if ((landmarkId ?? '').trim().isNotEmpty)
+          'landmarkId': landmarkId!.trim(),
         if ((categorySlug ?? '').trim().isNotEmpty)
           'categorySlug': categorySlug!.trim(),
         if ((cityName ?? '').trim().isNotEmpty) 'cityName': cityName!.trim(),
@@ -212,6 +215,19 @@ class ExcursionApi {
     return ExcursionBookingVm.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<ExcursionBookingVm> cancelExcursionBooking(
+    String bookingId, {
+    String reason = '',
+  }) async {
+    final encodedBookingId = Uri.encodeComponent(bookingId);
+    final response = await _apiClient.dio.post(
+      '/me/excursion-bookings/$encodedBookingId/cancel',
+      data: <String, dynamic>{'reason': reason},
+    );
+
+    return ExcursionBookingVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<ExcursionBookingsPage> getMyExcursionBookings({
     int limit = 50,
     int offset = 0,
@@ -275,6 +291,8 @@ class ExcursionApi {
   Future<ExcursionReviewsPage> getExcursionReviews({
     String? productId,
     String? landmarkId,
+    String? guideUserId,
+    String? sort,
     int limit = 20,
     int offset = 0,
   }) async {
@@ -286,6 +304,9 @@ class ExcursionApi {
       queryParameters: <String, dynamic>{
         if ((landmarkId ?? '').trim().isNotEmpty)
           'landmarkId': landmarkId!.trim(),
+        if ((guideUserId ?? '').trim().isNotEmpty)
+          'guideUserId': guideUserId!.trim(),
+        if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
         'limit': limit,
         'offset': offset,
       },
@@ -303,6 +324,20 @@ class ExcursionApi {
           .map(ExcursionReviewVm.fromJson)
           .toList(growable: false),
       hasMore: data is Map<String, dynamic> && data['hasMore'] == true,
+    );
+  }
+
+  Future<ExcursionReviewsPage> getGuideExcursionReviews({
+    required String guideUserId,
+    int limit = 10,
+    int offset = 0,
+    String sort = 'rating_desc',
+  }) {
+    return getExcursionReviews(
+      guideUserId: guideUserId,
+      sort: sort,
+      limit: limit,
+      offset: offset,
     );
   }
 }

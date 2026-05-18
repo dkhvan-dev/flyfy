@@ -15,6 +15,8 @@ type Config struct {
 	Log          LogConfig
 	Security     SecurityConfig
 	GuideService GuideServiceConfig
+	UserService  UserServiceConfig
+	Attraction   AttractionServiceConfig
 	FileManager  FileManagerConfig
 	Translation  TranslationServiceConfig
 }
@@ -90,7 +92,16 @@ type SecurityConfig struct {
 }
 
 type GuideServiceConfig struct {
-	Target string `env:"GUIDE_SERVICE_GRPC_TARGET, default=dns:///guide-service:9095"`
+	Target  string `env:"GUIDE_SERVICE_GRPC_TARGET, default=dns:///guide-service:9095"`
+	BaseURL string `env:"GUIDE_SERVICE_URL, default=http://guide-service:8085"`
+}
+
+type UserServiceConfig struct {
+	Target string `env:"USER_SERVICE_GRPC_TARGET, default=dns:///user-service:9094"`
+}
+
+type AttractionServiceConfig struct {
+	BaseURL string `env:"ATTRACTION_SERVICE_URL, default=http://attraction-service:8090"`
 }
 
 type FileManagerConfig struct {

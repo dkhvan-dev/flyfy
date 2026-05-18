@@ -36,4 +36,20 @@ void main() {
       contains('onFollowersTap: () => _openFollowers(effectiveProfile)'),
     );
   });
+
+  test('foreign guide profile loads and renders top excursion reviews',
+      () async {
+    final source =
+        await File('lib/screens/profile/profile_screen.dart').readAsString();
+
+    expect(source, contains('ExcursionApi _excursionApi = ExcursionApi()'));
+    expect(source, contains('_guideReviewsFutureFor('));
+    expect(source, contains('getGuideExcursionReviews('));
+    expect(source, contains("sort: 'rating_desc'"));
+    expect(source, contains('limit: 10'));
+    expect(source, contains('class _GuideExcursionReviewsSection'));
+    expect(source, contains('profileGuideReviewsTitle'));
+    expect(source, contains('profileGuideReviewsEmpty'));
+    expect(source, contains('review.author.resolvedDisplayName'));
+  });
 }

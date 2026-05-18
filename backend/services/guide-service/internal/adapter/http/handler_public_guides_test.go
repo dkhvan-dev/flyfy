@@ -207,6 +207,10 @@ func (s *publicGuideRepositoryStub) UpdateGuideProfile(context.Context, *model.G
 	return nil
 }
 
+func (s *publicGuideRepositoryStub) UpdateGuideRatingSnapshot(context.Context, uuid.UUID, float64, int) error {
+	return nil
+}
+
 func (s *publicGuideRepositoryStub) CreateVerificationRequest(context.Context, *model.GuideVerificationRequest) error {
 	return nil
 }

@@ -210,6 +210,24 @@ func (r *PGGuideRepository) UpdateGuideProfile(ctx context.Context, profile *mod
 	return nil
 }
 
+func (r *PGGuideRepository) UpdateGuideRatingSnapshot(ctx context.Context, guideProfileID uuid.UUID, ratingAvg float64, reviewsCount int) error {
+	const query = `
+		UPDATE guide_profiles
+		SET rating_avg = $2,
+			reviews_count = $3,
+			updated_at = NOW()
+		WHERE id = $1
+	`
+	tag, err := r.pool.Exec(ctx, query, guideProfileID, ratingAvg, reviewsCount)
+	if err != nil {
+		return fmt.Errorf("update guide rating snapshot: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (r *PGGuideRepository) CreateVerificationRequest(ctx context.Context, req *model.GuideVerificationRequest) error {
 	const query = `
 		INSERT INTO guide_verification_requests (

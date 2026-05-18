@@ -43,6 +43,7 @@ type GuideRepository interface {
 	GetGuideProfileByID(ctx context.Context, id uuid.UUID) (*model.GuideProfile, error)
 	GetGuideProfileByUserID(ctx context.Context, userID uuid.UUID) (*model.GuideProfile, error)
 	UpdateGuideProfile(ctx context.Context, profile *model.GuideProfile) error
+	UpdateGuideRatingSnapshot(ctx context.Context, guideProfileID uuid.UUID, ratingAvg float64, reviewsCount int) error
 
 	CreateVerificationRequest(ctx context.Context, req *model.GuideVerificationRequest) error
 	GetVerificationRequestByID(ctx context.Context, id uuid.UUID) (*model.GuideVerificationRequest, error)

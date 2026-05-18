@@ -39,12 +39,49 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/guides/verification-requests/", h.handleAdminVerificationActions)
 	mux.HandleFunc("POST /v1/admin/guides/", h.handleAdminGuideActions)
 	mux.HandleFunc("GET /v1/admin/guides/verification-requests", h.ListPendingVerificationRequests)
+	mux.HandleFunc("POST /internal/v1/guides/ratings/snapshots", h.ApplyGuideRatingSnapshots)
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{
 		"status": "ok",
 	})
+}
+
+func (h *Handler) ApplyGuideRatingSnapshots(w http.ResponseWriter, r *http.Request) {
+	var req dto.ApplyGuideRatingSnapshotsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	items := make([]app.GuideRatingSnapshotInput, 0, len(req.Items))
+	for _, item := range req.Items {
+		guideProfileID, err := uuid.Parse(strings.TrimSpace(item.GuideProfileID))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid guide profile id")
+			return
+		}
+		items = append(items, app.GuideRatingSnapshotInput{
+			GuideProfileID: guideProfileID,
+			RatingAvg:      item.RatingAvg,
+			ReviewsCount:   item.ReviewsCount,
+		})
+	}
+
+	if err := h.useCase.ApplyGuideRatingSnapshots(r.Context(), items); err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidGuideProfileID),
+			errors.Is(err, model.ErrInvalidRatingAverage),
+			errors.Is(err, model.ErrInvalidReviewsCount):
+			writeError(w, http.StatusBadRequest, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to apply guide rating snapshots")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.ApplyGuideRatingSnapshotsResponse{Updated: len(items)})
 }
 
 func (h *Handler) InitMyGuideProfile(w http.ResponseWriter, r *http.Request) {

@@ -1,8 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:superapp/core/network/excursion_api.dart';
+import 'package:superapp/core/network/excursion_schedule_api.dart';
 import 'package:superapp/features/excursions/models/create_excursion_request.dart';
 import 'package:superapp/features/excursions/models/excursion_booking_vm.dart';
+import 'package:superapp/features/excursions/models/excursion_schedule_vm.dart';
 import 'package:superapp/features/excursions/models/excursion_vm.dart';
+import 'package:superapp/features/profile/data/guide_api.dart';
+import 'package:superapp/features/profile/models/guide_profile_vm.dart';
 import 'package:superapp/providers/excursion_provider.dart';
 
 void main() {
@@ -48,7 +52,10 @@ void main() {
         publishedExcursion: _publishedExcursion,
         excursionDetails: const {'product-new': _publishedProductDetails},
       );
-      final provider = ExcursionProvider(excursionApi: api);
+      final provider = ExcursionProvider(
+        excursionApi: api,
+        guideApi: _FakeGuideApi(profile: null),
+      );
 
       await provider.loadExcursions();
       final created = await provider.createAndPublishExcursion(_request);
@@ -79,8 +86,10 @@ void main() {
       final provider = ExcursionProvider(excursionApi: api);
 
       await provider.loadExcursionDetails('product-new-updated');
-      final updated =
-          await provider.updateExcursionOffer('excursion-new', _request);
+      final updated = await provider.updateExcursionOffer(
+        'excursion-new',
+        _request,
+      );
 
       expect(updated?.id, 'product-new-updated');
       expect(updated?.offers.single.priceAmount, 150);
@@ -103,7 +112,10 @@ void main() {
         myExcursions: const [_publishedProductDetails],
         guideBookings: [_upcomingGuideBooking],
       );
-      final provider = ExcursionProvider(excursionApi: api);
+      final provider = ExcursionProvider(
+        excursionApi: api,
+        guideApi: _FakeGuideApi(profile: null),
+      );
 
       await provider.loadGuideDashboardData();
 
@@ -116,36 +128,88 @@ void main() {
   );
 
   test(
-    'loadExcursionDetails keeps details scoped by excursion id',
+    'loadGuideDashboardData loads real guide rating from guide profile',
     () async {
       final api = _FakeExcursionApi(
         excursionBatches: const [],
         createdExcursion: _createdDraft,
         publishedExcursion: _publishedExcursion,
-        excursionDetails: const {
-          'product-new': _publishedProductDetails,
-          'product-other': _otherProductDetails,
-        },
+        myExcursions: const [_publishedProductDetails],
+        guideBookings: [_upcomingGuideBooking],
       );
-      final provider = ExcursionProvider(excursionApi: api);
+      final guideApi = _FakeGuideApi(profile: _myGuideProfile);
+      final provider = ExcursionProvider(excursionApi: api, guideApi: guideApi);
 
-      await provider.loadExcursionDetails('product-new');
-      await provider.loadExcursionDetails('product-other');
+      await provider.loadGuideDashboardData();
 
-      expect(provider.excursionDetailsFor('product-new')?.id, 'product-new');
-      expect(
-        provider.excursionDetailsFor('product-new')?.offers.single.id,
-        'offer-new',
-      );
-      expect(
-          provider.excursionDetailsFor('product-other')?.id, 'product-other');
-      expect(
-        provider.excursionDetailsFor('product-other')?.offers.single.id,
-        'offer-other',
-      );
-      expect(provider.selectedExcursion?.id, 'product-other');
+      expect(provider.myGuideProfile?.ratingAvg, 4.8);
+      expect(provider.guideDashboardState, ExcursionListState.success);
+      expect(guideApi.getMyGuideProfileCallCount, 1);
     },
   );
+
+  test('cancelGuideExcursionSlot cancels related guide dashboard bookings',
+      () async {
+    final api = _FakeExcursionApi(
+      excursionBatches: const [],
+      createdExcursion: _createdDraft,
+      publishedExcursion: _publishedExcursion,
+      myExcursions: const [_publishedProductDetails],
+      guideBookings: [
+        _upcomingGuideBooking,
+        _secondUpcomingGuideBooking,
+      ],
+    );
+    final scheduleApi =
+        _FakeExcursionScheduleApi(cancelledSlot: _cancelledSlot);
+    final provider = ExcursionProvider(
+      excursionApi: api,
+      guideApi: _FakeGuideApi(profile: null),
+      scheduleApi: scheduleApi,
+    );
+
+    await provider.loadGuideDashboardData();
+    final cancelled = await provider.cancelGuideExcursionSlot(
+      'slot-1',
+      reason: 'Guide is sick',
+    );
+
+    expect(cancelled, isTrue);
+    expect(scheduleApi.cancelSlotCalls, ['slot-1']);
+    expect(scheduleApi.cancelReasons, ['Guide is sick']);
+    expect(
+      provider.myGuideExcursionBookings.map((booking) => booking.status),
+      ['CANCELLED', 'CANCELLED'],
+    );
+  });
+
+  test('loadExcursionDetails keeps details scoped by excursion id', () async {
+    final api = _FakeExcursionApi(
+      excursionBatches: const [],
+      createdExcursion: _createdDraft,
+      publishedExcursion: _publishedExcursion,
+      excursionDetails: const {
+        'product-new': _publishedProductDetails,
+        'product-other': _otherProductDetails,
+      },
+    );
+    final provider = ExcursionProvider(excursionApi: api);
+
+    await provider.loadExcursionDetails('product-new');
+    await provider.loadExcursionDetails('product-other');
+
+    expect(provider.excursionDetailsFor('product-new')?.id, 'product-new');
+    expect(
+      provider.excursionDetailsFor('product-new')?.offers.single.id,
+      'offer-new',
+    );
+    expect(provider.excursionDetailsFor('product-other')?.id, 'product-other');
+    expect(
+      provider.excursionDetailsFor('product-other')?.offers.single.id,
+      'offer-other',
+    );
+    expect(provider.selectedExcursion?.id, 'product-other');
+  });
 }
 
 const _existingExcursion = ExcursionVm(
@@ -293,6 +357,7 @@ final _upcomingGuideBooking = ExcursionBookingVm(
   id: 'booking-guide-1',
   productId: 'product-new',
   offerId: 'offer-new',
+  scheduleSlotId: 'slot-1',
   touristUserId: 'tourist-1',
   guideUserId: 'guide-user-1',
   guideProfileId: 'guide-profile-1',
@@ -306,6 +371,56 @@ final _upcomingGuideBooking = ExcursionBookingVm(
   totalPriceAmount: 240,
   currency: 'KZT',
   status: 'REQUESTED',
+);
+
+final _secondUpcomingGuideBooking = ExcursionBookingVm(
+  id: 'booking-guide-2',
+  productId: 'product-new',
+  offerId: 'offer-new',
+  scheduleSlotId: 'slot-1',
+  touristUserId: 'tourist-2',
+  guideUserId: 'guide-user-1',
+  guideProfileId: 'guide-profile-1',
+  guideDisplayName: 'Aruzhan',
+  title: 'New Excursion',
+  summary: 'Published route',
+  scheduledFor: DateTime.utc(2026, 6, 1, 10),
+  adults: 1,
+  children: 1,
+  totalSeats: 2,
+  totalPriceAmount: 240,
+  currency: 'KZT',
+  status: 'REQUESTED',
+);
+
+final _cancelledSlot = ExcursionScheduleSlotVm(
+  id: 'slot-1',
+  offerId: 'offer-new',
+  productId: 'product-new',
+  startAt: DateTime.utc(2026, 6, 1, 10),
+  endAt: DateTime.utc(2026, 6, 1, 13),
+  timezone: 'Asia/Almaty',
+  capacity: 6,
+  bookedSeats: 4,
+  status: ExcursionScheduleSlotStatus.cancelled,
+  cancelReason: 'Guide is sick',
+);
+
+final _myGuideProfile = GuideProfileVm(
+  id: 'guide-profile-1',
+  userId: 'guide-user-1',
+  type: 'INDEPENDENT',
+  status: 'ACTIVE',
+  headline: 'Mountain guide',
+  about: 'Almaty mountain routes',
+  experienceYears: 5,
+  isPrivateGuideAvailable: true,
+  isActivityHostAvailable: true,
+  isExcursionGuideAvailable: true,
+  ratingAvg: 4.8,
+  reviewsCount: 32,
+  languages: const ['ru', 'en'],
+  specializations: const ['mountain_guide'],
 );
 
 const _request = CreateExcursionRequest(
@@ -355,6 +470,7 @@ class _FakeExcursionApi extends ExcursionApi {
     int limit = 50,
     int offset = 0,
     String? query,
+    String? landmarkId,
     String? categorySlug,
     String? cityName,
   }) async {
@@ -407,5 +523,33 @@ class _FakeExcursionApi extends ExcursionApi {
   }) async {
     getMyGuideExcursionBookingsCallCount++;
     return ExcursionBookingsPage(items: guideBookings, hasMore: false);
+  }
+}
+
+class _FakeGuideApi extends GuideApi {
+  _FakeGuideApi({required this.profile});
+
+  final GuideProfileVm? profile;
+  int getMyGuideProfileCallCount = 0;
+
+  @override
+  Future<GuideProfileVm?> getMyGuideProfileOrNull() async {
+    getMyGuideProfileCallCount++;
+    return profile;
+  }
+}
+
+class _FakeExcursionScheduleApi extends ExcursionScheduleApi {
+  _FakeExcursionScheduleApi({required this.cancelledSlot});
+
+  final ExcursionScheduleSlotVm cancelledSlot;
+  final List<String> cancelSlotCalls = [];
+  final List<String> cancelReasons = [];
+
+  @override
+  Future<ExcursionScheduleSlotVm> cancelSlot(String id, String reason) async {
+    cancelSlotCalls.add(id);
+    cancelReasons.add(reason);
+    return cancelledSlot;
   }
 }

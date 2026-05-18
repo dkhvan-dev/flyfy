@@ -8,12 +8,14 @@ import (
 	"syscall"
 	"time"
 
+	attractionadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/attraction"
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/filemanager"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/grpc"
 	guideadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/guide"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/repository"
 	translationadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/translation"
+	userserviceadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/userservice"
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -54,6 +56,17 @@ func main() {
 	}
 	defer guideClient.Close()
 
+	userClient, err := userserviceadapter.New(
+		cfg.UserService.Target,
+		cfg.Security.InternalServiceToken,
+		cfg.App.Name,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("dial user-service")
+	}
+	defer userClient.Close()
+
 	fileManagerClient, err := filemanageradapter.New(
 		cfg.FileManager.Target,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -72,7 +85,13 @@ func main() {
 		cfg.Translation.Timeout,
 		cfg.Security.InternalServiceToken,
 	)
-	excursionUC := app.NewExcursionUseCase(repo, guideClient, fileManagerClient, translator)
+	attractionRatingClient := attractionadapter.NewClient(
+		cfg.Attraction.BaseURL,
+		cfg.Security.InternalServiceToken,
+	)
+	excursionUC := app.NewExcursionUseCase(repo, guideClient, fileManagerClient, translator).
+		WithUserProfileResolver(userClient).
+		WithAttractionRatingUpdater(attractionRatingClient)
 	handler := httpadapter.NewHandler(excursionUC, fileManagerClient)
 
 	mux := http.NewServeMux()

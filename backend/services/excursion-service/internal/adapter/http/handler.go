@@ -61,6 +61,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/me/guide-excursion-bookings", h.ListMyGuideExcursionBookings)
 	mux.HandleFunc("POST /v1/me/excursion-bookings", h.CreateExcursionBooking)
 	mux.HandleFunc("PATCH /v1/me/excursion-bookings/{id}", h.UpdateExcursionBookingGuests)
+	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/cancel", h.CancelExcursionBooking)
 	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/review", h.CreateExcursionReview)
 }
 
@@ -644,6 +645,32 @@ func (h *Handler) UpdateExcursionBookingGuests(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, toExcursionBookingResponse(booking))
 }
 
+func (h *Handler) CancelExcursionBooking(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	bookingID, ok := parsePathUUID(w, r, "id", "invalid excursion booking id")
+	if !ok {
+		return
+	}
+	var req dto.CancelExcursionBookingRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	booking, err := h.useCase.CancelExcursionBooking(r.Context(), app.CancelExcursionBookingInput{
+		ActorUserID: actorUserID,
+		BookingID:   bookingID,
+		Reason:      req.Reason,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to cancel excursion booking")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionBookingResponse(booking))
+}
+
 func (h *Handler) CreateExcursionReview(w http.ResponseWriter, r *http.Request) {
 	actorUserID, ok := parseActorUserID(w, r)
 	if !ok {
@@ -696,6 +723,23 @@ func (h *Handler) ListExcursionReviews(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		filter.LandmarkID = &landmarkID
+	}
+	if rawGuideUserID := strings.TrimSpace(r.URL.Query().Get("guideUserId")); rawGuideUserID != "" {
+		guideUserID, err := uuid.Parse(rawGuideUserID)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid guide user id")
+			return
+		}
+		filter.GuideUserID = &guideUserID
+	}
+	if rawSort := strings.TrimSpace(r.URL.Query().Get("sort")); rawSort != "" {
+		switch port.ExcursionReviewSort(rawSort) {
+		case port.ExcursionReviewSortLatest, port.ExcursionReviewSortRatingDesc:
+			filter.Sort = port.ExcursionReviewSort(rawSort)
+		default:
+			writeError(w, http.StatusBadRequest, "invalid excursion review sort")
+			return
+		}
 	}
 	h.writeExcursionReviews(w, r, filter)
 }
@@ -787,6 +831,7 @@ func parseExcursionProductFilter(r *http.Request, limit int) port.ExcursionProdu
 	query := r.URL.Query()
 	return port.ExcursionProductFilter{
 		CategorySlug:    optionalString(query.Get("categorySlug")),
+		LandmarkID:      optionalUUID(query.Get("landmarkId")),
 		CountryCode:     optionalString(query.Get("countryCode")),
 		CityName:        optionalString(query.Get("cityName")),
 		LanguageCode:    optionalString(query.Get("languageCode")),
@@ -1283,6 +1328,11 @@ func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionRespons
 }
 
 func toExcursionBookingResponse(item *model.ExcursionBooking) dto.ExcursionBookingResponse {
+	var cancelledBy *string
+	if item.CancelledBy != nil {
+		value := string(*item.CancelledBy)
+		cancelledBy = &value
+	}
 	return dto.ExcursionBookingResponse{
 		ID:                item.ID.String(),
 		ProductID:         item.ProductID.String(),
@@ -1301,6 +1351,14 @@ func toExcursionBookingResponse(item *model.ExcursionBooking) dto.ExcursionBooki
 		TotalPriceAmount:  item.TotalPriceAmount,
 		Currency:          item.Currency,
 		Status:            string(item.Status),
+		CancelledAt:       formatOptionalTime(item.CancelledAt),
+		CancelledBy:       cancelledBy,
+		CancelReason:      formatOptionalString(item.CancelReason),
+		RefundPercent:     item.RefundPercent,
+		RefundAmount:      item.RefundAmount,
+		RefundCurrency:    formatOptionalString(item.RefundCurrency),
+		RefundPolicyCode:  formatOptionalString(item.RefundPolicyCode),
+		RefundStatus:      formatOptionalString(item.RefundStatus),
 		CreatedAt:         item.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:         item.UpdatedAt.UTC().Format(time.RFC3339),
 	}
@@ -1351,6 +1409,18 @@ func toExcursionBookingListItemResponse(item *model.ExcursionBookingListItem) dt
 	response.CityName = formatOptionalString(item.CityName)
 	response.CoverFileID = formatOptionalUUID(item.CoverFileID)
 	response.MaxGroupSize = item.MaxGroupSize
+	if item.Author.UserID != uuid.Nil {
+		var avatarFileID *string
+		if item.Author.AvatarFileID != nil {
+			value := item.Author.AvatarFileID.String()
+			avatarFileID = &value
+		}
+		response.Author = &dto.ReviewAuthorResponse{
+			UserID:       item.Author.UserID.String(),
+			DisplayName:  item.Author.DisplayName,
+			AvatarFileID: avatarFileID,
+		}
+	}
 	if item.Review != nil {
 		response.Review = toExcursionReviewResponse(item.Review, response.GuideDisplayName)
 	}
@@ -1384,6 +1454,15 @@ func toExcursionReviewResponse(item *model.ExcursionReview, guideDisplayName str
 	if resolvedGuideDisplayName == "" {
 		resolvedGuideDisplayName = strings.TrimSpace(item.GuideDisplayName)
 	}
+	authorUserID := item.Author.UserID
+	if authorUserID == uuid.Nil {
+		authorUserID = item.TouristUserID
+	}
+	var authorAvatarFileID *string
+	if item.Author.AvatarFileID != nil {
+		value := item.Author.AvatarFileID.String()
+		authorAvatarFileID = &value
+	}
 	return &dto.ExcursionReviewResponse{
 		ID:                item.ID.String(),
 		BookingID:         item.BookingID.String(),
@@ -1396,11 +1475,16 @@ func toExcursionReviewResponse(item *model.ExcursionReview, guideDisplayName str
 		GuideUserID:       item.GuideUserID.String(),
 		GuideDisplayName:  resolvedGuideDisplayName,
 		TouristUserID:     item.TouristUserID.String(),
-		Rating:            item.Rating,
-		Comment:           item.Comment,
-		SourceLabel:       "EXCURSION",
-		CreatedAt:         item.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:         item.UpdatedAt.UTC().Format(time.RFC3339),
+		Author: dto.ReviewAuthorResponse{
+			UserID:       authorUserID.String(),
+			DisplayName:  item.Author.DisplayName,
+			AvatarFileID: authorAvatarFileID,
+		},
+		Rating:      item.Rating,
+		Comment:     item.Comment,
+		SourceLabel: "EXCURSION",
+		CreatedAt:   item.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:   item.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 }
 
