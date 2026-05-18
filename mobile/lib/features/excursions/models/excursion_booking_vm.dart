@@ -20,7 +20,9 @@ class ExcursionBookingVm {
     required this.totalPriceAmount,
     required this.currency,
     required this.status,
+    this.scheduleSlotId,
     this.legacyExcursionId,
+    this.maxGroupSize,
     this.landmarkId,
     this.landmarkName,
     this.categorySlug,
@@ -35,6 +37,7 @@ class ExcursionBookingVm {
   final String id;
   final String productId;
   final String offerId;
+  final String? scheduleSlotId;
   final String? legacyExcursionId;
   final String touristUserId;
   final String guideUserId;
@@ -52,6 +55,7 @@ class ExcursionBookingVm {
   final int adults;
   final int children;
   final int totalSeats;
+  final int? maxGroupSize;
   final double totalPriceAmount;
   final String currency;
   final String status;
@@ -78,6 +82,7 @@ class ExcursionBookingVm {
       id: id,
       productId: productId,
       offerId: offerId,
+      scheduleSlotId: scheduleSlotId,
       legacyExcursionId: legacyExcursionId,
       touristUserId: touristUserId,
       guideUserId: guideUserId,
@@ -95,6 +100,7 @@ class ExcursionBookingVm {
       adults: adults,
       children: children,
       totalSeats: totalSeats,
+      maxGroupSize: maxGroupSize,
       totalPriceAmount: totalPriceAmount,
       currency: currency,
       status: status,
@@ -109,6 +115,7 @@ class ExcursionBookingVm {
       id: _string(json['id']),
       productId: _string(json['productId']),
       offerId: _string(json['offerId']),
+      scheduleSlotId: _nullableString(json['scheduleSlotId']),
       legacyExcursionId: _nullableString(json['legacyExcursionId']),
       touristUserId: _string(json['touristUserId']),
       guideUserId: _string(json['guideUserId']),
@@ -126,10 +133,10 @@ class ExcursionBookingVm {
       adults: _int(json['adults']),
       children: _int(json['children']),
       totalSeats: _int(json['totalSeats']),
+      maxGroupSize: _optionalPositiveInt(json['maxGroupSize']),
       totalPriceAmount: _double(json['totalPriceAmount']),
-      currency: _string(json['currency']).isEmpty
-          ? 'KZT'
-          : _string(json['currency']),
+      currency:
+          _string(json['currency']).isEmpty ? 'KZT' : _string(json['currency']),
       status: _string(json['status']).isEmpty
           ? 'REQUESTED'
           : _string(json['status']),
@@ -214,52 +221,50 @@ List<ExcursionBookingVm> filterMyExcursionBookings(
   DateTime? endDate,
 }) {
   final normalizedQuery = query.trim().toLowerCase();
-  return items
-      .where((item) {
-        if (tab == MyExcursionsTab.booked && !item.isBooked(now)) {
-          return false;
-        }
-        if (tab == MyExcursionsTab.visited && !item.isVisited(now)) {
-          return false;
-        }
-        if (statuses.isNotEmpty &&
-            !statuses.contains(item.status.trim().toUpperCase())) {
-          return false;
-        }
-        if (reviewed != null && item.isReviewed != reviewed) {
-          return false;
-        }
-        if (startDate != null) {
-          final start = DateTime(
-            startDate.year,
-            startDate.month,
-            startDate.day,
-          );
-          if (item.scheduledFor.isBefore(start)) return false;
-        }
-        if (endDate != null) {
-          final end = DateTime(
-            endDate.year,
-            endDate.month,
-            endDate.day,
-            23,
-            59,
-            59,
-            999,
-          );
-          if (item.scheduledFor.isAfter(end)) return false;
-        }
-        if (normalizedQuery.isEmpty) return true;
-        final haystack = [
-          item.title,
-          item.summary,
-          item.landmarkName,
-          item.guideDisplayName,
-          item.cityName,
-        ].whereType<String>().join(' ').toLowerCase();
-        return haystack.contains(normalizedQuery);
-      })
-      .toList(growable: false);
+  return items.where((item) {
+    if (tab == MyExcursionsTab.booked && !item.isBooked(now)) {
+      return false;
+    }
+    if (tab == MyExcursionsTab.visited && !item.isVisited(now)) {
+      return false;
+    }
+    if (statuses.isNotEmpty &&
+        !statuses.contains(item.status.trim().toUpperCase())) {
+      return false;
+    }
+    if (reviewed != null && item.isReviewed != reviewed) {
+      return false;
+    }
+    if (startDate != null) {
+      final start = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+      );
+      if (item.scheduledFor.isBefore(start)) return false;
+    }
+    if (endDate != null) {
+      final end = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+        999,
+      );
+      if (item.scheduledFor.isAfter(end)) return false;
+    }
+    if (normalizedQuery.isEmpty) return true;
+    final haystack = [
+      item.title,
+      item.summary,
+      item.landmarkName,
+      item.guideDisplayName,
+      item.cityName,
+    ].whereType<String>().join(' ').toLowerCase();
+    return haystack.contains(normalizedQuery);
+  }).toList(growable: false);
 }
 
 List<ExcursionBookingVm> sortMyExcursionBookings(
@@ -280,11 +285,11 @@ List<ExcursionBookingVm> sortMyExcursionBookings(
 
     final primary = switch (sortMode) {
       MyExcursionBookingSortMode.date => a.scheduledFor.compareTo(
-        b.scheduledFor,
-      ),
+          b.scheduledFor,
+        ),
       MyExcursionBookingSortMode.price => a.totalPriceAmount.compareTo(
-        b.totalPriceAmount,
-      ),
+          b.totalPriceAmount,
+        ),
     };
     final directed = ascending ? primary : -primary;
     if (directed != 0) return directed;
@@ -304,6 +309,11 @@ int _int(Object? value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return int.tryParse(_string(value)) ?? 0;
+}
+
+int? _optionalPositiveInt(Object? value) {
+  final parsed = _int(value);
+  return parsed > 0 ? parsed : null;
 }
 
 double _double(Object? value) {

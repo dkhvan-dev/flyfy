@@ -883,6 +883,9 @@
   "excursionDetailsOffersFiltersTitle": "Guide filters",
   "excursionDetailsOffersMaxPrice": "Max price",
   "excursionDetailsOffersMaxPriceHint": "e.g. 50000",
+  "excursionDetailsOffersAvailableDate": "Available date",
+  "excursionDetailsOffersAvailableDateHint": "dd.mm.yyyy",
+  "excursionDetailsOffersAvailableDateInvalid": "Enter the date as dd.mm.yyyy",
   "excursionDetailsOffersMinGroup": "Minimum group size",
   "excursionDetailsOffersMinGroupHint": "e.g. 4",
   "excursionDetailsOffersLanguageAny": "Any language",
@@ -894,6 +897,8 @@
   "excursionDetailsMeetingPoint": "Meeting point",
   "excursionDetailsTotal": "Total",
   "excursionDetailsBook": "Book",
+  "excursionDetailsCheckingSchedule": "Checking available times...",
+  "excursionDetailsNoAvailableSlots": "This guide has no available time slots for this excursion yet.",
   "excursionDetailsEditOffer": "Edit offer",
   "excursionDetailsLoadFailed": "Failed to load excursion",
   "excursionDetailsBookingComingSoon": "Excursion booking will be available soon.",
@@ -926,8 +931,20 @@
   "excursionBookingConfirmPay": "Confirm & Pay",
   "excursionBookingSecurePayment": "Secure payment processed by FlyFy",
   "excursionBookingSubmitted": "Booking request is ready. Online payment will be connected soon.",
+  "excursionBookingAlreadyBookedTitle": "You already booked this time",
+  "excursionBookingAlreadyBookedMessage": "You can change the number of guests in My excursions.",
+  "excursionBookingOpenMyExcursions": "Open My excursions",
   "excursionBookingLoadFailed": "Failed to load excursion booking",
   "excursionBookingPerPerson": "/ person",
+  "excursionBookingSelectSlot": "Select an available time",
+  "excursionBookingScheduleLoadFailed": "Failed to load available times",
+  "excursionBookingNoSlots": "The guide has not added available times for this offer yet.",
+  "excursionBookingSeatsLeft": "{count} seats left",
+  "@excursionBookingSeatsLeft": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "excursionDetailsNoDescription": "Your guide will share the detailed description soon.",
   "createExcursionTitle": "Create Excursion",
   "createExcursionEditTitle": "Edit Offer",
@@ -1295,6 +1312,27 @@
   },
   "myExcursionsReviewButton": "Rate",
   "myExcursionsReviewed": "Reviewed",
+  "myExcursionsEditGuestsButton": "Edit guests",
+  "myExcursionsEditGuestsTitle": "Edit guests",
+  "myExcursionsEditGuestsHint": "We will check available seats and update the booking without creating another one.",
+  "myExcursionsUpdateGuestsSuccess": "Guest count updated",
+  "myExcursionsUpdateGuestsFailed": "Failed to update guest count. Check available seats and try again.",
+  "myExcursionsGuestsChargeMock": "To pay: {amount}",
+  "@myExcursionsGuestsChargeMock": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "myExcursionsGuestsRefundMock": "To refund: {amount}",
+  "@myExcursionsGuestsRefundMock": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "myExcursionsGuestsNoPaymentChange": "Price will not change",
+  "myExcursionsGuestsPaymentMockHint": "This is a mock settlement for now: real charges or refunds will be connected through the payment service.",
+  "myExcursionsPayAndSaveGuests": "Pay and save",
+  "myExcursionsRefundAndSaveGuests": "Refund and save",
   "myExcursionsFilterStatus": "Status",
   "myExcursionsStatusRequested": "Booked",
   "myExcursionsFilterReview": "Reviews",
@@ -1811,5 +1849,63 @@
   "chatExternalLinkOpenFailed": "Could not open this link.",
   "chatSharedLoadFailed": "Could not load content",
   "chatSharedLoadFailedSubtitle": "Please check the connection and retry.",
-  "chatSharedPartialLoadWarning": "Some older shared items could not be loaded."
+  "chatSharedPartialLoadWarning": "Some older shared items could not be loaded.",
+  "guideCalendarTitle": "Guide calendar",
+  "guideCalendarAddSlot": "Slot",
+  "guideCalendarEditSlot": "Edit slot",
+  "guideCalendarEmptyDay": "No slots for this day",
+  "guideCalendarAvailable": "Available",
+  "guideCalendarBooked": "Booked",
+  "guideCalendarClosed": "Closed",
+  "guideCalendarCancelled": "Cancelled",
+  "guideCalendarCancelReason": "Reason: {reason}",
+  "@guideCalendarCancelReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "guideCalendarAutoCancelNoBookings": "no one booked this slot at least 2 hours before start",
+  "guideCalendarRepeatWeekly": "Repeat weekly",
+  "guideCalendarConflictTitle": "This time overlaps another excursion",
+  "guideCalendarSuggestNextTime": "Choose the next available time",
+  "guideCalendarDeleteSlot": "Delete",
+  "guideCalendarCancelSlot": "Cancel",
+  "guideCalendarCloseSlot": "Close",
+  "guideCalendarOfferLabel": "Published offer",
+  "guideCalendarNoPublishedOffers": "Publish an excursion offer first to add it to the schedule.",
+  "guideCalendarOfferRequired": "Choose an excursion offer",
+  "guideCalendarCurrentOfferFallback": "Current offer",
+  "guideCalendarOfferDuration": "{minutes} min",
+  "@guideCalendarOfferDuration": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "guideCalendarOfferCapacity": "{count} seats",
+  "@guideCalendarOfferCapacity": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guideCalendarDateLabel": "Date",
+  "guideCalendarDateHint": "dd.mm.yyyy",
+  "guideCalendarInvalidDate": "Enter the date as dd.mm.yyyy",
+  "guideCalendarTimeLabel": "Time",
+  "guideCalendarTimeHint": "hh:mm",
+  "guideCalendarInvalidTime": "Enter the time as hh:mm",
+  "guideCalendarCapacityLabel": "Seats",
+  "guideCalendarCapacityMax": "Maximum for this offer: {count}",
+  "@guideCalendarCapacityMax": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guideCalendarCapacityTooHigh": "This offer allows up to {count} seats",
+  "@guideCalendarCapacityTooHigh": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guideCalendarSlotLeadTimeTooSoon": "Choose a date and time at least 3 hours before the start.",
+  "guideCalendarSaveSlot": "Save"
 }

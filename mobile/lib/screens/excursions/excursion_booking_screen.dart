@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_view.dart';
 import '../../features/excursions/models/create_excursion_booking_request.dart';
+import '../../features/excursions/models/excursion_booking_vm.dart';
+import '../../features/excursions/models/excursion_schedule_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_cover_url.dart';
 import '../../features/excursions/excursion_localization.dart';
@@ -39,24 +41,26 @@ class ExcursionBookingScreen extends StatefulWidget {
 }
 
 class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
-  late DateTime _selectedDate;
-  late TimeOfDay _selectedTime;
   ExcursionVm? _excursion;
+  List<ExcursionScheduleSlotVm> _slots = const [];
+  ExcursionScheduleSlotVm? _selectedSlot;
   String? _loadError;
+  String? _scheduleError;
   bool _isLoading = true;
+  bool _isScheduleLoading = false;
   bool _isSubmitting = false;
+  int _scheduleRequestSerial = 0;
   int _adults = 1;
   int _children = 0;
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now().add(const Duration(days: 2));
-    _selectedTime = const TimeOfDay(hour: 10, minute: 0);
     _excursion = _applySelectedOffer(widget.initialExcursion);
     _isLoading = widget.initialExcursion == null;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ExcursionProvider>().loadMyExcursionBookings();
       _ensureExcursionLoaded(silent: widget.initialExcursion != null);
     });
   }
@@ -74,7 +78,8 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     }
 
     final provider = context.read<ExcursionProvider>();
-    final cachedExcursion = provider.selectedExcursion;
+    final cachedExcursion = provider.excursionDetailsFor(trimmedExcursionId) ??
+        provider.selectedExcursion;
     if (_excursion == null &&
         cachedExcursion != null &&
         cachedExcursion.id == trimmedExcursionId) {
@@ -92,27 +97,32 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
       });
     }
 
-    await provider.loadExcursionDetails(trimmedExcursionId,
-        initialExcursion: _excursion);
+    await provider.loadExcursionDetails(
+      trimmedExcursionId,
+      initialExcursion: _excursion,
+    );
 
     if (!mounted) return;
-    final loadedExcursion = provider.selectedExcursion;
+    final loadedExcursion = provider.excursionDetailsFor(trimmedExcursionId) ??
+        provider.selectedExcursion;
     final loadedMatchingExcursion =
         loadedExcursion != null && loadedExcursion.id == trimmedExcursionId
             ? loadedExcursion
             : null;
-    final nextExcursion =
-        _applySelectedOffer(loadedMatchingExcursion ?? _excursion);
+    final nextExcursion = _applySelectedOffer(
+      loadedMatchingExcursion ?? _excursion,
+    );
 
     setState(() {
       _excursion = nextExcursion;
       _isLoading = false;
-      _loadError = nextExcursion == null ? provider.detailErrorMessage : null;
-      final maxTravelers = _maxTravelersFor(nextExcursion);
-      if (_adults + _children > maxTravelers) {
-        _children = math.max(0, maxTravelers - _adults);
-      }
+      _loadError = nextExcursion == null
+          ? provider.detailErrorMessageFor(trimmedExcursionId) ??
+              provider.detailErrorMessage
+          : null;
+      _clampTravelersToLimit(_travelerLimitFor(nextExcursion, _selectedSlot));
     });
+    await _loadScheduleSlots();
   }
 
   void _goBack() {
@@ -123,89 +133,124 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     context.go('/excursions/${Uri.encodeComponent(widget.excursionId)}');
   }
 
-  Future<void> _pickSchedule() async {
-    final now = DateTime.now();
-    final initialDate = _selectedDate.isBefore(now) ? now : _selectedDate;
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(now.year, now.month, now.day),
-      lastDate: DateTime(now.year + 2),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.accent,
-              onPrimary: Colors.white,
-              surface: _BookingColors.panel,
-              onSurface: _BookingColors.text,
-            ),
-          ),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
-    );
+  Future<void> _loadScheduleSlots() async {
+    final productId = widget.excursionId.trim();
+    final offerId = _selectedOfferId;
+    if (productId.isEmpty || offerId.isEmpty || _excursion == null) {
+      return;
+    }
 
-    if (!mounted || pickedDate == null) return;
-
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.accent,
-              onPrimary: Colors.white,
-              surface: _BookingColors.panel,
-              onSurface: _BookingColors.text,
-            ),
-          ),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
-    );
-
-    if (!mounted) return;
+    final requestSerial = ++_scheduleRequestSerial;
+    final previousSlotId = _selectedSlot?.id;
     setState(() {
-      _selectedDate = pickedDate;
-      if (pickedTime != null) {
-        _selectedTime = pickedTime;
-      }
+      _isScheduleLoading = true;
+      _scheduleError = null;
     });
+
+    final now = DateTime.now();
+    final from = DateTime(now.year, now.month, now.day);
+    final to = from.add(const Duration(days: 90));
+
+    try {
+      final loadedSlots =
+          await context.read<ExcursionProvider>().loadBookableExcursionSchedule(
+                productId: productId,
+                offerId: offerId,
+                from: from,
+                to: to,
+                seats: _totalTravelers,
+              );
+      if (!mounted || requestSerial != _scheduleRequestSerial) return;
+
+      final slots = _sortSlots(
+        loadedSlots
+            .where((slot) => slot.isBookableForBooking(_totalTravelers))
+            .toList(growable: false),
+      );
+      final preservedSlot = _slotById(slots, previousSlotId);
+      setState(() {
+        _slots = slots;
+        _selectedSlot = preservedSlot ?? _firstSlotOrNull(slots);
+        _isScheduleLoading = false;
+        _scheduleError = null;
+      });
+    } catch (_) {
+      if (!mounted || requestSerial != _scheduleRequestSerial) return;
+      setState(() {
+        _slots = const [];
+        _selectedSlot = null;
+        _isScheduleLoading = false;
+        _scheduleError = AppLocalizations.of(
+          context,
+        )!
+            .excursionBookingScheduleLoadFailed;
+      });
+    }
+  }
+
+  List<ExcursionScheduleSlotVm> _sortSlots(
+    List<ExcursionScheduleSlotVm> slots,
+  ) {
+    return List<ExcursionScheduleSlotVm>.of(slots)
+      ..sort((a, b) => a.startAt.compareTo(b.startAt));
+  }
+
+  ExcursionScheduleSlotVm? _slotById(
+    List<ExcursionScheduleSlotVm> slots,
+    String? id,
+  ) {
+    if (id == null || id.trim().isEmpty) return null;
+    for (final slot in slots) {
+      if (slot.id == id) return slot;
+    }
+    return null;
+  }
+
+  ExcursionScheduleSlotVm? _firstSlotOrNull(
+    List<ExcursionScheduleSlotVm> slots,
+  ) {
+    return slots.isEmpty ? null : slots.first;
   }
 
   void _incrementAdults() {
-    if (_adults + _children >= _maxTravelers) return;
+    if (_adults + _children >= _travelerLimit) return;
     setState(() => _adults++);
+    _loadScheduleSlots();
   }
 
   void _decrementAdults() {
     if (_adults <= 1) return;
     setState(() => _adults--);
+    _loadScheduleSlots();
   }
 
   void _incrementChildren() {
-    if (_adults + _children >= _maxTravelers) return;
+    if (_adults + _children >= _travelerLimit) return;
     setState(() => _children++);
+    _loadScheduleSlots();
   }
 
   void _decrementChildren() {
     if (_children <= 0) return;
     setState(() => _children--);
+    _loadScheduleSlots();
   }
 
   Future<void> _confirmBooking() async {
     if (_isSubmitting) return;
     final productId = widget.excursionId.trim();
     final offerId = _selectedOfferId;
-    if (productId.isEmpty || offerId.isEmpty) {
+    final selectedSlot = _selectedSlot;
+    if (productId.isEmpty || offerId.isEmpty || selectedSlot == null) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content:
-                Text(AppLocalizations.of(context)!.excursionBookingLoadFailed),
+            content: Text(
+              selectedSlot == null
+                  ? AppLocalizations.of(context)!.excursionBookingSelectSlot
+                  : AppLocalizations.of(context)!.excursionBookingLoadFailed,
+            ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: const Color(0xFF3A2B1D),
           ),
@@ -215,30 +260,24 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
 
     HapticFeedback.mediumImpact();
     setState(() => _isSubmitting = true);
-    final scheduledFor = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      _selectedTime.hour,
-      _selectedTime.minute,
+    final scheduledFor = selectedSlot.startAt;
+    final provider = context.read<ExcursionProvider>();
+    final success = await provider.createExcursionBooking(
+      CreateExcursionBookingRequest(
+        productId: productId,
+        offerId: offerId,
+        scheduledFor: scheduledFor,
+        adults: _adults,
+        children: _children,
+        scheduleSlotId: _selectedSlot?.id,
+        idempotencyKey:
+            '$productId:$offerId:${selectedSlot.id}:$_adults:$_children',
+      ),
     );
-    final success =
-        await context.read<ExcursionProvider>().createExcursionBooking(
-              CreateExcursionBookingRequest(
-                productId: productId,
-                offerId: offerId,
-                scheduledFor: scheduledFor,
-                adults: _adults,
-                children: _children,
-                idempotencyKey:
-                    '$productId:$offerId:${scheduledFor.toUtc().toIso8601String()}:$_adults:$_children',
-              ),
-            );
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
     if (!success) {
-      final provider = context.read<ExcursionProvider>();
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -253,19 +292,15 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
         );
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content:
-              Text(AppLocalizations.of(context)!.excursionBookingSubmitted),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: const Color(0xFF3A2B1D),
-        ),
-      );
+    await provider.loadMyExcursionBookings(force: true);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    context.go('/me/excursions');
   }
 
-  int get _maxTravelers => _maxTravelersFor(_excursion);
+  int get _totalTravelers => _adults + _children;
+
+  int get _travelerLimit => _travelerLimitFor(_excursion, _selectedSlot);
 
   String get _selectedOfferId {
     final explicit = widget.selectedOfferId?.trim();
@@ -295,6 +330,58 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
     return groupSize > 0 ? groupSize : 12;
   }
 
+  int _travelerLimitFor(
+    ExcursionVm? excursion,
+    ExcursionScheduleSlotVm? selectedSlot,
+  ) {
+    final excursionLimit = _maxTravelersFor(excursion);
+    final slotLimit = selectedSlot?.availableSeats;
+    if (slotLimit == null || slotLimit <= 0) {
+      return excursionLimit;
+    }
+    return math.min(excursionLimit, slotLimit);
+  }
+
+  void _clampTravelersToLimit(int maxTravelers) {
+    final safeMaxTravelers = math.max(1, maxTravelers);
+    if (_adults > safeMaxTravelers) {
+      _adults = safeMaxTravelers;
+      _children = 0;
+      return;
+    }
+    if (_adults + _children > safeMaxTravelers) {
+      _children = math.max(0, safeMaxTravelers - _adults);
+    }
+  }
+
+  ExcursionBookingVm? _existingBookingForSelectedSlot(
+    List<ExcursionBookingVm> bookings,
+  ) {
+    final selectedSlot = _selectedSlot;
+    final offerId = _selectedOfferId;
+    final productId = widget.excursionId.trim();
+    if (selectedSlot == null || offerId.isEmpty || productId.isEmpty) {
+      return null;
+    }
+    final now = DateTime.now().toUtc();
+    for (final booking in bookings) {
+      if (!booking.isBooked(now) ||
+          booking.productId != productId ||
+          booking.offerId != offerId) {
+        continue;
+      }
+      final bookedSlotId = booking.scheduleSlotId?.trim();
+      if (bookedSlotId != null && bookedSlotId == selectedSlot.id) {
+        return booking;
+      }
+      if ((bookedSlotId == null || bookedSlotId.isEmpty) &&
+          booking.scheduledFor.isAtSameMomentAs(selectedSlot.startAt.toUtc())) {
+        return booking;
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -319,24 +406,36 @@ class _ExcursionBookingScreenState extends State<ExcursionBookingScreen> {
       );
     }
 
+    final existingBooking = _existingBookingForSelectedSlot(
+      context.watch<ExcursionProvider>().myExcursionBookings,
+    );
+
     return Scaffold(
       backgroundColor: _BookingColors.base,
       body: ExcursionBookingContent(
         excursion: excursion,
-        selectedDate: _selectedDate,
-        selectedTime: _selectedTime,
+        slots: _slots,
+        selectedSlot: _selectedSlot,
+        isScheduleLoading: _isScheduleLoading,
+        scheduleError: _scheduleError,
         adults: _adults,
         children: _children,
-        maxTravelers: _maxTravelers,
+        maxTravelers: _travelerLimit,
         isSubmitting: _isSubmitting,
+        existingBooking: existingBooking,
         loadError: _loadError,
         onBackTap: _goBack,
-        onChangeSchedule: _pickSchedule,
+        onSelectSlot: (slot) => setState(() {
+          _selectedSlot = slot;
+          _clampTravelersToLimit(_travelerLimitFor(_excursion, slot));
+        }),
+        onReloadSchedule: _loadScheduleSlots,
         onIncrementAdults: _incrementAdults,
         onDecrementAdults: _decrementAdults,
         onIncrementChildren: _incrementChildren,
         onDecrementChildren: _decrementChildren,
         onConfirm: _confirmBooking,
+        onOpenMyExcursions: () => context.go('/me/excursions'),
         onRetry: () => _ensureExcursionLoaded(),
       ),
     );
@@ -347,44 +446,60 @@ class ExcursionBookingContent extends StatelessWidget {
   const ExcursionBookingContent({
     super.key,
     required this.excursion,
-    required this.selectedDate,
-    required this.selectedTime,
+    required this.slots,
+    required this.selectedSlot,
+    required this.isScheduleLoading,
     required this.adults,
     required this.children,
     required this.maxTravelers,
     required this.isSubmitting,
+    required this.existingBooking,
     required this.onBackTap,
-    required this.onChangeSchedule,
+    required this.onSelectSlot,
+    required this.onReloadSchedule,
     required this.onIncrementAdults,
     required this.onDecrementAdults,
     required this.onIncrementChildren,
     required this.onDecrementChildren,
     required this.onConfirm,
+    required this.onOpenMyExcursions,
     this.onRetry,
     this.loadError,
+    this.scheduleError,
   });
 
   final ExcursionVm excursion;
-  final DateTime selectedDate;
-  final TimeOfDay selectedTime;
+  final List<ExcursionScheduleSlotVm> slots;
+  final ExcursionScheduleSlotVm? selectedSlot;
+  final bool isScheduleLoading;
   final int adults;
   final int children;
   final int maxTravelers;
   final bool isSubmitting;
+  final ExcursionBookingVm? existingBooking;
   final VoidCallback onBackTap;
-  final VoidCallback onChangeSchedule;
+  final ValueChanged<ExcursionScheduleSlotVm> onSelectSlot;
+  final VoidCallback onReloadSchedule;
   final VoidCallback onIncrementAdults;
   final VoidCallback onDecrementAdults;
   final VoidCallback onIncrementChildren;
   final VoidCallback onDecrementChildren;
   final VoidCallback onConfirm;
+  final VoidCallback onOpenMyExcursions;
   final VoidCallback? onRetry;
   final String? loadError;
+  final String? scheduleError;
 
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
     final horizontalPadding = compact ? 20.0 : 24.0;
+    final effectiveMaxTravelers = _effectiveTravelerLimit(
+      maxTravelers,
+      selectedSlot,
+    );
+    final selectedSlotCanFitTravelers =
+        selectedSlot?.isBookableForBooking(adults + children) ?? false;
 
     return DecoratedBox(
       decoration: _BookingColors.backgroundDecoration,
@@ -422,15 +537,19 @@ class ExcursionBookingContent extends StatelessWidget {
                             _BookingExcursionCard(excursion: excursion),
                             const SizedBox(height: 42),
                             _BookingScheduleSection(
-                              selectedDate: selectedDate,
-                              selectedTime: selectedTime,
-                              onChangeSchedule: onChangeSchedule,
+                              slots: slots,
+                              selectedSlot: selectedSlot,
+                              isLoading: isScheduleLoading,
+                              errorMessage: scheduleError,
+                              travelers: adults + children,
+                              onSelectSlot: onSelectSlot,
+                              onReload: onReloadSchedule,
                             ),
                             const SizedBox(height: 38),
                             _TravelersSection(
                               adults: adults,
                               children: children,
-                              maxTravelers: maxTravelers,
+                              maxTravelers: effectiveMaxTravelers,
                               onIncrementAdults: onIncrementAdults,
                               onDecrementAdults: onDecrementAdults,
                               onIncrementChildren: onIncrementChildren,
@@ -442,6 +561,13 @@ class ExcursionBookingContent extends StatelessWidget {
                               adults: adults,
                               children: children,
                             ),
+                            if (existingBooking != null) ...[
+                              const SizedBox(height: 16),
+                              _AlreadyBookedNotice(
+                                booking: existingBooking!,
+                                onOpenMyExcursions: onOpenMyExcursions,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -451,7 +577,11 @@ class ExcursionBookingContent extends StatelessWidget {
                       adults: adults,
                       children: children,
                       isSubmitting: isSubmitting,
+                      canConfirm: selectedSlotCanFitTravelers &&
+                          existingBooking == null,
+                      existingBooking: existingBooking,
                       onConfirm: onConfirm,
+                      onOpenMyExcursions: onOpenMyExcursions,
                     ),
                   ],
                 ),
@@ -514,8 +644,11 @@ class _BookingExcursionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final imageUrl = resolveExcursionCoverUrl(excursion)?.trim() ?? '';
-    final price =
-        _formatBookingMoney(context, excursion.priceAmount, excursion.currency);
+    final price = _formatBookingMoney(
+      context,
+      excursion.priceAmount,
+      excursion.currency,
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -596,24 +729,34 @@ class _BookingExcursionCard extends StatelessWidget {
 
 class _BookingScheduleSection extends StatelessWidget {
   const _BookingScheduleSection({
-    required this.selectedDate,
-    required this.selectedTime,
-    required this.onChangeSchedule,
+    required this.slots,
+    required this.selectedSlot,
+    required this.isLoading,
+    required this.travelers,
+    required this.onSelectSlot,
+    required this.onReload,
+    this.errorMessage,
   });
 
-  final DateTime selectedDate;
-  final TimeOfDay selectedTime;
-  final VoidCallback onChangeSchedule;
+  final List<ExcursionScheduleSlotVm> slots;
+  final ExcursionScheduleSlotVm? selectedSlot;
+  final bool isLoading;
+  final int travelers;
+  final ValueChanged<ExcursionScheduleSlotVm> onSelectSlot;
+  final VoidCallback onReload;
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final dateLabel = DateFormat.yMMMd(locale).format(selectedDate);
-    final timeLabel = MaterialLocalizations.of(context).formatTimeOfDay(
-      selectedTime,
-      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-    );
+    final selectedStart = selectedSlot?.startAt.toLocal();
+    final dateLabel = selectedStart == null
+        ? l10n.excursionBookingSelectSlot
+        : DateFormat.yMMMd(locale).format(selectedStart);
+    final timeLabel = selectedStart == null
+        ? '--:--'
+        : DateFormat.Hm(locale).format(selectedStart);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -621,46 +764,319 @@ class _BookingScheduleSection extends StatelessWidget {
         _SectionHead(
           title: l10n.excursionBookingSchedule,
           actionLabel: l10n.excursionBookingChange,
-          onActionTap: onChangeSchedule,
+          onActionTap: () => _handleChangeTap(context),
         ),
         const SizedBox(height: 22),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 342;
-            final cards = [
-              _BookingScheduleCard(
-                icon: Icons.calendar_month_rounded,
-                label: l10n.excursionBookingDate,
-                value: dateLabel,
-                onTap: onChangeSchedule,
-              ),
-              _BookingScheduleCard(
-                icon: Icons.schedule_rounded,
-                label: l10n.excursionBookingTimeSlot,
-                value: timeLabel,
-                active: true,
-                onTap: onChangeSchedule,
-              ),
-            ];
-
-            if (isNarrow) {
-              return Column(
-                children: [cards.first, const SizedBox(height: 12), cards.last],
-              );
-            }
-
-            return Row(
-              children: [
-                Expanded(child: cards.first),
-                const SizedBox(width: 14),
-                Expanded(child: cards.last),
-              ],
-            );
-          },
+        Column(
+          children: [
+            _BookingScheduleCard(
+              icon: Icons.calendar_month_rounded,
+              label: l10n.excursionBookingDate,
+              value: dateLabel,
+              onTap: () => _handleChangeTap(context),
+            ),
+            const SizedBox(height: 12),
+            _BookingScheduleCard(
+              icon: Icons.schedule_rounded,
+              label: l10n.excursionBookingTimeSlot,
+              value: timeLabel,
+              active: true,
+              onTap: () => _handleChangeTap(context),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        _BookingSlotSelector(
+          slots: slots,
+          selectedSlot: selectedSlot,
+          isLoading: isLoading,
+          travelers: travelers,
+          errorMessage: errorMessage,
+          onSelectSlot: onSelectSlot,
+          onRetry: onReload,
         ),
       ],
     );
   }
+
+  void _handleChangeTap(BuildContext context) {
+    if (isLoading) return;
+    if (slots.isEmpty || errorMessage != null) {
+      onReload();
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.62,
+          minChildSize: 0.38,
+          maxChildSize: 0.88,
+          builder: (context, scrollController) {
+            return DecoratedBox(
+              decoration: const BoxDecoration(
+                color: _BookingColors.base,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        AppLocalizations.of(
+                          context,
+                        )!
+                            .excursionBookingSelectSlot,
+                        style: _sectionTitleStyle,
+                      ),
+                      const SizedBox(height: 18),
+                      _BookingSlotSelector(
+                        slots: slots,
+                        selectedSlot: selectedSlot,
+                        isLoading: false,
+                        travelers: travelers,
+                        onSelectSlot: (slot) {
+                          onSelectSlot(slot);
+                          Navigator.of(sheetContext).pop();
+                        },
+                        onRetry: onReload,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _BookingSlotSelector extends StatelessWidget {
+  const _BookingSlotSelector({
+    required this.slots,
+    required this.selectedSlot,
+    required this.isLoading,
+    required this.travelers,
+    required this.onSelectSlot,
+    required this.onRetry,
+    this.errorMessage,
+  });
+
+  final List<ExcursionScheduleSlotVm> slots;
+  final ExcursionScheduleSlotVm? selectedSlot;
+  final bool isLoading;
+  final int travelers;
+  final ValueChanged<ExcursionScheduleSlotVm> onSelectSlot;
+  final VoidCallback onRetry;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    if (isLoading && slots.isEmpty) {
+      return const _BookingScheduleStatePanel(
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.accent),
+        ),
+      );
+    }
+    if (errorMessage != null) {
+      return _SoftErrorBanner(message: errorMessage!, onRetry: onRetry);
+    }
+    if (slots.isEmpty) {
+      return _BookingScheduleStatePanel(
+        child: Text(
+          l10n.excursionBookingNoSlots,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: _BookingColors.muted,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
+          ),
+        ),
+      );
+    }
+
+    final grouped = _groupSlotsByDay(slots);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < grouped.length; i++) ...[
+          if (i > 0) const SizedBox(height: 14),
+          Text(
+            DateFormat.yMMMd(locale).format(grouped[i].day),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _BookingColors.text,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final slot in grouped[i].slots)
+                _BookingSlotChip(
+                  slot: slot,
+                  selected: selectedSlot?.id == slot.id,
+                  enabled: slot.isBookableForBooking(travelers),
+                  onTap: () => onSelectSlot(slot),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  List<_SlotsByDay> _groupSlotsByDay(List<ExcursionScheduleSlotVm> slots) {
+    final result = <_SlotsByDay>[];
+    for (final slot in slots) {
+      final local = slot.startAt.toLocal();
+      final day = DateTime(local.year, local.month, local.day);
+      if (result.isEmpty || result.last.day != day) {
+        result.add(_SlotsByDay(day: day, slots: [slot]));
+      } else {
+        result.last.slots.add(slot);
+      }
+    }
+    return result;
+  }
+}
+
+class _BookingSlotChip extends StatelessWidget {
+  const _BookingSlotChip({
+    required this.slot,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final ExcursionScheduleSlotVm slot;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localStart = slot.startAt.toLocal();
+    final timeLabel = DateFormat.Hm(
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(localStart);
+    final background = selected
+        ? AppColors.accent
+        : enabled
+            ? _BookingColors.panel
+            : _BookingColors.panel.withValues(alpha: 0.52);
+    final foreground = selected
+        ? AppColors.textPrimary
+        : enabled
+            ? _BookingColors.text
+            : _BookingColors.muted.withValues(alpha: 0.58);
+
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                timeLabel,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                l10n.excursionBookingSeatsLeft(slot.availableSeats),
+                style: TextStyle(
+                  color: foreground.withValues(alpha: selected ? 0.86 : 0.68),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingScheduleStatePanel extends StatelessWidget {
+  const _BookingScheduleStatePanel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 86),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _BookingColors.panel,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _SlotsByDay {
+  _SlotsByDay({required this.day, required this.slots});
+
+  final DateTime day;
+  final List<ExcursionScheduleSlotVm> slots;
+}
+
+int _effectiveTravelerLimit(
+  int maxTravelers,
+  ExcursionScheduleSlotVm? selectedSlot,
+) {
+  final slotLimit = selectedSlot?.availableSeats;
+  if (slotLimit == null || slotLimit <= 0) {
+    return maxTravelers;
+  }
+  return math.min(maxTravelers, slotLimit);
 }
 
 class _TravelersSection extends StatelessWidget {
@@ -750,8 +1166,11 @@ class _BookingSummarySection extends StatelessWidget {
           const SizedBox(height: 22),
           _SummaryRow(
             label: l10n.excursionBookingChildrenSummary(children, priceLabel),
-            value:
-                _formatBookingMoney(context, childrenTotal, excursion.currency),
+            value: _formatBookingMoney(
+              context,
+              childrenTotal,
+              excursion.currency,
+            ),
           ),
         ],
         const SizedBox(height: 22),
@@ -806,14 +1225,20 @@ class _BookingFooter extends StatelessWidget {
     required this.adults,
     required this.children,
     required this.isSubmitting,
+    required this.canConfirm,
+    required this.existingBooking,
     required this.onConfirm,
+    required this.onOpenMyExcursions,
   });
 
   final ExcursionVm excursion;
   final int adults;
   final int children;
   final bool isSubmitting;
+  final bool canConfirm;
+  final ExcursionBookingVm? existingBooking;
   final VoidCallback onConfirm;
+  final VoidCallback onOpenMyExcursions;
 
   @override
   Widget build(BuildContext context) {
@@ -842,8 +1267,12 @@ class _BookingFooter extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 height: 60,
-                child: FilledButton(
-                  onPressed: isSubmitting ? null : onConfirm,
+                child: FilledButton.icon(
+                  onPressed: existingBooking != null
+                      ? onOpenMyExcursions
+                      : isSubmitting || !canConfirm
+                          ? null
+                          : onConfirm,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: Colors.white,
@@ -852,7 +1281,10 @@ class _BookingFooter extends StatelessWidget {
                     ),
                     shape: const StadiumBorder(),
                   ),
-                  child: AnimatedSwitcher(
+                  icon: existingBooking == null
+                      ? const SizedBox.shrink()
+                      : const Icon(Icons.confirmation_number_rounded, size: 19),
+                  label: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
                     child: isSubmitting
                         ? const SizedBox(
@@ -865,7 +1297,10 @@ class _BookingFooter extends StatelessWidget {
                             ),
                           )
                         : Text(
-                            l10n.excursionBookingConfirmPay.toUpperCase(),
+                            (existingBooking != null
+                                    ? l10n.excursionBookingOpenMyExcursions
+                                    : l10n.excursionBookingConfirmPay)
+                                .toUpperCase(),
                             key: const ValueKey('booking-confirm'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -880,8 +1315,10 @@ class _BookingFooter extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                '${l10n.excursionBookingSecurePayment} · '
-                '${_formatBookingMoney(context, total, excursion.currency)}',
+                existingBooking != null
+                    ? l10n.excursionBookingAlreadyBookedMessage
+                    : '${l10n.excursionBookingSecurePayment} · '
+                        '${_formatBookingMoney(context, total, excursion.currency)}',
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -1224,6 +1661,83 @@ class _SoftErrorBanner extends StatelessWidget {
               const SizedBox(width: 8),
               TextButton(onPressed: onRetry, child: Text(l10n.retry)),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AlreadyBookedNotice extends StatelessWidget {
+  const _AlreadyBookedNotice({
+    required this.booking,
+    required this.onOpenMyExcursions,
+  });
+
+  final ExcursionBookingVm booking;
+  final VoidCallback onOpenMyExcursions;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).toLanguageTag();
+    final dateLabel = DateFormat.yMMMd(
+      localeName,
+    ).add_Hm().format(booking.scheduledFor.toLocal());
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.26)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.confirmation_number_rounded,
+              color: AppColors.accent,
+              size: 22,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.excursionBookingAlreadyBookedTitle,
+                    style: const TextStyle(
+                      color: _BookingColors.text,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      height: 1.15,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '$dateLabel · ${l10n.myExcursionsGuests(booking.totalSeats)}',
+                    style: const TextStyle(
+                      color: _BookingColors.muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: onOpenMyExcursions,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.accent,
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(l10n.excursionBookingOpenMyExcursions),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

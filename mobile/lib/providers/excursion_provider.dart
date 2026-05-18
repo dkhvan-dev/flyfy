@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 
 import '../core/network/dio_error_mapper.dart';
 import '../core/network/excursion_api.dart';
+import '../core/network/excursion_schedule_api.dart';
 import '../features/excursions/models/create_excursion_booking_request.dart';
 import '../features/excursions/models/create_excursion_review_request.dart';
 import '../features/excursions/models/create_excursion_request.dart';
 import '../features/excursions/models/excursion_booking_vm.dart';
+import '../features/excursions/models/excursion_schedule_vm.dart';
 import '../features/excursions/models/excursion_vm.dart';
 
 enum ExcursionActionState { idle, loading, success, error }
@@ -16,13 +18,17 @@ enum ExcursionListState { initial, loading, success, error }
 enum ExcursionDetailState { initial, loading, success, error }
 
 class ExcursionProvider extends ChangeNotifier {
-  ExcursionProvider({ExcursionApi? excursionApi})
-      : _excursionApi = excursionApi ?? ExcursionApi();
+  ExcursionProvider({
+    ExcursionApi? excursionApi,
+    ExcursionScheduleApi? scheduleApi,
+  })  : _excursionApi = excursionApi ?? ExcursionApi(),
+        _scheduleApi = scheduleApi ?? ExcursionScheduleApi();
 
   static const _marketplaceRefreshAttempts = 3;
   static const _marketplaceRefreshRetryDelay = Duration(milliseconds: 150);
 
   final ExcursionApi _excursionApi;
+  final ExcursionScheduleApi _scheduleApi;
 
   ExcursionListState _listState = ExcursionListState.initial;
   List<ExcursionVm> _excursions = const [];
@@ -33,6 +39,9 @@ class ExcursionProvider extends ChangeNotifier {
   String? _detailExcursionId;
   ExcursionVm? _selectedExcursion;
   String? _detailErrorMessage;
+  final Map<String, ExcursionVm> _excursionDetailsById = {};
+  final Set<String> _loadingDetailExcursionIds = <String>{};
+  final Map<String, String> _detailErrorsByExcursionId = {};
 
   ExcursionActionState _actionState = ExcursionActionState.idle;
   String? _actionErrorMessage;
@@ -60,6 +69,31 @@ class ExcursionProvider extends ChangeNotifier {
   ExcursionDetailState get detailState => _detailState;
   ExcursionVm? get selectedExcursion => _selectedExcursion;
   String? get detailErrorMessage => _detailErrorMessage;
+
+  ExcursionVm? excursionDetailsFor(String excursionId) {
+    final trimmedExcursionId = excursionId.trim();
+    if (trimmedExcursionId.isEmpty) return null;
+    return _excursionDetailsById[trimmedExcursionId];
+  }
+
+  bool isDetailLoadingFor(String excursionId) {
+    final trimmedExcursionId = excursionId.trim();
+    if (trimmedExcursionId.isEmpty) return false;
+    return _loadingDetailExcursionIds.contains(trimmedExcursionId);
+  }
+
+  bool isDetailErrorFor(String excursionId) {
+    final trimmedExcursionId = excursionId.trim();
+    if (trimmedExcursionId.isEmpty) return false;
+    return !_excursionDetailsById.containsKey(trimmedExcursionId) &&
+        _detailErrorsByExcursionId.containsKey(trimmedExcursionId);
+  }
+
+  String? detailErrorMessageFor(String excursionId) {
+    final trimmedExcursionId = excursionId.trim();
+    if (trimmedExcursionId.isEmpty) return null;
+    return _detailErrorsByExcursionId[trimmedExcursionId];
+  }
 
   ExcursionActionState get actionState => _actionState;
   String? get actionErrorMessage => _actionErrorMessage;
@@ -226,6 +260,22 @@ class ExcursionProvider extends ChangeNotifier {
     return loadGuideDashboardData(force: true);
   }
 
+  Future<List<ExcursionScheduleSlotVm>> loadBookableExcursionSchedule({
+    required String productId,
+    required String offerId,
+    required DateTime from,
+    required DateTime to,
+    required int seats,
+  }) {
+    return _scheduleApi.getPublicSchedule(
+      productId: productId,
+      offerId: offerId,
+      from: from,
+      to: to,
+      seats: seats,
+    );
+  }
+
   Future<bool> publishExcursionOffer(String excursionId) async {
     final trimmedExcursionId = excursionId.trim();
     if (trimmedExcursionId.isEmpty) {
@@ -302,14 +352,18 @@ class ExcursionProvider extends ChangeNotifier {
       return;
     }
 
-    final cachedExcursion =
-        initialExcursion ?? _findCachedExcursion(trimmedExcursionId);
+    final cachedExcursion = _excursionDetailsById[trimmedExcursionId] ??
+        initialExcursion ??
+        _findCachedExcursion(trimmedExcursionId);
     final hasCachedExcursion = cachedExcursion != null;
 
     _detailExcursionId = trimmedExcursionId;
     _detailErrorMessage = null;
+    _detailErrorsByExcursionId.remove(trimmedExcursionId);
+    _loadingDetailExcursionIds.add(trimmedExcursionId);
     if (hasCachedExcursion) {
       _selectedExcursion = cachedExcursion;
+      _excursionDetailsById[trimmedExcursionId] = cachedExcursion;
       _detailState = ExcursionDetailState.success;
     } else {
       _selectedExcursion = null;
@@ -321,28 +375,35 @@ class ExcursionProvider extends ChangeNotifier {
       final excursion = await _excursionApi.getExcursionById(
         trimmedExcursionId,
       );
-      if (_detailExcursionId != trimmedExcursionId) return;
 
-      _selectedExcursion = excursion;
-      _detailState = ExcursionDetailState.success;
+      _excursionDetailsById[trimmedExcursionId] = excursion;
+      _detailErrorsByExcursionId.remove(trimmedExcursionId);
+      if (_detailExcursionId == trimmedExcursionId) {
+        _selectedExcursion = excursion;
+        _detailState = ExcursionDetailState.success;
+        _detailErrorMessage = null;
+      }
     } on DioException catch (e) {
-      if (_detailExcursionId != trimmedExcursionId) return;
-
-      _detailErrorMessage = DioErrorMapper.toMessage(e);
-      if (!hasCachedExcursion) {
-        _detailState = ExcursionDetailState.error;
+      final message = DioErrorMapper.toMessage(e);
+      _detailErrorsByExcursionId[trimmedExcursionId] = message;
+      if (_detailExcursionId == trimmedExcursionId) {
+        _detailErrorMessage = message;
+        if (!hasCachedExcursion) {
+          _detailState = ExcursionDetailState.error;
+        }
       }
     } catch (_) {
-      if (_detailExcursionId != trimmedExcursionId) return;
-
-      _detailErrorMessage = 'Failed to load excursion';
-      if (!hasCachedExcursion) {
-        _detailState = ExcursionDetailState.error;
+      const message = 'Failed to load excursion';
+      _detailErrorsByExcursionId[trimmedExcursionId] = message;
+      if (_detailExcursionId == trimmedExcursionId) {
+        _detailErrorMessage = message;
+        if (!hasCachedExcursion) {
+          _detailState = ExcursionDetailState.error;
+        }
       }
     } finally {
-      if (_detailExcursionId == trimmedExcursionId) {
-        notifyListeners();
-      }
+      _loadingDetailExcursionIds.remove(trimmedExcursionId);
+      notifyListeners();
     }
   }
 
@@ -440,7 +501,8 @@ class ExcursionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _excursionApi.createExcursionBooking(request);
+      final booking = await _excursionApi.createExcursionBooking(request);
+      _upsertMyExcursionBooking(booking);
       _actionState = ExcursionActionState.success;
       return true;
     } on DioException catch (e) {
@@ -449,6 +511,44 @@ class ExcursionProvider extends ChangeNotifier {
       return false;
     } catch (_) {
       _actionErrorMessage = 'Failed to book excursion';
+      _actionState = ExcursionActionState.error;
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateExcursionBookingGuests(
+    String bookingId, {
+    required int adults,
+    required int children,
+  }) async {
+    final trimmedBookingId = bookingId.trim();
+    if (trimmedBookingId.isEmpty) {
+      _actionErrorMessage = 'Invalid excursion booking id';
+      return false;
+    }
+
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final booking = await _excursionApi.updateExcursionBookingGuests(
+        trimmedBookingId,
+        adults: adults,
+        children: children,
+      );
+      _upsertMyExcursionBooking(booking);
+      _actionState = ExcursionActionState.success;
+      await loadMyExcursionBookings(force: true);
+      return true;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return false;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to update excursion booking';
       _actionState = ExcursionActionState.error;
       return false;
     } finally {
@@ -557,6 +657,8 @@ class ExcursionProvider extends ChangeNotifier {
 
       try {
         final details = await _excursionApi.getExcursionById(productId);
+        _excursionDetailsById[productId] = details;
+        _detailErrorsByExcursionId.remove(productId);
         _upsertPublishedExcursion(details);
         if (_detailExcursionId == productId) {
           _selectedExcursion = details;
@@ -651,6 +753,7 @@ class ExcursionProvider extends ChangeNotifier {
       nextExcursions.insert(0, excursion);
     }
     _excursions = List.unmodifiable(nextExcursions);
+    _excursionDetailsById[excursionId] = excursion;
     _listState = ExcursionListState.success;
   }
 
@@ -668,6 +771,21 @@ class ExcursionProvider extends ChangeNotifier {
       nextExcursions.insert(0, excursion);
     }
     _myGuideExcursions = List.unmodifiable(nextExcursions);
+  }
+
+  void _upsertMyExcursionBooking(ExcursionBookingVm booking) {
+    final bookingId = booking.id.trim();
+    if (bookingId.isEmpty) return;
+
+    final nextBookings = [..._myExcursionBookings];
+    final existingIndex =
+        nextBookings.indexWhere((item) => item.id == bookingId);
+    if (existingIndex >= 0) {
+      nextBookings[existingIndex] = booking;
+    } else {
+      nextBookings.insert(0, booking);
+    }
+    _myExcursionBookings = List.unmodifiable(nextBookings);
   }
 
   void _upsertBookingReview(String bookingId, ExcursionReviewVm review) {

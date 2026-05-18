@@ -14,19 +14,45 @@ import (
 )
 
 type excursionRepoStub struct {
-	createdExcursion  *model.Excursion
-	createdRelations  port.ExcursionRelations
-	gotExcursion      *model.Excursion
-	gotOffer          *model.ExcursionOffer
-	savedExcursion    *model.Excursion
-	savedRelations    port.ExcursionRelations
-	createdBooking    *model.ExcursionBooking
-	listBookingFilter port.ExcursionBookingFilter
-	listBookingItems  []*model.ExcursionBookingListItem
-	listExcursions    []*model.Excursion
-	loadedRelations   port.ExcursionRelations
-	hasGuideLandmark  bool
-	createAggregateFn func(ctx context.Context, item *model.Excursion, relations port.ExcursionRelations) error
+	createdExcursion                *model.Excursion
+	createdRelations                port.ExcursionRelations
+	gotExcursion                    *model.Excursion
+	gotOffer                        *model.ExcursionOffer
+	gotOfferByLegacy                *model.ExcursionOffer
+	gotOfferByLegacyID              uuid.UUID
+	savedExcursion                  *model.Excursion
+	savedRelations                  port.ExcursionRelations
+	createdBooking                  *model.ExcursionBooking
+	createBookingErr                error
+	existingBookingByKey            *model.ExcursionBooking
+	existingBookingAfterKeyConflict *model.ExcursionBooking
+	gotIdempotencyTouristID         uuid.UUID
+	gotIdempotencyKey               string
+	idempotencyLookupCount          int
+	createdScheduleSlot             *model.ExcursionScheduleSlot
+	createdScheduleSeries           *model.ExcursionScheduleSeries
+	createdSeriesSlots              []*model.ExcursionScheduleSlot
+	createScheduleSeriesErr         error
+	createScheduleSlotErr           error
+	gotScheduleSlot                 *model.ExcursionScheduleSlot
+	reservedScheduleSlotID          uuid.UUID
+	reservedScheduleSeats           int
+	reserveScheduleErr              error
+	expiredScheduleCutoff           time.Time
+	expiredScheduleReason           string
+	expireScheduleErr               error
+	listBookingFilter               port.ExcursionBookingFilter
+	listBookingItems                []*model.ExcursionBookingListItem
+	gotBooking                      *model.ExcursionBooking
+	updatedBooking                  *model.ExcursionBooking
+	updatedBookingSeatDelta         int
+	updateBookingGuestsErr          error
+	listScheduleFilter              port.ExcursionScheduleFilter
+	listScheduleSlots               []*model.ExcursionScheduleSlot
+	listExcursions                  []*model.Excursion
+	loadedRelations                 port.ExcursionRelations
+	hasGuideLandmark                bool
+	createAggregateFn               func(ctx context.Context, item *model.Excursion, relations port.ExcursionRelations) error
 }
 
 func (s *excursionRepoStub) CreateExcursionAggregate(ctx context.Context, item *model.Excursion, relations port.ExcursionRelations) error {
@@ -89,13 +115,69 @@ func (s *excursionRepoStub) GetExcursionOfferByID(ctx context.Context, offerID u
 	return s.gotOffer, nil
 }
 
+func (s *excursionRepoStub) GetExcursionOfferByLegacyExcursionID(ctx context.Context, legacyExcursionID uuid.UUID) (*model.ExcursionOffer, error) {
+	s.gotOfferByLegacyID = legacyExcursionID
+	return s.gotOfferByLegacy, nil
+}
+
 func (s *excursionRepoStub) LoadExcursionOfferRelations(ctx context.Context, offerID uuid.UUID) (port.ExcursionOfferRelations, error) {
 	return port.ExcursionOfferRelations{}, nil
 }
 
 func (s *excursionRepoStub) CreateExcursionBooking(ctx context.Context, item *model.ExcursionBooking) error {
 	s.createdBooking = item
+	return s.createBookingErr
+}
+
+func (s *excursionRepoStub) GetExcursionBookingByTouristIDAndIdempotencyKey(ctx context.Context, touristUserID uuid.UUID, idempotencyKey string) (*model.ExcursionBooking, error) {
+	s.gotIdempotencyTouristID = touristUserID
+	s.gotIdempotencyKey = idempotencyKey
+	s.idempotencyLookupCount++
+	if s.idempotencyLookupCount > 1 && s.existingBookingAfterKeyConflict != nil {
+		return s.existingBookingAfterKeyConflict, nil
+	}
+	return s.existingBookingByKey, nil
+}
+
+func (s *excursionRepoStub) CreateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error {
+	s.createdScheduleSlot = slot
+	return s.createScheduleSlotErr
+}
+
+func (s *excursionRepoStub) CreateExcursionScheduleSeriesWithSlots(ctx context.Context, series *model.ExcursionScheduleSeries, slots []*model.ExcursionScheduleSlot) error {
+	s.createdScheduleSeries = series
+	s.createdSeriesSlots = slots
+	return s.createScheduleSeriesErr
+}
+
+func (s *excursionRepoStub) UpdateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error {
+	s.createdScheduleSlot = slot
 	return nil
+}
+
+func (s *excursionRepoStub) DeleteExcursionScheduleSlot(ctx context.Context, slotID uuid.UUID, guideUserID uuid.UUID) error {
+	return nil
+}
+
+func (s *excursionRepoStub) GetExcursionScheduleSlotByID(ctx context.Context, slotID uuid.UUID) (*model.ExcursionScheduleSlot, error) {
+	return s.gotScheduleSlot, nil
+}
+
+func (s *excursionRepoStub) ListExcursionScheduleSlots(ctx context.Context, filter port.ExcursionScheduleFilter) ([]*model.ExcursionScheduleSlot, error) {
+	s.listScheduleFilter = filter
+	return s.listScheduleSlots, nil
+}
+
+func (s *excursionRepoStub) ReserveExcursionScheduleSlotSeats(ctx context.Context, slotID uuid.UUID, seats int) error {
+	s.reservedScheduleSlotID = slotID
+	s.reservedScheduleSeats = seats
+	return s.reserveScheduleErr
+}
+
+func (s *excursionRepoStub) ExpireUnbookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, reason string) error {
+	s.expiredScheduleCutoff = cutoff
+	s.expiredScheduleReason = reason
+	return s.expireScheduleErr
 }
 
 func (s *excursionRepoStub) ListExcursionBookings(ctx context.Context, filter port.ExcursionBookingFilter) ([]*model.ExcursionBookingListItem, error) {
@@ -104,7 +186,13 @@ func (s *excursionRepoStub) ListExcursionBookings(ctx context.Context, filter po
 }
 
 func (s *excursionRepoStub) GetExcursionBookingByID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionBooking, error) {
-	return nil, nil
+	return s.gotBooking, nil
+}
+
+func (s *excursionRepoStub) UpdateExcursionBookingGuests(ctx context.Context, item *model.ExcursionBooking, seatDelta int) error {
+	s.updatedBooking = item
+	s.updatedBookingSeatDelta = seatDelta
+	return s.updateBookingGuestsErr
 }
 
 func (s *excursionRepoStub) CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
@@ -910,6 +998,939 @@ func TestCreateExcursionBookingPersistsRequestForSelectedOffer(t *testing.T) {
 	}
 	if booking.TotalPriceAmount <= booking.UnitPriceAmount {
 		t.Fatalf("total price = %v, want subtotal plus service fee", booking.TotalPriceAmount)
+	}
+}
+
+func TestCreateExcursionBookingReturnsExistingForIdempotencyRetry(t *testing.T) {
+	productID := uuid.New()
+	offerID := uuid.New()
+	guideUserID := uuid.New()
+	touristUserID := uuid.New()
+	scheduledFor := time.Date(2026, 5, 18, 8, 0, 0, 0, time.UTC)
+	idempotencyKey := productID.String() + ":" + offerID.String() + ":1:0"
+	existing, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       productID,
+		OfferID:         offerID,
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		TouristUserID:   touristUserID,
+		ScheduledFor:    scheduledFor,
+		Adults:          1,
+		Children:        0,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+		IdempotencyKey:  &idempotencyKey,
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		existingBookingByKey: existing,
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	booking, err := uc.CreateExcursionBooking(context.Background(), CreateExcursionBookingInput{
+		ActorUserID:    touristUserID,
+		ProductID:      productID,
+		OfferID:        offerID,
+		ScheduledFor:   scheduledFor,
+		Adults:         1,
+		Children:       0,
+		IdempotencyKey: &idempotencyKey,
+	})
+
+	if err != nil {
+		t.Fatalf("CreateExcursionBooking() error = %v", err)
+	}
+	if booking.ID != existing.ID {
+		t.Fatalf("booking id = %s, want existing %s", booking.ID, existing.ID)
+	}
+	if repo.createdBooking != nil {
+		t.Fatal("idempotency retry inserted a new booking")
+	}
+	if repo.gotIdempotencyTouristID != touristUserID {
+		t.Fatalf("idempotency tourist id = %s, want %s", repo.gotIdempotencyTouristID, touristUserID)
+	}
+	if repo.gotIdempotencyKey != idempotencyKey {
+		t.Fatalf("idempotency key = %q, want %q", repo.gotIdempotencyKey, idempotencyKey)
+	}
+}
+
+func TestCreateExcursionBookingReturnsExistingWhenInsertHitsIdempotencyConflict(t *testing.T) {
+	productID := uuid.New()
+	offerID := uuid.New()
+	guideUserID := uuid.New()
+	touristUserID := uuid.New()
+	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
+	idempotencyKey := productID.String() + ":" + offerID.String() + ":1:0"
+	existing, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       productID,
+		OfferID:         offerID,
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		TouristUserID:   touristUserID,
+		ScheduledFor:    scheduledFor,
+		Adults:          1,
+		Children:        0,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+		IdempotencyKey:  &idempotencyKey,
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:             offerID,
+			ProductID:      productID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			Status:         enum.ExcursionStatusPublished,
+			Visibility:     enum.ExcursionVisibilityPublic,
+			MaxGroupSize:   6,
+			PriceAmount:    120,
+			Currency:       "KZT",
+		},
+		createBookingErr:                port.ErrExcursionBookingIdempotencyConflict,
+		existingBookingAfterKeyConflict: existing,
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	booking, err := uc.CreateExcursionBooking(context.Background(), CreateExcursionBookingInput{
+		ActorUserID:    touristUserID,
+		ProductID:      productID,
+		OfferID:        offerID,
+		ScheduledFor:   scheduledFor,
+		Adults:         1,
+		Children:       0,
+		IdempotencyKey: &idempotencyKey,
+	})
+
+	if err != nil {
+		t.Fatalf("CreateExcursionBooking() error = %v", err)
+	}
+	if booking.ID != existing.ID {
+		t.Fatalf("booking id = %s, want existing %s", booking.ID, existing.ID)
+	}
+	if repo.createdBooking == nil {
+		t.Fatal("booking insert was not attempted before conflict resolution")
+	}
+	if repo.idempotencyLookupCount != 2 {
+		t.Fatalf("idempotency lookups = %d, want 2", repo.idempotencyLookupCount)
+	}
+}
+
+func TestCreateGuideScheduleSlotRejectsOverlap(t *testing.T) {
+	guideUserID := uuid.New()
+	start := time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC)
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:                uuid.New(),
+			ProductID:         uuid.New(),
+			LegacyExcursionID: uuidPtr(uuid.New()),
+			GuideProfileID:    uuid.New(),
+			GuideUserID:       guideUserID,
+			Status:            enum.ExcursionStatusPublished,
+			Visibility:        enum.ExcursionVisibilityPublic,
+			DurationMinutes:   240,
+			MaxGroupSize:      6,
+			MeetingPoint:      "Medeu entrance",
+			PriceAmount:       120,
+			Currency:          "KZT",
+		},
+		createScheduleSlotErr: port.ErrExcursionScheduleConflict,
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.CreateGuideScheduleSlot(context.Background(), CreateGuideScheduleSlotInput{
+		ActorUserID: guideUserID,
+		OfferID:     repo.gotOffer.ID,
+		StartAt:     start,
+		Timezone:    "Asia/Almaty",
+		Capacity:    6,
+	})
+
+	if !errors.Is(err, ErrExcursionScheduleConflict) {
+		t.Fatalf("error = %v, want ErrExcursionScheduleConflict", err)
+	}
+}
+
+func TestCreateGuideScheduleSlotAcceptsLegacyExcursionID(t *testing.T) {
+	guideUserID := uuid.New()
+	legacyExcursionID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	start := time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC)
+	repo := &excursionRepoStub{
+		gotOfferByLegacy: &model.ExcursionOffer{
+			ID:                offerID,
+			ProductID:         productID,
+			LegacyExcursionID: &legacyExcursionID,
+			GuideProfileID:    uuid.New(),
+			GuideUserID:       guideUserID,
+			Status:            enum.ExcursionStatusPublished,
+			Visibility:        enum.ExcursionVisibilityPublic,
+			DurationMinutes:   180,
+			MaxGroupSize:      6,
+			MeetingPoint:      "Medeu entrance",
+			PriceAmount:       120,
+			Currency:          "KZT",
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	slot, err := uc.CreateGuideScheduleSlot(context.Background(), CreateGuideScheduleSlotInput{
+		ActorUserID: guideUserID,
+		OfferID:     legacyExcursionID,
+		StartAt:     start,
+		Timezone:    "Asia/Almaty",
+		Capacity:    6,
+	})
+
+	if err != nil {
+		t.Fatalf("CreateGuideScheduleSlot() error = %v", err)
+	}
+	if repo.gotOfferByLegacyID != legacyExcursionID {
+		t.Fatalf("legacy lookup id = %s, want %s", repo.gotOfferByLegacyID, legacyExcursionID)
+	}
+	if slot.OfferID != offerID || slot.ProductID != productID {
+		t.Fatalf("slot offer/product = %s/%s, want %s/%s", slot.OfferID, slot.ProductID, offerID, productID)
+	}
+}
+
+func TestCreateGuideScheduleSlotRejectsCapacityAboveOfferMax(t *testing.T) {
+	guideUserID := uuid.New()
+	offerID := uuid.New()
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:              offerID,
+			ProductID:       uuid.New(),
+			GuideProfileID:  uuid.New(),
+			GuideUserID:     guideUserID,
+			Status:          enum.ExcursionStatusPublished,
+			Visibility:      enum.ExcursionVisibilityPublic,
+			DurationMinutes: 180,
+			MaxGroupSize:    8,
+			MeetingPoint:    "Medeu entrance",
+			PriceAmount:     120,
+			Currency:        "KZT",
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.CreateGuideScheduleSlot(context.Background(), CreateGuideScheduleSlotInput{
+		ActorUserID: guideUserID,
+		OfferID:     offerID,
+		StartAt:     time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC),
+		Timezone:    "Asia/Almaty",
+		Capacity:    100,
+	})
+
+	if !errors.Is(err, model.ErrInvalidExcursionScheduleCapacity) {
+		t.Fatalf("error = %v, want ErrInvalidExcursionScheduleCapacity", err)
+	}
+	if repo.createdScheduleSlot != nil {
+		t.Fatalf("slot was persisted despite invalid capacity: %#v", repo.createdScheduleSlot)
+	}
+}
+
+func TestCreateGuideScheduleSlotRejectsStartInsideSetupLeadTime(t *testing.T) {
+	guideUserID := uuid.New()
+	offerID := uuid.New()
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:              offerID,
+			ProductID:       uuid.New(),
+			GuideProfileID:  uuid.New(),
+			GuideUserID:     guideUserID,
+			Status:          enum.ExcursionStatusPublished,
+			Visibility:      enum.ExcursionVisibilityPublic,
+			DurationMinutes: 180,
+			MaxGroupSize:    8,
+			MeetingPoint:    "Medeu entrance",
+			PriceAmount:     120,
+			Currency:        "KZT",
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.CreateGuideScheduleSlot(context.Background(), CreateGuideScheduleSlotInput{
+		ActorUserID: guideUserID,
+		OfferID:     offerID,
+		StartAt:     time.Now().UTC().Add(2 * time.Hour),
+		Timezone:    "Asia/Almaty",
+		Capacity:    6,
+	})
+
+	if !errors.Is(err, ErrExcursionScheduleStartTooSoon) {
+		t.Fatalf("error = %v, want ErrExcursionScheduleStartTooSoon", err)
+	}
+	if repo.createdScheduleSlot != nil {
+		t.Fatalf("slot was persisted despite setup lead time: %#v", repo.createdScheduleSlot)
+	}
+}
+
+func TestUpdateGuideScheduleSlotReschedulesWithSelectedOffer(t *testing.T) {
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	oldOfferID := uuid.New()
+	newOfferID := uuid.New()
+	newProductID := uuid.New()
+	newLegacyExcursionID := uuid.New()
+	startAt := time.Date(2026, 5, 29, 9, 30, 0, 0, time.UTC)
+	repo := &excursionRepoStub{
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        oldOfferID,
+			ProductID:      uuid.New(),
+			StartAt:        time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC),
+			EndAt:          time.Date(2026, 5, 22, 11, 0, 0, 0, time.UTC),
+			Timezone:       "Asia/Almaty",
+			Capacity:       6,
+			BookedSeats:    0,
+			Status:         enum.ExcursionScheduleSlotStatusAvailable,
+		},
+		gotOffer: &model.ExcursionOffer{
+			ID:                newOfferID,
+			ProductID:         newProductID,
+			LegacyExcursionID: &newLegacyExcursionID,
+			GuideProfileID:    uuid.New(),
+			GuideUserID:       guideUserID,
+			Status:            enum.ExcursionStatusPublished,
+			Visibility:        enum.ExcursionVisibilityPublic,
+			DurationMinutes:   180,
+			MaxGroupSize:      8,
+			MeetingPoint:      "Medeu entrance",
+			PriceAmount:       120,
+			Currency:          "KZT",
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	slot, err := uc.UpdateGuideScheduleSlot(context.Background(), UpdateGuideScheduleSlotInput{
+		ActorUserID: guideUserID,
+		SlotID:      slotID,
+		OfferID:     newOfferID,
+		StartAt:     startAt,
+		Timezone:    "Asia/Almaty",
+		Capacity:    5,
+	})
+
+	if err != nil {
+		t.Fatalf("UpdateGuideScheduleSlot() error = %v", err)
+	}
+	if repo.createdScheduleSlot == nil {
+		t.Fatal("updated slot was not persisted")
+	}
+	if slot.OfferID != newOfferID || slot.ProductID != newProductID {
+		t.Fatalf("slot offer/product = %s/%s, want %s/%s", slot.OfferID, slot.ProductID, newOfferID, newProductID)
+	}
+	if slot.StartAt != startAt || slot.EndAt != startAt.Add(180*time.Minute) {
+		t.Fatalf("slot interval = %s-%s, want %s + 180m", slot.StartAt, slot.EndAt, startAt)
+	}
+	if slot.Capacity != 5 {
+		t.Fatalf("capacity = %d, want 5", slot.Capacity)
+	}
+}
+
+func TestUpdateGuideScheduleSlotRejectsBookedSlot(t *testing.T) {
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	repo := &excursionRepoStub{
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        offerID,
+			ProductID:      uuid.New(),
+			StartAt:        time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC),
+			EndAt:          time.Date(2026, 5, 22, 11, 0, 0, 0, time.UTC),
+			Timezone:       "Asia/Almaty",
+			Capacity:       6,
+			BookedSeats:    2,
+			Status:         enum.ExcursionScheduleSlotStatusBooked,
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.UpdateGuideScheduleSlot(context.Background(), UpdateGuideScheduleSlotInput{
+		ActorUserID: guideUserID,
+		SlotID:      slotID,
+		OfferID:     offerID,
+		StartAt:     time.Date(2026, 5, 29, 9, 30, 0, 0, time.UTC),
+		Timezone:    "Asia/Almaty",
+		Capacity:    5,
+	})
+
+	if !errors.Is(err, ErrExcursionScheduleUnavailable) {
+		t.Fatalf("error = %v, want ErrExcursionScheduleUnavailable", err)
+	}
+	if repo.createdScheduleSlot != nil {
+		t.Fatalf("slot was persisted despite booked seats: %#v", repo.createdScheduleSlot)
+	}
+}
+
+func TestUpdateGuideScheduleSlotRejectsStartInsideSetupLeadTime(t *testing.T) {
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	repo := &excursionRepoStub{
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        offerID,
+			ProductID:      uuid.New(),
+			StartAt:        time.Now().UTC().Add(24 * time.Hour),
+			EndAt:          time.Now().UTC().Add(26 * time.Hour),
+			Timezone:       "Asia/Almaty",
+			Capacity:       6,
+			BookedSeats:    0,
+			Status:         enum.ExcursionScheduleSlotStatusAvailable,
+		},
+		gotOffer: &model.ExcursionOffer{
+			ID:              offerID,
+			ProductID:       uuid.New(),
+			GuideProfileID:  uuid.New(),
+			GuideUserID:     guideUserID,
+			Status:          enum.ExcursionStatusPublished,
+			Visibility:      enum.ExcursionVisibilityPublic,
+			DurationMinutes: 180,
+			MaxGroupSize:    8,
+			MeetingPoint:    "Medeu entrance",
+			PriceAmount:     120,
+			Currency:        "KZT",
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.UpdateGuideScheduleSlot(context.Background(), UpdateGuideScheduleSlotInput{
+		ActorUserID: guideUserID,
+		SlotID:      slotID,
+		OfferID:     offerID,
+		StartAt:     time.Now().UTC().Add(2 * time.Hour),
+		Timezone:    "Asia/Almaty",
+		Capacity:    5,
+	})
+
+	if !errors.Is(err, ErrExcursionScheduleStartTooSoon) {
+		t.Fatalf("error = %v, want ErrExcursionScheduleStartTooSoon", err)
+	}
+	if repo.createdScheduleSlot != nil {
+		t.Fatalf("slot was persisted despite setup lead time: %#v", repo.createdScheduleSlot)
+	}
+}
+
+func TestWeeklyOccurrencesKeepsLocalWeekdayAndClock(t *testing.T) {
+	startDate := time.Date(2026, 5, 18, 12, 0, 0, 0, time.UTC)
+	until := time.Date(2026, 6, 5, 23, 59, 0, 0, time.UTC)
+
+	items, err := weeklyOccurrences(startDate, []int{5}, "09:00", 180, "Asia/Almaty", until, 3)
+
+	if err != nil {
+		t.Fatalf("weeklyOccurrences() error = %v", err)
+	}
+	if len(items) != 3 {
+		t.Fatalf("items len = %d, want 3", len(items))
+	}
+	loc, err := time.LoadLocation("Asia/Almaty")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+	for _, item := range items {
+		local := item.In(loc)
+		if local.Weekday() != time.Friday || local.Hour() != 9 || local.Minute() != 0 {
+			t.Fatalf("occurrence = %s, want Friday 09:00 Asia/Almaty", local)
+		}
+	}
+}
+
+func TestCreateGuideScheduleSeriesCreatesWeeklySlots(t *testing.T) {
+	guideUserID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:              offerID,
+			ProductID:       productID,
+			GuideProfileID:  uuid.New(),
+			GuideUserID:     guideUserID,
+			Status:          enum.ExcursionStatusPublished,
+			Visibility:      enum.ExcursionVisibilityPublic,
+			DurationMinutes: 180,
+			MaxGroupSize:    6,
+			MeetingPoint:    "Medeu entrance",
+			PriceAmount:     120,
+			Currency:        "KZT",
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+	limit := 3
+
+	slots, err := uc.CreateGuideScheduleSeries(context.Background(), CreateGuideScheduleSeriesInput{
+		ActorUserID:     guideUserID,
+		OfferID:         offerID,
+		StartsOn:        time.Date(2026, 5, 18, 0, 0, 0, 0, time.UTC),
+		OccurrenceLimit: &limit,
+		StartTime:       "09:00",
+		Timezone:        "Asia/Almaty",
+		Weekdays:        []int{5},
+		Capacity:        5,
+	})
+
+	if err != nil {
+		t.Fatalf("CreateGuideScheduleSeries() error = %v", err)
+	}
+	if repo.createdScheduleSeries == nil {
+		t.Fatal("series was not persisted")
+	}
+	if len(slots) != 3 || len(repo.createdSeriesSlots) != 3 {
+		t.Fatalf("slots = %d persisted = %d, want 3", len(slots), len(repo.createdSeriesSlots))
+	}
+	loc, err := time.LoadLocation("Asia/Almaty")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+	for _, slot := range slots {
+		local := slot.StartAt.In(loc)
+		if local.Weekday() != time.Friday || local.Hour() != 9 || slot.Capacity != 5 {
+			t.Fatalf("slot = %+v local = %v, want Friday 09:00 capacity 5", slot, local)
+		}
+		if slot.SeriesID == nil || *slot.SeriesID != repo.createdScheduleSeries.ID {
+			t.Fatalf("slot series id = %v, want %s", slot.SeriesID, repo.createdScheduleSeries.ID)
+		}
+	}
+}
+
+func TestCreateExcursionBookingUsesScheduleSlotAndLocksCapacity(t *testing.T) {
+	touristUserID := uuid.New()
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	startAt := time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC)
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:             offerID,
+			ProductID:      productID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			Status:         enum.ExcursionStatusPublished,
+			Visibility:     enum.ExcursionVisibilityPublic,
+			MaxGroupSize:   6,
+			PriceAmount:    100,
+			Currency:       "KZT",
+		},
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        offerID,
+			ProductID:      productID,
+			StartAt:        startAt,
+			EndAt:          startAt.Add(4 * time.Hour),
+			Timezone:       "Asia/Almaty",
+			Capacity:       6,
+			BookedSeats:    0,
+			Status:         enum.ExcursionScheduleSlotStatusAvailable,
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	booking, err := uc.CreateExcursionBooking(context.Background(), CreateExcursionBookingInput{
+		ActorUserID:    touristUserID,
+		ProductID:      productID,
+		OfferID:        offerID,
+		ScheduleSlotID: &slotID,
+		Adults:         2,
+		Children:       0,
+	})
+
+	if err != nil {
+		t.Fatalf("CreateExcursionBooking() error = %v", err)
+	}
+	if booking.ScheduleSlotID == nil || *booking.ScheduleSlotID != slotID {
+		t.Fatalf("schedule slot id = %v, want %s", booking.ScheduleSlotID, slotID)
+	}
+	if booking.ScheduledFor != startAt {
+		t.Fatalf("scheduled for = %v, want %v", booking.ScheduledFor, startAt)
+	}
+}
+
+func TestCreateExcursionBookingRejectsSlotInsideBookingLeadTime(t *testing.T) {
+	touristUserID := uuid.New()
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	startAt := time.Now().UTC().Add(90 * time.Minute)
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:             offerID,
+			ProductID:      productID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			Status:         enum.ExcursionStatusPublished,
+			Visibility:     enum.ExcursionVisibilityPublic,
+			MaxGroupSize:   6,
+			PriceAmount:    100,
+			Currency:       "KZT",
+		},
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        offerID,
+			ProductID:      productID,
+			StartAt:        startAt,
+			EndAt:          startAt.Add(4 * time.Hour),
+			Timezone:       "Asia/Almaty",
+			Capacity:       6,
+			BookedSeats:    0,
+			Status:         enum.ExcursionScheduleSlotStatusAvailable,
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.CreateExcursionBooking(context.Background(), CreateExcursionBookingInput{
+		ActorUserID:    touristUserID,
+		ProductID:      productID,
+		OfferID:        offerID,
+		ScheduleSlotID: &slotID,
+		Adults:         1,
+		Children:       0,
+	})
+
+	if !errors.Is(err, ErrExcursionScheduleUnavailable) {
+		t.Fatalf("error = %v, want ErrExcursionScheduleUnavailable", err)
+	}
+	if repo.createdBooking != nil {
+		t.Fatal("booking was persisted despite slot being inside booking lead time")
+	}
+}
+
+func TestUpdateExcursionBookingGuestsAdjustsScheduleSeatDelta(t *testing.T) {
+	touristUserID := uuid.New()
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       productID,
+		OfferID:         offerID,
+		ScheduleSlotID:  &slotID,
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		TouristUserID:   touristUserID,
+		ScheduledFor:    scheduledFor,
+		Adults:          2,
+		Children:        0,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotBooking: booking,
+		gotOffer: &model.ExcursionOffer{
+			ID:             offerID,
+			ProductID:      productID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			Status:         enum.ExcursionStatusPublished,
+			Visibility:     enum.ExcursionVisibilityPublic,
+			MaxGroupSize:   6,
+			PriceAmount:    120,
+			Currency:       "KZT",
+		},
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:          slotID,
+			OfferID:     offerID,
+			ProductID:   productID,
+			GuideUserID: guideUserID,
+			StartAt:     scheduledFor,
+			EndAt:       scheduledFor.Add(2 * time.Hour),
+			Timezone:    "Asia/Almaty",
+			Capacity:    6,
+			BookedSeats: 2,
+			Status:      enum.ExcursionScheduleSlotStatusBooked,
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	updated, err := uc.UpdateExcursionBookingGuests(context.Background(), UpdateExcursionBookingGuestsInput{
+		ActorUserID: touristUserID,
+		BookingID:   booking.ID,
+		Adults:      3,
+		Children:    1,
+	})
+
+	if err != nil {
+		t.Fatalf("UpdateExcursionBookingGuests() error = %v", err)
+	}
+	if updated.TotalSeats != 4 || updated.Adults != 3 || updated.Children != 1 {
+		t.Fatalf("updated guests = %d/%d total %d, want 3/1 total 4", updated.Adults, updated.Children, updated.TotalSeats)
+	}
+	if repo.updatedBookingSeatDelta != 2 {
+		t.Fatalf("seat delta = %d, want 2", repo.updatedBookingSeatDelta)
+	}
+	if repo.updatedBooking == nil || repo.updatedBooking.ID != booking.ID {
+		t.Fatal("updated booking was not persisted")
+	}
+}
+
+func TestUpdateExcursionBookingGuestsRejectsSlotCapacityOverflow(t *testing.T) {
+	touristUserID := uuid.New()
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	scheduledFor := time.Now().UTC().Add(48 * time.Hour)
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       productID,
+		OfferID:         offerID,
+		ScheduleSlotID:  &slotID,
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		TouristUserID:   touristUserID,
+		ScheduledFor:    scheduledFor,
+		Adults:          2,
+		Children:        0,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotBooking: booking,
+		gotOffer: &model.ExcursionOffer{
+			ID:             offerID,
+			ProductID:      productID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			Status:         enum.ExcursionStatusPublished,
+			Visibility:     enum.ExcursionVisibilityPublic,
+			MaxGroupSize:   6,
+			PriceAmount:    120,
+			Currency:       "KZT",
+		},
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:          slotID,
+			OfferID:     offerID,
+			ProductID:   productID,
+			GuideUserID: guideUserID,
+			StartAt:     scheduledFor,
+			EndAt:       scheduledFor.Add(2 * time.Hour),
+			Timezone:    "Asia/Almaty",
+			Capacity:    4,
+			BookedSeats: 2,
+			Status:      enum.ExcursionScheduleSlotStatusBooked,
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err = uc.UpdateExcursionBookingGuests(context.Background(), UpdateExcursionBookingGuestsInput{
+		ActorUserID: touristUserID,
+		BookingID:   booking.ID,
+		Adults:      4,
+		Children:    1,
+	})
+
+	if !errors.Is(err, ErrExcursionScheduleUnavailable) {
+		t.Fatalf("error = %v, want ErrExcursionScheduleUnavailable", err)
+	}
+	if repo.updatedBooking != nil {
+		t.Fatal("booking was persisted despite capacity overflow")
+	}
+}
+
+func TestListPublicExcursionScheduleFiltersBookableSlotsBySeats(t *testing.T) {
+	offerID := uuid.New()
+	productID := uuid.New()
+	guideUserID := uuid.New()
+	from := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	to := from.Add(7 * 24 * time.Hour)
+	availableStart := time.Date(2026, 6, 2, 9, 0, 0, 0, time.UTC)
+	fullStart := time.Date(2026, 6, 3, 9, 0, 0, 0, time.UTC)
+	closedStart := time.Date(2026, 6, 4, 9, 0, 0, 0, time.UTC)
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:             offerID,
+			ProductID:      productID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			Status:         enum.ExcursionStatusPublished,
+			Visibility:     enum.ExcursionVisibilityPublic,
+			MaxGroupSize:   8,
+			PriceAmount:    100,
+			Currency:       "KZT",
+		},
+		listScheduleSlots: []*model.ExcursionScheduleSlot{
+			{
+				ID:             uuid.New(),
+				GuideProfileID: uuid.New(),
+				GuideUserID:    guideUserID,
+				OfferID:        offerID,
+				ProductID:      productID,
+				StartAt:        availableStart,
+				EndAt:          availableStart.Add(3 * time.Hour),
+				Timezone:       "Asia/Almaty",
+				Capacity:       8,
+				BookedSeats:    4,
+				Status:         enum.ExcursionScheduleSlotStatusBooked,
+			},
+			{
+				ID:             uuid.New(),
+				GuideProfileID: uuid.New(),
+				GuideUserID:    guideUserID,
+				OfferID:        offerID,
+				ProductID:      productID,
+				StartAt:        fullStart,
+				EndAt:          fullStart.Add(3 * time.Hour),
+				Timezone:       "Asia/Almaty",
+				Capacity:       8,
+				BookedSeats:    6,
+				Status:         enum.ExcursionScheduleSlotStatusBooked,
+			},
+			{
+				ID:             uuid.New(),
+				GuideProfileID: uuid.New(),
+				GuideUserID:    guideUserID,
+				OfferID:        offerID,
+				ProductID:      productID,
+				StartAt:        closedStart,
+				EndAt:          closedStart.Add(3 * time.Hour),
+				Timezone:       "Asia/Almaty",
+				Capacity:       8,
+				Status:         enum.ExcursionScheduleSlotStatusClosed,
+			},
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	slots, err := uc.ListPublicExcursionSchedule(context.Background(), ListPublicExcursionScheduleInput{
+		ProductID: productID,
+		OfferID:   offerID,
+		From:      from,
+		To:        to,
+		Seats:     3,
+	})
+
+	if err != nil {
+		t.Fatalf("ListPublicExcursionSchedule() error = %v", err)
+	}
+	if len(slots) != 1 {
+		t.Fatalf("slots len = %d, want 1", len(slots))
+	}
+	if slots[0].StartAt != availableStart {
+		t.Fatalf("slot start = %v, want %v", slots[0].StartAt, availableStart)
+	}
+	if repo.listScheduleFilter.OfferID == nil || *repo.listScheduleFilter.OfferID != offerID {
+		t.Fatalf("offer filter = %v, want %s", repo.listScheduleFilter.OfferID, offerID)
+	}
+	if len(repo.listScheduleFilter.Statuses) != 2 {
+		t.Fatalf("status filters = %v, want available/booked", repo.listScheduleFilter.Statuses)
+	}
+}
+
+func TestListPublicExcursionScheduleRequiresTwoHourLeadTime(t *testing.T) {
+	offerID := uuid.New()
+	productID := uuid.New()
+	guideUserID := uuid.New()
+	now := time.Now().UTC()
+	soonStart := now.Add(90 * time.Minute)
+	futureStart := now.Add(3 * time.Hour)
+	repo := &excursionRepoStub{
+		gotOffer: &model.ExcursionOffer{
+			ID:             offerID,
+			ProductID:      productID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			Status:         enum.ExcursionStatusPublished,
+			Visibility:     enum.ExcursionVisibilityPublic,
+			MaxGroupSize:   8,
+			PriceAmount:    100,
+			Currency:       "KZT",
+		},
+		listScheduleSlots: []*model.ExcursionScheduleSlot{
+			{
+				ID:             uuid.New(),
+				GuideProfileID: uuid.New(),
+				GuideUserID:    guideUserID,
+				OfferID:        offerID,
+				ProductID:      productID,
+				StartAt:        soonStart,
+				EndAt:          soonStart.Add(3 * time.Hour),
+				Timezone:       "Asia/Almaty",
+				Capacity:       8,
+				BookedSeats:    0,
+				Status:         enum.ExcursionScheduleSlotStatusAvailable,
+			},
+			{
+				ID:             uuid.New(),
+				GuideProfileID: uuid.New(),
+				GuideUserID:    guideUserID,
+				OfferID:        offerID,
+				ProductID:      productID,
+				StartAt:        futureStart,
+				EndAt:          futureStart.Add(3 * time.Hour),
+				Timezone:       "Asia/Almaty",
+				Capacity:       8,
+				BookedSeats:    0,
+				Status:         enum.ExcursionScheduleSlotStatusAvailable,
+			},
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	slots, err := uc.ListPublicExcursionSchedule(context.Background(), ListPublicExcursionScheduleInput{
+		ProductID: productID,
+		OfferID:   offerID,
+		From:      now.Add(-time.Hour),
+		To:        now.Add(24 * time.Hour),
+		Seats:     1,
+	})
+
+	if err != nil {
+		t.Fatalf("ListPublicExcursionSchedule() error = %v", err)
+	}
+	if len(slots) != 1 || slots[0].StartAt != futureStart {
+		t.Fatalf("slots = %v, want only future slot %v", slots, futureStart)
+	}
+	if repo.listScheduleFilter.From.Before(now.Add(2*time.Hour - time.Second)) {
+		t.Fatalf("list from = %v, want at least two-hour booking lead time", repo.listScheduleFilter.From)
+	}
+	if repo.expiredScheduleReason == "" || repo.expiredScheduleCutoff.IsZero() {
+		t.Fatal("unbooked near-start slots were not expired before public schedule list")
+	}
+}
+
+func TestListGuideScheduleExpiresUnbookedSlotsBeforeBookingCutoff(t *testing.T) {
+	actorUserID := uuid.New()
+	now := time.Now().UTC()
+	repo := &excursionRepoStub{}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.ListGuideSchedule(context.Background(), ListGuideScheduleInput{
+		ActorUserID: actorUserID,
+		From:        now.Add(-24 * time.Hour),
+		To:          now.Add(24 * time.Hour),
+	})
+
+	if err != nil {
+		t.Fatalf("ListGuideSchedule() error = %v", err)
+	}
+	if repo.expiredScheduleReason == "" {
+		t.Fatal("unbooked near-start slots were not expired before guide schedule list")
+	}
+	if repo.expiredScheduleCutoff.Before(now.Add(2*time.Hour - time.Second)) {
+		t.Fatalf("expire cutoff = %v, want at least now + 2h", repo.expiredScheduleCutoff)
 	}
 }
 

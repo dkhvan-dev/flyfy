@@ -17,6 +17,7 @@ import 'providers/activity_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/sticker_catalog_provider.dart';
 import 'providers/excursion_provider.dart';
+import 'providers/excursion_schedule_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +66,7 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionProvider()),
+        ChangeNotifierProvider(create: (_) => ExcursionScheduleProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => StickerCatalogProvider()),
       ],

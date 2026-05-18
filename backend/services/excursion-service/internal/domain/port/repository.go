@@ -2,10 +2,19 @@ package port
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
+)
+
+var (
+	ErrExcursionScheduleConflict           = errors.New("excursion schedule conflict")
+	ErrExcursionScheduleUnavailable        = errors.New("excursion schedule slot is unavailable")
+	ErrExcursionBookingIdempotencyConflict = errors.New("excursion booking idempotency conflict")
 )
 
 type ExcursionFilter struct {
@@ -84,6 +93,17 @@ type ExcursionReviewFilter struct {
 	Offset     int
 }
 
+type ExcursionScheduleFilter struct {
+	GuideUserID *uuid.UUID
+	OfferID     *uuid.UUID
+	ProductID   *uuid.UUID
+	From        time.Time
+	To          time.Time
+	Statuses    []enum.ExcursionScheduleSlotStatus
+	Limit       int
+	Offset      int
+}
+
 type ExcursionRepository interface {
 	CreateExcursionAggregate(ctx context.Context, item *model.Excursion, relations ExcursionRelations) error
 	UpdateExcursionAggregate(ctx context.Context, item *model.Excursion, relations ExcursionRelations) error
@@ -98,11 +118,22 @@ type ExcursionRepository interface {
 	ListExcursionLanguageCodesByGuideUserIDs(ctx context.Context, guideUserIDs []uuid.UUID) (map[uuid.UUID][]string, error)
 	HasActiveExcursionForGuideLandmark(ctx context.Context, guideUserID uuid.UUID, landmarkID uuid.UUID) (bool, error)
 	GetExcursionOfferByID(ctx context.Context, offerID uuid.UUID) (*model.ExcursionOffer, error)
+	GetExcursionOfferByLegacyExcursionID(ctx context.Context, legacyExcursionID uuid.UUID) (*model.ExcursionOffer, error)
 	LoadExcursionOfferRelations(ctx context.Context, offerID uuid.UUID) (ExcursionOfferRelations, error)
 	CreateExcursionBooking(ctx context.Context, item *model.ExcursionBooking) error
 	ListExcursionBookings(ctx context.Context, filter ExcursionBookingFilter) ([]*model.ExcursionBookingListItem, error)
 	GetExcursionBookingByID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionBooking, error)
+	GetExcursionBookingByTouristIDAndIdempotencyKey(ctx context.Context, touristUserID uuid.UUID, idempotencyKey string) (*model.ExcursionBooking, error)
+	UpdateExcursionBookingGuests(ctx context.Context, item *model.ExcursionBooking, seatDelta int) error
 	CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error
 	GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error)
 	ListExcursionReviews(ctx context.Context, filter ExcursionReviewFilter) ([]*model.ExcursionReview, error)
+	CreateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error
+	CreateExcursionScheduleSeriesWithSlots(ctx context.Context, series *model.ExcursionScheduleSeries, slots []*model.ExcursionScheduleSlot) error
+	UpdateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error
+	DeleteExcursionScheduleSlot(ctx context.Context, slotID uuid.UUID, guideUserID uuid.UUID) error
+	GetExcursionScheduleSlotByID(ctx context.Context, slotID uuid.UUID) (*model.ExcursionScheduleSlot, error)
+	ListExcursionScheduleSlots(ctx context.Context, filter ExcursionScheduleFilter) ([]*model.ExcursionScheduleSlot, error)
+	ReserveExcursionScheduleSlotSeats(ctx context.Context, slotID uuid.UUID, seats int) error
+	ExpireUnbookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, reason string) error
 }

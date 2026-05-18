@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
@@ -41,6 +42,114 @@ func TestUpdateExcursionUsesContiguousPlaceholders(t *testing.T) {
 	err = updateExcursion(context.Background(), placeholderCheckingExecutor{}, item)
 	if err != nil {
 		t.Fatalf("updateExcursion() error = %v", err)
+	}
+}
+
+func TestInsertExcursionScheduleSlotUsesContiguousPlaceholders(t *testing.T) {
+	slot := validRepositoryScheduleSlot(t)
+
+	err := insertExcursionScheduleSlot(context.Background(), placeholderCheckingExecutor{}, slot)
+	if err != nil {
+		t.Fatalf("insertExcursionScheduleSlot() error = %v", err)
+	}
+}
+
+func TestInsertExcursionBookingUsesContiguousPlaceholders(t *testing.T) {
+	booking := validRepositoryBooking(t)
+
+	err := insertExcursionBooking(context.Background(), placeholderCheckingExecutor{}, booking)
+	if err != nil {
+		t.Fatalf("insertExcursionBooking() error = %v", err)
+	}
+}
+
+func TestInsertExcursionBookingMapsIdempotencyUniqueViolation(t *testing.T) {
+	booking := validRepositoryBooking(t)
+
+	err := insertExcursionBooking(
+		context.Background(),
+		uniqueViolationExecutor{constraintName: "idx_excursion_bookings_tourist_idempotency"},
+		booking,
+	)
+
+	if !errors.Is(err, port.ErrExcursionBookingIdempotencyConflict) {
+		t.Fatalf("error = %v, want %v", err, port.ErrExcursionBookingIdempotencyConflict)
+	}
+}
+
+func TestExcursionScheduleOverlapConstraintMapsConflict(t *testing.T) {
+	slot := validRepositoryScheduleSlot(t)
+
+	err := insertExcursionScheduleSlot(
+		context.Background(),
+		exclusionViolationExecutor{constraintName: "excursion_schedule_slots_no_guide_overlap"},
+		slot,
+	)
+
+	if !errors.Is(err, port.ErrExcursionScheduleConflict) {
+		t.Fatalf("error = %v, want %v", err, port.ErrExcursionScheduleConflict)
+	}
+}
+
+func TestReserveExcursionScheduleSlotSeatsUsesGuardedStatusUpdate(t *testing.T) {
+	err := reserveExcursionScheduleSlotSeats(
+		context.Background(),
+		placeholderCheckingExecutor{},
+		uuid.New(),
+		2,
+	)
+	if err != nil {
+		t.Fatalf("reserveExcursionScheduleSlotSeats() error = %v", err)
+	}
+}
+
+func TestExpireUnbookedExcursionScheduleSlotsUsesGuardedCancellation(t *testing.T) {
+	err := expireUnbookedExcursionScheduleSlots(
+		context.Background(),
+		placeholderCheckingExecutor{},
+		time.Now().UTC().Add(2*time.Hour),
+		"NO_BOOKINGS_BEFORE_START_2H",
+	)
+	if err != nil {
+		t.Fatalf("expireUnbookedExcursionScheduleSlots() error = %v", err)
+	}
+}
+
+func TestReserveExcursionScheduleSlotSeatsReturnsUnavailableWhenNoRows(t *testing.T) {
+	err := reserveExcursionScheduleSlotSeats(
+		context.Background(),
+		affectedRowsExecutor{rowsAffected: 0},
+		uuid.New(),
+		2,
+	)
+
+	if !errors.Is(err, port.ErrExcursionScheduleUnavailable) {
+		t.Fatalf("error = %v, want %v", err, port.ErrExcursionScheduleUnavailable)
+	}
+}
+
+func TestUpdateExcursionBookingGuestsUsesContiguousPlaceholders(t *testing.T) {
+	booking := validRepositoryBooking(t)
+	booking.Adults = 3
+	booking.Children = 1
+	booking.TotalSeats = 4
+
+	err := updateExcursionBookingGuests(context.Background(), placeholderCheckingExecutor{}, booking)
+	if err != nil {
+		t.Fatalf("updateExcursionBookingGuests() error = %v", err)
+	}
+}
+
+func TestReleaseExcursionScheduleSlotSeatsReturnsUnavailableWhenNoRows(t *testing.T) {
+	err := releaseExcursionScheduleSlotSeats(
+		context.Background(),
+		affectedRowsExecutor{rowsAffected: 0},
+		uuid.New(),
+		2,
+	)
+
+	if !errors.Is(err, port.ErrExcursionScheduleUnavailable) {
+		t.Fatalf("error = %v, want %v", err, port.ErrExcursionScheduleUnavailable)
 	}
 }
 
@@ -86,6 +195,32 @@ func TestGuideLandmarkUniquenessMigrationExists(t *testing.T) {
 		!strings.Contains(migration, "guide_user_id, landmark_id") ||
 		!strings.Contains(migration, "deleted_at IS NULL") {
 		t.Fatalf("migration does not enforce active guide landmark uniqueness:\n%s", migration)
+	}
+}
+
+func TestExcursionScheduleMigrationMatchesDomainNullability(t *testing.T) {
+	if _, err := os.Stat("../../../migrations/010_excursion_schedule.up.sql"); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("old duplicate 010 schedule migration still exists or stat failed: %v", err)
+	}
+	source, err := os.ReadFile("../../../migrations/011_excursion_schedule.up.sql")
+	if err != nil {
+		t.Fatalf("read schedule migration: %v", err)
+	}
+
+	migration := string(source)
+	for _, required := range []string{
+		"series_id UUID NULL",
+		"legacy_excursion_id UUID NULL",
+		"default_capacity INTEGER NULL",
+		"ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[]",
+		"excursion_schedule_slots_no_guide_overlap",
+	} {
+		if !strings.Contains(migration, required) {
+			t.Fatalf("schedule migration missing %q:\n%s", required, migration)
+		}
+	}
+	if strings.Contains(migration, "default_end_time") {
+		t.Fatalf("schedule migration still requires default_end_time:\n%s", migration)
 	}
 }
 
@@ -488,6 +623,29 @@ func validRepositoryExcursion(t *testing.T) *model.Excursion {
 	return item
 }
 
+func validRepositoryBooking(t *testing.T) *model.ExcursionBooking {
+	t.Helper()
+
+	idempotencyKey := uuid.NewString()
+	item, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       uuid.New(),
+		OfferID:         uuid.New(),
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     uuid.New(),
+		TouristUserID:   uuid.New(),
+		ScheduledFor:    time.Date(2026, 6, 2, 9, 0, 0, 0, time.UTC),
+		Adults:          2,
+		Children:        1,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+		IdempotencyKey:  &idempotencyKey,
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	return item
+}
+
 func stringPtr(value string) *string {
 	return &value
 }
@@ -535,6 +693,36 @@ func (e uniqueViolationExecutor) Exec(context.Context, string, ...any) (pgconn.C
 }
 
 func (uniqueViolationExecutor) QueryRow(context.Context, string, ...any) pgx.Row {
+	return nil
+}
+
+type exclusionViolationExecutor struct {
+	constraintName string
+}
+
+func (e exclusionViolationExecutor) Exec(context.Context, string, ...any) (pgconn.CommandTag, error) {
+	return pgconn.CommandTag{}, &pgconn.PgError{
+		Code:           pgExclusionViolation,
+		ConstraintName: e.constraintName,
+	}
+}
+
+func (exclusionViolationExecutor) QueryRow(context.Context, string, ...any) pgx.Row {
+	return nil
+}
+
+type affectedRowsExecutor struct {
+	rowsAffected int64
+}
+
+func (e affectedRowsExecutor) Exec(_ context.Context, query string, arguments ...any) (pgconn.CommandTag, error) {
+	if err := validateContiguousPlaceholders(query, len(arguments)); err != nil {
+		return pgconn.CommandTag{}, err
+	}
+	return pgconn.NewCommandTag(fmt.Sprintf("UPDATE %d", e.rowsAffected)), nil
+}
+
+func (affectedRowsExecutor) QueryRow(context.Context, string, ...any) pgx.Row {
 	return nil
 }
 
@@ -645,4 +833,28 @@ func validateContiguousPlaceholders(query string, argCount int) error {
 		}
 	}
 	return nil
+}
+
+func validRepositoryScheduleSlot(t *testing.T) *model.ExcursionScheduleSlot {
+	t.Helper()
+
+	startAt := time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC)
+	seriesID := uuid.New()
+	legacyExcursionID := uuid.New()
+	slot, err := model.NewExcursionScheduleSlot(model.NewExcursionScheduleSlotParams{
+		SeriesID:          &seriesID,
+		GuideProfileID:    uuid.New(),
+		GuideUserID:       uuid.New(),
+		OfferID:           uuid.New(),
+		ProductID:         uuid.New(),
+		LegacyExcursionID: &legacyExcursionID,
+		StartAt:           startAt,
+		EndAt:             startAt.Add(2 * time.Hour),
+		Timezone:          "Asia/Almaty",
+		Capacity:          8,
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionScheduleSlot() error = %v", err)
+	}
+	return slot
 }

@@ -53,6 +53,7 @@ type ExcursionBookingListItem struct {
 	CityName         *string
 	CoverFileID      *uuid.UUID
 	GuideDisplayName string
+	MaxGroupSize     int
 }
 
 type NewExcursionReviewParams struct {

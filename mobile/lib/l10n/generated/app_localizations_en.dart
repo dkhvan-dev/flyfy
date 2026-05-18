@@ -2469,6 +2469,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get excursionDetailsOffersMaxPriceHint => 'e.g. 50000';
 
   @override
+  String get excursionDetailsOffersAvailableDate => 'Available date';
+
+  @override
+  String get excursionDetailsOffersAvailableDateHint => 'dd.mm.yyyy';
+
+  @override
+  String get excursionDetailsOffersAvailableDateInvalid =>
+      'Enter the date as dd.mm.yyyy';
+
+  @override
   String get excursionDetailsOffersMinGroup => 'Minimum group size';
 
   @override
@@ -2501,6 +2511,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get excursionDetailsBook => 'Book';
+
+  @override
+  String get excursionDetailsCheckingSchedule => 'Checking available times...';
+
+  @override
+  String get excursionDetailsNoAvailableSlots =>
+      'This guide has no available time slots for this excursion yet.';
 
   @override
   String get excursionDetailsEditOffer => 'Edit offer';
@@ -2571,10 +2588,37 @@ class AppLocalizationsEn extends AppLocalizations {
       'Booking request is ready. Online payment will be connected soon.';
 
   @override
+  String get excursionBookingAlreadyBookedTitle =>
+      'You already booked this time';
+
+  @override
+  String get excursionBookingAlreadyBookedMessage =>
+      'You can change the number of guests in My excursions.';
+
+  @override
+  String get excursionBookingOpenMyExcursions => 'Open My excursions';
+
+  @override
   String get excursionBookingLoadFailed => 'Failed to load excursion booking';
 
   @override
   String get excursionBookingPerPerson => '/ person';
+
+  @override
+  String get excursionBookingSelectSlot => 'Select an available time';
+
+  @override
+  String get excursionBookingScheduleLoadFailed =>
+      'Failed to load available times';
+
+  @override
+  String get excursionBookingNoSlots =>
+      'The guide has not added available times for this offer yet.';
+
+  @override
+  String excursionBookingSeatsLeft(Object count) {
+    return '$count seats left';
+  }
 
   @override
   String get excursionDetailsNoDescription =>
@@ -3532,6 +3576,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get myExcursionsReviewed => 'Reviewed';
+
+  @override
+  String get myExcursionsEditGuestsButton => 'Edit guests';
+
+  @override
+  String get myExcursionsEditGuestsTitle => 'Edit guests';
+
+  @override
+  String get myExcursionsEditGuestsHint =>
+      'We will check available seats and update the booking without creating another one.';
+
+  @override
+  String get myExcursionsUpdateGuestsSuccess => 'Guest count updated';
+
+  @override
+  String get myExcursionsUpdateGuestsFailed =>
+      'Failed to update guest count. Check available seats and try again.';
+
+  @override
+  String myExcursionsGuestsChargeMock(Object amount) {
+    return 'To pay: $amount';
+  }
+
+  @override
+  String myExcursionsGuestsRefundMock(Object amount) {
+    return 'To refund: $amount';
+  }
+
+  @override
+  String get myExcursionsGuestsNoPaymentChange => 'Price will not change';
+
+  @override
+  String get myExcursionsGuestsPaymentMockHint =>
+      'This is a mock settlement for now: real charges or refunds will be connected through the payment service.';
+
+  @override
+  String get myExcursionsPayAndSaveGuests => 'Pay and save';
+
+  @override
+  String get myExcursionsRefundAndSaveGuests => 'Refund and save';
 
   @override
   String get myExcursionsFilterStatus => 'Status';
@@ -4876,4 +4960,117 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatSharedPartialLoadWarning =>
       'Some older shared items could not be loaded.';
+
+  @override
+  String get guideCalendarTitle => 'Guide calendar';
+
+  @override
+  String get guideCalendarAddSlot => 'Slot';
+
+  @override
+  String get guideCalendarEditSlot => 'Edit slot';
+
+  @override
+  String get guideCalendarEmptyDay => 'No slots for this day';
+
+  @override
+  String get guideCalendarAvailable => 'Available';
+
+  @override
+  String get guideCalendarBooked => 'Booked';
+
+  @override
+  String get guideCalendarClosed => 'Closed';
+
+  @override
+  String get guideCalendarCancelled => 'Cancelled';
+
+  @override
+  String guideCalendarCancelReason(Object reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get guideCalendarAutoCancelNoBookings =>
+      'no one booked this slot at least 2 hours before start';
+
+  @override
+  String get guideCalendarRepeatWeekly => 'Repeat weekly';
+
+  @override
+  String get guideCalendarConflictTitle =>
+      'This time overlaps another excursion';
+
+  @override
+  String get guideCalendarSuggestNextTime => 'Choose the next available time';
+
+  @override
+  String get guideCalendarDeleteSlot => 'Delete';
+
+  @override
+  String get guideCalendarCancelSlot => 'Cancel';
+
+  @override
+  String get guideCalendarCloseSlot => 'Close';
+
+  @override
+  String get guideCalendarOfferLabel => 'Published offer';
+
+  @override
+  String get guideCalendarNoPublishedOffers =>
+      'Publish an excursion offer first to add it to the schedule.';
+
+  @override
+  String get guideCalendarOfferRequired => 'Choose an excursion offer';
+
+  @override
+  String get guideCalendarCurrentOfferFallback => 'Current offer';
+
+  @override
+  String guideCalendarOfferDuration(Object minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String guideCalendarOfferCapacity(Object count) {
+    return '$count seats';
+  }
+
+  @override
+  String get guideCalendarDateLabel => 'Date';
+
+  @override
+  String get guideCalendarDateHint => 'dd.mm.yyyy';
+
+  @override
+  String get guideCalendarInvalidDate => 'Enter the date as dd.mm.yyyy';
+
+  @override
+  String get guideCalendarTimeLabel => 'Time';
+
+  @override
+  String get guideCalendarTimeHint => 'hh:mm';
+
+  @override
+  String get guideCalendarInvalidTime => 'Enter the time as hh:mm';
+
+  @override
+  String get guideCalendarCapacityLabel => 'Seats';
+
+  @override
+  String guideCalendarCapacityMax(Object count) {
+    return 'Maximum for this offer: $count';
+  }
+
+  @override
+  String guideCalendarCapacityTooHigh(Object count) {
+    return 'This offer allows up to $count seats';
+  }
+
+  @override
+  String get guideCalendarSlotLeadTimeTooSoon =>
+      'Choose a date and time at least 3 hours before the start.';
+
+  @override
+  String get guideCalendarSaveSlot => 'Save';
 }

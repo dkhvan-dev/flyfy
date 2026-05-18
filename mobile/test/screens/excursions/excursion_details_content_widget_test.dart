@@ -160,6 +160,79 @@ void main() {
     expect(find.text('Book'), findsNothing);
   });
 
+  testWidgets('offers filter sheet exposes available date filter', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ExcursionDetailsContent(
+            excursion: _excursion,
+            selectedOffer: _excursion.offers.first,
+            offerProfiles: {'guide-user-1': _guideProfile1},
+            onBookTap: () {},
+            onEditOfferTap: () {},
+            onMessageGuideTap: () {},
+            onOfferSelected: (_) {},
+            showMessageGuide: false,
+            showBookingAction: false,
+          ),
+        ),
+      ),
+    );
+
+    await tester.ensureVisible(find.byIcon(Icons.tune_rounded));
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Available date'), findsOneWidget);
+    expect(find.text('dd.mm.yyyy'), findsOneWidget);
+  });
+
+  testWidgets('renders unavailable schedule notice instead of booking CTA', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ExcursionDetailsContent(
+            excursion: _excursion,
+            selectedOffer: _excursion.offers.first,
+            offerProfiles: {'guide-user-1': _guideProfile1},
+            onBookTap: () {},
+            onEditOfferTap: () {},
+            onMessageGuideTap: () {},
+            onOfferSelected: (_) {},
+            showMessageGuide: true,
+            showBookingAction: false,
+            bookingUnavailableMessage:
+                'This guide has no available time slots yet.',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Book'), findsNothing);
+    expect(
+      find.text('This guide has no available time slots yet.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('renders full-width edit CTA without price for guide authors', (
     tester,
   ) async {

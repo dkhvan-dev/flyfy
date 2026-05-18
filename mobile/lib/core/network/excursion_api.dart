@@ -187,7 +187,7 @@ class ExcursionApi {
     return ExcursionVm.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<Map<String, dynamic>> createExcursionBooking(
+  Future<ExcursionBookingVm> createExcursionBooking(
     CreateExcursionBookingRequest request,
   ) async {
     final response = await _apiClient.dio.post(
@@ -195,7 +195,21 @@ class ExcursionApi {
       data: request.toJson(),
     );
 
-    return response.data as Map<String, dynamic>;
+    return ExcursionBookingVm.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<ExcursionBookingVm> updateExcursionBookingGuests(
+    String bookingId, {
+    required int adults,
+    required int children,
+  }) async {
+    final encodedBookingId = Uri.encodeComponent(bookingId);
+    final response = await _apiClient.dio.patch(
+      '/me/excursion-bookings/$encodedBookingId',
+      data: <String, dynamic>{'adults': adults, 'children': children},
+    );
+
+    return ExcursionBookingVm.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<ExcursionBookingsPage> getMyExcursionBookings({

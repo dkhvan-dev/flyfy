@@ -185,16 +185,72 @@ type GuideExcursionLanguageListResponse struct {
 type CreateExcursionBookingRequest struct {
 	ProductID      string  `json:"productId"`
 	OfferID        string  `json:"offerId"`
+	ScheduleSlotID *string `json:"scheduleSlotId,omitempty"`
 	ScheduledFor   string  `json:"scheduledFor"`
 	Adults         int     `json:"adults"`
 	Children       int     `json:"children"`
 	IdempotencyKey *string `json:"idempotencyKey,omitempty"`
 }
 
+type UpdateExcursionBookingGuestsRequest struct {
+	Adults   int `json:"adults"`
+	Children int `json:"children"`
+}
+
+type CreateGuideScheduleSlotRequest struct {
+	OfferID  string `json:"offerId"`
+	StartAt  string `json:"startAt"`
+	Timezone string `json:"timezone"`
+	Capacity int    `json:"capacity,omitempty"`
+}
+
+type UpdateGuideScheduleSlotRequest struct {
+	OfferID  string `json:"offerId,omitempty"`
+	StartAt  string `json:"startAt"`
+	Timezone string `json:"timezone"`
+	Capacity int    `json:"capacity,omitempty"`
+}
+
+type CreateGuideScheduleSeriesRequest struct {
+	OfferID         string `json:"offerId"`
+	StartsOn        string `json:"startsOn"`
+	EndsOn          string `json:"endsOn,omitempty"`
+	OccurrenceLimit int    `json:"occurrenceLimit,omitempty"`
+	StartTime       string `json:"startTime"`
+	Timezone        string `json:"timezone"`
+	Weekdays        []int  `json:"weekdays"`
+	Capacity        int    `json:"capacity,omitempty"`
+}
+
+type CancelGuideScheduleSlotRequest struct {
+	Reason string `json:"reason"`
+}
+
+type GuideScheduleSlotResponse struct {
+	ID                string  `json:"id"`
+	SeriesID          *string `json:"seriesId,omitempty"`
+	OfferID           string  `json:"offerId"`
+	ProductID         string  `json:"productId"`
+	LegacyExcursionID *string `json:"legacyExcursionId,omitempty"`
+	StartAt           string  `json:"startAt"`
+	EndAt             string  `json:"endAt"`
+	Timezone          string  `json:"timezone"`
+	Capacity          int     `json:"capacity"`
+	BookedSeats       int     `json:"bookedSeats"`
+	Status            string  `json:"status"`
+	Title             string  `json:"title,omitempty"`
+	CancelReason      *string `json:"cancelReason,omitempty"`
+}
+
+type GuideScheduleListResponse struct {
+	Items []GuideScheduleSlotResponse `json:"items"`
+}
+
 type ExcursionBookingResponse struct {
 	ID                string                   `json:"id"`
 	ProductID         string                   `json:"productId"`
 	OfferID           string                   `json:"offerId"`
+	ScheduleSlotID    *string                  `json:"scheduleSlotId,omitempty"`
 	LegacyExcursionID *string                  `json:"legacyExcursionId,omitempty"`
 	GuideProfileID    string                   `json:"guideProfileId"`
 	GuideUserID       string                   `json:"guideUserId"`
@@ -212,6 +268,7 @@ type ExcursionBookingResponse struct {
 	Adults            int                      `json:"adults"`
 	Children          int                      `json:"children"`
 	TotalSeats        int                      `json:"totalSeats"`
+	MaxGroupSize      int                      `json:"maxGroupSize,omitempty"`
 	UnitPriceAmount   float64                  `json:"unitPriceAmount"`
 	ServiceFeeAmount  float64                  `json:"serviceFeeAmount"`
 	TotalPriceAmount  float64                  `json:"totalPriceAmount"`

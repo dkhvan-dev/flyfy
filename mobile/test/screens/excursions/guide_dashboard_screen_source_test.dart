@@ -28,6 +28,9 @@ void main() {
     expect(source, contains('_archiveOffer'));
     expect(source, contains('archiveExcursionOffer'));
     expect(source, contains('guideDashboardBookingCount'));
+    expect(source, contains('formatLocalizedExcursionMoney'));
+    expect(source, isNot(contains('symbol: excursion.currency')));
+    expect(source, isNot(contains('symbol: booking.currency')));
     expect(source, contains('guideDashboardArchiveTab'));
     expect(source, contains('guideDashboardArchiveOffer'));
     expect(
@@ -40,6 +43,8 @@ void main() {
     expect(source, contains('AspectRatio('));
     expect(source, contains('RefreshIndicator('));
     expect(source, contains('FlyfyPaginationBar('));
+    expect(source, isNot(contains('bottomNavigationBar:')));
+    expect(source, isNot(contains('CommonBottomNavigationBar')));
   });
 
   test('edit excursion screen keeps the existing cover visible', () async {

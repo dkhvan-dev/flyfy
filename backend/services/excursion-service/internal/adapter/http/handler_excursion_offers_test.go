@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -205,6 +206,10 @@ func (s *excursionOffersRepoStub) GetExcursionOfferByID(context.Context, uuid.UU
 	return nil, nil
 }
 
+func (s *excursionOffersRepoStub) GetExcursionOfferByLegacyExcursionID(context.Context, uuid.UUID) (*model.ExcursionOffer, error) {
+	return nil, nil
+}
+
 func (s *excursionOffersRepoStub) LoadExcursionOfferRelations(context.Context, uuid.UUID) (port.ExcursionOfferRelations, error) {
 	return port.ExcursionOfferRelations{}, nil
 }
@@ -221,6 +226,14 @@ func (s *excursionOffersRepoStub) GetExcursionBookingByID(context.Context, uuid.
 	return nil, nil
 }
 
+func (s *excursionOffersRepoStub) GetExcursionBookingByTouristIDAndIdempotencyKey(context.Context, uuid.UUID, string) (*model.ExcursionBooking, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) UpdateExcursionBookingGuests(context.Context, *model.ExcursionBooking, int) error {
+	return nil
+}
+
 func (s *excursionOffersRepoStub) CreateExcursionReview(context.Context, *model.ExcursionReview) error {
 	return nil
 }
@@ -231,4 +244,36 @@ func (s *excursionOffersRepoStub) GetExcursionReviewByBookingID(context.Context,
 
 func (s *excursionOffersRepoStub) ListExcursionReviews(context.Context, port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
 	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) CreateExcursionScheduleSlot(context.Context, *model.ExcursionScheduleSlot) error {
+	return nil
+}
+
+func (s *excursionOffersRepoStub) CreateExcursionScheduleSeriesWithSlots(context.Context, *model.ExcursionScheduleSeries, []*model.ExcursionScheduleSlot) error {
+	return nil
+}
+
+func (s *excursionOffersRepoStub) UpdateExcursionScheduleSlot(context.Context, *model.ExcursionScheduleSlot) error {
+	return nil
+}
+
+func (s *excursionOffersRepoStub) DeleteExcursionScheduleSlot(context.Context, uuid.UUID, uuid.UUID) error {
+	return nil
+}
+
+func (s *excursionOffersRepoStub) GetExcursionScheduleSlotByID(context.Context, uuid.UUID) (*model.ExcursionScheduleSlot, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) ListExcursionScheduleSlots(context.Context, port.ExcursionScheduleFilter) ([]*model.ExcursionScheduleSlot, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) ReserveExcursionScheduleSlotSeats(context.Context, uuid.UUID, int) error {
+	return nil
+}
+
+func (s *excursionOffersRepoStub) ExpireUnbookedExcursionScheduleSlots(context.Context, time.Time, string) error {
+	return nil
 }

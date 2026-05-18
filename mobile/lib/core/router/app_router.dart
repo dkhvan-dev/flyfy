@@ -29,6 +29,7 @@ import '../../screens/excursions/excursion_booking_screen.dart';
 import '../../screens/excursions/excursion_select_location_screen.dart';
 import '../../screens/excursions/excursion_details_screen.dart';
 import '../../screens/excursions/excursions_screen.dart';
+import '../../screens/excursions/guide_calendar_screen.dart';
 import '../../screens/excursions/guide_dashboard_screen.dart';
 import '../../screens/excursions/my_excursions_screen.dart';
 import '../../screens/guides/guides_screen.dart';
@@ -163,6 +164,11 @@ class AppRouter {
           path: '/profile/guide-dashboard',
           builder: (context, state) =>
               _withAndroidBackSwipe(const GuideDashboardScreen()),
+        ),
+        GoRoute(
+          path: '/profile/guide-dashboard/calendar',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const GuideCalendarScreen()),
         ),
         GoRoute(
           path: '/users/:userId/profile',

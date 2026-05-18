@@ -32,6 +32,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", h.Health)
 	mux.HandleFunc("GET /v1/excursion-products", h.ListExcursionProducts)
 	mux.HandleFunc("GET /v1/excursion-products/{id}", h.GetExcursionProduct)
+	mux.HandleFunc("GET /v1/excursion-products/{id}/schedule", h.ListPublicExcursionSchedule)
 	mux.HandleFunc("GET /v1/excursion-products/{id}/offers", h.ListExcursionProductOffers)
 	mux.HandleFunc("GET /v1/excursion-products/{id}/reviews", h.ListExcursionProductReviews)
 	mux.HandleFunc("GET /v1/excursion-products/{id}/cover", h.GetExcursionProductCover)
@@ -49,9 +50,17 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /v1/me/excursions/{id}", h.DeleteExcursion)
 	mux.HandleFunc("POST /v1/me/excursions/{id}/archive", h.ArchiveExcursion)
 	mux.HandleFunc("POST /v1/me/excursions/{id}/publish", h.PublishExcursion)
+	mux.HandleFunc("GET /v1/me/excursion-schedule", h.ListGuideSchedule)
+	mux.HandleFunc("POST /v1/me/excursion-schedule/slots", h.CreateGuideScheduleSlot)
+	mux.HandleFunc("PATCH /v1/me/excursion-schedule/slots/{id}", h.UpdateGuideScheduleSlot)
+	mux.HandleFunc("POST /v1/me/excursion-schedule/series", h.CreateGuideScheduleSeries)
+	mux.HandleFunc("POST /v1/me/excursion-schedule/slots/{id}/close", h.CloseGuideScheduleSlot)
+	mux.HandleFunc("POST /v1/me/excursion-schedule/slots/{id}/cancel", h.CancelGuideScheduleSlot)
+	mux.HandleFunc("DELETE /v1/me/excursion-schedule/slots/{id}", h.DeleteGuideScheduleSlot)
 	mux.HandleFunc("GET /v1/me/excursion-bookings", h.ListMyExcursionBookings)
 	mux.HandleFunc("GET /v1/me/guide-excursion-bookings", h.ListMyGuideExcursionBookings)
 	mux.HandleFunc("POST /v1/me/excursion-bookings", h.CreateExcursionBooking)
+	mux.HandleFunc("PATCH /v1/me/excursion-bookings/{id}", h.UpdateExcursionBookingGuests)
 	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/review", h.CreateExcursionReview)
 }
 
@@ -301,6 +310,275 @@ func (h *Handler) CreateExcursionBooking(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusCreated, toExcursionBookingResponse(booking))
 }
 
+func (h *Handler) ListGuideSchedule(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	from, err := time.Parse(time.RFC3339, strings.TrimSpace(r.URL.Query().Get("from")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid from")
+		return
+	}
+	to, err := time.Parse(time.RFC3339, strings.TrimSpace(r.URL.Query().Get("to")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid to")
+		return
+	}
+	items, err := h.useCase.ListGuideSchedule(r.Context(), app.ListGuideScheduleInput{
+		ActorUserID: actorUserID,
+		From:        from,
+		To:          to,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list guide schedule")
+		return
+	}
+	response := make([]dto.GuideScheduleSlotResponse, 0, len(items))
+	for _, item := range items {
+		response = append(response, toGuideScheduleSlotResponse(item))
+	}
+	writeJSON(w, http.StatusOK, dto.GuideScheduleListResponse{Items: response})
+}
+
+func (h *Handler) ListPublicExcursionSchedule(w http.ResponseWriter, r *http.Request) {
+	productID, ok := parsePathUUID(w, r, "id", "invalid excursion product id")
+	if !ok {
+		return
+	}
+	offerID, err := uuid.Parse(strings.TrimSpace(r.URL.Query().Get("offerId")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid offerId")
+		return
+	}
+	from, err := time.Parse(time.RFC3339, strings.TrimSpace(r.URL.Query().Get("from")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid from")
+		return
+	}
+	to, err := time.Parse(time.RFC3339, strings.TrimSpace(r.URL.Query().Get("to")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid to")
+		return
+	}
+	seats := 1
+	if rawSeats := strings.TrimSpace(r.URL.Query().Get("seats")); rawSeats != "" {
+		parsed, parseErr := strconv.Atoi(rawSeats)
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "invalid seats")
+			return
+		}
+		seats = parsed
+	}
+	items, err := h.useCase.ListPublicExcursionSchedule(r.Context(), app.ListPublicExcursionScheduleInput{
+		ProductID: productID,
+		OfferID:   offerID,
+		From:      from,
+		To:        to,
+		Seats:     seats,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list excursion schedule")
+		return
+	}
+	response := make([]dto.GuideScheduleSlotResponse, 0, len(items))
+	for _, item := range items {
+		response = append(response, toGuideScheduleSlotResponse(item))
+	}
+	writeJSON(w, http.StatusOK, dto.GuideScheduleListResponse{Items: response})
+}
+
+func (h *Handler) CreateGuideScheduleSlot(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	var req dto.CreateGuideScheduleSlotRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	offerID, err := uuid.Parse(strings.TrimSpace(req.OfferID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid offer id")
+		return
+	}
+	startAt, err := time.Parse(time.RFC3339, strings.TrimSpace(req.StartAt))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid startAt")
+		return
+	}
+	slot, err := h.useCase.CreateGuideScheduleSlot(r.Context(), app.CreateGuideScheduleSlotInput{
+		ActorUserID: actorUserID,
+		OfferID:     offerID,
+		StartAt:     startAt,
+		Timezone:    req.Timezone,
+		Capacity:    req.Capacity,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to create guide schedule slot")
+		return
+	}
+	writeJSON(w, http.StatusCreated, toGuideScheduleSlotResponse(slot))
+}
+
+func (h *Handler) UpdateGuideScheduleSlot(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	slotID, ok := parsePathUUID(w, r, "id", "invalid schedule slot id")
+	if !ok {
+		return
+	}
+	var req dto.UpdateGuideScheduleSlotRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	var offerID uuid.UUID
+	if strings.TrimSpace(req.OfferID) != "" {
+		parsed, err := uuid.Parse(strings.TrimSpace(req.OfferID))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid offer id")
+			return
+		}
+		offerID = parsed
+	}
+	var startAt time.Time
+	if strings.TrimSpace(req.StartAt) != "" {
+		parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(req.StartAt))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid startAt")
+			return
+		}
+		startAt = parsed
+	}
+	slot, err := h.useCase.UpdateGuideScheduleSlot(r.Context(), app.UpdateGuideScheduleSlotInput{
+		ActorUserID: actorUserID,
+		SlotID:      slotID,
+		OfferID:     offerID,
+		StartAt:     startAt,
+		Timezone:    req.Timezone,
+		Capacity:    req.Capacity,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to update guide schedule slot")
+		return
+	}
+	writeJSON(w, http.StatusOK, toGuideScheduleSlotResponse(slot))
+}
+
+func (h *Handler) CreateGuideScheduleSeries(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	var req dto.CreateGuideScheduleSeriesRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	offerID, err := uuid.Parse(strings.TrimSpace(req.OfferID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid offer id")
+		return
+	}
+	startsOn, err := time.Parse("2006-01-02", strings.TrimSpace(req.StartsOn))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid startsOn")
+		return
+	}
+	var endsOn *time.Time
+	if strings.TrimSpace(req.EndsOn) != "" {
+		parsed, parseErr := time.Parse("2006-01-02", strings.TrimSpace(req.EndsOn))
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "invalid endsOn")
+			return
+		}
+		endsOn = &parsed
+	}
+	var occurrenceLimit *int
+	if req.OccurrenceLimit > 0 {
+		occurrenceLimit = &req.OccurrenceLimit
+	}
+	slots, err := h.useCase.CreateGuideScheduleSeries(r.Context(), app.CreateGuideScheduleSeriesInput{
+		ActorUserID:     actorUserID,
+		OfferID:         offerID,
+		StartsOn:        startsOn,
+		EndsOn:          endsOn,
+		OccurrenceLimit: occurrenceLimit,
+		StartTime:       req.StartTime,
+		Timezone:        req.Timezone,
+		Weekdays:        req.Weekdays,
+		Capacity:        req.Capacity,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to create guide schedule series")
+		return
+	}
+	response := make([]dto.GuideScheduleSlotResponse, 0, len(slots))
+	for _, slot := range slots {
+		response = append(response, toGuideScheduleSlotResponse(slot))
+	}
+	writeJSON(w, http.StatusCreated, dto.GuideScheduleListResponse{Items: response})
+}
+
+func (h *Handler) CloseGuideScheduleSlot(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	slotID, ok := parsePathUUID(w, r, "id", "invalid schedule slot id")
+	if !ok {
+		return
+	}
+	slot, err := h.useCase.CloseGuideScheduleSlot(r.Context(), actorUserID, slotID)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to close guide schedule slot")
+		return
+	}
+	writeJSON(w, http.StatusOK, toGuideScheduleSlotResponse(slot))
+}
+
+func (h *Handler) CancelGuideScheduleSlot(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	slotID, ok := parsePathUUID(w, r, "id", "invalid schedule slot id")
+	if !ok {
+		return
+	}
+	var req dto.CancelGuideScheduleSlotRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	slot, err := h.useCase.CancelGuideScheduleSlot(r.Context(), actorUserID, slotID, req.Reason)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to cancel guide schedule slot")
+		return
+	}
+	writeJSON(w, http.StatusOK, toGuideScheduleSlotResponse(slot))
+}
+
+func (h *Handler) DeleteGuideScheduleSlot(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	slotID, ok := parsePathUUID(w, r, "id", "invalid schedule slot id")
+	if !ok {
+		return
+	}
+	if err := h.useCase.DeleteGuideScheduleSlot(r.Context(), actorUserID, slotID); err != nil {
+		h.writeUseCaseError(w, r, err, "failed to delete guide schedule slot")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Handler) ListMyExcursionBookings(w http.ResponseWriter, r *http.Request) {
 	actorUserID, ok := parseActorUserID(w, r)
 	if !ok {
@@ -337,6 +615,33 @@ func (h *Handler) ListMyGuideExcursionBookings(w http.ResponseWriter, r *http.Re
 		return
 	}
 	writeJSON(w, http.StatusOK, toExcursionBookingListResponse(items, requestedLimit))
+}
+
+func (h *Handler) UpdateExcursionBookingGuests(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	bookingID, ok := parsePathUUID(w, r, "id", "invalid excursion booking id")
+	if !ok {
+		return
+	}
+	var req dto.UpdateExcursionBookingGuestsRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	booking, err := h.useCase.UpdateExcursionBookingGuests(r.Context(), app.UpdateExcursionBookingGuestsInput{
+		ActorUserID: actorUserID,
+		BookingID:   bookingID,
+		Adults:      req.Adults,
+		Children:    req.Children,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to update excursion booking")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionBookingResponse(booking))
 }
 
 func (h *Handler) CreateExcursionReview(w http.ResponseWriter, r *http.Request) {
@@ -621,14 +926,28 @@ func toCreateExcursionBookingInput(actorUserID uuid.UUID, req dto.CreateExcursio
 	if err != nil {
 		return app.CreateExcursionBookingInput{}, fmt.Errorf("invalid offerId")
 	}
-	scheduledFor, err := time.Parse(time.RFC3339, strings.TrimSpace(req.ScheduledFor))
-	if err != nil {
+	var scheduleSlotID *uuid.UUID
+	if req.ScheduleSlotID != nil && strings.TrimSpace(*req.ScheduleSlotID) != "" {
+		parsed, parseErr := uuid.Parse(strings.TrimSpace(*req.ScheduleSlotID))
+		if parseErr != nil {
+			return app.CreateExcursionBookingInput{}, fmt.Errorf("invalid scheduleSlotId")
+		}
+		scheduleSlotID = &parsed
+	}
+	var scheduledFor time.Time
+	if strings.TrimSpace(req.ScheduledFor) != "" {
+		scheduledFor, err = time.Parse(time.RFC3339, strings.TrimSpace(req.ScheduledFor))
+		if err != nil {
+			return app.CreateExcursionBookingInput{}, fmt.Errorf("invalid scheduledFor")
+		}
+	} else if scheduleSlotID == nil {
 		return app.CreateExcursionBookingInput{}, fmt.Errorf("invalid scheduledFor")
 	}
 	return app.CreateExcursionBookingInput{
 		ActorUserID:    actorUserID,
 		ProductID:      productID,
 		OfferID:        offerID,
+		ScheduleSlotID: scheduleSlotID,
 		ScheduledFor:   scheduledFor,
 		Adults:         req.Adults,
 		Children:       req.Children,
@@ -968,6 +1287,7 @@ func toExcursionBookingResponse(item *model.ExcursionBooking) dto.ExcursionBooki
 		ID:                item.ID.String(),
 		ProductID:         item.ProductID.String(),
 		OfferID:           item.OfferID.String(),
+		ScheduleSlotID:    formatOptionalUUID(item.ScheduleSlotID),
 		LegacyExcursionID: formatOptionalUUID(item.LegacyExcursionID),
 		GuideProfileID:    item.GuideProfileID.String(),
 		GuideUserID:       item.GuideUserID.String(),
@@ -983,6 +1303,24 @@ func toExcursionBookingResponse(item *model.ExcursionBooking) dto.ExcursionBooki
 		Status:            string(item.Status),
 		CreatedAt:         item.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:         item.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func toGuideScheduleSlotResponse(slot *model.ExcursionScheduleSlot) dto.GuideScheduleSlotResponse {
+	return dto.GuideScheduleSlotResponse{
+		ID:                slot.ID.String(),
+		SeriesID:          formatOptionalUUID(slot.SeriesID),
+		OfferID:           slot.OfferID.String(),
+		ProductID:         slot.ProductID.String(),
+		LegacyExcursionID: formatOptionalUUID(slot.LegacyExcursionID),
+		StartAt:           slot.StartAt.UTC().Format(time.RFC3339),
+		EndAt:             slot.EndAt.UTC().Format(time.RFC3339),
+		Timezone:          slot.Timezone,
+		Capacity:          slot.Capacity,
+		BookedSeats:       slot.BookedSeats,
+		Status:            string(slot.Status),
+		Title:             strings.TrimSpace(slot.Title),
+		CancelReason:      formatOptionalString(slot.CancelReason),
 	}
 }
 
@@ -1012,6 +1350,7 @@ func toExcursionBookingListItemResponse(item *model.ExcursionBookingListItem) dt
 	response.CountryCode = formatOptionalString(item.CountryCode)
 	response.CityName = formatOptionalString(item.CityName)
 	response.CoverFileID = formatOptionalUUID(item.CoverFileID)
+	response.MaxGroupSize = item.MaxGroupSize
 	if item.Review != nil {
 		response.Review = toExcursionReviewResponse(item.Review, response.GuideDisplayName)
 	}
@@ -1097,7 +1436,9 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		writeError(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, model.ErrExcursionAlreadyArchived),
 		errors.Is(err, model.ErrExcursionGuideLandmarkAlreadyExists),
-		errors.Is(err, model.ErrExcursionReviewAlreadyExists):
+		errors.Is(err, model.ErrExcursionReviewAlreadyExists),
+		errors.Is(err, app.ErrExcursionBookingIdempotencyConflict),
+		errors.Is(err, app.ErrExcursionScheduleConflict):
 		writeError(w, http.StatusConflict, err.Error())
 	case errors.Is(err, app.ErrExcursionTranslationFailed):
 		writeError(w, http.StatusServiceUnavailable, err.Error())
@@ -1139,8 +1480,20 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, model.ErrInvalidExcursionReviewUser),
 		errors.Is(err, model.ErrInvalidExcursionReviewRating),
 		errors.Is(err, model.ErrInvalidExcursionReviewComment),
+		errors.Is(err, model.ErrInvalidExcursionScheduleID),
+		errors.Is(err, model.ErrInvalidExcursionScheduleGuide),
+		errors.Is(err, model.ErrInvalidExcursionScheduleOffer),
+		errors.Is(err, model.ErrInvalidExcursionScheduleInterval),
+		errors.Is(err, model.ErrInvalidExcursionScheduleTimezone),
+		errors.Is(err, model.ErrInvalidExcursionScheduleCapacity),
+		errors.Is(err, model.ErrExcursionScheduleCancelReasonRequired),
+		errors.Is(err, model.ErrExcursionScheduleBookedDeleteDenied),
+		errors.Is(err, app.ErrExcursionBookingNotEditable),
 		errors.Is(err, app.ErrExcursionBookingNotReviewable),
-		errors.Is(err, app.ErrExcursionOfferNotBookable):
+		errors.Is(err, app.ErrExcursionOfferNotBookable),
+		errors.Is(err, app.ErrExcursionNotPublished),
+		errors.Is(err, app.ErrExcursionScheduleStartTooSoon),
+		errors.Is(err, app.ErrExcursionScheduleUnavailable):
 		writeError(w, http.StatusBadRequest, err.Error())
 	default:
 		log.Error().

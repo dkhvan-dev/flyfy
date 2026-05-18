@@ -273,6 +273,33 @@ void main() {
   );
 
   test(
+    'updateExcursionBookingGuests patches adults and children',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursion-bookings/booking-1': _bookingJson(),
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final booking = await api.updateExcursionBookingGuests(
+        'booking-1',
+        adults: 3,
+        children: 1,
+      );
+
+      expect(adapter.requests.single.path, '/me/excursion-bookings/booking-1');
+      expect(adapter.lastOptions?.method, 'PATCH');
+      expect(adapter.lastJsonBody, {'adults': 3, 'children': 1});
+      expect(booking.id, 'booking-1');
+    },
+  );
+
+  test(
     'createExcursionReview posts rating and comment for visited booking',
     () async {
       final adapter = _ExcursionJsonAdapter({
@@ -447,6 +474,7 @@ Map<String, Object?> _bookingJson() {
     'id': 'booking-1',
     'productId': 'product-1',
     'offerId': 'offer-1',
+    'scheduleSlotId': 'slot-1',
     'touristUserId': 'tourist-1',
     'guideProfileId': 'guide-profile-1',
     'guideUserId': 'guide-user-1',

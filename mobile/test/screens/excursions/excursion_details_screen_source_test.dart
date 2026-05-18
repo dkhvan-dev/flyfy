@@ -145,7 +145,7 @@ void main() {
       expect(source, contains('context.push('));
       expect(source, contains("'/users/\$guideUserId/profile'"));
       expect(source, contains('_formatGuideFullName'));
-      expect(source, contains("return '\$lastName \$firstName';"));
+      expect(source, contains("return '\$lastName \${firstName[0]}.';"));
       expect(source, isNot(contains('_formatGuideSurnameInitials')));
       expect(source, contains('showMessageGuide: !isAuthor'));
       expect(source, contains('showMessageGuide'));
@@ -188,11 +188,44 @@ void main() {
       expect(source, contains('resolveExcursionCoverUrl(excursion)'));
       expect(
         source,
-        contains('showBookingAction: !isAuthor && hasBookableOffer'),
+        contains('!isAuthor && hasBookableOffer && hasAvailableSchedule'),
       );
       expect(source, contains('showEditOfferAction'));
-      expect(source, contains('showBookingAction || showEditOfferAction'));
+      expect(source, contains('showBottomBookingNotice'));
       expect(source, contains('class _ExcursionCheckoutBar'));
+    },
+  );
+
+  test('excursion details checks selected guide schedule before booking CTA',
+      () async {
+    final source = await File(
+      'lib/screens/excursions/excursion_details_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('_scheduleLoadSelectedOfferAvailability'));
+    expect(source, contains('loadBookableExcursionSchedule'));
+    expect(source, contains('selectedOfferScheduleKey'));
+    expect(source, contains('bookingUnavailableMessage'));
+    expect(source, contains('excursionDetailsNoAvailableSlots'));
+    expect(source, contains('excursionDetailsCheckingSchedule'));
+  });
+
+  test(
+    'excursion details reads route-scoped details instead of global selection',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      expect(
+          source, contains('provider.excursionDetailsFor(widget.excursionId)'));
+      expect(
+          source, contains('provider.isDetailLoadingFor(widget.excursionId)'));
+      expect(source, contains('provider.isDetailErrorFor(widget.excursionId)'));
+      expect(
+        source,
+        isNot(contains('final excursion = provider.selectedExcursion;')),
+      );
     },
   );
 
@@ -327,6 +360,11 @@ void main() {
       expect(source, contains('profile.displayName'));
       expect(source, contains('profile.primaryPhone'));
       expect(source, contains('_ExcursionOffersFilterSheet'));
+      expect(source, contains('availableDate'));
+      expect(source, contains('loadBookableExcursionSchedule'));
+      expect(source, contains('_offerHasBookableSlotOnDate'));
+      expect(source, contains('excursionDetailsOffersAvailableDate'));
+      expect(source, contains('excursionDetailsOffersAvailableDateHint'));
       expect(source, contains('_languageSearchController'));
       expect(source, contains('_visibleLanguages'));
       expect(source, contains('_languageSearchHaystack'));

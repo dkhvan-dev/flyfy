@@ -2480,6 +2480,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get excursionDetailsOffersMaxPriceHint => 'Например, 50000';
 
   @override
+  String get excursionDetailsOffersAvailableDate => 'Доступная дата';
+
+  @override
+  String get excursionDetailsOffersAvailableDateHint => 'дд.мм.гггг';
+
+  @override
+  String get excursionDetailsOffersAvailableDateInvalid =>
+      'Введите дату в формате дд.мм.гггг';
+
+  @override
   String get excursionDetailsOffersMinGroup => 'Мин. размер группы';
 
   @override
@@ -2511,6 +2521,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get excursionDetailsBook => 'Забронировать';
+
+  @override
+  String get excursionDetailsCheckingSchedule => 'Проверяем доступное время...';
+
+  @override
+  String get excursionDetailsNoAvailableSlots =>
+      'У этого гида пока нет доступных слотов для этой экскурсии.';
 
   @override
   String get excursionDetailsEditOffer => 'Редактировать предложение';
@@ -2580,11 +2597,38 @@ class AppLocalizationsRu extends AppLocalizations {
       'Заявка на бронирование готова. Онлайн-оплата будет подключена скоро.';
 
   @override
+  String get excursionBookingAlreadyBookedTitle =>
+      'Вы уже забронировали это время';
+
+  @override
+  String get excursionBookingAlreadyBookedMessage =>
+      'Изменить количество гостей можно в разделе «Мои экскурсии».';
+
+  @override
+  String get excursionBookingOpenMyExcursions => 'Открыть Мои экскурсии';
+
+  @override
   String get excursionBookingLoadFailed =>
       'Не удалось загрузить бронирование экскурсии';
 
   @override
   String get excursionBookingPerPerson => '/ чел.';
+
+  @override
+  String get excursionBookingSelectSlot => 'Выберите доступное время';
+
+  @override
+  String get excursionBookingScheduleLoadFailed =>
+      'Не удалось загрузить доступное время';
+
+  @override
+  String get excursionBookingNoSlots =>
+      'Гид пока не добавил доступное время для этого предложения.';
+
+  @override
+  String excursionBookingSeatsLeft(Object count) {
+    return 'Осталось мест: $count';
+  }
 
   @override
   String get excursionDetailsNoDescription =>
@@ -3549,6 +3593,46 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get myExcursionsReviewed => 'Оценено';
+
+  @override
+  String get myExcursionsEditGuestsButton => 'Изменить гостей';
+
+  @override
+  String get myExcursionsEditGuestsTitle => 'Изменить количество гостей';
+
+  @override
+  String get myExcursionsEditGuestsHint =>
+      'Мы проверим доступные места и обновим бронь без повторного создания.';
+
+  @override
+  String get myExcursionsUpdateGuestsSuccess => 'Количество гостей обновлено';
+
+  @override
+  String get myExcursionsUpdateGuestsFailed =>
+      'Не удалось обновить количество гостей. Проверьте доступные места и попробуйте снова.';
+
+  @override
+  String myExcursionsGuestsChargeMock(Object amount) {
+    return 'К доплате: $amount';
+  }
+
+  @override
+  String myExcursionsGuestsRefundMock(Object amount) {
+    return 'К возврату: $amount';
+  }
+
+  @override
+  String get myExcursionsGuestsNoPaymentChange => 'Стоимость не изменится';
+
+  @override
+  String get myExcursionsGuestsPaymentMockHint =>
+      'Пока это мок-расчет: реальная доплата или возврат подключатся через платежный сервис.';
+
+  @override
+  String get myExcursionsPayAndSaveGuests => 'Доплатить и сохранить';
+
+  @override
+  String get myExcursionsRefundAndSaveGuests => 'Вернуть и сохранить';
 
   @override
   String get myExcursionsFilterStatus => 'Статус';
@@ -4915,4 +4999,118 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get chatSharedPartialLoadWarning =>
       'Часть старых вложений не удалось загрузить.';
+
+  @override
+  String get guideCalendarTitle => 'Календарь гида';
+
+  @override
+  String get guideCalendarAddSlot => 'Слот';
+
+  @override
+  String get guideCalendarEditSlot => 'Редактировать слот';
+
+  @override
+  String get guideCalendarEmptyDay => 'На этот день нет слотов';
+
+  @override
+  String get guideCalendarAvailable => 'Свободно';
+
+  @override
+  String get guideCalendarBooked => 'Есть бронь';
+
+  @override
+  String get guideCalendarClosed => 'Закрыто';
+
+  @override
+  String get guideCalendarCancelled => 'Отменено';
+
+  @override
+  String guideCalendarCancelReason(Object reason) {
+    return 'Причина: $reason';
+  }
+
+  @override
+  String get guideCalendarAutoCancelNoBookings =>
+      'никто не забронировал слот за 2 часа до начала';
+
+  @override
+  String get guideCalendarRepeatWeekly => 'Повторять еженедельно';
+
+  @override
+  String get guideCalendarConflictTitle =>
+      'Время пересекается с другой экскурсией';
+
+  @override
+  String get guideCalendarSuggestNextTime =>
+      'Выберите ближайшее свободное время';
+
+  @override
+  String get guideCalendarDeleteSlot => 'Удалить';
+
+  @override
+  String get guideCalendarCancelSlot => 'Отменить';
+
+  @override
+  String get guideCalendarCloseSlot => 'Закрыть';
+
+  @override
+  String get guideCalendarOfferLabel => 'Опубликованное предложение';
+
+  @override
+  String get guideCalendarNoPublishedOffers =>
+      'Сначала опубликуйте предложение по экскурсии, чтобы добавить его в расписание.';
+
+  @override
+  String get guideCalendarOfferRequired => 'Выберите предложение по экскурсии';
+
+  @override
+  String get guideCalendarCurrentOfferFallback => 'Текущее предложение';
+
+  @override
+  String guideCalendarOfferDuration(Object minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String guideCalendarOfferCapacity(Object count) {
+    return '$count мест';
+  }
+
+  @override
+  String get guideCalendarDateLabel => 'Дата';
+
+  @override
+  String get guideCalendarDateHint => 'дд.мм.гггг';
+
+  @override
+  String get guideCalendarInvalidDate => 'Введите дату в формате дд.мм.гггг';
+
+  @override
+  String get guideCalendarTimeLabel => 'Время';
+
+  @override
+  String get guideCalendarTimeHint => 'чч:мм';
+
+  @override
+  String get guideCalendarInvalidTime => 'Введите время в формате чч:мм';
+
+  @override
+  String get guideCalendarCapacityLabel => 'Мест';
+
+  @override
+  String guideCalendarCapacityMax(Object count) {
+    return 'Максимум для этого предложения: $count';
+  }
+
+  @override
+  String guideCalendarCapacityTooHigh(Object count) {
+    return 'В этом предложении доступно до $count мест';
+  }
+
+  @override
+  String get guideCalendarSlotLeadTimeTooSoon =>
+      'Выберите дату и время минимум за 3 часа до начала.';
+
+  @override
+  String get guideCalendarSaveSlot => 'Сохранить';
 }

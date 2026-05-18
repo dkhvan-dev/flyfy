@@ -113,4 +113,22 @@ void main() {
       expect(drawerSource, contains('myExcursionsTitle'));
     },
   );
+
+  test('edit guests sheet shows mock settlement for payment deltas', () async {
+    final source = await File(
+      'lib/screens/excursions/my_excursions_screen.dart',
+    ).readAsString();
+    final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+    expect(source, contains('_settlementDeltaAmount'));
+    expect(source, contains('_simulateMockSettlement'));
+    expect(source, contains('formatLocalizedExcursionMoney'));
+    expect(source, contains('myExcursionsGuestsChargeMock'));
+    expect(source, contains('myExcursionsGuestsRefundMock'));
+    expect(source, contains('myExcursionsGuestsNoPaymentChange'));
+    expect(source, contains('myExcursionsPayAndSaveGuests'));
+    expect(source, contains('myExcursionsRefundAndSaveGuests'));
+    expect(ruSource, contains('"myExcursionsGuestsChargeMock"'));
+    expect(ruSource, contains('"myExcursionsGuestsRefundMock"'));
+  });
 }

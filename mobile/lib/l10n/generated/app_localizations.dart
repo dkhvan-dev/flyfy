@@ -4588,6 +4588,24 @@ abstract class AppLocalizations {
   /// **'e.g. 50000'**
   String get excursionDetailsOffersMaxPriceHint;
 
+  /// No description provided for @excursionDetailsOffersAvailableDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Available date'**
+  String get excursionDetailsOffersAvailableDate;
+
+  /// No description provided for @excursionDetailsOffersAvailableDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'dd.mm.yyyy'**
+  String get excursionDetailsOffersAvailableDateHint;
+
+  /// No description provided for @excursionDetailsOffersAvailableDateInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the date as dd.mm.yyyy'**
+  String get excursionDetailsOffersAvailableDateInvalid;
+
   /// No description provided for @excursionDetailsOffersMinGroup.
   ///
   /// In en, this message translates to:
@@ -4653,6 +4671,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Book'**
   String get excursionDetailsBook;
+
+  /// No description provided for @excursionDetailsCheckingSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking available times...'**
+  String get excursionDetailsCheckingSchedule;
+
+  /// No description provided for @excursionDetailsNoAvailableSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'This guide has no available time slots for this excursion yet.'**
+  String get excursionDetailsNoAvailableSlots;
 
   /// No description provided for @excursionDetailsEditOffer.
   ///
@@ -4774,6 +4804,24 @@ abstract class AppLocalizations {
   /// **'Booking request is ready. Online payment will be connected soon.'**
   String get excursionBookingSubmitted;
 
+  /// No description provided for @excursionBookingAlreadyBookedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You already booked this time'**
+  String get excursionBookingAlreadyBookedTitle;
+
+  /// No description provided for @excursionBookingAlreadyBookedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change the number of guests in My excursions.'**
+  String get excursionBookingAlreadyBookedMessage;
+
+  /// No description provided for @excursionBookingOpenMyExcursions.
+  ///
+  /// In en, this message translates to:
+  /// **'Open My excursions'**
+  String get excursionBookingOpenMyExcursions;
+
   /// No description provided for @excursionBookingLoadFailed.
   ///
   /// In en, this message translates to:
@@ -4785,6 +4833,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'/ person'**
   String get excursionBookingPerPerson;
+
+  /// No description provided for @excursionBookingSelectSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an available time'**
+  String get excursionBookingSelectSlot;
+
+  /// No description provided for @excursionBookingScheduleLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load available times'**
+  String get excursionBookingScheduleLoadFailed;
+
+  /// No description provided for @excursionBookingNoSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'The guide has not added available times for this offer yet.'**
+  String get excursionBookingNoSlots;
+
+  /// No description provided for @excursionBookingSeatsLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} seats left'**
+  String excursionBookingSeatsLeft(Object count);
 
   /// No description provided for @excursionDetailsNoDescription.
   ///
@@ -6525,6 +6597,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reviewed'**
   String get myExcursionsReviewed;
+
+  /// No description provided for @myExcursionsEditGuestsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit guests'**
+  String get myExcursionsEditGuestsButton;
+
+  /// No description provided for @myExcursionsEditGuestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit guests'**
+  String get myExcursionsEditGuestsTitle;
+
+  /// No description provided for @myExcursionsEditGuestsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'We will check available seats and update the booking without creating another one.'**
+  String get myExcursionsEditGuestsHint;
+
+  /// No description provided for @myExcursionsUpdateGuestsSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest count updated'**
+  String get myExcursionsUpdateGuestsSuccess;
+
+  /// No description provided for @myExcursionsUpdateGuestsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update guest count. Check available seats and try again.'**
+  String get myExcursionsUpdateGuestsFailed;
+
+  /// No description provided for @myExcursionsGuestsChargeMock.
+  ///
+  /// In en, this message translates to:
+  /// **'To pay: {amount}'**
+  String myExcursionsGuestsChargeMock(Object amount);
+
+  /// No description provided for @myExcursionsGuestsRefundMock.
+  ///
+  /// In en, this message translates to:
+  /// **'To refund: {amount}'**
+  String myExcursionsGuestsRefundMock(Object amount);
+
+  /// No description provided for @myExcursionsGuestsNoPaymentChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Price will not change'**
+  String get myExcursionsGuestsNoPaymentChange;
+
+  /// No description provided for @myExcursionsGuestsPaymentMockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a mock settlement for now: real charges or refunds will be connected through the payment service.'**
+  String get myExcursionsGuestsPaymentMockHint;
+
+  /// No description provided for @myExcursionsPayAndSaveGuests.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay and save'**
+  String get myExcursionsPayAndSaveGuests;
+
+  /// No description provided for @myExcursionsRefundAndSaveGuests.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund and save'**
+  String get myExcursionsRefundAndSaveGuests;
 
   /// No description provided for @myExcursionsFilterStatus.
   ///
@@ -8877,6 +9015,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some older shared items could not be loaded.'**
   String get chatSharedPartialLoadWarning;
+
+  /// No description provided for @guideCalendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide calendar'**
+  String get guideCalendarTitle;
+
+  /// No description provided for @guideCalendarAddSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Slot'**
+  String get guideCalendarAddSlot;
+
+  /// No description provided for @guideCalendarEditSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit slot'**
+  String get guideCalendarEditSlot;
+
+  /// No description provided for @guideCalendarEmptyDay.
+  ///
+  /// In en, this message translates to:
+  /// **'No slots for this day'**
+  String get guideCalendarEmptyDay;
+
+  /// No description provided for @guideCalendarAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get guideCalendarAvailable;
+
+  /// No description provided for @guideCalendarBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked'**
+  String get guideCalendarBooked;
+
+  /// No description provided for @guideCalendarClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get guideCalendarClosed;
+
+  /// No description provided for @guideCalendarCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get guideCalendarCancelled;
+
+  /// No description provided for @guideCalendarCancelReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String guideCalendarCancelReason(Object reason);
+
+  /// No description provided for @guideCalendarAutoCancelNoBookings.
+  ///
+  /// In en, this message translates to:
+  /// **'no one booked this slot at least 2 hours before start'**
+  String get guideCalendarAutoCancelNoBookings;
+
+  /// No description provided for @guideCalendarRepeatWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat weekly'**
+  String get guideCalendarRepeatWeekly;
+
+  /// No description provided for @guideCalendarConflictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This time overlaps another excursion'**
+  String get guideCalendarConflictTitle;
+
+  /// No description provided for @guideCalendarSuggestNextTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the next available time'**
+  String get guideCalendarSuggestNextTime;
+
+  /// No description provided for @guideCalendarDeleteSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get guideCalendarDeleteSlot;
+
+  /// No description provided for @guideCalendarCancelSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get guideCalendarCancelSlot;
+
+  /// No description provided for @guideCalendarCloseSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get guideCalendarCloseSlot;
+
+  /// No description provided for @guideCalendarOfferLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Published offer'**
+  String get guideCalendarOfferLabel;
+
+  /// No description provided for @guideCalendarNoPublishedOffers.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish an excursion offer first to add it to the schedule.'**
+  String get guideCalendarNoPublishedOffers;
+
+  /// No description provided for @guideCalendarOfferRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an excursion offer'**
+  String get guideCalendarOfferRequired;
+
+  /// No description provided for @guideCalendarCurrentOfferFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Current offer'**
+  String get guideCalendarCurrentOfferFallback;
+
+  /// No description provided for @guideCalendarOfferDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String guideCalendarOfferDuration(Object minutes);
+
+  /// No description provided for @guideCalendarOfferCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} seats'**
+  String guideCalendarOfferCapacity(Object count);
+
+  /// No description provided for @guideCalendarDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get guideCalendarDateLabel;
+
+  /// No description provided for @guideCalendarDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'dd.mm.yyyy'**
+  String get guideCalendarDateHint;
+
+  /// No description provided for @guideCalendarInvalidDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the date as dd.mm.yyyy'**
+  String get guideCalendarInvalidDate;
+
+  /// No description provided for @guideCalendarTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get guideCalendarTimeLabel;
+
+  /// No description provided for @guideCalendarTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'hh:mm'**
+  String get guideCalendarTimeHint;
+
+  /// No description provided for @guideCalendarInvalidTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the time as hh:mm'**
+  String get guideCalendarInvalidTime;
+
+  /// No description provided for @guideCalendarCapacityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Seats'**
+  String get guideCalendarCapacityLabel;
+
+  /// No description provided for @guideCalendarCapacityMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum for this offer: {count}'**
+  String guideCalendarCapacityMax(Object count);
+
+  /// No description provided for @guideCalendarCapacityTooHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'This offer allows up to {count} seats'**
+  String guideCalendarCapacityTooHigh(Object count);
+
+  /// No description provided for @guideCalendarSlotLeadTimeTooSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a date and time at least 3 hours before the start.'**
+  String get guideCalendarSlotLeadTimeTooSoon;
+
+  /// No description provided for @guideCalendarSaveSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get guideCalendarSaveSlot;
 }
 
 class _AppLocalizationsDelegate

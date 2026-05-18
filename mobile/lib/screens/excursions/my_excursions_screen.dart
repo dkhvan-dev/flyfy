@@ -14,6 +14,7 @@ import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
+import '../../features/excursions/excursion_currency.dart';
 import '../../features/excursions/models/create_excursion_review_request.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -195,6 +196,38 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
     ).showSnackBar(SnackBar(content: Text(l10n.myExcursionsReviewSuccess)));
   }
 
+  Future<void> _openEditGuestsSheet(ExcursionBookingVm booking) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ExcursionProvider>();
+    final success = await showModalBottomSheet<bool>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return _EditExcursionGuestsSheet(
+          l10n: l10n,
+          booking: booking,
+          onSubmit: (adults, children) {
+            return provider.updateExcursionBookingGuests(
+              booking.id,
+              adults: adults,
+              children: children,
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || success != true) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(l10n.myExcursionsUpdateGuestsSuccess)),
+      );
+  }
+
   void _openDetails(ExcursionBookingVm booking) {
     context.push('/excursions/${Uri.encodeComponent(booking.productId)}');
   }
@@ -358,6 +391,9 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
                                 return _MyExcursionBookingCard(
                                   booking: booking,
                                   onTap: () => _openDetails(booking),
+                                  onEditGuestsTap: booking.isBooked(now)
+                                      ? () => _openEditGuestsSheet(booking)
+                                      : null,
                                   onReviewTap: booking.canReview(now)
                                       ? () => _openReviewSheet(booking)
                                       : null,
@@ -481,11 +517,13 @@ class _MyExcursionBookingCard extends StatelessWidget {
   const _MyExcursionBookingCard({
     required this.booking,
     required this.onTap,
+    required this.onEditGuestsTap,
     required this.onReviewTap,
   });
 
   final ExcursionBookingVm booking;
   final VoidCallback onTap;
+  final VoidCallback? onEditGuestsTap;
   final VoidCallback? onReviewTap;
 
   @override
@@ -594,18 +632,37 @@ class _MyExcursionBookingCard extends StatelessWidget {
                   ),
                 ),
               ],
-              if (onReviewTap != null || booking.isReviewed) ...[
+              if (onEditGuestsTap != null ||
+                  onReviewTap != null ||
+                  booking.isReviewed) ...[
                 const SizedBox(height: 14),
-                Row(
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     if (booking.isReviewed)
-                      Expanded(
+                      SizedBox(
+                        width: double.infinity,
                         child: _ReviewedBadge(rating: booking.review!.rating),
-                      )
-                    else
-                      const Spacer(),
-                    if (onReviewTap != null) ...[
-                      const SizedBox(width: 12),
+                      ),
+                    if (onEditGuestsTap != null)
+                      OutlinedButton.icon(
+                        onPressed: onEditGuestsTap,
+                        icon: const Icon(Icons.group_add_rounded, size: 18),
+                        label: Text(l10n.myExcursionsEditGuestsButton),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.accent,
+                          side: BorderSide(
+                            color: AppColors.accent.withValues(alpha: 0.45),
+                          ),
+                          minimumSize: const Size(0, 42),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    if (onReviewTap != null)
                       FilledButton.icon(
                         onPressed: onReviewTap,
                         icon: const Icon(Icons.star_rounded, size: 18),
@@ -619,7 +676,6 @@ class _MyExcursionBookingCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ],
                   ],
                 ),
               ],
@@ -693,6 +749,418 @@ class _ReviewedBadge extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _EditExcursionGuestsSheet extends StatefulWidget {
+  const _EditExcursionGuestsSheet({
+    required this.l10n,
+    required this.booking,
+    required this.onSubmit,
+  });
+
+  final AppLocalizations l10n;
+  final ExcursionBookingVm booking;
+  final Future<bool> Function(int adults, int children) onSubmit;
+
+  @override
+  State<_EditExcursionGuestsSheet> createState() =>
+      _EditExcursionGuestsSheetState();
+}
+
+class _EditExcursionGuestsSheetState extends State<_EditExcursionGuestsSheet> {
+  late int _adults;
+  late int _children;
+  bool _isSubmitting = false;
+  String? _errorMessage;
+
+  int get _totalGuests => _adults + _children;
+
+  double get _guestUnitAmount {
+    final seats = widget.booking.totalSeats;
+    if (seats <= 0 || widget.booking.totalPriceAmount <= 0) return 0;
+    return widget.booking.totalPriceAmount / seats;
+  }
+
+  double get _settlementDeltaAmount {
+    final delta =
+        (_guestUnitAmount * _totalGuests) - widget.booking.totalPriceAmount;
+    return delta.abs() < 0.01 ? 0 : delta;
+  }
+
+  int get _maxGuests {
+    final maxGroupSize = widget.booking.maxGroupSize ?? 0;
+    if (maxGroupSize > 0) {
+      return math.max(maxGroupSize, widget.booking.totalSeats);
+    }
+    return math.max(widget.booking.totalSeats, 20);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _adults = math.max(1, widget.booking.adults);
+    _children = math.max(0, widget.booking.children);
+  }
+
+  void _incrementAdults() {
+    if (_totalGuests >= _maxGuests || _isSubmitting) return;
+    setState(() => _adults++);
+  }
+
+  void _decrementAdults() {
+    if (_adults <= 1 || _isSubmitting) return;
+    setState(() => _adults--);
+  }
+
+  void _incrementChildren() {
+    if (_totalGuests >= _maxGuests || _isSubmitting) return;
+    setState(() => _children++);
+  }
+
+  void _decrementChildren() {
+    if (_children <= 0 || _isSubmitting) return;
+    setState(() => _children--);
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+    final success = await widget.onSubmit(_adults, _children);
+    if (!mounted) return;
+    if (success) {
+      await _simulateMockSettlement();
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _isSubmitting = false;
+      _errorMessage = widget.l10n.myExcursionsUpdateGuestsFailed;
+    });
+  }
+
+  Future<void> _simulateMockSettlement() async {
+    if (_settlementDeltaAmount == 0) return;
+    await Future<void>.delayed(const Duration(milliseconds: 420));
+  }
+
+  String _formatSettlementAmount(double amount) {
+    return formatLocalizedExcursionMoney(
+      amount: amount.abs(),
+      currency: widget.booking.currency,
+      localeName: widget.l10n.localeName,
+    );
+  }
+
+  String _submitLabel() {
+    final delta = _settlementDeltaAmount;
+    if (delta > 0) {
+      return widget.l10n.myExcursionsPayAndSaveGuests;
+    }
+    if (delta < 0) {
+      return widget.l10n.myExcursionsRefundAndSaveGuests;
+    }
+    return widget.l10n.createExcursionSaveChanges;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(12, 0, 12, math.max(12, bottom + 12)),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFF21150D),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.l10n.myExcursionsEditGuestsTitle,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                      color: const Color(0xFFDCCAB7),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.l10n.myExcursionsEditGuestsHint,
+                  style: const TextStyle(
+                    color: Color(0xFFCBB8A3),
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _EditGuestsCounterRow(
+                  title: widget.l10n.excursionBookingAdults,
+                  value: _adults,
+                  canIncrement: _totalGuests < _maxGuests && !_isSubmitting,
+                  canDecrement: _adults > 1 && !_isSubmitting,
+                  onIncrement: _incrementAdults,
+                  onDecrement: _decrementAdults,
+                ),
+                const SizedBox(height: 10),
+                _EditGuestsCounterRow(
+                  title: widget.l10n.excursionBookingChildren,
+                  value: _children,
+                  canIncrement: _totalGuests < _maxGuests && !_isSubmitting,
+                  canDecrement: _children > 0 && !_isSubmitting,
+                  onIncrement: _incrementChildren,
+                  onDecrement: _decrementChildren,
+                ),
+                const SizedBox(height: 12),
+                _EditGuestsSettlementPanel(
+                  l10n: widget.l10n,
+                  deltaAmount: _settlementDeltaAmount,
+                  formattedAmount: _formatSettlementAmount(
+                    _settlementDeltaAmount,
+                  ),
+                ),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _errorMessage!,
+                    style: const TextStyle(
+                      color: Color(0xFFFFC1A8),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                FilledButton(
+                  onPressed: _isSubmitting ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.textPrimary,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: AppColors.textPrimary,
+                          ),
+                        )
+                      : Text(_submitLabel()),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditGuestsSettlementPanel extends StatelessWidget {
+  const _EditGuestsSettlementPanel({
+    required this.l10n,
+    required this.deltaAmount,
+    required this.formattedAmount,
+  });
+
+  final AppLocalizations l10n;
+  final double deltaAmount;
+  final String formattedAmount;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCharge = deltaAmount > 0;
+    final isRefund = deltaAmount < 0;
+    final accentColor = isCharge
+        ? AppColors.accent
+        : isRefund
+            ? const Color(0xFF7ED7B5)
+            : const Color(0xFFDCCAB7);
+    final title = isCharge
+        ? l10n.myExcursionsGuestsChargeMock(formattedAmount)
+        : isRefund
+            ? l10n.myExcursionsGuestsRefundMock(formattedAmount)
+            : l10n.myExcursionsGuestsNoPaymentChange;
+    final icon = isCharge
+        ? Icons.payments_rounded
+        : isRefund
+            ? Icons.savings_rounded
+            : Icons.check_circle_rounded;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accentColor.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: accentColor, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  l10n.myExcursionsGuestsPaymentMockHint,
+                  style: const TextStyle(
+                    color: Color(0xFFCBB8A3),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditGuestsCounterRow extends StatelessWidget {
+  const _EditGuestsCounterRow({
+    required this.title,
+    required this.value,
+    required this.canIncrement,
+    required this.canDecrement,
+    required this.onIncrement,
+    required this.onDecrement,
+  });
+
+  final String title;
+  final int value;
+  final bool canIncrement;
+  final bool canDecrement;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 64),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          _EditGuestsCounterButton(
+            icon: Icons.remove_rounded,
+            enabled: canDecrement,
+            onTap: onDecrement,
+          ),
+          SizedBox(
+            width: 48,
+            child: Text(
+              '$value',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          _EditGuestsCounterButton(
+            icon: Icons.add_rounded,
+            enabled: canIncrement,
+            onTap: onIncrement,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditGuestsCounterButton extends StatelessWidget {
+  const _EditGuestsCounterButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkResponse(
+      onTap: enabled ? onTap : null,
+      radius: 24,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppColors.accent.withValues(alpha: 0.16)
+              : Colors.white.withValues(alpha: 0.04),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.accent.withValues(alpha: enabled ? 0.58 : 0.16),
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: enabled
+              ? AppColors.accent
+              : const Color(0xFFDCCAB7).withValues(alpha: 0.38),
+          size: 20,
+        ),
+      ),
     );
   }
 }

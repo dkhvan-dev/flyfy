@@ -2485,6 +2485,16 @@ class AppLocalizationsKk extends AppLocalizations {
   String get excursionDetailsOffersMaxPriceHint => 'Мысалы, 50000';
 
   @override
+  String get excursionDetailsOffersAvailableDate => 'Қолжетімді күн';
+
+  @override
+  String get excursionDetailsOffersAvailableDateHint => 'кк.аа.жжжж';
+
+  @override
+  String get excursionDetailsOffersAvailableDateInvalid =>
+      'Күнді кк.аа.жжжж форматында енгізіңіз';
+
+  @override
   String get excursionDetailsOffersMinGroup => 'Мин. топ өлшемі';
 
   @override
@@ -2517,6 +2527,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get excursionDetailsBook => 'Брондау';
+
+  @override
+  String get excursionDetailsCheckingSchedule =>
+      'Қолжетімді уақыттарды тексеріп жатырмыз...';
+
+  @override
+  String get excursionDetailsNoAvailableSlots =>
+      'Бұл гидте осы экскурсияға әзірге қолжетімді уақыттар жоқ.';
 
   @override
   String get excursionDetailsEditOffer => 'Ұсынысты өзгерту';
@@ -2587,11 +2605,37 @@ class AppLocalizationsKk extends AppLocalizations {
       'Брондау сұрауы дайын. Онлайн төлем жақында қосылады.';
 
   @override
+  String get excursionBookingAlreadyBookedTitle => 'Бұл уақытқа бронь бар';
+
+  @override
+  String get excursionBookingAlreadyBookedMessage =>
+      'Қонақтар санын «Менің экскурсияларым» бөлімінде өзгертуге болады.';
+
+  @override
+  String get excursionBookingOpenMyExcursions => 'Менің экскурсияларымды ашу';
+
+  @override
   String get excursionBookingLoadFailed =>
       'Экскурсия брондауын жүктеу мүмкін болмады';
 
   @override
   String get excursionBookingPerPerson => '/ адам';
+
+  @override
+  String get excursionBookingSelectSlot => 'Қолжетімді уақытты таңдаңыз';
+
+  @override
+  String get excursionBookingScheduleLoadFailed =>
+      'Қолжетімді уақыттарды жүктеу мүмкін болмады';
+
+  @override
+  String get excursionBookingNoSlots =>
+      'Гид бұл ұсыныс үшін қолжетімді уақыттарды әлі қоспады.';
+
+  @override
+  String excursionBookingSeatsLeft(Object count) {
+    return 'Қалған орын: $count';
+  }
 
   @override
   String get excursionDetailsNoDescription =>
@@ -3555,6 +3599,46 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get myExcursionsReviewed => 'Бағаланған';
+
+  @override
+  String get myExcursionsEditGuestsButton => 'Қонақтарды өзгерту';
+
+  @override
+  String get myExcursionsEditGuestsTitle => 'Қонақтар санын өзгерту';
+
+  @override
+  String get myExcursionsEditGuestsHint =>
+      'Біз бос орындарды тексеріп, жаңа бронь жасамай броньды жаңартамыз.';
+
+  @override
+  String get myExcursionsUpdateGuestsSuccess => 'Қонақтар саны жаңартылды';
+
+  @override
+  String get myExcursionsUpdateGuestsFailed =>
+      'Қонақтар санын жаңарту мүмкін болмады. Бос орындарды тексеріп, қайталап көріңіз.';
+
+  @override
+  String myExcursionsGuestsChargeMock(Object amount) {
+    return 'Қосымша төлем: $amount';
+  }
+
+  @override
+  String myExcursionsGuestsRefundMock(Object amount) {
+    return 'Қайтарым: $amount';
+  }
+
+  @override
+  String get myExcursionsGuestsNoPaymentChange => 'Баға өзгермейді';
+
+  @override
+  String get myExcursionsGuestsPaymentMockHint =>
+      'Әзірге бұл мок-есеп: нақты қосымша төлем немесе қайтарым төлем сервисі арқылы қосылады.';
+
+  @override
+  String get myExcursionsPayAndSaveGuests => 'Төлеп сақтау';
+
+  @override
+  String get myExcursionsRefundAndSaveGuests => 'Қайтарып сақтау';
 
   @override
   String get myExcursionsFilterStatus => 'Мәртебе';
@@ -4901,4 +4985,118 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get chatSharedPartialLoadWarning =>
       'Кейбір ескі ортақ элементтерді жүктеу мүмкін болмады.';
+
+  @override
+  String get guideCalendarTitle => 'Гид күнтізбесі';
+
+  @override
+  String get guideCalendarAddSlot => 'Слот';
+
+  @override
+  String get guideCalendarEditSlot => 'Слотты өңдеу';
+
+  @override
+  String get guideCalendarEmptyDay => 'Бұл күнге слоттар жоқ';
+
+  @override
+  String get guideCalendarAvailable => 'Бос';
+
+  @override
+  String get guideCalendarBooked => 'Бронь бар';
+
+  @override
+  String get guideCalendarClosed => 'Жабық';
+
+  @override
+  String get guideCalendarCancelled => 'Бас тартылды';
+
+  @override
+  String guideCalendarCancelReason(Object reason) {
+    return 'Себебі: $reason';
+  }
+
+  @override
+  String get guideCalendarAutoCancelNoBookings =>
+      'басталуына 2 сағат қалғанға дейін ешкім бронь жасамады';
+
+  @override
+  String get guideCalendarRepeatWeekly => 'Апта сайын қайталау';
+
+  @override
+  String get guideCalendarConflictTitle =>
+      'Бұл уақыт басқа экскурсиямен қабаттасады';
+
+  @override
+  String get guideCalendarSuggestNextTime => 'Келесі бос уақытты таңдаңыз';
+
+  @override
+  String get guideCalendarDeleteSlot => 'Жою';
+
+  @override
+  String get guideCalendarCancelSlot => 'Бас тарту';
+
+  @override
+  String get guideCalendarCloseSlot => 'Жабу';
+
+  @override
+  String get guideCalendarOfferLabel => 'Жарияланған ұсыныс';
+
+  @override
+  String get guideCalendarNoPublishedOffers =>
+      'Кестеге қосу үшін алдымен экскурсия ұсынысын жариялаңыз.';
+
+  @override
+  String get guideCalendarOfferRequired => 'Экскурсия ұсынысын таңдаңыз';
+
+  @override
+  String get guideCalendarCurrentOfferFallback => 'Ағымдағы ұсыныс';
+
+  @override
+  String guideCalendarOfferDuration(Object minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String guideCalendarOfferCapacity(Object count) {
+    return '$count орын';
+  }
+
+  @override
+  String get guideCalendarDateLabel => 'Күні';
+
+  @override
+  String get guideCalendarDateHint => 'кк.аа.жжжж';
+
+  @override
+  String get guideCalendarInvalidDate =>
+      'Күнді кк.аа.жжжж форматында енгізіңіз';
+
+  @override
+  String get guideCalendarTimeLabel => 'Уақыты';
+
+  @override
+  String get guideCalendarTimeHint => 'сс:мм';
+
+  @override
+  String get guideCalendarInvalidTime => 'Уақытты сс:мм форматында енгізіңіз';
+
+  @override
+  String get guideCalendarCapacityLabel => 'Орын';
+
+  @override
+  String guideCalendarCapacityMax(Object count) {
+    return 'Бұл ұсыныс үшін максимум: $count';
+  }
+
+  @override
+  String guideCalendarCapacityTooHigh(Object count) {
+    return 'Бұл ұсыныста $count орынға дейін ғана қолжетімді';
+  }
+
+  @override
+  String get guideCalendarSlotLeadTimeTooSoon =>
+      'Басталуына кемінде 3 сағат қалатындай күн мен уақытты таңдаңыз.';
+
+  @override
+  String get guideCalendarSaveSlot => 'Сақтау';
 }

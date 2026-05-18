@@ -883,6 +883,9 @@
   "excursionDetailsOffersFiltersTitle": "Гид сүзгілері",
   "excursionDetailsOffersMaxPrice": "Ең жоғары баға",
   "excursionDetailsOffersMaxPriceHint": "Мысалы, 50000",
+  "excursionDetailsOffersAvailableDate": "Қолжетімді күн",
+  "excursionDetailsOffersAvailableDateHint": "кк.аа.жжжж",
+  "excursionDetailsOffersAvailableDateInvalid": "Күнді кк.аа.жжжж форматында енгізіңіз",
   "excursionDetailsOffersMinGroup": "Мин. топ өлшемі",
   "excursionDetailsOffersMinGroupHint": "Мысалы, 4",
   "excursionDetailsOffersLanguageAny": "Кез келген тіл",
@@ -894,6 +897,8 @@
   "excursionDetailsMeetingPoint": "Кездесу орны",
   "excursionDetailsTotal": "Барлығы",
   "excursionDetailsBook": "Брондау",
+  "excursionDetailsCheckingSchedule": "Қолжетімді уақыттарды тексеріп жатырмыз...",
+  "excursionDetailsNoAvailableSlots": "Бұл гидте осы экскурсияға әзірге қолжетімді уақыттар жоқ.",
   "excursionDetailsEditOffer": "Ұсынысты өзгерту",
   "excursionDetailsLoadFailed": "Экскурсияны жүктеу мүмкін болмады",
   "excursionDetailsBookingComingSoon": "Экскурсияны брондау жақында қолжетімді болады.",
@@ -926,8 +931,20 @@
   "excursionBookingConfirmPay": "Растау және төлеу",
   "excursionBookingSecurePayment": "Қауіпсіз төлем FlyFy арқылы өңделеді",
   "excursionBookingSubmitted": "Брондау сұрауы дайын. Онлайн төлем жақында қосылады.",
+  "excursionBookingAlreadyBookedTitle": "Бұл уақытқа бронь бар",
+  "excursionBookingAlreadyBookedMessage": "Қонақтар санын «Менің экскурсияларым» бөлімінде өзгертуге болады.",
+  "excursionBookingOpenMyExcursions": "Менің экскурсияларымды ашу",
   "excursionBookingLoadFailed": "Экскурсия брондауын жүктеу мүмкін болмады",
   "excursionBookingPerPerson": "/ адам",
+  "excursionBookingSelectSlot": "Қолжетімді уақытты таңдаңыз",
+  "excursionBookingScheduleLoadFailed": "Қолжетімді уақыттарды жүктеу мүмкін болмады",
+  "excursionBookingNoSlots": "Гид бұл ұсыныс үшін қолжетімді уақыттарды әлі қоспады.",
+  "excursionBookingSeatsLeft": "Қалған орын: {count}",
+  "@excursionBookingSeatsLeft": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "excursionDetailsNoDescription": "Гид жақында толық сипаттаманы қосады.",
   "createExcursionTitle": "Экскурсия құру",
   "createExcursionEditTitle": "Ұсынысты өзгерту",
@@ -1295,6 +1312,27 @@
   },
   "myExcursionsReviewButton": "Бағалау",
   "myExcursionsReviewed": "Бағаланған",
+  "myExcursionsEditGuestsButton": "Қонақтарды өзгерту",
+  "myExcursionsEditGuestsTitle": "Қонақтар санын өзгерту",
+  "myExcursionsEditGuestsHint": "Біз бос орындарды тексеріп, жаңа бронь жасамай броньды жаңартамыз.",
+  "myExcursionsUpdateGuestsSuccess": "Қонақтар саны жаңартылды",
+  "myExcursionsUpdateGuestsFailed": "Қонақтар санын жаңарту мүмкін болмады. Бос орындарды тексеріп, қайталап көріңіз.",
+  "myExcursionsGuestsChargeMock": "Қосымша төлем: {amount}",
+  "@myExcursionsGuestsChargeMock": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "myExcursionsGuestsRefundMock": "Қайтарым: {amount}",
+  "@myExcursionsGuestsRefundMock": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "myExcursionsGuestsNoPaymentChange": "Баға өзгермейді",
+  "myExcursionsGuestsPaymentMockHint": "Әзірге бұл мок-есеп: нақты қосымша төлем немесе қайтарым төлем сервисі арқылы қосылады.",
+  "myExcursionsPayAndSaveGuests": "Төлеп сақтау",
+  "myExcursionsRefundAndSaveGuests": "Қайтарып сақтау",
   "myExcursionsFilterStatus": "Мәртебе",
   "myExcursionsStatusRequested": "Брондалған",
   "myExcursionsFilterReview": "Пікірлер",
@@ -1811,5 +1849,63 @@
   "chatExternalLinkOpenFailed": "Бұл сілтемені ашу мүмкін болмады.",
   "chatSharedLoadFailed": "Контентті жүктеу мүмкін болмады",
   "chatSharedLoadFailedSubtitle": "Байланысты тексеріп, қайта көріңіз.",
-  "chatSharedPartialLoadWarning": "Кейбір ескі ортақ элементтерді жүктеу мүмкін болмады."
+  "chatSharedPartialLoadWarning": "Кейбір ескі ортақ элементтерді жүктеу мүмкін болмады.",
+  "guideCalendarTitle": "Гид күнтізбесі",
+  "guideCalendarAddSlot": "Слот",
+  "guideCalendarEditSlot": "Слотты өңдеу",
+  "guideCalendarEmptyDay": "Бұл күнге слоттар жоқ",
+  "guideCalendarAvailable": "Бос",
+  "guideCalendarBooked": "Бронь бар",
+  "guideCalendarClosed": "Жабық",
+  "guideCalendarCancelled": "Бас тартылды",
+  "guideCalendarCancelReason": "Себебі: {reason}",
+  "@guideCalendarCancelReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "guideCalendarAutoCancelNoBookings": "басталуына 2 сағат қалғанға дейін ешкім бронь жасамады",
+  "guideCalendarRepeatWeekly": "Апта сайын қайталау",
+  "guideCalendarConflictTitle": "Бұл уақыт басқа экскурсиямен қабаттасады",
+  "guideCalendarSuggestNextTime": "Келесі бос уақытты таңдаңыз",
+  "guideCalendarDeleteSlot": "Жою",
+  "guideCalendarCancelSlot": "Бас тарту",
+  "guideCalendarCloseSlot": "Жабу",
+  "guideCalendarOfferLabel": "Жарияланған ұсыныс",
+  "guideCalendarNoPublishedOffers": "Кестеге қосу үшін алдымен экскурсия ұсынысын жариялаңыз.",
+  "guideCalendarOfferRequired": "Экскурсия ұсынысын таңдаңыз",
+  "guideCalendarCurrentOfferFallback": "Ағымдағы ұсыныс",
+  "guideCalendarOfferDuration": "{minutes} мин",
+  "@guideCalendarOfferDuration": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "guideCalendarOfferCapacity": "{count} орын",
+  "@guideCalendarOfferCapacity": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guideCalendarDateLabel": "Күні",
+  "guideCalendarDateHint": "кк.аа.жжжж",
+  "guideCalendarInvalidDate": "Күнді кк.аа.жжжж форматында енгізіңіз",
+  "guideCalendarTimeLabel": "Уақыты",
+  "guideCalendarTimeHint": "сс:мм",
+  "guideCalendarInvalidTime": "Уақытты сс:мм форматында енгізіңіз",
+  "guideCalendarCapacityLabel": "Орын",
+  "guideCalendarCapacityMax": "Бұл ұсыныс үшін максимум: {count}",
+  "@guideCalendarCapacityMax": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guideCalendarCapacityTooHigh": "Бұл ұсыныста {count} орынға дейін ғана қолжетімді",
+  "@guideCalendarCapacityTooHigh": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guideCalendarSlotLeadTimeTooSoon": "Басталуына кемінде 3 сағат қалатындай күн мен уақытты таңдаңыз.",
+  "guideCalendarSaveSlot": "Сақтау"
 }

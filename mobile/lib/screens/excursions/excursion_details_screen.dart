@@ -59,6 +59,8 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
   List<ExcursionOfferVm> _visibleOffers = const [];
   String? _visibleOffersExcursionId;
   String? _selectedOfferId;
+  final Map<String, bool> _offerScheduleAvailability = <String, bool>{};
+  final Set<String> _loadingOfferScheduleAvailability = <String>{};
   bool _isMessageGuideLoading = false;
 
   @override
@@ -66,15 +68,33 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ExcursionProvider>().loadExcursionDetails(
-        widget.excursionId,
-        initialExcursion: widget.initialExcursion,
-      );
+            widget.excursionId,
+            initialExcursion: widget.initialExcursion,
+          );
       unawaited(
         context.read<ExcursionProvider>().loadExcursionReviews(
-          productId: widget.excursionId,
-        ),
+              productId: widget.excursionId,
+            ),
       );
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant ExcursionDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.excursionId == widget.excursionId) return;
+
+    _localizedLandmark = null;
+    _localizedLandmarkId = null;
+    _localizedLandmarkLocale = null;
+    _loadingLocalizedLandmarkId = null;
+    _resolvedProfiles = const {};
+    _resolvingGuideUserIds.clear();
+    _visibleOffers = const [];
+    _visibleOffersExcursionId = null;
+    _selectedOfferId = null;
+    _offerScheduleAvailability.clear();
+    _loadingOfferScheduleAvailability.clear();
   }
 
   void _goBack() {
@@ -87,9 +107,9 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
 
   Future<void> _retry({ExcursionVm? initialExcursion}) {
     return context.read<ExcursionProvider>().loadExcursionDetails(
-      widget.excursionId,
-      initialExcursion: initialExcursion ?? widget.initialExcursion,
-    );
+          widget.excursionId,
+          initialExcursion: initialExcursion ?? widget.initialExcursion,
+        );
   }
 
   void _showInfoSnack(String message) {
@@ -229,13 +249,13 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     if (updated != null) {
       final updatedProductId = updated.id.trim();
       setState(() {
-        _visibleOffersExcursionId = updatedProductId.isNotEmpty
-            ? updatedProductId
-            : null;
+        _visibleOffersExcursionId =
+            updatedProductId.isNotEmpty ? updatedProductId : null;
         _visibleOffers = updated.offers;
-        _selectedOfferId = updated.offers.isNotEmpty
-            ? updated.offers.first.id
-            : null;
+        _selectedOfferId =
+            updated.offers.isNotEmpty ? updated.offers.first.id : null;
+        _offerScheduleAvailability.clear();
+        _loadingOfferScheduleAvailability.clear();
       });
       await _retry(initialExcursion: updated);
     }
@@ -243,6 +263,76 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
 
   void _selectOffer(ExcursionOfferVm offer) {
     setState(() => _selectedOfferId = offer.id);
+  }
+
+  String? _selectedOfferScheduleKey(
+    ExcursionVm excursion,
+    ExcursionOfferVm? selectedOffer,
+  ) {
+    final productId = excursion.id.trim();
+    final offerId = selectedOffer?.id.trim() ?? '';
+    if (productId.isEmpty || offerId.isEmpty) {
+      return null;
+    }
+    return '$productId:$offerId';
+  }
+
+  void _scheduleLoadSelectedOfferAvailability(
+    ExcursionVm excursion,
+    ExcursionOfferVm? selectedOffer,
+  ) {
+    final selectedOfferScheduleKey =
+        _selectedOfferScheduleKey(excursion, selectedOffer);
+    if (selectedOfferScheduleKey == null ||
+        _offerScheduleAvailability.containsKey(selectedOfferScheduleKey) ||
+        _loadingOfferScheduleAvailability.contains(selectedOfferScheduleKey)) {
+      return;
+    }
+
+    _loadingOfferScheduleAvailability.add(selectedOfferScheduleKey);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        _loadSelectedOfferAvailability(
+          productId: excursion.id,
+          offerId: selectedOffer!.id,
+          selectedOfferScheduleKey: selectedOfferScheduleKey,
+        ),
+      );
+    });
+  }
+
+  Future<void> _loadSelectedOfferAvailability({
+    required String productId,
+    required String offerId,
+    required String selectedOfferScheduleKey,
+  }) async {
+    final now = DateTime.now();
+    final from = DateTime(now.year, now.month, now.day);
+    final to = from.add(const Duration(days: 90));
+
+    try {
+      final slots =
+          await context.read<ExcursionProvider>().loadBookableExcursionSchedule(
+                productId: productId,
+                offerId: offerId,
+                from: from,
+                to: to,
+                seats: 1,
+              );
+      if (!mounted) return;
+      setState(() {
+        _offerScheduleAvailability[selectedOfferScheduleKey] = slots.any(
+          (slot) => slot.isAvailableFor(1),
+        );
+        _loadingOfferScheduleAvailability.remove(selectedOfferScheduleKey);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _offerScheduleAvailability[selectedOfferScheduleKey] = false;
+        _loadingOfferScheduleAvailability.remove(selectedOfferScheduleKey);
+      });
+    }
   }
 
   List<ExcursionOfferVm> _offersFor(ExcursionVm excursion) {
@@ -308,6 +398,8 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
     setState(() {
       _visibleOffersExcursionId = excursionId;
       _visibleOffers = offers;
+      _offerScheduleAvailability.clear();
+      _loadingOfferScheduleAvailability.clear();
     });
   }
 
@@ -338,13 +430,13 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
       backgroundColor: const Color(0xFF1A1209),
       body: Consumer<ExcursionProvider>(
         builder: (context, provider, _) {
-          final excursion = provider.selectedExcursion;
+          final excursion = provider.excursionDetailsFor(widget.excursionId);
           final isInitialLoading =
-              provider.detailState == ExcursionDetailState.loading &&
-              excursion == null;
+              provider.isDetailLoadingFor(widget.excursionId) &&
+                  excursion == null;
           final isInitialError =
-              provider.detailState == ExcursionDetailState.error &&
-              excursion == null;
+              provider.isDetailErrorFor(widget.excursionId) &&
+                  excursion == null;
 
           if (isInitialLoading) {
             return const _ExcursionDetailsLoading();
@@ -353,8 +445,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
           if (isInitialError) {
             return SafeArea(
               child: ErrorView(
-                message:
-                    provider.detailErrorMessage ??
+                message: provider.detailErrorMessageFor(widget.excursionId) ??
                     l10n.excursionDetailsLoadFailed,
                 onRetry: _retry,
               ),
@@ -376,13 +467,32 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
                   .trim();
           final hasBookableOffer = offers.isNotEmpty;
           final currentUserId = (session.profile?.userId ?? '').trim();
-          final isCurrentUserGuide =
-              session.profile?.roles.any(
+          final isCurrentUserGuide = session.profile?.roles.any(
                 (role) => role.trim().toUpperCase() == 'GUIDE',
               ) ??
               false;
           final isAuthor =
               guideUserId.isNotEmpty && currentUserId == guideUserId;
+          if (!isAuthor && hasBookableOffer) {
+            _scheduleLoadSelectedOfferAvailability(excursion, selectedOffer);
+          }
+          final selectedOfferScheduleKey =
+              _selectedOfferScheduleKey(excursion, selectedOffer);
+          final hasAvailableSchedule = selectedOfferScheduleKey != null &&
+              (_offerScheduleAvailability[selectedOfferScheduleKey] ?? false);
+          final hasScheduleAvailabilityResult = selectedOfferScheduleKey !=
+                  null &&
+              _offerScheduleAvailability.containsKey(selectedOfferScheduleKey);
+          final isCheckingSchedule = selectedOfferScheduleKey != null &&
+              _loadingOfferScheduleAvailability.contains(
+                selectedOfferScheduleKey,
+              );
+          final bookingUnavailableMessage =
+              !isAuthor && hasBookableOffer && !hasAvailableSchedule
+                  ? (isCheckingSchedule || !hasScheduleAvailabilityResult
+                      ? l10n.excursionDetailsCheckingSchedule
+                      : l10n.excursionDetailsNoAvailableSlots)
+                  : null;
           _scheduleResolveGuideProfiles(
             offers.map((offer) => offer.guideUserId),
             session.profile,
@@ -404,13 +514,14 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
             enableRemoteOffers: true,
             offerProfiles: offerProfiles,
             showMessageGuide: !isAuthor && guideUserId.isNotEmpty,
-            showBookingAction: !isAuthor && hasBookableOffer,
+            showBookingAction:
+                !isAuthor && hasBookableOffer && hasAvailableSchedule,
             showCheckoutPrice:
                 !isCurrentUserGuide && !isAuthor && hasBookableOffer,
-            showEditOfferAction:
-                isAuthor &&
+            showEditOfferAction: isAuthor &&
                 (selectedOffer?.legacyExcursionId ?? '').trim().isNotEmpty,
             isMessageGuideLoading: _isMessageGuideLoading,
+            bookingUnavailableMessage: bookingUnavailableMessage,
             onBackTap: _goBack,
             onNotificationsTap: () => context.push('/notifications'),
             onOfferProfileTap: (offer) {
@@ -455,6 +566,7 @@ class ExcursionDetailsContent extends StatelessWidget {
     this.showCheckoutPrice = true,
     this.showEditOfferAction = false,
     this.isMessageGuideLoading = false,
+    this.bookingUnavailableMessage,
     this.onBackTap,
     this.onNotificationsTap,
     this.onOffersChanged,
@@ -480,6 +592,7 @@ class ExcursionDetailsContent extends StatelessWidget {
   final bool showCheckoutPrice;
   final bool showEditOfferAction;
   final bool isMessageGuideLoading;
+  final String? bookingUnavailableMessage;
   final VoidCallback? onBackTap;
   final VoidCallback? onNotificationsTap;
   final ValueChanged<List<ExcursionOfferVm>>? onOffersChanged;
@@ -489,9 +602,14 @@ class ExcursionDetailsContent extends StatelessWidget {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final activeSelectedOffer = selectedOffer;
     final visibleOffers = offers ?? excursion.offers;
+    final showBottomBookingNotice = !showBookingAction &&
+        !showEditOfferAction &&
+        bookingUnavailableMessage != null;
     final scrollBottomPadding =
-        (showBookingAction || showEditOfferAction ? 116.0 : 24.0) +
-        bottomPadding;
+        (showBookingAction || showEditOfferAction || showBottomBookingNotice
+                ? 116.0
+                : 24.0) +
+            bottomPadding;
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -555,8 +673,7 @@ class ExcursionDetailsContent extends StatelessWidget {
                               ),
                               if (activeSelectedOffer != null &&
                                   activeSelectedOffer
-                                      .includedItems
-                                      .isNotEmpty) ...[
+                                      .includedItems.isNotEmpty) ...[
                                 const SizedBox(height: 44),
                                 _ExcursionSelectedOfferIncludedSection(
                                   selectedOffer: activeSelectedOffer,
@@ -592,13 +709,23 @@ class ExcursionDetailsContent extends StatelessWidget {
                       label: showEditOfferAction
                           ? AppLocalizations.of(
                               context,
-                            )!.excursionDetailsEditOffer
+                            )!
+                              .excursionDetailsEditOffer
                           : AppLocalizations.of(context)!.excursionDetailsBook,
                       icon: showEditOfferAction
                           ? Icons.edit_rounded
                           : Icons.arrow_forward_ios_rounded,
                       showPrice: showCheckoutPrice && showBookingAction,
                       onTap: showEditOfferAction ? onEditOfferTap : onBookTap,
+                    ),
+                  ),
+                if (showBottomBookingNotice)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _ExcursionBookingUnavailableNotice(
+                      message: bookingUnavailableMessage!,
                     ),
                   ),
               ],
@@ -907,18 +1034,17 @@ class _ExcursionHeroPainter extends CustomPainter {
     canvas.drawPath(snowCap, snow);
 
     final glow = Paint()
-      ..shader =
-          RadialGradient(
-            colors: [
-              AppColors.accent.withValues(alpha: 0.22),
-              AppColors.accent.withValues(alpha: 0),
-            ],
-          ).createShader(
-            Rect.fromCircle(
-              center: Offset(size.width * 0.5, -size.height * 0.12),
-              radius: math.min(size.width, size.height),
-            ),
-          );
+      ..shader = RadialGradient(
+        colors: [
+          AppColors.accent.withValues(alpha: 0.22),
+          AppColors.accent.withValues(alpha: 0),
+        ],
+      ).createShader(
+        Rect.fromCircle(
+          center: Offset(size.width * 0.5, -size.height * 0.12),
+          radius: math.min(size.width, size.height),
+        ),
+      );
     canvas.drawRect(Offset.zero & size, glow);
   }
 
@@ -1044,8 +1170,8 @@ class _ExcursionStatCard extends StatelessWidget {
                 fontSize: data.accent
                     ? 24
                     : data.allowMultiline
-                    ? 18
-                    : 20,
+                        ? 18
+                        : 20,
                 fontWeight: FontWeight.w800,
                 height: data.allowMultiline ? 1.16 : 1.08,
               ),
@@ -1276,22 +1402,26 @@ _ExcursionIncludedFeatureType? _includedFeatureTypeFromPrefix(String prefix) {
   return switch (prefix) {
     'transport' ||
     'транспорт' ||
-    'көлік' => _ExcursionIncludedFeatureType.transport,
+    'көлік' =>
+      _ExcursionIncludedFeatureType.transport,
     'food' ||
     'meal' ||
     'meals' ||
     'питание' ||
     'еда' ||
-    'тамақ' => _ExcursionIncludedFeatureType.food,
+    'тамақ' =>
+      _ExcursionIncludedFeatureType.food,
     'tickets' ||
     'ticket' ||
     'билеты' ||
     'билет' ||
-    'билеттер' => _ExcursionIncludedFeatureType.tickets,
+    'билеттер' =>
+      _ExcursionIncludedFeatureType.tickets,
     'equipment' ||
     'gear' ||
     'снаряжение' ||
-    'жабдық' => _ExcursionIncludedFeatureType.equipment,
+    'жабдық' =>
+      _ExcursionIncludedFeatureType.equipment,
     'guide' || 'гид' => _ExcursionIncludedFeatureType.guide,
     'photo' || 'photos' || 'фото' => _ExcursionIncludedFeatureType.photo,
     'other' || 'другое' || 'басқа' => _ExcursionIncludedFeatureType.other,
@@ -1306,40 +1436,40 @@ String _includedFeatureTypeLabel(
   final normalized = _normalizeLanguageCode(languageCode);
   final labels = switch (type) {
     _ExcursionIncludedFeatureType.transport => const {
-      'en': 'Transport',
-      'ru': 'Транспорт',
-      'kk': 'Көлік',
-    },
+        'en': 'Transport',
+        'ru': 'Транспорт',
+        'kk': 'Көлік',
+      },
     _ExcursionIncludedFeatureType.food => const {
-      'en': 'Food',
-      'ru': 'Питание',
-      'kk': 'Тамақ',
-    },
+        'en': 'Food',
+        'ru': 'Питание',
+        'kk': 'Тамақ',
+      },
     _ExcursionIncludedFeatureType.tickets => const {
-      'en': 'Tickets',
-      'ru': 'Билеты',
-      'kk': 'Билеттер',
-    },
+        'en': 'Tickets',
+        'ru': 'Билеты',
+        'kk': 'Билеттер',
+      },
     _ExcursionIncludedFeatureType.equipment => const {
-      'en': 'Equipment',
-      'ru': 'Снаряжение',
-      'kk': 'Жабдық',
-    },
+        'en': 'Equipment',
+        'ru': 'Снаряжение',
+        'kk': 'Жабдық',
+      },
     _ExcursionIncludedFeatureType.guide => const {
-      'en': 'Guide',
-      'ru': 'Гид',
-      'kk': 'Гид',
-    },
+        'en': 'Guide',
+        'ru': 'Гид',
+        'kk': 'Гид',
+      },
     _ExcursionIncludedFeatureType.photo => const {
-      'en': 'Photo',
-      'ru': 'Фото',
-      'kk': 'Фото',
-    },
+        'en': 'Photo',
+        'ru': 'Фото',
+        'kk': 'Фото',
+      },
     _ExcursionIncludedFeatureType.other => const {
-      'en': 'Included',
-      'ru': 'Включено',
-      'kk': 'Кіреді',
-    },
+        'en': 'Included',
+        'ru': 'Включено',
+        'kk': 'Кіреді',
+      },
   };
   return labels[normalized] ??
       labels[normalized.split('-').first] ??
@@ -1500,16 +1630,19 @@ class _ExcursionOfferFilters {
     this.languageCode,
     this.priceMax,
     this.maxGroupSizeMin,
+    this.availableDate,
   });
 
   final String? languageCode;
   final double? priceMax;
   final int? maxGroupSizeMin;
+  final DateTime? availableDate;
 
   int get activeCount =>
       ((languageCode ?? '').trim().isEmpty ? 0 : 1) +
       (priceMax == null ? 0 : 1) +
-      (maxGroupSizeMin == null ? 0 : 1);
+      (maxGroupSizeMin == null ? 0 : 1) +
+      (availableDate == null ? 0 : 1);
 }
 
 class _ExcursionOffersSection extends StatefulWidget {
@@ -1565,6 +1698,8 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
   String? _errorText;
   String _offerSearchQuery = '';
   int _requestSerial = 0;
+  final Map<String, bool> _offerDateAvailability = <String, bool>{};
+  final Set<String> _loadingOfferDateAvailability = <String>{};
 
   @override
   void initState() {
@@ -1613,8 +1748,7 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
     if (!widget.enableRemoteOffers) return false;
     if (oldWidget.excursion.id != widget.excursion.id) return true;
 
-    final staleEmptyOffersBecameVisible =
-        widget.offers.isEmpty &&
+    final staleEmptyOffersBecameVisible = widget.offers.isEmpty &&
         widget.excursion.publishedOffersCount > 0 &&
         (oldWidget.offers != widget.offers ||
             oldWidget.excursion.publishedOffersCount !=
@@ -1664,7 +1798,8 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
       setState(
         () => _errorText = AppLocalizations.of(
           context,
-        )!.excursionDetailsOffersLoadFailed,
+        )!
+            .excursionDetailsOffersLoadFailed,
       );
     } finally {
       if (mounted && requestSerial == _requestSerial) {
@@ -1726,7 +1861,13 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
       builder: (_) => _ExcursionOffersFilterSheet(filters: _filters),
     );
     if (!mounted || next == null) return;
-    setState(() => _filters = next);
+    setState(() {
+      if (_dateKey(_filters.availableDate) != _dateKey(next.availableDate)) {
+        _offerDateAvailability.clear();
+        _loadingOfferDateAvailability.clear();
+      }
+      _filters = next;
+    });
     _refreshOffers();
   }
 
@@ -1781,16 +1922,96 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
   List<ExcursionOfferVm> _visibleOffers(AppLocalizations l10n) {
     final offers = _prioritizeCurrentGuideOffer(_offers);
     final searchGroups = excursionSearchNeedleGroups(_offerSearchQuery);
-    if (searchGroups.isEmpty) return offers;
+    final searchedOffers = searchGroups.isEmpty
+        ? offers
+        : offers.where((offer) {
+            final haystack = _offerSearchHaystack(l10n, offer);
+            return searchGroups.every(
+              (variants) => variants.any(haystack.contains),
+            );
+          }).toList(growable: false);
 
-    return offers
-        .where((offer) {
-          final haystack = _offerSearchHaystack(l10n, offer);
-          return searchGroups.every(
-            (variants) => variants.any(haystack.contains),
-          );
-        })
+    final availableDate = _filters.availableDate;
+    if (availableDate == null) return searchedOffers;
+
+    _scheduleLoadOfferDateAvailability(searchedOffers, availableDate);
+    return searchedOffers
+        .where((offer) => _offerHasBookableSlotOnDate(offer, availableDate))
         .toList(growable: false);
+  }
+
+  bool _offerHasBookableSlotOnDate(
+    ExcursionOfferVm offer,
+    DateTime availableDate,
+  ) {
+    return _offerDateAvailability[_offerDateAvailabilityKey(
+          offer.id,
+          availableDate,
+        )] ??
+        false;
+  }
+
+  void _scheduleLoadOfferDateAvailability(
+    List<ExcursionOfferVm> offers,
+    DateTime availableDate,
+  ) {
+    for (final offer in offers) {
+      final offerId = offer.id.trim();
+      if (offerId.isEmpty) continue;
+      final key = _offerDateAvailabilityKey(offerId, availableDate);
+      if (_offerDateAvailability.containsKey(key) ||
+          _loadingOfferDateAvailability.contains(key)) {
+        continue;
+      }
+      _loadingOfferDateAvailability.add(key);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(
+          _loadOfferDateAvailability(
+            offerId: offerId,
+            availableDate: availableDate,
+            cacheKey: key,
+          ),
+        );
+      });
+    }
+  }
+
+  Future<void> _loadOfferDateAvailability({
+    required String offerId,
+    required DateTime availableDate,
+    required String cacheKey,
+  }) async {
+    final from = DateTime(
+      availableDate.year,
+      availableDate.month,
+      availableDate.day,
+    );
+    final to = from.add(const Duration(days: 1));
+    try {
+      final slots =
+          await context.read<ExcursionProvider>().loadBookableExcursionSchedule(
+                productId: widget.excursion.id,
+                offerId: offerId,
+                from: from,
+                to: to,
+                seats: 1,
+              );
+      if (!mounted) return;
+      setState(() {
+        _offerDateAvailability[cacheKey] = slots.any(
+          (slot) =>
+              slot.isAvailableFor(1) &&
+              _dateKey(slot.startAt.toLocal()) == _dateKey(availableDate),
+        );
+        _loadingOfferDateAvailability.remove(cacheKey);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _offerDateAvailability[cacheKey] = false;
+        _loadingOfferDateAvailability.remove(cacheKey);
+      });
+    }
   }
 
   String _offerSearchHaystack(AppLocalizations l10n, ExcursionOfferVm offer) {
@@ -1873,6 +2094,8 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final offers = _visibleOffers(l10n);
+    final isDateFilterLoading = _filters.availableDate != null &&
+        _loadingOfferDateAvailability.isNotEmpty;
 
     return _ExcursionSection(
       title: l10n.excursionDetailsOffersTitle,
@@ -1893,7 +2116,7 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
             onChanged: _onSortChanged,
           ),
           const SizedBox(height: 18),
-          if (_isLoading && offers.isEmpty)
+          if ((_isLoading || isDateFilterLoading) && offers.isEmpty)
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
@@ -1927,11 +2150,10 @@ class _ExcursionOffersSectionState extends State<_ExcursionOffersSection> {
                         onProfileTap: isCurrentUserOffer
                             ? null
                             : widget.onOfferProfileTap == null
-                            ? null
-                            : () => widget.onOfferProfileTap!(offer),
-                        onMessageTap: isSelected
-                            ? widget.onMessageGuideTap
-                            : null,
+                                ? null
+                                : () => widget.onOfferProfileTap!(offer),
+                        onMessageTap:
+                            isSelected ? widget.onMessageGuideTap : null,
                       );
                     },
                   ),
@@ -2117,8 +2339,10 @@ class _ExcursionOffersFilterSheetState
   late final TextEditingController _languageSearchController;
   late final TextEditingController _priceMaxController;
   late final TextEditingController _groupSizeController;
+  late final TextEditingController _availableDateController;
   String? _languageCode;
   String _languageSearchQuery = '';
+  String? _availableDateError;
 
   static const _languageCodes = [
     'en',
@@ -2145,6 +2369,9 @@ class _ExcursionOffersFilterSheetState
     _groupSizeController = TextEditingController(
       text: widget.filters.maxGroupSizeMin?.toString() ?? '',
     );
+    _availableDateController = TextEditingController(
+      text: _formatDateInput(widget.filters.availableDate),
+    );
   }
 
   @override
@@ -2154,6 +2381,7 @@ class _ExcursionOffersFilterSheetState
       ..dispose();
     _priceMaxController.dispose();
     _groupSizeController.dispose();
+    _availableDateController.dispose();
     super.dispose();
   }
 
@@ -2162,6 +2390,8 @@ class _ExcursionOffersFilterSheetState
     setState(() => _languageCode = null);
     _priceMaxController.clear();
     _groupSizeController.clear();
+    _availableDateController.clear();
+    _availableDateError = null;
   }
 
   void _handleLanguageSearchChanged() {
@@ -2195,12 +2425,10 @@ class _ExcursionOffersFilterSheetState
         .toList(growable: false);
     if (tokens.isEmpty) return const [];
 
-    return _languageCodes
-        .where((code) {
-          final haystack = _languageSearchHaystack(l10n, code);
-          return tokens.every(haystack.contains);
-        })
-        .toList(growable: false);
+    return _languageCodes.where((code) {
+      final haystack = _languageSearchHaystack(l10n, code);
+      return tokens.every(haystack.contains);
+    }).toList(growable: false);
   }
 
   String _languageSearchHaystack(AppLocalizations l10n, String code) {
@@ -2225,13 +2453,24 @@ class _ExcursionOffersFilterSheetState
       _priceMaxController.text.trim().replaceAll(',', '.'),
     );
     final groupSize = int.tryParse(_groupSizeController.text.trim());
+    final availableDateInput = _availableDateController.text.trim();
+    final availableDate = _parseDateInput(availableDateInput);
+    if (availableDateInput.isNotEmpty && availableDate == null) {
+      setState(
+        () => _availableDateError = AppLocalizations.of(
+          context,
+        )!
+            .excursionDetailsOffersAvailableDateInvalid,
+      );
+      return;
+    }
     Navigator.of(context).pop(
       _ExcursionOfferFilters(
-        languageCode: (_languageCode ?? '').trim().isEmpty
-            ? null
-            : _languageCode,
+        languageCode:
+            (_languageCode ?? '').trim().isEmpty ? null : _languageCode,
         priceMax: priceMax != null && priceMax > 0 ? priceMax : null,
         maxGroupSizeMin: groupSize != null && groupSize > 0 ? groupSize : null,
+        availableDate: availableDate,
       ),
     );
   }
@@ -2402,6 +2641,19 @@ class _ExcursionOffersFilterSheetState
                       ),
                       const SizedBox(height: 24),
                       _ExcursionOffersFilterTitle(
+                        icon: Icons.event_available_rounded,
+                        label: l10n.excursionDetailsOffersAvailableDate,
+                      ),
+                      const SizedBox(height: 10),
+                      _ExcursionOffersDateField(
+                        controller: _availableDateController,
+                        hintText: l10n.excursionDetailsOffersAvailableDateHint,
+                        errorText: _availableDateError,
+                        onChanged: (_) =>
+                            setState(() => _availableDateError = null),
+                      ),
+                      const SizedBox(height: 24),
+                      _ExcursionOffersFilterTitle(
                         icon: Icons.payments_rounded,
                         label: l10n.excursionDetailsOffersMaxPrice,
                       ),
@@ -2538,6 +2790,82 @@ class _ExcursionOffersLanguageRow extends StatelessWidget {
   }
 }
 
+class _ExcursionOffersDateField extends StatelessWidget {
+  const _ExcursionOffersDateField({
+    required this.controller,
+    required this.hintText,
+    required this.onChanged,
+    this.errorText,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.datetime,
+      onChanged: onChanged,
+      style: const TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+      ),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: const Color(0xFF2B1F14),
+        hintText: hintText,
+        errorText: errorText,
+        prefixIcon: const Icon(
+          Icons.calendar_month_rounded,
+          color: AppColors.accent,
+        ),
+        suffixIcon: controller.text.trim().isEmpty
+            ? null
+            : IconButton(
+                tooltip: AppLocalizations.of(context)!.excursionsFiltersClear,
+                onPressed: () {
+                  controller.clear();
+                  onChanged('');
+                },
+                icon: const Icon(
+                  Icons.close_rounded,
+                  color: Color(0xFFBDAA98),
+                ),
+              ),
+        hintStyle: const TextStyle(color: Color(0xFF9F8B7D)),
+        errorStyle: const TextStyle(
+          color: Color(0xFFFF6B6B),
+          fontWeight: FontWeight.w700,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.accent),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
+        ),
+      ),
+    );
+  }
+}
+
 class _ExcursionOffersNumberField extends StatelessWidget {
   const _ExcursionOffersNumberField({
     required this.controller,
@@ -2586,6 +2914,52 @@ String _formatNumericInput(num value) {
     return value.toInt().toString();
   }
   return value.toString();
+}
+
+String _formatDateInput(DateTime? value) {
+  if (value == null) return '';
+  final day = value.day.toString().padLeft(2, '0');
+  final month = value.month.toString().padLeft(2, '0');
+  final year = value.year.toString().padLeft(4, '0');
+  return '$day.$month.$year';
+}
+
+DateTime? _parseDateInput(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return null;
+
+  final parts = trimmed.split(RegExp(r'[.\-/]'));
+  if (parts.length != 3) return null;
+
+  final first = int.tryParse(parts[0]);
+  final second = int.tryParse(parts[1]);
+  final third = int.tryParse(parts[2]);
+  if (first == null || second == null || third == null) return null;
+
+  final year = parts[0].length == 4 ? first : third;
+  final month = second;
+  final day = parts[0].length == 4 ? third : first;
+  if (year < 2000 || month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+
+  final parsed = DateTime(year, month, day);
+  if (parsed.year != year || parsed.month != month || parsed.day != day) {
+    return null;
+  }
+  return parsed;
+}
+
+String? _dateKey(DateTime? value) {
+  if (value == null) return null;
+  final normalized = DateTime(value.year, value.month, value.day);
+  final month = normalized.month.toString().padLeft(2, '0');
+  final day = normalized.day.toString().padLeft(2, '0');
+  return '${normalized.year}-$month-$day';
+}
+
+String _offerDateAvailabilityKey(String offerId, DateTime availableDate) {
+  return '${offerId.trim()}:${_dateKey(availableDate)}';
 }
 
 class _ExcursionOffersEmpty extends StatelessWidget {
@@ -2679,15 +3053,15 @@ class _ExcursionOfferCard extends StatelessWidget {
             color: isCurrentUserOffer
                 ? AppColors.success.withValues(alpha: 0.11)
                 : isSelected
-                ? AppColors.accent.withValues(alpha: 0.13)
-                : const Color(0xFF312316),
+                    ? AppColors.accent.withValues(alpha: 0.13)
+                    : const Color(0xFF312316),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isCurrentUserOffer
                   ? AppColors.success.withValues(alpha: 0.68)
                   : isSelected
-                  ? AppColors.accent.withValues(alpha: 0.76)
-                  : Colors.white.withValues(alpha: 0.055),
+                      ? AppColors.accent.withValues(alpha: 0.76)
+                      : Colors.white.withValues(alpha: 0.055),
             ),
           ),
           child: Row(
@@ -2785,9 +3159,8 @@ class _ExcursionOfferCard extends StatelessWidget {
                             ),
                           if (showMessageAction)
                             OutlinedButton(
-                              onPressed: isMessageActionLoading
-                                  ? null
-                                  : onMessageTap,
+                              onPressed:
+                                  isMessageActionLoading ? null : onMessageTap,
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.textPrimary,
                                 side: BorderSide(
@@ -2842,9 +3215,8 @@ class _ExcursionOfferCard extends StatelessWidget {
   }
 
   String _offerGuideName(AppLocalizations l10n) {
-    final profileName = profile == null
-        ? ''
-        : _formatGuideFullName(profile!).trim();
+    final profileName =
+        profile == null ? '' : _formatGuideFullName(profile!).trim();
     if (profileName.isNotEmpty) {
       return profileName;
     }
@@ -3006,8 +3378,8 @@ class _ExcursionMapPreview extends StatelessWidget {
     final label = excursion.meetingPoint.trim().isNotEmpty
         ? excursion.meetingPoint.trim()
         : excursion.cityName?.trim().isNotEmpty == true
-        ? excursion.cityName!.trim()
-        : l10n.excursionDetailsMapPreview;
+            ? excursion.cityName!.trim()
+            : l10n.excursionDetailsMapPreview;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -3519,6 +3891,66 @@ class _ExcursionSection extends StatelessWidget {
         const SizedBox(height: 18),
         child,
       ],
+    );
+  }
+}
+
+class _ExcursionBookingUnavailableNotice extends StatelessWidget {
+  const _ExcursionBookingUnavailableNotice({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E140B).withValues(alpha: 0.97),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(14, 13, 14, math.max(13, safeBottom)),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.34),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.event_busy_rounded,
+                    color: AppColors.accent,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        height: 1.35,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

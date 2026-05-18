@@ -28,6 +28,7 @@ type ExcursionBooking struct {
 
 	ProductID         uuid.UUID
 	OfferID           uuid.UUID
+	ScheduleSlotID    *uuid.UUID
 	LegacyExcursionID *uuid.UUID
 
 	GuideProfileID uuid.UUID
@@ -54,6 +55,7 @@ type ExcursionBooking struct {
 type NewExcursionBookingParams struct {
 	ProductID         uuid.UUID
 	OfferID           uuid.UUID
+	ScheduleSlotID    *uuid.UUID
 	LegacyExcursionID *uuid.UUID
 	GuideProfileID    uuid.UUID
 	GuideUserID       uuid.UUID
@@ -76,6 +78,7 @@ func NewExcursionBooking(params NewExcursionBookingParams) (*ExcursionBooking, e
 		ID:                uuid.New(),
 		ProductID:         params.ProductID,
 		OfferID:           params.OfferID,
+		ScheduleSlotID:    NormalizeUUIDPointer(params.ScheduleSlotID),
 		LegacyExcursionID: NormalizeUUIDPointer(params.LegacyExcursionID),
 		GuideProfileID:    params.GuideProfileID,
 		GuideUserID:       params.GuideUserID,
@@ -122,6 +125,21 @@ func (b *ExcursionBooking) Validate() error {
 		return ErrInvalidExcursionBookingStatus
 	}
 	return nil
+}
+
+func (b *ExcursionBooking) UpdateGuests(adults int, children int) error {
+	totalSeats := adults + children
+	subtotal := roundMoney(b.UnitPriceAmount * float64(totalSeats))
+	serviceFee := roundMoney(subtotal * excursionBookingServiceFeeRate)
+
+	b.Adults = adults
+	b.Children = children
+	b.TotalSeats = totalSeats
+	b.ServiceFeeAmount = serviceFee
+	b.TotalPriceAmount = roundMoney(subtotal + serviceFee)
+	b.UpdatedAt = time.Now().UTC()
+
+	return b.Validate()
 }
 
 func roundMoney(value float64) float64 {

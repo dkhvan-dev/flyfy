@@ -3,12 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_list_screen_header.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
 import '../../features/excursions/excursion_cover_url.dart';
+import '../../features/excursions/excursion_currency.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/excursions/models/excursion_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -213,14 +213,6 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF160D07),
-      bottomNavigationBar: CommonBottomNavigationBar(
-        activeItem: AppBottomNavItem.services,
-        onHomeTap: () => context.go('/'),
-        onQrTap: () => context.push('/qr'),
-        onMapTap: () => context.push('/map'),
-        onServicesTap: () => context.push('/excursions'),
-        onChatsTap: () => context.push('/chats'),
-      ),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -292,7 +284,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                         horizontalPadding,
                         12,
                         horizontalPadding,
-                        104 + safeBottom,
+                        28 + safeBottom,
                       ),
                       children: [
                         AppListScreenHeader(
@@ -303,6 +295,12 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                           onNotificationsTap: () =>
                               context.push('/notifications'),
                           horizontalPadding: 0,
+                        ),
+                        const SizedBox(height: 14),
+                        _GuideDashboardCalendarButton(
+                          label: l10n.guideCalendarTitle,
+                          onPressed: () =>
+                              context.push('/profile/guide-dashboard/calendar'),
                         ),
                         const SizedBox(height: 22),
                         _GuideDashboardStats(
@@ -893,11 +891,12 @@ class _GuideDashboardStats extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
-    final revenue = NumberFormat.compactCurrency(
-      locale: localeName,
-      name: revenueCurrency,
-      symbol: revenueCurrency,
-    ).format(revenueAmount);
+    final revenue = formatLocalizedExcursionMoney(
+      amount: revenueAmount,
+      currency: revenueCurrency,
+      localeName: localeName,
+      compact: true,
+    );
     final ratingLabel = rating <= 0 ? '0.0' : rating.toStringAsFixed(1);
 
     return LayoutBuilder(
@@ -1080,6 +1079,38 @@ class _GuideDashboardSearchField extends StatelessWidget {
           ),
           const SizedBox(width: 6),
         ],
+      ),
+    );
+  }
+}
+
+class _GuideDashboardCalendarButton extends StatelessWidget {
+  const _GuideDashboardCalendarButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.calendar_month_rounded),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: AppColors.textPrimary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
       ),
     );
   }
@@ -1305,11 +1336,12 @@ class _GuideOfferCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
-    final price = NumberFormat.compactCurrency(
-      locale: localeName,
-      name: excursion.currency,
-      symbol: excursion.currency,
-    ).format(excursion.priceAmount);
+    final price = formatLocalizedExcursionMoney(
+      amount: excursion.priceAmount,
+      currency: excursion.currency,
+      localeName: localeName,
+      compact: true,
+    );
     final maxGroupLabel = excursion.maxGroupSize > 0
         ? l10n.guideDashboardMaxGuests(excursion.maxGroupSize)
         : l10n.guideDashboardFlexibleGroup;
@@ -1361,11 +1393,12 @@ class _GuideBookingCard extends StatelessWidget {
     final dateLabel = DateFormat.yMMMd(
       localeName,
     ).add_Hm().format(booking.scheduledFor.toLocal());
-    final price = NumberFormat.compactCurrency(
-      locale: localeName,
-      name: booking.currency,
-      symbol: booking.currency,
-    ).format(booking.totalPriceAmount);
+    final price = formatLocalizedExcursionMoney(
+      amount: booking.totalPriceAmount,
+      currency: booking.currency,
+      localeName: localeName,
+      compact: true,
+    );
 
     return _GuideJourneyCard(
       title: booking.title.trim().isEmpty

@@ -61,6 +61,8 @@ class DioErrorMapper {
         'Описание каждого этапа маршрута должно быть не короче 5 символов.',
       'excursion already exists for this guide and attraction' =>
         'У вас уже есть экскурсия по этой достопримечательности.',
+      'excursion schedule slot must start at least 3 hours from now' =>
+        'Выберите дату и время минимум за 3 часа до начала.',
       _ => message,
     };
   }

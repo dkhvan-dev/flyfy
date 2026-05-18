@@ -883,6 +883,9 @@
   "excursionDetailsOffersFiltersTitle": "Фильтры гидов",
   "excursionDetailsOffersMaxPrice": "Цена до",
   "excursionDetailsOffersMaxPriceHint": "Например, 50000",
+  "excursionDetailsOffersAvailableDate": "Доступная дата",
+  "excursionDetailsOffersAvailableDateHint": "дд.мм.гггг",
+  "excursionDetailsOffersAvailableDateInvalid": "Введите дату в формате дд.мм.гггг",
   "excursionDetailsOffersMinGroup": "Мин. размер группы",
   "excursionDetailsOffersMinGroupHint": "Например, 4",
   "excursionDetailsOffersLanguageAny": "Любой язык",
@@ -894,6 +897,8 @@
   "excursionDetailsMeetingPoint": "Место встречи",
   "excursionDetailsTotal": "Итого",
   "excursionDetailsBook": "Забронировать",
+  "excursionDetailsCheckingSchedule": "Проверяем доступное время...",
+  "excursionDetailsNoAvailableSlots": "У этого гида пока нет доступных слотов для этой экскурсии.",
   "excursionDetailsEditOffer": "Редактировать предложение",
   "excursionDetailsLoadFailed": "Не удалось загрузить экскурсию",
   "excursionDetailsBookingComingSoon": "Бронирование экскурсии скоро будет доступно.",
@@ -926,8 +931,20 @@
   "excursionBookingConfirmPay": "Подтвердить и оплатить",
   "excursionBookingSecurePayment": "Безопасная оплата через FlyFy",
   "excursionBookingSubmitted": "Заявка на бронирование готова. Онлайн-оплата будет подключена скоро.",
+  "excursionBookingAlreadyBookedTitle": "Вы уже забронировали это время",
+  "excursionBookingAlreadyBookedMessage": "Изменить количество гостей можно в разделе «Мои экскурсии».",
+  "excursionBookingOpenMyExcursions": "Открыть Мои экскурсии",
   "excursionBookingLoadFailed": "Не удалось загрузить бронирование экскурсии",
   "excursionBookingPerPerson": "/ чел.",
+  "excursionBookingSelectSlot": "Выберите доступное время",
+  "excursionBookingScheduleLoadFailed": "Не удалось загрузить доступное время",
+  "excursionBookingNoSlots": "Гид пока не добавил доступное время для этого предложения.",
+  "excursionBookingSeatsLeft": "Осталось мест: {count}",
+  "@excursionBookingSeatsLeft": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "excursionDetailsNoDescription": "Гид скоро добавит подробное описание.",
   "createExcursionTitle": "Создать экскурсию",
   "createExcursionEditTitle": "Редактировать предложение",
@@ -1295,6 +1312,27 @@
   },
   "myExcursionsReviewButton": "Оценить",
   "myExcursionsReviewed": "Оценено",
+  "myExcursionsEditGuestsButton": "Изменить гостей",
+  "myExcursionsEditGuestsTitle": "Изменить количество гостей",
+  "myExcursionsEditGuestsHint": "Мы проверим доступные места и обновим бронь без повторного создания.",
+  "myExcursionsUpdateGuestsSuccess": "Количество гостей обновлено",
+  "myExcursionsUpdateGuestsFailed": "Не удалось обновить количество гостей. Проверьте доступные места и попробуйте снова.",
+  "myExcursionsGuestsChargeMock": "К доплате: {amount}",
+  "@myExcursionsGuestsChargeMock": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "myExcursionsGuestsRefundMock": "К возврату: {amount}",
+  "@myExcursionsGuestsRefundMock": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "myExcursionsGuestsNoPaymentChange": "Стоимость не изменится",
+  "myExcursionsGuestsPaymentMockHint": "Пока это мок-расчет: реальная доплата или возврат подключатся через платежный сервис.",
+  "myExcursionsPayAndSaveGuests": "Доплатить и сохранить",
+  "myExcursionsRefundAndSaveGuests": "Вернуть и сохранить",
   "myExcursionsFilterStatus": "Статус",
   "myExcursionsStatusRequested": "Забронировано",
   "myExcursionsFilterReview": "Отзывы",
@@ -1811,5 +1849,63 @@
   "chatExternalLinkOpenFailed": "Не удалось открыть эту ссылку.",
   "chatSharedLoadFailed": "Не удалось загрузить контент",
   "chatSharedLoadFailedSubtitle": "Проверьте подключение и попробуйте снова.",
-  "chatSharedPartialLoadWarning": "Часть старых вложений не удалось загрузить."
+  "chatSharedPartialLoadWarning": "Часть старых вложений не удалось загрузить.",
+  "guideCalendarTitle": "Календарь гида",
+  "guideCalendarAddSlot": "Слот",
+  "guideCalendarEditSlot": "Редактировать слот",
+  "guideCalendarEmptyDay": "На этот день нет слотов",
+  "guideCalendarAvailable": "Свободно",
+  "guideCalendarBooked": "Есть бронь",
+  "guideCalendarClosed": "Закрыто",
+  "guideCalendarCancelled": "Отменено",
+  "guideCalendarCancelReason": "Причина: {reason}",
+  "@guideCalendarCancelReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "guideCalendarAutoCancelNoBookings": "никто не забронировал слот за 2 часа до начала",
+  "guideCalendarRepeatWeekly": "Повторять еженедельно",
+  "guideCalendarConflictTitle": "Время пересекается с другой экскурсией",
+  "guideCalendarSuggestNextTime": "Выберите ближайшее свободное время",
+  "guideCalendarDeleteSlot": "Удалить",
+  "guideCalendarCancelSlot": "Отменить",
+  "guideCalendarCloseSlot": "Закрыть",
+  "guideCalendarOfferLabel": "Опубликованное предложение",
+  "guideCalendarNoPublishedOffers": "Сначала опубликуйте предложение по экскурсии, чтобы добавить его в расписание.",
+  "guideCalendarOfferRequired": "Выберите предложение по экскурсии",
+  "guideCalendarCurrentOfferFallback": "Текущее предложение",
+  "guideCalendarOfferDuration": "{minutes} мин",
+  "@guideCalendarOfferDuration": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "guideCalendarOfferCapacity": "{count} мест",
+  "@guideCalendarOfferCapacity": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guideCalendarDateLabel": "Дата",
+  "guideCalendarDateHint": "дд.мм.гггг",
+  "guideCalendarInvalidDate": "Введите дату в формате дд.мм.гггг",
+  "guideCalendarTimeLabel": "Время",
+  "guideCalendarTimeHint": "чч:мм",
+  "guideCalendarInvalidTime": "Введите время в формате чч:мм",
+  "guideCalendarCapacityLabel": "Мест",
+  "guideCalendarCapacityMax": "Максимум для этого предложения: {count}",
+  "@guideCalendarCapacityMax": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guideCalendarCapacityTooHigh": "В этом предложении доступно до {count} мест",
+  "@guideCalendarCapacityTooHigh": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guideCalendarSlotLeadTimeTooSoon": "Выберите дату и время минимум за 3 часа до начала.",
+  "guideCalendarSaveSlot": "Сохранить"
 }

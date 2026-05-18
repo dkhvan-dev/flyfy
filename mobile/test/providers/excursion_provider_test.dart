@@ -114,6 +114,38 @@ void main() {
       expect(api.getMyGuideExcursionBookingsCallCount, 1);
     },
   );
+
+  test(
+    'loadExcursionDetails keeps details scoped by excursion id',
+    () async {
+      final api = _FakeExcursionApi(
+        excursionBatches: const [],
+        createdExcursion: _createdDraft,
+        publishedExcursion: _publishedExcursion,
+        excursionDetails: const {
+          'product-new': _publishedProductDetails,
+          'product-other': _otherProductDetails,
+        },
+      );
+      final provider = ExcursionProvider(excursionApi: api);
+
+      await provider.loadExcursionDetails('product-new');
+      await provider.loadExcursionDetails('product-other');
+
+      expect(provider.excursionDetailsFor('product-new')?.id, 'product-new');
+      expect(
+        provider.excursionDetailsFor('product-new')?.offers.single.id,
+        'offer-new',
+      );
+      expect(
+          provider.excursionDetailsFor('product-other')?.id, 'product-other');
+      expect(
+        provider.excursionDetailsFor('product-other')?.offers.single.id,
+        'offer-other',
+      );
+      expect(provider.selectedExcursion?.id, 'product-other');
+    },
+  );
 }
 
 const _existingExcursion = ExcursionVm(
@@ -224,6 +256,34 @@ const _updatedProductDetails = ExcursionVm(
       maxGroupSize: 6,
       meetingPoint: 'Hotel lobby',
       priceAmount: 150,
+      currency: 'KZT',
+    ),
+  ],
+);
+
+const _otherProductDetails = ExcursionVm(
+  id: 'product-other',
+  title: 'Other Excursion',
+  summary: 'Another route',
+  status: 'PUBLISHED',
+  visibility: 'PUBLIC',
+  landmarkId: 'attraction-2',
+  priceAmount: 200,
+  currency: 'KZT',
+  publishedOffersCount: 1,
+  offers: [
+    ExcursionOfferVm(
+      id: 'offer-other',
+      productId: 'product-other',
+      legacyExcursionId: 'excursion-other',
+      guideProfileId: 'guide-profile-1',
+      guideUserId: 'guide-user-1',
+      status: 'PUBLISHED',
+      visibility: 'PUBLIC',
+      durationMinutes: 120,
+      maxGroupSize: 4,
+      meetingPoint: 'Museum entrance',
+      priceAmount: 200,
       currency: 'KZT',
     ),
   ],

@@ -29,7 +29,9 @@ func NewPGExcursionRepository(pool *pgxpool.Pool) *PGExcursionRepository {
 
 const (
 	pgUniqueViolation             = "23505"
+	pgExclusionViolation          = "23P01"
 	activeGuideLandmarkConstraint = "uq_excursions_active_guide_landmark"
+	scheduleOverlapConstraint     = "excursion_schedule_slots_no_guide_overlap"
 )
 
 const excursionSelectColumns = `
@@ -64,6 +66,27 @@ const excursionOfferSelectColumns = `
 	duration_minutes, max_group_size, meeting_point, latitude, longitude, map_url,
 	price_amount, currency, cover_file_id,
 	published_at, deleted_at, revision, created_at, updated_at
+`
+
+const excursionScheduleSlotSelectColumns = `
+	id, series_id,
+	guide_profile_id, guide_user_id,
+	offer_id, product_id, legacy_excursion_id,
+	start_at, end_at, timezone,
+	capacity, booked_seats,
+	status, cancel_reason, closed_at, cancelled_at,
+	created_at, updated_at
+`
+
+const excursionScheduleSlotSelectColumnsWithTitle = `
+	s.id, s.series_id,
+	s.guide_profile_id, s.guide_user_id,
+	s.offer_id, s.product_id, s.legacy_excursion_id,
+	s.start_at, s.end_at, s.timezone,
+	s.capacity, s.booked_seats,
+	s.status, s.cancel_reason, s.closed_at, s.cancelled_at,
+	s.created_at, s.updated_at,
+	COALESCE(NULLIF(o.title, ''), NULLIF(p.title, ''), '')
 `
 
 type smartSearchTarget func(placeholder string) string
@@ -1105,6 +1128,24 @@ func (r *PGExcursionRepository) GetExcursionOfferByID(ctx context.Context, offer
 	return item, nil
 }
 
+func (r *PGExcursionRepository) GetExcursionOfferByLegacyExcursionID(ctx context.Context, legacyExcursionID uuid.UUID) (*model.ExcursionOffer, error) {
+	query := `
+		SELECT ` + excursionOfferSelectColumns + `
+		FROM excursion_offers
+		WHERE legacy_excursion_id = $1
+		ORDER BY updated_at DESC
+		LIMIT 1
+	`
+	item, err := scanExcursionOffer(r.pool.QueryRow(ctx, query, legacyExcursionID))
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion offer by legacy excursion id: %w", err)
+	}
+	return item, nil
+}
+
 func (r *PGExcursionRepository) LoadExcursionOfferRelations(ctx context.Context, offerID uuid.UUID) (port.ExcursionOfferRelations, error) {
 	languages, err := r.listOfferStrings(ctx, "excursion_offer_languages", "language_code", offerID)
 	if err != nil {
@@ -1129,10 +1170,32 @@ func (r *PGExcursionRepository) LoadExcursionOfferRelations(ctx context.Context,
 }
 
 func (r *PGExcursionRepository) CreateExcursionBooking(ctx context.Context, item *model.ExcursionBooking) error {
+	if item.ScheduleSlotID != nil {
+		tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+		if err != nil {
+			return fmt.Errorf("begin create excursion booking: %w", err)
+		}
+		defer tx.Rollback(ctx)
+
+		if err = insertExcursionBooking(ctx, tx, item); err != nil {
+			return err
+		}
+		if err = reserveExcursionScheduleSlotSeats(ctx, tx, *item.ScheduleSlotID, item.TotalSeats); err != nil {
+			return err
+		}
+		if err = tx.Commit(ctx); err != nil {
+			return fmt.Errorf("commit create excursion booking: %w", err)
+		}
+		return nil
+	}
+	return insertExcursionBooking(ctx, r.pool, item)
+}
+
+func insertExcursionBooking(ctx context.Context, exec dbExecutor, item *model.ExcursionBooking) error {
 	const query = `
 		INSERT INTO excursion_bookings (
 			id,
-			product_id, offer_id, legacy_excursion_id,
+			product_id, offer_id, schedule_slot_id, legacy_excursion_id,
 			guide_profile_id, guide_user_id, tourist_user_id,
 			scheduled_for, adults, children, total_seats,
 			unit_price_amount, service_fee_amount, total_price_amount, currency,
@@ -1140,20 +1203,21 @@ func (r *PGExcursionRepository) CreateExcursionBooking(ctx context.Context, item
 			created_at, updated_at
 		) VALUES (
 			$1,
-			$2, $3, $4,
-			$5, $6, $7,
-			$8, $9, $10, $11,
-			$12, $13, $14, $15,
-			$16, $17, $18, $19,
-			$20, $21
+			$2, $3, $4, $5,
+			$6, $7, $8,
+			$9, $10, $11, $12,
+			$13, $14, $15, $16,
+			$17, $18, $19, $20,
+			$21, $22
 		)
 	`
-	_, err := r.pool.Exec(
+	_, err := exec.Exec(
 		ctx,
 		query,
 		item.ID,
 		item.ProductID,
 		item.OfferID,
+		item.ScheduleSlotID,
 		item.LegacyExcursionID,
 		item.GuideProfileID,
 		item.GuideUserID,
@@ -1174,6 +1238,9 @@ func (r *PGExcursionRepository) CreateExcursionBooking(ctx context.Context, item
 		item.UpdatedAt,
 	)
 	if err != nil {
+		if isExcursionBookingIdempotencyUniqueViolation(err) {
+			return port.ErrExcursionBookingIdempotencyConflict
+		}
 		return fmt.Errorf("insert excursion booking: %w", err)
 	}
 	return nil
@@ -1183,7 +1250,7 @@ func (r *PGExcursionRepository) ListExcursionBookings(ctx context.Context, filte
 	baseQuery := `
 		SELECT
 			b.id,
-			b.product_id, b.offer_id, b.legacy_excursion_id,
+			b.product_id, b.offer_id, b.schedule_slot_id, b.legacy_excursion_id,
 			b.guide_profile_id, b.guide_user_id, b.tourist_user_id,
 			b.scheduled_for, b.adults, b.children, b.total_seats,
 			b.unit_price_amount, b.service_fee_amount, b.total_price_amount, b.currency,
@@ -1194,6 +1261,7 @@ func (r *PGExcursionRepository) ListExcursionBookings(ctx context.Context, filte
 			p.landmark_id, p.landmark_name, p.category_slug, p.country_code, p.city_name,
 			COALESCE(o.cover_file_id, p.cover_file_id),
 			o.guide_display_name,
+			o.max_group_size,
 			r.id, r.booking_id, r.product_id, r.offer_id, r.legacy_excursion_id,
 			r.landmark_id, r.landmark_name,
 			r.guide_profile_id, r.guide_user_id, r.guide_display_name, r.tourist_user_id,
@@ -1254,7 +1322,7 @@ func (r *PGExcursionRepository) GetExcursionBookingByID(ctx context.Context, boo
 	const query = `
 		SELECT
 			id,
-			product_id, offer_id, legacy_excursion_id,
+			product_id, offer_id, schedule_slot_id, legacy_excursion_id,
 			guide_profile_id, guide_user_id, tourist_user_id,
 			scheduled_for, adults, children, total_seats,
 			unit_price_amount, service_fee_amount, total_price_amount, currency,
@@ -1271,6 +1339,233 @@ func (r *PGExcursionRepository) GetExcursionBookingByID(ctx context.Context, boo
 		return nil, fmt.Errorf("get excursion booking: %w", err)
 	}
 	return item, nil
+}
+
+func (r *PGExcursionRepository) GetExcursionBookingByTouristIDAndIdempotencyKey(ctx context.Context, touristUserID uuid.UUID, idempotencyKey string) (*model.ExcursionBooking, error) {
+	key := strings.TrimSpace(idempotencyKey)
+	if touristUserID == uuid.Nil || key == "" {
+		return nil, nil
+	}
+	const query = `
+		SELECT
+			id,
+			product_id, offer_id, schedule_slot_id, legacy_excursion_id,
+			guide_profile_id, guide_user_id, tourist_user_id,
+			scheduled_for, adults, children, total_seats,
+			unit_price_amount, service_fee_amount, total_price_amount, currency,
+			status, idempotency_key, cancelled_at, cancel_reason,
+			created_at, updated_at
+		FROM excursion_bookings
+		WHERE tourist_user_id = $1 AND idempotency_key = $2
+	`
+	item, err := scanExcursionBooking(r.pool.QueryRow(ctx, query, touristUserID, key))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion booking by idempotency key: %w", err)
+	}
+	return item, nil
+}
+
+func (r *PGExcursionRepository) UpdateExcursionBookingGuests(ctx context.Context, item *model.ExcursionBooking, seatDelta int) error {
+	if item.ScheduleSlotID == nil || seatDelta == 0 {
+		return updateExcursionBookingGuests(ctx, r.pool, item)
+	}
+
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin update excursion booking guests: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if seatDelta > 0 {
+		if err = reserveExcursionScheduleSlotSeats(ctx, tx, *item.ScheduleSlotID, seatDelta); err != nil {
+			return err
+		}
+	} else {
+		if err = releaseExcursionScheduleSlotSeats(ctx, tx, *item.ScheduleSlotID, -seatDelta); err != nil {
+			return err
+		}
+	}
+	if err = updateExcursionBookingGuests(ctx, tx, item); err != nil {
+		return err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit update excursion booking guests: %w", err)
+	}
+	return nil
+}
+
+func (r *PGExcursionRepository) CreateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error {
+	return insertExcursionScheduleSlot(ctx, r.pool, slot)
+}
+
+func (r *PGExcursionRepository) CreateExcursionScheduleSeriesWithSlots(ctx context.Context, series *model.ExcursionScheduleSeries, slots []*model.ExcursionScheduleSlot) error {
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin create excursion schedule series: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if err = insertExcursionScheduleSeries(ctx, tx, series); err != nil {
+		return err
+	}
+	for _, slot := range slots {
+		if err = insertExcursionScheduleSlot(ctx, tx, slot); err != nil {
+			return err
+		}
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit create excursion schedule series: %w", err)
+	}
+	return nil
+}
+
+func (r *PGExcursionRepository) UpdateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error {
+	const query = `
+		UPDATE excursion_schedule_slots
+		SET
+			offer_id = $2,
+			product_id = $3,
+			legacy_excursion_id = $4,
+			start_at = $5,
+			end_at = $6,
+			timezone = $7,
+			capacity = $8,
+			booked_seats = $9,
+			status = $10,
+			cancel_reason = $11,
+			closed_at = $12,
+			cancelled_at = $13,
+			updated_at = $14
+		WHERE id = $1
+	`
+	_, err := r.pool.Exec(
+		ctx,
+		query,
+		slot.ID,
+		slot.OfferID,
+		slot.ProductID,
+		slot.LegacyExcursionID,
+		slot.StartAt,
+		slot.EndAt,
+		slot.Timezone,
+		slot.Capacity,
+		slot.BookedSeats,
+		string(slot.Status),
+		slot.CancelReason,
+		slot.ClosedAt,
+		slot.CancelledAt,
+		slot.UpdatedAt,
+	)
+	if err != nil {
+		if isExcursionScheduleConflict(err) {
+			return port.ErrExcursionScheduleConflict
+		}
+		return fmt.Errorf("update excursion schedule slot: %w", err)
+	}
+	return nil
+}
+
+func (r *PGExcursionRepository) DeleteExcursionScheduleSlot(ctx context.Context, slotID uuid.UUID, guideUserID uuid.UUID) error {
+	const query = `DELETE FROM excursion_schedule_slots WHERE id = $1 AND guide_user_id = $2`
+	_, err := r.pool.Exec(ctx, query, slotID, guideUserID)
+	if err != nil {
+		return fmt.Errorf("delete excursion schedule slot: %w", err)
+	}
+	return nil
+}
+
+func (r *PGExcursionRepository) GetExcursionScheduleSlotByID(ctx context.Context, slotID uuid.UUID) (*model.ExcursionScheduleSlot, error) {
+	query := "SELECT " + excursionScheduleSlotSelectColumns + " FROM excursion_schedule_slots WHERE id = $1"
+	slot, err := scanExcursionScheduleSlot(r.pool.QueryRow(ctx, query, slotID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion schedule slot: %w", err)
+	}
+	return slot, nil
+}
+
+func (r *PGExcursionRepository) ListExcursionScheduleSlots(ctx context.Context, filter port.ExcursionScheduleFilter) ([]*model.ExcursionScheduleSlot, error) {
+	parts := []string{"SELECT " + excursionScheduleSlotSelectColumnsWithTitle + " FROM excursion_schedule_slots s JOIN excursion_offers o ON o.id = s.offer_id LEFT JOIN excursion_products p ON p.id = s.product_id WHERE 1 = 1"}
+	args := make([]any, 0, 8)
+	argPos := 1
+
+	if filter.GuideUserID != nil && *filter.GuideUserID != uuid.Nil {
+		parts = append(parts, fmt.Sprintf(" AND s.guide_user_id = $%d", argPos))
+		args = append(args, *filter.GuideUserID)
+		argPos++
+	}
+	if filter.OfferID != nil && *filter.OfferID != uuid.Nil {
+		parts = append(parts, fmt.Sprintf(" AND s.offer_id = $%d", argPos))
+		args = append(args, *filter.OfferID)
+		argPos++
+	}
+	if filter.ProductID != nil && *filter.ProductID != uuid.Nil {
+		parts = append(parts, fmt.Sprintf(" AND s.product_id = $%d", argPos))
+		args = append(args, *filter.ProductID)
+		argPos++
+	}
+	if !filter.From.IsZero() {
+		parts = append(parts, fmt.Sprintf(" AND s.end_at > $%d", argPos))
+		args = append(args, filter.From.UTC())
+		argPos++
+	}
+	if !filter.To.IsZero() {
+		parts = append(parts, fmt.Sprintf(" AND s.start_at < $%d", argPos))
+		args = append(args, filter.To.UTC())
+		argPos++
+	}
+	if len(filter.Statuses) > 0 {
+		statuses := make([]string, 0, len(filter.Statuses))
+		for _, status := range filter.Statuses {
+			statuses = append(statuses, string(status))
+		}
+		parts = append(parts, fmt.Sprintf(" AND s.status = ANY($%d)", argPos))
+		args = append(args, statuses)
+		argPos++
+	}
+
+	parts = append(parts, " ORDER BY s.start_at ASC")
+	if filter.Limit > 0 {
+		parts = append(parts, fmt.Sprintf(" LIMIT $%d", argPos))
+		args = append(args, filter.Limit)
+		argPos++
+	}
+	if filter.Offset > 0 {
+		parts = append(parts, fmt.Sprintf(" OFFSET $%d", argPos))
+		args = append(args, filter.Offset)
+	}
+
+	rows, err := r.pool.Query(ctx, strings.Join(parts, ""), args...)
+	if err != nil {
+		return nil, fmt.Errorf("query excursion schedule slots: %w", err)
+	}
+	defer rows.Close()
+
+	slots := make([]*model.ExcursionScheduleSlot, 0)
+	for rows.Next() {
+		slot, scanErr := scanExcursionScheduleSlotWithTitle(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		slots = append(slots, slot)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate excursion schedule slots: %w", err)
+	}
+	return slots, nil
+}
+
+func (r *PGExcursionRepository) ReserveExcursionScheduleSlotSeats(ctx context.Context, slotID uuid.UUID, seats int) error {
+	return reserveExcursionScheduleSlotSeats(ctx, r.pool, slotID, seats)
+}
+
+func (r *PGExcursionRepository) ExpireUnbookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, reason string) error {
+	return expireUnbookedExcursionScheduleSlots(ctx, r.pool, cutoff, reason)
 }
 
 func (r *PGExcursionRepository) CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
@@ -1422,6 +1717,225 @@ func isExcursionReviewUniqueViolation(err error) bool {
 	return errors.As(err, &pgErr) &&
 		pgErr.Code == pgUniqueViolation &&
 		pgErr.ConstraintName == "idx_excursion_reviews_booking"
+}
+
+func isExcursionBookingIdempotencyUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) &&
+		pgErr.Code == pgUniqueViolation &&
+		pgErr.ConstraintName == "idx_excursion_bookings_tourist_idempotency"
+}
+
+func isExcursionScheduleConflict(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) &&
+		(pgErr.Code == pgExclusionViolation || pgErr.Code == pgUniqueViolation) &&
+		pgErr.ConstraintName == scheduleOverlapConstraint
+}
+
+func insertExcursionScheduleSlot(ctx context.Context, exec dbExecutor, slot *model.ExcursionScheduleSlot) error {
+	const query = `
+		INSERT INTO excursion_schedule_slots (
+			id, series_id,
+			guide_profile_id, guide_user_id,
+			offer_id, product_id, legacy_excursion_id,
+			start_at, end_at, timezone,
+			capacity, booked_seats,
+			status, cancel_reason, closed_at, cancelled_at,
+			created_at, updated_at
+		) VALUES (
+			$1, $2,
+			$3, $4,
+			$5, $6, $7,
+			$8, $9, $10,
+			$11, $12,
+			$13, $14, $15, $16,
+			$17, $18
+		)
+	`
+	_, err := exec.Exec(
+		ctx,
+		query,
+		slot.ID,
+		slot.SeriesID,
+		slot.GuideProfileID,
+		slot.GuideUserID,
+		slot.OfferID,
+		slot.ProductID,
+		slot.LegacyExcursionID,
+		slot.StartAt,
+		slot.EndAt,
+		slot.Timezone,
+		slot.Capacity,
+		slot.BookedSeats,
+		string(slot.Status),
+		slot.CancelReason,
+		slot.ClosedAt,
+		slot.CancelledAt,
+		slot.CreatedAt,
+		slot.UpdatedAt,
+	)
+	if err != nil {
+		if isExcursionScheduleConflict(err) {
+			return port.ErrExcursionScheduleConflict
+		}
+		return fmt.Errorf("insert excursion schedule slot: %w", err)
+	}
+	return nil
+}
+
+func insertExcursionScheduleSeries(ctx context.Context, exec dbExecutor, series *model.ExcursionScheduleSeries) error {
+	const query = `
+		INSERT INTO excursion_schedule_series (
+			id,
+			guide_user_id, guide_profile_id,
+			offer_id, product_id, legacy_excursion_id,
+			timezone, recurrence_type, weekdays,
+			starts_on, ends_on, occurrence_limit,
+			default_start_time, default_capacity,
+			status, created_at, updated_at
+		) VALUES (
+			$1,
+			$2, $3,
+			$4, $5, $6,
+			$7, $8, $9,
+			$10, $11, $12,
+			$13, $14,
+			$15, $16, $17
+		)
+	`
+	_, err := exec.Exec(
+		ctx,
+		query,
+		series.ID,
+		series.GuideUserID,
+		series.GuideProfileID,
+		series.OfferID,
+		series.ProductID,
+		series.LegacyExcursionID,
+		series.Timezone,
+		string(series.RecurrenceType),
+		toInt16Slice(series.Weekdays),
+		series.StartsOn,
+		series.EndsOn,
+		series.OccurrenceLimit,
+		series.DefaultStartTime,
+		series.DefaultCapacity,
+		string(series.Status),
+		series.CreatedAt,
+		series.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("insert excursion schedule series: %w", err)
+	}
+	return nil
+}
+
+func reserveExcursionScheduleSlotSeats(ctx context.Context, exec dbExecutor, slotID uuid.UUID, seats int) error {
+	const query = `
+		UPDATE excursion_schedule_slots
+		SET
+			booked_seats = booked_seats + $2,
+			status = CASE
+				WHEN booked_seats + $2 >= capacity THEN 'FULL'
+				ELSE 'BOOKED'
+			END,
+			updated_at = NOW()
+		WHERE id = $1
+		  AND status IN ('AVAILABLE', 'BOOKED')
+		  AND start_at >= NOW() + INTERVAL '2 hours'
+		  AND booked_seats + $2 <= capacity
+	`
+	tag, err := exec.Exec(ctx, query, slotID, seats)
+	if err != nil {
+		return fmt.Errorf("reserve excursion schedule slot seats: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return port.ErrExcursionScheduleUnavailable
+	}
+	return nil
+}
+
+func releaseExcursionScheduleSlotSeats(ctx context.Context, exec dbExecutor, slotID uuid.UUID, seats int) error {
+	if seats <= 0 {
+		return nil
+	}
+	const query = `
+		UPDATE excursion_schedule_slots
+		SET
+			booked_seats = booked_seats - $2,
+			status = CASE
+				WHEN status IN ('BOOKED', 'FULL') AND booked_seats - $2 <= 0 THEN 'AVAILABLE'
+				WHEN status = 'FULL' AND booked_seats - $2 < capacity THEN 'BOOKED'
+				ELSE status
+			END,
+			updated_at = NOW()
+		WHERE id = $1
+		  AND booked_seats >= $2
+	`
+	tag, err := exec.Exec(ctx, query, slotID, seats)
+	if err != nil {
+		return fmt.Errorf("release excursion schedule slot seats: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return port.ErrExcursionScheduleUnavailable
+	}
+	return nil
+}
+
+func expireUnbookedExcursionScheduleSlots(ctx context.Context, exec dbExecutor, cutoff time.Time, reason string) error {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = "NO_BOOKINGS_BEFORE_START_2H"
+	}
+	const query = `
+		UPDATE excursion_schedule_slots
+		SET
+			status = 'CANCELLED',
+			cancel_reason = $2,
+			cancelled_at = NOW(),
+			updated_at = NOW()
+		WHERE start_at < $1
+		  AND booked_seats = 0
+		  AND status IN ('AVAILABLE', 'BOOKED')
+	`
+	_, err := exec.Exec(ctx, query, cutoff.UTC(), reason)
+	if err != nil {
+		return fmt.Errorf("expire unbooked excursion schedule slots: %w", err)
+	}
+	return nil
+}
+
+func updateExcursionBookingGuests(ctx context.Context, exec dbExecutor, item *model.ExcursionBooking) error {
+	const query = `
+		UPDATE excursion_bookings
+		SET
+			adults = $2,
+			children = $3,
+			total_seats = $4,
+			service_fee_amount = $5,
+			total_price_amount = $6,
+			updated_at = $7
+		WHERE id = $1
+	`
+	tag, err := exec.Exec(
+		ctx,
+		query,
+		item.ID,
+		item.Adults,
+		item.Children,
+		item.TotalSeats,
+		item.ServiceFeeAmount,
+		item.TotalPriceAmount,
+		item.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("update excursion booking guests: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("update excursion booking guests: booking %s was not found", item.ID)
+	}
+	return nil
 }
 
 func updateExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion) error {
@@ -1910,6 +2424,17 @@ func excursionMarketplaceCanonicalKey(item *model.Excursion) string {
 	return "custom:" + country + ":" + city + ":" + category + ":" + title
 }
 
+func toInt16Slice(values []int) []int16 {
+	if len(values) == 0 {
+		return nil
+	}
+	result := make([]int16, 0, len(values))
+	for _, value := range values {
+		result = append(result, int16(value))
+	}
+	return result
+}
+
 func marketplaceProductTitle(item *model.Excursion) string {
 	if item == nil {
 		return "FlyFy excursions"
@@ -2338,6 +2863,7 @@ func scanExcursionBooking(row excursionScanner) (*model.ExcursionBooking, error)
 		&item.ID,
 		&item.ProductID,
 		&item.OfferID,
+		&item.ScheduleSlotID,
 		&item.LegacyExcursionID,
 		&item.GuideProfileID,
 		&item.GuideUserID,
@@ -2363,6 +2889,71 @@ func scanExcursionBooking(row excursionScanner) (*model.ExcursionBooking, error)
 	return &item, nil
 }
 
+func scanExcursionScheduleSlot(row excursionScanner) (*model.ExcursionScheduleSlot, error) {
+	var (
+		slot      model.ExcursionScheduleSlot
+		statusRaw string
+	)
+	if err := row.Scan(
+		&slot.ID,
+		&slot.SeriesID,
+		&slot.GuideProfileID,
+		&slot.GuideUserID,
+		&slot.OfferID,
+		&slot.ProductID,
+		&slot.LegacyExcursionID,
+		&slot.StartAt,
+		&slot.EndAt,
+		&slot.Timezone,
+		&slot.Capacity,
+		&slot.BookedSeats,
+		&statusRaw,
+		&slot.CancelReason,
+		&slot.ClosedAt,
+		&slot.CancelledAt,
+		&slot.CreatedAt,
+		&slot.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	slot.Status = enum.ExcursionScheduleSlotStatus(statusRaw)
+	return &slot, nil
+}
+
+func scanExcursionScheduleSlotWithTitle(row excursionScanner) (*model.ExcursionScheduleSlot, error) {
+	var (
+		slot      model.ExcursionScheduleSlot
+		statusRaw string
+		title     string
+	)
+	if err := row.Scan(
+		&slot.ID,
+		&slot.SeriesID,
+		&slot.GuideProfileID,
+		&slot.GuideUserID,
+		&slot.OfferID,
+		&slot.ProductID,
+		&slot.LegacyExcursionID,
+		&slot.StartAt,
+		&slot.EndAt,
+		&slot.Timezone,
+		&slot.Capacity,
+		&slot.BookedSeats,
+		&statusRaw,
+		&slot.CancelReason,
+		&slot.ClosedAt,
+		&slot.CancelledAt,
+		&slot.CreatedAt,
+		&slot.UpdatedAt,
+		&title,
+	); err != nil {
+		return nil, err
+	}
+	slot.Status = enum.ExcursionScheduleSlotStatus(statusRaw)
+	slot.Title = strings.TrimSpace(title)
+	return &slot, nil
+}
+
 func scanExcursionBookingListItem(row excursionScanner) (*model.ExcursionBookingListItem, error) {
 	var (
 		booking                model.ExcursionBooking
@@ -2386,6 +2977,7 @@ func scanExcursionBookingListItem(row excursionScanner) (*model.ExcursionBooking
 		&booking.ID,
 		&booking.ProductID,
 		&booking.OfferID,
+		&booking.ScheduleSlotID,
 		&booking.LegacyExcursionID,
 		&booking.GuideProfileID,
 		&booking.GuideUserID,
@@ -2413,6 +3005,7 @@ func scanExcursionBookingListItem(row excursionScanner) (*model.ExcursionBooking
 		&item.CityName,
 		&item.CoverFileID,
 		&item.GuideDisplayName,
+		&item.MaxGroupSize,
 		&reviewID,
 		&reviewBookingID,
 		&reviewProductID,
