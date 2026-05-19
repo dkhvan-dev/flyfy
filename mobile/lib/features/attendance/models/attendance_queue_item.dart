@@ -8,14 +8,19 @@ class AttendanceQueueItem {
     required this.installationId,
     required this.scannedAtDevice,
     required this.createdAt,
+    this.type = typeActivity,
     this.retryCount = 0,
     this.nextRetryAt,
     this.lastErrorCode,
     this.lastErrorMessage,
   });
 
+  static const typeActivity = 'activity';
+  static const typeExcursion = 'excursion';
+
   final String scanId;
   final String participantUserId;
+  final String type;
   final String activityId;
   final String qrJti;
   final String qrToken;
@@ -37,6 +42,7 @@ class AttendanceQueueItem {
     return AttendanceQueueItem(
       scanId: scanId,
       participantUserId: participantUserId,
+      type: type,
       activityId: activityId,
       qrJti: qrJti,
       qrToken: qrToken,
@@ -56,6 +62,7 @@ class AttendanceQueueItem {
     return {
       'scanId': scanId,
       'participantUserId': participantUserId,
+      'type': type,
       'activityId': activityId,
       'qrJti': qrJti,
       'qrToken': qrToken,
@@ -73,6 +80,7 @@ class AttendanceQueueItem {
     return AttendanceQueueItem(
       scanId: json['scanId']?.toString() ?? '',
       participantUserId: json['participantUserId']?.toString() ?? '',
+      type: _normalizedType(json['type']?.toString()),
       activityId: json['activityId']?.toString() ?? '',
       qrJti: json['qrJti']?.toString() ?? '',
       qrToken: json['qrToken']?.toString() ?? '',
@@ -90,5 +98,10 @@ class AttendanceQueueItem {
       lastErrorCode: json['lastErrorCode']?.toString(),
       lastErrorMessage: json['lastErrorMessage']?.toString(),
     );
+  }
+
+  static String _normalizedType(String? value) {
+    final normalized = (value ?? '').trim().toLowerCase();
+    return normalized == typeExcursion ? typeExcursion : typeActivity;
   }
 }

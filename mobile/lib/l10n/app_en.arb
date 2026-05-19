@@ -1422,6 +1422,10 @@
   "guideDashboardArchiveFailed": "Failed to move offer to archive",
   "guideDashboardPublishFailed": "Failed to publish offer",
   "guideDashboardViewBooking": "View booking",
+  "guideDashboardShowAttendanceQr": "Attendance QR",
+  "guideDashboardAttendanceParticipants": "Participants",
+  "guideDashboardAttendanceCheckedIn": "Checked in",
+  "guideDashboardAttendanceWaiting": "Waiting for check-in",
   "guideDashboardViewDetails": "View details",
   "guideDashboardCancelExcursion": "Cancel excursion",
   "guideDashboardCancelTitle": "Cancel this excursion?",
@@ -1936,6 +1940,9 @@
   "guideCalendarBooked": "Booked",
   "guideCalendarClosed": "Closed",
   "guideCalendarCancelled": "Cancelled",
+  "guideCalendarCompleted": "Completed",
+  "guideCalendarViewSlot": "Slot details",
+  "guideCalendarReadonlyCompletedSlot": "This slot has already finished. It is kept in the calendar for history and can only be viewed.",
   "guideCalendarCancelReason": "Reason: {reason}",
   "@guideCalendarCancelReason": {
     "placeholders": {

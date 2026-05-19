@@ -7102,6 +7102,30 @@ abstract class AppLocalizations {
   /// **'View booking'**
   String get guideDashboardViewBooking;
 
+  /// No description provided for @guideDashboardShowAttendanceQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance QR'**
+  String get guideDashboardShowAttendanceQr;
+
+  /// No description provided for @guideDashboardAttendanceParticipants.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants'**
+  String get guideDashboardAttendanceParticipants;
+
+  /// No description provided for @guideDashboardAttendanceCheckedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked in'**
+  String get guideDashboardAttendanceCheckedIn;
+
+  /// No description provided for @guideDashboardAttendanceWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for check-in'**
+  String get guideDashboardAttendanceWaiting;
+
   /// No description provided for @guideDashboardViewDetails.
   ///
   /// In en, this message translates to:
@@ -9337,6 +9361,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancelled'**
   String get guideCalendarCancelled;
+
+  /// No description provided for @guideCalendarCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get guideCalendarCompleted;
+
+  /// No description provided for @guideCalendarViewSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Slot details'**
+  String get guideCalendarViewSlot;
+
+  /// No description provided for @guideCalendarReadonlyCompletedSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'This slot has already finished. It is kept in the calendar for history and can only be viewed.'**
+  String get guideCalendarReadonlyCompletedSlot;
 
   /// No description provided for @guideCalendarCancelReason.
   ///

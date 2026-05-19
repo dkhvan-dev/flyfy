@@ -21,6 +21,13 @@ var (
 	ErrExcursionScheduleConflict           = errors.New("excursion schedule conflict")
 	ErrExcursionScheduleStartTooSoon       = errors.New("excursion schedule slot must start at least 3 hours from now")
 	ErrExcursionScheduleUnavailable        = errors.New("excursion schedule slot is unavailable")
+	ErrExcursionAttendanceAccessDenied     = errors.New("excursion attendance access denied")
+	ErrExcursionAttendanceQRUnavailable    = errors.New("excursion attendance qr is unavailable for this slot")
+	ErrExcursionAttendanceQRInvalid        = errors.New("excursion attendance qr is invalid")
+	ErrExcursionAttendanceQRVersionInvalid = errors.New("excursion attendance qr version is not supported")
+	ErrExcursionAttendanceQRExpired        = errors.New("excursion attendance qr is no longer usable")
+	ErrExcursionAttendanceAlreadyCheckedIn = errors.New("excursion booking already checked in")
+	ErrExcursionAttendanceBookingInvalid   = errors.New("excursion booking is not eligible for attendance check-in")
 
 	ErrExcursionCoverFileNotFound   = errors.New("excursion cover file not found")
 	ErrExcursionCoverFileNotReady   = errors.New("excursion cover file is not ready")

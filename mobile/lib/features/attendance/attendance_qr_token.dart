@@ -2,6 +2,8 @@ import 'dart:convert';
 
 class AttendanceQrTokenPayload {
   AttendanceQrTokenPayload({
+    required this.type,
+    required this.subjectId,
     required this.activityId,
     required this.hostId,
     required this.qrJti,
@@ -12,7 +14,12 @@ class AttendanceQrTokenPayload {
   });
 
   static const prefix = 'ffatt1';
+  static const excursionPrefix = 'ffexatt1';
+  static const typeActivity = 'activity';
+  static const typeExcursion = 'excursion';
 
+  final String type;
+  final String subjectId;
   final String activityId;
   final String hostId;
   final String qrJti;
@@ -26,7 +33,9 @@ class AttendanceQrTokenPayload {
     if (token.isEmpty) return null;
 
     final parts = token.split('.');
-    if (parts.length != 3 || parts.first != prefix) {
+    final tokenPrefix = parts.isEmpty ? '' : parts.first;
+    if (parts.length != 3 ||
+        (tokenPrefix != prefix && tokenPrefix != excursionPrefix)) {
       return null;
     }
 
@@ -39,14 +48,16 @@ class AttendanceQrTokenPayload {
 
       final version = (payload['v'] as num?)?.toInt();
       final audience = payload['aud']?.toString();
-      final activityId = payload['activityId']?.toString();
-      final hostId = payload['hostId']?.toString();
+      final isExcursion = tokenPrefix == excursionPrefix;
+      final subjectId =
+          payload[isExcursion ? 'slotId' : 'activityId']?.toString();
+      final hostId = payload[isExcursion ? 'guideId' : 'hostId']?.toString();
       final qrJti = payload['jti']?.toString();
       final issuedAt = (payload['iat'] as num?)?.toInt();
       final expiresAt = (payload['exp'] as num?)?.toInt();
       if (version == null ||
           audience == null ||
-          activityId == null ||
+          subjectId == null ||
           hostId == null ||
           qrJti == null ||
           issuedAt == null ||
@@ -55,7 +66,9 @@ class AttendanceQrTokenPayload {
       }
 
       return AttendanceQrTokenPayload(
-        activityId: activityId,
+        type: isExcursion ? typeExcursion : typeActivity,
+        subjectId: subjectId,
+        activityId: subjectId,
         hostId: hostId,
         qrJti: qrJti,
         issuedAt: DateTime.fromMillisecondsSinceEpoch(

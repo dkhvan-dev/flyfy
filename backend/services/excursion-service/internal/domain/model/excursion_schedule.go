@@ -58,6 +58,8 @@ type ExcursionScheduleSlot struct {
 	CancelReason      *string
 	ClosedAt          *time.Time
 	CancelledAt       *time.Time
+	CompletedAt       *time.Time
+	CompletionReason  *string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	Title             string
@@ -209,6 +211,20 @@ func (slot *ExcursionScheduleSlot) Cancel(reason string) error {
 	}
 	slot.CancelReason = &reason
 	return nil
+}
+
+func (slot *ExcursionScheduleSlot) Complete(reason string) {
+	now := time.Now().UTC()
+	reason = strings.TrimSpace(reason)
+
+	slot.Status = enum.ExcursionScheduleSlotStatusCompleted
+	slot.CompletedAt = &now
+	slot.UpdatedAt = now
+	if reason == "" {
+		slot.CompletionReason = nil
+		return
+	}
+	slot.CompletionReason = &reason
 }
 
 func (slot *ExcursionScheduleSlot) CanHardDelete() bool {

@@ -9,6 +9,7 @@ import '../../features/attendance/attendance_sync_manager.dart';
 import '../../features/attendance/models/attendance_queue_item.dart';
 import '../../features/attendance/models/attendance_sync_result_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../providers/excursion_provider.dart';
 import '../../providers/session_provider.dart';
 
 class AttendanceScannerScreen extends StatefulWidget {
@@ -178,9 +179,10 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
 
     _isHandlingScan = true;
     try {
-      final existing = await _queueRepository.findPendingForActivity(
+      final existing = await _queueRepository.findPending(
         participantUserId: participantUserId,
-        activityId: payload.activityId,
+        type: payload.type,
+        subjectId: payload.subjectId,
       );
       if (existing != null) {
         final outcome = await AttendanceSyncManager.instance.syncPendingForUser(
@@ -188,6 +190,10 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
         );
         if (!mounted) return;
         setState(() => _pendingCount = outcome.remainingPendingCount);
+        await _refreshExcursionAttendanceState(
+          type: payload.type,
+          results: outcome.resultsByScanId.values,
+        );
         _setFeedback(l10n.qrScannerAlreadyQueued, _ScannerFeedbackTone.warning);
         return;
       }
@@ -197,7 +203,8 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
       final item = AttendanceQueueItem(
         scanId: scanId,
         participantUserId: participantUserId,
-        activityId: payload.activityId,
+        type: payload.type,
+        activityId: payload.subjectId,
         qrJti: payload.qrJti,
         qrToken: rawValue,
         installationId: installationId,
@@ -226,9 +233,37 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
                 ? _ScannerFeedbackTone.error
                 : _ScannerFeedbackTone.warning,
       );
+      await _refreshExcursionAttendanceState(
+        type: payload.type,
+        results: [result],
+      );
       await _stopScanner();
     } finally {
       _isHandlingScan = false;
+    }
+  }
+
+  Future<void> _refreshExcursionAttendanceState({
+    required String type,
+    required Iterable<AttendanceSyncResultVm> results,
+  }) async {
+    if (!mounted || type != AttendanceQueueItem.typeExcursion) {
+      return;
+    }
+    final hasSuccessfulResult = results.any(
+      (result) => result.isSynced || result.isAlreadySynced,
+    );
+    if (!hasSuccessfulResult) {
+      return;
+    }
+
+    final excursionProvider = context.read<ExcursionProvider>();
+    await excursionProvider.refreshMyExcursionBookings();
+    final hasGuideDashboardData = excursionProvider.myGuideProfile != null ||
+        excursionProvider.myGuideExcursions.isNotEmpty ||
+        excursionProvider.myGuideExcursionBookings.isNotEmpty;
+    if (hasGuideDashboardData) {
+      await excursionProvider.refreshGuideDashboardData();
     }
   }
 
@@ -253,6 +288,7 @@ class _AttendanceScannerScreenState extends State<AttendanceScannerScreen> {
       case 'host_scan_not_allowed':
         return l10n.qrScannerHostNotAllowed;
       case 'activity_unavailable':
+      case 'slot_unavailable':
         return l10n.qrScannerActivityUnavailable;
       case 'auth_required':
         return l10n.qrScannerSessionUnavailable;

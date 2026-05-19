@@ -59,10 +59,23 @@ class AttendanceQueueRepository {
     required String participantUserId,
     required String activityId,
   }) async {
+    return findPending(
+      participantUserId: participantUserId,
+      type: AttendanceQueueItem.typeActivity,
+      subjectId: activityId,
+    );
+  }
+
+  Future<AttendanceQueueItem?> findPending({
+    required String participantUserId,
+    required String type,
+    required String subjectId,
+  }) async {
     final items = await readAll();
     for (final item in items) {
       if (item.participantUserId == participantUserId &&
-          item.activityId == activityId) {
+          item.type == type &&
+          item.activityId == subjectId) {
         return item;
       }
     }
@@ -74,6 +87,7 @@ class AttendanceQueueRepository {
     final updated = <AttendanceQueueItem>[
       for (final existing in items)
         if (!(existing.participantUserId == item.participantUserId &&
+            existing.type == item.type &&
             existing.activityId == item.activityId))
           existing,
       item,

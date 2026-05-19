@@ -2,6 +2,9 @@ enum MyExcursionsTab { booked, visited }
 
 enum MyExcursionBookingSortMode { date, price }
 
+const _excursionAttendanceQrLeadTime = Duration(hours: 1);
+const _excursionAttendanceQrFallbackAfterStartWindow = Duration(hours: 6);
+
 class ExcursionBookingVm {
   const ExcursionBookingVm({
     required this.id,
@@ -34,6 +37,7 @@ class ExcursionBookingVm {
     this.cancelledAt,
     this.cancelledBy,
     this.cancelReason,
+    this.checkedInAt,
     this.refundPercent = 0,
     this.refundAmount = 0,
     this.refundCurrency,
@@ -73,6 +77,7 @@ class ExcursionBookingVm {
   final DateTime? cancelledAt;
   final String? cancelledBy;
   final String? cancelReason;
+  final DateTime? checkedInAt;
   final int refundPercent;
   final double refundAmount;
   final String? refundCurrency;
@@ -92,6 +97,21 @@ class ExcursionBookingVm {
   }
 
   bool get isCancelled => status.trim().toUpperCase() == 'CANCELLED';
+
+  bool get isCheckedIn => checkedInAt != null;
+
+  bool canShowAttendanceQr(DateTime now) {
+    final slotId = (scheduleSlotId ?? '').trim();
+    if (slotId.isEmpty || isCancelled) return false;
+
+    final nowUtc = now.toUtc();
+    final startsAt = scheduledFor.toUtc();
+    return !nowUtc
+            .isBefore(startsAt.subtract(_excursionAttendanceQrLeadTime)) &&
+        nowUtc.isBefore(
+          startsAt.add(_excursionAttendanceQrFallbackAfterStartWindow),
+        );
+  }
 
   bool canReview(DateTime now) => isVisited(now) && !isReviewed;
 
@@ -118,6 +138,7 @@ class ExcursionBookingVm {
     DateTime? cancelledAt,
     String? cancelledBy,
     String? cancelReason,
+    DateTime? checkedInAt,
     int? refundPercent,
     double? refundAmount,
     String? refundCurrency,
@@ -155,6 +176,7 @@ class ExcursionBookingVm {
       cancelledAt: cancelledAt ?? this.cancelledAt,
       cancelledBy: cancelledBy ?? this.cancelledBy,
       cancelReason: cancelReason ?? this.cancelReason,
+      checkedInAt: checkedInAt ?? this.checkedInAt,
       refundPercent: refundPercent ?? this.refundPercent,
       refundAmount: refundAmount ?? this.refundAmount,
       refundCurrency: refundCurrency ?? this.refundCurrency,
@@ -207,6 +229,7 @@ class ExcursionBookingVm {
       cancelledAt: _date(json['cancelledAt']),
       cancelledBy: _nullableString(json['cancelledBy']),
       cancelReason: _nullableString(json['cancelReason']),
+      checkedInAt: _date(json['checkedInAt']),
       refundPercent: _int(json['refundPercent']),
       refundAmount: _double(json['refundAmount']),
       refundCurrency: _nullableString(json['refundCurrency']),

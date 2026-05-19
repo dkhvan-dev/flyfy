@@ -3859,6 +3859,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideDashboardViewBooking => 'View booking';
 
   @override
+  String get guideDashboardShowAttendanceQr => 'Attendance QR';
+
+  @override
+  String get guideDashboardAttendanceParticipants => 'Participants';
+
+  @override
+  String get guideDashboardAttendanceCheckedIn => 'Checked in';
+
+  @override
+  String get guideDashboardAttendanceWaiting => 'Waiting for check-in';
+
+  @override
   String get guideDashboardViewDetails => 'View details';
 
   @override
@@ -5146,6 +5158,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideCalendarCancelled => 'Cancelled';
+
+  @override
+  String get guideCalendarCompleted => 'Completed';
+
+  @override
+  String get guideCalendarViewSlot => 'Slot details';
+
+  @override
+  String get guideCalendarReadonlyCompletedSlot =>
+      'This slot has already finished. It is kept in the calendar for history and can only be viewed.';
 
   @override
   String guideCalendarCancelReason(Object reason) {

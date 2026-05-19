@@ -19,6 +19,7 @@ type Config struct {
 	Attraction   AttractionServiceConfig
 	FileManager  FileManagerConfig
 	Translation  TranslationServiceConfig
+	Attendance   AttendanceConfig
 }
 
 type AppConfig struct {
@@ -111,6 +112,14 @@ type FileManagerConfig struct {
 type TranslationServiceConfig struct {
 	BaseURL string        `env:"TRANSLATION_SERVICE_URL"`
 	Timeout time.Duration `env:"TRANSLATION_SERVICE_TIMEOUT, default=8s"`
+}
+
+type AttendanceConfig struct {
+	QRSigningSecret          string        `env:"EXCURSION_ATTENDANCE_QR_SIGNING_SECRET"`
+	QRTTL                    time.Duration `env:"EXCURSION_ATTENDANCE_QR_TTL, default=5m"`
+	OfflineWindow            time.Duration `env:"EXCURSION_ATTENDANCE_OFFLINE_WINDOW, default=4h"`
+	CompletionTickerInterval time.Duration `env:"EXCURSION_SCHEDULE_COMPLETION_TICKER_INTERVAL, default=1m"`
+	CompletionBatchSize      int           `env:"EXCURSION_SCHEDULE_COMPLETION_BATCH_SIZE, default=100"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

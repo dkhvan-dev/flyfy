@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -32,6 +33,7 @@ func main() {
 		log.Fatal().Err(err).Msg("load config")
 	}
 	configureLogger(cfg)
+	validateSecurityConfig(cfg)
 
 	pool, err := newPostgresPool(ctx, cfg)
 	if err != nil {
@@ -91,7 +93,12 @@ func main() {
 	)
 	excursionUC := app.NewExcursionUseCase(repo, guideClient, fileManagerClient, translator).
 		WithUserProfileResolver(userClient).
-		WithAttractionRatingUpdater(attractionRatingClient)
+		WithAttractionRatingUpdater(attractionRatingClient).
+		WithAttendanceQRConfig(
+			cfg.Attendance.QRSigningSecret,
+			cfg.Attendance.QRTTL,
+			cfg.Attendance.OfflineWindow,
+		)
 	handler := httpadapter.NewHandler(excursionUC, fileManagerClient)
 
 	mux := http.NewServeMux()
@@ -104,6 +111,10 @@ func main() {
 		WriteTimeout: cfg.HTTP.WriteTimeout,
 		IdleTimeout:  cfg.HTTP.IdleTimeout,
 	}
+
+	backgroundCtx, stopBackground := context.WithCancel(ctx)
+	defer stopBackground()
+	go runExcursionLifecycleTicker(backgroundCtx, excursionUC, cfg.Attendance)
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -135,6 +146,45 @@ func main() {
 	log.Info().Str("service", cfg.App.Name).Msg("service stopped")
 }
 
+func runExcursionLifecycleTicker(
+	ctx context.Context,
+	uc *app.ExcursionUseCase,
+	attendanceCfg config.AttendanceConfig,
+) {
+	interval := attendanceCfg.CompletionTickerInterval
+	if interval <= 0 {
+		interval = time.Minute
+	}
+	batchSize := attendanceCfg.CompletionBatchSize
+	if batchSize <= 0 {
+		batchSize = 100
+	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	run := func() {
+		count, err := uc.AutoCompleteDueExcursionScheduleSlots(ctx, batchSize)
+		if err != nil {
+			log.Error().Err(err).Msg("auto-complete due excursion schedule slots failed")
+			return
+		}
+		if count > 0 {
+			log.Info().Int("completed_slots", count).Msg("auto-completed due excursion schedule slots")
+		}
+	}
+
+	run()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			run()
+		}
+	}
+}
+
 func configureLogger(cfg *config.Config) {
 	level, err := zerolog.ParseLevel(cfg.Log.Level)
 	if err != nil {
@@ -142,6 +192,15 @@ func configureLogger(cfg *config.Config) {
 	}
 	zerolog.SetGlobalLevel(level)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
+}
+
+func validateSecurityConfig(cfg *config.Config) {
+	if strings.EqualFold(cfg.App.Env, "production") &&
+		strings.TrimSpace(cfg.Attendance.QRSigningSecret) == "" {
+		log.Fatal().
+			Str("env", "EXCURSION_ATTENDANCE_QR_SIGNING_SECRET").
+			Msg("missing production excursion attendance QR signing secret")
+	}
 }
 
 func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {

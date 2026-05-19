@@ -92,6 +92,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
         provider.actionState == ExcursionScheduleActionState.error &&
             provider.actionErrorMessage != null &&
             !provider.isActionConflict;
+    final isReadonly = widget.slot?.isReadonly == true;
 
     return SafeArea(
       child: DraggableScrollableSheet(
@@ -115,9 +116,11 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
               ),
               children: [
                 Text(
-                  isEditing
-                      ? l10n.guideCalendarEditSlot
-                      : l10n.guideCalendarAddSlot,
+                  isReadonly
+                      ? l10n.guideCalendarViewSlot
+                      : isEditing
+                          ? l10n.guideCalendarEditSlot
+                          : l10n.guideCalendarAddSlot,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -151,7 +154,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                       ),
                     );
                   }).toList(growable: false),
-                  onChanged: !hasOfferOptions
+                  onChanged: isReadonly || !hasOfferOptions
                       ? null
                       : (value) => setState(() {
                             _selectedOfferId = value;
@@ -182,7 +185,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                       hint: l10n.guideCalendarDateHint,
                       controller: _dateController,
                       icon: Icons.calendar_today_rounded,
-                      enabled: true,
+                      enabled: !isReadonly,
                       keyboardType: TextInputType.datetime,
                       inputFormatters: const [_DateInputFormatter()],
                       errorText: _dateError,
@@ -193,7 +196,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                       hint: l10n.guideCalendarTimeHint,
                       controller: _timeController,
                       icon: Icons.schedule_rounded,
-                      enabled: true,
+                      enabled: !isReadonly,
                       keyboardType: TextInputType.datetime,
                       inputFormatters: const [_TimeInputFormatter()],
                       errorText: _timeError,
@@ -205,7 +208,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                 TextField(
                   controller: _capacityController,
                   keyboardType: TextInputType.number,
-                  enabled: true,
+                  enabled: !isReadonly,
                   cursorColor: AppColors.accent,
                   style: const TextStyle(color: AppColors.textPrimary),
                   onChanged: (_) => _clearActionHints(clearCapacity: true),
@@ -260,6 +263,12 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                     suggestionLabel: l10n.guideCalendarSuggestNextTime,
                   ),
                 ],
+                if (isReadonly) ...[
+                  const SizedBox(height: 16),
+                  _GuideCalendarReadonlyBanner(
+                    title: l10n.guideCalendarReadonlyCompletedSlot,
+                  ),
+                ],
                 if (showActionError) ...[
                   const SizedBox(height: 14),
                   Text(
@@ -276,7 +285,7 @@ class _GuideScheduleSlotSheetState extends State<GuideScheduleSlotSheet> {
                   runSpacing: 10,
                   alignment: WrapAlignment.end,
                   children: [
-                    if (isEditing) ...[
+                    if (isEditing && !isReadonly) ...[
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.accent,
@@ -1212,6 +1221,40 @@ class _GuideCalendarConflictBanner extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GuideCalendarReadonlyBanner extends StatelessWidget {
+  const _GuideCalendarReadonlyBanner({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3A2107).withValues(alpha: 0.68),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.visibility_rounded, color: Color(0xFFD3BFA9)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFFEFDCC8),
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
             ),
           ),
         ],

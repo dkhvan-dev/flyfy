@@ -1422,6 +1422,10 @@
   "guideDashboardArchiveFailed": "Ұсынысты архивке жіберу мүмкін болмады",
   "guideDashboardPublishFailed": "Ұсынысты жариялау мүмкін болмады",
   "guideDashboardViewBooking": "Бронды ашу",
+  "guideDashboardShowAttendanceQr": "Белгілеу QR-ы",
+  "guideDashboardAttendanceParticipants": "Қатысушылар",
+  "guideDashboardAttendanceCheckedIn": "Белгіленді",
+  "guideDashboardAttendanceWaiting": "Белгілеуді күтуде",
   "guideDashboardViewDetails": "Толығырақ",
   "guideDashboardCancelExcursion": "Экскурсиядан бас тарту",
   "guideDashboardCancelTitle": "Экскурсиядан бас тартасыз ба?",
@@ -1936,6 +1940,9 @@
   "guideCalendarBooked": "Бронь бар",
   "guideCalendarClosed": "Жабық",
   "guideCalendarCancelled": "Бас тартылды",
+  "guideCalendarCompleted": "Аяқталды",
+  "guideCalendarViewSlot": "Слот мәліметтері",
+  "guideCalendarReadonlyCompletedSlot": "Бұл слот аяқталды. Ол тарих үшін күнтізбеде қалады және тек қарауға қолжетімді.",
   "guideCalendarCancelReason": "Себебі: {reason}",
   "@guideCalendarCancelReason": {
     "placeholders": {

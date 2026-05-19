@@ -139,6 +139,103 @@ void main() {
     expect(bookingCardSource, isNot(contains('imageUrl: null')));
   });
 
+  test('attendance QR opens from bottom sheet instead of inline card',
+      () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+    final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+    expect(source, contains('showModalBottomSheet<void>'));
+    expect(source, contains('class _ExcursionAttendanceQrSheet'));
+    expect(source, contains('_ExcursionAttendanceQrSheet('));
+    expect(source, isNot(contains('class _ExcursionAttendanceQrInline')));
+    expect(source, isNot(contains('_isExpanded')));
+    expect(
+      ruSource,
+      contains('"guideDashboardShowAttendanceQr": "QR отметки"'),
+    );
+    expect(ruSource, isNot(contains('Показать QR прихода')));
+  });
+
+  test('attendance QR is time-gated and shows participant statuses', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+    final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+    expect(source, contains('booking.canShowAttendanceQr(now)'));
+    expect(source, contains('class _GuideAttendanceParticipantStatusList'));
+    expect(source, contains('guideDashboardAttendanceParticipants'));
+    expect(source, contains('guideDashboardAttendanceCheckedIn'));
+    expect(source, contains('guideDashboardAttendanceWaiting'));
+    expect(source, contains('refreshGuideDashboardData'));
+    expect(
+      ruSource,
+      contains('"guideDashboardAttendanceCheckedIn": "Отметился"'),
+    );
+    expect(
+      ruSource,
+      contains('"guideDashboardAttendanceWaiting": "Ожидает отметки"'),
+    );
+  });
+
+  test('attendance QR action is full-width and countdown ticks', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+
+    final actionStart = source.indexOf('class _ExcursionAttendanceQrAction');
+    final sheetStart = source.indexOf('class _ExcursionAttendanceQrSheet');
+    expect(actionStart, isNonNegative);
+    expect(sheetStart, greaterThan(actionStart));
+    final actionSource = source.substring(actionStart, sheetStart);
+
+    expect(actionSource, contains('width: double.infinity'));
+    expect(source, contains('Timer? _countdownTimer'));
+    expect(source, contains('Timer.periodic(const Duration(seconds: 1)'));
+    expect(source, contains('_restartCountdownTicker()'));
+  });
+
+  test('attendance QR sheet is lifted above the bottom edge', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+
+    final sheetStateStart =
+        source.indexOf('class _ExcursionAttendanceQrSheetState');
+    final bookingSheetStart = source.indexOf('class _GuideBookingDetailsSheet');
+    expect(sheetStateStart, isNonNegative);
+    expect(bookingSheetStart, greaterThan(sheetStateStart));
+    final sheetSource = source.substring(sheetStateStart, bookingSheetStart);
+
+    expect(sheetSource, contains('final bottomLift ='));
+    expect(sheetSource, contains('mediaQuery.padding.bottom + 18'));
+    expect(
+      sheetSource,
+      contains('bottom: mediaQuery.viewInsets.bottom + bottomLift'),
+    );
+  });
+
+  test('booking details authors show live attendance statuses', () async {
+    final source = await File(
+      'lib/screens/excursions/guide_dashboard_screen.dart',
+    ).readAsString();
+
+    expect(source, contains('class _GuideBookingDetailsSheetState'));
+    expect(source, contains('Timer? _authorRefreshTimer'));
+    expect(source, contains('_refreshGuideDashboardAuthors'));
+    expect(source, contains('refreshGuideDashboardData'));
+    expect(source, contains('class _GuideBookingAuthorsList'));
+    expect(source, contains('Consumer<ExcursionProvider>'));
+    expect(source, contains('_effectiveGuideBookingAuthors'));
+    expect(source, contains('class _GuideBookingAttendanceStatusPill'));
+    expect(source, contains('booking.isCheckedIn'));
+    expect(source, contains('guideDashboardAttendanceCheckedIn'));
+    expect(source, contains('guideDashboardAttendanceWaiting'));
+    expect(source, contains('DateFormat.Hm(localeName)'));
+  });
+
   test(
     'profile and router expose guide dashboard only from guide profile',
     () async {

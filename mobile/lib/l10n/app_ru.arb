@@ -1422,6 +1422,10 @@
   "guideDashboardArchiveFailed": "Не удалось перенести предложение в архив",
   "guideDashboardPublishFailed": "Не удалось опубликовать предложение",
   "guideDashboardViewBooking": "Открыть бронь",
+  "guideDashboardShowAttendanceQr": "QR отметки",
+  "guideDashboardAttendanceParticipants": "Участники",
+  "guideDashboardAttendanceCheckedIn": "Отметился",
+  "guideDashboardAttendanceWaiting": "Ожидает отметки",
   "guideDashboardViewDetails": "Подробнее",
   "guideDashboardCancelExcursion": "Отменить экскурсию",
   "guideDashboardCancelTitle": "Отменить экскурсию?",
@@ -1936,6 +1940,9 @@
   "guideCalendarBooked": "Есть бронь",
   "guideCalendarClosed": "Закрыто",
   "guideCalendarCancelled": "Отменено",
+  "guideCalendarCompleted": "Завершено",
+  "guideCalendarViewSlot": "Детали слота",
+  "guideCalendarReadonlyCompletedSlot": "Этот слот уже завершен. Он остается в календаре для истории и доступен только для просмотра.",
   "guideCalendarCancelReason": "Причина: {reason}",
   "@guideCalendarCancelReason": {
     "placeholders": {

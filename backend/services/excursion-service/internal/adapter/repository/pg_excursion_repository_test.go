@@ -115,6 +115,19 @@ func TestExpireUnbookedExcursionScheduleSlotsUsesGuardedCancellation(t *testing.
 	}
 }
 
+func TestCompleteDueExcursionScheduleSlotsUsesGuardedCompletion(t *testing.T) {
+	_, err := completeDueExcursionScheduleSlots(
+		context.Background(),
+		placeholderCheckingExecutor{},
+		time.Now().UTC(),
+		"SLOT_END_REACHED",
+		100,
+	)
+	if err != nil {
+		t.Fatalf("completeDueExcursionScheduleSlots() error = %v", err)
+	}
+}
+
 func TestReserveExcursionScheduleSlotSeatsReturnsUnavailableWhenNoRows(t *testing.T) {
 	err := reserveExcursionScheduleSlotSeats(
 		context.Background(),

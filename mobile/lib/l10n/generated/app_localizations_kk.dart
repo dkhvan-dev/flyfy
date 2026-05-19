@@ -3888,6 +3888,18 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guideDashboardViewBooking => 'Бронды ашу';
 
   @override
+  String get guideDashboardShowAttendanceQr => 'Белгілеу QR-ы';
+
+  @override
+  String get guideDashboardAttendanceParticipants => 'Қатысушылар';
+
+  @override
+  String get guideDashboardAttendanceCheckedIn => 'Белгіленді';
+
+  @override
+  String get guideDashboardAttendanceWaiting => 'Белгілеуді күтуде';
+
+  @override
   String get guideDashboardViewDetails => 'Толығырақ';
 
   @override
@@ -5178,6 +5190,16 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideCalendarCancelled => 'Бас тартылды';
+
+  @override
+  String get guideCalendarCompleted => 'Аяқталды';
+
+  @override
+  String get guideCalendarViewSlot => 'Слот мәліметтері';
+
+  @override
+  String get guideCalendarReadonlyCompletedSlot =>
+      'Бұл слот аяқталды. Ол тарих үшін күнтізбеде қалады және тек қарауға қолжетімді.';
 
   @override
   String guideCalendarCancelReason(Object reason) {

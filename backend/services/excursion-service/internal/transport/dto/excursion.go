@@ -250,6 +250,38 @@ type GuideScheduleListResponse struct {
 	Items []GuideScheduleSlotResponse `json:"items"`
 }
 
+type ExcursionAttendanceQRResponse struct {
+	ScheduleSlotID string `json:"scheduleSlotId"`
+	Token          string `json:"token"`
+	ExpiresAt      string `json:"expiresAt"`
+	RefreshAt      string `json:"refreshAt"`
+}
+
+type ExcursionAttendanceSyncRequest struct {
+	Items []ExcursionAttendanceSyncItemRequest `json:"items"`
+}
+
+type ExcursionAttendanceSyncItemRequest struct {
+	ScanID          string `json:"scanId"`
+	QRToken         string `json:"qrToken"`
+	InstallationID  string `json:"installationId"`
+	ScannedAtDevice string `json:"scannedAtDevice,omitempty"`
+}
+
+type ExcursionAttendanceSyncResponse struct {
+	Items []ExcursionAttendanceSyncItemResponse `json:"items"`
+}
+
+type ExcursionAttendanceSyncItemResponse struct {
+	ScanID         string  `json:"scanId"`
+	ScheduleSlotID *string `json:"scheduleSlotId,omitempty"`
+	Status         string  `json:"status"`
+	Code           string  `json:"code"`
+	Message        string  `json:"message"`
+	CheckedInAt    *string `json:"checkedInAt,omitempty"`
+	SyncedAt       string  `json:"syncedAt"`
+}
+
 type ExcursionBookingResponse struct {
 	ID                string                   `json:"id"`
 	ProductID         string                   `json:"productId"`
@@ -286,6 +318,7 @@ type ExcursionBookingResponse struct {
 	RefundCurrency    *string                  `json:"refundCurrency,omitempty"`
 	RefundPolicyCode  *string                  `json:"refundPolicyCode,omitempty"`
 	RefundStatus      *string                  `json:"refundStatus,omitempty"`
+	CheckedInAt       *string                  `json:"checkedInAt,omitempty"`
 	Author            *ReviewAuthorResponse    `json:"author,omitempty"`
 	CreatedAt         string                   `json:"createdAt"`
 	UpdatedAt         string                   `json:"updatedAt"`

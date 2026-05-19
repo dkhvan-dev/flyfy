@@ -88,12 +88,66 @@ void main() {
       ]);
     },
   );
+
+  test('attendance QR action is available only from one hour before start', () {
+    final startsAt = DateTime.utc(2026, 5, 1, 8);
+    final booking = _booking(
+      'with-slot',
+      startsAt,
+      scheduleSlotId: 'slot-1',
+    );
+
+    expect(
+      booking.canShowAttendanceQr(DateTime.utc(2026, 5, 1, 6, 59)),
+      isFalse,
+    );
+    expect(
+      booking.canShowAttendanceQr(DateTime.utc(2026, 5, 1, 7)),
+      isTrue,
+    );
+    expect(
+      booking.canShowAttendanceQr(DateTime.utc(2026, 5, 1, 8, 30)),
+      isTrue,
+    );
+    expect(
+      _booking('without-slot', startsAt).canShowAttendanceQr(
+        DateTime.utc(2026, 5, 1, 7),
+      ),
+      isFalse,
+    );
+  });
+
+  test('booking exposes checked-in attendance status', () {
+    final checkedIn = ExcursionBookingVm.fromJson({
+      'id': 'booking-1',
+      'productId': 'product-1',
+      'offerId': 'offer-1',
+      'scheduleSlotId': 'slot-1',
+      'touristUserId': 'tourist-1',
+      'guideUserId': 'guide-user-1',
+      'guideProfileId': 'guide-profile-1',
+      'scheduledFor': '2026-05-01T08:00:00Z',
+      'adults': 1,
+      'children': 0,
+      'totalSeats': 1,
+      'totalPriceAmount': 100,
+      'currency': 'KZT',
+      'status': 'REQUESTED',
+      'checkedInAt': '2026-05-01T07:45:00Z',
+    });
+
+    expect(checkedIn.isCheckedIn, isTrue);
+    expect(checkedIn.checkedInAt, DateTime.utc(2026, 5, 1, 7, 45));
+    expect(
+        _booking('waiting', DateTime.utc(2026, 5, 1, 8)).isCheckedIn, isFalse);
+  });
 }
 
 ExcursionBookingVm _booking(
   String id,
   DateTime scheduledFor, {
   bool reviewed = false,
+  String? scheduleSlotId,
 }) {
   return ExcursionBookingVm(
     id: id,
@@ -103,6 +157,7 @@ ExcursionBookingVm _booking(
     guideUserId: 'guide-user-1',
     guideProfileId: 'guide-profile-1',
     guideDisplayName: 'Aruzhan',
+    scheduleSlotId: scheduleSlotId,
     title: 'Tour $id',
     summary: 'Summary',
     scheduledFor: scheduledFor,

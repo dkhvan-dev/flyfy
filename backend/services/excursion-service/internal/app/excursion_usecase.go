@@ -44,12 +44,17 @@ type ExcursionUseCase struct {
 	translator              port.ExcursionTranslator
 	userProfiles            port.UserProfileResolver
 	attractionRatingUpdater port.AttractionRatingUpdater
+	attendanceQRSigningKey  []byte
+	attendanceQRTTL         time.Duration
+	attendanceOfflineWindow time.Duration
 }
 
 const (
 	excursionScheduleBookingLeadTime            = 2 * time.Hour
 	excursionScheduleSetupLeadTime              = 3 * time.Hour
+	excursionAttendanceQRLeadTime               = time.Hour
 	excursionScheduleAutoCancelReasonNoBookings = "NO_BOOKINGS_BEFORE_START_2H"
+	excursionScheduleAutoCompleteReasonEnded    = "SLOT_END_REACHED"
 	attractionRatingSourceExcursionReviews      = "excursion_reviews"
 
 	excursionBookingRefundPolicyFull24H    = "FULL_REFUND_BEFORE_24H"
@@ -60,6 +65,13 @@ const (
 
 	excursionBookingRefundStatusPendingPaymentIntegration = "PENDING_PAYMENT_INTEGRATION"
 	excursionBookingRefundStatusNotRefundable             = "NOT_REFUNDABLE"
+
+	defaultExcursionAttendanceQRSigningSecret = "dev-excursion-attendance-qr-secret"
+
+	AttendanceSyncStatusSynced        = "SYNCED"
+	AttendanceSyncStatusAlreadySynced = "ALREADY_SYNCED"
+	AttendanceSyncStatusRejected      = "REJECTED"
+	AttendanceSyncStatusRetryable     = "RETRYABLE"
 )
 
 func NewExcursionUseCase(
@@ -73,10 +85,13 @@ func NewExcursionUseCase(
 		translator = translators[0]
 	}
 	return &ExcursionUseCase{
-		repo:          repo,
-		guideVerifier: guideVerifier,
-		fileManager:   fileManager,
-		translator:    translator,
+		repo:                    repo,
+		guideVerifier:           guideVerifier,
+		fileManager:             fileManager,
+		translator:              translator,
+		attendanceQRSigningKey:  []byte(defaultExcursionAttendanceQRSigningSecret),
+		attendanceQRTTL:         45 * time.Second,
+		attendanceOfflineWindow: 6 * time.Hour,
 	}
 }
 
@@ -87,6 +102,23 @@ func (u *ExcursionUseCase) WithUserProfileResolver(resolver port.UserProfileReso
 
 func (u *ExcursionUseCase) WithAttractionRatingUpdater(updater port.AttractionRatingUpdater) *ExcursionUseCase {
 	u.attractionRatingUpdater = updater
+	return u
+}
+
+func (u *ExcursionUseCase) WithAttendanceQRConfig(secret string, ttl time.Duration, offlineWindow time.Duration) *ExcursionUseCase {
+	secret = strings.TrimSpace(secret)
+	if secret == "" {
+		secret = defaultExcursionAttendanceQRSigningSecret
+	}
+	if ttl <= 0 {
+		ttl = 45 * time.Second
+	}
+	if offlineWindow <= ttl {
+		offlineWindow = 6 * time.Hour
+	}
+	u.attendanceQRSigningKey = []byte(secret)
+	u.attendanceQRTTL = ttl
+	u.attendanceOfflineWindow = offlineWindow
 	return u
 }
 
@@ -238,6 +270,30 @@ type CreateExcursionReviewInput struct {
 	BookingID   uuid.UUID
 	Rating      float64
 	Comment     string
+}
+
+type ExcursionAttendanceQRData struct {
+	ScheduleSlotID string
+	Token          string
+	ExpiresAt      time.Time
+	RefreshAt      time.Time
+}
+
+type ExcursionAttendanceProofInput struct {
+	ScanID          uuid.UUID
+	QRToken         string
+	InstallationID  string
+	ScannedAtDevice *time.Time
+}
+
+type ExcursionAttendanceSyncItemResult struct {
+	ScanID         uuid.UUID
+	ScheduleSlotID *uuid.UUID
+	Status         string
+	Code           string
+	Message        string
+	CheckedInAt    *time.Time
+	SyncedAt       time.Time
 }
 
 func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcursionInput) (*ExcursionAggregate, error) {
@@ -779,17 +835,261 @@ func (u *ExcursionUseCase) ListGuideSchedule(ctx context.Context, input ListGuid
 	if err := u.expireUnbookedExcursionScheduleSlots(ctx, now); err != nil {
 		return nil, err
 	}
+	if _, err := u.AutoCompleteDueExcursionScheduleSlots(ctx, 100); err != nil {
+		return nil, err
+	}
 	guideUserID := input.ActorUserID
 	items, err := u.repo.ListExcursionScheduleSlots(ctx, port.ExcursionScheduleFilter{
 		GuideUserID: &guideUserID,
 		From:        input.From,
 		To:          input.To,
-		Limit:       500,
+		Statuses: []enum.ExcursionScheduleSlotStatus{
+			enum.ExcursionScheduleSlotStatusAvailable,
+			enum.ExcursionScheduleSlotStatusBooked,
+			enum.ExcursionScheduleSlotStatusFull,
+			enum.ExcursionScheduleSlotStatusClosed,
+			enum.ExcursionScheduleSlotStatusCancelled,
+			enum.ExcursionScheduleSlotStatusCompleted,
+		},
+		Limit: 500,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list excursion schedule slots: %w", err)
 	}
 	return items, nil
+}
+
+func (u *ExcursionUseCase) AutoCompleteDueExcursionScheduleSlots(ctx context.Context, limit int) (int, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	count, err := u.repo.CompleteDueExcursionScheduleSlots(
+		ctx,
+		time.Now().UTC(),
+		excursionScheduleAutoCompleteReasonEnded,
+		limit,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("complete due excursion schedule slots: %w", err)
+	}
+	return count, nil
+}
+
+func (u *ExcursionUseCase) GenerateExcursionAttendanceQR(
+	ctx context.Context,
+	slotID uuid.UUID,
+	actorUserID uuid.UUID,
+) (*ExcursionAttendanceQRData, error) {
+	slot, err := u.getOwnedScheduleSlot(ctx, actorUserID, slotID)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now().UTC()
+	if !isExcursionAttendanceQRAvailable(slot, now) {
+		return nil, ErrExcursionAttendanceQRUnavailable
+	}
+
+	issue, err := model.NewExcursionAttendanceQRIssue(model.NewExcursionAttendanceQRIssueParams{
+		ScheduleSlotID: slot.ID,
+		GuideUserID:    actorUserID,
+		IssuedAt:       now,
+		TTL:            u.attendanceQRTTL,
+		OfflineWindow:  u.resolveExcursionAttendanceOfflineWindow(slot, now),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err = u.repo.CreateExcursionAttendanceQRIssue(ctx, issue); err != nil {
+		return nil, fmt.Errorf("create excursion attendance qr issue: %w", err)
+	}
+
+	token, err := signExcursionAttendanceQRToken(
+		u.attendanceQRSigningKey,
+		issue.ScheduleSlotID,
+		issue.GuideUserID,
+		issue.JTI,
+		issue.IssuedAt,
+		issue.ExpiresAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("sign excursion attendance qr: %w", err)
+	}
+
+	refreshAt := issue.ExpiresAt.Add(-10 * time.Second)
+	if !refreshAt.After(now) {
+		refreshAt = now.Add(u.attendanceQRTTL / 2)
+	}
+
+	return &ExcursionAttendanceQRData{
+		ScheduleSlotID: issue.ScheduleSlotID.String(),
+		Token:          token,
+		ExpiresAt:      issue.ExpiresAt,
+		RefreshAt:      refreshAt,
+	}, nil
+}
+
+func (u *ExcursionUseCase) SyncExcursionAttendanceProofs(
+	ctx context.Context,
+	actorUserID uuid.UUID,
+	inputs []ExcursionAttendanceProofInput,
+) ([]ExcursionAttendanceSyncItemResult, error) {
+	if actorUserID == uuid.Nil {
+		return nil, model.ErrInvalidAttendanceSyncParticipantID
+	}
+
+	results := make([]ExcursionAttendanceSyncItemResult, 0, len(inputs))
+	for _, input := range inputs {
+		results = append(results, u.syncExcursionAttendanceProof(ctx, actorUserID, input))
+	}
+	return results, nil
+}
+
+func (u *ExcursionUseCase) syncExcursionAttendanceProof(
+	ctx context.Context,
+	actorUserID uuid.UUID,
+	input ExcursionAttendanceProofInput,
+) ExcursionAttendanceSyncItemResult {
+	now := time.Now().UTC()
+	if input.ScanID == uuid.Nil {
+		return excursionAttendanceRejectedResult(input.ScanID, nil, "invalid_scan_id", "invalid attendance scan id")
+	}
+	if strings.TrimSpace(input.QRToken) == "" {
+		return excursionAttendanceRejectedResult(input.ScanID, nil, "invalid_qr", ErrExcursionAttendanceQRInvalid.Error())
+	}
+	if strings.TrimSpace(input.InstallationID) == "" {
+		return excursionAttendanceRejectedResult(input.ScanID, nil, "invalid_installation", "invalid installation id")
+	}
+
+	decoded, err := decodeAndVerifyExcursionAttendanceQR(u.attendanceQRSigningKey, input.QRToken)
+	if err != nil {
+		code := excursionAttendanceCodeForError(err)
+		return excursionAttendanceRejectedResult(input.ScanID, nil, code, err.Error())
+	}
+
+	result := ExcursionAttendanceSyncItemResult{
+		ScanID:         input.ScanID,
+		ScheduleSlotID: &decoded.ScheduleSlotID,
+		SyncedAt:       now,
+	}
+
+	err = u.repo.WithTx(ctx, func(txRepo port.ExcursionTxRepository) error {
+		existingAttempt, err := txRepo.GetExcursionAttendanceSyncAttemptByScanIDForUpdate(ctx, input.ScanID)
+		if err != nil {
+			return fmt.Errorf("get excursion attendance sync attempt: %w", err)
+		}
+		if existingAttempt != nil {
+			result = excursionAttendanceResultFromAttempt(existingAttempt)
+			return nil
+		}
+
+		issue, err := txRepo.GetExcursionAttendanceQRIssueByJTIForUpdate(ctx, decoded.JTI)
+		if err != nil {
+			return fmt.Errorf("get excursion attendance qr issue: %w", err)
+		}
+		if issue == nil ||
+			issue.ScheduleSlotID != decoded.ScheduleSlotID ||
+			issue.GuideUserID != decoded.GuideUserID {
+			return u.persistRejectedExcursionAttendanceAttempt(ctx, txRepo, input, actorUserID, decoded, "invalid_qr", ErrExcursionAttendanceQRInvalid.Error(), &result)
+		}
+		if now.After(issue.UsableUntil) {
+			return u.persistRejectedExcursionAttendanceAttempt(ctx, txRepo, input, actorUserID, decoded, "qr_expired", ErrExcursionAttendanceQRExpired.Error(), &result)
+		}
+
+		slot, err := txRepo.GetExcursionScheduleSlotByIDForUpdate(ctx, decoded.ScheduleSlotID)
+		if err != nil {
+			return fmt.Errorf("get excursion slot for attendance sync: %w", err)
+		}
+		if slot == nil || slot.GuideUserID != decoded.GuideUserID || !isExcursionAttendanceScanAllowed(slot) {
+			return u.persistRejectedExcursionAttendanceAttempt(ctx, txRepo, input, actorUserID, decoded, "slot_unavailable", ErrExcursionAttendanceQRUnavailable.Error(), &result)
+		}
+		if slot.GuideUserID == actorUserID {
+			return u.persistRejectedExcursionAttendanceAttempt(ctx, txRepo, input, actorUserID, decoded, "host_scan_not_allowed", ErrExcursionAttendanceAccessDenied.Error(), &result)
+		}
+
+		booking, err := txRepo.GetExcursionBookingByScheduleSlotAndTouristForUpdate(ctx, decoded.ScheduleSlotID, actorUserID)
+		if err != nil {
+			return fmt.Errorf("get excursion booking for attendance sync: %w", err)
+		}
+		if booking == nil || booking.TouristUserID != actorUserID {
+			return u.persistRejectedExcursionAttendanceAttempt(ctx, txRepo, input, actorUserID, decoded, "not_registered", ErrExcursionBookingNotFound.Error(), &result)
+		}
+		if booking.Status != enum.ExcursionBookingStatusRequested || booking.CancelledAt != nil {
+			return u.persistRejectedExcursionAttendanceAttempt(ctx, txRepo, input, actorUserID, decoded, "participant_not_eligible", ErrExcursionAttendanceBookingInvalid.Error(), &result)
+		}
+		if booking.CheckedInAt != nil {
+			attempt, attemptErr := model.NewExcursionAttendanceSyncAttempt(model.NewExcursionAttendanceSyncAttemptParams{
+				ScanID:          input.ScanID,
+				ScheduleSlotID:  decoded.ScheduleSlotID,
+				TouristUserID:   actorUserID,
+				QRJTI:           decoded.JTI,
+				InstallationID:  input.InstallationID,
+				ScannedAtDevice: input.ScannedAtDevice,
+				ResultStatus:    model.AttendanceSyncAttemptStatusAlreadyCheckedIn,
+				CheckedInAt:     booking.CheckedInAt,
+			})
+			if attemptErr != nil {
+				return attemptErr
+			}
+			if err = txRepo.CreateExcursionAttendanceSyncAttempt(ctx, attempt); err != nil {
+				return fmt.Errorf("create already checked-in excursion attendance attempt: %w", err)
+			}
+			result = ExcursionAttendanceSyncItemResult{
+				ScanID:         input.ScanID,
+				ScheduleSlotID: &decoded.ScheduleSlotID,
+				Status:         AttendanceSyncStatusAlreadySynced,
+				Code:           "already_checked_in",
+				Message:        ErrExcursionAttendanceAlreadyCheckedIn.Error(),
+				CheckedInAt:    booking.CheckedInAt,
+				SyncedAt:       time.Now().UTC(),
+			}
+			return nil
+		}
+
+		checkInTime := time.Now().UTC()
+		if err = booking.MarkCheckedIn(checkInTime); err != nil {
+			return err
+		}
+		if err = txRepo.UpdateExcursionBookingAttendance(ctx, booking); err != nil {
+			return fmt.Errorf("update excursion booking attendance: %w", err)
+		}
+		attempt, attemptErr := model.NewExcursionAttendanceSyncAttempt(model.NewExcursionAttendanceSyncAttemptParams{
+			ScanID:          input.ScanID,
+			ScheduleSlotID:  decoded.ScheduleSlotID,
+			TouristUserID:   actorUserID,
+			QRJTI:           decoded.JTI,
+			InstallationID:  input.InstallationID,
+			ScannedAtDevice: input.ScannedAtDevice,
+			ResultStatus:    model.AttendanceSyncAttemptStatusAccepted,
+			CheckedInAt:     &checkInTime,
+		})
+		if attemptErr != nil {
+			return attemptErr
+		}
+		if err = txRepo.CreateExcursionAttendanceSyncAttempt(ctx, attempt); err != nil {
+			return fmt.Errorf("create accepted excursion attendance attempt: %w", err)
+		}
+		result = ExcursionAttendanceSyncItemResult{
+			ScanID:         input.ScanID,
+			ScheduleSlotID: &decoded.ScheduleSlotID,
+			Status:         AttendanceSyncStatusSynced,
+			Code:           "checked_in",
+			Message:        "attendance synced",
+			CheckedInAt:    &checkInTime,
+			SyncedAt:       time.Now().UTC(),
+		}
+		return nil
+	})
+	if err != nil {
+		return ExcursionAttendanceSyncItemResult{
+			ScanID:         input.ScanID,
+			ScheduleSlotID: result.ScheduleSlotID,
+			Status:         AttendanceSyncStatusRetryable,
+			Code:           "server_error",
+			Message:        "attendance sync failed",
+			SyncedAt:       time.Now().UTC(),
+		}
+	}
+	return result
 }
 
 func (u *ExcursionUseCase) ListPublicExcursionSchedule(ctx context.Context, input ListPublicExcursionScheduleInput) ([]*model.ExcursionScheduleSlot, error) {
@@ -982,6 +1282,149 @@ func (u *ExcursionUseCase) expireUnbookedExcursionScheduleSlots(ctx context.Cont
 		return fmt.Errorf("expire unbooked excursion schedule slots: %w", err)
 	}
 	return nil
+}
+
+func (u *ExcursionUseCase) resolveExcursionAttendanceOfflineWindow(slot *model.ExcursionScheduleSlot, now time.Time) time.Duration {
+	offlineDeadline := now.Add(u.attendanceOfflineWindow)
+	if slot != nil && !slot.EndAt.IsZero() {
+		slotDeadline := slot.EndAt.UTC().Add(6 * time.Hour)
+		if slotDeadline.Before(offlineDeadline) {
+			offlineDeadline = slotDeadline
+		}
+	}
+	if !offlineDeadline.After(now.Add(u.attendanceQRTTL)) {
+		offlineDeadline = now.Add(u.attendanceQRTTL).Add(30 * time.Minute)
+	}
+	return time.Until(offlineDeadline)
+}
+
+func isExcursionAttendanceQRAvailable(slot *model.ExcursionScheduleSlot, now time.Time) bool {
+	if slot == nil || slot.BookedSeats <= 0 {
+		return false
+	}
+	now = now.UTC()
+	if slot.StartAt.IsZero() ||
+		slot.EndAt.IsZero() ||
+		now.Before(slot.StartAt.UTC().Add(-excursionAttendanceQRLeadTime)) ||
+		!now.Before(slot.EndAt.UTC()) {
+		return false
+	}
+	switch slot.Status {
+	case enum.ExcursionScheduleSlotStatusBooked,
+		enum.ExcursionScheduleSlotStatusFull,
+		enum.ExcursionScheduleSlotStatusClosed:
+		return true
+	default:
+		return false
+	}
+}
+
+func isExcursionAttendanceScanAllowed(slot *model.ExcursionScheduleSlot) bool {
+	if slot == nil {
+		return false
+	}
+	switch slot.Status {
+	case enum.ExcursionScheduleSlotStatusBooked,
+		enum.ExcursionScheduleSlotStatusFull,
+		enum.ExcursionScheduleSlotStatusClosed:
+		return true
+	default:
+		return false
+	}
+}
+
+func excursionAttendanceCodeForError(err error) string {
+	switch err {
+	case nil:
+		return ""
+	case ErrExcursionAttendanceQRVersionInvalid:
+		return "unsupported_qr"
+	case ErrExcursionAttendanceQRInvalid:
+		return "invalid_qr"
+	default:
+		if err.Error() == ErrExcursionAttendanceQRVersionInvalid.Error() {
+			return "unsupported_qr"
+		}
+		return "invalid_qr"
+	}
+}
+
+func excursionAttendanceResultFromAttempt(attempt *model.ExcursionAttendanceSyncAttempt) ExcursionAttendanceSyncItemResult {
+	status := AttendanceSyncStatusRejected
+	code := valueOr(attempt.FailureCode, "rejected")
+	message := valueOr(attempt.FailureMessage, "attendance rejected")
+	switch attempt.ResultStatus {
+	case model.AttendanceSyncAttemptStatusAccepted:
+		status = AttendanceSyncStatusSynced
+		code = "checked_in"
+		message = "attendance synced"
+	case model.AttendanceSyncAttemptStatusAlreadyCheckedIn:
+		status = AttendanceSyncStatusAlreadySynced
+		code = "already_checked_in"
+		message = ErrExcursionAttendanceAlreadyCheckedIn.Error()
+	}
+	return ExcursionAttendanceSyncItemResult{
+		ScanID:         attempt.ScanID,
+		ScheduleSlotID: &attempt.ScheduleSlotID,
+		Status:         status,
+		Code:           code,
+		Message:        message,
+		CheckedInAt:    attempt.CheckedInAt,
+		SyncedAt:       attempt.UpdatedAt,
+	}
+}
+
+func (u *ExcursionUseCase) persistRejectedExcursionAttendanceAttempt(
+	ctx context.Context,
+	txRepo port.ExcursionTxRepository,
+	input ExcursionAttendanceProofInput,
+	actorUserID uuid.UUID,
+	decoded *decodedExcursionAttendanceQR,
+	code string,
+	message string,
+	result *ExcursionAttendanceSyncItemResult,
+) error {
+	attempt, attemptErr := model.NewExcursionAttendanceSyncAttempt(model.NewExcursionAttendanceSyncAttemptParams{
+		ScanID:          input.ScanID,
+		ScheduleSlotID:  decoded.ScheduleSlotID,
+		TouristUserID:   actorUserID,
+		QRJTI:           decoded.JTI,
+		InstallationID:  input.InstallationID,
+		ScannedAtDevice: input.ScannedAtDevice,
+		ResultStatus:    model.AttendanceSyncAttemptStatusRejected,
+		FailureCode:     &code,
+		FailureMessage:  &message,
+	})
+	if attemptErr == nil {
+		if err := txRepo.CreateExcursionAttendanceSyncAttempt(ctx, attempt); err != nil {
+			return fmt.Errorf("create rejected excursion attendance attempt: %w", err)
+		}
+	}
+	*result = excursionAttendanceRejectedResult(input.ScanID, &decoded.ScheduleSlotID, code, message)
+	return nil
+}
+
+func excursionAttendanceRejectedResult(
+	scanID uuid.UUID,
+	scheduleSlotID *uuid.UUID,
+	code string,
+	message string,
+) ExcursionAttendanceSyncItemResult {
+	return ExcursionAttendanceSyncItemResult{
+		ScanID:         scanID,
+		ScheduleSlotID: scheduleSlotID,
+		Status:         AttendanceSyncStatusRejected,
+		Code:           code,
+		Message:        message,
+		SyncedAt:       time.Now().UTC(),
+	}
+}
+
+func valueOr(ptr *string, fallback string) string {
+	if ptr == nil || strings.TrimSpace(*ptr) == "" {
+		return fallback
+	}
+	return strings.TrimSpace(*ptr)
 }
 
 func slotCanAcceptExcursionBooking(slot *model.ExcursionScheduleSlot, seats int, now time.Time) bool {

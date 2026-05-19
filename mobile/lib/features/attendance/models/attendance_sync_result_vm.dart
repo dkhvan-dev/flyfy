@@ -23,9 +23,11 @@ class AttendanceSyncResultVm {
   bool get isRetryable => status == 'RETRYABLE';
 
   factory AttendanceSyncResultVm.fromJson(Map<String, dynamic> json) {
+    final subjectId =
+        json['activityId']?.toString() ?? json['scheduleSlotId']?.toString();
     return AttendanceSyncResultVm(
       scanId: json['scanId']?.toString() ?? '',
-      activityId: json['activityId']?.toString(),
+      activityId: subjectId,
       status: json['status']?.toString() ?? 'RETRYABLE',
       code: json['code']?.toString() ?? 'server_error',
       message: json['message']?.toString() ?? '',

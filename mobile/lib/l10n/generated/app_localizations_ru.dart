@@ -3877,6 +3877,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guideDashboardViewBooking => 'Открыть бронь';
 
   @override
+  String get guideDashboardShowAttendanceQr => 'QR отметки';
+
+  @override
+  String get guideDashboardAttendanceParticipants => 'Участники';
+
+  @override
+  String get guideDashboardAttendanceCheckedIn => 'Отметился';
+
+  @override
+  String get guideDashboardAttendanceWaiting => 'Ожидает отметки';
+
+  @override
   String get guideDashboardViewDetails => 'Подробнее';
 
   @override
@@ -5184,6 +5196,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideCalendarCancelled => 'Отменено';
+
+  @override
+  String get guideCalendarCompleted => 'Завершено';
+
+  @override
+  String get guideCalendarViewSlot => 'Детали слота';
+
+  @override
+  String get guideCalendarReadonlyCompletedSlot =>
+      'Этот слот уже завершен. Он остается в календаре для истории и доступен только для просмотра.';
 
   @override
   String guideCalendarCancelReason(Object reason) {

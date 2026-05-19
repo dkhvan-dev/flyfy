@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../core/network/attendance_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/app_list_screen_header.dart';
@@ -648,6 +652,8 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
         final canCancel = booking.canBeCancelledByGuide(now);
         return _GuideBookingCard(
           booking: booking,
+          now: now,
+          relatedBookings: relatedBookings,
           statusLabel: l10n.guideDashboardStatusBooked,
           actionLabel: l10n.guideDashboardViewBooking,
           secondaryActionLabel:
@@ -659,27 +665,27 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
         );
       case GuideBookingDashboardTab.cancelled:
         final booking = cancelledBookings[index];
+        final relatedBookings = _relatedBookingsFor(booking, guideBookings);
         return _GuideBookingCard(
           booking: booking,
+          now: now,
+          relatedBookings: relatedBookings,
           statusLabel: l10n.guideDashboardStatusCancelled,
           actionLabel: l10n.guideDashboardViewDetails,
           muted: true,
-          onTap: () => _openBookingDetailsSheet(
-            booking,
-            _relatedBookingsFor(booking, guideBookings),
-          ),
+          onTap: () => _openBookingDetailsSheet(booking, relatedBookings),
         );
       case GuideBookingDashboardTab.completed:
         final booking = completedBookings[index];
+        final relatedBookings = _relatedBookingsFor(booking, guideBookings);
         return _GuideBookingCard(
           booking: booking,
+          now: now,
+          relatedBookings: relatedBookings,
           statusLabel: l10n.guideDashboardStatusCompleted,
           actionLabel: l10n.guideDashboardViewDetails,
           muted: true,
-          onTap: () => _openBookingDetailsSheet(
-            booking,
-            _relatedBookingsFor(booking, guideBookings),
-          ),
+          onTap: () => _openBookingDetailsSheet(booking, relatedBookings),
         );
     }
   }
@@ -765,6 +771,40 @@ List<ExcursionBookingVm> _relatedBookingsFor(
     return _bookingCreatedAtOrEpoch(a).compareTo(_bookingCreatedAtOrEpoch(b));
   });
   return related;
+}
+
+bool _hasGuideBookingSlot(
+  ExcursionBookingVm booking,
+  List<ExcursionBookingVm> relatedBookings,
+) {
+  if ((booking.scheduleSlotId ?? '').trim().isNotEmpty) return true;
+  return relatedBookings.any(
+    (item) => (item.scheduleSlotId ?? '').trim().isNotEmpty,
+  );
+}
+
+List<ExcursionBookingVm> _effectiveGuideBookingAuthors({
+  required ExcursionBookingVm booking,
+  required List<ExcursionBookingVm> relatedBookings,
+  required List<ExcursionBookingVm> providerBookings,
+}) {
+  final fallbackBookings =
+      relatedBookings.isEmpty ? [booking] : relatedBookings;
+  final slotIds = fallbackBookings
+      .map((item) => (item.scheduleSlotId ?? '').trim())
+      .where((slotId) => slotId.isNotEmpty)
+      .toSet();
+  if (slotIds.isEmpty) return fallbackBookings;
+
+  final refreshed = providerBookings.where((item) {
+    return slotIds.contains((item.scheduleSlotId ?? '').trim());
+  }).toList(growable: false);
+  if (refreshed.isEmpty) return fallbackBookings;
+
+  refreshed.sort((a, b) {
+    return _bookingCreatedAtOrEpoch(a).compareTo(_bookingCreatedAtOrEpoch(b));
+  });
+  return refreshed;
 }
 
 DateTime _bookingCreatedAtOrEpoch(ExcursionBookingVm booking) {
@@ -1556,6 +1596,8 @@ class _GuideOfferCard extends StatelessWidget {
 class _GuideBookingCard extends StatelessWidget {
   const _GuideBookingCard({
     required this.booking,
+    required this.now,
+    required this.relatedBookings,
     required this.statusLabel,
     required this.actionLabel,
     required this.onTap,
@@ -1565,6 +1607,8 @@ class _GuideBookingCard extends StatelessWidget {
   });
 
   final ExcursionBookingVm booking;
+  final DateTime now;
+  final List<ExcursionBookingVm> relatedBookings;
   final String statusLabel;
   final String actionLabel;
   final VoidCallback onTap;
@@ -1585,6 +1629,8 @@ class _GuideBookingCard extends StatelessWidget {
       localeName: localeName,
       useExcursionListCurrencyFormat: true,
     );
+    final scheduleSlotId = (booking.scheduleSlotId ?? '').trim();
+    final showAttendanceQr = booking.canShowAttendanceQr(now);
 
     return _GuideJourneyCard(
       title: booking.title.trim().isEmpty
@@ -1601,6 +1647,12 @@ class _GuideBookingCard extends StatelessWidget {
       onTap: onTap,
       secondaryActionLabel: secondaryActionLabel,
       onSecondaryActionTap: onSecondaryActionTap,
+      actionFooter: showAttendanceQr
+          ? _ExcursionAttendanceQrAction(
+              scheduleSlotId: scheduleSlotId,
+              relatedBookings: relatedBookings,
+            )
+          : null,
       stackSecondaryAction: true,
       meta: [
         _GuideMetaData(icon: Icons.event_rounded, label: dateLabel),
@@ -1615,7 +1667,533 @@ class _GuideBookingCard extends StatelessWidget {
   }
 }
 
-class _GuideBookingDetailsSheet extends StatelessWidget {
+class _ExcursionAttendanceQrAction extends StatelessWidget {
+  const _ExcursionAttendanceQrAction({
+    required this.scheduleSlotId,
+    required this.relatedBookings,
+  });
+
+  final String scheduleSlotId;
+  final List<ExcursionBookingVm> relatedBookings;
+
+  Future<void> _openSheet(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ExcursionAttendanceQrSheet(
+        scheduleSlotId: scheduleSlotId,
+        relatedBookings: relatedBookings,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _openSheet(context),
+        icon: const Icon(Icons.qr_code_scanner),
+        label: Text(
+          l10n.guideDashboardShowAttendanceQr.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFFFD6A3),
+          side: BorderSide(
+            color: const Color(0xFFFFD6A3).withValues(alpha: 0.38),
+          ),
+          minimumSize: const Size(0, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExcursionAttendanceQrSheet extends StatefulWidget {
+  const _ExcursionAttendanceQrSheet({
+    required this.scheduleSlotId,
+    required this.relatedBookings,
+  });
+
+  final String scheduleSlotId;
+  final List<ExcursionBookingVm> relatedBookings;
+
+  @override
+  State<_ExcursionAttendanceQrSheet> createState() =>
+      _ExcursionAttendanceQrSheetState();
+}
+
+class _ExcursionAttendanceQrSheetState
+    extends State<_ExcursionAttendanceQrSheet> {
+  final AttendanceApi _attendanceApi = AttendanceApi();
+
+  Timer? _refreshTimer;
+  Timer? _countdownTimer;
+  Timer? _participantRefreshTimer;
+  bool _isLoading = false;
+  bool _isRefreshingParticipants = false;
+  String? _token;
+  String? _error;
+  DateTime? _refreshAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadQr();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_refreshParticipants());
+    });
+    _participantRefreshTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => unawaited(_refreshParticipants()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _countdownTimer?.cancel();
+    _participantRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ExcursionAttendanceQrSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.scheduleSlotId == widget.scheduleSlotId) {
+      return;
+    }
+    _refreshTimer?.cancel();
+    _countdownTimer?.cancel();
+    _isLoading = false;
+    _token = null;
+    _error = null;
+    _refreshAt = null;
+    unawaited(_loadQr());
+  }
+
+  Future<void> _refreshParticipants() async {
+    if (!mounted || _isRefreshingParticipants) return;
+    _isRefreshingParticipants = true;
+    try {
+      await context.read<ExcursionProvider>().refreshGuideDashboardData();
+    } finally {
+      _isRefreshingParticipants = false;
+    }
+  }
+
+  Future<void> _loadQr() async {
+    _refreshTimer?.cancel();
+    _countdownTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
+
+    try {
+      final qr =
+          await _attendanceApi.getExcursionAttendanceQr(widget.scheduleSlotId);
+      if (!mounted) return;
+      setState(() {
+        _token = qr.token;
+        _refreshAt = qr.refreshAt;
+        _isLoading = false;
+      });
+      _scheduleRefresh(qr.refreshAt);
+      _restartCountdownTicker();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'failed';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _scheduleRefresh(DateTime refreshAt) {
+    _refreshTimer?.cancel();
+    final delay = refreshAt.difference(DateTime.now().toUtc());
+    _refreshTimer = Timer(
+      delay.isNegative ? const Duration(seconds: 1) : delay,
+      _loadQr,
+    );
+  }
+
+  void _restartCountdownTicker() {
+    _countdownTimer?.cancel();
+    if (_refreshAt == null) return;
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+  }
+
+  String _countdownLabel(AppLocalizations l10n) {
+    final refreshAt = _refreshAt;
+    if (refreshAt == null) return '';
+    final remaining = refreshAt.difference(DateTime.now().toUtc());
+    if (remaining.isNegative) {
+      return l10n.activityAttendanceQrRefreshing;
+    }
+    return l10n.activityAttendanceQrExpiresIn(
+      remaining.inSeconds.clamp(0, 999).toString(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final mediaQuery = MediaQuery.of(context);
+    final compact = mediaQuery.size.width < 390;
+    final bottomLift = mediaQuery.padding.bottom + 18;
+
+    return AppDismissibleModalSheet(
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.only(
+          left: 12,
+          right: 12,
+          bottom: mediaQuery.viewInsets.bottom + bottomLift,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 520,
+            maxHeight: mediaQuery.size.height * 0.82,
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xF92A190D), Color(0xFA180E08)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.34),
+                  blurRadius: 36,
+                  offset: const Offset(0, -18),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 16 : 20,
+                14,
+                compact ? 16 : 20,
+                22,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 52,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.guideDashboardShowAttendanceQr,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: compact ? 21 : 23,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      IconButton(
+                        onPressed: () => Navigator.maybePop(context),
+                        icon: const Icon(Icons.close_rounded),
+                        color: const Color(0xFFD3BFA9),
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).closeButtonTooltip,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _buildQrBody(l10n),
+                  const SizedBox(height: 18),
+                  _GuideAttendanceParticipantStatusList(
+                    scheduleSlotId: widget.scheduleSlotId,
+                    fallbackBookings: widget.relatedBookings,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQrBody(AppLocalizations l10n) {
+    if (_isLoading) {
+      return const SizedBox(
+        height: 180,
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.accent),
+        ),
+      );
+    }
+
+    if (_error != null || (_token ?? '').isEmpty) {
+      return Column(
+        children: [
+          const Icon(
+            Icons.qr_code_2_rounded,
+            color: AppColors.accent,
+            size: 34,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            l10n.activityAttendanceQrLoadFailed,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(onPressed: _loadQr, child: Text(l10n.retryButton)),
+        ],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final qrSize = (constraints.maxWidth - 40).clamp(160.0, 220.0);
+        return Column(
+          children: [
+            Container(
+              width: qrSize,
+              height: qrSize,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: QrImageView(
+                data: _token!,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: Colors.black,
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  color: Colors.black,
+                  dataModuleShape: QrDataModuleShape.square,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _countdownLabel(l10n),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFFD3BFA9),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _GuideAttendanceParticipantStatusList extends StatelessWidget {
+  const _GuideAttendanceParticipantStatusList({
+    required this.scheduleSlotId,
+    required this.fallbackBookings,
+  });
+
+  final String scheduleSlotId;
+  final List<ExcursionBookingVm> fallbackBookings;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).toString();
+
+    return Consumer<ExcursionProvider>(
+      builder: (context, provider, _) {
+        final participants = provider.myGuideExcursionBookings.where((booking) {
+          return !booking.isCancelled &&
+              (booking.scheduleSlotId ?? '').trim() == scheduleSlotId;
+        }).toList(growable: false);
+        final effectiveParticipants = participants.isEmpty
+            ? fallbackBookings
+                .where((booking) => !booking.isCancelled)
+                .toList(growable: false)
+            : participants;
+        if (effectiveParticipants.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.guideDashboardAttendanceParticipants,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (final booking in effectiveParticipants) ...[
+                _GuideAttendanceParticipantRow(
+                  booking: booking,
+                  localeName: localeName,
+                ),
+                if (booking != effectiveParticipants.last)
+                  const SizedBox(height: 10),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _GuideAttendanceParticipantRow extends StatelessWidget {
+  const _GuideAttendanceParticipantRow({
+    required this.booking,
+    required this.localeName,
+  });
+
+  final ExcursionBookingVm booking;
+  final String localeName;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final checkedIn = booking.isCheckedIn;
+    final statusColor =
+        checkedIn ? const Color(0xFF77D88B) : const Color(0xFFFFD6A3);
+    final statusLabel = checkedIn
+        ? l10n.guideDashboardAttendanceCheckedIn
+        : l10n.guideDashboardAttendanceWaiting;
+    final checkedInAt = booking.checkedInAt;
+    final timeLabel = checkedInAt == null
+        ? null
+        : DateFormat.Hm(localeName).format(checkedInAt.toLocal());
+
+    return Row(
+      children: [
+        Icon(
+          checkedIn ? Icons.check_circle_rounded : Icons.schedule_rounded,
+          color: statusColor,
+          size: 20,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _guideAttendanceParticipantName(booking),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                l10n.myExcursionsGuests(booking.totalSeats),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFD3BFA9),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: statusColor.withValues(alpha: 0.28)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            child: Text(
+              timeLabel == null ? statusLabel : '$statusLabel · $timeLabel',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: statusColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _guideAttendanceParticipantName(ExcursionBookingVm booking) {
+  final displayName = booking.author.displayName?.trim();
+  if (displayName != null && displayName.isNotEmpty) {
+    return displayName;
+  }
+  final userId = booking.touristUserId.trim();
+  if (userId.isNotEmpty) {
+    return userId;
+  }
+  return booking.id;
+}
+
+class _GuideBookingDetailsSheet extends StatefulWidget {
   const _GuideBookingDetailsSheet({
     required this.booking,
     required this.relatedBookings,
@@ -1625,12 +2203,56 @@ class _GuideBookingDetailsSheet extends StatelessWidget {
   final List<ExcursionBookingVm> relatedBookings;
 
   @override
+  State<_GuideBookingDetailsSheet> createState() =>
+      _GuideBookingDetailsSheetState();
+}
+
+class _GuideBookingDetailsSheetState extends State<_GuideBookingDetailsSheet> {
+  Timer? _authorRefreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_refreshGuideDashboardAuthors());
+    });
+    _authorRefreshTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => unawaited(_refreshGuideDashboardAuthors()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _authorRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshGuideDashboardAuthors() async {
+    if (!mounted ||
+        !_hasGuideBookingSlot(widget.booking, widget.relatedBookings)) {
+      return;
+    }
+    await context.read<ExcursionProvider>().refreshGuideDashboardData();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeName = Localizations.localeOf(context).toString();
     final mediaQuery = MediaQuery.of(context);
     final compact = mediaQuery.size.width < 390;
-    final bookings = relatedBookings.isEmpty ? [booking] : relatedBookings;
+    final providerBookings =
+        context.watch<ExcursionProvider>().myGuideExcursionBookings;
+    final bookings = _effectiveGuideBookingAuthors(
+      booking: widget.booking,
+      relatedBookings: widget.relatedBookings,
+      providerBookings: providerBookings,
+    );
+    final primaryBooking = bookings.firstWhere(
+      (item) => item.id == widget.booking.id,
+      orElse: () => widget.booking,
+    );
     final adults = bookings.fold<int>(0, (sum, item) => sum + item.adults);
     final children = bookings.fold<int>(0, (sum, item) => sum + item.children);
     final totalSeats = bookings.fold<int>(
@@ -1643,7 +2265,7 @@ class _GuideBookingDetailsSheet extends StatelessWidget {
     );
     final dateLabel = DateFormat.yMMMd(
       localeName,
-    ).add_Hm().format(booking.scheduledFor.toLocal());
+    ).add_Hm().format(primaryBooking.scheduledFor.toLocal());
     final totalPrice = formatLocalizedExcursionMoney(
       amount: totalAmount,
       currency: _primaryCurrency(bookings),
@@ -1716,9 +2338,9 @@ class _GuideBookingDetailsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    booking.title.trim().isEmpty
+                    primaryBooking.title.trim().isEmpty
                         ? l10n.myExcursionsUntitled
-                        : booking.title.trim(),
+                        : primaryBooking.title.trim(),
                     style: const TextStyle(
                       color: Color(0xFFD3BFA9),
                       fontSize: 14,
@@ -1746,8 +2368,8 @@ class _GuideBookingDetailsSheet extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 22),
-                  if (booking.isCancelled) ...[
-                    _GuideBookingCancellationPanel(booking: booking),
+                  if (primaryBooking.isCancelled) ...[
+                    _GuideBookingCancellationPanel(booking: primaryBooking),
                     const SizedBox(height: 22),
                   ],
                   _GuideBookingGuestBreakdown(
@@ -1756,19 +2378,10 @@ class _GuideBookingDetailsSheet extends StatelessWidget {
                     totalSeats: totalSeats,
                   ),
                   const SizedBox(height: 22),
-                  Text(
-                    l10n.guideDashboardBookingAuthorsTitle,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  _GuideBookingAuthorsList(
+                    bookings: bookings,
+                    localeName: localeName,
                   ),
-                  const SizedBox(height: 12),
-                  for (final item in bookings) ...[
-                    _GuideBookingAuthorRow(booking: item),
-                    if (item != bookings.last) const SizedBox(height: 10),
-                  ],
                 ],
               ),
             ),
@@ -1824,6 +2437,44 @@ class _GuideBookingGuestBreakdown extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GuideBookingAuthorsList extends StatelessWidget {
+  const _GuideBookingAuthorsList({
+    required this.bookings,
+    required this.localeName,
+  });
+
+  final List<ExcursionBookingVm> bookings;
+  final String localeName;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Consumer<ExcursionProvider>(
+      builder: (context, _, __) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.guideDashboardBookingAuthorsTitle,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final item in bookings) ...[
+              _GuideBookingAuthorRow(booking: item, localeName: localeName),
+              if (item != bookings.last) const SizedBox(height: 10),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -2191,13 +2842,16 @@ class _GuideCancelExcursionSheetState
 }
 
 class _GuideBookingAuthorRow extends StatelessWidget {
-  const _GuideBookingAuthorRow({required this.booking});
+  const _GuideBookingAuthorRow({
+    required this.booking,
+    required this.localeName,
+  });
 
   final ExcursionBookingVm booking;
+  final String localeName;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final displayName = booking.author.resolvedDisplayName.isNotEmpty
         ? booking.author.resolvedDisplayName
         : booking.touristUserId;
@@ -2241,25 +2895,105 @@ class _GuideBookingAuthorRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  l10n.guideDashboardGuestBreakdown(
-                    booking.adults,
-                    booking.children,
-                    booking.totalSeats,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFD3BFA9),
-                    fontSize: 12,
-                    height: 1.25,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                _GuideBookingAuthorGuestsText(booking: booking),
               ],
             ),
           ),
+          const SizedBox(width: 12),
+          _GuideBookingAttendanceStatusPill(
+            booking: booking,
+            localeName: localeName,
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _GuideBookingAuthorGuestsText extends StatelessWidget {
+  const _GuideBookingAuthorGuestsText({required this.booking});
+
+  final ExcursionBookingVm booking;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Text(
+      l10n.guideDashboardGuestBreakdown(
+        booking.adults,
+        booking.children,
+        booking.totalSeats,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        color: Color(0xFFD3BFA9),
+        fontSize: 12,
+        height: 1.25,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+}
+
+class _GuideBookingAttendanceStatusPill extends StatelessWidget {
+  const _GuideBookingAttendanceStatusPill({
+    required this.booking,
+    required this.localeName,
+  });
+
+  final ExcursionBookingVm booking;
+  final String localeName;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final checkedIn = booking.isCheckedIn;
+    final statusColor =
+        checkedIn ? const Color(0xFF77D88B) : const Color(0xFFFFD6A3);
+    final statusLabel = checkedIn
+        ? l10n.guideDashboardAttendanceCheckedIn
+        : l10n.guideDashboardAttendanceWaiting;
+    final checkedInAt = booking.checkedInAt;
+    final timeLabel = checkedInAt == null
+        ? null
+        : DateFormat.Hm(localeName).format(checkedInAt.toLocal());
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 178),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: statusColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: statusColor.withValues(alpha: 0.28)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                checkedIn ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                color: statusColor,
+                size: 16,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  timeLabel == null ? statusLabel : '$statusLabel · $timeLabel',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -2349,6 +3083,7 @@ class _GuideJourneyCard extends StatelessWidget {
     this.categorySlug,
     this.secondaryActionLabel,
     this.onSecondaryActionTap,
+    this.actionFooter,
     this.subtitle = '',
     this.muted = false,
     this.stackSecondaryAction = false,
@@ -2364,6 +3099,7 @@ class _GuideJourneyCard extends StatelessWidget {
   final String? categorySlug;
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryActionTap;
+  final Widget? actionFooter;
   final String subtitle;
   final bool muted;
   final bool stackSecondaryAction;
@@ -2542,6 +3278,10 @@ class _GuideJourneyCard extends StatelessWidget {
                         );
                       },
                     ),
+                    if (actionFooter != null) ...[
+                      const SizedBox(height: 14),
+                      actionFooter!,
+                    ],
                   ],
                 ),
               ),

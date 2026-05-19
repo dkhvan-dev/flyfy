@@ -12,8 +12,10 @@ class ActivityAttendanceQrVm {
   final DateTime refreshAt;
 
   factory ActivityAttendanceQrVm.fromJson(Map<String, dynamic> json) {
+    final subjectId =
+        json['activityId']?.toString() ?? json['scheduleSlotId']?.toString();
     return ActivityAttendanceQrVm(
-      activityId: json['activityId']?.toString() ?? '',
+      activityId: subjectId ?? '',
       token: json['token']?.toString() ?? '',
       expiresAt:
           DateTime.tryParse(json['expiresAt']?.toString() ?? '')?.toUtc() ??

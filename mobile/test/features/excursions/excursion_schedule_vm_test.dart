@@ -75,6 +75,24 @@ void main() {
     expect(bookableSlot.isBookableForBooking(1, now: now), isTrue);
   });
 
+  test('completed schedule slot parses as readonly non-bookable history', () {
+    final slot = ExcursionScheduleSlotVm.fromJson({
+      'id': 'slot-completed',
+      'offerId': 'offer-1',
+      'productId': 'product-1',
+      'startAt': '2026-06-01T08:00:00Z',
+      'endAt': '2026-06-01T10:00:00Z',
+      'timezone': 'Asia/Almaty',
+      'capacity': 6,
+      'bookedSeats': 3,
+      'status': 'COMPLETED',
+    });
+
+    expect(slot.status, ExcursionScheduleSlotStatus.completed);
+    expect(slot.isBookable, isFalse);
+    expect(slot.isReadonly, isTrue);
+  });
+
   test('update slot request serializes editable fields as UTC ISO', () {
     final request = UpdateExcursionScheduleSlotRequest(
       offerId: ' offer-2 ',

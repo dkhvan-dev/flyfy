@@ -54,6 +54,7 @@ type ExcursionBooking struct {
 	RefundCurrency   *string
 	RefundPolicyCode *string
 	RefundStatus     *string
+	CheckedInAt      *time.Time
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -180,6 +181,16 @@ func (b *ExcursionBooking) Cancel(
 	b.RefundStatus = NormalizeOptionalString(&normalizedRefundStatus)
 	b.UpdatedAt = now
 
+	return b.Validate()
+}
+
+func (b *ExcursionBooking) MarkCheckedIn(checkedInAt time.Time) error {
+	if b.Status != enum.ExcursionBookingStatusRequested || b.CancelledAt != nil {
+		return ErrInvalidExcursionBookingStatus
+	}
+	ts := checkedInAt.UTC()
+	b.CheckedInAt = &ts
+	b.UpdatedAt = ts
 	return b.Validate()
 }
 

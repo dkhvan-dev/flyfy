@@ -43,6 +43,7 @@ const (
 	ExcursionScheduleSlotStatusFull      ExcursionScheduleSlotStatus = "FULL"
 	ExcursionScheduleSlotStatusClosed    ExcursionScheduleSlotStatus = "CLOSED"
 	ExcursionScheduleSlotStatusCancelled ExcursionScheduleSlotStatus = "CANCELLED"
+	ExcursionScheduleSlotStatusCompleted ExcursionScheduleSlotStatus = "COMPLETED"
 )
 
 func (value ExcursionScheduleSlotStatus) IsValid() bool {
@@ -51,7 +52,8 @@ func (value ExcursionScheduleSlotStatus) IsValid() bool {
 		ExcursionScheduleSlotStatusBooked,
 		ExcursionScheduleSlotStatusFull,
 		ExcursionScheduleSlotStatusClosed,
-		ExcursionScheduleSlotStatusCancelled:
+		ExcursionScheduleSlotStatusCancelled,
+		ExcursionScheduleSlotStatusCompleted:
 		return true
 	default:
 		return false

@@ -287,3 +287,15 @@ func (s *excursionOffersRepoStub) ReserveExcursionScheduleSlotSeats(context.Cont
 func (s *excursionOffersRepoStub) ExpireUnbookedExcursionScheduleSlots(context.Context, time.Time, string) error {
 	return nil
 }
+
+func (s *excursionOffersRepoStub) CompleteDueExcursionScheduleSlots(context.Context, time.Time, string, int) (int, error) {
+	return 0, nil
+}
+
+func (s *excursionOffersRepoStub) CreateExcursionAttendanceQRIssue(context.Context, *model.ExcursionAttendanceQRIssue) error {
+	return nil
+}
+
+func (s *excursionOffersRepoStub) WithTx(context.Context, func(port.ExcursionTxRepository) error) error {
+	return nil
+}

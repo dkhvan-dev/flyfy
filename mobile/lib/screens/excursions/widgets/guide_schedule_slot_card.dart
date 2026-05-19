@@ -16,6 +16,8 @@ Color guideScheduleStatusColor(ExcursionScheduleSlotVm slot) {
       return const Color(0xFF7A88FF);
     case ExcursionScheduleSlotStatus.cancelled:
       return const Color(0xFF8B8178);
+    case ExcursionScheduleSlotStatus.completed:
+      return const Color(0xFF6F8F7B);
   }
 }
 
@@ -195,5 +197,7 @@ String _statusLabel(
       return l10n.guideCalendarClosed;
     case ExcursionScheduleSlotStatus.cancelled:
       return l10n.guideCalendarCancelled;
+    case ExcursionScheduleSlotStatus.completed:
+      return l10n.guideCalendarCompleted;
   }
 }

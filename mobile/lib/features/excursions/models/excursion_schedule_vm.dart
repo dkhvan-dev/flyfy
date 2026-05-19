@@ -3,7 +3,8 @@ enum ExcursionScheduleSlotStatus {
   booked,
   full,
   closed,
-  cancelled;
+  cancelled,
+  completed;
 
   static ExcursionScheduleSlotStatus fromWire(String? value) {
     return switch ((value ?? '').trim().toUpperCase()) {
@@ -12,6 +13,7 @@ enum ExcursionScheduleSlotStatus {
       'FULL' => ExcursionScheduleSlotStatus.full,
       'CLOSED' => ExcursionScheduleSlotStatus.closed,
       'CANCELLED' => ExcursionScheduleSlotStatus.cancelled,
+      'COMPLETED' => ExcursionScheduleSlotStatus.completed,
       _ => ExcursionScheduleSlotStatus.closed,
     };
   }
@@ -79,6 +81,8 @@ class ExcursionScheduleSlotVm {
   bool get isBookable =>
       status == ExcursionScheduleSlotStatus.available ||
       status == ExcursionScheduleSlotStatus.booked;
+
+  bool get isReadonly => status == ExcursionScheduleSlotStatus.completed;
 
   factory ExcursionScheduleSlotVm.fromJson(Map<String, dynamic> json) {
     return ExcursionScheduleSlotVm(

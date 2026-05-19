@@ -27,6 +27,26 @@ func NewPGExcursionRepository(pool *pgxpool.Pool) *PGExcursionRepository {
 	return &PGExcursionRepository{pool: pool}
 }
 
+type PGExcursionTxRepository struct {
+	tx pgx.Tx
+}
+
+func (r *PGExcursionRepository) WithTx(ctx context.Context, fn func(repo port.ExcursionTxRepository) error) error {
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin excursion transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if err = fn(&PGExcursionTxRepository{tx: tx}); err != nil {
+		return err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit excursion transaction: %w", err)
+	}
+	return nil
+}
+
 type GuideReviewStats struct {
 	GuideProfileID uuid.UUID
 	GuideUserID    uuid.UUID
@@ -148,6 +168,7 @@ const excursionScheduleSlotSelectColumns = `
 	start_at, end_at, timezone,
 	capacity, booked_seats,
 	status, cancel_reason, closed_at, cancelled_at,
+	completed_at, completion_reason,
 	created_at, updated_at
 `
 
@@ -158,6 +179,7 @@ const excursionScheduleSlotSelectColumnsWithTitle = `
 	s.start_at, s.end_at, s.timezone,
 	s.capacity, s.booked_seats,
 	s.status, s.cancel_reason, s.closed_at, s.cancelled_at,
+	s.completed_at, s.completion_reason,
 	s.created_at, s.updated_at,
 	COALESCE(NULLIF(o.title, ''), NULLIF(p.title, ''), '')
 `
@@ -1279,7 +1301,7 @@ func insertExcursionBooking(ctx context.Context, exec dbExecutor, item *model.Ex
 			unit_price_amount, service_fee_amount, total_price_amount, currency,
 			status, idempotency_key, cancelled_at, cancelled_by, cancel_reason,
 			refund_percent, refund_amount, refund_currency, refund_policy_code, refund_status,
-			created_at, updated_at
+			checked_in_at, created_at, updated_at
 		) VALUES (
 			$1,
 			$2, $3, $4, $5,
@@ -1288,7 +1310,7 @@ func insertExcursionBooking(ctx context.Context, exec dbExecutor, item *model.Ex
 			$13, $14, $15, $16,
 			$17, $18, $19, $20, $21,
 			$22, $23, $24, $25, $26,
-			$27, $28
+			$27, $28, $29
 		)
 	`
 	var cancelledBy *string
@@ -1325,6 +1347,7 @@ func insertExcursionBooking(ctx context.Context, exec dbExecutor, item *model.Ex
 		item.RefundCurrency,
 		item.RefundPolicyCode,
 		item.RefundStatus,
+		item.CheckedInAt,
 		item.CreatedAt,
 		item.UpdatedAt,
 	)
@@ -1347,7 +1370,7 @@ func (r *PGExcursionRepository) ListExcursionBookings(ctx context.Context, filte
 			b.unit_price_amount, b.service_fee_amount, b.total_price_amount, b.currency,
 			b.status, b.idempotency_key, b.cancelled_at, b.cancelled_by, b.cancel_reason,
 			b.refund_percent, b.refund_amount, b.refund_currency, b.refund_policy_code, b.refund_status,
-			b.created_at, b.updated_at,
+			b.checked_in_at, b.created_at, b.updated_at,
 			COALESCE(NULLIF(o.title, ''), p.title),
 			COALESCE(NULLIF(o.summary, ''), p.summary),
 			p.landmark_id, p.landmark_name, p.category_slug, p.country_code, p.city_name,
@@ -1420,7 +1443,7 @@ func (r *PGExcursionRepository) GetExcursionBookingByID(ctx context.Context, boo
 			unit_price_amount, service_fee_amount, total_price_amount, currency,
 			status, idempotency_key, cancelled_at, cancelled_by, cancel_reason,
 			refund_percent, refund_amount, refund_currency, refund_policy_code, refund_status,
-			created_at, updated_at
+			checked_in_at, created_at, updated_at
 		FROM excursion_bookings
 		WHERE id = $1
 	`
@@ -1448,7 +1471,7 @@ func (r *PGExcursionRepository) GetExcursionBookingByTouristIDAndIdempotencyKey(
 			unit_price_amount, service_fee_amount, total_price_amount, currency,
 			status, idempotency_key, cancelled_at, cancelled_by, cancel_reason,
 			refund_percent, refund_amount, refund_currency, refund_policy_code, refund_status,
-			created_at, updated_at
+			checked_in_at, created_at, updated_at
 		FROM excursion_bookings
 		WHERE tourist_user_id = $1 AND idempotency_key = $2
 	`
@@ -1514,6 +1537,138 @@ func (r *PGExcursionRepository) CancelExcursionBooking(ctx context.Context, item
 	return nil
 }
 
+func (r *PGExcursionTxRepository) GetExcursionAttendanceQRIssueByJTIForUpdate(
+	ctx context.Context,
+	jti uuid.UUID,
+) (*model.ExcursionAttendanceQRIssue, error) {
+	const query = `
+		SELECT jti, schedule_slot_id, guide_user_id, issued_at, expires_at, usable_until, created_at
+		FROM excursion_attendance_qr_issues
+		WHERE jti = $1
+		FOR UPDATE
+	`
+	item, err := scanExcursionAttendanceQRIssue(r.tx.QueryRow(ctx, query, jti))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion attendance qr issue for update: %w", err)
+	}
+	return item, nil
+}
+
+func (r *PGExcursionTxRepository) GetExcursionAttendanceSyncAttemptByScanIDForUpdate(
+	ctx context.Context,
+	scanID uuid.UUID,
+) (*model.ExcursionAttendanceSyncAttempt, error) {
+	const query = `
+		SELECT
+			scan_id, schedule_slot_id, tourist_user_id, qr_jti, installation_id,
+			scanned_at_device, result_status, failure_code, failure_message, checked_in_at,
+			created_at, updated_at
+		FROM excursion_attendance_sync_attempts
+		WHERE scan_id = $1
+		FOR UPDATE
+	`
+	item, err := scanExcursionAttendanceSyncAttempt(r.tx.QueryRow(ctx, query, scanID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion attendance sync attempt for update: %w", err)
+	}
+	return item, nil
+}
+
+func (r *PGExcursionTxRepository) GetExcursionBookingByScheduleSlotAndTouristForUpdate(
+	ctx context.Context,
+	slotID uuid.UUID,
+	touristUserID uuid.UUID,
+) (*model.ExcursionBooking, error) {
+	const query = `
+		SELECT
+			id,
+			product_id, offer_id, schedule_slot_id, legacy_excursion_id,
+			guide_profile_id, guide_user_id, tourist_user_id,
+			scheduled_for, adults, children, total_seats,
+			unit_price_amount, service_fee_amount, total_price_amount, currency,
+			status, idempotency_key, cancelled_at, cancelled_by, cancel_reason,
+			refund_percent, refund_amount, refund_currency, refund_policy_code, refund_status,
+			checked_in_at, created_at, updated_at
+		FROM excursion_bookings
+		WHERE schedule_slot_id = $1
+		  AND tourist_user_id = $2
+		ORDER BY created_at ASC
+		LIMIT 1
+		FOR UPDATE
+	`
+	item, err := scanExcursionBooking(r.tx.QueryRow(ctx, query, slotID, touristUserID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion booking by slot and tourist for update: %w", err)
+	}
+	return item, nil
+}
+
+func (r *PGExcursionTxRepository) CreateExcursionAttendanceSyncAttempt(
+	ctx context.Context,
+	item *model.ExcursionAttendanceSyncAttempt,
+) error {
+	const query = `
+		INSERT INTO excursion_attendance_sync_attempts (
+			scan_id, schedule_slot_id, tourist_user_id, qr_jti, installation_id,
+			scanned_at_device, result_status, failure_code, failure_message, checked_in_at,
+			created_at, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5,
+			$6, $7, $8, $9, $10,
+			$11, $12
+		)
+	`
+	if _, err := r.tx.Exec(
+		ctx,
+		query,
+		item.ScanID,
+		item.ScheduleSlotID,
+		item.TouristUserID,
+		item.QRJTI,
+		item.InstallationID,
+		item.ScannedAtDevice,
+		item.ResultStatus,
+		item.FailureCode,
+		item.FailureMessage,
+		item.CheckedInAt,
+		item.CreatedAt,
+		item.UpdatedAt,
+	); err != nil {
+		return fmt.Errorf("insert excursion attendance sync attempt: %w", err)
+	}
+	return nil
+}
+
+func (r *PGExcursionTxRepository) UpdateExcursionBookingAttendance(
+	ctx context.Context,
+	item *model.ExcursionBooking,
+) error {
+	const query = `
+		UPDATE excursion_bookings
+		SET checked_in_at = $2, updated_at = $3
+		WHERE id = $1
+		  AND status = 'REQUESTED'
+		  AND cancelled_at IS NULL
+	`
+	tag, err := r.tx.Exec(ctx, query, item.ID, item.CheckedInAt, item.UpdatedAt)
+	if err != nil {
+		return fmt.Errorf("update excursion booking attendance: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return port.ErrExcursionBookingNotEditable
+	}
+	return nil
+}
+
 func (r *PGExcursionRepository) CreateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error {
 	return insertExcursionScheduleSlot(ctx, r.pool, slot)
 }
@@ -1555,7 +1710,9 @@ func (r *PGExcursionRepository) UpdateExcursionScheduleSlot(ctx context.Context,
 			cancel_reason = $11,
 			closed_at = $12,
 			cancelled_at = $13,
-			updated_at = $14
+			completed_at = $14,
+			completion_reason = $15,
+			updated_at = $16
 		WHERE id = $1
 	`
 	_, err := r.pool.Exec(
@@ -1574,6 +1731,8 @@ func (r *PGExcursionRepository) UpdateExcursionScheduleSlot(ctx context.Context,
 		slot.CancelReason,
 		slot.ClosedAt,
 		slot.CancelledAt,
+		slot.CompletedAt,
+		slot.CompletionReason,
 		slot.UpdatedAt,
 	)
 	if err != nil {
@@ -1602,6 +1761,18 @@ func (r *PGExcursionRepository) GetExcursionScheduleSlotByID(ctx context.Context
 			return nil, nil
 		}
 		return nil, fmt.Errorf("get excursion schedule slot: %w", err)
+	}
+	return slot, nil
+}
+
+func (r *PGExcursionTxRepository) GetExcursionScheduleSlotByIDForUpdate(ctx context.Context, slotID uuid.UUID) (*model.ExcursionScheduleSlot, error) {
+	query := "SELECT " + excursionScheduleSlotSelectColumns + " FROM excursion_schedule_slots WHERE id = $1 FOR UPDATE"
+	slot, err := scanExcursionScheduleSlot(r.tx.QueryRow(ctx, query, slotID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get excursion schedule slot for update: %w", err)
 	}
 	return slot, nil
 }
@@ -1683,6 +1854,33 @@ func (r *PGExcursionRepository) ReserveExcursionScheduleSlotSeats(ctx context.Co
 
 func (r *PGExcursionRepository) ExpireUnbookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, reason string) error {
 	return expireUnbookedExcursionScheduleSlots(ctx, r.pool, cutoff, reason)
+}
+
+func (r *PGExcursionRepository) CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) (int, error) {
+	return completeDueExcursionScheduleSlots(ctx, r.pool, before, reason, limit)
+}
+
+func (r *PGExcursionRepository) CreateExcursionAttendanceQRIssue(ctx context.Context, item *model.ExcursionAttendanceQRIssue) error {
+	const query = `
+		INSERT INTO excursion_attendance_qr_issues (
+			jti, schedule_slot_id, guide_user_id,
+			issued_at, expires_at, usable_until, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+	if _, err := r.pool.Exec(
+		ctx,
+		query,
+		item.JTI,
+		item.ScheduleSlotID,
+		item.GuideUserID,
+		item.IssuedAt,
+		item.ExpiresAt,
+		item.UsableUntil,
+		item.CreatedAt,
+	); err != nil {
+		return fmt.Errorf("insert excursion attendance qr issue: %w", err)
+	}
+	return nil
 }
 
 func (r *PGExcursionRepository) CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
@@ -1880,6 +2078,7 @@ func insertExcursionScheduleSlot(ctx context.Context, exec dbExecutor, slot *mod
 			start_at, end_at, timezone,
 			capacity, booked_seats,
 			status, cancel_reason, closed_at, cancelled_at,
+			completed_at, completion_reason,
 			created_at, updated_at
 		) VALUES (
 			$1, $2,
@@ -1888,7 +2087,8 @@ func insertExcursionScheduleSlot(ctx context.Context, exec dbExecutor, slot *mod
 			$8, $9, $10,
 			$11, $12,
 			$13, $14, $15, $16,
-			$17, $18
+			$17, $18,
+			$19, $20
 		)
 	`
 	_, err := exec.Exec(
@@ -1910,6 +2110,8 @@ func insertExcursionScheduleSlot(ctx context.Context, exec dbExecutor, slot *mod
 		slot.CancelReason,
 		slot.ClosedAt,
 		slot.CancelledAt,
+		slot.CompletedAt,
+		slot.CompletionReason,
 		slot.CreatedAt,
 		slot.UpdatedAt,
 	)
@@ -2042,6 +2244,41 @@ func expireUnbookedExcursionScheduleSlots(ctx context.Context, exec dbExecutor, 
 		return fmt.Errorf("expire unbooked excursion schedule slots: %w", err)
 	}
 	return nil
+}
+
+func completeDueExcursionScheduleSlots(ctx context.Context, exec dbExecutor, before time.Time, reason string, limit int) (int, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = "SLOT_END_REACHED"
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	const query = `
+		WITH due_slots AS (
+			SELECT id
+			FROM excursion_schedule_slots
+			WHERE end_at <= $1
+			  AND booked_seats > 0
+			  AND status IN ('BOOKED', 'FULL', 'CLOSED')
+			ORDER BY end_at ASC
+			LIMIT $3
+			FOR UPDATE SKIP LOCKED
+		)
+		UPDATE excursion_schedule_slots s
+		SET
+			status = 'COMPLETED',
+			completed_at = NOW(),
+			completion_reason = $2,
+			updated_at = NOW()
+		FROM due_slots
+		WHERE s.id = due_slots.id
+	`
+	tag, err := exec.Exec(ctx, query, before.UTC(), reason, limit)
+	if err != nil {
+		return 0, fmt.Errorf("complete due excursion schedule slots: %w", err)
+	}
+	return int(tag.RowsAffected()), nil
 }
 
 func updateExcursionBookingGuests(ctx context.Context, exec dbExecutor, item *model.ExcursionBooking) error {
@@ -3072,6 +3309,7 @@ func scanExcursionBooking(row excursionScanner) (*model.ExcursionBooking, error)
 		&item.RefundCurrency,
 		&item.RefundPolicyCode,
 		&item.RefundStatus,
+		&item.CheckedInAt,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	); err != nil {
@@ -3107,6 +3345,8 @@ func scanExcursionScheduleSlot(row excursionScanner) (*model.ExcursionScheduleSl
 		&slot.CancelReason,
 		&slot.ClosedAt,
 		&slot.CancelledAt,
+		&slot.CompletedAt,
+		&slot.CompletionReason,
 		&slot.CreatedAt,
 		&slot.UpdatedAt,
 	); err != nil {
@@ -3139,6 +3379,8 @@ func scanExcursionScheduleSlotWithTitle(row excursionScanner) (*model.ExcursionS
 		&slot.CancelReason,
 		&slot.ClosedAt,
 		&slot.CancelledAt,
+		&slot.CompletedAt,
+		&slot.CompletionReason,
 		&slot.CreatedAt,
 		&slot.UpdatedAt,
 		&title,
@@ -3148,6 +3390,43 @@ func scanExcursionScheduleSlotWithTitle(row excursionScanner) (*model.ExcursionS
 	slot.Status = enum.ExcursionScheduleSlotStatus(statusRaw)
 	slot.Title = strings.TrimSpace(title)
 	return &slot, nil
+}
+
+func scanExcursionAttendanceQRIssue(row excursionScanner) (*model.ExcursionAttendanceQRIssue, error) {
+	var item model.ExcursionAttendanceQRIssue
+	if err := row.Scan(
+		&item.JTI,
+		&item.ScheduleSlotID,
+		&item.GuideUserID,
+		&item.IssuedAt,
+		&item.ExpiresAt,
+		&item.UsableUntil,
+		&item.CreatedAt,
+	); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+func scanExcursionAttendanceSyncAttempt(row excursionScanner) (*model.ExcursionAttendanceSyncAttempt, error) {
+	var item model.ExcursionAttendanceSyncAttempt
+	if err := row.Scan(
+		&item.ScanID,
+		&item.ScheduleSlotID,
+		&item.TouristUserID,
+		&item.QRJTI,
+		&item.InstallationID,
+		&item.ScannedAtDevice,
+		&item.ResultStatus,
+		&item.FailureCode,
+		&item.FailureMessage,
+		&item.CheckedInAt,
+		&item.CreatedAt,
+		&item.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	return &item, nil
 }
 
 func scanExcursionBookingListItem(row excursionScanner) (*model.ExcursionBookingListItem, error) {
@@ -3197,6 +3476,7 @@ func scanExcursionBookingListItem(row excursionScanner) (*model.ExcursionBooking
 		&booking.RefundCurrency,
 		&booking.RefundPolicyCode,
 		&booking.RefundStatus,
+		&booking.CheckedInAt,
 		&booking.CreatedAt,
 		&booking.UpdatedAt,
 		&item.Title,

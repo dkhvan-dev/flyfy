@@ -41,6 +41,18 @@ type excursionRepoStub struct {
 	expiredScheduleCutoff           time.Time
 	expiredScheduleReason           string
 	expireScheduleErr               error
+	completedScheduleBefore         time.Time
+	completedScheduleReason         string
+	completedScheduleLimit          int
+	completedScheduleCount          int
+	createdAttendanceIssue          *model.ExcursionAttendanceQRIssue
+	gotAttendanceIssue              *model.ExcursionAttendanceQRIssue
+	gotAttendanceAttempt            *model.ExcursionAttendanceSyncAttempt
+	createdAttendanceAttempt        *model.ExcursionAttendanceSyncAttempt
+	gotAttendanceBooking            *model.ExcursionBooking
+	checkedInAttendanceBooking      *model.ExcursionBooking
+	txRepo                          port.ExcursionTxRepository
+	txErr                           error
 	listBookingFilter               port.ExcursionBookingFilter
 	listBookingItems                []*model.ExcursionBookingListItem
 	gotBooking                      *model.ExcursionBooking
@@ -191,6 +203,29 @@ func (s *excursionRepoStub) ExpireUnbookedExcursionScheduleSlots(ctx context.Con
 	return s.expireScheduleErr
 }
 
+func (s *excursionRepoStub) CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) (int, error) {
+	s.completedScheduleBefore = before
+	s.completedScheduleReason = reason
+	s.completedScheduleLimit = limit
+	return s.completedScheduleCount, nil
+}
+
+func (s *excursionRepoStub) CreateExcursionAttendanceQRIssue(ctx context.Context, item *model.ExcursionAttendanceQRIssue) error {
+	s.createdAttendanceIssue = item
+	return nil
+}
+
+func (s *excursionRepoStub) WithTx(ctx context.Context, fn func(repo port.ExcursionTxRepository) error) error {
+	if s.txErr != nil {
+		return s.txErr
+	}
+	txRepo := s.txRepo
+	if txRepo == nil {
+		txRepo = &excursionTxRepoStub{repo: s}
+	}
+	return fn(txRepo)
+}
+
 func (s *excursionRepoStub) ListExcursionBookings(ctx context.Context, filter port.ExcursionBookingFilter) ([]*model.ExcursionBookingListItem, error) {
 	s.listBookingFilter = filter
 	return s.listBookingItems, nil
@@ -229,6 +264,36 @@ func (s *excursionRepoStub) GetExcursionReviewByBookingID(ctx context.Context, b
 func (s *excursionRepoStub) ListExcursionReviews(ctx context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
 	s.listReviewFilter = filter
 	return s.listReviewItems, nil
+}
+
+type excursionTxRepoStub struct {
+	repo *excursionRepoStub
+}
+
+func (s *excursionTxRepoStub) GetExcursionAttendanceQRIssueByJTIForUpdate(ctx context.Context, jti uuid.UUID) (*model.ExcursionAttendanceQRIssue, error) {
+	return s.repo.gotAttendanceIssue, nil
+}
+
+func (s *excursionTxRepoStub) GetExcursionAttendanceSyncAttemptByScanIDForUpdate(ctx context.Context, scanID uuid.UUID) (*model.ExcursionAttendanceSyncAttempt, error) {
+	return s.repo.gotAttendanceAttempt, nil
+}
+
+func (s *excursionTxRepoStub) GetExcursionScheduleSlotByIDForUpdate(ctx context.Context, slotID uuid.UUID) (*model.ExcursionScheduleSlot, error) {
+	return s.repo.gotScheduleSlot, nil
+}
+
+func (s *excursionTxRepoStub) GetExcursionBookingByScheduleSlotAndTouristForUpdate(ctx context.Context, slotID uuid.UUID, touristUserID uuid.UUID) (*model.ExcursionBooking, error) {
+	return s.repo.gotAttendanceBooking, nil
+}
+
+func (s *excursionTxRepoStub) CreateExcursionAttendanceSyncAttempt(ctx context.Context, item *model.ExcursionAttendanceSyncAttempt) error {
+	s.repo.createdAttendanceAttempt = item
+	return nil
+}
+
+func (s *excursionTxRepoStub) UpdateExcursionBookingAttendance(ctx context.Context, item *model.ExcursionBooking) error {
+	s.repo.checkedInAttendanceBooking = item
+	return nil
 }
 
 func (s *excursionRepoStub) CalculateLandmarkReviewStats(ctx context.Context, landmarkID uuid.UUID) (float64, int, error) {
@@ -2290,6 +2355,283 @@ func TestListGuideScheduleExpiresUnbookedSlotsBeforeBookingCutoff(t *testing.T) 
 	}
 	if repo.expiredScheduleCutoff.Before(now.Add(2*time.Hour - time.Second)) {
 		t.Fatalf("expire cutoff = %v, want at least now + 2h", repo.expiredScheduleCutoff)
+	}
+}
+
+func TestListGuideScheduleIncludesCompletedSlotsForReadonlyHistory(t *testing.T) {
+	actorUserID := uuid.New()
+	now := time.Now().UTC()
+	repo := &excursionRepoStub{}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.ListGuideSchedule(context.Background(), ListGuideScheduleInput{
+		ActorUserID: actorUserID,
+		From:        now.Add(-24 * time.Hour),
+		To:          now.Add(24 * time.Hour),
+	})
+
+	if err != nil {
+		t.Fatalf("ListGuideSchedule() error = %v", err)
+	}
+	for _, status := range repo.listScheduleFilter.Statuses {
+		if status == enum.ExcursionScheduleSlotStatusCompleted {
+			return
+		}
+	}
+	t.Fatalf("status filters = %v, want completed included for guide calendar history", repo.listScheduleFilter.Statuses)
+}
+
+func TestAutoCompleteDueExcursionScheduleSlotsCompletesEndedSlots(t *testing.T) {
+	repo := &excursionRepoStub{completedScheduleCount: 2}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	count, err := uc.AutoCompleteDueExcursionScheduleSlots(context.Background(), 50)
+	if err != nil {
+		t.Fatalf("AutoCompleteDueExcursionScheduleSlots() error = %v", err)
+	}
+
+	if count != 2 {
+		t.Fatalf("count = %d, want 2", count)
+	}
+	if repo.completedScheduleReason != excursionScheduleAutoCompleteReasonEnded {
+		t.Fatalf("completion reason = %q, want %q", repo.completedScheduleReason, excursionScheduleAutoCompleteReasonEnded)
+	}
+	if repo.completedScheduleLimit != 50 {
+		t.Fatalf("completion limit = %d, want 50", repo.completedScheduleLimit)
+	}
+	if repo.completedScheduleBefore.IsZero() {
+		t.Fatal("completion cutoff was not passed to repository")
+	}
+}
+
+func TestGenerateExcursionAttendanceQRRequiresOwnedBookedSlot(t *testing.T) {
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	repo := &excursionRepoStub{
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        uuid.New(),
+			ProductID:      uuid.New(),
+			StartAt:        time.Now().UTC().Add(30 * time.Minute),
+			EndAt:          time.Now().UTC().Add(3 * time.Hour),
+			Timezone:       "Asia/Almaty",
+			Capacity:       8,
+			BookedSeats:    2,
+			Status:         enum.ExcursionScheduleSlotStatusBooked,
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithAttendanceQRConfig("test-excursion-secret", time.Minute, 4*time.Hour)
+
+	qr, err := uc.GenerateExcursionAttendanceQR(context.Background(), slotID, guideUserID)
+	if err != nil {
+		t.Fatalf("GenerateExcursionAttendanceQR() error = %v", err)
+	}
+
+	if qr == nil || qr.Token == "" {
+		t.Fatal("qr token was not generated")
+	}
+	if repo.createdAttendanceIssue == nil {
+		t.Fatal("attendance qr issue was not persisted")
+	}
+	if repo.createdAttendanceIssue.ScheduleSlotID != slotID {
+		t.Fatalf("issue slot id = %s, want %s", repo.createdAttendanceIssue.ScheduleSlotID, slotID)
+	}
+}
+
+func TestGenerateExcursionAttendanceQRRejectsSlotsEarlierThanOneHourBeforeStart(t *testing.T) {
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	repo := &excursionRepoStub{
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        uuid.New(),
+			ProductID:      uuid.New(),
+			StartAt:        time.Now().UTC().Add(90 * time.Minute),
+			EndAt:          time.Now().UTC().Add(3 * time.Hour),
+			Timezone:       "Asia/Almaty",
+			Capacity:       8,
+			BookedSeats:    2,
+			Status:         enum.ExcursionScheduleSlotStatusBooked,
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithAttendanceQRConfig("test-excursion-secret", time.Minute, 4*time.Hour)
+
+	_, err := uc.GenerateExcursionAttendanceQR(context.Background(), slotID, guideUserID)
+	if !errors.Is(err, ErrExcursionAttendanceQRUnavailable) {
+		t.Fatalf("GenerateExcursionAttendanceQR() error = %v, want %v", err, ErrExcursionAttendanceQRUnavailable)
+	}
+	if repo.createdAttendanceIssue != nil {
+		t.Fatal("attendance qr issue was persisted for a slot earlier than one hour before start")
+	}
+}
+
+func TestSyncExcursionAttendanceProofMarksTouristBookingCheckedIn(t *testing.T) {
+	guideUserID := uuid.New()
+	touristUserID := uuid.New()
+	slotID := uuid.New()
+	qr, err := signExcursionAttendanceQRToken(
+		[]byte("test-excursion-secret"),
+		slotID,
+		guideUserID,
+		uuid.MustParse("44444444-4444-4444-8444-444444444444"),
+		time.Now().UTC().Add(-time.Minute),
+		time.Now().UTC().Add(time.Minute),
+	)
+	if err != nil {
+		t.Fatalf("signExcursionAttendanceQRToken() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotAttendanceIssue: &model.ExcursionAttendanceQRIssue{
+			JTI:            uuid.MustParse("44444444-4444-4444-8444-444444444444"),
+			ScheduleSlotID: slotID,
+			GuideUserID:    guideUserID,
+			IssuedAt:       time.Now().UTC().Add(-time.Minute),
+			ExpiresAt:      time.Now().UTC().Add(time.Minute),
+			UsableUntil:    time.Now().UTC().Add(3 * time.Hour),
+			CreatedAt:      time.Now().UTC().Add(-time.Minute),
+		},
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        uuid.New(),
+			ProductID:      uuid.New(),
+			StartAt:        time.Now().UTC().Add(-30 * time.Minute),
+			EndAt:          time.Now().UTC().Add(90 * time.Minute),
+			Timezone:       "Asia/Almaty",
+			Capacity:       8,
+			BookedSeats:    2,
+			Status:         enum.ExcursionScheduleSlotStatusBooked,
+		},
+		gotAttendanceBooking: &model.ExcursionBooking{
+			ID:             uuid.New(),
+			ProductID:      uuid.New(),
+			OfferID:        uuid.New(),
+			ScheduleSlotID: &slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			TouristUserID:  touristUserID,
+			ScheduledFor:   time.Now().UTC().Add(-30 * time.Minute),
+			Adults:         1,
+			Children:       0,
+			TotalSeats:     1,
+			Currency:       "KZT",
+			Status:         enum.ExcursionBookingStatusRequested,
+			CreatedAt:      time.Now().UTC().Add(-24 * time.Hour),
+			UpdatedAt:      time.Now().UTC().Add(-24 * time.Hour),
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithAttendanceQRConfig("test-excursion-secret", time.Minute, 4*time.Hour)
+
+	results, err := uc.SyncExcursionAttendanceProofs(context.Background(), touristUserID, []ExcursionAttendanceProofInput{
+		{
+			ScanID:         uuid.New(),
+			QRToken:        qr,
+			InstallationID: "installation-1",
+		},
+	})
+	if err != nil {
+		t.Fatalf("SyncExcursionAttendanceProofs() error = %v", err)
+	}
+
+	if len(results) != 1 || results[0].Status != AttendanceSyncStatusSynced {
+		t.Fatalf("results = %+v, want one synced result", results)
+	}
+	if repo.checkedInAttendanceBooking == nil || repo.checkedInAttendanceBooking.CheckedInAt == nil {
+		t.Fatalf("booking was not checked in: %#v", repo.checkedInAttendanceBooking)
+	}
+	if repo.createdAttendanceAttempt == nil || repo.createdAttendanceAttempt.ResultStatus != model.AttendanceSyncAttemptStatusAccepted {
+		t.Fatalf("attendance attempt = %#v, want accepted", repo.createdAttendanceAttempt)
+	}
+}
+
+func TestSyncExcursionAttendanceProofRejectsBookingForDifferentTourist(t *testing.T) {
+	guideUserID := uuid.New()
+	touristUserID := uuid.New()
+	otherTouristUserID := uuid.New()
+	slotID := uuid.New()
+	qrJTI := uuid.MustParse("55555555-5555-4555-8555-555555555555")
+	qr, err := signExcursionAttendanceQRToken(
+		[]byte("test-excursion-secret"),
+		slotID,
+		guideUserID,
+		qrJTI,
+		time.Now().UTC().Add(-time.Minute),
+		time.Now().UTC().Add(time.Minute),
+	)
+	if err != nil {
+		t.Fatalf("signExcursionAttendanceQRToken() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotAttendanceIssue: &model.ExcursionAttendanceQRIssue{
+			JTI:            qrJTI,
+			ScheduleSlotID: slotID,
+			GuideUserID:    guideUserID,
+			IssuedAt:       time.Now().UTC().Add(-time.Minute),
+			ExpiresAt:      time.Now().UTC().Add(time.Minute),
+			UsableUntil:    time.Now().UTC().Add(3 * time.Hour),
+			CreatedAt:      time.Now().UTC().Add(-time.Minute),
+		},
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        uuid.New(),
+			ProductID:      uuid.New(),
+			StartAt:        time.Now().UTC().Add(-30 * time.Minute),
+			EndAt:          time.Now().UTC().Add(90 * time.Minute),
+			Timezone:       "Asia/Almaty",
+			Capacity:       8,
+			BookedSeats:    2,
+			Status:         enum.ExcursionScheduleSlotStatusBooked,
+		},
+		gotAttendanceBooking: &model.ExcursionBooking{
+			ID:             uuid.New(),
+			ProductID:      uuid.New(),
+			OfferID:        uuid.New(),
+			ScheduleSlotID: &slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			TouristUserID:  otherTouristUserID,
+			ScheduledFor:   time.Now().UTC().Add(-30 * time.Minute),
+			Adults:         1,
+			Children:       0,
+			TotalSeats:     1,
+			Currency:       "KZT",
+			Status:         enum.ExcursionBookingStatusRequested,
+			CreatedAt:      time.Now().UTC().Add(-24 * time.Hour),
+			UpdatedAt:      time.Now().UTC().Add(-24 * time.Hour),
+		},
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithAttendanceQRConfig("test-excursion-secret", time.Minute, 4*time.Hour)
+
+	results, err := uc.SyncExcursionAttendanceProofs(context.Background(), touristUserID, []ExcursionAttendanceProofInput{
+		{
+			ScanID:         uuid.New(),
+			QRToken:        qr,
+			InstallationID: "installation-1",
+		},
+	})
+	if err != nil {
+		t.Fatalf("SyncExcursionAttendanceProofs() error = %v", err)
+	}
+
+	if len(results) != 1 || results[0].Status != AttendanceSyncStatusRejected || results[0].Code != "not_registered" {
+		t.Fatalf("results = %+v, want one not_registered rejection", results)
+	}
+	if repo.checkedInAttendanceBooking != nil {
+		t.Fatalf("booking for another tourist was checked in: %#v", repo.checkedInAttendanceBooking)
+	}
+	if repo.createdAttendanceAttempt == nil || repo.createdAttendanceAttempt.ResultStatus != model.AttendanceSyncAttemptStatusRejected {
+		t.Fatalf("attendance attempt = %#v, want rejected", repo.createdAttendanceAttempt)
 	}
 }
 

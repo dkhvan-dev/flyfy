@@ -56,6 +56,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/me/excursion-schedule/series", h.CreateGuideScheduleSeries)
 	mux.HandleFunc("POST /v1/me/excursion-schedule/slots/{id}/close", h.CloseGuideScheduleSlot)
 	mux.HandleFunc("POST /v1/me/excursion-schedule/slots/{id}/cancel", h.CancelGuideScheduleSlot)
+	mux.HandleFunc("GET /v1/me/excursion-schedule/slots/{id}/attendance-qr", h.GetGuideScheduleSlotAttendanceQR)
+	mux.HandleFunc("POST /v1/me/excursion-schedule/attendance/sync", h.SyncExcursionAttendanceProofs)
 	mux.HandleFunc("DELETE /v1/me/excursion-schedule/slots/{id}", h.DeleteGuideScheduleSlot)
 	mux.HandleFunc("GET /v1/me/excursion-bookings", h.ListMyExcursionBookings)
 	mux.HandleFunc("GET /v1/me/guide-excursion-bookings", h.ListMyGuideExcursionBookings)
@@ -578,6 +580,92 @@ func (h *Handler) DeleteGuideScheduleSlot(w http.ResponseWriter, r *http.Request
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) GetGuideScheduleSlotAttendanceQR(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	slotID, ok := parsePathUUID(w, r, "id", "invalid schedule slot id")
+	if !ok {
+		return
+	}
+
+	item, err := h.useCase.GenerateExcursionAttendanceQR(r.Context(), slotID, actorUserID)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to generate excursion attendance qr")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.ExcursionAttendanceQRResponse{
+		ScheduleSlotID: item.ScheduleSlotID,
+		Token:          item.Token,
+		ExpiresAt:      item.ExpiresAt.UTC().Format(time.RFC3339),
+		RefreshAt:      item.RefreshAt.UTC().Format(time.RFC3339),
+	})
+}
+
+func (h *Handler) SyncExcursionAttendanceProofs(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+
+	var req dto.ExcursionAttendanceSyncRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid attendance sync payload")
+		return
+	}
+	if len(req.Items) == 0 {
+		writeError(w, http.StatusBadRequest, "attendance sync items are required")
+		return
+	}
+
+	inputs := make([]app.ExcursionAttendanceProofInput, 0, len(req.Items))
+	for _, item := range req.Items {
+		scanID, err := uuid.Parse(strings.TrimSpace(item.ScanID))
+		if err != nil {
+			inputs = append(inputs, app.ExcursionAttendanceProofInput{
+				QRToken:        item.QRToken,
+				InstallationID: item.InstallationID,
+			})
+			continue
+		}
+		var scannedAtDevice *time.Time
+		if strings.TrimSpace(item.ScannedAtDevice) != "" {
+			if parsed, parseErr := time.Parse(time.RFC3339, strings.TrimSpace(item.ScannedAtDevice)); parseErr == nil {
+				parsed = parsed.UTC()
+				scannedAtDevice = &parsed
+			}
+		}
+		inputs = append(inputs, app.ExcursionAttendanceProofInput{
+			ScanID:          scanID,
+			QRToken:         item.QRToken,
+			InstallationID:  item.InstallationID,
+			ScannedAtDevice: scannedAtDevice,
+		})
+	}
+
+	results, err := h.useCase.SyncExcursionAttendanceProofs(r.Context(), actorUserID, inputs)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to sync excursion attendance proofs")
+		return
+	}
+
+	items := make([]dto.ExcursionAttendanceSyncItemResponse, 0, len(results))
+	for _, result := range results {
+		items = append(items, dto.ExcursionAttendanceSyncItemResponse{
+			ScanID:         result.ScanID.String(),
+			ScheduleSlotID: formatOptionalUUID(result.ScheduleSlotID),
+			Status:         result.Status,
+			Code:           result.Code,
+			Message:        result.Message,
+			CheckedInAt:    formatOptionalTime(result.CheckedInAt),
+			SyncedAt:       result.SyncedAt.UTC().Format(time.RFC3339),
+		})
+	}
+	writeJSON(w, http.StatusOK, dto.ExcursionAttendanceSyncResponse{Items: items})
 }
 
 func (h *Handler) ListMyExcursionBookings(w http.ResponseWriter, r *http.Request) {
@@ -1359,6 +1447,7 @@ func toExcursionBookingResponse(item *model.ExcursionBooking) dto.ExcursionBooki
 		RefundCurrency:    formatOptionalString(item.RefundCurrency),
 		RefundPolicyCode:  formatOptionalString(item.RefundPolicyCode),
 		RefundStatus:      formatOptionalString(item.RefundStatus),
+		CheckedInAt:       formatOptionalTime(item.CheckedInAt),
 		CreatedAt:         item.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:         item.UpdatedAt.UTC().Format(time.RFC3339),
 	}
@@ -1511,6 +1600,7 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 	case errors.Is(err, app.ErrInvalidActorUserID):
 		writeError(w, http.StatusUnauthorized, err.Error())
 	case errors.Is(err, app.ErrExcursionAccessDenied),
+		errors.Is(err, app.ErrExcursionAttendanceAccessDenied),
 		errors.Is(err, app.ErrGuideNotAllowed):
 		writeError(w, http.StatusForbidden, err.Error())
 	case errors.Is(err, app.ErrExcursionNotFound),
@@ -1577,7 +1667,23 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, app.ErrExcursionOfferNotBookable),
 		errors.Is(err, app.ErrExcursionNotPublished),
 		errors.Is(err, app.ErrExcursionScheduleStartTooSoon),
-		errors.Is(err, app.ErrExcursionScheduleUnavailable):
+		errors.Is(err, app.ErrExcursionScheduleUnavailable),
+		errors.Is(err, app.ErrExcursionAttendanceQRUnavailable),
+		errors.Is(err, app.ErrExcursionAttendanceQRInvalid),
+		errors.Is(err, app.ErrExcursionAttendanceQRVersionInvalid),
+		errors.Is(err, app.ErrExcursionAttendanceQRExpired),
+		errors.Is(err, app.ErrExcursionAttendanceAlreadyCheckedIn),
+		errors.Is(err, app.ErrExcursionAttendanceBookingInvalid),
+		errors.Is(err, model.ErrInvalidExcursionAttendanceQRJTI),
+		errors.Is(err, model.ErrInvalidExcursionAttendanceQRSlot),
+		errors.Is(err, model.ErrInvalidExcursionAttendanceQRGuide),
+		errors.Is(err, model.ErrInvalidExcursionAttendanceQRRange),
+		errors.Is(err, model.ErrInvalidAttendanceSyncScanID),
+		errors.Is(err, model.ErrInvalidAttendanceSyncScheduleSlot),
+		errors.Is(err, model.ErrInvalidAttendanceSyncParticipantID),
+		errors.Is(err, model.ErrInvalidAttendanceSyncQRJTI),
+		errors.Is(err, model.ErrInvalidAttendanceSyncInstallID),
+		errors.Is(err, model.ErrInvalidAttendanceSyncStatus):
 		writeError(w, http.StatusBadRequest, err.Error())
 	default:
 		log.Error().
