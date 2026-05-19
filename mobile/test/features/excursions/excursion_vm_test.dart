@@ -329,4 +329,41 @@ void main() {
       'Қазақстандағы шатқал.',
     );
   });
+
+  test('localizes attraction title with booking-safe fallback', () {
+    final attraction = AttractionVm.fromJson(const {
+      'id': 'attraction-1',
+      'locale': 'ru',
+      'defaultLocale': 'en',
+      'title': 'Чарынский каньон',
+      'description': 'Каньон в Казахстане.',
+      'translations': {
+        'en': {
+          'title': 'Charyn Canyon',
+          'description': 'Canyon in Kazakhstan.',
+        },
+        'kk': {
+          'title': 'Шарын шатқалы',
+          'description': 'Қазақстандағы шатқал.',
+        },
+      },
+    });
+
+    expect(
+      localizedAttractionTitle(
+        languageCode: 'kk-KZ',
+        attraction: attraction,
+        fallback: 'Charyn Canyon',
+      ),
+      'Шарын шатқалы',
+    );
+    expect(
+      localizedAttractionTitle(
+        languageCode: 'tr',
+        attraction: null,
+        fallback: 'Charyn Canyon',
+      ),
+      'Charyn Canyon',
+    );
+  });
 }

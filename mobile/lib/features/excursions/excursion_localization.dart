@@ -11,7 +11,10 @@ String localizedExcursionTitle({
   return _firstNonBlank([
     _excursionCopyFor(excursion, languageCode)?.title,
     if (_isSameAttraction(excursion, attraction))
-      _localizedAttractionTitle(attraction, languageCode),
+      localizedAttractionTitle(
+        languageCode: languageCode,
+        attraction: attraction,
+      ),
     excursion.title,
     excursion.landmarkName,
     fallback,
@@ -57,7 +60,10 @@ String localizedExcursionLandmarkName({
 }) {
   return _firstNonBlank([
     if (_isSameAttraction(excursion, attraction))
-      _localizedAttractionTitle(attraction, languageCode),
+      localizedAttractionTitle(
+        languageCode: languageCode,
+        attraction: attraction,
+      ),
     excursion.landmarkName,
     fallback,
   ]);
@@ -71,11 +77,12 @@ ExcursionLocalizedCopyVm? _excursionCopyFor(
       excursion.translations[normalized.split('-').first];
 }
 
-String _localizedAttractionTitle(
+String localizedAttractionTitle({
+  required String languageCode,
   AttractionVm? attraction,
-  String languageCode,
-) {
-  if (attraction == null) return '';
+  String fallback = '',
+}) {
+  if (attraction == null) return fallback.trim();
   final normalized = _normalizeLocale(languageCode);
   final requested = attraction.translations[normalized]?.title;
   final requestedLanguage =
@@ -89,6 +96,7 @@ String _localizedAttractionTitle(
       attraction.title,
     attraction.translations[_normalizeLocale(attraction.defaultLocale)]?.title,
     attraction.title,
+    fallback,
   ]);
 }
 

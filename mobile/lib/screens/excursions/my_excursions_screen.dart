@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -14,7 +15,10 @@ import '../../core/ui/app_list_search_field.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
+import '../../features/attractions/data/attraction_api.dart';
+import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/excursions/excursion_currency.dart';
+import '../../features/excursions/excursion_localization.dart';
 import '../../features/excursions/models/create_excursion_review_request.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -30,10 +34,14 @@ class MyExcursionsScreen extends StatefulWidget {
 class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
   static const int _pageSize = 8;
 
+  final AttractionApi _attractionApi = AttractionApi();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
 
+  Map<String, AttractionVm> _localizedLandmarks = const {};
+  final Set<String> _loadingLocalizedLandmarkIds = <String>{};
+  String? _localizedLandmarksLocale;
   MyExcursionsTab _activeTab = MyExcursionsTab.booked;
   MyExcursionBookingSortMode _sortMode = MyExcursionBookingSortMode.date;
   bool _sortAscending = false;
@@ -49,6 +57,17 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ExcursionProvider>().loadMyExcursionBookings();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final lang = Localizations.localeOf(context).languageCode;
+    if (_localizedLandmarksLocale == lang) return;
+    _localizedLandmarksLocale = lang;
+    _localizedLandmarks = const {};
+    _loadingLocalizedLandmarkIds.clear();
   }
 
   @override
@@ -120,6 +139,58 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
       return;
     }
     context.go('/');
+  }
+
+  void _scheduleResolveLocalizedLandmarks(List<ExcursionBookingVm> bookings) {
+    if (!mounted) return;
+
+    final lang = Localizations.localeOf(context).languageCode;
+    final ids = <String>{};
+    for (final booking in bookings) {
+      final landmarkId = booking.landmarkId?.trim();
+      if (landmarkId == null ||
+          landmarkId.isEmpty ||
+          _localizedLandmarks.containsKey(landmarkId) ||
+          _loadingLocalizedLandmarkIds.contains(landmarkId)) {
+        continue;
+      }
+      ids.add(landmarkId);
+    }
+    if (ids.isEmpty) return;
+
+    for (final landmarkId in ids.take(16)) {
+      _loadingLocalizedLandmarkIds.add(landmarkId);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_loadLocalizedLandmark(landmarkId, lang));
+      });
+    }
+  }
+
+  Future<void> _loadLocalizedLandmark(String landmarkId, String lang) async {
+    try {
+      final attraction = await _attractionApi.getAttraction(
+        landmarkId,
+        locale: lang,
+      );
+      if (!mounted || _localizedLandmarksLocale != lang) return;
+
+      setState(() {
+        _localizedLandmarks = {
+          ..._localizedLandmarks,
+          landmarkId: attraction,
+        };
+        _loadingLocalizedLandmarkIds.remove(landmarkId);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingLocalizedLandmarkIds.remove(landmarkId));
+    }
+  }
+
+  AttractionVm? _localizedLandmarkFor(ExcursionBookingVm booking) {
+    final landmarkId = booking.landmarkId?.trim();
+    if (landmarkId == null || landmarkId.isEmpty) return null;
+    return _localizedLandmarks[landmarkId];
   }
 
   Future<void> _openFilters(
@@ -293,6 +364,9 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
           bottom: false,
           child: Consumer<ExcursionProvider>(
             builder: (context, provider, _) {
+              _scheduleResolveLocalizedLandmarks(
+                provider.myExcursionBookings,
+              );
               final now = DateTime.now().toUtc();
               final filtered = filterMyExcursionBookings(
                 provider.myExcursionBookings,
@@ -421,6 +495,10 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
                                 final booking = page.items[i];
                                 return _MyExcursionBookingCard(
                                   booking: booking,
+                                  languageCode: Localizations.localeOf(context)
+                                      .languageCode,
+                                  localizedLandmark:
+                                      _localizedLandmarkFor(booking),
                                   onTap: () => _openDetails(booking),
                                   onEditGuestsTap: booking.isBooked(now)
                                       ? () => _openEditGuestsSheet(booking)
@@ -551,13 +629,17 @@ class _SegmentButton extends StatelessWidget {
 class _MyExcursionBookingCard extends StatelessWidget {
   const _MyExcursionBookingCard({
     required this.booking,
+    required this.languageCode,
     required this.onTap,
     required this.onEditGuestsTap,
     required this.onCancelTap,
     required this.onReviewTap,
+    this.localizedLandmark,
   });
 
   final ExcursionBookingVm booking;
+  final String languageCode;
+  final AttractionVm? localizedLandmark;
   final VoidCallback onTap;
   final VoidCallback? onEditGuestsTap;
   final VoidCallback? onCancelTap;
@@ -579,6 +661,18 @@ class _MyExcursionBookingCard extends StatelessWidget {
       localeName: localeName,
       useExcursionListCurrencyFormat: true,
     );
+    final displayTitle = localizedAttractionTitle(
+      languageCode: languageCode,
+      attraction: localizedLandmark,
+      fallback: booking.title,
+    ).trim();
+    final landmarkName = localizedAttractionTitle(
+      languageCode: languageCode,
+      attraction: localizedLandmark,
+      fallback: booking.landmarkName ?? '',
+    ).trim();
+    final showLandmarkName = landmarkName.isNotEmpty &&
+        !_isSameMyExcursionLabel(landmarkName, displayTitle);
 
     return Material(
       color: Colors.transparent,
@@ -616,9 +710,9 @@ class _MyExcursionBookingCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          booking.title.isEmpty
+                          displayTitle.isEmpty
                               ? l10n.myExcursionsUntitled
-                              : booking.title,
+                              : displayTitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -657,10 +751,10 @@ class _MyExcursionBookingCard extends StatelessWidget {
                   _MetaChip(icon: Icons.payments_outlined, label: price),
                 ],
               ),
-              if ((booking.landmarkName ?? '').trim().isNotEmpty) ...[
+              if (showLandmarkName) ...[
                 const SizedBox(height: 10),
                 Text(
-                  booking.landmarkName!.trim(),
+                  landmarkName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -748,6 +842,10 @@ class _MyExcursionBookingCard extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _isSameMyExcursionLabel(String left, String right) {
+  return left.trim().toLowerCase() == right.trim().toLowerCase();
 }
 
 class _MetaChip extends StatelessWidget {

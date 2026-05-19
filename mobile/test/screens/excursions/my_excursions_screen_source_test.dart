@@ -54,6 +54,58 @@ void main() {
   );
 
   test(
+    'my excursions cards resolve localized attraction text for landmark bookings',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('dart:async'));
+      expect(
+        source,
+        contains(
+          "import '../../features/attractions/data/attraction_api.dart';",
+        ),
+      );
+      expect(
+        source,
+        contains(
+          "import '../../features/attractions/models/attraction_vm.dart';",
+        ),
+      );
+      expect(
+        source,
+        contains(
+          "import '../../features/excursions/excursion_localization.dart';",
+        ),
+      );
+      expect(source, contains('final AttractionApi _attractionApi'));
+      expect(source, contains('Map<String, AttractionVm> _localizedLandmarks'));
+      expect(source, contains('_scheduleResolveLocalizedLandmarks'));
+      expect(source, contains('_loadLocalizedLandmark'));
+      expect(source, contains('locale: lang'));
+      expect(source, contains('localizedLandmark:'));
+      expect(source, contains('localizedAttractionTitle('));
+      expect(
+          source, contains('final displayTitle = localizedAttractionTitle('));
+      expect(
+          source, contains('final landmarkName = localizedAttractionTitle('));
+      expect(source, contains('displayTitle.isEmpty'));
+      expect(source, isNot(contains('booking.landmarkName!.trim()')));
+      expect(
+        source,
+        isNot(
+          contains(
+            'booking.title.isEmpty\n'
+            '                              ? l10n.myExcursionsUntitled\n'
+            '                              : booking.title',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
     'my excursions filter uses activity-style manual date range and excursion result label',
     () async {
       final source = await File(
