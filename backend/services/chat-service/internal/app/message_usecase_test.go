@@ -250,7 +250,9 @@ type fakeMessageRepo struct {
 	participant                    *model.Participant
 	createdMessage                 *model.Message
 	conversationsByID              map[uuid.UUID]*model.Conversation
+	conversationsByExcursionSlotID map[uuid.UUID]*model.Conversation
 	participantsByConversationUser map[[2]uuid.UUID]*model.Participant
+	createdParticipants            []*model.Participant
 	messagesByID                   map[uuid.UUID]*model.Message
 }
 
@@ -304,7 +306,13 @@ func (r *fakeMessageRepo) CreateMessage(_ context.Context, msg *model.Message) e
 	return nil
 }
 
-func (r *fakeMessageRepo) CreateConversation(context.Context, *model.Conversation) error {
+func (r *fakeMessageRepo) CreateConversation(_ context.Context, conv *model.Conversation) error {
+	if r.conversationsByID != nil {
+		r.conversationsByID[conv.ID] = conv
+	}
+	if r.conversationsByExcursionSlotID != nil && conv.ExcursionScheduleSlotID != nil {
+		r.conversationsByExcursionSlotID[*conv.ExcursionScheduleSlotID] = conv
+	}
 	return nil
 }
 
@@ -336,6 +344,16 @@ func (r *fakeMessageRepo) FindDirectConversation(context.Context, uuid.UUID, uui
 }
 
 func (r *fakeMessageRepo) GetConversationByActivityID(context.Context, uuid.UUID) (*model.Conversation, error) {
+	return nil, nil
+}
+
+func (r *fakeMessageRepo) GetConversationByExcursionScheduleSlotID(
+	_ context.Context,
+	slotID uuid.UUID,
+) (*model.Conversation, error) {
+	if r.conversationsByExcursionSlotID != nil {
+		return r.conversationsByExcursionSlotID[slotID], nil
+	}
 	return nil, nil
 }
 
@@ -396,6 +414,16 @@ func (r *fakeMessageRepo) GetConversationByActivityIDForUpdate(context.Context, 
 	return nil, nil
 }
 
+func (r *fakeMessageRepo) GetConversationByExcursionScheduleSlotIDForUpdate(
+	_ context.Context,
+	slotID uuid.UUID,
+) (*model.Conversation, error) {
+	if r.conversationsByExcursionSlotID != nil {
+		return r.conversationsByExcursionSlotID[slotID], nil
+	}
+	return nil, nil
+}
+
 func (r *fakeMessageRepo) GetParticipantForUpdate(_ context.Context, conversationID, userID uuid.UUID) (*model.Participant, error) {
 	if r.participantsByConversationUser != nil {
 		return r.participantsByConversationUser[[2]uuid.UUID{conversationID, userID}], nil
@@ -407,7 +435,12 @@ func (r *fakeMessageRepo) CountActiveParticipantsTx(context.Context, uuid.UUID) 
 	return 1, nil
 }
 
-func (r *fakeMessageRepo) CreateParticipant(context.Context, *model.Participant) error {
+func (r *fakeMessageRepo) CreateParticipant(_ context.Context, p *model.Participant) error {
+	copyValue := *p
+	r.createdParticipants = append(r.createdParticipants, &copyValue)
+	if r.participantsByConversationUser != nil {
+		r.participantsByConversationUser[[2]uuid.UUID{p.ConversationID, p.UserID}] = &copyValue
+	}
 	return nil
 }
 

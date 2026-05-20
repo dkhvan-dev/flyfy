@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS conversations (
     title            VARCHAR(255),
     avatar_file_id   VARCHAR(255),
     activity_id      UUID,
+    excursion_schedule_slot_id UUID,
     pinned_message_id UUID,
     messaging_available_until TIMESTAMPTZ,
     created_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
@@ -13,6 +14,8 @@ CREATE TABLE IF NOT EXISTS conversations (
 );
 
 CREATE INDEX IF NOT EXISTS idx_conversations_activity_id ON conversations (activity_id) WHERE activity_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_conversations_excursion_schedule_slot_id ON conversations (excursion_schedule_slot_id) WHERE excursion_schedule_slot_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_conversations_excursion_schedule_slot_id ON conversations (excursion_schedule_slot_id) WHERE excursion_schedule_slot_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_conversations_type ON conversations (type);
 
 CREATE TABLE IF NOT EXISTS conversation_participants (

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/model"
@@ -44,6 +45,7 @@ type ExcursionUseCase struct {
 	translator              port.ExcursionTranslator
 	userProfiles            port.UserProfileResolver
 	attractionRatingUpdater port.AttractionRatingUpdater
+	chatGateway             port.ExcursionChatGateway
 	attendanceQRSigningKey  []byte
 	attendanceQRTTL         time.Duration
 	attendanceOfflineWindow time.Duration
@@ -102,6 +104,11 @@ func (u *ExcursionUseCase) WithUserProfileResolver(resolver port.UserProfileReso
 
 func (u *ExcursionUseCase) WithAttractionRatingUpdater(updater port.AttractionRatingUpdater) *ExcursionUseCase {
 	u.attractionRatingUpdater = updater
+	return u
+}
+
+func (u *ExcursionUseCase) WithExcursionChatGateway(chatGateway port.ExcursionChatGateway) *ExcursionUseCase {
+	u.chatGateway = chatGateway
 	return u
 }
 
@@ -832,6 +839,9 @@ func (u *ExcursionUseCase) ListGuideSchedule(ctx context.Context, input ListGuid
 		return nil, model.ErrInvalidExcursionScheduleInterval
 	}
 	now := time.Now().UTC()
+	if _, err := u.AutoCloseBookedExcursionScheduleSlots(ctx, 100); err != nil {
+		return nil, err
+	}
 	if err := u.expireUnbookedExcursionScheduleSlots(ctx, now); err != nil {
 		return nil, err
 	}
@@ -873,6 +883,29 @@ func (u *ExcursionUseCase) AutoCompleteDueExcursionScheduleSlots(ctx context.Con
 		return 0, fmt.Errorf("complete due excursion schedule slots: %w", err)
 	}
 	return count, nil
+}
+
+func (u *ExcursionUseCase) AutoCloseBookedExcursionScheduleSlots(ctx context.Context, limit int) (int, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	slots, err := u.repo.CloseBookedExcursionScheduleSlots(
+		ctx,
+		excursionScheduleBookingCutoff(time.Now().UTC()),
+		limit,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("close booked excursion schedule slots: %w", err)
+	}
+	for _, slot := range slots {
+		if err := u.syncExcursionScheduleSlotChat(ctx, slot); err != nil {
+			log.Warn().
+				Err(err).
+				Str("schedule_slot_id", slot.ID.String()).
+				Msg("failed to sync excursion schedule slot chat after auto-close")
+		}
+	}
+	return len(slots), nil
 }
 
 func (u *ExcursionUseCase) GenerateExcursionAttendanceQR(
@@ -1119,6 +1152,9 @@ func (u *ExcursionUseCase) ListPublicExcursionSchedule(ctx context.Context, inpu
 		return nil, model.ErrInvalidExcursionBookingGuests
 	}
 	now := time.Now().UTC()
+	if _, err := u.AutoCloseBookedExcursionScheduleSlots(ctx, 100); err != nil {
+		return nil, err
+	}
 	if err := u.expireUnbookedExcursionScheduleSlots(ctx, now); err != nil {
 		return nil, err
 	}
@@ -1242,6 +1278,9 @@ func (u *ExcursionUseCase) CloseGuideScheduleSlot(ctx context.Context, actorUser
 		}
 		return nil, fmt.Errorf("close excursion schedule slot: %w", err)
 	}
+	if err = u.syncExcursionScheduleSlotChat(ctx, slot); err != nil {
+		return nil, fmt.Errorf("sync excursion schedule slot chat: %w", err)
+	}
 	return slot, nil
 }
 
@@ -1255,6 +1294,9 @@ func (u *ExcursionUseCase) CancelGuideScheduleSlot(ctx context.Context, actorUse
 	}
 	if err = u.repo.UpdateExcursionScheduleSlot(ctx, slot); err != nil {
 		return nil, fmt.Errorf("cancel excursion schedule slot: %w", err)
+	}
+	if err = u.syncExcursionScheduleSlotChat(ctx, slot); err != nil {
+		return nil, fmt.Errorf("sync cancelled excursion schedule slot chat: %w", err)
 	}
 	return slot, nil
 }
@@ -1282,6 +1324,76 @@ func (u *ExcursionUseCase) expireUnbookedExcursionScheduleSlots(ctx context.Cont
 		return fmt.Errorf("expire unbooked excursion schedule slots: %w", err)
 	}
 	return nil
+}
+
+func (u *ExcursionUseCase) syncExcursionScheduleSlotChat(
+	ctx context.Context,
+	slot *model.ExcursionScheduleSlot,
+) error {
+	if u.chatGateway == nil || slot == nil || slot.ID == uuid.Nil {
+		return nil
+	}
+	if slot.BookedSeats <= 0 {
+		return nil
+	}
+
+	slotID := slot.ID
+	items, err := u.repo.ListExcursionBookings(ctx, port.ExcursionBookingFilter{
+		ScheduleSlotID: &slotID,
+		Statuses:       []enum.ExcursionBookingStatus{enum.ExcursionBookingStatusRequested},
+		Limit:          500,
+	})
+	if err != nil {
+		return fmt.Errorf("list excursion slot bookings: %w", err)
+	}
+
+	messagingAvailableUntil := excursionScheduleSlotChatMessagingAvailableUntil(slot)
+	return u.chatGateway.SyncExcursionScheduleSlotConversation(ctx, port.SyncExcursionScheduleSlotConversationInput{
+		ScheduleSlotID:          slot.ID,
+		ExcursionTitle:          strings.TrimSpace(slot.Title),
+		MessagingAvailableUntil: &messagingAvailableUntil,
+		GuideUserID:             slot.GuideUserID,
+		ParticipantUserIDs:      activeExcursionBookingAuthorUserIDs(items, slot.GuideUserID),
+	})
+}
+
+func excursionScheduleSlotChatMessagingAvailableUntil(slot *model.ExcursionScheduleSlot) time.Time {
+	if slot == nil {
+		return time.Now().UTC()
+	}
+	closedAt := slot.EndAt
+	if slot.CancelledAt != nil {
+		closedAt = slot.CancelledAt.UTC()
+	} else if slot.CompletedAt != nil {
+		closedAt = slot.CompletedAt.UTC()
+	}
+	return closedAt.UTC().Add(time.Hour)
+}
+
+func activeExcursionBookingAuthorUserIDs(
+	items []*model.ExcursionBookingListItem,
+	guideUserID uuid.UUID,
+) []uuid.UUID {
+	seen := make(map[uuid.UUID]struct{}, len(items))
+	result := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if item == nil || item.Booking == nil {
+			continue
+		}
+		booking := item.Booking
+		if booking.Status != enum.ExcursionBookingStatusRequested ||
+			booking.CancelledAt != nil ||
+			booking.TouristUserID == uuid.Nil ||
+			booking.TouristUserID == guideUserID {
+			continue
+		}
+		if _, ok := seen[booking.TouristUserID]; ok {
+			continue
+		}
+		seen[booking.TouristUserID] = struct{}{}
+		result = append(result, booking.TouristUserID)
+	}
+	return result
 }
 
 func (u *ExcursionUseCase) resolveExcursionAttendanceOfflineWindow(slot *model.ExcursionScheduleSlot, now time.Time) time.Duration {

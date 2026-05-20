@@ -41,6 +41,10 @@ type excursionRepoStub struct {
 	expiredScheduleCutoff           time.Time
 	expiredScheduleReason           string
 	expireScheduleErr               error
+	closedScheduleCutoff            time.Time
+	closedScheduleLimit             int
+	closedScheduleSlots             []*model.ExcursionScheduleSlot
+	closeScheduleErr                error
 	completedScheduleBefore         time.Time
 	completedScheduleReason         string
 	completedScheduleLimit          int
@@ -203,6 +207,12 @@ func (s *excursionRepoStub) ExpireUnbookedExcursionScheduleSlots(ctx context.Con
 	return s.expireScheduleErr
 }
 
+func (s *excursionRepoStub) CloseBookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, limit int) ([]*model.ExcursionScheduleSlot, error) {
+	s.closedScheduleCutoff = cutoff
+	s.closedScheduleLimit = limit
+	return s.closedScheduleSlots, s.closeScheduleErr
+}
+
 func (s *excursionRepoStub) CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) (int, error) {
 	s.completedScheduleBefore = before
 	s.completedScheduleReason = reason
@@ -358,6 +368,20 @@ func (s *userProfileResolverStub) GetUserProfileProjections(ctx context.Context,
 	copied := append([]uuid.UUID(nil), userIDs...)
 	s.requests = append(s.requests, copied)
 	return s.profiles, nil
+}
+
+type excursionChatGatewayStub struct {
+	synced *port.SyncExcursionScheduleSlotConversationInput
+}
+
+func (s *excursionChatGatewayStub) SyncExcursionScheduleSlotConversation(
+	_ context.Context,
+	input port.SyncExcursionScheduleSlotConversationInput,
+) error {
+	copyInput := input
+	copyInput.ParticipantUserIDs = append([]uuid.UUID(nil), input.ParticipantUserIDs...)
+	s.synced = &copyInput
+	return nil
 }
 
 func TestCreateExcursionRequiresActiveExcursionGuide(t *testing.T) {
@@ -1714,6 +1738,92 @@ func TestUpdateGuideScheduleSlotRejectsStartInsideSetupLeadTime(t *testing.T) {
 	}
 	if repo.createdScheduleSlot != nil {
 		t.Fatalf("slot was persisted despite setup lead time: %#v", repo.createdScheduleSlot)
+	}
+}
+
+func TestCloseGuideScheduleSlotSyncsChatForGuideAndBookingAuthors(t *testing.T) {
+	guideUserID := uuid.New()
+	slotID := uuid.New()
+	offerID := uuid.New()
+	productID := uuid.New()
+	activeTouristID := uuid.New()
+	cancelledTouristID := uuid.New()
+	startAt := time.Now().UTC().Add(3 * time.Hour)
+	endAt := startAt.Add(2 * time.Hour)
+	repo := &excursionRepoStub{
+		gotScheduleSlot: &model.ExcursionScheduleSlot{
+			ID:             slotID,
+			GuideProfileID: uuid.New(),
+			GuideUserID:    guideUserID,
+			OfferID:        offerID,
+			ProductID:      productID,
+			StartAt:        startAt,
+			EndAt:          endAt,
+			Timezone:       "Asia/Almaty",
+			Capacity:       6,
+			BookedSeats:    2,
+			Status:         enum.ExcursionScheduleSlotStatusBooked,
+			Title:          "Big Almaty Lake",
+		},
+		listBookingItems: []*model.ExcursionBookingListItem{
+			{
+				Booking: &model.ExcursionBooking{
+					ID:             uuid.New(),
+					ProductID:      productID,
+					OfferID:        offerID,
+					ScheduleSlotID: &slotID,
+					GuideProfileID: uuid.New(),
+					GuideUserID:    guideUserID,
+					TouristUserID:  activeTouristID,
+					ScheduledFor:   startAt,
+					Adults:         2,
+					TotalSeats:     2,
+					Currency:       "KZT",
+					Status:         enum.ExcursionBookingStatusRequested,
+				},
+			},
+			{
+				Booking: &model.ExcursionBooking{
+					ID:             uuid.New(),
+					ProductID:      productID,
+					OfferID:        offerID,
+					ScheduleSlotID: &slotID,
+					GuideProfileID: uuid.New(),
+					GuideUserID:    guideUserID,
+					TouristUserID:  cancelledTouristID,
+					ScheduledFor:   startAt,
+					Adults:         1,
+					TotalSeats:     1,
+					Currency:       "KZT",
+					Status:         enum.ExcursionBookingStatusCancelled,
+				},
+			},
+		},
+	}
+	chat := &excursionChatGatewayStub{}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).WithExcursionChatGateway(chat)
+
+	_, err := uc.CloseGuideScheduleSlot(context.Background(), guideUserID, slotID)
+	if err != nil {
+		t.Fatalf("CloseGuideScheduleSlot() error = %v", err)
+	}
+	if chat.synced == nil {
+		t.Fatal("chat was not synced")
+	}
+	if chat.synced.ScheduleSlotID != slotID {
+		t.Fatalf("chat slot id = %s, want %s", chat.synced.ScheduleSlotID, slotID)
+	}
+	if chat.synced.GuideUserID != guideUserID {
+		t.Fatalf("chat guide id = %s, want %s", chat.synced.GuideUserID, guideUserID)
+	}
+	if len(chat.synced.ParticipantUserIDs) != 1 || chat.synced.ParticipantUserIDs[0] != activeTouristID {
+		t.Fatalf("chat participants = %v, want only active booking author %s", chat.synced.ParticipantUserIDs, activeTouristID)
+	}
+	if chat.synced.MessagingAvailableUntil == nil || !chat.synced.MessagingAvailableUntil.Equal(endAt.Add(time.Hour)) {
+		t.Fatalf("messaging deadline = %v, want %v", chat.synced.MessagingAvailableUntil, endAt.Add(time.Hour))
+	}
+	if repo.listBookingFilter.ScheduleSlotID == nil || *repo.listBookingFilter.ScheduleSlotID != slotID {
+		t.Fatalf("booking filter slot id = %v, want %s", repo.listBookingFilter.ScheduleSlotID, slotID)
 	}
 }
 

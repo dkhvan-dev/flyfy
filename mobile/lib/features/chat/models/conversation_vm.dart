@@ -4,6 +4,7 @@ class ConversationVm {
   final String? title;
   final String? avatarFileId;
   final String? activityId;
+  final String? excursionScheduleSlotId;
   final List<ParticipantInfo> participants;
   final LastMessagePreview? lastMessage;
   final int unreadCount;
@@ -19,6 +20,7 @@ class ConversationVm {
     this.title,
     this.avatarFileId,
     this.activityId,
+    this.excursionScheduleSlotId,
     this.participants = const [],
     this.lastMessage,
     this.unreadCount = 0,
@@ -32,6 +34,9 @@ class ConversationVm {
   bool get isGroup => type == 'group';
   bool get isDirect => type == 'direct';
   bool get isActivity => activityId != null && activityId!.trim().isNotEmpty;
+  bool get isExcursion =>
+      excursionScheduleSlotId != null &&
+      excursionScheduleSlotId!.trim().isNotEmpty;
   bool get canSendNow =>
       canSendMessages &&
       (messagingAvailableUntil == null ||
@@ -71,6 +76,7 @@ class ConversationVm {
       title: title,
       avatarFileId: avatarFileId,
       activityId: activityId,
+      excursionScheduleSlotId: excursionScheduleSlotId,
       participants: participants ?? this.participants,
       lastMessage: lastMessage ?? this.lastMessage,
       unreadCount: unreadCount ?? this.unreadCount,
@@ -89,6 +95,7 @@ class ConversationVm {
       title: json['title'] as String?,
       avatarFileId: json['avatarFileId'] as String?,
       activityId: json['activityId'] as String?,
+      excursionScheduleSlotId: json['excursionScheduleSlotId'] as String?,
       participants: (json['participants'] as List<dynamic>?)
               ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -168,6 +175,7 @@ class ConversationDetail {
   final String? avatarFileId;
   final DateTime createdAt;
   final String? activityId;
+  final String? excursionScheduleSlotId;
   final List<ParticipantInfo> participants;
   final List<PinnedMessageInfo> pinnedMessages;
   final int unreadCount;
@@ -183,6 +191,7 @@ class ConversationDetail {
     this.avatarFileId,
     required this.createdAt,
     this.activityId,
+    this.excursionScheduleSlotId,
     this.participants = const [],
     this.pinnedMessages = const [],
     this.unreadCount = 0,
@@ -195,6 +204,9 @@ class ConversationDetail {
   bool get isGroup => type == 'group';
   bool get isDirect => type == 'direct';
   bool get isActivity => activityId != null && activityId!.trim().isNotEmpty;
+  bool get isExcursion =>
+      excursionScheduleSlotId != null &&
+      excursionScheduleSlotId!.trim().isNotEmpty;
   bool get canSendNow =>
       canSendMessages &&
       (messagingAvailableUntil == null ||
@@ -228,6 +240,7 @@ class ConversationDetail {
       avatarFileId: avatarFileId,
       createdAt: createdAt,
       activityId: activityId,
+      excursionScheduleSlotId: excursionScheduleSlotId,
       participants: participants ?? this.participants,
       pinnedMessages: pinnedMessages ?? this.pinnedMessages,
       unreadCount: unreadCount ?? this.unreadCount,
@@ -246,6 +259,7 @@ class ConversationDetail {
       avatarFileId: json['avatarFileId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       activityId: json['activityId'] as String?,
+      excursionScheduleSlotId: json['excursionScheduleSlotId'] as String?,
       participants: (json['participants'] as List<dynamic>?)
               ?.map((e) => ParticipantInfo.fromJson(e as Map<String, dynamic>))
               .toList() ??

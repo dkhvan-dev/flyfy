@@ -24,12 +24,22 @@ type SyncActivityConversationRequest struct {
 	MessagingAvailableUntil string `json:"messagingAvailableUntil,omitempty"`
 }
 
+type SyncExcursionScheduleSlotConversationRequest struct {
+	ScheduleSlotID          string   `json:"scheduleSlotId"`
+	ExcursionTitle          string   `json:"excursionTitle,omitempty"`
+	ExcursionAvatarFileID   string   `json:"excursionAvatarFileId,omitempty"`
+	MessagingAvailableUntil string   `json:"messagingAvailableUntil,omitempty"`
+	GuideUserID             string   `json:"guideUserId"`
+	ParticipantUserIDs      []string `json:"participantUserIds,omitempty"`
+}
+
 type ConversationListItem struct {
 	ID                      string              `json:"id"`
 	Type                    string              `json:"type"`
 	Title                   *string             `json:"title"`
 	AvatarFileID            *string             `json:"avatarFileId"`
 	ActivityID              *string             `json:"activityId,omitempty"`
+	ExcursionScheduleSlotID *string             `json:"excursionScheduleSlotId,omitempty"`
 	Participants            []ParticipantInfo   `json:"participants,omitempty"`
 	LastMessage             *LastMessagePreview `json:"lastMessage"`
 	UnreadCount             int                 `json:"unreadCount"`
@@ -60,6 +70,7 @@ type ConversationDetail struct {
 	AvatarFileID            *string             `json:"avatarFileId"`
 	CreatedAt               string              `json:"createdAt"`
 	ActivityID              *string             `json:"activityId"`
+	ExcursionScheduleSlotID *string             `json:"excursionScheduleSlotId,omitempty"`
 	Participants            []ParticipantInfo   `json:"participants"`
 	PinnedMessages          []PinnedMessageInfo `json:"pinnedMessages"`
 	UnreadCount             int                 `json:"unreadCount"`

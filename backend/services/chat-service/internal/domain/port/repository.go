@@ -37,6 +37,7 @@ type ChatTxRepository interface {
 	UpdateConversation(ctx context.Context, conv *model.Conversation) error
 	GetConversationByIDForUpdate(ctx context.Context, conversationID uuid.UUID) (*model.Conversation, error)
 	GetConversationByActivityIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Conversation, error)
+	GetConversationByExcursionScheduleSlotIDForUpdate(ctx context.Context, slotID uuid.UUID) (*model.Conversation, error)
 	GetParticipantForUpdate(ctx context.Context, conversationID, userID uuid.UUID) (*model.Participant, error)
 	CountActiveParticipants(ctx context.Context, conversationID uuid.UUID) (int, error)
 	CreateParticipant(ctx context.Context, p *model.Participant) error
@@ -88,6 +89,7 @@ type ChatRepository interface {
 	ListConversationsByUserID(ctx context.Context, filter ConversationFilter) ([]*model.Conversation, error)
 	FindDirectConversation(ctx context.Context, userID1, userID2 uuid.UUID) (*model.Conversation, error)
 	GetConversationByActivityID(ctx context.Context, activityID uuid.UUID) (*model.Conversation, error)
+	GetConversationByExcursionScheduleSlotID(ctx context.Context, slotID uuid.UUID) (*model.Conversation, error)
 	GetMessageByID(ctx context.Context, messageID uuid.UUID) (*model.Message, error)
 	ListMessages(ctx context.Context, filter MessageFilter) ([]*model.Message, error)
 	ListMessageReactionSummaries(

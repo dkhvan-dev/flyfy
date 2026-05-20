@@ -8963,13 +8963,13 @@ abstract class AppLocalizations {
   /// No description provided for @chatActivityChatClosed.
   ///
   /// In en, this message translates to:
-  /// **'This activity chat is now read-only.'**
+  /// **'This chat is now read-only.'**
   String get chatActivityChatClosed;
 
   /// No description provided for @chatActivityChatClosedHistoryNotice.
   ///
   /// In en, this message translates to:
-  /// **'The activity has ended. Messages can no longer be sent in this chat.'**
+  /// **'The event has ended. Messages can no longer be sent in this chat.'**
   String get chatActivityChatClosedHistoryNotice;
 
   /// No description provided for @chatVoiceMessage.

@@ -82,10 +82,12 @@ type ExcursionOfferRelations struct {
 }
 
 type ExcursionBookingFilter struct {
-	TouristUserID *uuid.UUID
-	GuideUserID   *uuid.UUID
-	Limit         int
-	Offset        int
+	TouristUserID  *uuid.UUID
+	GuideUserID    *uuid.UUID
+	ScheduleSlotID *uuid.UUID
+	Statuses       []enum.ExcursionBookingStatus
+	Limit          int
+	Offset         int
 }
 
 type ExcursionReviewFilter struct {
@@ -149,6 +151,7 @@ type ExcursionRepository interface {
 	ListExcursionScheduleSlots(ctx context.Context, filter ExcursionScheduleFilter) ([]*model.ExcursionScheduleSlot, error)
 	ReserveExcursionScheduleSlotSeats(ctx context.Context, slotID uuid.UUID, seats int) error
 	ExpireUnbookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, reason string) error
+	CloseBookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, limit int) ([]*model.ExcursionScheduleSlot, error)
 	CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) (int, error)
 	CreateExcursionAttendanceQRIssue(ctx context.Context, item *model.ExcursionAttendanceQRIssue) error
 	WithTx(ctx context.Context, fn func(repo ExcursionTxRepository) error) error

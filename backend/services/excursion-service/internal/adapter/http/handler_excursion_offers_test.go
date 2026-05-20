@@ -288,6 +288,10 @@ func (s *excursionOffersRepoStub) ExpireUnbookedExcursionScheduleSlots(context.C
 	return nil
 }
 
+func (s *excursionOffersRepoStub) CloseBookedExcursionScheduleSlots(context.Context, time.Time, int) ([]*model.ExcursionScheduleSlot, error) {
+	return nil, nil
+}
+
 func (s *excursionOffersRepoStub) CompleteDueExcursionScheduleSlots(context.Context, time.Time, string, int) (int, error) {
 	return 0, nil
 }

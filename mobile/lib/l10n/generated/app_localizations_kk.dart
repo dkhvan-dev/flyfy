@@ -4960,12 +4960,11 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatComposerClosedHint => 'Чат жабылды';
 
   @override
-  String get chatActivityChatClosed =>
-      'Бұл белсенділік чаты енді тек оқуға қолжетімді.';
+  String get chatActivityChatClosed => 'Бұл чат енді тек оқуға қолжетімді.';
 
   @override
   String get chatActivityChatClosedHistoryNotice =>
-      'Белсенділік аяқталды. Бұл чатқа енді хабар жіберу мүмкін емес.';
+      'Оқиға аяқталды. Бұл чатқа енді хабар жіберу мүмкін емес.';
 
   @override
   String get chatVoiceMessage => 'Дауыстық хабар';

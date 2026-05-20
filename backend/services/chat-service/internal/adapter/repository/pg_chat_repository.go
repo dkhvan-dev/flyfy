@@ -45,8 +45,8 @@ func (r *PGChatRepository) WithTx(ctx context.Context, fn func(repo port.ChatTxR
 	return nil
 }
 
-const conversationColumns = `id, type, title, avatar_file_id, activity_id, pinned_message_id, messaging_available_until, created_at, last_activity_at`
-const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
+const conversationColumns = `id, type, title, avatar_file_id, activity_id, excursion_schedule_slot_id, pinned_message_id, messaging_available_until, created_at, last_activity_at`
+const conversationSelectColumns = `c.id, c.type, c.title, c.avatar_file_id, c.activity_id, c.excursion_schedule_slot_id, c.pinned_message_id, c.messaging_available_until, c.created_at, c.last_activity_at`
 const messageColumns = `id, conversation_id, sender_user_id, type, content, sticker_id, sticker_file_id, sticker_payload, reply_to_message_id, forwarded_from_message_id, forwarded_from_sender_user_id, forwarded_from_sender_name, forward_count, edited_at, deleted_at, sent_at`
 const messageSelectColumns = `m.id, m.conversation_id, m.sender_user_id, m.type, m.content, m.sticker_id, m.sticker_file_id, m.sticker_payload, m.reply_to_message_id, m.forwarded_from_message_id, m.forwarded_from_sender_user_id, m.forwarded_from_sender_name, m.forward_count, m.edited_at, m.deleted_at, m.sent_at`
 
@@ -54,7 +54,7 @@ func scanConversation(row pgx.Row) (*model.Conversation, error) {
 	var c model.Conversation
 	err := row.Scan(
 		&c.ID, &c.Type, &c.Title, &c.AvatarFileID, &c.ActivityID,
-		&c.PinnedMessageID, &c.MessagingAvailableUntil, &c.CreatedAt, &c.LastActivityAt,
+		&c.ExcursionScheduleSlotID, &c.PinnedMessageID, &c.MessagingAvailableUntil, &c.CreatedAt, &c.LastActivityAt,
 	)
 	if err == pgx.ErrNoRows {
 		return nil, nil
@@ -74,6 +74,12 @@ func (r *PGChatRepository) GetConversationByID(ctx context.Context, conversation
 func (r *PGChatRepository) GetConversationByActivityID(ctx context.Context, activityID uuid.UUID) (*model.Conversation, error) {
 	row := r.pool.QueryRow(ctx,
 		`SELECT `+conversationColumns+` FROM conversations WHERE activity_id = $1`, activityID)
+	return scanConversation(row)
+}
+
+func (r *PGChatRepository) GetConversationByExcursionScheduleSlotID(ctx context.Context, slotID uuid.UUID) (*model.Conversation, error) {
+	row := r.pool.QueryRow(ctx,
+		`SELECT `+conversationColumns+` FROM conversations WHERE excursion_schedule_slot_id = $1`, slotID)
 	return scanConversation(row)
 }
 
@@ -125,7 +131,7 @@ func (r *PGChatRepository) ListConversationsByUserID(ctx context.Context, filter
 		var c model.Conversation
 		if err := rows.Scan(
 			&c.ID, &c.Type, &c.Title, &c.AvatarFileID, &c.ActivityID,
-			&c.PinnedMessageID, &c.MessagingAvailableUntil, &c.CreatedAt, &c.LastActivityAt,
+			&c.ExcursionScheduleSlotID, &c.PinnedMessageID, &c.MessagingAvailableUntil, &c.CreatedAt, &c.LastActivityAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan conversation row: %w", err)
 		}
@@ -530,10 +536,10 @@ func (r *PGChatRepository) GetUnreadCount(ctx context.Context, conversationID, u
 
 func (tx *pgChatTxRepository) CreateConversation(ctx context.Context, conv *model.Conversation) error {
 	_, err := tx.tx.Exec(ctx, `
-		INSERT INTO conversations (id, type, title, avatar_file_id, activity_id, pinned_message_id, messaging_available_until, created_at, last_activity_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO conversations (id, type, title, avatar_file_id, activity_id, excursion_schedule_slot_id, pinned_message_id, messaging_available_until, created_at, last_activity_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`, conv.ID, conv.Type, conv.Title, conv.AvatarFileID, conv.ActivityID,
-		conv.PinnedMessageID, conv.MessagingAvailableUntil, conv.CreatedAt, conv.LastActivityAt)
+		conv.ExcursionScheduleSlotID, conv.PinnedMessageID, conv.MessagingAvailableUntil, conv.CreatedAt, conv.LastActivityAt)
 	return err
 }
 
@@ -555,6 +561,12 @@ func (tx *pgChatTxRepository) GetConversationByIDForUpdate(ctx context.Context, 
 func (tx *pgChatTxRepository) GetConversationByActivityIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Conversation, error) {
 	row := tx.tx.QueryRow(ctx,
 		`SELECT `+conversationColumns+` FROM conversations WHERE activity_id = $1 FOR UPDATE`, activityID)
+	return scanConversation(row)
+}
+
+func (tx *pgChatTxRepository) GetConversationByExcursionScheduleSlotIDForUpdate(ctx context.Context, slotID uuid.UUID) (*model.Conversation, error) {
+	row := tx.tx.QueryRow(ctx,
+		`SELECT `+conversationColumns+` FROM conversations WHERE excursion_schedule_slot_id = $1 FOR UPDATE`, slotID)
 	return scanConversation(row)
 }
 

@@ -45,6 +45,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/conversations", h.CreateConversation)
 	mux.HandleFunc("POST /v1/internal/activity-conversations/participants", h.EnsureActivityParticipant)
 	mux.HandleFunc("POST /v1/internal/activity-conversations/sync", h.SyncActivityConversation)
+	mux.HandleFunc("POST /v1/internal/excursion-schedule-slot-conversations/sync", h.SyncExcursionScheduleSlotConversation)
 	mux.HandleFunc("GET /v1/conversations/", h.handleConversationRoutes)
 	mux.HandleFunc("POST /v1/conversations/", h.handleConversationRoutes)
 	mux.HandleFunc("PATCH /v1/conversations/", h.handleConversationRoutes)
@@ -114,6 +115,10 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 		if c.ActivityID != nil {
 			s := c.ActivityID.String()
 			item.ActivityID = &s
+		}
+		if c.ExcursionScheduleSlotID != nil {
+			s := c.ExcursionScheduleSlotID.String()
+			item.ExcursionScheduleSlotID = &s
 		}
 		if c.MutedUntil != nil {
 			s := c.MutedUntil.Format(time.RFC3339)
@@ -300,6 +305,54 @@ func (h *Handler) SyncActivityConversation(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, map[string]string{"id": conv.ID.String()})
 }
 
+func (h *Handler) SyncExcursionScheduleSlotConversation(w http.ResponseWriter, r *http.Request) {
+	if !InternalCallFromContext(r.Context()) {
+		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		return
+	}
+
+	var req dto.SyncExcursionScheduleSlotConversationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	slotID, err := uuid.Parse(strings.TrimSpace(req.ScheduleSlotID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid schedule slot id")
+		return
+	}
+	guideUserID, err := uuid.Parse(strings.TrimSpace(req.GuideUserID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid guide user id")
+		return
+	}
+	participantUserIDs := make([]uuid.UUID, 0, len(req.ParticipantUserIDs))
+	for _, rawUserID := range req.ParticipantUserIDs {
+		userID, parseErr := uuid.Parse(strings.TrimSpace(rawUserID))
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "invalid participant user id")
+			return
+		}
+		participantUserIDs = append(participantUserIDs, userID)
+	}
+
+	conv, err := h.conversationUC.SyncExcursionScheduleSlotConversation(r.Context(), app.SyncExcursionScheduleSlotConversationInput{
+		ScheduleSlotID:          slotID,
+		ExcursionTitle:          req.ExcursionTitle,
+		ExcursionAvatarFileID:   req.ExcursionAvatarFileID,
+		MessagingAvailableUntil: parseOptionalTime(req.MessagingAvailableUntil),
+		GuideUserID:             guideUserID,
+		ParticipantUserIDs:      participantUserIDs,
+	})
+	if err != nil {
+		h.writeAppError(w, err, "sync excursion schedule slot conversation failed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"id": conv.ID.String()})
+}
+
 func (h *Handler) handleConversationRoutes(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/v1/conversations/")
 	path = strings.Trim(path, "/")
@@ -473,6 +526,10 @@ func (h *Handler) GetConversation(w http.ResponseWriter, r *http.Request, convID
 		s := conv.ActivityID.String()
 		detail.ActivityID = &s
 	}
+	if conv.ExcursionScheduleSlotID != nil {
+		s := conv.ExcursionScheduleSlotID.String()
+		detail.ExcursionScheduleSlotID = &s
+	}
 	if conv.MutedUntil != nil {
 		s := conv.MutedUntil.Format(time.RFC3339)
 		detail.MutedUntil = &s
@@ -514,6 +571,10 @@ func (h *Handler) GetConversationByActivity(w http.ResponseWriter, r *http.Reque
 	if conv.ActivityID != nil {
 		s := conv.ActivityID.String()
 		detail.ActivityID = &s
+	}
+	if conv.ExcursionScheduleSlotID != nil {
+		s := conv.ExcursionScheduleSlotID.String()
+		detail.ExcursionScheduleSlotID = &s
 	}
 	if conv.MutedUntil != nil {
 		s := conv.MutedUntil.Format(time.RFC3339)

@@ -4964,12 +4964,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatComposerClosedHint => 'Чат закрыт';
 
   @override
-  String get chatActivityChatClosed =>
-      'Чат активности теперь доступен только для чтения.';
+  String get chatActivityChatClosed => 'Чат теперь доступен только для чтения.';
 
   @override
   String get chatActivityChatClosedHistoryNotice =>
-      'Активность завершена. Сообщения в этот чат больше нельзя отправлять.';
+      'Событие завершено. Сообщения в этот чат больше нельзя отправлять.';
 
   @override
   String get chatVoiceMessage => 'Голосовое сообщение';

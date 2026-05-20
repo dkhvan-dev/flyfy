@@ -10,6 +10,7 @@ import (
 	"time"
 
 	attractionadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/attraction"
+	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/chat"
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/filemanager"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/grpc"
 	guideadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/guide"
@@ -91,9 +92,15 @@ func main() {
 		cfg.Attraction.BaseURL,
 		cfg.Security.InternalServiceToken,
 	)
+	chatClient := chatadapter.New(
+		cfg.ChatService.HTTPURL,
+		cfg.Security.InternalServiceToken,
+		cfg.ChatService.RequestTimeout,
+	)
 	excursionUC := app.NewExcursionUseCase(repo, guideClient, fileManagerClient, translator).
 		WithUserProfileResolver(userClient).
 		WithAttractionRatingUpdater(attractionRatingClient).
+		WithExcursionChatGateway(chatClient).
 		WithAttendanceQRConfig(
 			cfg.Attendance.QRSigningSecret,
 			cfg.Attendance.QRTTL,
@@ -164,6 +171,15 @@ func runExcursionLifecycleTicker(
 	defer ticker.Stop()
 
 	run := func() {
+		closedCount, err := uc.AutoCloseBookedExcursionScheduleSlots(ctx, batchSize)
+		if err != nil {
+			log.Error().Err(err).Msg("auto-close booked excursion schedule slots failed")
+			return
+		}
+		if closedCount > 0 {
+			log.Info().Int("closed_slots", closedCount).Msg("auto-closed booked excursion schedule slots")
+		}
+
 		count, err := uc.AutoCompleteDueExcursionScheduleSlots(ctx, batchSize)
 		if err != nil {
 			log.Error().Err(err).Msg("auto-complete due excursion schedule slots failed")

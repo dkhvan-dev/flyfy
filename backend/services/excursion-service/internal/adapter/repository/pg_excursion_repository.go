@@ -1400,8 +1400,22 @@ func (r *PGExcursionRepository) ListExcursionBookings(ctx context.Context, filte
 		args = append(args, *filter.GuideUserID)
 		argPos++
 	}
+	if filter.ScheduleSlotID != nil && *filter.ScheduleSlotID != uuid.Nil {
+		parts = append(parts, fmt.Sprintf(" AND b.schedule_slot_id = $%d", argPos))
+		args = append(args, *filter.ScheduleSlotID)
+		argPos++
+	}
+	if len(filter.Statuses) > 0 {
+		statuses := make([]string, 0, len(filter.Statuses))
+		for _, status := range filter.Statuses {
+			statuses = append(statuses, string(status))
+		}
+		parts = append(parts, fmt.Sprintf(" AND b.status = ANY($%d)", argPos))
+		args = append(args, statuses)
+		argPos++
+	}
 	if len(args) == 0 {
-		return nil, fmt.Errorf("list excursion bookings requires tourist or guide filter")
+		return nil, fmt.Errorf("list excursion bookings requires tourist, guide or schedule slot filter")
 	}
 	parts = append(parts, fmt.Sprintf(`
 		ORDER BY
@@ -1856,6 +1870,10 @@ func (r *PGExcursionRepository) ExpireUnbookedExcursionScheduleSlots(ctx context
 	return expireUnbookedExcursionScheduleSlots(ctx, r.pool, cutoff, reason)
 }
 
+func (r *PGExcursionRepository) CloseBookedExcursionScheduleSlots(ctx context.Context, cutoff time.Time, limit int) ([]*model.ExcursionScheduleSlot, error) {
+	return closeBookedExcursionScheduleSlots(ctx, r.pool, cutoff, limit)
+}
+
 func (r *PGExcursionRepository) CompleteDueExcursionScheduleSlots(ctx context.Context, before time.Time, reason string, limit int) (int, error) {
 	return completeDueExcursionScheduleSlots(ctx, r.pool, before, reason, limit)
 }
@@ -2005,6 +2023,11 @@ func (r *PGExcursionRepository) CalculateLandmarkReviewStats(ctx context.Context
 type dbExecutor interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+type dbQueryExecutor interface {
+	dbExecutor
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
 func insertExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion) error {
@@ -2244,6 +2267,79 @@ func expireUnbookedExcursionScheduleSlots(ctx context.Context, exec dbExecutor, 
 		return fmt.Errorf("expire unbooked excursion schedule slots: %w", err)
 	}
 	return nil
+}
+
+func closeBookedExcursionScheduleSlots(
+	ctx context.Context,
+	exec dbQueryExecutor,
+	cutoff time.Time,
+	limit int,
+) ([]*model.ExcursionScheduleSlot, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	const query = `
+		WITH due_slots AS (
+			SELECT id
+			FROM excursion_schedule_slots
+			WHERE start_at < $1
+			  AND booked_seats > 0
+			  AND status IN ('BOOKED', 'FULL')
+			ORDER BY start_at ASC
+			LIMIT $2
+			FOR UPDATE SKIP LOCKED
+		),
+		updated_slots AS (
+			UPDATE excursion_schedule_slots s
+			SET
+				status = 'CLOSED',
+				closed_at = COALESCE(closed_at, NOW()),
+				updated_at = NOW()
+			FROM due_slots
+			WHERE s.id = due_slots.id
+			RETURNING
+				s.id, s.series_id,
+				s.guide_profile_id, s.guide_user_id,
+				s.offer_id, s.product_id, s.legacy_excursion_id,
+				s.start_at, s.end_at, s.timezone,
+				s.capacity, s.booked_seats,
+				s.status, s.cancel_reason, s.closed_at, s.cancelled_at,
+				s.completed_at, s.completion_reason,
+				s.created_at, s.updated_at
+		)
+		SELECT
+			us.id, us.series_id,
+			us.guide_profile_id, us.guide_user_id,
+			us.offer_id, us.product_id, us.legacy_excursion_id,
+			us.start_at, us.end_at, us.timezone,
+			us.capacity, us.booked_seats,
+			us.status, us.cancel_reason, us.closed_at, us.cancelled_at,
+			us.completed_at, us.completion_reason,
+			us.created_at, us.updated_at,
+			COALESCE(NULLIF(o.title, ''), NULLIF(p.title, ''), '')
+		FROM updated_slots us
+		JOIN excursion_offers o ON o.id = us.offer_id
+		JOIN excursion_products p ON p.id = us.product_id
+		ORDER BY us.start_at ASC
+	`
+	rows, err := exec.Query(ctx, query, cutoff.UTC(), limit)
+	if err != nil {
+		return nil, fmt.Errorf("close booked excursion schedule slots: %w", err)
+	}
+	defer rows.Close()
+
+	slots := make([]*model.ExcursionScheduleSlot, 0)
+	for rows.Next() {
+		slot, scanErr := scanExcursionScheduleSlotWithTitle(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		slots = append(slots, slot)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate closed excursion schedule slots: %w", err)
+	}
+	return slots, nil
 }
 
 func completeDueExcursionScheduleSlots(ctx context.Context, exec dbExecutor, before time.Time, reason string, limit int) (int, error) {

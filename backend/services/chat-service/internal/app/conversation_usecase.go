@@ -179,6 +179,15 @@ type SyncActivityConversationInput struct {
 	MessagingAvailableUntil *time.Time
 }
 
+type SyncExcursionScheduleSlotConversationInput struct {
+	ScheduleSlotID          uuid.UUID
+	ExcursionTitle          string
+	ExcursionAvatarFileID   string
+	MessagingAvailableUntil *time.Time
+	GuideUserID             uuid.UUID
+	ParticipantUserIDs      []uuid.UUID
+}
+
 func (u *ConversationUseCase) EnsureActivityParticipant(ctx context.Context, input EnsureActivityParticipantInput) (*model.Conversation, error) {
 	if input.ActivityID == uuid.Nil {
 		return nil, ErrInvalidActivityID
@@ -350,6 +359,135 @@ func (u *ConversationUseCase) SyncActivityConversation(ctx context.Context, inpu
 	}
 
 	return conv, nil
+}
+
+func (u *ConversationUseCase) SyncExcursionScheduleSlotConversation(
+	ctx context.Context,
+	input SyncExcursionScheduleSlotConversationInput,
+) (*model.Conversation, error) {
+	if input.ScheduleSlotID == uuid.Nil {
+		return nil, ErrInvalidActivityID
+	}
+	if input.GuideUserID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+
+	title := strings.TrimSpace(input.ExcursionTitle)
+	if title == "" {
+		title = "Excursion chat"
+	}
+	excursionAvatarFileID := strings.TrimSpace(input.ExcursionAvatarFileID)
+	var avatarFileID *string
+	if excursionAvatarFileID != "" {
+		avatarFileID = &excursionAvatarFileID
+	}
+	participantUserIDs := uniqueConversationParticipantUserIDs(input.ParticipantUserIDs, input.GuideUserID)
+
+	now := time.Now().UTC()
+	var conv *model.Conversation
+	err := u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
+		var err error
+		conv, err = txRepo.GetConversationByExcursionScheduleSlotIDForUpdate(ctx, input.ScheduleSlotID)
+		if err != nil {
+			return err
+		}
+		if conv == nil {
+			conv = &model.Conversation{
+				ID:                      uuid.New(),
+				Type:                    "group",
+				Title:                   &title,
+				AvatarFileID:            avatarFileID,
+				ExcursionScheduleSlotID: &input.ScheduleSlotID,
+				MessagingAvailableUntil: normalizeTimePtr(input.MessagingAvailableUntil),
+				CreatedAt:               now,
+				LastActivityAt:          now,
+			}
+			if err := txRepo.CreateConversation(ctx, conv); err != nil {
+				return err
+			}
+		} else {
+			if strings.TrimSpace(title) != "" {
+				conv.Title = &title
+			}
+			if avatarFileID != nil {
+				conv.AvatarFileID = avatarFileID
+			}
+			conv.MessagingAvailableUntil = normalizeTimePtr(input.MessagingAvailableUntil)
+			if err := txRepo.UpdateConversation(ctx, conv); err != nil {
+				return err
+			}
+		}
+
+		if err := ensureConversationParticipant(ctx, txRepo, conv.ID, input.GuideUserID, "admin", now); err != nil {
+			return err
+		}
+		for _, userID := range participantUserIDs {
+			if err := ensureConversationParticipant(ctx, txRepo, conv.ID, userID, "member", now); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return conv, nil
+}
+
+func uniqueConversationParticipantUserIDs(userIDs []uuid.UUID, excludeUserID uuid.UUID) []uuid.UUID {
+	if len(userIDs) == 0 {
+		return nil
+	}
+	seen := make(map[uuid.UUID]struct{}, len(userIDs))
+	result := make([]uuid.UUID, 0, len(userIDs))
+	for _, userID := range userIDs {
+		if userID == uuid.Nil || userID == excludeUserID {
+			continue
+		}
+		if _, ok := seen[userID]; ok {
+			continue
+		}
+		seen[userID] = struct{}{}
+		result = append(result, userID)
+	}
+	return result
+}
+
+func ensureConversationParticipant(
+	ctx context.Context,
+	txRepo port.ChatTxRepository,
+	conversationID uuid.UUID,
+	userID uuid.UUID,
+	role string,
+	now time.Time,
+) error {
+	participant, err := txRepo.GetParticipantForUpdate(ctx, conversationID, userID)
+	if err != nil {
+		return err
+	}
+	if participant != nil && participant.LeftAt == nil {
+		if participant.Role != role {
+			participant.Role = role
+			return txRepo.UpdateParticipant(ctx, participant)
+		}
+		return nil
+	}
+
+	count, err := txRepo.CountActiveParticipants(ctx, conversationID)
+	if err != nil {
+		return err
+	}
+	if count >= 200 {
+		return ErrConversationFull
+	}
+	return txRepo.CreateParticipant(ctx, &model.Participant{
+		ID:             uuid.New(),
+		ConversationID: conversationID,
+		UserID:         userID,
+		Role:           role,
+		JoinedAt:       now,
+	})
 }
 
 func (u *ConversationUseCase) GetConversationByID(ctx context.Context, conversationID, actorUserID uuid.UUID) (*model.Conversation, error) {

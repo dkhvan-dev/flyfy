@@ -11,6 +11,7 @@ type Conversation struct {
 	Title                   *string
 	AvatarFileID            *string
 	ActivityID              *uuid.UUID
+	ExcursionScheduleSlotID *uuid.UUID
 	PinnedMessageID         *uuid.UUID
 	MessagingAvailableUntil *time.Time
 	CreatedAt               time.Time

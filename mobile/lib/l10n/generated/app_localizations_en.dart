@@ -4930,11 +4930,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatComposerClosedHint => 'Chat is closed';
 
   @override
-  String get chatActivityChatClosed => 'This activity chat is now read-only.';
+  String get chatActivityChatClosed => 'This chat is now read-only.';
 
   @override
   String get chatActivityChatClosedHistoryNotice =>
-      'The activity has ended. Messages can no longer be sent in this chat.';
+      'The event has ended. Messages can no longer be sent in this chat.';
 
   @override
   String get chatVoiceMessage => 'Voice message';
