@@ -455,6 +455,23 @@ void main() {
   );
 
   test(
+    'excursion details lets authors manage their reviews from long press',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('showExcursionReviewActionsSheet('));
+      expect(source, contains('showExcursionReviewEditSheet('));
+      expect(source, contains('_openExcursionReviewActions'));
+      expect(source, contains('onLongPress:'));
+      expect(source, contains('review.author.userId'));
+      expect(source, contains('saveExcursionReview('));
+      expect(source, contains('deleteExcursionReview('));
+    },
+  );
+
+  test(
     'excursion details refreshes empty stale offer lists and keeps itinerary text visible',
     () async {
       final source = await File(

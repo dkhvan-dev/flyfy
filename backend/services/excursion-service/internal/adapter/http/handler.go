@@ -37,6 +37,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/excursion-products/{id}/reviews", h.ListExcursionProductReviews)
 	mux.HandleFunc("GET /v1/excursion-products/{id}/cover", h.GetExcursionProductCover)
 	mux.HandleFunc("GET /v1/excursion-reviews", h.ListExcursionReviews)
+	mux.HandleFunc("GET /v1/guide-reviews", h.ListGuideReviews)
 
 	mux.HandleFunc("GET /v1/excursions", h.ListExcursions)
 	mux.HandleFunc("GET /v1/excursions/{id}", h.GetExcursion)
@@ -65,6 +66,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("PATCH /v1/me/excursion-bookings/{id}", h.UpdateExcursionBookingGuests)
 	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/cancel", h.CancelExcursionBooking)
 	mux.HandleFunc("POST /v1/me/excursion-bookings/{id}/review", h.CreateExcursionReview)
+	mux.HandleFunc("PUT /v1/me/excursion-bookings/{id}/reviews", h.SaveBookingReviews)
 }
 
 func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
@@ -786,6 +788,33 @@ func (h *Handler) CreateExcursionReview(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusCreated, toExcursionReviewResponse(review, ""))
 }
 
+func (h *Handler) SaveBookingReviews(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	bookingID, ok := parsePathUUID(w, r, "id", "invalid excursion booking id")
+	if !ok {
+		return
+	}
+	var req dto.SaveBookingReviewsRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	result, err := h.useCase.SaveBookingReviews(r.Context(), app.SaveBookingReviewsInput{
+		ActorUserID:     actorUserID,
+		BookingID:       bookingID,
+		ExcursionReview: toReviewMutationInput(req.ExcursionReview),
+		GuideReview:     toReviewMutationInput(req.GuideReview),
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to save booking reviews")
+		return
+	}
+	writeJSON(w, http.StatusOK, toBookingReviewsResponse(result))
+}
+
 func (h *Handler) ListExcursionProductReviews(w http.ResponseWriter, r *http.Request) {
 	productID, ok := parsePathUUID(w, r, "id", "invalid excursion product id")
 	if !ok {
@@ -832,6 +861,31 @@ func (h *Handler) ListExcursionReviews(w http.ResponseWriter, r *http.Request) {
 	h.writeExcursionReviews(w, r, filter)
 }
 
+func (h *Handler) ListGuideReviews(w http.ResponseWriter, r *http.Request) {
+	var filter port.GuideReviewFilter
+	rawGuideUserID := strings.TrimSpace(r.URL.Query().Get("guideUserId"))
+	if rawGuideUserID == "" {
+		writeError(w, http.StatusBadRequest, "guide user id is required")
+		return
+	}
+	guideUserID, err := uuid.Parse(rawGuideUserID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid guide user id")
+		return
+	}
+	filter.GuideUserID = &guideUserID
+	if rawSort := strings.TrimSpace(r.URL.Query().Get("sort")); rawSort != "" {
+		switch port.GuideReviewSort(rawSort) {
+		case port.GuideReviewSortLatest, port.GuideReviewSortRatingDesc:
+			filter.Sort = port.GuideReviewSort(rawSort)
+		default:
+			writeError(w, http.StatusBadRequest, "invalid guide review sort")
+			return
+		}
+	}
+	h.writeGuideReviews(w, r, filter)
+}
+
 func (h *Handler) writeExcursionReviews(w http.ResponseWriter, r *http.Request, filter port.ExcursionReviewFilter) {
 	requestedLimit := clampLimit(parseIntOrDefault(r.URL.Query().Get("limit"), 20))
 	filter.Limit = requestedLimit + 1
@@ -842,6 +896,18 @@ func (h *Handler) writeExcursionReviews(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	writeJSON(w, http.StatusOK, toExcursionReviewListResponse(items, requestedLimit))
+}
+
+func (h *Handler) writeGuideReviews(w http.ResponseWriter, r *http.Request, filter port.GuideReviewFilter) {
+	requestedLimit := clampLimit(parseIntOrDefault(r.URL.Query().Get("limit"), 20))
+	filter.Limit = requestedLimit + 1
+	filter.Offset = parseIntOrDefault(r.URL.Query().Get("offset"), 0)
+	items, err := h.useCase.ListGuideReviews(r.Context(), filter)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list guide reviews")
+		return
+	}
+	writeJSON(w, http.StatusOK, toGuideReviewListResponse(items, requestedLimit))
 }
 
 func (h *Handler) GetExcursionCover(w http.ResponseWriter, r *http.Request) {
@@ -1534,6 +1600,9 @@ func toExcursionBookingListItemResponse(item *model.ExcursionBookingListItem) dt
 	if item.Review != nil {
 		response.Review = toExcursionReviewResponse(item.Review, response.GuideDisplayName)
 	}
+	if item.GuideReview != nil {
+		response.GuideReview = toGuideReviewResponse(item.GuideReview)
+	}
 	return response
 }
 
@@ -1554,6 +1623,46 @@ func toExcursionReviewListResponse(items []*model.ExcursionReview, requestedLimi
 		result = append(result, *response)
 	}
 	return dto.ExcursionReviewListResponse{Items: result, HasMore: hasMore}
+}
+
+func toGuideReviewListResponse(items []*model.GuideReview, requestedLimit int) dto.GuideReviewListResponse {
+	hasMore := len(items) > requestedLimit
+	if hasMore {
+		items = items[:requestedLimit]
+	}
+	result := make([]dto.GuideReviewResponse, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		response := toGuideReviewResponse(item)
+		if response == nil {
+			continue
+		}
+		result = append(result, *response)
+	}
+	return dto.GuideReviewListResponse{Items: result, HasMore: hasMore}
+}
+
+func toReviewMutationInput(req *dto.ReviewMutationRequest) *app.ReviewMutationInput {
+	if req == nil {
+		return nil
+	}
+	return &app.ReviewMutationInput{
+		Rating:  req.Rating,
+		Comment: req.Comment,
+		Delete:  req.Delete,
+	}
+}
+
+func toBookingReviewsResponse(result *app.BookingReviewsResult) dto.BookingReviewsResponse {
+	if result == nil {
+		return dto.BookingReviewsResponse{}
+	}
+	return dto.BookingReviewsResponse{
+		ExcursionReview: toExcursionReviewResponse(result.ExcursionReview, ""),
+		GuideReview:     toGuideReviewResponse(result.GuideReview),
+	}
 }
 
 func toExcursionReviewResponse(item *model.ExcursionReview, guideDisplayName string) *dto.ExcursionReviewResponse {
@@ -1593,6 +1702,40 @@ func toExcursionReviewResponse(item *model.ExcursionReview, guideDisplayName str
 		Rating:      item.Rating,
 		Comment:     item.Comment,
 		SourceLabel: "EXCURSION",
+		CreatedAt:   item.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:   item.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func toGuideReviewResponse(item *model.GuideReview) *dto.GuideReviewResponse {
+	if item == nil {
+		return nil
+	}
+	authorUserID := item.Author.UserID
+	if authorUserID == uuid.Nil {
+		authorUserID = item.TouristUserID
+	}
+	var authorAvatarFileID *string
+	if item.Author.AvatarFileID != nil {
+		value := item.Author.AvatarFileID.String()
+		authorAvatarFileID = &value
+	}
+	return &dto.GuideReviewResponse{
+		ID:             item.ID.String(),
+		BookingID:      item.BookingID.String(),
+		ProductID:      item.ProductID.String(),
+		OfferID:        item.OfferID.String(),
+		GuideProfileID: item.GuideProfileID.String(),
+		GuideUserID:    item.GuideUserID.String(),
+		TouristUserID:  item.TouristUserID.String(),
+		Author: dto.ReviewAuthorResponse{
+			UserID:       authorUserID.String(),
+			DisplayName:  item.Author.DisplayName,
+			AvatarFileID: authorAvatarFileID,
+		},
+		Rating:      item.Rating,
+		Comment:     item.Comment,
+		SourceLabel: "GUIDE",
 		CreatedAt:   item.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:   item.UpdatedAt.UTC().Format(time.RFC3339),
 	}
@@ -1642,6 +1785,7 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 	case errors.Is(err, model.ErrExcursionAlreadyArchived),
 		errors.Is(err, model.ErrExcursionGuideLandmarkAlreadyExists),
 		errors.Is(err, model.ErrExcursionReviewAlreadyExists),
+		errors.Is(err, model.ErrGuideReviewAlreadyExists),
 		errors.Is(err, app.ErrExcursionBookingIdempotencyConflict),
 		errors.Is(err, app.ErrExcursionScheduleConflict):
 		writeError(w, http.StatusConflict, err.Error())

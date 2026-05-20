@@ -284,6 +284,35 @@ type CreateExcursionReviewInput struct {
 	Comment     string
 }
 
+type ReviewMutationInput struct {
+	Rating  float64
+	Comment string
+	Delete  bool
+}
+
+type SaveBookingReviewsInput struct {
+	ActorUserID     uuid.UUID
+	BookingID       uuid.UUID
+	ExcursionReview *ReviewMutationInput
+	GuideReview     *ReviewMutationInput
+}
+
+type BookingReviewsResult struct {
+	ExcursionReview *model.ExcursionReview
+	GuideReview     *model.GuideReview
+}
+
+type reviewMutationRepository interface {
+	CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error
+	UpdateExcursionReview(ctx context.Context, item *model.ExcursionReview) error
+	DeleteExcursionReview(ctx context.Context, item *model.ExcursionReview) error
+	GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error)
+	CreateGuideReview(ctx context.Context, item *model.GuideReview) error
+	UpdateGuideReview(ctx context.Context, item *model.GuideReview) error
+	DeleteGuideReview(ctx context.Context, item *model.GuideReview) error
+	GetGuideReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.GuideReview, error)
+}
+
 type ExcursionAttendanceQRData struct {
 	ScheduleSlotID string
 	Token          string
@@ -1954,9 +1983,7 @@ func (u *ExcursionUseCase) CreateExcursionReview(ctx context.Context, input Crea
 	if booking == nil || booking.TouristUserID != input.ActorUserID {
 		return nil, ErrExcursionBookingNotFound
 	}
-	if booking.Status != enum.ExcursionBookingStatusRequested ||
-		booking.CancelledAt != nil ||
-		booking.ScheduledFor.After(time.Now().UTC()) {
+	if !isExcursionBookingReviewable(booking) {
 		return nil, ErrExcursionBookingNotReviewable
 	}
 	existing, err := u.repo.GetExcursionReviewByBookingID(ctx, booking.ID)
@@ -1981,6 +2008,165 @@ func (u *ExcursionUseCase) CreateExcursionReview(ctx context.Context, input Crea
 	u.enrichExcursionReviewAuthors(ctx, []*model.ExcursionReview{review})
 	u.applyAttractionRatingSnapshot(ctx, review)
 	return review, nil
+}
+
+func (u *ExcursionUseCase) SaveBookingReviews(ctx context.Context, input SaveBookingReviewsInput) (*BookingReviewsResult, error) {
+	if input.ActorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	if input.BookingID == uuid.Nil {
+		return nil, model.ErrInvalidExcursionBookingID
+	}
+	booking, err := u.repo.GetExcursionBookingByID(ctx, input.BookingID)
+	if err != nil {
+		return nil, fmt.Errorf("get excursion booking: %w", err)
+	}
+	if booking == nil || booking.TouristUserID != input.ActorUserID {
+		return nil, ErrExcursionBookingNotFound
+	}
+	if !isExcursionBookingReviewable(booking) {
+		return nil, ErrExcursionBookingNotReviewable
+	}
+
+	result := &BookingReviewsResult{}
+	var refreshLandmarkReview *model.ExcursionReview
+	err = u.repo.WithTx(ctx, func(repo port.ExcursionTxRepository) error {
+		if input.ExcursionReview != nil {
+			existing, err := repo.GetExcursionReviewByBookingID(ctx, booking.ID)
+			if err != nil {
+				return fmt.Errorf("get excursion review: %w", err)
+			}
+			result.ExcursionReview, refreshLandmarkReview, err = u.applyExcursionReviewMutation(ctx, repo, booking, existing, *input.ExcursionReview)
+			if err != nil {
+				return err
+			}
+		} else {
+			result.ExcursionReview, err = repo.GetExcursionReviewByBookingID(ctx, booking.ID)
+			if err != nil {
+				return fmt.Errorf("get excursion review: %w", err)
+			}
+		}
+
+		if input.GuideReview != nil {
+			existing, err := repo.GetGuideReviewByBookingID(ctx, booking.ID)
+			if err != nil {
+				return fmt.Errorf("get guide review: %w", err)
+			}
+			result.GuideReview, err = u.applyGuideReviewMutation(ctx, repo, booking, existing, *input.GuideReview)
+			if err != nil {
+				return err
+			}
+		} else {
+			result.GuideReview, err = repo.GetGuideReviewByBookingID(ctx, booking.ID)
+			if err != nil {
+				return fmt.Errorf("get guide review: %w", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if result.ExcursionReview != nil {
+		u.enrichExcursionReviewAuthors(ctx, []*model.ExcursionReview{result.ExcursionReview})
+	}
+	if result.GuideReview != nil {
+		result.GuideReview.Author.UserID = result.GuideReview.TouristUserID
+	}
+	u.applyAttractionRatingSnapshot(ctx, refreshLandmarkReview)
+	return result, nil
+}
+
+func (u *ExcursionUseCase) applyExcursionReviewMutation(
+	ctx context.Context,
+	repo reviewMutationRepository,
+	booking *model.ExcursionBooking,
+	existing *model.ExcursionReview,
+	input ReviewMutationInput,
+) (*model.ExcursionReview, *model.ExcursionReview, error) {
+	if input.Delete {
+		if existing == nil {
+			return nil, nil, nil
+		}
+		existing.SoftDelete()
+		if err := repo.DeleteExcursionReview(ctx, existing); err != nil {
+			return nil, nil, fmt.Errorf("delete excursion review: %w", err)
+		}
+		return nil, existing, nil
+	}
+	if existing != nil {
+		oldRating := existing.Rating
+		if err := existing.Update(input.Rating, input.Comment); err != nil {
+			return nil, nil, err
+		}
+		if err := repo.UpdateExcursionReview(ctx, existing); err != nil {
+			return nil, nil, fmt.Errorf("update excursion review: %w", err)
+		}
+		if oldRating != existing.Rating {
+			return existing, existing, nil
+		}
+		return existing, nil, nil
+	}
+	review, err := model.NewExcursionReview(model.NewExcursionReviewParams{
+		Booking: booking,
+		Rating:  input.Rating,
+		Comment: input.Comment,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := repo.CreateExcursionReview(ctx, review); err != nil {
+		return nil, nil, fmt.Errorf("create excursion review: %w", err)
+	}
+	return review, review, nil
+}
+
+func (u *ExcursionUseCase) applyGuideReviewMutation(
+	ctx context.Context,
+	repo reviewMutationRepository,
+	booking *model.ExcursionBooking,
+	existing *model.GuideReview,
+	input ReviewMutationInput,
+) (*model.GuideReview, error) {
+	if input.Delete {
+		if existing == nil {
+			return nil, nil
+		}
+		existing.SoftDelete()
+		if err := repo.DeleteGuideReview(ctx, existing); err != nil {
+			return nil, fmt.Errorf("delete guide review: %w", err)
+		}
+		return nil, nil
+	}
+	if existing != nil {
+		if err := existing.Update(input.Rating, input.Comment); err != nil {
+			return nil, err
+		}
+		if err := repo.UpdateGuideReview(ctx, existing); err != nil {
+			return nil, fmt.Errorf("update guide review: %w", err)
+		}
+		return existing, nil
+	}
+	review, err := model.NewGuideReview(model.NewGuideReviewParams{
+		Booking: booking,
+		Rating:  input.Rating,
+		Comment: input.Comment,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := repo.CreateGuideReview(ctx, review); err != nil {
+		return nil, fmt.Errorf("create guide review: %w", err)
+	}
+	return review, nil
+}
+
+func isExcursionBookingReviewable(booking *model.ExcursionBooking) bool {
+	return booking != nil &&
+		booking.Status == enum.ExcursionBookingStatusRequested &&
+		booking.CancelledAt == nil &&
+		!booking.ScheduledFor.After(time.Now().UTC())
 }
 
 func (u *ExcursionUseCase) applyAttractionRatingSnapshot(ctx context.Context, review *model.ExcursionReview) {
@@ -2023,6 +2209,30 @@ func (u *ExcursionUseCase) ListExcursionReviews(ctx context.Context, filter port
 	return items, nil
 }
 
+func (u *ExcursionUseCase) ListGuideReviews(ctx context.Context, filter port.GuideReviewFilter) ([]*model.GuideReview, error) {
+	if filter.GuideUserID == nil || *filter.GuideUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+	if filter.Limit > 100 {
+		filter.Limit = 100
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+	if filter.Sort == "" {
+		filter.Sort = port.GuideReviewSortLatest
+	}
+	items, err := u.repo.ListGuideReviews(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("list guide reviews: %w", err)
+	}
+	u.enrichGuideReviewAuthors(ctx, items)
+	return items, nil
+}
+
 func (u *ExcursionUseCase) enrichExcursionReviewAuthors(ctx context.Context, items []*model.ExcursionReview) {
 	if len(items) == 0 {
 		return
@@ -2060,6 +2270,53 @@ func (u *ExcursionUseCase) enrichExcursionReviewAuthors(ctx context.Context, ite
 		item.Author.UserID = item.TouristUserID
 		item.Author.DisplayName = profile.DisplayName
 		item.Author.AvatarFileID = profile.AvatarFileID
+	}
+}
+
+func (u *ExcursionUseCase) enrichGuideReviewAuthors(ctx context.Context, items []*model.GuideReview) {
+	if len(items) == 0 {
+		return
+	}
+
+	ids := make([]uuid.UUID, 0, len(items))
+	seen := make(map[uuid.UUID]struct{}, len(items))
+	for _, item := range items {
+		if item == nil || item.TouristUserID == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[item.TouristUserID]; ok {
+			continue
+		}
+		seen[item.TouristUserID] = struct{}{}
+		ids = append(ids, item.TouristUserID)
+	}
+	if len(ids) == 0 || u.userProfiles == nil {
+		for _, item := range items {
+			if item != nil && item.Author.UserID == uuid.Nil {
+				item.Author.UserID = item.TouristUserID
+			}
+		}
+		return
+	}
+
+	profiles, err := u.userProfiles.GetUserProfileProjections(ctx, ids)
+	if err != nil {
+		for _, item := range items {
+			if item != nil && item.Author.UserID == uuid.Nil {
+				item.Author.UserID = item.TouristUserID
+			}
+		}
+		return
+	}
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		item.Author.UserID = item.TouristUserID
+		if profile, ok := profiles[item.TouristUserID]; ok {
+			item.Author.DisplayName = profile.DisplayName
+			item.Author.AvatarFileID = profile.AvatarFileID
+		}
 	}
 }
 

@@ -31,6 +31,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
 import 'excursion_booking_screen.dart';
+import 'widgets/excursion_review_management_sheet.dart';
 
 class ExcursionDetailsScreen extends StatefulWidget {
   const ExcursionDetailsScreen({
@@ -258,6 +259,76 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
         _loadingOfferScheduleAvailability.clear();
       });
       await _retry(initialExcursion: updated);
+    }
+  }
+
+  Future<void> _openExcursionReviewActions(ExcursionReviewVm review) async {
+    final currentUserId =
+        (context.read<SessionProvider>().profile?.userId ?? '').trim();
+    if (currentUserId.isEmpty || review.author.userId.trim() != currentUserId) {
+      return;
+    }
+    final action = await showExcursionReviewActionsSheet(context);
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case ExcursionReviewAction.edit:
+        await _editExcursionReview(review);
+      case ExcursionReviewAction.delete:
+        await _deleteExcursionReview(review);
+    }
+  }
+
+  Future<void> _editExcursionReview(ExcursionReviewVm review) async {
+    final draft = await showExcursionReviewEditSheet(context, review: review);
+    if (!mounted || draft == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ExcursionProvider>();
+    final savedReview = await provider.saveExcursionReview(
+      review.bookingId,
+      draft.toRequest(),
+    );
+    if (!mounted) return;
+    if (savedReview == null) {
+      _showInfoSnack(
+        provider.actionErrorMessage ?? l10n.myExcursionsReviewFailed,
+      );
+      return;
+    }
+    await _refreshReviewSources(savedReview);
+    if (!mounted) return;
+    _showInfoSnack(l10n.excursionReviewUpdated);
+  }
+
+  Future<void> _deleteExcursionReview(ExcursionReviewVm review) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ExcursionProvider>();
+    final success = await provider.deleteExcursionReview(
+      review.bookingId,
+      review.id,
+    );
+    if (!mounted) return;
+    if (!success) {
+      _showInfoSnack(
+        provider.actionErrorMessage ?? l10n.myExcursionsReviewDeleteFailed,
+      );
+      return;
+    }
+    await _refreshReviewSources(review);
+    if (!mounted) return;
+    _showInfoSnack(l10n.excursionReviewDeleted);
+  }
+
+  Future<void> _refreshReviewSources(ExcursionReviewVm review) async {
+    final provider = context.read<ExcursionProvider>();
+    final productId = review.productId.trim();
+    if (productId.isNotEmpty) {
+      await provider.loadExcursionReviews(productId: productId);
+    }
+    final landmarkId = review.landmarkId?.trim() ?? '';
+    if (landmarkId.isNotEmpty) {
+      await provider.loadExcursionReviews(landmarkId: landmarkId);
     }
   }
 
@@ -538,6 +609,7 @@ class _ExcursionDetailsScreenState extends State<ExcursionDetailsScreen> {
             onOfferSelected: _selectOffer,
             onOffersChanged: (offers) =>
                 _replaceVisibleOffers(excursion.id, offers),
+            onReviewLongPress: _openExcursionReviewActions,
           );
         },
       ),
@@ -570,6 +642,7 @@ class ExcursionDetailsContent extends StatelessWidget {
     this.onBackTap,
     this.onNotificationsTap,
     this.onOffersChanged,
+    this.onReviewLongPress,
     this.localizedLandmark,
   });
 
@@ -596,6 +669,7 @@ class ExcursionDetailsContent extends StatelessWidget {
   final VoidCallback? onBackTap;
   final VoidCallback? onNotificationsTap;
   final ValueChanged<List<ExcursionOfferVm>>? onOffersChanged;
+  final ValueChanged<ExcursionReviewVm>? onReviewLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -690,6 +764,8 @@ class ExcursionDetailsContent extends StatelessWidget {
                                 const SizedBox(height: 44),
                                 _ExcursionReviewsSection(
                                   reviews: excursionReviews,
+                                  currentUserId: currentUserId,
+                                  onReviewLongPress: onReviewLongPress,
                                 ),
                               ],
                             ],
@@ -3776,9 +3852,15 @@ ExcursionItineraryLocalizedCopyVm? _itineraryTranslationFor(
 }
 
 class _ExcursionReviewsSection extends StatelessWidget {
-  const _ExcursionReviewsSection({required this.reviews});
+  const _ExcursionReviewsSection({
+    required this.reviews,
+    required this.currentUserId,
+    this.onReviewLongPress,
+  });
 
   final List<ExcursionReviewVm> reviews;
+  final String currentUserId;
+  final ValueChanged<ExcursionReviewVm>? onReviewLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -3813,7 +3895,11 @@ class _ExcursionReviewsSection extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < reviews.length; i++) ...[
-            _ExcursionReviewCard(review: reviews[i]),
+            _ExcursionReviewCard(
+              review: reviews[i],
+              currentUserId: currentUserId,
+              onLongPress: onReviewLongPress,
+            ),
             if (i < reviews.length - 1) const SizedBox(height: 14),
           ],
         ],
@@ -3823,9 +3909,15 @@ class _ExcursionReviewsSection extends StatelessWidget {
 }
 
 class _ExcursionReviewCard extends StatelessWidget {
-  const _ExcursionReviewCard({required this.review});
+  const _ExcursionReviewCard({
+    required this.review,
+    required this.currentUserId,
+    this.onLongPress,
+  });
 
   final ExcursionReviewVm review;
+  final String currentUserId;
+  final ValueChanged<ExcursionReviewVm>? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -3839,96 +3931,105 @@ class _ExcursionReviewCard extends StatelessWidget {
     final authorAvatarUrl = review.author.resolvedAvatarFileId.isEmpty
         ? null
         : resolvePublicFileContentUrl(review.author.resolvedAvatarFileId);
+    final canManage = currentUserId.isNotEmpty &&
+        review.author.userId.trim() == currentUserId;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A2A1A),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFF245163),
-                backgroundImage: authorAvatarUrl != null
-                    ? NetworkImage(authorAvatarUrl)
-                    : null,
-                child: authorAvatarUrl == null
-                    ? const Icon(
-                        Icons.person_rounded,
-                        color: Colors.white,
-                        size: 19,
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      authorName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      l10n.excursionReviewViaGuide(guideName),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFD8C2AD),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ],
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress:
+          canManage && onLongPress != null ? () => onLongPress!(review) : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF3A2A1A),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFF245163),
+                  backgroundImage: authorAvatarUrl != null
+                      ? NetworkImage(authorAvatarUrl)
+                      : null,
+                  child: authorAvatarUrl == null
+                      ? const Icon(
+                          Icons.person_rounded,
+                          color: Colors.white,
+                          size: 19,
+                        )
+                      : null,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(5, (index) {
-                    return Icon(
-                      index < review.rating.round()
-                          ? Icons.star_rounded
-                          : Icons.star_border_rounded,
-                      color: AppColors.accent,
-                      size: 18,
-                    );
-                  }),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        authorName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        l10n.excursionReviewViaGuide(guideName),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFD8C2AD),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(5, (index) {
+                      return Icon(
+                        index < review.rating.round()
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        color: AppColors.accent,
+                        size: 18,
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+            if (review.comment.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                review.comment,
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFD7BFAA),
+                  fontSize: 14,
+                  height: 1.55,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            review.comment,
-            maxLines: 5,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFFD7BFAA),
-              fontSize: 14,
-              height: 1.55,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

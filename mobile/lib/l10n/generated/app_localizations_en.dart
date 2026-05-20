@@ -1970,11 +1970,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileGuideReviewsLatestTitle => 'Latest excursion reviews';
 
   @override
+  String get profileDirectGuideReviewsTitle => 'Guide rating';
+
+  @override
   String get profileGuideReviewsEmptyTitle => 'No reviews yet';
 
   @override
   String get profileGuideReviewsEmpty =>
       'Reviews will appear here after travelers rate completed excursions.';
+
+  @override
+  String get profileDirectGuideReviewsEmpty =>
+      'Direct guide reviews will appear here after travelers rate the guide.';
 
   @override
   String get profileGuideReviewsLoadFailed => 'Could not load reviews';
@@ -3760,6 +3767,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myExcursionsReviewFailed => 'Failed to publish review';
 
   @override
+  String get myExcursionsReviewDeleteFailed => 'Failed to delete review';
+
+  @override
   String get myExcursionsReviewRating => 'Rating';
 
   @override
@@ -3767,13 +3777,79 @@ class AppLocalizationsEn extends AppLocalizations {
       'What did you like, and what could be better?';
 
   @override
+  String get myExcursionsExcursionReviewSectionTitle => 'Excursion review';
+
+  @override
+  String get myExcursionsExcursionReviewSectionSubtitle =>
+      'Rate the route, organization, and overall experience.';
+
+  @override
+  String get myExcursionsExcursionReviewOptional =>
+      'Turn this off if you only want to rate the guide.';
+
+  @override
+  String get myExcursionsGuideReviewSectionTitle => 'Guide review';
+
+  @override
+  String get myExcursionsGuideReviewSectionSubtitle =>
+      'Optionally rate the guide separately for future travelers.';
+
+  @override
+  String get myExcursionsGuideReviewRating => 'Guide rating';
+
+  @override
+  String get myExcursionsGuideReviewHint =>
+      'How was the guide\'s communication, care, and storytelling?';
+
+  @override
+  String get myExcursionsGuideReviewOptional =>
+      'Optional, but it helps the guide build a trusted profile.';
+
+  @override
+  String get myExcursionsReviewSelectOneError =>
+      'Choose at least one review to publish';
+
+  @override
+  String get myExcursionsReviewDeleteExcursion => 'Delete excursion review';
+
+  @override
+  String get myExcursionsReviewDeleteGuide => 'Delete guide review';
+
+  @override
   String get myExcursionsReviewPublish => 'Publish';
+
+  @override
+  String get excursionReviewActionsTitle => 'Review actions';
+
+  @override
+  String get excursionReviewEditAction => 'Edit review';
+
+  @override
+  String get excursionReviewDeleteAction => 'Delete review';
+
+  @override
+  String get excursionReviewEditTitle => 'Edit review';
+
+  @override
+  String get excursionReviewEditSave => 'Save review';
+
+  @override
+  String get excursionReviewUpdated => 'Review updated';
+
+  @override
+  String get excursionReviewDeleted => 'Review deleted';
 
   @override
   String get guideDashboardTitle => 'Guide Dashboard';
 
   @override
   String get guideDashboardReviewsTitle => 'Reviews';
+
+  @override
+  String get guideDashboardExcursionReviewsTab => 'Excursions';
+
+  @override
+  String get guideDashboardDirectGuideReviewsTab => 'Guide';
 
   @override
   String get guideDashboardOffersStat => 'Total offers';
@@ -3845,6 +3921,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guideDashboardReviewEmptyHint =>
       'Offers waiting for moderation or publication will appear here.';
+
+  @override
+  String get guideDashboardDirectGuideReviewsEmpty =>
+      'Direct guide reviews will appear here after travelers rate you separately.';
 
   @override
   String get guideDashboardArchiveEmpty => 'Archive is empty';

@@ -341,6 +341,7 @@ type ExcursionBookingResponse struct {
 	CreatedAt         string                   `json:"createdAt"`
 	UpdatedAt         string                   `json:"updatedAt"`
 	Review            *ExcursionReviewResponse `json:"review,omitempty"`
+	GuideReview       *GuideReviewResponse     `json:"guideReview,omitempty"`
 }
 
 type ExcursionBookingListResponse struct {
@@ -351,6 +352,22 @@ type ExcursionBookingListResponse struct {
 type CreateExcursionReviewRequest struct {
 	Rating  float64 `json:"rating"`
 	Comment string  `json:"comment"`
+}
+
+type SaveBookingReviewsRequest struct {
+	ExcursionReview *ReviewMutationRequest `json:"excursionReview,omitempty"`
+	GuideReview     *ReviewMutationRequest `json:"guideReview,omitempty"`
+}
+
+type ReviewMutationRequest struct {
+	Rating  float64 `json:"rating"`
+	Comment string  `json:"comment"`
+	Delete  bool    `json:"delete,omitempty"`
+}
+
+type BookingReviewsResponse struct {
+	ExcursionReview *ExcursionReviewResponse `json:"excursionReview,omitempty"`
+	GuideReview     *GuideReviewResponse     `json:"guideReview,omitempty"`
 }
 
 type ExcursionReviewResponse struct {
@@ -373,6 +390,22 @@ type ExcursionReviewResponse struct {
 	UpdatedAt         string               `json:"updatedAt"`
 }
 
+type GuideReviewResponse struct {
+	ID             string               `json:"id"`
+	BookingID      string               `json:"bookingId"`
+	ProductID      string               `json:"productId"`
+	OfferID        string               `json:"offerId"`
+	GuideProfileID string               `json:"guideProfileId"`
+	GuideUserID    string               `json:"guideUserId"`
+	TouristUserID  string               `json:"touristUserId"`
+	Author         ReviewAuthorResponse `json:"author"`
+	Rating         float64              `json:"rating"`
+	Comment        string               `json:"comment"`
+	SourceLabel    string               `json:"sourceLabel"`
+	CreatedAt      string               `json:"createdAt"`
+	UpdatedAt      string               `json:"updatedAt"`
+}
+
 type ReviewAuthorResponse struct {
 	UserID       string  `json:"userId"`
 	DisplayName  *string `json:"displayName,omitempty"`
@@ -382,4 +415,9 @@ type ReviewAuthorResponse struct {
 type ExcursionReviewListResponse struct {
 	Items   []ExcursionReviewResponse `json:"items"`
 	HasMore bool                      `json:"hasMore"`
+}
+
+type GuideReviewListResponse struct {
+	Items   []GuideReviewResponse `json:"items"`
+	HasMore bool                  `json:"hasMore"`
 }

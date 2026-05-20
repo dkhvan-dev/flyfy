@@ -101,11 +101,25 @@ type ExcursionReviewFilter struct {
 	Offset      int
 }
 
+type GuideReviewFilter struct {
+	GuideUserID *uuid.UUID
+	Sort        GuideReviewSort
+	Limit       int
+	Offset      int
+}
+
 type ExcursionReviewSort string
 
 const (
 	ExcursionReviewSortLatest     ExcursionReviewSort = "latest"
 	ExcursionReviewSortRatingDesc ExcursionReviewSort = "rating_desc"
+)
+
+type GuideReviewSort string
+
+const (
+	GuideReviewSortLatest     GuideReviewSort = "latest"
+	GuideReviewSortRatingDesc GuideReviewSort = "rating_desc"
 )
 
 type ExcursionScheduleFilter struct {
@@ -142,8 +156,15 @@ type ExcursionRepository interface {
 	UpdateExcursionBookingGuests(ctx context.Context, item *model.ExcursionBooking, seatDelta int) error
 	CancelExcursionBooking(ctx context.Context, item *model.ExcursionBooking) error
 	CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error
+	UpdateExcursionReview(ctx context.Context, item *model.ExcursionReview) error
+	DeleteExcursionReview(ctx context.Context, item *model.ExcursionReview) error
 	GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error)
+	CreateGuideReview(ctx context.Context, item *model.GuideReview) error
+	UpdateGuideReview(ctx context.Context, item *model.GuideReview) error
+	DeleteGuideReview(ctx context.Context, item *model.GuideReview) error
+	GetGuideReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.GuideReview, error)
 	ListExcursionReviews(ctx context.Context, filter ExcursionReviewFilter) ([]*model.ExcursionReview, error)
+	ListGuideReviews(ctx context.Context, filter GuideReviewFilter) ([]*model.GuideReview, error)
 	CalculateLandmarkReviewStats(ctx context.Context, landmarkID uuid.UUID) (float64, int, error)
 	CreateExcursionScheduleSlot(ctx context.Context, slot *model.ExcursionScheduleSlot) error
 	CreateExcursionScheduleSeriesWithSlots(ctx context.Context, series *model.ExcursionScheduleSeries, slots []*model.ExcursionScheduleSlot) error
@@ -160,6 +181,14 @@ type ExcursionRepository interface {
 }
 
 type ExcursionTxRepository interface {
+	CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error
+	UpdateExcursionReview(ctx context.Context, item *model.ExcursionReview) error
+	DeleteExcursionReview(ctx context.Context, item *model.ExcursionReview) error
+	GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error)
+	CreateGuideReview(ctx context.Context, item *model.GuideReview) error
+	UpdateGuideReview(ctx context.Context, item *model.GuideReview) error
+	DeleteGuideReview(ctx context.Context, item *model.GuideReview) error
+	GetGuideReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.GuideReview, error)
 	GetExcursionAttendanceQRIssueByJTIForUpdate(ctx context.Context, jti uuid.UUID) (*model.ExcursionAttendanceQRIssue, error)
 	GetExcursionAttendanceSyncAttemptByScanIDForUpdate(ctx context.Context, scanID uuid.UUID) (*model.ExcursionAttendanceSyncAttempt, error)
 	GetExcursionScheduleSlotByIDForUpdate(ctx context.Context, slotID uuid.UUID) (*model.ExcursionScheduleSlot, error)

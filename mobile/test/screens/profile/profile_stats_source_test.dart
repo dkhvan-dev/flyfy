@@ -52,4 +52,18 @@ void main() {
     expect(source, contains('profileGuideReviewsEmpty'));
     expect(source, contains('review.author.resolvedDisplayName'));
   });
+
+  test('foreign guide profile renders direct guide reviews separately',
+      () async {
+    final source =
+        await File('lib/screens/profile/profile_screen.dart').readAsString();
+
+    expect(source, contains('_directGuideReviewsFutureFor('));
+    expect(source, contains('getGuideReviews('));
+    expect(source, contains('class _DirectGuideReviewsSection'));
+    expect(source, contains('profileDirectGuideReviewsTitle'));
+    expect(source, contains('profileDirectGuideReviewsEmpty'));
+    expect(source, contains('GuideReviewVm'));
+    expect(source, contains('directGuideReviewsFuture:'));
+  });
 }

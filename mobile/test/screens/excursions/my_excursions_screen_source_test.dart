@@ -48,8 +48,74 @@ void main() {
       expect(source, contains('booking.canReview'));
       expect(source, contains('myExcursionsReviewButton'));
       expect(source, contains('class _ExcursionReviewSheet'));
-      expect(source, contains('createExcursionReview('));
+      expect(source, contains('saveBookingReviews('));
       expect(source, contains('loadExcursionReviews('));
+    },
+  );
+
+  test(
+    'review sheet manages excursion and optional guide reviews together',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('saveBookingReviews('));
+      expect(source, contains('deleteExcursionReview('));
+      expect(source, contains('deleteGuideReview('));
+      expect(source, contains('class _CombinedReviewDraft'));
+      expect(source, contains('class _ReviewSectionCard'));
+      expect(source, contains('myExcursionsExcursionReviewSectionTitle'));
+      expect(source, contains('myExcursionsGuideReviewSectionTitle'));
+      expect(source, contains('booking.guideReview'));
+      expect(source, contains('DraggableScrollableSheet'));
+      expect(source, contains('MediaQuery.viewInsetsOf(context).bottom'));
+    },
+  );
+
+  test(
+    'review sheet lets tourist choose excursion and guide review sections',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+      final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+      expect(source, contains('late bool _includeExcursionReview'));
+      expect(source, contains('excursion: _includeExcursionReview'));
+      expect(source, contains('guide: _includeGuideReview'));
+      expect(source, contains('myExcursionsExcursionReviewOptional'));
+      expect(source, contains('myExcursionsReviewSelectOneError'));
+      expect(ruSource, contains('"myExcursionsExcursionReviewOptional"'));
+      expect(ruSource, contains('"myExcursionsReviewSelectOneError"'));
+    },
+  );
+
+  test(
+    'review sheet allows rating-only reviews and keeps delete actions scoped',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('ReviewDraftRequest('));
+      expect(source, isNot(contains('myExcursionsReviewCommentError')));
+      expect(source, contains('myExcursionsReviewDeleteExcursion'));
+      expect(source, contains('myExcursionsReviewDeleteGuide'));
+      expect(source, contains('_deleteExcursionReview'));
+      expect(source, contains('_deleteGuideReview'));
+    },
+  );
+
+  test(
+    'visited review badge does not force unwrap excursion review',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+
+      expect(source, isNot(contains('booking.review!.rating')));
+      expect(source, contains('booking.reviewBadgeRating'));
     },
   );
 

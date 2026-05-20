@@ -286,11 +286,39 @@ func (s *excursionScheduleHTTPRepoStub) CreateExcursionReview(context.Context, *
 	return nil
 }
 
+func (s *excursionScheduleHTTPRepoStub) UpdateExcursionReview(context.Context, *model.ExcursionReview) error {
+	return nil
+}
+
+func (s *excursionScheduleHTTPRepoStub) DeleteExcursionReview(context.Context, *model.ExcursionReview) error {
+	return nil
+}
+
 func (s *excursionScheduleHTTPRepoStub) GetExcursionReviewByBookingID(context.Context, uuid.UUID) (*model.ExcursionReview, error) {
 	return nil, nil
 }
 
+func (s *excursionScheduleHTTPRepoStub) CreateGuideReview(context.Context, *model.GuideReview) error {
+	return nil
+}
+
+func (s *excursionScheduleHTTPRepoStub) UpdateGuideReview(context.Context, *model.GuideReview) error {
+	return nil
+}
+
+func (s *excursionScheduleHTTPRepoStub) DeleteGuideReview(context.Context, *model.GuideReview) error {
+	return nil
+}
+
+func (s *excursionScheduleHTTPRepoStub) GetGuideReviewByBookingID(context.Context, uuid.UUID) (*model.GuideReview, error) {
+	return nil, nil
+}
+
 func (s *excursionScheduleHTTPRepoStub) ListExcursionReviews(context.Context, port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
+	return nil, nil
+}
+
+func (s *excursionScheduleHTTPRepoStub) ListGuideReviews(context.Context, port.GuideReviewFilter) ([]*model.GuideReview, error) {
 	return nil, nil
 }
 

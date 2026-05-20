@@ -1983,11 +1983,18 @@ class AppLocalizationsKk extends AppLocalizations {
       'Экскурсиялар бойынша соңғы пікірлер';
 
   @override
+  String get profileDirectGuideReviewsTitle => 'Гид рейтингі';
+
+  @override
   String get profileGuideReviewsEmptyTitle => 'Әзірге пікір жоқ';
 
   @override
   String get profileGuideReviewsEmpty =>
       'Саяхатшылар өткізілген экскурсияларды бағалағаннан кейін пікірлер осында шығады.';
+
+  @override
+  String get profileDirectGuideReviewsEmpty =>
+      'Гид туралы тікелей пікірлер саяхатшылар бөлек бағалағаннан кейін осында шығады.';
 
   @override
   String get profileGuideReviewsLoadFailed =>
@@ -3789,19 +3796,88 @@ class AppLocalizationsKk extends AppLocalizations {
   String get myExcursionsReviewFailed => 'Пікірді жариялау мүмкін болмады';
 
   @override
+  String get myExcursionsReviewDeleteFailed => 'Пікірді жою мүмкін болмады';
+
+  @override
   String get myExcursionsReviewRating => 'Баға';
 
   @override
   String get myExcursionsReviewHint => 'Не ұнады, нені жақсартуға болады?';
 
   @override
+  String get myExcursionsExcursionReviewSectionTitle => 'Экскурсия пікірі';
+
+  @override
+  String get myExcursionsExcursionReviewSectionSubtitle =>
+      'Бағытты, ұйымдастыруды және жалпы әсерді бағалаңыз.';
+
+  @override
+  String get myExcursionsExcursionReviewOptional =>
+      'Тек гидті бағалағыңыз келсе, мұны өшіріңіз.';
+
+  @override
+  String get myExcursionsGuideReviewSectionTitle => 'Гид пікірі';
+
+  @override
+  String get myExcursionsGuideReviewSectionSubtitle =>
+      'Қаласаңыз, болашақ саяхатшылар үшін гидті бөлек бағалаңыз.';
+
+  @override
+  String get myExcursionsGuideReviewRating => 'Гид бағасы';
+
+  @override
+  String get myExcursionsGuideReviewHint =>
+      'Гидтің қарым-қатынасы, қамқорлығы және әңгімелеуі қандай болды?';
+
+  @override
+  String get myExcursionsGuideReviewOptional =>
+      'Міндетті емес, бірақ гидтің сенімді профилін дамытуға көмектеседі.';
+
+  @override
+  String get myExcursionsReviewSelectOneError =>
+      'Жариялау үшін кемінде бір пікір таңдаңыз';
+
+  @override
+  String get myExcursionsReviewDeleteExcursion => 'Экскурсия пікірін жою';
+
+  @override
+  String get myExcursionsReviewDeleteGuide => 'Гид пікірін жою';
+
+  @override
   String get myExcursionsReviewPublish => 'Жариялау';
+
+  @override
+  String get excursionReviewActionsTitle => 'Пікір әрекеттері';
+
+  @override
+  String get excursionReviewEditAction => 'Пікірді өңдеу';
+
+  @override
+  String get excursionReviewDeleteAction => 'Пікірді жою';
+
+  @override
+  String get excursionReviewEditTitle => 'Пікірді өңдеу';
+
+  @override
+  String get excursionReviewEditSave => 'Пікірді сақтау';
+
+  @override
+  String get excursionReviewUpdated => 'Пікір жаңартылды';
+
+  @override
+  String get excursionReviewDeleted => 'Пікір жойылды';
 
   @override
   String get guideDashboardTitle => 'Гид кабинеті';
 
   @override
   String get guideDashboardReviewsTitle => 'Пікірлер';
+
+  @override
+  String get guideDashboardExcursionReviewsTab => 'Экскурсиялар';
+
+  @override
+  String get guideDashboardDirectGuideReviewsTab => 'Гид';
 
   @override
   String get guideDashboardOffersStat => 'Барлық ұсыныс';
@@ -3873,6 +3949,10 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get guideDashboardReviewEmptyHint =>
       'Модерацияны немесе жариялауды күтіп тұрған ұсыныстар осында шығады.';
+
+  @override
+  String get guideDashboardDirectGuideReviewsEmpty =>
+      'Сіз туралы тікелей пікірлер саяхатшылар бөлек бағалағаннан кейін осында шығады.';
 
   @override
   String get guideDashboardArchiveEmpty => 'Архив әзірге бос';

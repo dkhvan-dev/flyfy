@@ -147,10 +147,20 @@ func TestListGuideExcursionLanguagesRejectsTooManyGuideUserIDs(t *testing.T) {
 }
 
 type excursionOffersRepoStub struct {
-	lastOfferFilter    port.ExcursionOfferFilter
-	listReviewFilter   port.ExcursionReviewFilter
-	lastGuideUserIDs   []uuid.UUID
-	guideLanguageCodes map[uuid.UUID][]string
+	lastOfferFilter       port.ExcursionOfferFilter
+	listReviewFilter      port.ExcursionReviewFilter
+	listGuideReviewFilter port.GuideReviewFilter
+	lastGuideUserIDs      []uuid.UUID
+	guideLanguageCodes    map[uuid.UUID][]string
+	booking               *model.ExcursionBooking
+	existingReview        *model.ExcursionReview
+	createdReview         *model.ExcursionReview
+	updatedReview         *model.ExcursionReview
+	deletedReview         *model.ExcursionReview
+	existingGuideReview   *model.GuideReview
+	createdGuideReview    *model.GuideReview
+	updatedGuideReview    *model.GuideReview
+	deletedGuideReview    *model.GuideReview
 }
 
 func (s *excursionOffersRepoStub) CreateExcursionAggregate(context.Context, *model.Excursion, port.ExcursionRelations) error {
@@ -224,7 +234,7 @@ func (s *excursionOffersRepoStub) ListExcursionBookings(context.Context, port.Ex
 }
 
 func (s *excursionOffersRepoStub) GetExcursionBookingByID(context.Context, uuid.UUID) (*model.ExcursionBooking, error) {
-	return nil, nil
+	return s.booking, nil
 }
 
 func (s *excursionOffersRepoStub) GetExcursionBookingByTouristIDAndIdempotencyKey(context.Context, uuid.UUID, string) (*model.ExcursionBooking, error) {
@@ -239,16 +249,51 @@ func (s *excursionOffersRepoStub) CancelExcursionBooking(context.Context, *model
 	return nil
 }
 
-func (s *excursionOffersRepoStub) CreateExcursionReview(context.Context, *model.ExcursionReview) error {
+func (s *excursionOffersRepoStub) CreateExcursionReview(_ context.Context, item *model.ExcursionReview) error {
+	s.createdReview = item
 	return nil
 }
 
 func (s *excursionOffersRepoStub) GetExcursionReviewByBookingID(context.Context, uuid.UUID) (*model.ExcursionReview, error) {
-	return nil, nil
+	return s.existingReview, nil
+}
+
+func (s *excursionOffersRepoStub) UpdateExcursionReview(_ context.Context, item *model.ExcursionReview) error {
+	s.updatedReview = item
+	return nil
+}
+
+func (s *excursionOffersRepoStub) DeleteExcursionReview(_ context.Context, item *model.ExcursionReview) error {
+	s.deletedReview = item
+	return nil
+}
+
+func (s *excursionOffersRepoStub) CreateGuideReview(_ context.Context, item *model.GuideReview) error {
+	s.createdGuideReview = item
+	return nil
+}
+
+func (s *excursionOffersRepoStub) UpdateGuideReview(_ context.Context, item *model.GuideReview) error {
+	s.updatedGuideReview = item
+	return nil
+}
+
+func (s *excursionOffersRepoStub) DeleteGuideReview(_ context.Context, item *model.GuideReview) error {
+	s.deletedGuideReview = item
+	return nil
+}
+
+func (s *excursionOffersRepoStub) GetGuideReviewByBookingID(context.Context, uuid.UUID) (*model.GuideReview, error) {
+	return s.existingGuideReview, nil
 }
 
 func (s *excursionOffersRepoStub) ListExcursionReviews(_ context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
 	s.listReviewFilter = filter
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) ListGuideReviews(_ context.Context, filter port.GuideReviewFilter) ([]*model.GuideReview, error) {
+	s.listGuideReviewFilter = filter
 	return nil, nil
 }
 
@@ -300,6 +345,30 @@ func (s *excursionOffersRepoStub) CreateExcursionAttendanceQRIssue(context.Conte
 	return nil
 }
 
-func (s *excursionOffersRepoStub) WithTx(context.Context, func(port.ExcursionTxRepository) error) error {
+func (s *excursionOffersRepoStub) WithTx(_ context.Context, fn func(port.ExcursionTxRepository) error) error {
+	return fn(s)
+}
+
+func (s *excursionOffersRepoStub) GetExcursionAttendanceQRIssueByJTIForUpdate(context.Context, uuid.UUID) (*model.ExcursionAttendanceQRIssue, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) GetExcursionAttendanceSyncAttemptByScanIDForUpdate(context.Context, uuid.UUID) (*model.ExcursionAttendanceSyncAttempt, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) GetExcursionScheduleSlotByIDForUpdate(context.Context, uuid.UUID) (*model.ExcursionScheduleSlot, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) GetExcursionBookingByScheduleSlotAndTouristForUpdate(context.Context, uuid.UUID, uuid.UUID) (*model.ExcursionBooking, error) {
+	return nil, nil
+}
+
+func (s *excursionOffersRepoStub) CreateExcursionAttendanceSyncAttempt(context.Context, *model.ExcursionAttendanceSyncAttempt) error {
+	return nil
+}
+
+func (s *excursionOffersRepoStub) UpdateExcursionBookingAttendance(context.Context, *model.ExcursionBooking) error {
 	return nil
 }

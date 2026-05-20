@@ -46,6 +46,22 @@ void main() {
         'comment': 'Warm guide and a smooth route.',
         'createdAt': '2026-05-02T10:00:00Z',
       },
+      'guideReview': {
+        'id': 'guide-review-1',
+        'bookingId': 'booking-1',
+        'touristUserId': 'tourist-1',
+        'guideUserId': 'guide-user-1',
+        'guideProfileId': 'guide-profile-1',
+        'guideDisplayName': 'Aruzhan',
+        'author': {
+          'userId': 'tourist-1',
+          'displayName': '@nomad_aru',
+          'avatarFileId': 'avatar-1',
+        },
+        'rating': 5,
+        'comment': 'Thoughtful pacing and clear stories.',
+        'createdAt': '2026-05-02T10:05:00Z',
+      },
     });
 
     expect(booking.id, 'booking-1');
@@ -55,6 +71,11 @@ void main() {
     expect(booking.review?.author.userId, 'tourist-1');
     expect(booking.review?.author.displayName, '@nomad_aru');
     expect(booking.review?.author.avatarFileId, 'avatar-1');
+    expect(booking.guideReview?.id, 'guide-review-1');
+    expect(booking.guideReview?.rating, 5);
+    expect(
+        booking.guideReview?.comment, 'Thoughtful pacing and clear stories.');
+    expect(booking.guideReview?.author.displayName, '@nomad_aru');
     expect(booking.author.userId, 'tourist-1');
     expect(booking.author.displayName, '@booking_author');
     expect(booking.author.avatarFileId, 'booking-avatar-1');
@@ -141,12 +162,45 @@ void main() {
     expect(
         _booking('waiting', DateTime.utc(2026, 5, 1, 8)).isCheckedIn, isFalse);
   });
+
+  test('visited reviewed bookings still allow author review management', () {
+    final booking = _booking(
+      'rated-visited',
+      DateTime.utc(2026, 5, 10),
+      reviewed: true,
+    );
+
+    expect(booking.isReviewed, isTrue);
+    expect(booking.canReview(DateTime.utc(2026, 5, 17)), isTrue);
+  });
+
+  test('review badge rating uses available excursion and guide reviews', () {
+    final unrated = _booking('unrated', DateTime.utc(2026, 5, 10));
+    final guideOnly = _booking(
+      'guide-only',
+      DateTime.utc(2026, 5, 10),
+      guideReviewed: true,
+    );
+    final both = _booking(
+      'both',
+      DateTime.utc(2026, 5, 10),
+      reviewed: true,
+      guideReviewed: true,
+    );
+
+    expect(unrated.reviewBadgeRating, isNull);
+    expect(guideOnly.review, isNull);
+    expect(guideOnly.isReviewed, isTrue);
+    expect(guideOnly.reviewBadgeRating, 4);
+    expect(both.reviewBadgeRating, 4.5);
+  });
 }
 
 ExcursionBookingVm _booking(
   String id,
   DateTime scheduledFor, {
   bool reviewed = false,
+  bool guideReviewed = false,
   String? scheduleSlotId,
 }) {
   return ExcursionBookingVm(
@@ -179,6 +233,20 @@ ExcursionBookingVm _booking(
             guideDisplayName: 'Aruzhan',
             rating: 5,
             comment: 'Great',
+            createdAt: DateTime.utc(2026, 5, 13),
+            updatedAt: DateTime.utc(2026, 5, 13),
+          )
+        : null,
+    guideReview: guideReviewed
+        ? GuideReviewVm(
+            id: 'guide-review-$id',
+            bookingId: id,
+            touristUserId: 'tourist-1',
+            guideUserId: 'guide-user-1',
+            guideProfileId: 'guide-profile-1',
+            guideDisplayName: 'Aruzhan',
+            rating: 4,
+            comment: 'Careful guide',
             createdAt: DateTime.utc(2026, 5, 13),
             updatedAt: DateTime.utc(2026, 5, 13),
           )

@@ -3694,6 +3694,12 @@ abstract class AppLocalizations {
   /// **'Latest excursion reviews'**
   String get profileGuideReviewsLatestTitle;
 
+  /// No description provided for @profileDirectGuideReviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide rating'**
+  String get profileDirectGuideReviewsTitle;
+
   /// No description provided for @profileGuideReviewsEmptyTitle.
   ///
   /// In en, this message translates to:
@@ -3705,6 +3711,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reviews will appear here after travelers rate completed excursions.'**
   String get profileGuideReviewsEmpty;
+
+  /// No description provided for @profileDirectGuideReviewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct guide reviews will appear here after travelers rate the guide.'**
+  String get profileDirectGuideReviewsEmpty;
 
   /// No description provided for @profileGuideReviewsLoadFailed.
   ///
@@ -6904,6 +6916,12 @@ abstract class AppLocalizations {
   /// **'Failed to publish review'**
   String get myExcursionsReviewFailed;
 
+  /// No description provided for @myExcursionsReviewDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete review'**
+  String get myExcursionsReviewDeleteFailed;
+
   /// No description provided for @myExcursionsReviewRating.
   ///
   /// In en, this message translates to:
@@ -6916,11 +6934,119 @@ abstract class AppLocalizations {
   /// **'What did you like, and what could be better?'**
   String get myExcursionsReviewHint;
 
+  /// No description provided for @myExcursionsExcursionReviewSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursion review'**
+  String get myExcursionsExcursionReviewSectionTitle;
+
+  /// No description provided for @myExcursionsExcursionReviewSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the route, organization, and overall experience.'**
+  String get myExcursionsExcursionReviewSectionSubtitle;
+
+  /// No description provided for @myExcursionsExcursionReviewOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn this off if you only want to rate the guide.'**
+  String get myExcursionsExcursionReviewOptional;
+
+  /// No description provided for @myExcursionsGuideReviewSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide review'**
+  String get myExcursionsGuideReviewSectionTitle;
+
+  /// No description provided for @myExcursionsGuideReviewSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optionally rate the guide separately for future travelers.'**
+  String get myExcursionsGuideReviewSectionSubtitle;
+
+  /// No description provided for @myExcursionsGuideReviewRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide rating'**
+  String get myExcursionsGuideReviewRating;
+
+  /// No description provided for @myExcursionsGuideReviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'How was the guide\'s communication, care, and storytelling?'**
+  String get myExcursionsGuideReviewHint;
+
+  /// No description provided for @myExcursionsGuideReviewOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, but it helps the guide build a trusted profile.'**
+  String get myExcursionsGuideReviewOptional;
+
+  /// No description provided for @myExcursionsReviewSelectOneError.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one review to publish'**
+  String get myExcursionsReviewSelectOneError;
+
+  /// No description provided for @myExcursionsReviewDeleteExcursion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete excursion review'**
+  String get myExcursionsReviewDeleteExcursion;
+
+  /// No description provided for @myExcursionsReviewDeleteGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete guide review'**
+  String get myExcursionsReviewDeleteGuide;
+
   /// No description provided for @myExcursionsReviewPublish.
   ///
   /// In en, this message translates to:
   /// **'Publish'**
   String get myExcursionsReviewPublish;
+
+  /// No description provided for @excursionReviewActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review actions'**
+  String get excursionReviewActionsTitle;
+
+  /// No description provided for @excursionReviewEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit review'**
+  String get excursionReviewEditAction;
+
+  /// No description provided for @excursionReviewDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete review'**
+  String get excursionReviewDeleteAction;
+
+  /// No description provided for @excursionReviewEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit review'**
+  String get excursionReviewEditTitle;
+
+  /// No description provided for @excursionReviewEditSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save review'**
+  String get excursionReviewEditSave;
+
+  /// No description provided for @excursionReviewUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Review updated'**
+  String get excursionReviewUpdated;
+
+  /// No description provided for @excursionReviewDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Review deleted'**
+  String get excursionReviewDeleted;
 
   /// No description provided for @guideDashboardTitle.
   ///
@@ -6933,6 +7059,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reviews'**
   String get guideDashboardReviewsTitle;
+
+  /// No description provided for @guideDashboardExcursionReviewsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Excursions'**
+  String get guideDashboardExcursionReviewsTab;
+
+  /// No description provided for @guideDashboardDirectGuideReviewsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide'**
+  String get guideDashboardDirectGuideReviewsTab;
 
   /// No description provided for @guideDashboardOffersStat.
   ///
@@ -7065,6 +7203,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Offers waiting for moderation or publication will appear here.'**
   String get guideDashboardReviewEmptyHint;
+
+  /// No description provided for @guideDashboardDirectGuideReviewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct guide reviews will appear here after travelers rate you separately.'**
+  String get guideDashboardDirectGuideReviewsEmpty;
 
   /// No description provided for @guideDashboardArchiveEmpty.
   ///

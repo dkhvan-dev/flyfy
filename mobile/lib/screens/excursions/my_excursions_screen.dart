@@ -244,12 +244,19 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
         return _ExcursionReviewSheet(
           l10n: l10n,
           booking: booking,
-          onSubmit: (rating, comment) async {
-            final review = await provider.createExcursionReview(
+          onSubmit: (draft) async {
+            final savedBooking = await provider.saveBookingReviews(
               booking.id,
-              CreateExcursionReviewRequest(rating: rating, comment: comment),
+              SaveBookingReviewsRequest(
+                excursionReview: draft.excursion == null
+                    ? null
+                    : ReviewMutationRequest.fromDraft(draft.excursion!),
+                guideReview: draft.guide == null
+                    ? null
+                    : ReviewMutationRequest.fromDraft(draft.guide!),
+              ),
             );
-            if (review == null) return false;
+            if (savedBooking == null) return false;
             await provider.loadExcursionReviews(productId: booking.productId);
             final landmarkId = booking.landmarkId?.trim();
             if (landmarkId != null && landmarkId.isNotEmpty) {
@@ -257,6 +264,18 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
             }
             return true;
           },
+          onDeleteExcursionReview: booking.review == null
+              ? null
+              : () => provider.deleteExcursionReview(
+                    booking.id,
+                    booking.review!.id,
+                  ),
+          onDeleteGuideReview: booking.guideReview == null
+              ? null
+              : () => provider.deleteGuideReview(
+                    booking.id,
+                    booking.guideReview!.id,
+                  ),
         );
       },
     );
@@ -673,6 +692,7 @@ class _MyExcursionBookingCard extends StatelessWidget {
     ).trim();
     final showLandmarkName = landmarkName.isNotEmpty &&
         !_isSameMyExcursionLabel(landmarkName, displayTitle);
+    final reviewBadgeRating = booking.reviewBadgeRating;
 
     return Material(
       color: Colors.transparent,
@@ -768,17 +788,17 @@ class _MyExcursionBookingCard extends StatelessWidget {
                   onCancelTap != null ||
                   onReviewTap != null ||
                   booking.isCancelled ||
-                  booking.isReviewed) ...[
+                  reviewBadgeRating != null) ...[
                 const SizedBox(height: 14),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    if (booking.isReviewed)
+                    if (reviewBadgeRating != null)
                       SizedBox(
                         width: double.infinity,
-                        child: _ReviewedBadge(rating: booking.review!.rating),
+                        child: _ReviewedBadge(rating: reviewBadgeRating),
                       ),
                     if (booking.isCancelled)
                       SizedBox(
@@ -807,11 +827,10 @@ class _MyExcursionBookingCard extends StatelessWidget {
                         icon: const Icon(Icons.event_busy_rounded, size: 18),
                         label: Text(l10n.myExcursionsCancelBookingButton),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFFFB49A),
+                          foregroundColor: AppColors.destructive,
                           side: BorderSide(
-                            color: const Color(
-                              0xFFFFB49A,
-                            ).withValues(alpha: 0.42),
+                            color:
+                                AppColors.destructive.withValues(alpha: 0.42),
                           ),
                           minimumSize: const Size(0, 42),
                           shape: RoundedRectangleBorder(
@@ -942,7 +961,7 @@ class _CancelledBookingBadge extends StatelessWidget {
       children: [
         const Icon(
           Icons.event_busy_rounded,
-          color: Color(0xFFFFB49A),
+          color: AppColors.destructive,
           size: 18,
         ),
         const SizedBox(width: 6),
@@ -1165,7 +1184,7 @@ class _CancelRefundPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final color = hasRefund ? const Color(0xFF7ED7B5) : const Color(0xFFFFB49A);
+    final color = hasRefund ? const Color(0xFF7ED7B5) : AppColors.destructive;
     final title = hasRefund
         ? l10n.myExcursionsCancelBookingRefund(amount, percent)
         : l10n.myExcursionsCancelBookingNoRefund;
@@ -2340,47 +2359,90 @@ class _DateTextInputFormatter extends TextInputFormatter {
   }
 }
 
-typedef _SubmitExcursionReview = Future<bool> Function(
-    double rating, String comment);
+typedef _SubmitCombinedReview = Future<bool> Function(
+  _CombinedReviewDraft draft,
+);
 
 class _ExcursionReviewSheet extends StatefulWidget {
   const _ExcursionReviewSheet({
     required this.l10n,
     required this.booking,
     required this.onSubmit,
+    required this.onDeleteExcursionReview,
+    required this.onDeleteGuideReview,
   });
 
   final AppLocalizations l10n;
   final ExcursionBookingVm booking;
-  final _SubmitExcursionReview onSubmit;
+  final _SubmitCombinedReview onSubmit;
+  final Future<bool> Function()? onDeleteExcursionReview;
+  final Future<bool> Function()? onDeleteGuideReview;
 
   @override
   State<_ExcursionReviewSheet> createState() => _ExcursionReviewSheetState();
 }
 
 class _ExcursionReviewSheetState extends State<_ExcursionReviewSheet> {
-  final TextEditingController _commentController = TextEditingController();
-  double _rating = 5;
+  late final TextEditingController _excursionCommentController;
+  late final TextEditingController _guideCommentController;
+  late double _excursionRating;
+  late double _guideRating;
+  late bool _includeExcursionReview;
+  late bool _includeGuideReview;
   bool _submitting = false;
+  bool _deletingExcursionReview = false;
+  bool _deletingGuideReview = false;
   String? _errorText;
 
   @override
+  void initState() {
+    super.initState();
+    _excursionRating = widget.booking.review?.rating ?? 5;
+    _guideRating = widget.booking.guideReview?.rating ?? 5;
+    _includeExcursionReview =
+        widget.booking.review != null || widget.booking.guideReview == null;
+    _includeGuideReview = widget.booking.guideReview != null;
+    _excursionCommentController = TextEditingController(
+      text: widget.booking.review?.comment ?? '',
+    );
+    _guideCommentController = TextEditingController(
+      text: widget.booking.guideReview?.comment ?? '',
+    );
+  }
+
+  @override
   void dispose() {
-    _commentController.dispose();
+    _excursionCommentController.dispose();
+    _guideCommentController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    final comment = _commentController.text.trim();
-    if (comment.length < 4) {
-      setState(() => _errorText = widget.l10n.myExcursionsReviewCommentError);
+    if (!_includeExcursionReview && !_includeGuideReview) {
+      setState(() {
+        _errorText = widget.l10n.myExcursionsReviewSelectOneError;
+      });
       return;
     }
+    final excursionComment = _excursionCommentController.text.trim();
+    final guideComment = _guideCommentController.text.trim();
     setState(() {
       _submitting = true;
       _errorText = null;
     });
-    final success = await widget.onSubmit(_rating, comment);
+    final success = await widget.onSubmit(
+      _CombinedReviewDraft(
+        excursion: _includeExcursionReview
+            ? ReviewDraftRequest(
+                rating: _excursionRating,
+                comment: excursionComment,
+              )
+            : null,
+        guide: _includeGuideReview
+            ? ReviewDraftRequest(rating: _guideRating, comment: guideComment)
+            : null,
+      ),
+    );
     if (!mounted) return;
     if (success) {
       Navigator.of(context).pop(true);
@@ -2392,91 +2454,335 @@ class _ExcursionReviewSheetState extends State<_ExcursionReviewSheet> {
     });
   }
 
+  Future<void> _deleteExcursionReview() async {
+    final delete = widget.onDeleteExcursionReview;
+    if (delete == null) return;
+    setState(() {
+      _deletingExcursionReview = true;
+      _errorText = null;
+    });
+    final success = await delete();
+    if (!mounted) return;
+    if (!success) {
+      setState(() {
+        _deletingExcursionReview = false;
+        _errorText = widget.l10n.myExcursionsReviewDeleteFailed;
+      });
+      return;
+    }
+    Navigator.of(context).pop(true);
+  }
+
+  Future<void> _deleteGuideReview() async {
+    final delete = widget.onDeleteGuideReview;
+    if (delete == null) return;
+    setState(() {
+      _deletingGuideReview = true;
+      _errorText = null;
+    });
+    final success = await delete();
+    if (!mounted) return;
+    if (!success) {
+      setState(() {
+        _deletingGuideReview = false;
+        _errorText = widget.l10n.myExcursionsReviewDeleteFailed;
+      });
+      return;
+    }
+    Navigator.of(context).pop(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppDismissibleModalSheet(
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.82,
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        decoration: const BoxDecoration(
-          color: Color(0xFF211609),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.72,
+        minChildSize: 0.42,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            decoration: const BoxDecoration(
+              color: Color(0xFF211609),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
+              children: [
+                Text(
+                  widget.l10n.myExcursionsReviewTitle,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.booking.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFCBB8A3),
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _ReviewSectionCard(
+                  title: widget.l10n.myExcursionsExcursionReviewSectionTitle,
+                  subtitle:
+                      widget.l10n.myExcursionsExcursionReviewSectionSubtitle,
+                  rating: _excursionRating,
+                  ratingTooltip: widget.l10n.myExcursionsReviewRating,
+                  commentController: _excursionCommentController,
+                  commentHint: widget.l10n.myExcursionsReviewHint,
+                  enabled: !_submitting &&
+                      !_deletingExcursionReview &&
+                      _includeExcursionReview,
+                  optional: true,
+                  included: _includeExcursionReview,
+                  includeLabel: widget.l10n.myExcursionsExcursionReviewOptional,
+                  onIncludedChanged: (value) {
+                    setState(() {
+                      _includeExcursionReview = value;
+                      _errorText = null;
+                    });
+                  },
+                  onRatingChanged: (value) {
+                    setState(() => _excursionRating = value);
+                  },
+                  deleteLabel: widget.booking.review == null
+                      ? null
+                      : widget.l10n.myExcursionsReviewDeleteExcursion,
+                  isDeleting: _deletingExcursionReview,
+                  onDelete: widget.booking.review == null
+                      ? null
+                      : _deleteExcursionReview,
+                ),
+                const SizedBox(height: 14),
+                _ReviewSectionCard(
+                  title: widget.l10n.myExcursionsGuideReviewSectionTitle,
+                  subtitle: widget.l10n.myExcursionsGuideReviewSectionSubtitle,
+                  rating: _guideRating,
+                  ratingTooltip: widget.l10n.myExcursionsGuideReviewRating,
+                  commentController: _guideCommentController,
+                  commentHint: widget.l10n.myExcursionsGuideReviewHint,
+                  enabled: !_submitting &&
+                      !_deletingGuideReview &&
+                      _includeGuideReview,
+                  optional: true,
+                  included: _includeGuideReview,
+                  includeLabel: widget.l10n.myExcursionsGuideReviewOptional,
+                  onIncludedChanged: (value) {
+                    setState(() {
+                      _includeGuideReview = value;
+                      _errorText = null;
+                    });
+                  },
+                  onRatingChanged: (value) {
+                    setState(() => _guideRating = value);
+                  },
+                  deleteLabel: widget.booking.guideReview == null
+                      ? null
+                      : widget.l10n.myExcursionsReviewDeleteGuide,
+                  isDeleting: _deletingGuideReview,
+                  onDelete: widget.booking.guideReview == null
+                      ? null
+                      : _deleteGuideReview,
+                ),
+                if (_errorText != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _errorText!,
+                    style: const TextStyle(
+                      color: AppColors.destructive,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                AppFilterApplyButton(
+                  label: widget.l10n.myExcursionsReviewPublish,
+                  icon: Icons.send_rounded,
+                  isLoading: _submitting,
+                  onTap: _submit,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CombinedReviewDraft {
+  const _CombinedReviewDraft({
+    required this.excursion,
+    required this.guide,
+  });
+
+  final ReviewDraftRequest? excursion;
+  final ReviewDraftRequest? guide;
+}
+
+class _ReviewSectionCard extends StatelessWidget {
+  const _ReviewSectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.rating,
+    required this.ratingTooltip,
+    required this.commentController,
+    required this.commentHint,
+    required this.enabled,
+    required this.onRatingChanged,
+    this.optional = false,
+    this.included = true,
+    this.includeLabel,
+    this.onIncludedChanged,
+    this.deleteLabel,
+    this.isDeleting = false,
+    this.onDelete,
+  });
+
+  final String title;
+  final String subtitle;
+  final double rating;
+  final String ratingTooltip;
+  final TextEditingController commentController;
+  final String commentHint;
+  final bool enabled;
+  final ValueChanged<double> onRatingChanged;
+  final bool optional;
+  final bool included;
+  final String? includeLabel;
+  final ValueChanged<bool>? onIncludedChanged;
+  final String? deleteLabel;
+  final bool isDeleting;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = !optional || included;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A1D13),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.l10n.myExcursionsReviewTitle,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.booking.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Color(0xFFCBB8A3), height: 1.35),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: List.generate(5, (index) {
-                  final value = index + 1;
-                  return IconButton(
-                    tooltip: widget.l10n.myExcursionsReviewRating,
-                    onPressed: _submitting
-                        ? null
-                        : () => setState(() => _rating = value.toDouble()),
-                    icon: Icon(
-                      value <= _rating.round()
-                          ? Icons.star_rounded
-                          : Icons.star_border_rounded,
-                      color: AppColors.accent,
-                      size: 34,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _commentController,
-                enabled: !_submitting,
-                maxLines: 5,
-                minLines: 3,
-                maxLength: 600,
-                cursorColor: AppColors.accent,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: InputDecoration(
-                  hintText: widget.l10n.myExcursionsReviewHint,
-                  hintStyle: const TextStyle(color: Color(0xFF9F8B7D)),
-                  filled: true,
-                  fillColor: const Color(0xFF332416),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
-                  errorText: _errorText,
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Color(0xFFCBB8A3),
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              AppFilterApplyButton(
-                label: widget.l10n.myExcursionsReviewPublish,
-                icon: Icons.send_rounded,
-                isLoading: _submitting,
-                onTap: _submit,
-              ),
+              if (optional)
+                Switch.adaptive(
+                  value: included,
+                  activeThumbColor: AppColors.accent,
+                  activeTrackColor: AppColors.accent.withValues(alpha: 0.28),
+                  onChanged: onIncludedChanged,
+                ),
             ],
           ),
-        ),
+          if (optional && includeLabel != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              includeLabel!,
+              style: const TextStyle(
+                color: Color(0xFF9F8B7D),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 2,
+            children: List.generate(5, (index) {
+              final value = index + 1;
+              return IconButton(
+                tooltip: ratingTooltip,
+                onPressed: !enabled || !active
+                    ? null
+                    : () => onRatingChanged(value.toDouble()),
+                icon: Icon(
+                  value <= rating.round()
+                      ? Icons.star_rounded
+                      : Icons.star_border_rounded,
+                  color: active ? AppColors.accent : const Color(0xFF7D6D60),
+                  size: 32,
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: commentController,
+            enabled: enabled && active,
+            maxLines: 5,
+            minLines: 3,
+            maxLength: 600,
+            cursorColor: AppColors.accent,
+            style: const TextStyle(color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: commentHint,
+              hintStyle: const TextStyle(color: Color(0xFF9F8B7D)),
+              filled: true,
+              fillColor: const Color(0xFF332416),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          if (deleteLabel != null && onDelete != null) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: !enabled || isDeleting ? null : onDelete,
+              icon: isDeleting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline_rounded, size: 18),
+              label: Text(deleteLabel!),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.destructive,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

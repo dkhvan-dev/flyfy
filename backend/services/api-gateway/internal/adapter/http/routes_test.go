@@ -62,6 +62,20 @@ func TestExcursionRoutesProxyToExcursionService(t *testing.T) {
 		t.Fatalf("guide bookings rewrite prefix = %q, want /v1/me/guide-excursion-bookings", guideBookingsPolicy.RewritePrefix)
 	}
 
+	myBookingsPolicy := matchRoutePolicy("/api/v1/me/excursion-bookings/booking-1/reviews", "/api/v1")
+	if myBookingsPolicy == nil {
+		t.Fatal("expected my excursion booking reviews route policy")
+	}
+	if myBookingsPolicy.Upstream != "excursion" {
+		t.Fatalf("my booking reviews upstream = %q, want excursion", myBookingsPolicy.Upstream)
+	}
+	if myBookingsPolicy.AuthMode != RouteAuthAuthenticated {
+		t.Fatalf("my booking reviews auth mode = %q, want authenticated", myBookingsPolicy.AuthMode)
+	}
+	if myBookingsPolicy.RewritePrefix != "/v1/me/excursion-bookings" {
+		t.Fatalf("my booking reviews rewrite prefix = %q, want /v1/me/excursion-bookings", myBookingsPolicy.RewritePrefix)
+	}
+
 	schedulePolicy := matchRoutePolicy("/api/v1/me/excursion-schedule/slots", "/api/v1")
 	if schedulePolicy == nil {
 		t.Fatal("expected guide excursion schedule route policy")
@@ -91,6 +105,22 @@ func TestExcursionProductRoutesProxyToExcursionService(t *testing.T) {
 	}
 	if policy.RewritePrefix != "/v1/excursion-products" {
 		t.Fatalf("rewrite prefix = %q, want /v1/excursion-products", policy.RewritePrefix)
+	}
+}
+
+func TestGuideReviewsRouteProxiesPublicReadsToExcursionService(t *testing.T) {
+	policy := matchRoutePolicy("/api/v1/guide-reviews?guideUserId=guide-user-1", "/api/v1")
+	if policy == nil {
+		t.Fatal("expected guide reviews route policy")
+	}
+	if policy.Upstream != "excursion" {
+		t.Fatalf("upstream = %q, want excursion", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/v1/guide-reviews" {
+		t.Fatalf("rewrite prefix = %q, want /v1/guide-reviews", policy.RewritePrefix)
 	}
 }
 

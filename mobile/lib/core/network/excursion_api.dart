@@ -288,6 +288,20 @@ class ExcursionApi {
     return ExcursionReviewVm.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<BookingReviewsResultVm> saveBookingReviews(
+    String bookingId,
+    SaveBookingReviewsRequest request,
+  ) async {
+    final encodedBookingId = Uri.encodeComponent(bookingId);
+    final response = await _apiClient.dio.put(
+      '/me/excursion-bookings/$encodedBookingId/reviews',
+      data: request.toJson(),
+    );
+    return BookingReviewsResultVm.fromJson(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
   Future<ExcursionReviewsPage> getExcursionReviews({
     String? productId,
     String? landmarkId,
@@ -340,6 +354,37 @@ class ExcursionApi {
       offset: offset,
     );
   }
+
+  Future<GuideReviewsPage> getGuideReviews({
+    required String guideUserId,
+    int limit = 10,
+    int offset = 0,
+    String sort = 'latest',
+  }) async {
+    final response = await _apiClient.dio.get(
+      '/guide-reviews',
+      queryParameters: <String, dynamic>{
+        'guideUserId': guideUserId.trim(),
+        if (sort.trim().isNotEmpty) 'sort': sort.trim(),
+        'limit': limit,
+        'offset': offset,
+      },
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    final data = response.data;
+    final items = (data is Map<String, dynamic>
+            ? data['items'] as List<dynamic>?
+            : null) ??
+        const [];
+    return GuideReviewsPage(
+      items: items
+          .whereType<Map<String, dynamic>>()
+          .map(GuideReviewVm.fromJson)
+          .toList(growable: false),
+      hasMore: data is Map<String, dynamic> && data['hasMore'] == true,
+    );
+  }
 }
 
 class ExcursionOffersPage {
@@ -368,4 +413,31 @@ class ExcursionReviewsPage {
 
   final List<ExcursionReviewVm> items;
   final bool hasMore;
+}
+
+class GuideReviewsPage {
+  const GuideReviewsPage({required this.items, required this.hasMore});
+
+  final List<GuideReviewVm> items;
+  final bool hasMore;
+}
+
+class BookingReviewsResultVm {
+  const BookingReviewsResultVm({this.excursionReview, this.guideReview});
+
+  final ExcursionReviewVm? excursionReview;
+  final GuideReviewVm? guideReview;
+
+  factory BookingReviewsResultVm.fromJson(Map<String, dynamic> json) {
+    return BookingReviewsResultVm(
+      excursionReview: json['excursionReview'] is Map<String, dynamic>
+          ? ExcursionReviewVm.fromJson(
+              json['excursionReview'] as Map<String, dynamic>,
+            )
+          : null,
+      guideReview: json['guideReview'] is Map<String, dynamic>
+          ? GuideReviewVm.fromJson(json['guideReview'] as Map<String, dynamic>)
+          : null,
+    );
+  }
 }

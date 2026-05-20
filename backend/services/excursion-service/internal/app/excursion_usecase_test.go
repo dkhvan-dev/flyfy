@@ -57,6 +57,7 @@ type excursionRepoStub struct {
 	checkedInAttendanceBooking      *model.ExcursionBooking
 	txRepo                          port.ExcursionTxRepository
 	txErr                           error
+	txUsed                          bool
 	listBookingFilter               port.ExcursionBookingFilter
 	listBookingItems                []*model.ExcursionBookingListItem
 	gotBooking                      *model.ExcursionBooking
@@ -68,6 +69,12 @@ type excursionRepoStub struct {
 	cancelBookingErr                error
 	createdReview                   *model.ExcursionReview
 	createReviewFn                  func(item *model.ExcursionReview)
+	updatedReview                   *model.ExcursionReview
+	deletedReview                   *model.ExcursionReview
+	createdGuideReview              *model.GuideReview
+	updatedGuideReview              *model.GuideReview
+	deletedGuideReview              *model.GuideReview
+	existingGuideReview             *model.GuideReview
 	landmarkReviewStatsID           uuid.UUID
 	landmarkRatingAvg               float64
 	landmarkReviewsCount            int
@@ -226,6 +233,7 @@ func (s *excursionRepoStub) CreateExcursionAttendanceQRIssue(ctx context.Context
 }
 
 func (s *excursionRepoStub) WithTx(ctx context.Context, fn func(repo port.ExcursionTxRepository) error) error {
+	s.txUsed = true
 	if s.txErr != nil {
 		return s.txErr
 	}
@@ -267,8 +275,37 @@ func (s *excursionRepoStub) CreateExcursionReview(ctx context.Context, item *mod
 	return nil
 }
 
+func (s *excursionRepoStub) UpdateExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
+	s.updatedReview = item
+	return nil
+}
+
+func (s *excursionRepoStub) DeleteExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
+	s.deletedReview = item
+	return nil
+}
+
 func (s *excursionRepoStub) GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error) {
 	return s.existingReview, nil
+}
+
+func (s *excursionRepoStub) CreateGuideReview(ctx context.Context, item *model.GuideReview) error {
+	s.createdGuideReview = item
+	return nil
+}
+
+func (s *excursionRepoStub) UpdateGuideReview(ctx context.Context, item *model.GuideReview) error {
+	s.updatedGuideReview = item
+	return nil
+}
+
+func (s *excursionRepoStub) DeleteGuideReview(ctx context.Context, item *model.GuideReview) error {
+	s.deletedGuideReview = item
+	return nil
+}
+
+func (s *excursionRepoStub) GetGuideReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.GuideReview, error) {
+	return s.existingGuideReview, nil
 }
 
 func (s *excursionRepoStub) ListExcursionReviews(ctx context.Context, filter port.ExcursionReviewFilter) ([]*model.ExcursionReview, error) {
@@ -276,8 +313,44 @@ func (s *excursionRepoStub) ListExcursionReviews(ctx context.Context, filter por
 	return s.listReviewItems, nil
 }
 
+func (s *excursionRepoStub) ListGuideReviews(ctx context.Context, filter port.GuideReviewFilter) ([]*model.GuideReview, error) {
+	return nil, nil
+}
+
 type excursionTxRepoStub struct {
 	repo *excursionRepoStub
+}
+
+func (s *excursionTxRepoStub) CreateExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
+	return s.repo.CreateExcursionReview(ctx, item)
+}
+
+func (s *excursionTxRepoStub) UpdateExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
+	return s.repo.UpdateExcursionReview(ctx, item)
+}
+
+func (s *excursionTxRepoStub) DeleteExcursionReview(ctx context.Context, item *model.ExcursionReview) error {
+	return s.repo.DeleteExcursionReview(ctx, item)
+}
+
+func (s *excursionTxRepoStub) GetExcursionReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.ExcursionReview, error) {
+	return s.repo.GetExcursionReviewByBookingID(ctx, bookingID)
+}
+
+func (s *excursionTxRepoStub) CreateGuideReview(ctx context.Context, item *model.GuideReview) error {
+	return s.repo.CreateGuideReview(ctx, item)
+}
+
+func (s *excursionTxRepoStub) UpdateGuideReview(ctx context.Context, item *model.GuideReview) error {
+	return s.repo.UpdateGuideReview(ctx, item)
+}
+
+func (s *excursionTxRepoStub) DeleteGuideReview(ctx context.Context, item *model.GuideReview) error {
+	return s.repo.DeleteGuideReview(ctx, item)
+}
+
+func (s *excursionTxRepoStub) GetGuideReviewByBookingID(ctx context.Context, bookingID uuid.UUID) (*model.GuideReview, error) {
+	return s.repo.GetGuideReviewByBookingID(ctx, bookingID)
 }
 
 func (s *excursionTxRepoStub) GetExcursionAttendanceQRIssueByJTIForUpdate(ctx context.Context, jti uuid.UUID) (*model.ExcursionAttendanceQRIssue, error) {
@@ -1463,6 +1536,203 @@ func TestCreateExcursionReviewRequestsAttractionRatingRecalculation(t *testing.T
 		got.ReviewCount != 9 {
 		t.Fatalf("snapshot = %+v, want attraction %s source %s rating 4.7 count 9",
 			got, landmarkID, attractionRatingSourceExcursionReviews)
+	}
+}
+
+func TestSaveBookingReviewsUpdatesExcursionAndCreatesGuideReviewFromBookingAuthor(t *testing.T) {
+	landmarkID := uuid.New()
+	touristUserID := uuid.New()
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       uuid.New(),
+		OfferID:         uuid.New(),
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     uuid.New(),
+		TouristUserID:   touristUserID,
+		ScheduledFor:    time.Now().UTC().Add(-24 * time.Hour),
+		Adults:          1,
+		Children:        0,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	existingReview := &model.ExcursionReview{
+		ID:             uuid.New(),
+		BookingID:      booking.ID,
+		ProductID:      booking.ProductID,
+		OfferID:        booking.OfferID,
+		LandmarkID:     &landmarkID,
+		GuideProfileID: booking.GuideProfileID,
+		GuideUserID:    booking.GuideUserID,
+		TouristUserID:  touristUserID,
+		Rating:         3,
+		Comment:        "Good",
+		CreatedAt:      time.Now().UTC().Add(-time.Hour),
+		UpdatedAt:      time.Now().UTC().Add(-time.Hour),
+	}
+	repo := &excursionRepoStub{
+		gotBooking:           booking,
+		existingReview:       existingReview,
+		landmarkRatingAvg:    4.4,
+		landmarkReviewsCount: 12,
+	}
+	ratings := &attractionRatingUpdaterStub{}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithAttractionRatingUpdater(ratings)
+
+	result, err := uc.SaveBookingReviews(context.Background(), SaveBookingReviewsInput{
+		ActorUserID: touristUserID,
+		BookingID:   booking.ID,
+		ExcursionReview: &ReviewMutationInput{
+			Rating:  4.5,
+			Comment: "Updated excursion review",
+		},
+		GuideReview: &ReviewMutationInput{
+			Rating:  5,
+			Comment: "Guide was thoughtful and punctual",
+		},
+	})
+	if err != nil {
+		t.Fatalf("SaveBookingReviews() error = %v", err)
+	}
+	if !repo.txUsed {
+		t.Fatal("SaveBookingReviews() must persist review mutations in one transaction")
+	}
+	if repo.updatedReview == nil {
+		t.Fatal("excursion review was not updated")
+	}
+	if repo.updatedReview.ID != existingReview.ID || repo.updatedReview.TouristUserID != touristUserID {
+		t.Fatalf("updated review = %+v, want existing id and booking tourist author", repo.updatedReview)
+	}
+	if repo.updatedReview.Rating != 4.5 || repo.updatedReview.Comment != "Updated excursion review" {
+		t.Fatalf("updated review rating/comment = %.1f/%q", repo.updatedReview.Rating, repo.updatedReview.Comment)
+	}
+	if repo.createdGuideReview == nil {
+		t.Fatal("guide review was not created")
+	}
+	if repo.createdGuideReview.BookingID != booking.ID ||
+		repo.createdGuideReview.GuideUserID != booking.GuideUserID ||
+		repo.createdGuideReview.TouristUserID != touristUserID {
+		t.Fatalf("created guide review = %+v, want booking-derived author and guide", repo.createdGuideReview)
+	}
+	if result.ExcursionReview == nil || result.ExcursionReview.ID != existingReview.ID {
+		t.Fatalf("result excursion review = %+v", result.ExcursionReview)
+	}
+	if result.GuideReview == nil || result.GuideReview.TouristUserID != touristUserID {
+		t.Fatalf("result guide review = %+v", result.GuideReview)
+	}
+	if len(ratings.snapshots) != 1 || repo.landmarkReviewStatsID != landmarkID {
+		t.Fatalf("attraction snapshots = %+v, landmark stats id = %s, want one refresh for %s",
+			ratings.snapshots, repo.landmarkReviewStatsID, landmarkID)
+	}
+}
+
+func TestSaveBookingReviewsDeletesReviewsAndRefreshesLandmarkStats(t *testing.T) {
+	landmarkID := uuid.New()
+	touristUserID := uuid.New()
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       uuid.New(),
+		OfferID:         uuid.New(),
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     uuid.New(),
+		TouristUserID:   touristUserID,
+		ScheduledFor:    time.Now().UTC().Add(-24 * time.Hour),
+		Adults:          1,
+		Children:        0,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotBooking: booking,
+		existingReview: &model.ExcursionReview{
+			ID:             uuid.New(),
+			BookingID:      booking.ID,
+			ProductID:      booking.ProductID,
+			OfferID:        booking.OfferID,
+			LandmarkID:     &landmarkID,
+			GuideProfileID: booking.GuideProfileID,
+			GuideUserID:    booking.GuideUserID,
+			TouristUserID:  touristUserID,
+			Rating:         4,
+			Comment:        "Nice",
+			CreatedAt:      time.Now().UTC().Add(-time.Hour),
+			UpdatedAt:      time.Now().UTC().Add(-time.Hour),
+		},
+		existingGuideReview: &model.GuideReview{
+			ID:             uuid.New(),
+			BookingID:      booking.ID,
+			GuideProfileID: booking.GuideProfileID,
+			GuideUserID:    booking.GuideUserID,
+			TouristUserID:  touristUserID,
+			Rating:         5,
+			Comment:        "Great guide",
+			CreatedAt:      time.Now().UTC().Add(-time.Hour),
+			UpdatedAt:      time.Now().UTC().Add(-time.Hour),
+		},
+		landmarkRatingAvg:    0,
+		landmarkReviewsCount: 0,
+	}
+	ratings := &attractionRatingUpdaterStub{}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil).
+		WithAttractionRatingUpdater(ratings)
+
+	result, err := uc.SaveBookingReviews(context.Background(), SaveBookingReviewsInput{
+		ActorUserID:     touristUserID,
+		BookingID:       booking.ID,
+		ExcursionReview: &ReviewMutationInput{Delete: true},
+		GuideReview:     &ReviewMutationInput{Delete: true},
+	})
+	if err != nil {
+		t.Fatalf("SaveBookingReviews() error = %v", err)
+	}
+	if repo.deletedReview == nil || repo.deletedReview.ID != repo.existingReview.ID {
+		t.Fatalf("deleted excursion review = %+v", repo.deletedReview)
+	}
+	if repo.deletedGuideReview == nil || repo.deletedGuideReview.ID != repo.existingGuideReview.ID {
+		t.Fatalf("deleted guide review = %+v", repo.deletedGuideReview)
+	}
+	if result.ExcursionReview != nil || result.GuideReview != nil {
+		t.Fatalf("result = %+v, want nil reviews after delete", result)
+	}
+	if len(ratings.snapshots) != 1 || ratings.snapshots[0].ReviewCount != 0 {
+		t.Fatalf("snapshots = %+v, want attraction reset after delete", ratings.snapshots)
+	}
+}
+
+func TestSaveBookingReviewsRejectsNonAuthor(t *testing.T) {
+	booking, err := model.NewExcursionBooking(model.NewExcursionBookingParams{
+		ProductID:       uuid.New(),
+		OfferID:         uuid.New(),
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     uuid.New(),
+		TouristUserID:   uuid.New(),
+		ScheduledFor:    time.Now().UTC().Add(-24 * time.Hour),
+		Adults:          1,
+		Children:        0,
+		UnitPriceAmount: 120,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursionBooking() error = %v", err)
+	}
+	repo := &excursionRepoStub{gotBooking: booking}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err = uc.SaveBookingReviews(context.Background(), SaveBookingReviewsInput{
+		ActorUserID: uuid.New(),
+		BookingID:   booking.ID,
+		GuideReview: &ReviewMutationInput{Rating: 5, Comment: "Not mine"},
+	})
+	if !errors.Is(err, ErrExcursionBookingNotFound) {
+		t.Fatalf("SaveBookingReviews() error = %v, want ErrExcursionBookingNotFound", err)
+	}
+	if repo.createdGuideReview != nil || repo.updatedGuideReview != nil || repo.deletedGuideReview != nil {
+		t.Fatalf("guide review was mutated by non-author: created=%+v updated=%+v deleted=%+v",
+			repo.createdGuideReview, repo.updatedGuideReview, repo.deletedGuideReview)
 	}
 }
 

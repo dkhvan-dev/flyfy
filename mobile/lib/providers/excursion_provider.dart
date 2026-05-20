@@ -691,6 +691,130 @@ class ExcursionProvider extends ChangeNotifier {
     }
   }
 
+  Future<ExcursionBookingVm?> saveBookingReviews(
+    String bookingId,
+    SaveBookingReviewsRequest request,
+  ) async {
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _excursionApi.saveBookingReviews(
+        bookingId,
+        request,
+      );
+      final booking = _applyBookingReviewsResult(bookingId, result);
+      if (result.excursionReview != null) {
+        _upsertExcursionReviewCache(result.excursionReview!);
+      }
+      _actionState = ExcursionActionState.success;
+      return booking;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return null;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to save excursion reviews';
+      _actionState = ExcursionActionState.error;
+      return null;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<ExcursionReviewVm?> saveExcursionReview(
+    String bookingId,
+    ReviewDraftRequest draft,
+  ) async {
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _excursionApi.saveBookingReviews(
+        bookingId,
+        SaveBookingReviewsRequest(
+          excursionReview: ReviewMutationRequest.fromDraft(draft),
+        ),
+      );
+      _applyBookingReviewsResult(bookingId, result);
+      final review = result.excursionReview;
+      if (review != null) {
+        _upsertExcursionReviewCache(review);
+      }
+      _actionState = ExcursionActionState.success;
+      return review;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return null;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to save excursion review';
+      _actionState = ExcursionActionState.error;
+      return null;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteExcursionReview(String bookingId, String reviewId) async {
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _excursionApi.saveBookingReviews(
+        bookingId,
+        const SaveBookingReviewsRequest(
+          excursionReview: ReviewMutationRequest.delete(),
+        ),
+      );
+      _applyBookingReviewsResult(bookingId, result);
+      _removeExcursionReviewCache(reviewId);
+      _actionState = ExcursionActionState.success;
+      return true;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return false;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to delete excursion review';
+      _actionState = ExcursionActionState.error;
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteGuideReview(String bookingId, String reviewId) async {
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _excursionApi.saveBookingReviews(
+        bookingId,
+        const SaveBookingReviewsRequest(
+          guideReview: ReviewMutationRequest.delete(),
+        ),
+      );
+      _applyBookingReviewsResult(bookingId, result);
+      _actionState = ExcursionActionState.success;
+      return true;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return false;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to delete guide review';
+      _actionState = ExcursionActionState.error;
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
   Future<void> loadExcursionReviews({
     String? productId,
     String? landmarkId,
@@ -904,6 +1028,25 @@ class ExcursionProvider extends ChangeNotifier {
     }).toList(growable: false);
   }
 
+  ExcursionBookingVm? _applyBookingReviewsResult(
+    String bookingId,
+    BookingReviewsResultVm result,
+  ) {
+    final normalizedBookingId = bookingId.trim();
+    if (normalizedBookingId.isEmpty) return null;
+
+    ExcursionBookingVm? updatedBooking;
+    _myExcursionBookings = _myExcursionBookings.map((booking) {
+      if (booking.id != normalizedBookingId) return booking;
+      updatedBooking = booking.copyWith(
+        review: result.excursionReview,
+        guideReview: result.guideReview,
+      );
+      return updatedBooking!;
+    }).toList(growable: false);
+    return updatedBooking;
+  }
+
   void _upsertExcursionReviewCache(ExcursionReviewVm review) {
     final productId = review.productId.trim();
     if (productId.isNotEmpty) {
@@ -927,5 +1070,21 @@ class ExcursionProvider extends ChangeNotifier {
     final next = current.where((item) => item.id != review.id).toList();
     next.insert(0, review);
     return List.unmodifiable(next);
+  }
+
+  void _removeExcursionReviewCache(String reviewId) {
+    final normalizedReviewId = reviewId.trim();
+    if (normalizedReviewId.isEmpty) return;
+
+    for (final entry in _reviewsByProductId.entries.toList()) {
+      _reviewsByProductId[entry.key] = List.unmodifiable(
+        entry.value.where((item) => item.id != normalizedReviewId),
+      );
+    }
+    for (final entry in _reviewsByLandmarkId.entries.toList()) {
+      _reviewsByLandmarkId[entry.key] = List.unmodifiable(
+        entry.value.where((item) => item.id != normalizedReviewId),
+      );
+    }
   }
 }

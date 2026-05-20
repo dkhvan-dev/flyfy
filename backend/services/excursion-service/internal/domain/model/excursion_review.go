@@ -15,6 +15,7 @@ var (
 	ErrInvalidExcursionReviewRating  = errors.New("invalid excursion review rating")
 	ErrInvalidExcursionReviewComment = errors.New("invalid excursion review comment")
 	ErrExcursionReviewAlreadyExists  = errors.New("excursion review already exists")
+	ErrGuideReviewAlreadyExists      = errors.New("guide review already exists")
 )
 
 const maxExcursionReviewCommentLength = 2000
@@ -39,6 +40,7 @@ type ExcursionReview struct {
 	Comment   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	DeletedAt *time.Time
 }
 
 type ExcursionReviewAuthor struct {
@@ -48,9 +50,10 @@ type ExcursionReviewAuthor struct {
 }
 
 type ExcursionBookingListItem struct {
-	Booking *ExcursionBooking
-	Review  *ExcursionReview
-	Author  ExcursionReviewAuthor
+	Booking     *ExcursionBooking
+	Review      *ExcursionReview
+	GuideReview *GuideReview
+	Author      ExcursionReviewAuthor
 
 	Title            string
 	Summary          string
@@ -113,8 +116,21 @@ func (r *ExcursionReview) Validate() error {
 		return ErrInvalidExcursionReviewRating
 	}
 	r.Comment = strings.TrimSpace(r.Comment)
-	if r.Comment == "" || len([]rune(r.Comment)) > maxExcursionReviewCommentLength {
+	if len([]rune(r.Comment)) > maxExcursionReviewCommentLength {
 		return ErrInvalidExcursionReviewComment
 	}
 	return nil
+}
+
+func (r *ExcursionReview) Update(rating float64, comment string) error {
+	r.Rating = rating
+	r.Comment = strings.TrimSpace(comment)
+	r.UpdatedAt = time.Now().UTC()
+	return r.Validate()
+}
+
+func (r *ExcursionReview) SoftDelete() {
+	now := time.Now().UTC()
+	r.DeletedAt = &now
+	r.UpdatedAt = now
 }

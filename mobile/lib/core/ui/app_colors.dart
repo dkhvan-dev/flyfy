@@ -6,6 +6,7 @@ abstract final class AppColors {
   static const accent = Color(0xFFF98C06);
   static const accentLight = Color(0xFF7EE6F2);
   static const success = Color(0xFF00C853);
+  static const destructive = Color(0xFFFF0000);
 
   // Text Colors
   static const textPrimary = Color(0xFFF1F5F9); // slate-100

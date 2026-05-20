@@ -4,6 +4,7 @@ enum MyExcursionBookingSortMode { date, price }
 
 const _excursionAttendanceQrLeadTime = Duration(hours: 1);
 const _excursionAttendanceQrFallbackAfterStartWindow = Duration(hours: 6);
+const Object _copyWithSentinel = Object();
 
 class ExcursionBookingVm {
   const ExcursionBookingVm({
@@ -34,6 +35,7 @@ class ExcursionBookingVm {
     this.coverFileId,
     this.author = const ExcursionReviewAuthorVm(userId: ''),
     this.review,
+    this.guideReview,
     this.cancelledAt,
     this.cancelledBy,
     this.cancelReason,
@@ -74,6 +76,7 @@ class ExcursionBookingVm {
   final String currency;
   final String status;
   final ExcursionReviewVm? review;
+  final GuideReviewVm? guideReview;
   final DateTime? cancelledAt;
   final String? cancelledBy;
   final String? cancelReason;
@@ -86,7 +89,15 @@ class ExcursionBookingVm {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  bool get isReviewed => review != null;
+  bool get isReviewed => review != null || guideReview != null;
+
+  double? get reviewBadgeRating {
+    final excursionRating = review?.rating;
+    final guideRating = guideReview?.rating;
+    if (excursionRating == null) return guideRating;
+    if (guideRating == null) return excursionRating;
+    return (excursionRating + guideRating) / 2;
+  }
 
   bool isVisited(DateTime now) {
     return !isCancelled && !scheduledFor.isAfter(now);
@@ -113,7 +124,7 @@ class ExcursionBookingVm {
         );
   }
 
-  bool canReview(DateTime now) => isVisited(now) && !isReviewed;
+  bool canReview(DateTime now) => isVisited(now) && !isCancelled;
 
   bool canBeCancelledByGuide(DateTime now) {
     return !isCancelled && scheduledFor.toUtc().isAfter(now.toUtc());
@@ -133,7 +144,8 @@ class ExcursionBookingVm {
   }
 
   ExcursionBookingVm copyWith({
-    ExcursionReviewVm? review,
+    Object? review = _copyWithSentinel,
+    Object? guideReview = _copyWithSentinel,
     String? status,
     DateTime? cancelledAt,
     String? cancelledBy,
@@ -172,7 +184,12 @@ class ExcursionBookingVm {
       totalPriceAmount: totalPriceAmount,
       currency: currency,
       status: status ?? this.status,
-      review: review ?? this.review,
+      review: identical(review, _copyWithSentinel)
+          ? this.review
+          : review as ExcursionReviewVm?,
+      guideReview: identical(guideReview, _copyWithSentinel)
+          ? this.guideReview
+          : guideReview as GuideReviewVm?,
       cancelledAt: cancelledAt ?? this.cancelledAt,
       cancelledBy: cancelledBy ?? this.cancelledBy,
       cancelReason: cancelReason ?? this.cancelReason,
@@ -226,6 +243,9 @@ class ExcursionBookingVm {
       review: json['review'] is Map<String, dynamic>
           ? ExcursionReviewVm.fromJson(json['review'] as Map<String, dynamic>)
           : null,
+      guideReview: json['guideReview'] is Map<String, dynamic>
+          ? GuideReviewVm.fromJson(json['guideReview'] as Map<String, dynamic>)
+          : null,
       cancelledAt: _date(json['cancelledAt']),
       cancelledBy: _nullableString(json['cancelledBy']),
       cancelReason: _nullableString(json['cancelReason']),
@@ -237,6 +257,57 @@ class ExcursionBookingVm {
       refundStatus: _nullableString(json['refundStatus']),
       createdAt: _date(json['createdAt']),
       updatedAt: _date(json['updatedAt']),
+    );
+  }
+}
+
+class GuideReviewVm {
+  const GuideReviewVm({
+    required this.id,
+    required this.bookingId,
+    required this.touristUserId,
+    required this.guideUserId,
+    required this.guideProfileId,
+    required this.guideDisplayName,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+    required this.updatedAt,
+    this.author = const ExcursionReviewAuthorVm(userId: ''),
+  });
+
+  final String id;
+  final String bookingId;
+  final String touristUserId;
+  final String guideUserId;
+  final String guideProfileId;
+  final String guideDisplayName;
+  final ExcursionReviewAuthorVm author;
+  final double rating;
+  final String comment;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  factory GuideReviewVm.fromJson(Map<String, dynamic> json) {
+    final touristUserId = _string(json['touristUserId']);
+    final author = json['author'] is Map<String, dynamic>
+        ? ExcursionReviewAuthorVm.fromJson(
+            json['author'] as Map<String, dynamic>,
+            fallbackUserId: touristUserId,
+          )
+        : ExcursionReviewAuthorVm(userId: touristUserId);
+    return GuideReviewVm(
+      id: _string(json['id']),
+      bookingId: _string(json['bookingId']),
+      touristUserId: touristUserId,
+      guideUserId: _string(json['guideUserId']),
+      guideProfileId: _string(json['guideProfileId']),
+      guideDisplayName: _string(json['guideDisplayName']),
+      author: author,
+      rating: _double(json['rating']),
+      comment: _string(json['comment']),
+      createdAt: _date(json['createdAt']) ?? DateTime.now().toUtc(),
+      updatedAt: _date(json['updatedAt']) ?? DateTime.now().toUtc(),
     );
   }
 }
@@ -459,8 +530,8 @@ List<ExcursionBookingVm> sortMyExcursionBookings(
   final sorted = List<ExcursionBookingVm>.from(items);
   sorted.sort((a, b) {
     if (tab == MyExcursionsTab.visited) {
-      final aPriority = a.canReview(now) ? 0 : 1;
-      final bPriority = b.canReview(now) ? 0 : 1;
+      final aPriority = a.isReviewed ? 1 : 0;
+      final bPriority = b.isReviewed ? 1 : 0;
       final priorityCompare = aPriority.compareTo(bPriority);
       if (priorityCompare != 0) return priorityCompare;
     }

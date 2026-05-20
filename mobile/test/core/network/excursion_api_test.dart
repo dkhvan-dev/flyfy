@@ -209,6 +209,7 @@ void main() {
       expect(page.items.single.id, 'booking-1');
       expect(page.items.single.title, 'Medeu sunrise walk');
       expect(page.items.single.review?.rating, 4.5);
+      expect(page.items.single.guideReview?.rating, 5);
       expect(page.hasMore, isFalse);
     },
   );
@@ -361,6 +362,123 @@ void main() {
       expect(review.guideDisplayName, 'Aruzhan');
     },
   );
+
+  test(
+    'saveBookingReviews puts excursion and optional guide review in one request',
+    () async {
+      final adapter = _ExcursionJsonAdapter({
+        '/me/excursion-bookings/booking-1/reviews': {
+          'excursionReview': _reviewJson(),
+          'guideReview': _guideReviewJson(),
+        },
+      });
+      final api = ExcursionApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final result = await api.saveBookingReviews(
+        'booking-1',
+        SaveBookingReviewsRequest(
+          excursionReview: ReviewMutationRequest.fromDraft(
+            ReviewDraftRequest(
+              rating: 4.5,
+              comment: 'Warm guide and a smooth route.',
+            ),
+          ),
+          guideReview: ReviewMutationRequest.fromDraft(
+            ReviewDraftRequest(
+              rating: 5,
+              comment: 'Thoughtful pacing and clear stories.',
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        adapter.requests.single.path,
+        '/me/excursion-bookings/booking-1/reviews',
+      );
+      expect(adapter.lastOptions?.method, 'PUT');
+      expect(adapter.lastJsonBody?['excursionReview'], {
+        'rating': 4.5,
+        'comment': 'Warm guide and a smooth route.',
+      });
+      expect(adapter.lastJsonBody?['guideReview'], {
+        'rating': 5.0,
+        'comment': 'Thoughtful pacing and clear stories.',
+      });
+      expect(result.excursionReview?.id, 'review-1');
+      expect(result.guideReview?.id, 'guide-review-1');
+    },
+  );
+
+  test('saveBookingReviews can delete direct guide review from booking',
+      () async {
+    final adapter = _ExcursionJsonAdapter({
+      '/me/excursion-bookings/booking-1/reviews': {
+        'excursionReview': _reviewJson(),
+      },
+    });
+    final api = ExcursionApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    final result = await api.saveBookingReviews(
+      'booking-1',
+      const SaveBookingReviewsRequest(
+        guideReview: ReviewMutationRequest.delete(),
+      ),
+    );
+
+    expect(
+      adapter.requests.single.path,
+      '/me/excursion-bookings/booking-1/reviews',
+    );
+    expect(adapter.lastOptions?.method, 'PUT');
+    expect(adapter.lastJsonBody?['guideReview'], {'delete': true});
+    expect(result.excursionReview?.id, 'review-1');
+    expect(result.guideReview, isNull);
+  });
+
+  test('getGuideReviews reads public direct guide reviews endpoint', () async {
+    final adapter = _ExcursionJsonAdapter({
+      '/guide-reviews': {
+        'items': [_guideReviewJson()],
+        'hasMore': false,
+      },
+    });
+    final api = ExcursionApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    final page = await api.getGuideReviews(
+      guideUserId: 'guide-user-1',
+      limit: 20,
+      sort: 'latest',
+    );
+
+    expect(adapter.requests.single.path, '/guide-reviews');
+    expect(adapter.requests.single.extra['requiresAuth'], isFalse);
+    expect(adapter.requests.single.queryParameters, {
+      'guideUserId': 'guide-user-1',
+      'sort': 'latest',
+      'limit': 20,
+      'offset': 0,
+    });
+    expect(page.items.single.id, 'guide-review-1');
+  });
 
   test('getExcursionReviews can filter public reviews by attraction', () async {
     final adapter = _ExcursionJsonAdapter({
@@ -549,6 +667,7 @@ Map<String, Object?> _bookingJson() {
     'currency': 'KZT',
     'status': 'REQUESTED',
     'review': _reviewJson(),
+    'guideReview': _guideReviewJson(),
   };
 }
 
@@ -568,6 +687,21 @@ Map<String, Object?> _reviewJson() {
     'comment': 'Warm guide and a smooth route.',
     'createdAt': '2026-05-02T10:00:00Z',
     'updatedAt': '2026-05-02T10:00:00Z',
+  };
+}
+
+Map<String, Object?> _guideReviewJson() {
+  return {
+    'id': 'guide-review-1',
+    'bookingId': 'booking-1',
+    'touristUserId': 'tourist-1',
+    'guideProfileId': 'guide-profile-1',
+    'guideUserId': 'guide-user-1',
+    'guideDisplayName': 'Aruzhan',
+    'rating': 5,
+    'comment': 'Thoughtful pacing and clear stories.',
+    'createdAt': '2026-05-02T10:05:00Z',
+    'updatedAt': '2026-05-02T10:05:00Z',
   };
 }
 

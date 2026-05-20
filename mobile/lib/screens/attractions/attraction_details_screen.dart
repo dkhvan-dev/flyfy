@@ -19,6 +19,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
 import '../../providers/session_provider.dart';
 import '../excursions/excursions_screen.dart';
+import '../excursions/widgets/excursion_review_management_sheet.dart';
 import '../map/map_screen.dart';
 
 class AttractionDetailsScreen extends StatefulWidget {
@@ -270,6 +271,71 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
       builder: (context) =>
           _CreateReviewSheet(l10n: l10n, onSubmit: _submitReview),
     );
+  }
+
+  Future<void> _openExcursionReviewActions(ExcursionReviewVm review) async {
+    final currentUserId =
+        (context.read<SessionProvider>().profile?.userId ?? '').trim();
+    if (currentUserId.isEmpty || review.author.userId.trim() != currentUserId) {
+      return;
+    }
+    final action = await showExcursionReviewActionsSheet(context);
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case ExcursionReviewAction.edit:
+        await _editExcursionReview(review);
+      case ExcursionReviewAction.delete:
+        await _deleteExcursionReview(review);
+    }
+  }
+
+  Future<void> _editExcursionReview(ExcursionReviewVm review) async {
+    final draft = await showExcursionReviewEditSheet(context, review: review);
+    if (!mounted || draft == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ExcursionProvider>();
+    final savedReview = await provider.saveExcursionReview(
+      review.bookingId,
+      draft.toRequest(),
+    );
+    if (!mounted) return;
+    if (savedReview == null) {
+      _showSnack(provider.actionErrorMessage ?? l10n.myExcursionsReviewFailed);
+      return;
+    }
+    await _refreshExcursionReviewSources(savedReview);
+    if (!mounted) return;
+    _showSnack(l10n.excursionReviewUpdated);
+  }
+
+  Future<void> _deleteExcursionReview(ExcursionReviewVm review) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ExcursionProvider>();
+    final success = await provider.deleteExcursionReview(
+      review.bookingId,
+      review.id,
+    );
+    if (!mounted) return;
+    if (!success) {
+      _showSnack(
+        provider.actionErrorMessage ?? l10n.myExcursionsReviewDeleteFailed,
+      );
+      return;
+    }
+    await _refreshExcursionReviewSources(review);
+    if (!mounted) return;
+    _showSnack(l10n.excursionReviewDeleted);
+  }
+
+  Future<void> _refreshExcursionReviewSources(ExcursionReviewVm review) async {
+    final provider = context.read<ExcursionProvider>();
+    final productId = review.productId.trim();
+    if (productId.isNotEmpty) {
+      await provider.loadExcursionReviews(productId: productId);
+    }
+    await provider.loadExcursionReviews(landmarkId: widget.attractionId);
   }
 
   Future<void> _openImageGallery(
@@ -1208,6 +1274,8 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
     final excursionReviews = context
         .watch<ExcursionProvider>()
         .excursionReviewsForLandmark(widget.attractionId);
+    final currentUserId =
+        (context.watch<SessionProvider>().profile?.userId ?? '').trim();
     final hasAnyReviews = _reviews.isNotEmpty || excursionReviews.isNotEmpty;
 
     return Column(
@@ -1297,6 +1365,8 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
                   review: excursionReviews[i],
                   l10n: l10n,
                   adaptive: a,
+                  currentUserId: currentUserId,
+                  onLongPress: _openExcursionReviewActions,
                 ),
                 if (i < excursionReviews.length - 1)
                   SizedBox(height: a.scale(14)),
@@ -2225,11 +2295,15 @@ class _ExcursionAttractionReviewCard extends StatelessWidget {
     required this.review,
     required this.l10n,
     required this.adaptive,
+    required this.currentUserId,
+    this.onLongPress,
   });
 
   final ExcursionReviewVm review;
   final AppLocalizations l10n;
   final AttractionAdaptive adaptive;
+  final String currentUserId;
+  final ValueChanged<ExcursionReviewVm>? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -2242,135 +2316,144 @@ class _ExcursionAttractionReviewCard extends StatelessWidget {
     final authorAvatarUrl = review.author.resolvedAvatarFileId.isEmpty
         ? null
         : resolvePublicFileContentUrl(review.author.resolvedAvatarFileId);
+    final canManage = currentUserId.isNotEmpty &&
+        review.author.userId.trim() == currentUserId;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF3B2B1C),
-        borderRadius: BorderRadius.circular(adaptive.radius(15)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            top: adaptive.scale(8),
-            bottom: adaptive.scale(8),
-            child: Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: AppColors.accent,
-                borderRadius: BorderRadius.circular(999),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onLongPress:
+          canManage && onLongPress != null ? () => onLongPress!(review) : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF3B2B1C),
+          borderRadius: BorderRadius.circular(adaptive.radius(15)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: adaptive.scale(8),
+              bottom: adaptive.scale(8),
+              child: Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              adaptive.scale(26, minFactor: 0.7),
-              adaptive.scale(22),
-              adaptive.scale(22, minFactor: 0.78),
-              adaptive.scale(22),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: adaptive.scale(8),
-                  runSpacing: adaptive.scale(8),
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: adaptive.scale(10),
-                        vertical: adaptive.scale(6),
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.22),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                adaptive.scale(26, minFactor: 0.7),
+                adaptive.scale(22),
+                adaptive.scale(22, minFactor: 0.78),
+                adaptive.scale(22),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: adaptive.scale(8),
+                    runSpacing: adaptive.scale(8),
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: adaptive.scale(10),
+                          vertical: adaptive.scale(6),
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: AppColors.accent.withValues(alpha: 0.22),
+                          ),
+                        ),
+                        child: Text(
+                          l10n.excursionReviewSourceAttractionBadge,
+                          style: TextStyle(
+                            color: AppColors.accent,
+                            fontSize: adaptive.scale(10),
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                          ),
                         ),
                       ),
-                      child: Text(
-                        l10n.excursionReviewSourceAttractionBadge,
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontSize: adaptive.scale(10),
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                    ),
-                    _buildExcursionStars(review.rating, adaptive),
-                  ],
-                ),
-                SizedBox(height: adaptive.scale(12)),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: adaptive.scale(18),
-                      backgroundColor: const Color(0xFF245163),
-                      backgroundImage: authorAvatarUrl != null
-                          ? NetworkImage(authorAvatarUrl)
-                          : null,
-                      child: authorAvatarUrl == null
-                          ? Icon(
-                              Icons.person_rounded,
-                              color: Colors.white.withValues(alpha: 0.85),
-                              size: adaptive.scale(19),
-                            )
-                          : null,
-                    ),
-                    SizedBox(width: adaptive.scale(12)),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            authorName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: adaptive.scale(14),
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                          SizedBox(height: adaptive.scale(3)),
-                          Text(
-                            l10n.excursionReviewViaGuide(guideName),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: const Color(0xFFD8C2AD),
-                              fontSize: adaptive.scale(11),
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: adaptive.scale(12)),
-                Text(
-                  '"${review.comment}"',
-                  style: TextStyle(
-                    color: const Color(0xFFD7BFAA),
-                    fontSize: adaptive.scale(14),
-                    fontWeight: FontWeight.w500,
-                    fontStyle: FontStyle.italic,
-                    height: 1.55,
+                      _buildExcursionStars(review.rating, adaptive),
+                    ],
                   ),
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                  SizedBox(height: adaptive.scale(12)),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: adaptive.scale(18),
+                        backgroundColor: const Color(0xFF245163),
+                        backgroundImage: authorAvatarUrl != null
+                            ? NetworkImage(authorAvatarUrl)
+                            : null,
+                        child: authorAvatarUrl == null
+                            ? Icon(
+                                Icons.person_rounded,
+                                color: Colors.white.withValues(alpha: 0.85),
+                                size: adaptive.scale(19),
+                              )
+                            : null,
+                      ),
+                      SizedBox(width: adaptive.scale(12)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              authorName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: adaptive.scale(14),
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                            SizedBox(height: adaptive.scale(3)),
+                            Text(
+                              l10n.excursionReviewViaGuide(guideName),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: const Color(0xFFD8C2AD),
+                                fontSize: adaptive.scale(11),
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (review.comment.trim().isNotEmpty) ...[
+                    SizedBox(height: adaptive.scale(12)),
+                    Text(
+                      '"${review.comment}"',
+                      style: TextStyle(
+                        color: const Color(0xFFD7BFAA),
+                        fontSize: adaptive.scale(14),
+                        fontWeight: FontWeight.w500,
+                        fontStyle: FontStyle.italic,
+                        height: 1.55,
+                      ),
+                      maxLines: 5,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

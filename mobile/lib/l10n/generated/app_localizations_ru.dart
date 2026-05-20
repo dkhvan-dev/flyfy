@@ -1972,11 +1972,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileGuideReviewsLatestTitle => 'Последние отзывы об экскурсиях';
 
   @override
+  String get profileDirectGuideReviewsTitle => 'Рейтинг гида';
+
+  @override
   String get profileGuideReviewsEmptyTitle => 'Отзывов пока нет';
 
   @override
   String get profileGuideReviewsEmpty =>
       'Отзывы появятся здесь после того, как путешественники оценят проведенные экскурсии.';
+
+  @override
+  String get profileDirectGuideReviewsEmpty =>
+      'Прямые отзывы о гиде появятся здесь после отдельных оценок путешественников.';
 
   @override
   String get profileGuideReviewsLoadFailed => 'Не удалось загрузить отзывы';
@@ -3778,19 +3785,88 @@ class AppLocalizationsRu extends AppLocalizations {
   String get myExcursionsReviewFailed => 'Не удалось опубликовать отзыв';
 
   @override
+  String get myExcursionsReviewDeleteFailed => 'Не удалось удалить отзыв';
+
+  @override
   String get myExcursionsReviewRating => 'Оценка';
 
   @override
   String get myExcursionsReviewHint => 'Что понравилось, что можно улучшить?';
 
   @override
+  String get myExcursionsExcursionReviewSectionTitle => 'Отзыв об экскурсии';
+
+  @override
+  String get myExcursionsExcursionReviewSectionSubtitle =>
+      'Оцените маршрут, организацию и общее впечатление.';
+
+  @override
+  String get myExcursionsExcursionReviewOptional =>
+      'Выключите, если хотите оценить только гида.';
+
+  @override
+  String get myExcursionsGuideReviewSectionTitle => 'Отзыв о гиде';
+
+  @override
+  String get myExcursionsGuideReviewSectionSubtitle =>
+      'При желании оцените гида отдельно для будущих путешественников.';
+
+  @override
+  String get myExcursionsGuideReviewRating => 'Оценка гида';
+
+  @override
+  String get myExcursionsGuideReviewHint =>
+      'Как гид общался, заботился о группе и рассказывал истории?';
+
+  @override
+  String get myExcursionsGuideReviewOptional =>
+      'Необязательно, но помогает гиду развивать доверенный профиль.';
+
+  @override
+  String get myExcursionsReviewSelectOneError =>
+      'Выберите хотя бы один отзыв для публикации';
+
+  @override
+  String get myExcursionsReviewDeleteExcursion => 'Удалить отзыв об экскурсии';
+
+  @override
+  String get myExcursionsReviewDeleteGuide => 'Удалить отзыв о гиде';
+
+  @override
   String get myExcursionsReviewPublish => 'Опубликовать';
+
+  @override
+  String get excursionReviewActionsTitle => 'Действия с отзывом';
+
+  @override
+  String get excursionReviewEditAction => 'Редактировать отзыв';
+
+  @override
+  String get excursionReviewDeleteAction => 'Удалить отзыв';
+
+  @override
+  String get excursionReviewEditTitle => 'Редактировать отзыв';
+
+  @override
+  String get excursionReviewEditSave => 'Сохранить отзыв';
+
+  @override
+  String get excursionReviewUpdated => 'Отзыв обновлен';
+
+  @override
+  String get excursionReviewDeleted => 'Отзыв удален';
 
   @override
   String get guideDashboardTitle => 'Кабинет гида';
 
   @override
   String get guideDashboardReviewsTitle => 'Отзывы';
+
+  @override
+  String get guideDashboardExcursionReviewsTab => 'Экскурсии';
+
+  @override
+  String get guideDashboardDirectGuideReviewsTab => 'Гид';
 
   @override
   String get guideDashboardOffersStat => 'Всего предложений';
@@ -3862,6 +3938,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get guideDashboardReviewEmptyHint =>
       'Предложения, ожидающие модерации или публикации, появятся здесь.';
+
+  @override
+  String get guideDashboardDirectGuideReviewsEmpty =>
+      'Прямые отзывы о вас появятся здесь после отдельных оценок путешественников.';
 
   @override
   String get guideDashboardArchiveEmpty => 'В архиве пока пусто';

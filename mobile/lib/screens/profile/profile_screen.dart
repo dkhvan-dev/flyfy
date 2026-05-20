@@ -45,9 +45,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<_ProfileExtras>? _extrasFuture;
   Future<ActivityCompletionStatsVm>? _activityStatsFuture;
   Future<ExcursionReviewsPage>? _guideReviewsFuture;
+  Future<GuideReviewsPage>? _directGuideReviewsFuture;
   String _extrasKey = '';
   String _activityStatsKey = '';
   String _guideReviewsKey = '';
+  String _directGuideReviewsKey = '';
   String _followOverrideUserId = '';
   int? _followersCountOverride;
   bool? _isFollowedByMeOverride;
@@ -77,6 +79,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _isMessageActionLoading = false;
     _guideReviewsFuture = null;
     _guideReviewsKey = '';
+    _directGuideReviewsFuture = null;
+    _directGuideReviewsKey = '';
 
     final userId = widget.userId?.trim() ?? '';
     if (userId.isEmpty) {
@@ -242,6 +246,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _guideReviewsFuture!;
   }
 
+  Future<GuideReviewsPage> _directGuideReviewsFutureFor(
+    UserProfileVm profile,
+  ) {
+    final key = '${profile.userId.trim()}|rating_desc|10|direct';
+    if (_directGuideReviewsFuture == null || _directGuideReviewsKey != key) {
+      _directGuideReviewsKey = key;
+      _directGuideReviewsFuture = _excursionApi.getGuideReviews(
+        guideUserId: profile.userId.trim(),
+        limit: 10,
+        sort: 'rating_desc',
+      );
+    }
+    return _directGuideReviewsFuture!;
+  }
+
   Future<void> _openEditProfile() async {
     final updated = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -357,6 +376,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           guideReviewsFuture: !isOwnProfile && extras.guide?.isVerified == true
               ? _guideReviewsFutureFor(effectiveProfile)
               : null,
+          directGuideReviewsFuture:
+              !isOwnProfile && extras.guide?.isVerified == true
+                  ? _directGuideReviewsFutureFor(effectiveProfile)
+                  : null,
           activityStatsFuture: _activityStatsFutureFor(
             effectiveProfile,
             isOwnProfile: isOwnProfile,
@@ -386,6 +409,7 @@ class _ProfileBody extends StatelessWidget {
     required this.guide,
     required this.avatarUrl,
     required this.guideReviewsFuture,
+    required this.directGuideReviewsFuture,
     required this.activityStatsFuture,
     required this.isOwnProfile,
     required this.isFollowActionLoading,
@@ -402,6 +426,7 @@ class _ProfileBody extends StatelessWidget {
   final GuideProfileVm? guide;
   final String? avatarUrl;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
+  final Future<GuideReviewsPage>? directGuideReviewsFuture;
   final Future<ActivityCompletionStatsVm> activityStatsFuture;
   final bool isOwnProfile;
   final bool isFollowActionLoading;
@@ -485,6 +510,7 @@ class _ProfileBody extends StatelessWidget {
           _ForeignProfileSections(
             isGuideProfile: isGuideProfile,
             guideReviewsFuture: guideReviewsFuture,
+            directGuideReviewsFuture: directGuideReviewsFuture,
           ),
         ],
       ],
@@ -1342,10 +1368,12 @@ class _ForeignProfileSections extends StatelessWidget {
   const _ForeignProfileSections({
     required this.isGuideProfile,
     required this.guideReviewsFuture,
+    required this.directGuideReviewsFuture,
   });
 
   final bool isGuideProfile;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
+  final Future<GuideReviewsPage>? directGuideReviewsFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -1355,6 +1383,11 @@ class _ForeignProfileSections extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (isGuideProfile && guideReviewsFuture != null) ...[
+          if (directGuideReviewsFuture != null) ...[
+            _DirectGuideReviewsSection(
+                reviewsFuture: directGuideReviewsFuture!),
+            SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
+          ],
           _GuideExcursionReviewsSection(reviewsFuture: guideReviewsFuture!),
           SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
         ],
@@ -1373,6 +1406,56 @@ class _ForeignProfileSections extends StatelessWidget {
         _PlaceholderShowcaseCard(
           title: l10n.profileUnavailableTitle,
           subtitle: l10n.profileBlogsUnavailable,
+        ),
+      ],
+    );
+  }
+}
+
+class _DirectGuideReviewsSection extends StatelessWidget {
+  const _DirectGuideReviewsSection({required this.reviewsFuture});
+
+  final Future<GuideReviewsPage> reviewsFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProfileSectionHeading(title: l10n.profileDirectGuideReviewsTitle),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        FutureBuilder<GuideReviewsPage>(
+          future: reviewsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const _GuideReviewSkeletonList();
+            }
+            if (snapshot.hasError) {
+              return _PlaceholderShowcaseCard(
+                title: l10n.profileGuideReviewsLoadFailed,
+                subtitle: l10n.profileGuideReviewsLoadFailedHint,
+              );
+            }
+
+            final reviews = snapshot.data?.items ?? const <GuideReviewVm>[];
+            if (reviews.isEmpty) {
+              return _PlaceholderShowcaseCard(
+                title: l10n.profileGuideReviewsEmptyTitle,
+                subtitle: l10n.profileDirectGuideReviewsEmpty,
+              );
+            }
+
+            return Column(
+              children: [
+                for (var i = 0; i < reviews.length; i++) ...[
+                  _ProfileDirectGuideReviewCard(review: reviews[i]),
+                  if (i != reviews.length - 1)
+                    SizedBox(height: profileScaled(context, 12, min: 10)),
+                ],
+              ],
+            );
+          },
         ),
       ],
     );
@@ -1522,6 +1605,99 @@ class _ProfileGuideReviewCard extends StatelessWidget {
               height: 1.42,
             ),
           ),
+          SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+          Text(
+            dateText,
+            style: TextStyle(
+              color: profileDisabled,
+              fontSize: profileScaled(context, 11, min: 10, max: 11),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileDirectGuideReviewCard extends StatelessWidget {
+  const _ProfileDirectGuideReviewCard({required this.review});
+
+  final GuideReviewVm review;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final authorName = review.author.resolvedDisplayName.isEmpty
+        ? l10n.attractionTravelerFallback
+        : review.author.resolvedDisplayName;
+    final avatarUrl = review.author.resolvedAvatarFileId.isEmpty
+        ? null
+        : resolvePublicFileContentUrl(review.author.resolvedAvatarFileId);
+    final dateText = DateFormat.yMMMd(
+      locale,
+    ).format(review.createdAt.toLocal());
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(profileScaled(context, 16, min: 14, max: 18)),
+      decoration: profileCardDecoration(
+        context,
+        highlighted: true,
+        radius: profileScaled(context, 22, min: 18, max: 22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: profileScaled(context, 18, min: 16, max: 20),
+                backgroundColor: AppColors.accent.withValues(alpha: 0.16),
+                backgroundImage:
+                    avatarUrl == null ? null : NetworkImage(avatarUrl),
+                child: avatarUrl == null
+                    ? Text(
+                        _reviewInitial(authorName),
+                        style: const TextStyle(
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      )
+                    : null,
+              ),
+              SizedBox(width: profileScaled(context, 12, min: 10, max: 12)),
+              Expanded(
+                child: Text(
+                  authorName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: profileScaled(context, 14, min: 13, max: 15),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              SizedBox(width: profileScaled(context, 10, min: 8, max: 12)),
+              _ProfileReviewRating(value: review.rating),
+            ],
+          ),
+          if (review.comment.trim().isNotEmpty) ...[
+            SizedBox(height: profileScaled(context, 12, min: 10, max: 14)),
+            Text(
+              review.comment,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: profileScaled(context, 14, min: 13, max: 15),
+                height: 1.42,
+              ),
+            ),
+          ],
           SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
           Text(
             dateText,

@@ -392,6 +392,41 @@ func TestCombinedRouteMigrationAddsRouteMetadata(t *testing.T) {
 	}
 }
 
+func TestReviewCommentMigrationAllowsRatingOnlyReviews(t *testing.T) {
+	upMigration := readMigration(t, "017_allow_empty_review_comments.up.sql")
+	requiredUpFragments := []string{
+		"DROP CONSTRAINT IF EXISTS chk_excursion_reviews_comment",
+		"ADD CONSTRAINT chk_excursion_reviews_comment",
+		"DROP CONSTRAINT IF EXISTS chk_guide_reviews_comment",
+		"ADD CONSTRAINT chk_guide_reviews_comment",
+		"CHECK (length(comment) <= 2000)",
+	}
+	for _, fragment := range requiredUpFragments {
+		if !strings.Contains(upMigration, fragment) {
+			t.Fatalf("up migration missing %q\n%s", fragment, upMigration)
+		}
+	}
+	if strings.Contains(upMigration, "length(trim(comment)) > 0") {
+		t.Fatalf("up migration still rejects rating-only reviews:\n%s", upMigration)
+	}
+
+	downMigration := readMigration(t, "017_allow_empty_review_comments.down.sql")
+	requiredDownFragments := []string{
+		"UPDATE excursion_reviews",
+		"UPDATE guide_reviews",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_reviews_comment",
+		"ADD CONSTRAINT chk_excursion_reviews_comment",
+		"DROP CONSTRAINT IF EXISTS chk_guide_reviews_comment",
+		"ADD CONSTRAINT chk_guide_reviews_comment",
+		"CHECK (length(trim(comment)) > 0 AND length(comment) <= 2000)",
+	}
+	for _, fragment := range requiredDownFragments {
+		if !strings.Contains(downMigration, fragment) {
+			t.Fatalf("down migration missing %q\n%s", fragment, downMigration)
+		}
+	}
+}
+
 func TestExcursionMarketplaceCanonicalKeyNormalizesCustomRoute(t *testing.T) {
 	item := validRepositoryExcursion(t)
 	item.LandmarkID = nil
