@@ -1095,6 +1095,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   }
 
   Future<void> _submitAndPublish() async {
+    if (_isSubmitting) return;
     if (!_validateCurrentStep()) return;
 
     setState(() => _isSubmitting = true);
@@ -1106,26 +1107,13 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     if (!mounted) return;
 
     if (created != null) {
-      final published = await provider.publishActivity(created.id);
-
-      if (!mounted) return;
       setState(() => _isSubmitting = false);
-
-      if (published) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.activityPublishSuccess)));
-        context.read<ActivityProvider>().loadActivities();
-        context.pushReplacement('/activities/${created.id}');
-      } else {
-        final l10n = AppLocalizations.of(context)!;
-        await showErrorDialog(
-          context,
-          title: l10n.error,
-          message: provider.actionErrorMessage ?? l10n.activityPublishFailed,
-        );
-      }
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityPublishSuccess)));
+      context.read<ActivityProvider>().loadActivities();
+      context.pushReplacement('/activities/${created.id}', extra: created);
     } else {
       setState(() => _isSubmitting = false);
       final l10n = AppLocalizations.of(context)!;
@@ -1266,15 +1254,19 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   // ── Submit ─────────────────────────────────────────────────────
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
     if (!_validateCurrentStep()) return;
+
+    if (widget.isRepeatMode) {
+      await _submitAndPublish();
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
     final provider = context.read<ActivityProvider>();
 
-    if (widget.isRepeatMode) {
-      await _submitAndPublish();
-    } else if (_shouldRepublishCancelledActivity) {
+    if (_shouldRepublishCancelledActivity) {
       await _submitUpdateAndPublish(provider);
     } else if (widget.isEditMode) {
       await _submitUpdate(provider);
@@ -1329,7 +1321,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.createActivitySuccess)));
       context.read<ActivityProvider>().loadActivities();
-      context.pushReplacement('/activities/${created.id}');
+      context.pushReplacement('/activities/${created.id}', extra: created);
     } else {
       final l10n = AppLocalizations.of(context)!;
       await showErrorDialog(

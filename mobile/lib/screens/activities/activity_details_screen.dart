@@ -31,9 +31,14 @@ import '../../providers/session_provider.dart';
 import 'activity_payment_screen.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
-  const ActivityDetailsScreen({super.key, required this.activityId});
+  const ActivityDetailsScreen({
+    super.key,
+    required this.activityId,
+    this.initialActivity,
+  });
 
   final String activityId;
+  final ActivityListItemVm? initialActivity;
 
   @override
   State<ActivityDetailsScreen> createState() => _ActivityDetailsScreenState();
@@ -63,6 +68,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
   _FooterAction? _pendingAction;
   bool _isPaymentSuccessful = false;
   bool _isTrackingBackSwipe = false;
+  bool _isInitialLoadPending = true;
   double _backSwipeDistance = 0;
 
   @override
@@ -88,7 +94,23 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       provider.loadActivityCategories(),
       _loadParticipants(),
     ]);
-    await _loadVisibleProfiles(provider.selectedActivity);
+    if (!mounted) return;
+    setState(() => _isInitialLoadPending = false);
+    await _loadVisibleProfiles(_visibleActivity(provider));
+  }
+
+  ActivityListItemVm? _visibleActivity(ActivityProvider provider) {
+    final selectedActivity = provider.selectedActivity;
+    if (selectedActivity?.id == widget.activityId) {
+      return selectedActivity;
+    }
+
+    final initialActivity = widget.initialActivity;
+    if (initialActivity?.id == widget.activityId) {
+      return initialActivity;
+    }
+
+    return null;
   }
 
   Future<void> _loadParticipants() async {
@@ -184,7 +206,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     }
     if (!mounted) return;
 
-    final activity = context.read<ActivityProvider>().selectedActivity;
+    final activity = _visibleActivity(context.read<ActivityProvider>());
     if (_isPrivateActivity(activity)) {
       final joined = await _showPrivateJoinDialog(l10n);
       if (!mounted || joined != true) {
@@ -560,7 +582,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     }
 
     await Future.wait<void>(futures);
-    await _loadVisibleProfiles(provider.selectedActivity);
+    await _loadVisibleProfiles(_visibleActivity(provider));
     provider.resetActionState();
   }
 
@@ -955,10 +977,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<ActivityProvider>();
     final session = context.watch<SessionProvider>();
-    final activity = provider.selectedActivity;
+    final activity = _visibleActivity(provider);
     final currentUserId = (session.profile?.userId ?? '').trim();
 
-    if (provider.state == ActivitiesState.loading && activity == null) {
+    if ((_isInitialLoadPending || provider.state == ActivitiesState.loading) &&
+        activity == null) {
       return const _DetailsResponsiveTextScope(
         child: Scaffold(
           backgroundColor: _DetailsColors.base,

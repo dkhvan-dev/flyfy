@@ -250,7 +250,13 @@ class AppRouter {
           path: '/activities/:activityId',
           builder: (context, state) {
             final activityId = state.pathParameters['activityId'] ?? '';
-            return ActivityDetailsScreen(activityId: activityId);
+            final initialActivity = state.extra is ActivityListItemVm
+                ? state.extra! as ActivityListItemVm
+                : null;
+            return ActivityDetailsScreen(
+              activityId: activityId,
+              initialActivity: initialActivity,
+            );
           },
         ),
         GoRoute(
