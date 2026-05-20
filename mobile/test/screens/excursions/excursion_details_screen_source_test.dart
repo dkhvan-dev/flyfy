@@ -481,4 +481,22 @@ void main() {
       );
     },
   );
+
+  test(
+    'excursion details timeline displays combined route stop metadata',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/excursion_details_screen.dart',
+      ).readAsString();
+
+      expect(source, contains("excursion.routeKind == 'COMBINED_ROUTE'"));
+      expect(source, contains('excursion.stopCount > 1'));
+      expect(source, contains('excursionDetailsRouteStopsCount'));
+      expect(source, contains('step.attractionName'));
+      expect(source, contains('step.travelFromPreviousMinutes'));
+      expect(source, contains('excursionDetailsTravelFromPrevious'));
+      expect(source, contains('class _RouteStopMetaChip'));
+      expect(source, contains('Wrap('));
+    },
+  );
 }

@@ -19,7 +19,10 @@ void main() {
       expect(source, contains('_openLocationSelector'));
       expect(source, contains("context.push<ExcursionLocationSelection>"));
       expect(source, contains("'/excursions/create/location'"));
-      expect(source, contains('landmarkId: _selectedLandmarkId'));
+      expect(
+        source,
+        contains('landmarkId: isCombinedRoute ? null : _selectedLandmarkId'),
+      );
       expect(source, contains('latitude: _selectedLatitude'));
       expect(source, contains('longitude: _selectedLongitude'));
       expect(source, contains('MediaQuery.viewInsetsOf(context).bottom'));
@@ -561,17 +564,159 @@ void main() {
       expect(source, contains('l10n.excursionSelectLocationAttractionSection'));
       expect(source, contains('context.push<ExcursionLocationSelection>'));
       expect(source, contains('countryCode: _selectedCountryCode!'));
-      expect(
-        source,
-        contains(
-          'onSelectLocation: _hasSelectedCountry ? _openLocationSelector',
-        ),
-      );
+      expect(source, contains('onSelectLocation:'));
+      expect(source, contains('_openLocationSelector'));
       expect(source, isNot(contains('countryCodeController')));
       expect(source, isNot(contains('actionLabel: _hasSelectedCountry')));
       expect(source, isNot(contains('_isLocationEditingEnabled')));
       expect(source, isNot(contains('enabled: isEditable')));
       expect(source, isNot(contains('class _TransparentTextField')));
+    },
+  );
+
+  test(
+    'create excursion supports single attraction and combined route modes',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('enum _ExcursionCreationMode'));
+      expect(source, contains('singleAttraction'));
+      expect(source, contains('combinedRoute'));
+      expect(source, contains('_maxItineraryAttractionStops = 5'));
+      expect(
+        source,
+        contains('_creationMode = _ExcursionCreationMode.singleAttraction'),
+      );
+      expect(source, contains('class _CreationModeSelector'));
+      expect(source, contains('createExcursionSingleAttractionMode'));
+      expect(source, contains('createExcursionCombinedRouteMode'));
+      expect(source, contains('Wrap('));
+      expect(source, contains('enableAttractionSelection: isCombinedRoute'));
+      expect(source, contains('_openStopAttractionSelector'));
+    },
+  );
+
+  test(
+    'create excursion validates combined routes by attraction stop count',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains('_creationMode == _ExcursionCreationMode.singleAttraction'),
+      );
+      expect(
+        source,
+        contains('_creationMode == _ExcursionCreationMode.combinedRoute'),
+      );
+      expect(source, contains('_itineraryAttractionStopCount'));
+      expect(
+        source,
+        contains('createExcursionCombinedRouteMinStopsValidation'),
+      );
+      expect(
+        source,
+        contains('createExcursionCombinedRouteMaxStopsValidation'),
+      );
+      expect(source, contains('_maxItineraryAttractionStops'));
+      expect(
+        source,
+        isNot(
+          contains('if (!_hasSelectedAttraction) {\n      _landmarkErrorText'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'create excursion prevents duplicate combined route stops and locks selected stop title',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+      final enSource = await File('lib/l10n/app_en.arb').readAsString();
+      final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+      expect(source, contains('reservedAttractionIds'));
+      expect(source, contains('_reservedItineraryAttractionIds'));
+      expect(source, contains('_isReservedAttraction'));
+      expect(source, contains('createExcursionDuplicateRouteStopValidation'));
+      expect(source, contains('readOnly: widget.enableAttractionSelection'));
+      expect(source, contains('_titleCtrl.text = result.name.trim();'));
+      expect(enSource, contains('createExcursionDuplicateRouteStopValidation'));
+      expect(ruSource, contains('createExcursionDuplicateRouteStopValidation'));
+    },
+  );
+
+  test(
+    'create excursion hydrates edit mode route kind and itinerary stop snapshots',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('excursion.routeKind'));
+      expect(source, contains("'COMBINED_ROUTE'"));
+      expect(source, contains('attractionId: item.attractionId'));
+      expect(source, contains('attractionName: item.attractionName'));
+      expect(source, contains('latitude: item.latitude'));
+      expect(source, contains('longitude: item.longitude'));
+      expect(
+        source,
+        contains('travelFromPreviousMinutes: item.travelFromPreviousMinutes'),
+      );
+      expect(source, contains('attractionId: _selectedAttractionId'));
+      expect(source, contains('attractionName: _selectedAttractionName'));
+      expect(source, contains('latitude: _selectedLatitude'));
+      expect(source, contains('longitude: _selectedLongitude'));
+    },
+  );
+
+  test(
+    'create excursion serializes combined route requests without landmark id',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('final isCombinedRoute ='));
+      expect(
+        source,
+        contains('_creationMode == _ExcursionCreationMode.combinedRoute'),
+      );
+      expect(source, contains('landmarkName: isCombinedRoute ? null :'));
+      expect(
+        source,
+        contains('landmarkId: isCombinedRoute ? null : _selectedLandmarkId'),
+      );
+      expect(
+        source,
+        contains('attractionId: isCombinedRoute ? item.attractionId : null'),
+      );
+      expect(
+        source,
+        contains(
+          'attractionName: isCombinedRoute ? item.attractionName : null',
+        ),
+      );
+      expect(
+        source,
+        contains('latitude: isCombinedRoute ? item.latitude : null'),
+      );
+      expect(
+        source,
+        contains('longitude: isCombinedRoute ? item.longitude : null'),
+      );
+      expect(source, contains('travelFromPreviousMinutes:'));
+      expect(
+        source,
+        contains('isCombinedRoute ? item.travelFromPreviousMinutes : null'),
+      );
+      expect(source, contains('item.travelFromPreviousMinutes'));
     },
   );
 

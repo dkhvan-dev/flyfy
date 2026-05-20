@@ -1066,7 +1066,7 @@ class _ExcursionStatsGrid extends StatelessWidget {
         ? selectedOfferLanguages
         : excursion.languageCodes;
     final language = _formatLanguageLabels(l10n, languageCodes);
-    final cards = [
+    final cards = <_ExcursionStatData>[
       _ExcursionStatData(
         label: l10n.excursionDetailsPrice,
         value: _formatPrice(context, excursion),
@@ -1077,6 +1077,11 @@ class _ExcursionStatsGrid extends StatelessWidget {
         label: l10n.excursionDetailsIntensity,
         value: l10n.excursionDetailsIntensityModerate,
       ),
+      if (excursion.routeKind == 'COMBINED_ROUTE' && excursion.stopCount > 1)
+        _ExcursionStatData(
+          label: l10n.excursionDetailsRouteStopsCount(excursion.stopCount),
+          value: excursion.stopCount.toString(),
+        ),
       _ExcursionStatData(
         label: l10n.excursionDetailsGroupSize,
         value: excursion.maxGroupSize > 0
@@ -3592,6 +3597,7 @@ class _ExcursionItineraryStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final title = _localizedItineraryTitle(
       context,
       step,
@@ -3600,6 +3606,22 @@ class _ExcursionItineraryStep extends StatelessWidget {
       totalSteps,
     );
     final description = _localizedItineraryDescription(step, languageCode);
+    final attractionName = step.attractionName?.trim() ?? '';
+    final travelFromPreviousMinutes = step.travelFromPreviousMinutes;
+    final metaChips = <Widget>[
+      if (attractionName.isNotEmpty)
+        _RouteStopMetaChip(
+          icon: Icons.place_rounded,
+          label: attractionName,
+        ),
+      if (travelFromPreviousMinutes != null && travelFromPreviousMinutes > 0)
+        _RouteStopMetaChip(
+          icon: Icons.route_rounded,
+          label: l10n.excursionDetailsTravelFromPrevious(
+            travelFromPreviousMinutes,
+          ),
+        ),
+    ];
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3651,10 +3673,64 @@ class _ExcursionItineraryStep extends StatelessWidget {
                   ),
                 ),
               ],
+              if (metaChips.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: metaChips,
+                ),
+              ],
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RouteStopMetaChip extends StatelessWidget {
+  const _RouteStopMetaChip({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.accent.withValues(alpha: 0.28),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.accent),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 12,
+                height: 1.12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

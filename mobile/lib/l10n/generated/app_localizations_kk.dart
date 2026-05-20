@@ -2663,6 +2663,16 @@ class AppLocalizationsKk extends AppLocalizations {
       'Гид жақында толық сипаттаманы қосады.';
 
   @override
+  String excursionDetailsRouteStopsCount(Object count) {
+    return 'Аялдама саны: $count';
+  }
+
+  @override
+  String excursionDetailsTravelFromPrevious(Object minutes) {
+    return 'Алдыңғы аялдамадан $minutes мин';
+  }
+
+  @override
   String get createExcursionTitle => 'Экскурсия құру';
 
   @override
@@ -2732,6 +2742,26 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get createExcursionAttractionCatalogSource =>
       'Көрікті жерлер каталогынан';
+
+  @override
+  String get createExcursionSingleAttractionMode => 'Бір көрікті жер';
+
+  @override
+  String get createExcursionCombinedRouteMode => 'Бірнеше аялдамалы маршрут';
+
+  @override
+  String createExcursionCombinedRouteMinStopsValidation(Object count) {
+    return 'Кемінде $count көрікті жер аялдамасын қосыңыз';
+  }
+
+  @override
+  String createExcursionCombinedRouteMaxStopsValidation(Object count) {
+    return '$count-тен көп көрікті жер аялдамасын қоспаңыз';
+  }
+
+  @override
+  String get createExcursionDuplicateRouteStopValidation =>
+      'Бұл көрікті жер маршрутта бар.';
 
   @override
   String get excursionSelectLocationTitle => 'Орын таңдау';

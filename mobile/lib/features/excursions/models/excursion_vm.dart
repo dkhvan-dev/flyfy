@@ -11,6 +11,14 @@ class ExcursionVm {
     this.guideUserId,
     this.landmarkId,
     this.landmarkName,
+    this.routeKind = 'SINGLE_ATTRACTION',
+    this.routeFingerprint,
+    this.attractionIds = const [],
+    this.attractionNames = const [],
+    this.stopCount = 0,
+    this.transportMode = 'WALKING',
+    this.routeTheme,
+    this.durationBucket,
     this.description = '',
     this.categorySlug,
     this.durationMinutes = 0,
@@ -39,6 +47,14 @@ class ExcursionVm {
   final String? guideUserId;
   final String? landmarkId;
   final String? landmarkName;
+  final String routeKind;
+  final String? routeFingerprint;
+  final List<String> attractionIds;
+  final List<String> attractionNames;
+  final int stopCount;
+  final String transportMode;
+  final String? routeTheme;
+  final String? durationBucket;
   final String title;
   final String summary;
   final String description;
@@ -76,6 +92,14 @@ class ExcursionVm {
       guideUserId: offer.guideUserId,
       landmarkId: landmarkId,
       landmarkName: landmarkName,
+      routeKind: routeKind,
+      routeFingerprint: routeFingerprint,
+      attractionIds: attractionIds,
+      attractionNames: attractionNames,
+      stopCount: stopCount,
+      transportMode: transportMode,
+      routeTheme: routeTheme,
+      durationBucket: durationBucket,
       title: offer.title.trim().isNotEmpty ? offer.title : title,
       summary: offer.summary.trim().isNotEmpty ? offer.summary : summary,
       description:
@@ -128,6 +152,14 @@ class ExcursionVm {
       guideUserId: json['guideUserId'] as String? ?? primaryOffer?.guideUserId,
       landmarkId: json['landmarkId'] as String?,
       landmarkName: json['landmarkName'] as String?,
+      routeKind: (json['routeKind'] as String?) ?? 'SINGLE_ATTRACTION',
+      routeFingerprint: json['routeFingerprint'] as String?,
+      attractionIds: _stringList(json['attractionIds']),
+      attractionNames: _stringList(json['attractionNames']),
+      stopCount: (json['stopCount'] as num?)?.toInt() ?? 0,
+      transportMode: (json['transportMode'] as String?) ?? 'WALKING',
+      routeTheme: json['routeTheme'] as String?,
+      durationBucket: json['durationBucket'] as String?,
       title: (json['title'] as String?) ?? '',
       summary: (json['summary'] as String?) ?? '',
       description: (json['description'] as String?) ?? '',
@@ -428,6 +460,11 @@ class ExcursionItineraryItemVm {
     required this.title,
     required this.description,
     this.durationMinutes,
+    this.attractionId,
+    this.attractionName,
+    this.latitude,
+    this.longitude,
+    this.travelFromPreviousMinutes,
     this.translations = const {},
   });
 
@@ -435,6 +472,11 @@ class ExcursionItineraryItemVm {
   final int sortOrder;
   final int startOffsetMinutes;
   final int? durationMinutes;
+  final String? attractionId;
+  final String? attractionName;
+  final double? latitude;
+  final double? longitude;
+  final int? travelFromPreviousMinutes;
   final String title;
   final String description;
   final Map<String, ExcursionItineraryLocalizedCopyVm> translations;
@@ -445,6 +487,12 @@ class ExcursionItineraryItemVm {
       sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
       startOffsetMinutes: (json['startOffsetMinutes'] as num?)?.toInt() ?? 0,
       durationMinutes: (json['durationMinutes'] as num?)?.toInt(),
+      attractionId: json['attractionId'] as String?,
+      attractionName: json['attractionName'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      travelFromPreviousMinutes:
+          (json['travelFromPreviousMinutes'] as num?)?.toInt(),
       title: (json['title'] as String?) ?? '',
       description: (json['description'] as String?) ?? '',
       translations: _translations(json['translations']),

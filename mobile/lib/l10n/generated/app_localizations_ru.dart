@@ -2654,6 +2654,16 @@ class AppLocalizationsRu extends AppLocalizations {
       'Гид скоро добавит подробное описание.';
 
   @override
+  String excursionDetailsRouteStopsCount(Object count) {
+    return 'Остановок: $count';
+  }
+
+  @override
+  String excursionDetailsTravelFromPrevious(Object minutes) {
+    return '$minutes мин от предыдущей остановки';
+  }
+
+  @override
   String get createExcursionTitle => 'Создать экскурсию';
 
   @override
@@ -2726,6 +2736,27 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get createExcursionAttractionCatalogSource =>
       'Из каталога достопримечательностей';
+
+  @override
+  String get createExcursionSingleAttractionMode =>
+      'Одна достопримечательность';
+
+  @override
+  String get createExcursionCombinedRouteMode => 'Составной маршрут';
+
+  @override
+  String createExcursionCombinedRouteMinStopsValidation(Object count) {
+    return 'Добавьте минимум $count остановки с достопримечательностями';
+  }
+
+  @override
+  String createExcursionCombinedRouteMaxStopsValidation(Object count) {
+    return 'Добавьте не больше $count остановок с достопримечательностями';
+  }
+
+  @override
+  String get createExcursionDuplicateRouteStopValidation =>
+      'Эта достопримечательность уже есть в маршруте.';
 
   @override
   String get excursionSelectLocationTitle => 'Выбор локации';

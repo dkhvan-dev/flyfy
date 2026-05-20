@@ -1,11 +1,16 @@
 package dto
 
 type ExcursionItineraryItemRequest struct {
-	StartOffsetMinutes int                                        `json:"startOffsetMinutes"`
-	DurationMinutes    *int                                       `json:"durationMinutes,omitempty"`
-	Title              string                                     `json:"title"`
-	Description        string                                     `json:"description"`
-	Translations       map[string]ExcursionItineraryLocalizedCopy `json:"translations,omitempty"`
+	StartOffsetMinutes        int                                        `json:"startOffsetMinutes"`
+	DurationMinutes           *int                                       `json:"durationMinutes,omitempty"`
+	AttractionID              *string                                    `json:"attractionId,omitempty"`
+	AttractionName            *string                                    `json:"attractionName,omitempty"`
+	Latitude                  *float64                                   `json:"latitude,omitempty"`
+	Longitude                 *float64                                   `json:"longitude,omitempty"`
+	TravelFromPreviousMinutes *int                                       `json:"travelFromPreviousMinutes,omitempty"`
+	Title                     string                                     `json:"title"`
+	Description               string                                     `json:"description"`
+	Translations              map[string]ExcursionItineraryLocalizedCopy `json:"translations,omitempty"`
 }
 
 type ExcursionLocalizedCopy struct {
@@ -46,15 +51,20 @@ type CreateExcursionRequest struct {
 type UpdateExcursionRequest = CreateExcursionRequest
 
 type ExcursionItineraryItemResponse struct {
-	ID                 string                                     `json:"id"`
-	SortOrder          int                                        `json:"sortOrder"`
-	StartOffsetMinutes int                                        `json:"startOffsetMinutes"`
-	DurationMinutes    *int                                       `json:"durationMinutes,omitempty"`
-	Title              string                                     `json:"title"`
-	Description        string                                     `json:"description"`
-	Translations       map[string]ExcursionItineraryLocalizedCopy `json:"translations,omitempty"`
-	CreatedAt          string                                     `json:"createdAt"`
-	UpdatedAt          string                                     `json:"updatedAt"`
+	ID                        string                                     `json:"id"`
+	SortOrder                 int                                        `json:"sortOrder"`
+	StartOffsetMinutes        int                                        `json:"startOffsetMinutes"`
+	DurationMinutes           *int                                       `json:"durationMinutes,omitempty"`
+	AttractionID              *string                                    `json:"attractionId,omitempty"`
+	AttractionName            *string                                    `json:"attractionName,omitempty"`
+	Latitude                  *float64                                   `json:"latitude,omitempty"`
+	Longitude                 *float64                                   `json:"longitude,omitempty"`
+	TravelFromPreviousMinutes *int                                       `json:"travelFromPreviousMinutes,omitempty"`
+	Title                     string                                     `json:"title"`
+	Description               string                                     `json:"description"`
+	Translations              map[string]ExcursionItineraryLocalizedCopy `json:"translations,omitempty"`
+	CreatedAt                 string                                     `json:"createdAt"`
+	UpdatedAt                 string                                     `json:"updatedAt"`
 }
 
 type ExcursionResponse struct {
@@ -103,6 +113,14 @@ type ExcursionProductCardResponse struct {
 	ID                   string                            `json:"id"`
 	LandmarkID           *string                           `json:"landmarkId,omitempty"`
 	LandmarkName         *string                           `json:"landmarkName,omitempty"`
+	RouteKind            string                            `json:"routeKind"`
+	RouteFingerprint     *string                           `json:"routeFingerprint,omitempty"`
+	AttractionIDs        []string                          `json:"attractionIds,omitempty"`
+	AttractionNames      []string                          `json:"attractionNames,omitempty"`
+	StopCount            int                               `json:"stopCount"`
+	TransportMode        string                            `json:"transportMode"`
+	RouteTheme           *string                           `json:"routeTheme,omitempty"`
+	DurationBucket       *string                           `json:"durationBucket,omitempty"`
 	Title                string                            `json:"title"`
 	Summary              string                            `json:"summary"`
 	Description          string                            `json:"description"`

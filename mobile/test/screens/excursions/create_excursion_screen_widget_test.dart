@@ -31,6 +31,8 @@ void main() {
     expect(find.text('Attraction'), findsOneWidget);
     expect(find.text('Country'), findsOneWidget);
     expect(find.text('Select Attraction'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -420));
+    await tester.pumpAndSettle();
     expect(find.text('Excursion Cover'), findsOneWidget);
     expect(find.text('Next Step'), findsOneWidget);
   });

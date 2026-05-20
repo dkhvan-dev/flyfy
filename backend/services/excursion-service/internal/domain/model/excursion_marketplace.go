@@ -8,9 +8,25 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/enum"
 )
 
+type ExcursionRouteKind string
+
+const (
+	ExcursionRouteKindSingleAttraction ExcursionRouteKind = "SINGLE_ATTRACTION"
+	ExcursionRouteKindCombinedRoute    ExcursionRouteKind = "COMBINED_ROUTE"
+)
+
 type ExcursionProductCard struct {
 	ID           uuid.UUID
 	CanonicalKey string
+
+	RouteKind        ExcursionRouteKind
+	RouteFingerprint *string
+	AttractionIDs    []uuid.UUID
+	AttractionNames  []string
+	StopCount        int
+	TransportMode    string
+	RouteTheme       *string
+	DurationBucket   *string
 
 	LandmarkID   *uuid.UUID
 	LandmarkName *string

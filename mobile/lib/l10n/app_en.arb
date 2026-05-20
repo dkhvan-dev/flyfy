@@ -951,6 +951,18 @@
     }
   },
   "excursionDetailsNoDescription": "Your guide will share the detailed description soon.",
+  "excursionDetailsRouteStopsCount": "{count} stops",
+  "@excursionDetailsRouteStopsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "excursionDetailsTravelFromPrevious": "{minutes} min from previous stop",
+  "@excursionDetailsTravelFromPrevious": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "createExcursionTitle": "Create Excursion",
   "createExcursionEditTitle": "Edit Offer",
   "createExcursionSubmit": "Publish",
@@ -973,6 +985,21 @@
   "createExcursionLocationLockedByAttraction": "This location comes from the attraction catalog. Change the attraction to edit it.",
   "createExcursionAttractionCatalogHint": "Attraction catalog for the selected country",
   "createExcursionAttractionCatalogSource": "From the attraction catalog",
+  "createExcursionSingleAttractionMode": "Single attraction",
+  "createExcursionCombinedRouteMode": "Combined route",
+  "createExcursionCombinedRouteMinStopsValidation": "Add at least {count} attraction stops",
+  "@createExcursionCombinedRouteMinStopsValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionCombinedRouteMaxStopsValidation": "Add no more than {count} attraction stops",
+  "@createExcursionCombinedRouteMaxStopsValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionDuplicateRouteStopValidation": "This attraction is already in the route.",
   "excursionSelectLocationTitle": "Select Attraction",
   "excursionSelectLocationCountrySection": "Select Country",
   "excursionSelectLocationCountrySearchHint": "Search countries...",

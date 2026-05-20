@@ -2644,6 +2644,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your guide will share the detailed description soon.';
 
   @override
+  String excursionDetailsRouteStopsCount(Object count) {
+    return '$count stops';
+  }
+
+  @override
+  String excursionDetailsTravelFromPrevious(Object minutes) {
+    return '$minutes min from previous stop';
+  }
+
+  @override
   String get createExcursionTitle => 'Create Excursion';
 
   @override
@@ -2713,6 +2723,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get createExcursionAttractionCatalogSource =>
       'From the attraction catalog';
+
+  @override
+  String get createExcursionSingleAttractionMode => 'Single attraction';
+
+  @override
+  String get createExcursionCombinedRouteMode => 'Combined route';
+
+  @override
+  String createExcursionCombinedRouteMinStopsValidation(Object count) {
+    return 'Add at least $count attraction stops';
+  }
+
+  @override
+  String createExcursionCombinedRouteMaxStopsValidation(Object count) {
+    return 'Add no more than $count attraction stops';
+  }
+
+  @override
+  String get createExcursionDuplicateRouteStopValidation =>
+      'This attraction is already in the route.';
 
   @override
   String get excursionSelectLocationTitle => 'Select Attraction';

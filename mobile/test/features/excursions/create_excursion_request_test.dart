@@ -162,4 +162,47 @@ void main() {
       }),
     );
   });
+
+  test('serializes combined route itinerary stop snapshots', () {
+    final request = CreateExcursionRequest(
+      categorySlug: 'culture',
+      durationMinutes: 180,
+      maxGroupSize: 6,
+      languageCodes: const ['en'],
+      meetingPoint: 'Hotel pickup',
+      priceAmount: 45000,
+      currency: 'KZT',
+      cityName: 'Almaty',
+      itinerary: const [
+        CreateExcursionItineraryItemRequest(
+          startOffsetMinutes: 0,
+          durationMinutes: 45,
+          attractionId: 'kok-tobe-id',
+          attractionName: 'Kok-Tobe',
+          latitude: 43.233,
+          longitude: 76.976,
+          title: 'Kok-Tobe',
+          description: 'Start with a panoramic city view.',
+        ),
+        CreateExcursionItineraryItemRequest(
+          startOffsetMinutes: 60,
+          durationMinutes: 45,
+          attractionId: 'cathedral-id',
+          attractionName: 'Cathedral',
+          latitude: 43.258,
+          longitude: 76.954,
+          travelFromPreviousMinutes: 15,
+          title: 'Cathedral',
+          description: 'Continue with the cathedral story.',
+        ),
+      ],
+    );
+
+    final itinerary = request.toJson()['itinerary'] as List<dynamic>;
+    expect(itinerary.first, containsPair('attractionId', 'kok-tobe-id'));
+    expect(itinerary.first, containsPair('attractionName', 'Kok-Tobe'));
+    expect(itinerary.first, containsPair('latitude', 43.233));
+    expect(itinerary.first, containsPair('longitude', 76.976));
+    expect(itinerary.last, containsPair('travelFromPreviousMinutes', 15));
+  });
 }

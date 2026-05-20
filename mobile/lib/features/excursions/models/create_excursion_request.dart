@@ -171,11 +171,21 @@ class CreateExcursionItineraryItemRequest {
     required this.title,
     required this.description,
     this.durationMinutes,
+    this.attractionId,
+    this.attractionName,
+    this.latitude,
+    this.longitude,
+    this.travelFromPreviousMinutes,
     this.translations = const {},
   });
 
   final int startOffsetMinutes;
   final int? durationMinutes;
+  final String? attractionId;
+  final String? attractionName;
+  final double? latitude;
+  final double? longitude;
+  final int? travelFromPreviousMinutes;
   final String title;
   final String description;
   final Map<String, CreateExcursionItineraryLocalizedCopyRequest> translations;
@@ -185,6 +195,14 @@ class CreateExcursionItineraryItemRequest {
     return {
       'startOffsetMinutes': startOffsetMinutes,
       if (durationMinutes != null) 'durationMinutes': durationMinutes,
+      if (CreateExcursionRequest._isPresent(attractionId))
+        'attractionId': attractionId!.trim(),
+      if (CreateExcursionRequest._isPresent(attractionName))
+        'attractionName': attractionName!.trim(),
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (travelFromPreviousMinutes != null)
+        'travelFromPreviousMinutes': travelFromPreviousMinutes,
       'title': title.trim(),
       'description': description.trim(),
       if (normalizedTranslations.isNotEmpty)

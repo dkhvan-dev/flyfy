@@ -4894,6 +4894,18 @@ abstract class AppLocalizations {
   /// **'Your guide will share the detailed description soon.'**
   String get excursionDetailsNoDescription;
 
+  /// No description provided for @excursionDetailsRouteStopsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} stops'**
+  String excursionDetailsRouteStopsCount(Object count);
+
+  /// No description provided for @excursionDetailsTravelFromPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min from previous stop'**
+  String excursionDetailsTravelFromPrevious(Object minutes);
+
   /// No description provided for @createExcursionTitle.
   ///
   /// In en, this message translates to:
@@ -5025,6 +5037,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'From the attraction catalog'**
   String get createExcursionAttractionCatalogSource;
+
+  /// No description provided for @createExcursionSingleAttractionMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Single attraction'**
+  String get createExcursionSingleAttractionMode;
+
+  /// No description provided for @createExcursionCombinedRouteMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Combined route'**
+  String get createExcursionCombinedRouteMode;
+
+  /// No description provided for @createExcursionCombinedRouteMinStopsValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least {count} attraction stops'**
+  String createExcursionCombinedRouteMinStopsValidation(Object count);
+
+  /// No description provided for @createExcursionCombinedRouteMaxStopsValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add no more than {count} attraction stops'**
+  String createExcursionCombinedRouteMaxStopsValidation(Object count);
+
+  /// No description provided for @createExcursionDuplicateRouteStopValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'This attraction is already in the route.'**
+  String get createExcursionDuplicateRouteStopValidation;
 
   /// No description provided for @excursionSelectLocationTitle.
   ///

@@ -951,6 +951,18 @@
     }
   },
   "excursionDetailsNoDescription": "Гид жақында толық сипаттаманы қосады.",
+  "excursionDetailsRouteStopsCount": "Аялдама саны: {count}",
+  "@excursionDetailsRouteStopsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "excursionDetailsTravelFromPrevious": "Алдыңғы аялдамадан {minutes} мин",
+  "@excursionDetailsTravelFromPrevious": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "createExcursionTitle": "Экскурсия құру",
   "createExcursionEditTitle": "Ұсынысты өзгерту",
   "createExcursionSubmit": "Жариялау",
@@ -973,6 +985,21 @@
   "createExcursionLocationLockedByAttraction": "Локация көрікті жерлер анықтамалығынан алынды. Өзгерту үшін басқа көрікті жерді таңдаңыз.",
   "createExcursionAttractionCatalogHint": "Таңдалған елдің көрікті жерлер каталогы",
   "createExcursionAttractionCatalogSource": "Көрікті жерлер каталогынан",
+  "createExcursionSingleAttractionMode": "Бір көрікті жер",
+  "createExcursionCombinedRouteMode": "Бірнеше аялдамалы маршрут",
+  "createExcursionCombinedRouteMinStopsValidation": "Кемінде {count} көрікті жер аялдамасын қосыңыз",
+  "@createExcursionCombinedRouteMinStopsValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionCombinedRouteMaxStopsValidation": "{count}-тен көп көрікті жер аялдамасын қоспаңыз",
+  "@createExcursionCombinedRouteMaxStopsValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionDuplicateRouteStopValidation": "Бұл көрікті жер маршрутта бар.",
   "excursionSelectLocationTitle": "Орын таңдау",
   "excursionSelectLocationCountrySection": "Елді таңдаңыз",
   "excursionSelectLocationCountrySearchHint": "Елдерді іздеу...",

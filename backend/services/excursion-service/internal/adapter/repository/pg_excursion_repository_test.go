@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -168,6 +169,8 @@ func TestReleaseExcursionScheduleSlotSeatsReturnsUnavailableWhenNoRows(t *testin
 
 func TestExcursionMarketplaceCanonicalKeyPrefersLandmarkID(t *testing.T) {
 	landmarkID := uuid.New()
+	routeStopA := uuid.New()
+	routeStopB := uuid.New()
 	item := validRepositoryExcursion(t)
 	item.LandmarkID = &landmarkID
 	item.CountryCode = stringPtr("KZ")
@@ -175,11 +178,103 @@ func TestExcursionMarketplaceCanonicalKeyPrefersLandmarkID(t *testing.T) {
 	item.CategorySlug = "nature"
 	item.Title = "Almaty Mountain Escape"
 
-	got := excursionMarketplaceCanonicalKey(item)
+	got := excursionMarketplaceCanonicalKey(item, port.ExcursionRelations{
+		Itinerary: []*model.ExcursionItineraryItem{
+			{AttractionID: &routeStopA},
+			{AttractionID: &routeStopB},
+		},
+	})
 	want := "landmark:" + landmarkID.String()
 
 	if got != want {
 		t.Fatalf("canonical key = %q, want %q", got, want)
+	}
+}
+
+func TestExcursionMarketplaceCanonicalKeyGroupsCombinedRouteBySortedAttractions(t *testing.T) {
+	first := validRepositoryExcursion(t)
+	first.LandmarkID = nil
+	first.LandmarkName = nil
+	first.CountryCode = stringPtr("KZ")
+	first.CityName = stringPtr("Almaty")
+	first.CategorySlug = "culture"
+	first.DurationMinutes = 180
+
+	a := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	b := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	c := uuid.MustParse("00000000-0000-0000-0000-000000000003")
+
+	firstKey := excursionMarketplaceCanonicalKey(first, port.ExcursionRelations{
+		Itinerary: []*model.ExcursionItineraryItem{
+			{AttractionID: &a},
+			{AttractionID: &b},
+			{AttractionID: &c},
+		},
+	})
+
+	second := *first
+	secondKey := excursionMarketplaceCanonicalKey(&second, port.ExcursionRelations{
+		Itinerary: []*model.ExcursionItineraryItem{
+			{AttractionID: &c},
+			{AttractionID: &a},
+			{AttractionID: &b},
+		},
+	})
+
+	if firstKey != secondKey {
+		t.Fatalf("canonical keys differ:\nfirst:  %s\nsecond: %s", firstKey, secondKey)
+	}
+	if !strings.HasPrefix(firstKey, "route:kz:almaty:culture:2-4h:walking:") {
+		t.Fatalf("canonical key = %q, want route prefix", firstKey)
+	}
+}
+
+func TestSyncExcursionMarketplacePassesCombinedRouteMetadataToProduct(t *testing.T) {
+	item := validRepositoryExcursion(t)
+	item.LandmarkID = nil
+	item.LandmarkName = nil
+	item.CountryCode = stringPtr("KZ")
+	item.CityName = stringPtr("Almaty")
+	item.CategorySlug = "culture"
+	item.DurationMinutes = 180
+
+	a := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	b := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	exec := &marketplaceRecordingExecutor{queryRows: []uuid.UUID{uuid.New(), uuid.New()}}
+
+	err := syncExcursionMarketplace(context.Background(), exec, item, port.ExcursionRelations{
+		Itinerary: []*model.ExcursionItineraryItem{
+			{AttractionID: &a, AttractionName: stringPtr("Kok-Tobe")},
+			{AttractionID: &b, AttractionName: stringPtr("Cathedral")},
+		},
+	})
+	if err != nil {
+		t.Fatalf("syncExcursionMarketplace() error = %v", err)
+	}
+
+	productArgs := exec.queryRowArgs[0]
+	if got := fmt.Sprint(productArgs[20]); got != "COMBINED_ROUTE" {
+		t.Fatalf("route_kind arg = %q, want COMBINED_ROUTE", got)
+	}
+	if got := fmt.Sprint(productArgs[21]); !strings.HasPrefix(got, "route:kz:almaty:culture:2-4h:walking:") {
+		t.Fatalf("route_fingerprint arg = %q, want route fingerprint", got)
+	}
+	attractionIDs, ok := productArgs[22].([]uuid.UUID)
+	if !ok {
+		t.Fatalf("attraction_ids arg type = %T, want []uuid.UUID", productArgs[22])
+	}
+	if len(attractionIDs) != 2 || attractionIDs[0] != a || attractionIDs[1] != b {
+		t.Fatalf("attraction_ids arg = %#v, want sorted [%s %s]", attractionIDs, a, b)
+	}
+	attractionNames, ok := productArgs[23].([]string)
+	if !ok {
+		t.Fatalf("attraction_names arg type = %T, want []string", productArgs[23])
+	}
+	if strings.Join(attractionNames, ",") != "Kok-Tobe,Cathedral" {
+		t.Fatalf("attraction_names arg = %#v, want sorted attraction names", attractionNames)
+	}
+	if got := fmt.Sprint(productArgs[24]); got != "2" {
+		t.Fatalf("stop_count arg = %q, want 2", got)
 	}
 }
 
@@ -237,6 +332,66 @@ func TestExcursionScheduleMigrationMatchesDomainNullability(t *testing.T) {
 	}
 }
 
+func TestCombinedRouteMigrationAddsRouteMetadata(t *testing.T) {
+	migration := readMigration(t, "015_combined_excursion_routes.up.sql")
+	required := []string{
+		"ALTER TABLE excursion_products",
+		"route_kind TEXT NOT NULL DEFAULT 'SINGLE_ATTRACTION'",
+		"route_fingerprint TEXT NULL",
+		"attraction_ids UUID[] NULL",
+		"attraction_names TEXT[] NULL",
+		"stop_count INT NOT NULL DEFAULT 0",
+		"transport_mode TEXT NOT NULL DEFAULT 'WALKING'",
+		"route_theme TEXT NULL",
+		"duration_bucket TEXT NULL",
+		"chk_excursion_products_attraction_ids_cardinality",
+		"chk_excursion_products_attraction_names_cardinality",
+		"chk_excursion_products_single_attraction_shape",
+		"chk_excursion_products_combined_route_shape",
+		"route_kind = CASE",
+		"WHEN landmark_id IS NULL THEN 'COMBINED_ROUTE'",
+		"route_fingerprint = canonical_key",
+		"attraction_ids = CASE",
+		"WHEN landmark_id IS NULL THEN NULL",
+		"ELSE ARRAY[landmark_id]::UUID[]",
+		"attraction_names = CASE",
+		"WHEN landmark_id IS NULL OR landmark_name IS NULL OR BTRIM(landmark_name) = '' THEN NULL",
+		"stop_count = CASE",
+		"WHEN landmark_id IS NULL THEN 0",
+		"ELSE 1",
+		"WHEN duration_minutes IS NULL THEN NULL",
+		"WHERE route_fingerprint IS NULL",
+		"WHERE attraction_ids IS NOT NULL",
+		"ALTER TABLE excursion_itinerary_items",
+		"attraction_id UUID NULL",
+		"attraction_name VARCHAR(180) NULL",
+		"latitude NUMERIC(10,7) NULL",
+		"longitude NUMERIC(10,7) NULL",
+		"travel_from_previous_minutes INT NULL",
+		"uq_excursion_products_route_fingerprint",
+	}
+	for _, fragment := range required {
+		if !strings.Contains(migration, fragment) {
+			t.Fatalf("migration missing %q\n%s", fragment, migration)
+		}
+	}
+
+	downMigration := readMigration(t, "015_combined_excursion_routes.down.sql")
+	for _, fragment := range []string{
+		"DROP COLUMN IF EXISTS route_kind",
+		"DROP INDEX IF EXISTS uq_excursion_products_route_fingerprint",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_products_attraction_ids_cardinality",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_products_attraction_names_cardinality",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_products_single_attraction_shape",
+		"DROP CONSTRAINT IF EXISTS chk_excursion_products_combined_route_shape",
+		"DROP COLUMN IF EXISTS travel_from_previous_minutes",
+	} {
+		if !strings.Contains(downMigration, fragment) {
+			t.Fatalf("down migration missing %q\n%s", fragment, downMigration)
+		}
+	}
+}
+
 func TestExcursionMarketplaceCanonicalKeyNormalizesCustomRoute(t *testing.T) {
 	item := validRepositoryExcursion(t)
 	item.LandmarkID = nil
@@ -245,7 +400,7 @@ func TestExcursionMarketplaceCanonicalKeyNormalizesCustomRoute(t *testing.T) {
 	item.CategorySlug = " Nature Excursions "
 	item.Title = "  Almaty   Mountain -- Escape! "
 
-	got := excursionMarketplaceCanonicalKey(item)
+	got := excursionMarketplaceCanonicalKey(item, port.ExcursionRelations{})
 	want := "custom:kz:almaty:nature-excursions:almaty-mountain-escape"
 
 	if got != want {
@@ -661,6 +816,16 @@ func validRepositoryBooking(t *testing.T) *model.ExcursionBooking {
 
 func stringPtr(value string) *string {
 	return &value
+}
+
+func readMigration(t *testing.T, name string) string {
+	t.Helper()
+	path := filepath.Join("..", "..", "..", "migrations", name)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read migration %s: %v", name, err)
+	}
+	return string(content)
 }
 
 func containsString(items []string, want string) bool {

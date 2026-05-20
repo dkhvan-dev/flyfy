@@ -48,6 +48,8 @@ type ExcursionRelations struct {
 type ExcursionProductFilter struct {
 	CategorySlug    *string
 	LandmarkID      *uuid.UUID
+	AttractionID    *uuid.UUID
+	RouteKind       *string
 	CountryCode     *string
 	CityName        *string
 	LanguageCode    *string

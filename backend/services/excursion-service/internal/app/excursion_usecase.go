@@ -130,11 +130,16 @@ func (u *ExcursionUseCase) WithAttendanceQRConfig(secret string, ttl time.Durati
 }
 
 type ExcursionItineraryItemInput struct {
-	StartOffsetMinutes int
-	DurationMinutes    *int
-	Title              string
-	Description        string
-	Translations       model.ExcursionItineraryTranslations
+	StartOffsetMinutes        int
+	DurationMinutes           *int
+	AttractionID              *uuid.UUID
+	AttractionName            *string
+	Latitude                  *float64
+	Longitude                 *float64
+	TravelFromPreviousMinutes *int
+	Title                     string
+	Description               string
+	Translations              model.ExcursionItineraryTranslations
 }
 
 type ExcursionIncludedItemInput struct {
@@ -315,21 +320,31 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 	if !permission.Allowed {
 		return nil, ErrGuideNotAllowed
 	}
-	if input.LandmarkID == nil || *input.LandmarkID == uuid.Nil {
-		return nil, ErrExcursionAttractionRequired
+	landmarkID := normalizeUUIDPtr(input.LandmarkID)
+	landmarkName := input.LandmarkName
+	if landmarkID == nil {
+		landmarkName = nil
 	}
-	exists, err := u.repo.HasActiveExcursionForGuideLandmark(ctx, permission.GuideUserID, *input.LandmarkID)
-	if err != nil {
+	if err = validateCombinedRouteInput(landmarkID, input.Itinerary); err != nil {
 		return nil, err
 	}
-	if exists {
-		return nil, model.ErrExcursionGuideLandmarkAlreadyExists
+	if landmarkID != nil {
+		exists, err := u.repo.HasActiveExcursionForGuideLandmark(ctx, permission.GuideUserID, *landmarkID)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, model.ErrExcursionGuideLandmarkAlreadyExists
+		}
 	}
 
 	if err = u.validateCoverFiles(ctx, input.CoverFileID, input.ProductCoverFileID); err != nil {
 		return nil, err
 	}
-	marketingCopy := attractionBasedExcursionCopy(input.LandmarkName)
+	marketingCopy := attractionBasedExcursionCopy(landmarkName)
+	if landmarkID == nil {
+		marketingCopy = combinedRouteMarketingCopy(input)
+	}
 	categorySlug := model.NormalizeSlug(input.CategorySlug)
 	if categorySlug == "" {
 		categorySlug = "sightseeing"
@@ -343,8 +358,8 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		GuideExperienceYears: permission.ExperienceYears,
 		GuideDisplayName:     permission.DisplayName,
 		GuideSearchText:      permission.GuideSearchText,
-		LandmarkID:           input.LandmarkID,
-		LandmarkName:         input.LandmarkName,
+		LandmarkID:           landmarkID,
+		LandmarkName:         landmarkName,
 		Title:                marketingCopy.Title,
 		Summary:              marketingCopy.Summary,
 		Description:          marketingCopy.Description,
@@ -425,20 +440,35 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	if err = u.validateCoverFiles(ctx, input.CoverFileID, input.ProductCoverFileID); err != nil {
 		return nil, err
 	}
-	if item.LandmarkID == nil || *item.LandmarkID == uuid.Nil {
-		return nil, ErrExcursionAttractionRequired
+	inputLandmarkID := normalizeUUIDPtr(input.LandmarkID)
+	effectiveLandmarkID := inputLandmarkID
+	effectiveLandmarkName := input.LandmarkName
+	if input.LandmarkID == nil && !hasItineraryAttractionStops(input.Itinerary) {
+		effectiveLandmarkID = normalizeUUIDPtr(item.LandmarkID)
+		effectiveLandmarkName = item.LandmarkName
 	}
-	marketingCopy := attractionBasedExcursionCopy(item.LandmarkName)
+	if effectiveLandmarkID == nil {
+		effectiveLandmarkName = nil
+	} else if effectiveLandmarkName == nil {
+		effectiveLandmarkName = item.LandmarkName
+	}
+	if err = validateCombinedRouteInput(effectiveLandmarkID, input.Itinerary); err != nil {
+		return nil, err
+	}
+	marketingCopy := attractionBasedExcursionCopy(effectiveLandmarkName)
+	if effectiveLandmarkID == nil || *effectiveLandmarkID == uuid.Nil {
+		marketingCopy = combinedRouteMarketingCopy(CreateExcursionInput{Itinerary: input.Itinerary})
+	}
 
 	if err = item.ApplyUpdate(model.UpdateExcursionParams{
-		LandmarkID:          item.LandmarkID,
-		LandmarkName:        item.LandmarkName,
+		LandmarkID:          effectiveLandmarkID,
+		LandmarkName:        effectiveLandmarkName,
 		Title:               marketingCopy.Title,
 		Summary:             marketingCopy.Summary,
 		Description:         marketingCopy.Description,
 		Translations:        nil,
-		CategorySlug:        item.CategorySlug,
-		ProductTranslations: item.ProductTranslations,
+		CategorySlug:        input.CategorySlug,
+		ProductTranslations: input.ProductTranslations,
 		Visibility:          enum.ExcursionVisibility(strings.TrimSpace(input.Visibility)),
 		DurationMinutes:     input.DurationMinutes,
 		MaxGroupSize:        input.MaxGroupSize,
@@ -2431,13 +2461,18 @@ func buildRelations(
 	for index, input := range itinerary {
 		sortOrder := index
 		item, err := model.NewExcursionItineraryItem(model.NewExcursionItineraryItemParams{
-			ExcursionID:        excursionID,
-			SortOrder:          sortOrder,
-			StartOffsetMinutes: input.StartOffsetMinutes,
-			DurationMinutes:    input.DurationMinutes,
-			Title:              input.Title,
-			Description:        input.Description,
-			Translations:       input.Translations,
+			ExcursionID:               excursionID,
+			SortOrder:                 sortOrder,
+			StartOffsetMinutes:        input.StartOffsetMinutes,
+			DurationMinutes:           input.DurationMinutes,
+			AttractionID:              input.AttractionID,
+			AttractionName:            input.AttractionName,
+			Latitude:                  input.Latitude,
+			Longitude:                 input.Longitude,
+			TravelFromPreviousMinutes: input.TravelFromPreviousMinutes,
+			Title:                     input.Title,
+			Description:               input.Description,
+			Translations:              input.Translations,
 		})
 		if err != nil {
 			return port.ExcursionRelations{}, err
@@ -2492,6 +2527,38 @@ func uniqueUUIDs(values []uuid.UUID) []uuid.UUID {
 		result = append(result, value)
 	}
 	return result
+}
+
+func validateCombinedRouteInput(landmarkID *uuid.UUID, itinerary []ExcursionItineraryItemInput) error {
+	if landmarkID != nil && *landmarkID != uuid.Nil {
+		return nil
+	}
+	seen := make(map[uuid.UUID]struct{}, len(itinerary))
+	for _, item := range itinerary {
+		if item.AttractionID == nil || *item.AttractionID == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[*item.AttractionID]; ok {
+			return ErrCombinedExcursionRouteDuplicateStop
+		}
+		seen[*item.AttractionID] = struct{}{}
+	}
+	if len(seen) < 2 {
+		return ErrCombinedExcursionRouteRequiresTwoStops
+	}
+	if len(seen) > 5 {
+		return ErrCombinedExcursionRouteTooManyStops
+	}
+	return nil
+}
+
+func hasItineraryAttractionStops(itinerary []ExcursionItineraryItemInput) bool {
+	for _, item := range itinerary {
+		if item.AttractionID != nil && *item.AttractionID != uuid.Nil {
+			return true
+		}
+	}
+	return false
 }
 
 func weeklyOccurrences(startDate time.Time, weekdays []int, startClock string, durationMinutes int, timezone string, until time.Time, maxOccurrences int) ([]time.Time, error) {
@@ -2565,6 +2632,8 @@ func normalizeIncludedItems(values []ExcursionIncludedItemInput) ([]model.Excurs
 	return result, nil
 }
 
+type excursionMarketingCopy = model.ExcursionLocalizedCopy
+
 func attractionBasedExcursionCopy(landmarkName *string) model.ExcursionLocalizedCopy {
 	name := strings.TrimSpace(optionalStringValue(landmarkName))
 	if name == "" {
@@ -2574,6 +2643,31 @@ func attractionBasedExcursionCopy(landmarkName *string) model.ExcursionLocalized
 		Title:       name,
 		Summary:     "Compare guide offers for " + name + ".",
 		Description: "Choose a guide, language, price, meeting point, schedule, and included options before booking.",
+	}
+}
+
+func combinedRouteMarketingCopy(input CreateExcursionInput) excursionMarketingCopy {
+	names := make([]string, 0, len(input.Itinerary))
+	for _, item := range input.Itinerary {
+		if item.AttractionName == nil {
+			continue
+		}
+		name := strings.TrimSpace(*item.AttractionName)
+		if name != "" {
+			names = append(names, name)
+		}
+	}
+	if len(names) >= 2 {
+		return excursionMarketingCopy{
+			Title:       strings.Join(names, " + "),
+			Summary:     "Compare guide offers for this route.",
+			Description: "Choose a guide, language, price, meeting point, and schedule before booking this route.",
+		}
+	}
+	return excursionMarketingCopy{
+		Title:       "Guide route",
+		Summary:     "Compare guide offers for this route.",
+		Description: "Choose a guide, language, price, meeting point, and schedule before booking this route.",
 	}
 }
 

@@ -14,19 +14,25 @@ var (
 	ErrInvalidExcursionItineraryTitle       = errors.New("invalid excursion itinerary title")
 	ErrInvalidExcursionItineraryDescription = errors.New("invalid excursion itinerary description")
 	ErrInvalidExcursionItineraryDuration    = errors.New("invalid excursion itinerary duration")
+	ErrInvalidExcursionItineraryTravelTime  = errors.New("invalid excursion itinerary travel time")
 )
 
 type ExcursionItineraryItem struct {
-	ID                 uuid.UUID
-	ExcursionID        uuid.UUID
-	SortOrder          int
-	StartOffsetMinutes int
-	DurationMinutes    *int
-	Title              string
-	Description        string
-	Translations       ExcursionItineraryTranslations
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                        uuid.UUID
+	ExcursionID               uuid.UUID
+	SortOrder                 int
+	StartOffsetMinutes        int
+	DurationMinutes           *int
+	AttractionID              *uuid.UUID
+	AttractionName            *string
+	Latitude                  *float64
+	Longitude                 *float64
+	TravelFromPreviousMinutes *int
+	Title                     string
+	Description               string
+	Translations              ExcursionItineraryTranslations
+	CreatedAt                 time.Time
+	UpdatedAt                 time.Time
 }
 
 type ExcursionItineraryLocalizedCopy struct {
@@ -37,28 +43,38 @@ type ExcursionItineraryLocalizedCopy struct {
 type ExcursionItineraryTranslations map[string]ExcursionItineraryLocalizedCopy
 
 type NewExcursionItineraryItemParams struct {
-	ExcursionID        uuid.UUID
-	SortOrder          int
-	StartOffsetMinutes int
-	DurationMinutes    *int
-	Title              string
-	Description        string
-	Translations       ExcursionItineraryTranslations
+	ExcursionID               uuid.UUID
+	SortOrder                 int
+	StartOffsetMinutes        int
+	DurationMinutes           *int
+	AttractionID              *uuid.UUID
+	AttractionName            *string
+	Latitude                  *float64
+	Longitude                 *float64
+	TravelFromPreviousMinutes *int
+	Title                     string
+	Description               string
+	Translations              ExcursionItineraryTranslations
 }
 
 func NewExcursionItineraryItem(params NewExcursionItineraryItemParams) (*ExcursionItineraryItem, error) {
 	now := time.Now().UTC()
 	item := &ExcursionItineraryItem{
-		ID:                 uuid.New(),
-		ExcursionID:        params.ExcursionID,
-		SortOrder:          params.SortOrder,
-		StartOffsetMinutes: params.StartOffsetMinutes,
-		DurationMinutes:    params.DurationMinutes,
-		Title:              strings.TrimSpace(params.Title),
-		Description:        strings.TrimSpace(params.Description),
-		Translations:       NormalizeExcursionItineraryTranslations(params.Translations),
-		CreatedAt:          now,
-		UpdatedAt:          now,
+		ID:                        uuid.New(),
+		ExcursionID:               params.ExcursionID,
+		SortOrder:                 params.SortOrder,
+		StartOffsetMinutes:        params.StartOffsetMinutes,
+		DurationMinutes:           copyOptionalInt(params.DurationMinutes),
+		AttractionID:              normalizeOptionalUUID(params.AttractionID),
+		AttractionName:            NormalizeOptionalString(params.AttractionName),
+		Latitude:                  copyOptionalFloat64(params.Latitude),
+		Longitude:                 copyOptionalFloat64(params.Longitude),
+		TravelFromPreviousMinutes: copyOptionalInt(params.TravelFromPreviousMinutes),
+		Title:                     strings.TrimSpace(params.Title),
+		Description:               strings.TrimSpace(params.Description),
+		Translations:              NormalizeExcursionItineraryTranslations(params.Translations),
+		CreatedAt:                 now,
+		UpdatedAt:                 now,
 	}
 	if err := item.Validate(); err != nil {
 		return nil, err
@@ -76,6 +92,9 @@ func (i *ExcursionItineraryItem) Validate() error {
 	if i.DurationMinutes != nil && *i.DurationMinutes <= 0 {
 		return ErrInvalidExcursionItineraryDuration
 	}
+	if i.TravelFromPreviousMinutes != nil && *i.TravelFromPreviousMinutes < 0 {
+		return ErrInvalidExcursionItineraryTravelTime
+	}
 	if len(strings.TrimSpace(i.Title)) < 2 {
 		return ErrInvalidExcursionItineraryTitle
 	}
@@ -83,6 +102,30 @@ func (i *ExcursionItineraryItem) Validate() error {
 		return ErrInvalidExcursionItineraryDescription
 	}
 	return nil
+}
+
+func normalizeOptionalUUID(input *uuid.UUID) *uuid.UUID {
+	if input == nil || *input == uuid.Nil {
+		return nil
+	}
+	value := *input
+	return &value
+}
+
+func copyOptionalInt(input *int) *int {
+	if input == nil {
+		return nil
+	}
+	value := *input
+	return &value
+}
+
+func copyOptionalFloat64(input *float64) *float64 {
+	if input == nil {
+		return nil
+	}
+	value := *input
+	return &value
 }
 
 func NormalizeExcursionItineraryTranslations(input ExcursionItineraryTranslations) ExcursionItineraryTranslations {

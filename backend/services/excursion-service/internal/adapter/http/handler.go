@@ -994,6 +994,10 @@ func toCreateInput(actorUserID uuid.UUID, req dto.CreateExcursionRequest) (app.C
 	if err != nil {
 		return app.CreateExcursionInput{}, fmt.Errorf("invalid productCoverFileId")
 	}
+	itinerary, err := toAppItinerary(req.Itinerary)
+	if err != nil {
+		return app.CreateExcursionInput{}, err
+	}
 	return app.CreateExcursionInput{
 		ActorUserID:         actorUserID,
 		LandmarkID:          landmarkID,
@@ -1015,7 +1019,7 @@ func toCreateInput(actorUserID uuid.UUID, req dto.CreateExcursionRequest) (app.C
 		CoverFileID:         coverFileID,
 		ProductCoverFileID:  productCoverFileID,
 		IncludedItems:       toIncludedItemInputs(req.IncludedItems, req.IncludedItemTranslations),
-		Itinerary:           toAppItinerary(req.Itinerary),
+		Itinerary:           itinerary,
 	}, nil
 }
 
@@ -1088,18 +1092,27 @@ func toCreateExcursionBookingInput(actorUserID uuid.UUID, req dto.CreateExcursio
 	}, nil
 }
 
-func toAppItinerary(items []dto.ExcursionItineraryItemRequest) []app.ExcursionItineraryItemInput {
+func toAppItinerary(items []dto.ExcursionItineraryItemRequest) ([]app.ExcursionItineraryItemInput, error) {
 	result := make([]app.ExcursionItineraryItemInput, 0, len(items))
-	for _, item := range items {
+	for index, item := range items {
+		attractionID, err := parseOptionalRouteStopUUID(item.AttractionID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid itinerary[%d].attractionId", index)
+		}
 		result = append(result, app.ExcursionItineraryItemInput{
-			StartOffsetMinutes: item.StartOffsetMinutes,
-			DurationMinutes:    item.DurationMinutes,
-			Title:              item.Title,
-			Description:        item.Description,
-			Translations:       toModelItineraryTranslations(item.Translations),
+			StartOffsetMinutes:        item.StartOffsetMinutes,
+			DurationMinutes:           item.DurationMinutes,
+			AttractionID:              attractionID,
+			AttractionName:            item.AttractionName,
+			Latitude:                  item.Latitude,
+			Longitude:                 item.Longitude,
+			TravelFromPreviousMinutes: item.TravelFromPreviousMinutes,
+			Title:                     item.Title,
+			Description:               item.Description,
+			Translations:              toModelItineraryTranslations(item.Translations),
 		})
 	}
-	return result
+	return result, nil
 }
 
 func toIncludedItemInputs(items []string, translations map[string][]string) []app.ExcursionIncludedItemInput {
@@ -1270,6 +1283,14 @@ func toExcursionProductCardResponse(aggregate *app.ExcursionProductCardAggregate
 		ID:                   item.ID.String(),
 		LandmarkID:           formatOptionalUUID(item.LandmarkID),
 		LandmarkName:         item.LandmarkName,
+		RouteKind:            string(item.RouteKind),
+		RouteFingerprint:     item.RouteFingerprint,
+		AttractionIDs:        uuidStrings(item.AttractionIDs),
+		AttractionNames:      item.AttractionNames,
+		StopCount:            item.StopCount,
+		TransportMode:        item.TransportMode,
+		RouteTheme:           item.RouteTheme,
+		DurationBucket:       item.DurationBucket,
 		Title:                item.Title,
 		Summary:              item.Summary,
 		Description:          item.Description,
@@ -1580,16 +1601,26 @@ func toExcursionReviewResponse(item *model.ExcursionReview, guideDisplayName str
 func toItineraryResponse(items []*model.ExcursionItineraryItem) []dto.ExcursionItineraryItemResponse {
 	result := make([]dto.ExcursionItineraryItemResponse, 0, len(items))
 	for _, item := range items {
+		var attractionID *string
+		if item.AttractionID != nil && *item.AttractionID != uuid.Nil {
+			value := item.AttractionID.String()
+			attractionID = &value
+		}
 		result = append(result, dto.ExcursionItineraryItemResponse{
-			ID:                 item.ID.String(),
-			SortOrder:          item.SortOrder,
-			StartOffsetMinutes: item.StartOffsetMinutes,
-			DurationMinutes:    item.DurationMinutes,
-			Title:              item.Title,
-			Description:        item.Description,
-			Translations:       toDTOItineraryTranslations(item.Translations),
-			CreatedAt:          item.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:          item.UpdatedAt.UTC().Format(time.RFC3339),
+			ID:                        item.ID.String(),
+			SortOrder:                 item.SortOrder,
+			StartOffsetMinutes:        item.StartOffsetMinutes,
+			DurationMinutes:           item.DurationMinutes,
+			AttractionID:              attractionID,
+			AttractionName:            item.AttractionName,
+			Latitude:                  item.Latitude,
+			Longitude:                 item.Longitude,
+			TravelFromPreviousMinutes: item.TravelFromPreviousMinutes,
+			Title:                     item.Title,
+			Description:               item.Description,
+			Translations:              toDTOItineraryTranslations(item.Translations),
+			CreatedAt:                 item.CreatedAt.UTC().Format(time.RFC3339),
+			UpdatedAt:                 item.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
 	return result
@@ -1618,6 +1649,9 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		writeError(w, http.StatusServiceUnavailable, err.Error())
 	case errors.Is(err, app.ErrInvalidExcursionID),
 		errors.Is(err, app.ErrExcursionAttractionRequired),
+		errors.Is(err, app.ErrCombinedExcursionRouteRequiresTwoStops),
+		errors.Is(err, app.ErrCombinedExcursionRouteTooManyStops),
+		errors.Is(err, app.ErrCombinedExcursionRouteDuplicateStop),
 		errors.Is(err, app.ErrInvalidExcursionIncludedItem),
 		errors.Is(err, app.ErrExcursionCoverFileNotReady),
 		errors.Is(err, app.ErrExcursionCoverFileNotAllowed),
@@ -1738,6 +1772,20 @@ func parseOptionalUUIDString(v *string) (*uuid.UUID, error) {
 	parsed, err := uuid.Parse(strings.TrimSpace(*v))
 	if err != nil {
 		return nil, err
+	}
+	return &parsed, nil
+}
+
+func parseOptionalRouteStopUUID(value *string) (*uuid.UUID, error) {
+	if value == nil || strings.TrimSpace(*value) == "" {
+		return nil, nil
+	}
+	parsed, err := uuid.Parse(strings.TrimSpace(*value))
+	if err != nil {
+		return nil, err
+	}
+	if parsed == uuid.Nil {
+		return nil, fmt.Errorf("nil uuid")
 	}
 	return &parsed, nil
 }
@@ -1875,6 +1923,20 @@ func formatOptionalString(v *string) *string {
 		return nil
 	}
 	return &value
+}
+
+func uuidStrings(values []uuid.UUID) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		if value == uuid.Nil {
+			continue
+		}
+		result = append(result, value.String())
+	}
+	return result
 }
 
 func writeError(w http.ResponseWriter, status int, message string) {

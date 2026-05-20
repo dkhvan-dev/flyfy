@@ -951,6 +951,18 @@
     }
   },
   "excursionDetailsNoDescription": "Гид скоро добавит подробное описание.",
+  "excursionDetailsRouteStopsCount": "Остановок: {count}",
+  "@excursionDetailsRouteStopsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "excursionDetailsTravelFromPrevious": "{minutes} мин от предыдущей остановки",
+  "@excursionDetailsTravelFromPrevious": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "createExcursionTitle": "Создать экскурсию",
   "createExcursionEditTitle": "Редактировать предложение",
   "createExcursionSubmit": "Опубликовать",
@@ -973,6 +985,21 @@
   "createExcursionLocationLockedByAttraction": "Локация взята из справочника достопримечательностей. Чтобы изменить ее, выберите другую достопримечательность.",
   "createExcursionAttractionCatalogHint": "Каталог достопримечательностей выбранной страны",
   "createExcursionAttractionCatalogSource": "Из каталога достопримечательностей",
+  "createExcursionSingleAttractionMode": "Одна достопримечательность",
+  "createExcursionCombinedRouteMode": "Составной маршрут",
+  "createExcursionCombinedRouteMinStopsValidation": "Добавьте минимум {count} остановки с достопримечательностями",
+  "@createExcursionCombinedRouteMinStopsValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionCombinedRouteMaxStopsValidation": "Добавьте не больше {count} остановок с достопримечательностями",
+  "@createExcursionCombinedRouteMaxStopsValidation": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "createExcursionDuplicateRouteStopValidation": "Эта достопримечательность уже есть в маршруте.",
   "excursionSelectLocationTitle": "Выбор локации",
   "excursionSelectLocationCountrySection": "Выберите страну",
   "excursionSelectLocationCountrySearchHint": "Поиск стран...",

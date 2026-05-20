@@ -410,7 +410,7 @@ func TestCreateExcursionRequiresActiveExcursionGuide(t *testing.T) {
 	}
 }
 
-func TestCreateExcursionRequiresAttraction(t *testing.T) {
+func TestCreateExcursionRejectsRouteWithoutLandmarkOrAttractionStops(t *testing.T) {
 	repo := &excursionRepoStub{}
 	actorUserID := uuid.New()
 	uc := NewExcursionUseCase(repo, guideVerifierStub{
@@ -435,11 +435,207 @@ func TestCreateExcursionRequiresAttraction(t *testing.T) {
 		},
 	})
 
-	if !errors.Is(err, ErrExcursionAttractionRequired) {
-		t.Fatalf("error = %v, want %v", err, ErrExcursionAttractionRequired)
+	if !errors.Is(err, ErrCombinedExcursionRouteRequiresTwoStops) {
+		t.Fatalf("error = %v, want %v", err, ErrCombinedExcursionRouteRequiresTwoStops)
 	}
 	if repo.createdExcursion != nil {
-		t.Fatal("excursion was persisted without an attraction")
+		t.Fatal("excursion was persisted without a landmark or combined route")
+	}
+}
+
+func TestCreateExcursionAcceptsCombinedRouteWithoutLandmark(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	a := uuid.New()
+	b := uuid.New()
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil)
+
+	aggregate, err := uc.CreateExcursion(context.Background(), CreateExcursionInput{
+		ActorUserID:     actorUserID,
+		CategorySlug:    "culture",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 180,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		CountryCode:     stringPtr("KZ"),
+		CityName:        stringPtr("Almaty"),
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     45000,
+		Currency:        "KZT",
+		Itinerary: []ExcursionItineraryItemInput{
+			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Start with the city view."},
+			{StartOffsetMinutes: 60, AttractionID: &b, AttractionName: stringPtr("Cathedral"), Title: "Cathedral", Description: "Visit the cathedral story."},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("CreateExcursion() error = %v", err)
+	}
+	if aggregate.Excursion.LandmarkID != nil {
+		t.Fatalf("LandmarkID = %v, want nil for combined route", aggregate.Excursion.LandmarkID)
+	}
+	if len(repo.createdRelations.Itinerary) != 2 {
+		t.Fatalf("itinerary length = %d, want 2", len(repo.createdRelations.Itinerary))
+	}
+}
+
+func TestCreateExcursionRejectsCombinedRouteWithOneAttractionStop(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	a := uuid.New()
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil)
+
+	_, err := uc.CreateExcursion(context.Background(), CreateExcursionInput{
+		ActorUserID:     actorUserID,
+		CategorySlug:    "culture",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 90,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     30000,
+		Currency:        "KZT",
+		Itinerary: []ExcursionItineraryItemInput{
+			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Only one stop."},
+		},
+	})
+
+	if !errors.Is(err, ErrCombinedExcursionRouteRequiresTwoStops) {
+		t.Fatalf("error = %v, want %v", err, ErrCombinedExcursionRouteRequiresTwoStops)
+	}
+}
+
+func TestCreateExcursionRejectsCombinedRouteDuplicateAttractionStop(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	a := uuid.New()
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil)
+
+	_, err := uc.CreateExcursion(context.Background(), CreateExcursionInput{
+		ActorUserID:     actorUserID,
+		CategorySlug:    "culture",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 90,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     30000,
+		Currency:        "KZT",
+		Itinerary: []ExcursionItineraryItemInput{
+			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "First stop."},
+			{StartOffsetMinutes: 60, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe again", Description: "Duplicate stop."},
+		},
+	})
+
+	if !errors.Is(err, ErrCombinedExcursionRouteDuplicateStop) {
+		t.Fatalf("error = %v, want %v", err, ErrCombinedExcursionRouteDuplicateStop)
+	}
+	if repo.createdExcursion != nil {
+		t.Fatal("excursion was persisted despite duplicate attraction stop")
+	}
+}
+
+func TestCreateExcursionRejectsCombinedRouteTooManyAttractionStops(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil)
+	itinerary := make([]ExcursionItineraryItemInput, 0, 6)
+	for i := 0; i < 6; i++ {
+		attractionID := uuid.New()
+		itinerary = append(itinerary, ExcursionItineraryItemInput{
+			StartOffsetMinutes: i * 30,
+			AttractionID:       &attractionID,
+			AttractionName:     stringPtr("Stop"),
+			Title:              "Stop",
+			Description:        "A valid route stop.",
+		})
+	}
+
+	_, err := uc.CreateExcursion(context.Background(), CreateExcursionInput{
+		ActorUserID:     actorUserID,
+		CategorySlug:    "culture",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     30000,
+		Currency:        "KZT",
+		Itinerary:       itinerary,
+	})
+
+	if !errors.Is(err, ErrCombinedExcursionRouteTooManyStops) {
+		t.Fatalf("error = %v, want %v", err, ErrCombinedExcursionRouteTooManyStops)
+	}
+	if repo.createdExcursion != nil {
+		t.Fatal("excursion was persisted despite too many attraction stops")
+	}
+}
+
+func TestCreateExcursionNormalizesNilLandmarkIDForCombinedRoute(t *testing.T) {
+	repo := &excursionRepoStub{}
+	actorUserID := uuid.New()
+	nilLandmarkID := uuid.Nil
+	a := uuid.New()
+	b := uuid.New()
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: uuid.New(),
+			GuideUserID:    actorUserID,
+			Allowed:        true,
+		},
+	}, nil)
+
+	aggregate, err := uc.CreateExcursion(context.Background(), CreateExcursionInput{
+		ActorUserID:     actorUserID,
+		LandmarkID:      &nilLandmarkID,
+		LandmarkName:    stringPtr("Should be ignored"),
+		CategorySlug:    "culture",
+		Visibility:      "PUBLIC",
+		DurationMinutes: 180,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     45000,
+		Currency:        "KZT",
+		Itinerary: []ExcursionItineraryItemInput{
+			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Start with the city view."},
+			{StartOffsetMinutes: 60, AttractionID: &b, AttractionName: stringPtr("Cathedral"), Title: "Cathedral", Description: "Visit the cathedral story."},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("CreateExcursion() error = %v", err)
+	}
+	if aggregate.Excursion.LandmarkID != nil {
+		t.Fatalf("LandmarkID = %v, want nil", aggregate.Excursion.LandmarkID)
+	}
+	if aggregate.Excursion.LandmarkName != nil {
+		t.Fatalf("LandmarkName = %v, want nil", aggregate.Excursion.LandmarkName)
 	}
 }
 
@@ -1073,6 +1269,80 @@ func TestUpdateExcursionTranslatesItineraryBeforePersisting(t *testing.T) {
 	got := repo.savedRelations.Itinerary[0].Translations
 	if got["en"].Title != "Walk to the viewpoint" || got["kk"].Description == "" {
 		t.Fatalf("translations = %#v, want generated copies before save", got)
+	}
+}
+
+func TestUpdateExcursionAppliesCombinedRouteInput(t *testing.T) {
+	ownerID := uuid.New()
+	landmarkID := uuid.New()
+	excursion, err := model.NewExcursion(model.NewExcursionParams{
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     ownerID,
+		LandmarkID:      &landmarkID,
+		LandmarkName:    stringPtr("Medeu"),
+		Title:           "Medeu",
+		Summary:         "Compare guide offers for Medeu.",
+		Description:     "Choose a guide, language, price, meeting point, schedule, and included options before booking.",
+		CategorySlug:    "nature",
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 120,
+		MaxGroupSize:    8,
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursion() error = %v", err)
+	}
+
+	a := uuid.New()
+	b := uuid.New()
+	repo := &excursionRepoStub{gotExcursion: excursion}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID: excursion.GuideProfileID,
+			GuideUserID:    ownerID,
+			Allowed:        true,
+		},
+	}, nil)
+
+	_, err = uc.UpdateExcursion(context.Background(), UpdateExcursionInput{
+		ActorUserID:     ownerID,
+		ExcursionID:     excursion.ID,
+		LandmarkID:      nil,
+		LandmarkName:    nil,
+		CategorySlug:    "culture",
+		Visibility:      string(enum.ExcursionVisibilityPublic),
+		DurationMinutes: 180,
+		MaxGroupSize:    8,
+		LanguageCodes:   []string{"en"},
+		CityName:        stringPtr("Almaty"),
+		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     45000,
+		Currency:        "KZT",
+		Itinerary: []ExcursionItineraryItemInput{
+			{StartOffsetMinutes: 0, AttractionID: &a, AttractionName: stringPtr("Kok-Tobe"), Title: "Kok-Tobe", Description: "Start with the city view."},
+			{StartOffsetMinutes: 60, AttractionID: &b, AttractionName: stringPtr("Cathedral"), Title: "Cathedral", Description: "Visit the cathedral story."},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("UpdateExcursion() error = %v", err)
+	}
+	if repo.savedExcursion == nil {
+		t.Fatal("excursion was not saved")
+	}
+	if repo.savedExcursion.LandmarkID != nil {
+		t.Fatalf("LandmarkID = %v, want nil for combined route", repo.savedExcursion.LandmarkID)
+	}
+	if repo.savedExcursion.CategorySlug != "culture" {
+		t.Fatalf("CategorySlug = %q, want culture", repo.savedExcursion.CategorySlug)
+	}
+	if repo.savedExcursion.Title != "Kok-Tobe + Cathedral" {
+		t.Fatalf("Title = %q, want combined route copy", repo.savedExcursion.Title)
+	}
+	if len(repo.savedRelations.Itinerary) != 2 {
+		t.Fatalf("itinerary length = %d, want 2", len(repo.savedRelations.Itinerary))
 	}
 }
 
