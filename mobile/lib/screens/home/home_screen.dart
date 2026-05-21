@@ -1949,16 +1949,15 @@ class _TopDestinationAttractionCard extends StatelessWidget {
                         right: 9,
                         child: _DestinationBookmarkBadge(),
                       ),
-                      if (categoryLabel != null)
-                        Positioned(
-                          left: isCompact ? 12 : 16,
-                          right: isCompact ? 12 : 16,
-                          bottom: 15,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: _DestinationTag(label: categoryLabel),
-                          ),
+                      Positioned(
+                        left: isCompact ? 12 : 16,
+                        right: isCompact ? 12 : 16,
+                        bottom: 15,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _DestinationTag(label: categoryLabel),
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -3610,27 +3609,41 @@ String? _resolveHomeAttractionImageUrl(AttractionMediaVm? media) {
   return null;
 }
 
-String? _homeAttractionCategoryLabel(
+String _homeAttractionCategoryLabel(
   AppLocalizations l10n,
   AttractionVm attraction,
 ) {
   switch (attraction.category.toUpperCase()) {
+    case 'PARK':
+      return l10n.attractionFilterCategoryParks;
+    case 'MUSEUM':
+      return l10n.attractionFilterCategoryMuseums;
+    case 'NATURE':
+      return l10n.attractionFilterCategoryNature;
+    case 'ARCHITECTURE':
+      return l10n.attractionFilterCategoryArchitecture;
+    case 'BEACH':
+      return l10n.attractionFilterCategoryBeach;
+    case 'TEMPLE':
+      return l10n.attractionFilterCategoryTemple;
+    case 'ENTERTAINMENT':
+      return l10n.attractionFilterCategoryEntertainment;
+    case 'FOOD':
+      return l10n.attractionFilterCategoryFood;
+    case 'SHOPPING':
+      return l10n.attractionFilterCategoryShopping;
+    case 'OTHER':
+      return l10n.attractionFilterCategoryOther;
     case 'PARKS':
       return l10n.attractionFilterCategoryParks;
     case 'MUSEUMS':
       return l10n.attractionFilterCategoryMuseums;
-    case 'NATURE':
-      return l10n.attractionFilterCategoryNature;
     case 'HISTORY':
       return l10n.attractionFilterCategoryHistory;
     case 'ADVENTURE':
       return l10n.attractionFilterCategoryAdventure;
     default:
-      for (final tag in attraction.tags) {
-        final normalizedTag = tag.trim();
-        if (normalizedTag.isNotEmpty) return normalizedTag;
-      }
-      return null;
+      return l10n.attractionFilterCategoryOther;
   }
 }
 

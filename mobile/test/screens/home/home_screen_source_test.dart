@@ -74,4 +74,42 @@ void main() {
     expect(source, contains("context.push('/excursions')"));
     expect(source, contains('onTap: _openExcursions'));
   });
+
+  test('top destinations use backend attraction categories, not tag fallback',
+      () async {
+    final source =
+        await File('lib/screens/home/home_screen.dart').readAsString();
+
+    final labelMatch = RegExp(
+      r'String\?? _homeAttractionCategoryLabel\(',
+    ).firstMatch(source);
+    final labelStart = labelMatch?.start ?? -1;
+    final nextFunctionStart = source.indexOf(
+      'String _homeStoryTagLabel',
+      labelStart < 0 ? 0 : labelStart,
+    );
+
+    expect(labelStart, isNonNegative);
+    expect(nextFunctionStart, greaterThan(labelStart));
+
+    final labelSource = source.substring(labelStart, nextFunctionStart);
+
+    for (final category in [
+      'NATURE',
+      'ARCHITECTURE',
+      'MUSEUM',
+      'BEACH',
+      'PARK',
+      'TEMPLE',
+      'ENTERTAINMENT',
+      'FOOD',
+      'SHOPPING',
+      'OTHER',
+    ]) {
+      expect(labelSource, contains("case '$category':"));
+    }
+
+    expect(labelSource, contains('l10n.attractionFilterCategoryOther'));
+    expect(labelSource, isNot(contains('for (final tag in attraction.tags)')));
+  });
 }
