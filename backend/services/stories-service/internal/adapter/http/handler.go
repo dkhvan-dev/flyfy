@@ -172,6 +172,11 @@ func (h *Handler) handleStoryActions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	parts := strings.Split(path, "/")
+	if parts[0] == "users" {
+		h.handleStoryUserActions(w, r, parts)
+		return
+	}
+
 	storyID, err := uuid.Parse(parts[0])
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid story id")
@@ -245,6 +250,32 @@ func (h *Handler) handleStoryActions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeError(w, http.StatusNotFound, "not found")
+}
+
+func (h *Handler) handleStoryUserActions(w http.ResponseWriter, r *http.Request, parts []string) {
+	if r.Method != http.MethodGet ||
+		len(parts) != 3 ||
+		parts[2] != "published-count" {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	authorID, err := uuid.Parse(parts[1])
+	if err != nil || authorID == uuid.Nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	count, err := h.useCase.CountPublishedStoriesByAuthorID(r.Context(), authorID)
+	if err != nil {
+		h.writeUseCaseError(w, err, "failed to count published stories")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.PublishedStoryCountResponse{
+		UserID:           authorID.String(),
+		PublishedStories: count,
+	})
 }
 
 func (h *Handler) handleStoryRoot(w http.ResponseWriter, r *http.Request, storyID uuid.UUID) {
@@ -444,6 +475,7 @@ func (h *Handler) ShareStory(w http.ResponseWriter, r *http.Request, storyID uui
 func (h *Handler) writeUseCaseError(w http.ResponseWriter, err error, fallback string) {
 	switch {
 	case errors.Is(err, app.ErrInvalidStoryID),
+		errors.Is(err, app.ErrInvalidStoryAuthorID),
 		errors.Is(err, app.ErrInvalidCommentID),
 		errors.Is(err, app.ErrInvalidStoryTitle),
 		errors.Is(err, app.ErrInvalidStoryContent),

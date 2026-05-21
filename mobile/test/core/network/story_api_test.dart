@@ -50,6 +50,29 @@ void main() {
       expect(page.total, 1);
     },
   );
+
+  test(
+    'countPublishedStoriesForUser reads public author count endpoint',
+    () async {
+      final adapter = _JsonAdapter({'userId': 'user-1', 'publishedStories': 7});
+      final api = StoryApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final count = await api.countPublishedStoriesForUser('user-1');
+
+      expect(count, 7);
+      expect(
+        adapter.requestPath,
+        '/api/v1/stories/users/user-1/published-count',
+      );
+      expect(adapter.requiresAuth, isFalse);
+    },
+  );
 }
 
 Map<String, Object?> _storyJson(String id) {
@@ -86,6 +109,8 @@ class _JsonAdapter implements HttpClientAdapter {
   _JsonAdapter(this.payload);
 
   final Map<String, Object?> payload;
+  String? requestPath;
+  bool? requiresAuth;
 
   @override
   Future<ResponseBody> fetch(
@@ -93,6 +118,8 @@ class _JsonAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    requestPath = options.uri.path;
+    requiresAuth = options.extra['requiresAuth'] as bool?;
     return ResponseBody.fromString(
       jsonEncode(payload),
       200,

@@ -70,6 +70,40 @@ void main() {
     },
   );
 
+  test('profile published stories stat uses public author counter', () async {
+    final source = await File(
+      'lib/screens/profile/profile_screen.dart',
+    ).readAsString();
+    final statsFutureStart = source.indexOf(
+      'Future<int> _publishedStoriesCountFutureFor',
+    );
+    final statsFutureEnd = source.indexOf(
+      'Future<ExcursionReviewsPage>',
+      statsFutureStart,
+    );
+    final gridStart = source.indexOf('class _ProfileStatsGrid');
+    final gridEnd = source.indexOf('class _StatsGridLayout');
+
+    expect(statsFutureStart, isNonNegative);
+    expect(statsFutureEnd, greaterThan(statsFutureStart));
+    expect(gridStart, isNonNegative);
+    expect(gridEnd, greaterThan(gridStart));
+
+    final statsFutureSource = source.substring(
+      statsFutureStart,
+      statsFutureEnd,
+    );
+    final gridSource = source.substring(gridStart, gridEnd);
+
+    expect(source, contains("import '../../core/network/story_api.dart';"));
+    expect(source, contains('StoryApi _storyApi = StoryApi()'));
+    expect(statsFutureSource, contains('countPublishedStoriesForUser('));
+    expect(statsFutureSource, contains('profile.userId.trim()'));
+    expect(gridSource, contains('publishedStoriesCountFuture'));
+    expect(gridSource, contains('publishedStoriesCount'));
+    expect(gridSource, isNot(contains("value: '0'")));
+  });
+
   test(
     'foreign guide profile loads and renders top excursion reviews',
     () async {

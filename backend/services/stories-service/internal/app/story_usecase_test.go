@@ -1,9 +1,12 @@
 package app
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/uuid"
+
+	"github.com/dkhvan-dev/flyfy/backend/services/stories-service/internal/domain/port"
 )
 
 func TestSanitizeTagsReturnsEmptySliceForEmptyInput(t *testing.T) {
@@ -84,4 +87,36 @@ func TestNormalizeListInputPreservesStorySortDirection(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCountPublishedStoriesByAuthorIDUsesRepository(t *testing.T) {
+	authorID := uuid.New()
+	repo := &countingStoryRepository{count: 7}
+	useCase := NewStoryUseCase(repo, nil, "")
+
+	count, err := useCase.CountPublishedStoriesByAuthorID(context.Background(), authorID)
+	if err != nil {
+		t.Fatalf("CountPublishedStoriesByAuthorID returned error: %v", err)
+	}
+
+	if count != 7 {
+		t.Fatalf("count = %d, want 7", count)
+	}
+	if repo.authorID != authorID {
+		t.Fatalf("authorID = %s, want %s", repo.authorID, authorID)
+	}
+}
+
+type countingStoryRepository struct {
+	port.StoryRepository
+	count    int
+	authorID uuid.UUID
+}
+
+func (r *countingStoryRepository) CountPublishedStoriesByAuthorID(
+	_ context.Context,
+	authorID uuid.UUID,
+) (int, error) {
+	r.authorID = authorID
+	return r.count, nil
 }

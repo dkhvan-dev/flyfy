@@ -8,6 +8,7 @@ var (
 	ErrStoryAccessDenied          = errors.New("you do not have access to this story")
 	ErrStoryCommentAccessDenied   = errors.New("you do not have access to this comment")
 	ErrInvalidStoryID             = errors.New("invalid story id")
+	ErrInvalidStoryAuthorID       = errors.New("invalid story author id")
 	ErrInvalidCommentID           = errors.New("invalid comment id")
 	ErrInvalidStoryTitle          = errors.New("story title is required and must be 160 characters or fewer")
 	ErrInvalidStoryContent        = errors.New("story content is required and must be 2500 characters or fewer")

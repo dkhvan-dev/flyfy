@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../../features/stories/models/save_story_request.dart';
 import '../../features/stories/models/story_vm.dart';
 import 'api_client.dart';
@@ -264,6 +266,21 @@ class StoryApi {
       data['shareUrl']?.toString() ?? '',
       int.tryParse(data['shares']?.toString() ?? '') ?? 0,
     );
+  }
+
+  Future<int> countPublishedStoriesForUser(String userId) async {
+    final trimmedUserId = userId.trim();
+    if (trimmedUserId.isEmpty) {
+      return 0;
+    }
+
+    final encodedUserId = Uri.encodeComponent(trimmedUserId);
+    final response = await _apiClient.dio.get(
+      '/stories/users/$encodedUserId/published-count',
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+    final data = response.data as Map<String, dynamic>? ?? const {};
+    return int.tryParse(data['publishedStories']?.toString() ?? '') ?? 0;
   }
 }
 

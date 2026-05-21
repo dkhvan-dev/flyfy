@@ -75,6 +75,11 @@ type StoryListResponse struct {
 	Items []*StoryResponse `json:"items"`
 }
 
+type PublishedStoryCountResponse struct {
+	UserID           string `json:"userId"`
+	PublishedStories int    `json:"publishedStories"`
+}
+
 type StoryDetailResponse struct {
 	Story    *StoryResponse          `json:"story"`
 	Related  []*StoryResponse        `json:"related"`

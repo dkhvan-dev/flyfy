@@ -15,6 +15,7 @@ type StoryRepository interface {
 	GetStoryByID(ctx context.Context, storyID uuid.UUID) (*model.Story, error)
 	GetStoryBySlug(ctx context.Context, slug string) (*model.Story, error)
 	ListStories(ctx context.Context, filter model.StoryListFilter) ([]*model.Story, error)
+	CountPublishedStoriesByAuthorID(ctx context.Context, authorUserID uuid.UUID) (int, error)
 	LikeStory(ctx context.Context, storyID uuid.UUID, userID uuid.UUID) (bool, int, error)
 	UnlikeStory(ctx context.Context, storyID uuid.UUID, userID uuid.UUID) (bool, int, error)
 	HasStoryLike(ctx context.Context, storyID uuid.UUID, userID uuid.UUID) (bool, error)

@@ -11,6 +11,7 @@ import '../../core/network/chat_api.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/excursion_api.dart';
+import '../../core/network/story_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
@@ -40,14 +41,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ActivityApi _activityApi = ActivityApi();
   final ChatApi _chatApi = ChatApi();
   final ExcursionApi _excursionApi = ExcursionApi();
+  final StoryApi _storyApi = StoryApi();
 
   Future<UserProfileVm>? _foreignProfileFuture;
   Future<_ProfileExtras>? _extrasFuture;
   Future<int>? _activityCountFuture;
+  Future<int>? _publishedStoriesCountFuture;
   Future<ExcursionReviewsPage>? _guideReviewsFuture;
   Future<GuideReviewsPage>? _directGuideReviewsFuture;
   String _extrasKey = '';
   String _activityCountKey = '';
+  String _publishedStoriesCountKey = '';
   String _guideReviewsKey = '';
   String _directGuideReviewsKey = '';
   String _followOverrideUserId = '';
@@ -77,6 +81,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _isFollowedByMeOverride = null;
     _isFollowActionLoading = false;
     _isMessageActionLoading = false;
+    _publishedStoriesCountFuture = null;
+    _publishedStoriesCountKey = '';
     _guideReviewsFuture = null;
     _guideReviewsKey = '';
     _directGuideReviewsFuture = null;
@@ -219,6 +225,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _activityCountFuture!;
   }
 
+  Future<int> _publishedStoriesCountFutureFor(UserProfileVm profile) {
+    final key = profile.userId.trim();
+    if (_publishedStoriesCountFuture == null ||
+        _publishedStoriesCountKey != key) {
+      _publishedStoriesCountKey = key;
+      _publishedStoriesCountFuture = _storyApi.countPublishedStoriesForUser(
+        profile.userId.trim(),
+      );
+    }
+    return _publishedStoriesCountFuture!;
+  }
+
   Future<ExcursionReviewsPage> _guideReviewsFutureFor(UserProfileVm profile) {
     final key = '${profile.userId.trim()}|rating_desc|10';
     if (_guideReviewsFuture == null || _guideReviewsKey != key) {
@@ -257,6 +275,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _extrasFuture = null;
       _activityCountKey = '';
       _activityCountFuture = null;
+      _publishedStoriesCountKey = '';
+      _publishedStoriesCountFuture = null;
       await context.read<SessionProvider>().reloadProfile();
     }
   }
@@ -365,6 +385,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? _directGuideReviewsFutureFor(effectiveProfile)
               : null,
           activityCountFuture: _activityCountFutureFor(effectiveProfile),
+          publishedStoriesCountFuture: _publishedStoriesCountFutureFor(
+            effectiveProfile,
+          ),
           isOwnProfile: isOwnProfile,
           isFollowActionLoading: _isFollowActionLoading,
           isMessageActionLoading: _isMessageActionLoading,
@@ -392,6 +415,7 @@ class _ProfileBody extends StatelessWidget {
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
     required this.activityCountFuture,
+    required this.publishedStoriesCountFuture,
     required this.isOwnProfile,
     required this.isFollowActionLoading,
     required this.isMessageActionLoading,
@@ -409,6 +433,7 @@ class _ProfileBody extends StatelessWidget {
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
   final Future<int> activityCountFuture;
+  final Future<int> publishedStoriesCountFuture;
   final bool isOwnProfile;
   final bool isFollowActionLoading;
   final bool isMessageActionLoading;
@@ -472,6 +497,7 @@ class _ProfileBody extends StatelessWidget {
         _ProfileStatsGrid(
           profile: profile,
           activityCountFuture: activityCountFuture,
+          publishedStoriesCountFuture: publishedStoriesCountFuture,
           onFollowersTap: onFollowersTap,
         ),
         if (!isOwnProfile) ...[
@@ -1035,11 +1061,13 @@ class _ProfileStatsGrid extends StatelessWidget {
   const _ProfileStatsGrid({
     required this.profile,
     required this.activityCountFuture,
+    required this.publishedStoriesCountFuture,
     this.onFollowersTap,
   });
 
   final UserProfileVm profile;
   final Future<int> activityCountFuture;
+  final Future<int> publishedStoriesCountFuture;
   final VoidCallback? onFollowersTap;
 
   @override
@@ -1050,26 +1078,32 @@ class _ProfileStatsGrid extends StatelessWidget {
       future: activityCountFuture,
       builder: (context, snapshot) {
         final activityCount = snapshot.data ?? 0;
-        final cards = <_StatConfig>[
-          _StatConfig(
-            label: l10n.profileActivitiesStat,
-            value: '$activityCount',
-            highlighted: true,
-          ),
-          _StatConfig(
-            label: l10n.profileBlogsStat,
-            value: '0',
-            highlighted: true,
-          ),
-          _StatConfig(
-            label: l10n.profileFollowersStat,
-            value: '${profile.followersCount}',
-            highlighted: true,
-            onTap: onFollowersTap,
-          ),
-        ];
+        return FutureBuilder<int>(
+          future: publishedStoriesCountFuture,
+          builder: (context, storiesSnapshot) {
+            final publishedStoriesCount = storiesSnapshot.data ?? 0;
+            final cards = <_StatConfig>[
+              _StatConfig(
+                label: l10n.profileActivitiesStat,
+                value: '$activityCount',
+                highlighted: true,
+              ),
+              _StatConfig(
+                label: l10n.profileBlogsStat,
+                value: '$publishedStoriesCount',
+                highlighted: true,
+              ),
+              _StatConfig(
+                label: l10n.profileFollowersStat,
+                value: '${profile.followersCount}',
+                highlighted: true,
+                onTap: onFollowersTap,
+              ),
+            ];
 
-        return _StatsGridLayout(cards: cards);
+            return _StatsGridLayout(cards: cards);
+          },
+        );
       },
     );
   }

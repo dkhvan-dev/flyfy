@@ -285,6 +285,22 @@ func (r *PGStoryRepository) ListStories(ctx context.Context, filter model.StoryL
 	return items, rows.Err()
 }
 
+func (r *PGStoryRepository) CountPublishedStoriesByAuthorID(ctx context.Context, authorUserID uuid.UUID) (int, error) {
+	var count int64
+	err := r.pool.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM stories
+		WHERE author_user_id = $1
+			AND status = $2
+			AND deleted_at IS NULL
+	`, authorUserID, string(enum.StoryStatusPublished)).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count published stories by author: %w", err)
+	}
+
+	return int(count), nil
+}
+
 func storyListOrderBy(sort string) string {
 	switch sort {
 	case "latest_asc":

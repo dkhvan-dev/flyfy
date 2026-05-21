@@ -304,6 +304,19 @@ func (u *StoryUseCase) ListStories(ctx context.Context, subject string, input Li
 	return u.buildStoryViews(ctx, items, viewerUserID)
 }
 
+func (u *StoryUseCase) CountPublishedStoriesByAuthorID(ctx context.Context, authorUserID uuid.UUID) (int, error) {
+	if authorUserID == uuid.Nil {
+		return 0, ErrInvalidStoryAuthorID
+	}
+
+	count, err := u.repo.CountPublishedStoriesByAuthorID(ctx, authorUserID)
+	if err != nil {
+		return 0, fmt.Errorf("count published stories: %w", err)
+	}
+
+	return count, nil
+}
+
 func (u *StoryUseCase) TrackStoryView(ctx context.Context, subject string, storyID uuid.UUID) (int, error) {
 	viewerUserID, err := u.requireUserID(ctx, subject)
 	if err != nil {
