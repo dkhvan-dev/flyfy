@@ -1452,6 +1452,52 @@ func (r *PGActivityRepository) ListJoinedActivitiesByUserID(
 	return result, rows.Err()
 }
 
+func (r *PGActivityRepository) CountActivityCompletionStatsByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+) (port.ActivityCompletionStats, error) {
+	const query = `
+		WITH hosted AS (
+			SELECT COUNT(*)::int AS count
+			FROM activities
+			WHERE host_user_id = $1
+			  AND status = $2
+		),
+		joined AS (
+			SELECT COUNT(DISTINCT a.id)::int AS count
+			FROM activities a
+			INNER JOIN activity_participants ap ON ap.activity_id = a.id
+			WHERE ap.user_id = $1
+			  AND a.host_user_id <> $1
+			  AND a.status = $2
+			  AND ap.status = ANY($3)
+		)
+		SELECT hosted.count, joined.count
+		FROM hosted, joined
+	`
+
+	participantStatuses := []string{
+		string(enum.ParticipantStatusApproved),
+		string(enum.ParticipantStatusConfirmed),
+		string(enum.ParticipantStatusCheckedIn),
+		string(enum.ParticipantStatusAttended),
+	}
+
+	var stats port.ActivityCompletionStats
+	err := r.pool.QueryRow(
+		ctx,
+		query,
+		userID,
+		string(enum.ActivityStatusCompleted),
+		participantStatuses,
+	).Scan(&stats.HostedCompleted, &stats.JoinedCompleted)
+	if err != nil {
+		return port.ActivityCompletionStats{}, fmt.Errorf("count activity completion stats by user id: %w", err)
+	}
+
+	return stats, nil
+}
+
 func (r *PGActivityRepository) ListActiveBlockedURLPatterns(ctx context.Context) ([]*model.BlockedURLPattern, error) {
 	const query = `
 		SELECT id, pattern_type, pattern_value, action, is_active, comment, created_at

@@ -90,6 +90,21 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 	}
 
 	parts := strings.Split(path, "/")
+	if len(parts) == 3 && parts[0] == "users" && parts[2] == "completion-stats" {
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusNotFound, "not found")
+			return
+		}
+
+		userID, parseErr := uuid.Parse(parts[1])
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "invalid user id")
+			return
+		}
+		h.GetUserActivityCompletionStats(w, r, userID)
+		return
+	}
+
 	activityID, err := uuid.Parse(parts[0])
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid activity id")
@@ -1047,6 +1062,21 @@ func (h *Handler) ListMyHostedActivities(w http.ResponseWriter, r *http.Request)
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) GetUserActivityCompletionStats(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	stats, err := h.activityUC.GetActivityCompletionStats(r.Context(), userID)
+	if err != nil {
+		h.writeAppError(w, err, "failed to get activity completion stats")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.ActivityCompletionStatsResponse{
+		UserID:          stats.UserID.String(),
+		HostedCompleted: stats.HostedCompleted,
+		JoinedCompleted: stats.JoinedCompleted,
+		TotalCompleted:  stats.TotalCompleted,
+	})
 }
 
 func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) (dto.ActivityResponse, error) {

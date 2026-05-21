@@ -29,6 +29,11 @@ type JoinAvailability struct {
 	HasWaitlist   bool
 }
 
+type ActivityCompletionStats struct {
+	HostedCompleted int
+	JoinedCompleted int
+}
+
 type ActivityTxRepository interface {
 	GetActivityByIDForUpdate(ctx context.Context, activityID uuid.UUID) (*model.Activity, error)
 	GetParticipantByActivityAndUserForUpdate(ctx context.Context, activityID uuid.UUID, userID uuid.UUID) (*model.ActivityParticipant, error)
@@ -78,6 +83,7 @@ type ActivityRepository interface {
 
 	ListHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
 	ListJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
+	CountActivityCompletionStatsByUserID(ctx context.Context, userID uuid.UUID) (ActivityCompletionStats, error)
 
 	CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error
 	UpdateParticipant(ctx context.Context, item *model.ActivityParticipant) error

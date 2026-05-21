@@ -43,11 +43,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<UserProfileVm>? _foreignProfileFuture;
   Future<_ProfileExtras>? _extrasFuture;
-  Future<ActivityCompletionStatsVm>? _activityStatsFuture;
+  Future<int>? _activityCountFuture;
   Future<ExcursionReviewsPage>? _guideReviewsFuture;
   Future<GuideReviewsPage>? _directGuideReviewsFuture;
   String _extrasKey = '';
-  String _activityStatsKey = '';
+  String _activityCountKey = '';
   String _guideReviewsKey = '';
   String _directGuideReviewsKey = '';
   String _followOverrideUserId = '';
@@ -208,29 +208,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _extrasFuture!;
   }
 
-  Future<ActivityCompletionStatsVm> _activityStatsFutureFor(
-    UserProfileVm profile, {
-    required bool isOwnProfile,
-  }) {
-    final key = '${profile.userId.trim()}|$isOwnProfile';
-    if (_activityStatsFuture == null || _activityStatsKey != key) {
-      _activityStatsKey = key;
-      if (isOwnProfile) {
-        _activityStatsFuture = _activityApi.getMyCompletionStats(
-          actorUserId: profile.userId.trim(),
-        );
-      } else {
-        _activityStatsFuture = _activityApi
-            .countCompletedActivitiesForUser(profile.userId.trim())
-            .then(
-              (count) => ActivityCompletionStatsVm(
-                hostedCompleted: count,
-                joinedCompleted: 0,
-              ),
-            );
-      }
+  Future<int> _activityCountFutureFor(UserProfileVm profile) {
+    final key = profile.userId.trim();
+    if (_activityCountFuture == null || _activityCountKey != key) {
+      _activityCountKey = key;
+      _activityCountFuture = _activityApi.countCompletedActivitiesForUser(
+        profile.userId.trim(),
+      );
     }
-    return _activityStatsFuture!;
+    return _activityCountFuture!;
   }
 
   Future<ExcursionReviewsPage> _guideReviewsFutureFor(UserProfileVm profile) {
@@ -246,9 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _guideReviewsFuture!;
   }
 
-  Future<GuideReviewsPage> _directGuideReviewsFutureFor(
-    UserProfileVm profile,
-  ) {
+  Future<GuideReviewsPage> _directGuideReviewsFutureFor(UserProfileVm profile) {
     final key = '${profile.userId.trim()}|rating_desc|10|direct';
     if (_directGuideReviewsFuture == null || _directGuideReviewsKey != key) {
       _directGuideReviewsKey = key;
@@ -271,8 +255,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (updated == true && mounted) {
       _extrasKey = '';
       _extrasFuture = null;
-      _activityStatsKey = '';
-      _activityStatsFuture = null;
+      _activityCountKey = '';
+      _activityCountFuture = null;
       await context.read<SessionProvider>().reloadProfile();
     }
   }
@@ -378,12 +362,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : null,
           directGuideReviewsFuture:
               !isOwnProfile && extras.guide?.isVerified == true
-                  ? _directGuideReviewsFutureFor(effectiveProfile)
-                  : null,
-          activityStatsFuture: _activityStatsFutureFor(
-            effectiveProfile,
-            isOwnProfile: isOwnProfile,
-          ),
+              ? _directGuideReviewsFutureFor(effectiveProfile)
+              : null,
+          activityCountFuture: _activityCountFutureFor(effectiveProfile),
           isOwnProfile: isOwnProfile,
           isFollowActionLoading: _isFollowActionLoading,
           isMessageActionLoading: _isMessageActionLoading,
@@ -410,7 +391,7 @@ class _ProfileBody extends StatelessWidget {
     required this.avatarUrl,
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
-    required this.activityStatsFuture,
+    required this.activityCountFuture,
     required this.isOwnProfile,
     required this.isFollowActionLoading,
     required this.isMessageActionLoading,
@@ -427,7 +408,7 @@ class _ProfileBody extends StatelessWidget {
   final String? avatarUrl;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
-  final Future<ActivityCompletionStatsVm> activityStatsFuture;
+  final Future<int> activityCountFuture;
   final bool isOwnProfile;
   final bool isFollowActionLoading;
   final bool isMessageActionLoading;
@@ -490,7 +471,7 @@ class _ProfileBody extends StatelessWidget {
           SizedBox(height: profileScaled(context, 22, min: 16, max: 24)),
         _ProfileStatsGrid(
           profile: profile,
-          activityStatsFuture: activityStatsFuture,
+          activityCountFuture: activityCountFuture,
           onFollowersTap: onFollowersTap,
         ),
         if (!isOwnProfile) ...[
@@ -1053,28 +1034,26 @@ class _BecomeGuideCard extends StatelessWidget {
 class _ProfileStatsGrid extends StatelessWidget {
   const _ProfileStatsGrid({
     required this.profile,
-    required this.activityStatsFuture,
+    required this.activityCountFuture,
     this.onFollowersTap,
   });
 
   final UserProfileVm profile;
-  final Future<ActivityCompletionStatsVm> activityStatsFuture;
+  final Future<int> activityCountFuture;
   final VoidCallback? onFollowersTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return FutureBuilder<ActivityCompletionStatsVm>(
-      future: activityStatsFuture,
+    return FutureBuilder<int>(
+      future: activityCountFuture,
       builder: (context, snapshot) {
-        final stats = snapshot.data;
-        final totalCompleted =
-            (stats?.hostedCompleted ?? 0) + (stats?.joinedCompleted ?? 0);
+        final activityCount = snapshot.data ?? 0;
         final cards = <_StatConfig>[
           _StatConfig(
             label: l10n.profileActivitiesStat,
-            value: '$totalCompleted',
+            value: '$activityCount',
             highlighted: true,
           ),
           _StatConfig(
@@ -1385,7 +1364,8 @@ class _ForeignProfileSections extends StatelessWidget {
         if (isGuideProfile && guideReviewsFuture != null) ...[
           if (directGuideReviewsFuture != null) ...[
             _DirectGuideReviewsSection(
-                reviewsFuture: directGuideReviewsFuture!),
+              reviewsFuture: directGuideReviewsFuture!,
+            ),
             SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
           ],
           _GuideExcursionReviewsSection(reviewsFuture: guideReviewsFuture!),
@@ -1656,8 +1636,9 @@ class _ProfileDirectGuideReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
                 backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                backgroundImage:
-                    avatarUrl == null ? null : NetworkImage(avatarUrl),
+                backgroundImage: avatarUrl == null
+                    ? null
+                    : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),

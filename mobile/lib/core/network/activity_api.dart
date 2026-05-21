@@ -19,7 +19,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -40,7 +41,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -61,7 +63,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -102,7 +105,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -131,7 +135,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -232,137 +237,24 @@ class ActivityApi {
     return ActivityListItemVm.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// Count completed hosted activities for any user via the public endpoint.
+  /// Count completed hosted and joined activities for any user via the public endpoint.
   Future<int> countCompletedActivitiesForUser(String userId) async {
-    var offset = 0;
-    var total = 0;
-    var hasMore = true;
-
-    while (hasMore) {
-      final response = await _apiClient.dio.get(
-        '/activities',
-        queryParameters: {
-          'hostUserId': userId,
-          'status': 'COMPLETED',
-          'limit': 100,
-          'offset': offset,
-        },
-        options: Options(extra: const {'requiresAuth': false}),
-      );
-
-      final data = response.data;
-      final items = (data is Map<String, dynamic>
-              ? data['items'] as List<dynamic>?
-              : null) ??
-          const [];
-      total += items.length;
-      hasMore = data is Map<String, dynamic> && data['hasMore'] == true;
-      offset += items.length;
+    final trimmedUserId = userId.trim();
+    if (trimmedUserId.isEmpty) {
+      return 0;
     }
 
-    return total;
-  }
-
-  Future<ActivityCompletionStatsVm> getMyCompletionStats({
-    required String actorUserId,
-  }) async {
-    Future<int> countHostedCompleted() async {
-      var offset = 0;
-      var total = 0;
-      var hasMore = true;
-
-      while (hasMore) {
-        final page = await _getMyActivitiesPage(
-          path: '/me/activities/hosted',
-          limit: 100,
-          offset: offset,
-        );
-        total += page.items
-            .where((item) => item.status.trim().toUpperCase() == 'COMPLETED')
-            .length;
-        hasMore = page.hasMore;
-        offset += page.items.length;
-      }
-
-      return total;
-    }
-
-    Future<int> countJoinedCompleted() async {
-      var offset = 0;
-      var total = 0;
-      var hasMore = true;
-
-      while (hasMore) {
-        final page = await _getMyActivitiesPage(
-          path: '/me/activities/joined',
-          limit: 100,
-          offset: offset,
-        );
-        total += page.items
-            .where(
-              (item) =>
-                  item.status.trim().toUpperCase() == 'COMPLETED' &&
-                  item.hostUserId.trim() != actorUserId.trim(),
-            )
-            .length;
-        hasMore = page.hasMore;
-        offset += page.items.length;
-      }
-
-      return total;
-    }
-
-    final results = await Future.wait<int>([
-      countHostedCompleted(),
-      countJoinedCompleted(),
-    ]);
-
-    return ActivityCompletionStatsVm(
-      hostedCompleted: results[0],
-      joinedCompleted: results[1],
-    );
-  }
-
-  Future<_ActivityListPage> _getMyActivitiesPage({
-    required String path,
-    required int limit,
-    required int offset,
-  }) async {
+    final encodedUserId = Uri.encodeComponent(trimmedUserId);
     final response = await _apiClient.dio.get(
-      path,
-      queryParameters: {'limit': limit, 'offset': offset},
+      '/activities/users/$encodedUserId/completion-stats',
+      options: Options(extra: const {'requiresAuth': false}),
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
-            ? data['items'] as List<dynamic>?
-            : null) ??
-        const [];
-    final hasMore = data is Map<String, dynamic> && data['hasMore'] == true;
+    if (data is! Map<String, dynamic>) {
+      return 0;
+    }
 
-    return _ActivityListPage(
-      items: items
-          .whereType<Map<String, dynamic>>()
-          .map(ActivityListItemVm.fromJson)
-          .toList(),
-      hasMore: hasMore,
-    );
+    return int.tryParse(data['totalCompleted']?.toString() ?? '') ?? 0;
   }
-}
-
-class ActivityCompletionStatsVm {
-  const ActivityCompletionStatsVm({
-    required this.hostedCompleted,
-    required this.joinedCompleted,
-  });
-
-  final int hostedCompleted;
-  final int joinedCompleted;
-}
-
-class _ActivityListPage {
-  const _ActivityListPage({required this.items, required this.hasMore});
-
-  final List<ActivityListItemVm> items;
-  final bool hasMore;
 }

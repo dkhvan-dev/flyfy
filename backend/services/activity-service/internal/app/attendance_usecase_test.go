@@ -84,6 +84,10 @@ func (s *attendanceRepoStub) ListJoinedActivitiesByUserID(ctx context.Context, u
 	return nil, nil
 }
 
+func (s *attendanceRepoStub) CountActivityCompletionStatsByUserID(ctx context.Context, userID uuid.UUID) (port.ActivityCompletionStats, error) {
+	return port.ActivityCompletionStats{}, nil
+}
+
 func (s *attendanceRepoStub) CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error {
 	return nil
 }

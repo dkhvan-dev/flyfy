@@ -1825,6 +1825,34 @@ func (u *ActivityUseCase) ListJoinedActivities(
 	return u.normalizeLifecycleList(ctx, joinedItems)
 }
 
+type ActivityCompletionStats struct {
+	UserID          uuid.UUID
+	HostedCompleted int
+	JoinedCompleted int
+	TotalCompleted  int
+}
+
+func (u *ActivityUseCase) GetActivityCompletionStats(
+	ctx context.Context,
+	userID uuid.UUID,
+) (ActivityCompletionStats, error) {
+	if userID == uuid.Nil {
+		return ActivityCompletionStats{}, ErrInvalidActorUserID
+	}
+
+	stats, err := u.repo.CountActivityCompletionStatsByUserID(ctx, userID)
+	if err != nil {
+		return ActivityCompletionStats{}, fmt.Errorf("count activity completion stats: %w", err)
+	}
+
+	return ActivityCompletionStats{
+		UserID:          userID,
+		HostedCompleted: stats.HostedCompleted,
+		JoinedCompleted: stats.JoinedCompleted,
+		TotalCompleted:  stats.HostedCompleted + stats.JoinedCompleted,
+	}, nil
+}
+
 func (u *ActivityUseCase) validateCoverMediaFile(ctx context.Context, fileID *uuid.UUID) error {
 	if fileID == nil || *fileID == uuid.Nil || u.fileManager == nil {
 		return nil

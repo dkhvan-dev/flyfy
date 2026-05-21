@@ -20,6 +20,7 @@ type activityRepoStub struct {
 	updateActivity                               func(ctx context.Context, item *model.Activity) error
 	createParticipant                            func(ctx context.Context, item *model.ActivityParticipant) error
 	listParticipantsByActivityID                 func(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error)
+	countActivityCompletionStatsByUserID         func(ctx context.Context, userID uuid.UUID) (port.ActivityCompletionStats, error)
 	listActivitiesDueForRegistrationFinalization func(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error)
 	withTx                                       func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error
 }
@@ -117,6 +118,13 @@ func (s *activityRepoStub) ListHostedActivitiesByUserID(ctx context.Context, use
 
 func (s *activityRepoStub) ListJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error) {
 	return nil, nil
+}
+
+func (s *activityRepoStub) CountActivityCompletionStatsByUserID(ctx context.Context, userID uuid.UUID) (port.ActivityCompletionStats, error) {
+	if s.countActivityCompletionStatsByUserID != nil {
+		return s.countActivityCompletionStatsByUserID(ctx, userID)
+	}
+	return port.ActivityCompletionStats{}, nil
 }
 
 func (s *activityRepoStub) CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error {
@@ -1042,6 +1050,33 @@ func TestAutoFinalizeRegistrationCancelsWhenMinimumParticipantsNotMet(t *testing
 	}
 	if userParticipant.Status != enum.ParticipantStatusCancelledByActivity {
 		t.Fatalf("participant status = %s, want %s", userParticipant.Status, enum.ParticipantStatusCancelledByActivity)
+	}
+}
+
+func TestGetActivityCompletionStatsCountsHostedAndJoinedWithoutSelfHostedDuplicates(t *testing.T) {
+	t.Parallel()
+
+	userID := uuid.New()
+	repo := &activityRepoStub{
+		countActivityCompletionStatsByUserID: func(ctx context.Context, requestedUserID uuid.UUID) (port.ActivityCompletionStats, error) {
+			if requestedUserID != userID {
+				t.Fatalf("CountActivityCompletionStatsByUserID() userID = %s, want %s", requestedUserID, userID)
+			}
+			return port.ActivityCompletionStats{
+				HostedCompleted: 9,
+				JoinedCompleted: 2,
+			}, nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	stats, err := uc.GetActivityCompletionStats(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("GetActivityCompletionStats() error = %v", err)
+	}
+
+	if stats.HostedCompleted != 9 || stats.JoinedCompleted != 2 || stats.TotalCompleted != 11 {
+		t.Fatalf("GetActivityCompletionStats() = %+v, want hosted=9 joined=2 total=11", stats)
 	}
 }
 
