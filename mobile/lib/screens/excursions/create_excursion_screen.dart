@@ -20,6 +20,7 @@ import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_localization.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
+import '../../shared/widgets/app_currency_picker_field.dart';
 import 'excursion_select_location_screen.dart';
 
 class CreateExcursionScreen extends StatefulWidget {
@@ -1565,7 +1566,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           }),
         ),
         const SizedBox(height: 12),
-        _CurrencyPickerField(
+        AppCurrencyPickerField(
           label: l10n.createCurrencyLabel,
           selectedCode: _selectedCurrencyCode,
           errorText: _currencyErrorText,
@@ -4089,188 +4090,6 @@ class _ExcursionFieldShell extends StatelessWidget {
         const SizedBox(height: 8),
         child,
       ],
-    );
-  }
-}
-
-class _CurrencyOption {
-  const _CurrencyOption({required this.code, required this.symbol});
-
-  final String code;
-  final String symbol;
-
-  String label(AppLocalizations l10n) {
-    return switch (code) {
-      'KZT' => l10n.createCurrencyKzt,
-      'USD' => l10n.createCurrencyUsd,
-      'EUR' => l10n.createCurrencyEur,
-      'RUB' => l10n.createCurrencyRub,
-      'GBP' => l10n.createCurrencyGbp,
-      _ => code,
-    };
-  }
-}
-
-const _currencyOptions = [
-  _CurrencyOption(code: 'KZT', symbol: '₸'),
-  _CurrencyOption(code: 'USD', symbol: r'$'),
-  _CurrencyOption(code: 'EUR', symbol: '€'),
-  _CurrencyOption(code: 'RUB', symbol: '₽'),
-  _CurrencyOption(code: 'GBP', symbol: '£'),
-];
-
-class _CurrencyPickerField extends StatelessWidget {
-  const _CurrencyPickerField({
-    required this.label,
-    required this.selectedCode,
-    required this.onChanged,
-    this.errorText,
-  });
-
-  final String label;
-  final String selectedCode;
-  final ValueChanged<String> onChanged;
-  final String? errorText;
-
-  _CurrencyOption get _selectedOption {
-    return _currencyOptions.firstWhere(
-      (option) => option.code == selectedCode,
-      orElse: () => _currencyOptions.first,
-    );
-  }
-
-  Future<void> _openPicker(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      isDismissible: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D2115),
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(12),
-                itemCount: _currencyOptions.length,
-                separatorBuilder: (_, __) => Divider(
-                  height: 1,
-                  color: AppColors.accent.withValues(alpha: 0.10),
-                ),
-                itemBuilder: (context, index) {
-                  final option = _currencyOptions[index];
-                  final selected = option.code == selectedCode;
-                  return ListTile(
-                    onTap: () => Navigator.of(context).pop(option.code),
-                    leading: CircleAvatar(
-                      backgroundColor:
-                          selected ? AppColors.accent : const Color(0xFF3A2A1D),
-                      foregroundColor: Colors.white,
-                      child: Text(option.symbol),
-                    ),
-                    title: Text(
-                      option.label(l10n),
-                      style: const TextStyle(
-                        color: Color(0xFFFFF8F0),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    trailing: selected
-                        ? const Icon(
-                            Icons.check_circle_rounded,
-                            color: AppColors.accent,
-                          )
-                        : Text(
-                            option.code,
-                            style: const TextStyle(
-                              color: Color(0xFFA99683),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (result != null && result != selectedCode) {
-      onChanged(result);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final selectedOption = _selectedOption;
-
-    return _ExcursionFieldShell(
-      label: label,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Material(
-            color: const Color(0xFF2D2115),
-            borderRadius: BorderRadius.circular(24),
-            child: InkWell(
-              onTap: () => _openPicker(context),
-              borderRadius: BorderRadius.circular(24),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 62),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: errorText == null
-                        ? AppColors.accent.withValues(alpha: 0.10)
-                        : const Color(0xFFFFB199),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      selectedOption.symbol,
-                      style: const TextStyle(
-                        color: AppColors.accent,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        selectedOption.label(l10n),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFFFF8F0),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFFA99683),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (errorText != null) _InlineFieldError(message: errorText!),
-        ],
-      ),
     );
   }
 }

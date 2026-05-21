@@ -101,15 +101,16 @@ func (u *ActivityUseCase) ListActivityCategories() []model.ActivityCategory {
 }
 
 type CreateActivityInput struct {
-	HostUserID   uuid.UUID
-	Title        string
-	Description  string
-	Format       enum.ActivityFormat
-	Visibility   enum.ActivityVisibility
-	CategorySlug string
-	Tags         []string
-	LanguageCode string
-	Timezone     string
+	HostUserID      uuid.UUID
+	Title           string
+	Description     string
+	Format          enum.ActivityFormat
+	Visibility      enum.ActivityVisibility
+	CategorySlug    string
+	SubcategorySlug *string
+	Tags            []string
+	LanguageCode    string
+	Timezone        string
 
 	StartAt time.Time
 	EndAt   time.Time
@@ -127,6 +128,7 @@ type CreateActivityInput struct {
 	ConfirmationDeadline           *time.Time
 
 	CountryCode *string
+	CityID      *string
 	CityName    *string
 	AddressText *string
 	Latitude    *float64
@@ -142,14 +144,16 @@ type UpdateActivityInput struct {
 	ActorUserID uuid.UUID
 	ActivityID  uuid.UUID
 
-	Title        *string
-	Description  *string
-	Visibility   *enum.ActivityVisibility
-	CategorySlug *string
-	Tags         []string
-	HasTags      bool
-	LanguageCode *string
-	Timezone     *string
+	Title              *string
+	Description        *string
+	Visibility         *enum.ActivityVisibility
+	CategorySlug       *string
+	SubcategorySlug    *string
+	HasSubcategorySlug bool
+	Tags               []string
+	HasTags            bool
+	LanguageCode       *string
+	Timezone           *string
 
 	StartAt *time.Time
 	EndAt   *time.Time
@@ -173,6 +177,8 @@ type UpdateActivityInput struct {
 
 	CountryCode    *string
 	HasCountryCode bool
+	CityID         *string
+	HasCityID      bool
 	CityName       *string
 	HasCityName    bool
 	AddressText    *string
@@ -202,6 +208,14 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		return nil, err
 	}
 	input.CategorySlug = categorySlug
+	subcategorySlug, err := normalizeActivitySubcategorySlug(
+		input.CategorySlug,
+		input.SubcategorySlug,
+	)
+	if err != nil {
+		return nil, err
+	}
+	input.SubcategorySlug = subcategorySlug
 
 	if !input.PriceType.IsUserSelectable() {
 		return nil, model.ErrInvalidPriceType
@@ -242,6 +256,7 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		Format:                         input.Format,
 		Visibility:                     input.Visibility,
 		CategorySlug:                   input.CategorySlug,
+		SubcategorySlug:                input.SubcategorySlug,
 		LanguageCode:                   input.LanguageCode,
 		Timezone:                       input.Timezone,
 		StartAt:                        input.StartAt,
@@ -257,6 +272,7 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		RequiresAttendanceConfirmation: input.RequiresAttendanceConfirmation,
 		ConfirmationDeadline:           input.ConfirmationDeadline,
 		CountryCode:                    input.CountryCode,
+		CityID:                         input.CityID,
 		CityName:                       input.CityName,
 		AddressText:                    input.AddressText,
 		Latitude:                       input.Latitude,
@@ -1038,6 +1054,7 @@ func (u *ActivityUseCase) DuplicateActivity(
 		Format:                         source.Format,
 		Visibility:                     source.Visibility,
 		CategorySlug:                   categorySlug,
+		SubcategorySlug:                source.SubcategorySlug,
 		LanguageCode:                   source.LanguageCode,
 		Timezone:                       source.Timezone,
 		StartAt:                        newStartAt,
@@ -1053,6 +1070,7 @@ func (u *ActivityUseCase) DuplicateActivity(
 		RequiresAttendanceConfirmation: source.RequiresAttendanceConfirmation,
 		ConfirmationDeadline:           source.ConfirmationDeadline,
 		CountryCode:                    source.CountryCode,
+		CityID:                         source.CityID,
 		CityName:                       source.CityName,
 		AddressText:                    source.AddressText,
 		Latitude:                       source.Latitude,
@@ -1354,7 +1372,9 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	beforePriceType := item.PriceType
 	beforePriceAmount := item.PriceAmount
 	beforeCurrency := item.Currency
+	beforeStartAt := item.StartAt
 	beforeLocationSnapshot := locationSnapshot(item)
+	beforeMeetingAddressSnapshot := meetingAddressSnapshot(item)
 
 	if input.Title != nil {
 		item.Title = strings.TrimSpace(*input.Title)
@@ -1365,12 +1385,26 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	if input.Visibility != nil {
 		item.Visibility = *input.Visibility
 	}
+	categoryChanged := false
 	if input.CategorySlug != nil {
 		categorySlug, categoryErr := model.NormalizeAndValidateActivityCategorySlug(*input.CategorySlug)
 		if categoryErr != nil {
 			return nil, categoryErr
 		}
+		categoryChanged = item.CategorySlug != categorySlug
 		item.CategorySlug = categorySlug
+	}
+	if input.HasSubcategorySlug {
+		subcategorySlug, subcategoryErr := normalizeActivitySubcategorySlug(
+			item.CategorySlug,
+			input.SubcategorySlug,
+		)
+		if subcategoryErr != nil {
+			return nil, subcategoryErr
+		}
+		item.SubcategorySlug = subcategorySlug
+	} else if categoryChanged {
+		item.SubcategorySlug = nil
 	}
 	if input.LanguageCode != nil {
 		item.LanguageCode = strings.TrimSpace(*input.LanguageCode)
@@ -1416,6 +1450,9 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	}
 	if input.HasCountryCode {
 		item.CountryCode = model.NormalizeOptionalString(input.CountryCode)
+	}
+	if input.HasCityID {
+		item.CityID = model.NormalizeOptionalString(input.CityID)
 	}
 	if input.HasCityName {
 		item.CityName = model.NormalizeOptionalString(input.CityName)
@@ -1473,6 +1510,8 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		beforePriceAmount,
 		beforeCurrency,
 		beforeLocationSnapshot,
+		beforeMeetingAddressSnapshot,
+		beforeStartAt,
 		input.StartAt != nil,
 		input.EndAt != nil,
 	); err != nil {
@@ -1532,6 +1571,7 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 			PayloadJSON: mustJSON(map[string]any{
 				"format":      string(item.Format),
 				"countryCode": item.CountryCode,
+				"cityId":      item.CityID,
 				"cityName":    item.CityName,
 				"meetingUrl":  item.MeetingURL,
 			}),
@@ -1553,6 +1593,8 @@ func (u *ActivityUseCase) validateUpdateRules(
 	beforePriceAmount *float64,
 	beforeCurrency *string,
 	beforeLocationSnapshot string,
+	beforeMeetingAddressSnapshot string,
+	beforeStartAt time.Time,
 	startAtChanged bool,
 	endAtChanged bool,
 ) error {
@@ -1561,8 +1603,10 @@ func (u *ActivityUseCase) validateUpdateRules(
 	if startAtChanged && !item.StartAt.After(now.Add(1*time.Hour)) {
 		return model.ErrActivityTooSoon
 	}
-	if item.Format != enum.ActivityFormatOnline && locationSnapshot(item) != beforeLocationSnapshot {
-		return ErrCriticalFieldsUpdateForbidden
+	if item.Format != enum.ActivityFormatOnline &&
+		meetingAddressSnapshot(item) != beforeMeetingAddressSnapshot &&
+		!canUpdateMeetingAddress(beforeStartAt, now) {
+		return ErrMeetingAddressUpdateClosed
 	}
 
 	skipStartTimeCheck := !startAtChanged
@@ -1586,6 +1630,10 @@ func (u *ActivityUseCase) validateUpdateRules(
 	}
 
 	return nil
+}
+
+func canUpdateMeetingAddress(startAt time.Time, now time.Time) bool {
+	return startAt.UTC().Sub(now.UTC()) > time.Hour
 }
 
 func hasOtherPriceBlockingParticipants(
@@ -1830,7 +1878,7 @@ func normalizeTags(tags []string) []string {
 	result := make([]string, 0, len(tags))
 
 	for _, tag := range tags {
-		tag = strings.ToLower(strings.TrimSpace(tag))
+		tag = model.NormalizeActivityTagSlug(tag)
 		if tag == "" {
 			continue
 		}
@@ -1842,6 +1890,19 @@ func normalizeTags(tags []string) []string {
 	}
 
 	return result
+}
+
+func normalizeActivitySubcategorySlug(categorySlug string, raw *string) (*string, error) {
+	if raw == nil || strings.TrimSpace(*raw) == "" {
+		return nil, nil
+	}
+
+	slug, err := model.NormalizeAndValidateActivitySubCategorySlug(categorySlug, *raw)
+	if err != nil {
+		return nil, err
+	}
+
+	return &slug, nil
 }
 
 func mustJSON(v any) []byte {
@@ -1878,9 +1939,21 @@ func locationSnapshot(item *model.Activity) string {
 	return strings.Join([]string{
 		string(item.Format),
 		model.ValueOrEmpty(item.CountryCode),
+		model.ValueOrEmpty(item.CityID),
 		model.ValueOrEmpty(item.CityName),
 		model.ValueOrEmpty(item.AddressText),
 		model.ValueOrEmpty(item.MapURL),
 		model.ValueOrEmpty(item.MeetingURL),
+	}, "|")
+}
+
+func meetingAddressSnapshot(item *model.Activity) string {
+	return strings.Join([]string{
+		string(item.Format),
+		model.ValueOrEmpty(item.CountryCode),
+		model.ValueOrEmpty(item.CityID),
+		model.ValueOrEmpty(item.CityName),
+		model.ValueOrEmpty(item.AddressText),
+		model.ValueOrEmpty(item.MapURL),
 	}, "|")
 }

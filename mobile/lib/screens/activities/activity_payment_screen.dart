@@ -163,6 +163,7 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
       amount: activity.priceAmount,
       currency: activity.currency,
       countryCode: activity.countryCode,
+      localeName: locale,
     );
 
     return Scaffold(
@@ -235,6 +236,7 @@ class _ActivityPaymentScreenState extends State<ActivityPaymentScreen> {
                                   amount: 0,
                                   currency: activity.currency,
                                   countryCode: activity.countryCode,
+                                  localeName: locale,
                                 ),
                                 totalLabel: l10n.activityDetailsTotalLabel,
                                 totalValue: totalLabel,

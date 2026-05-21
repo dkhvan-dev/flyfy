@@ -14,10 +14,11 @@ type ActivityResponse struct {
 	JoinMode         string `json:"joinMode"`
 	ModerationStatus string `json:"moderationStatus"`
 
-	CategorySlug string   `json:"categorySlug"`
-	Tags         []string `json:"tags,omitempty"`
-	LanguageCode string   `json:"languageCode"`
-	Timezone     string   `json:"timezone"`
+	CategorySlug    string   `json:"categorySlug"`
+	SubcategorySlug *string  `json:"subcategorySlug,omitempty"`
+	Tags            []string `json:"tags,omitempty"`
+	LanguageCode    string   `json:"languageCode"`
+	Timezone        string   `json:"timezone"`
 
 	StartAt              string `json:"startAt"`
 	EndAt                string `json:"endAt"`
@@ -37,6 +38,7 @@ type ActivityResponse struct {
 	ConfirmationDeadline           *string `json:"confirmationDeadline,omitempty"`
 
 	CountryCode   *string  `json:"countryCode,omitempty"`
+	CityID        *string  `json:"cityId,omitempty"`
 	CityName      *string  `json:"cityName,omitempty"`
 	AddressText   *string  `json:"addressText,omitempty"`
 	Latitude      *float64 `json:"latitude,omitempty"`

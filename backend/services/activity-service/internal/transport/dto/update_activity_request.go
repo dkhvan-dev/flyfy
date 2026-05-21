@@ -1,14 +1,18 @@
 package dto
 
 type UpdateActivityRequest struct {
-	Title        *string  `json:"title,omitempty"`
-	Description  *string  `json:"description,omitempty"`
-	Visibility   *string  `json:"visibility,omitempty"`
-	CategorySlug *string  `json:"categorySlug,omitempty"`
-	Tags         []string `json:"tags,omitempty"`
-	HasTags      bool     `json:"hasTags,omitempty"`
-	LanguageCode *string  `json:"languageCode,omitempty"`
-	Timezone     *string  `json:"timezone,omitempty"`
+	Title              *string  `json:"title,omitempty"`
+	Description        *string  `json:"description,omitempty"`
+	Visibility         *string  `json:"visibility,omitempty"`
+	CategorySlug       *string  `json:"categorySlug,omitempty"`
+	SubcategorySlug    *string  `json:"subcategorySlug,omitempty"`
+	SubCategorySlug    *string  `json:"subCategorySlug,omitempty"`
+	HasSubcategorySlug bool     `json:"hasSubcategorySlug,omitempty"`
+	HasSubCategorySlug bool     `json:"hasSubCategorySlug,omitempty"`
+	Tags               []string `json:"tags,omitempty"`
+	HasTags            bool     `json:"hasTags,omitempty"`
+	LanguageCode       *string  `json:"languageCode,omitempty"`
+	Timezone           *string  `json:"timezone,omitempty"`
 
 	StartAt              *string `json:"startAt,omitempty"`
 	EndAt                *string `json:"endAt,omitempty"`
@@ -33,6 +37,8 @@ type UpdateActivityRequest struct {
 
 	CountryCode    *string  `json:"countryCode,omitempty"`
 	HasCountryCode bool     `json:"hasCountryCode,omitempty"`
+	CityID         *string  `json:"cityId,omitempty"`
+	HasCityID      bool     `json:"hasCityId,omitempty"`
 	CityName       *string  `json:"cityName,omitempty"`
 	HasCityName    bool     `json:"hasCityName,omitempty"`
 	AddressText    *string  `json:"addressText,omitempty"`

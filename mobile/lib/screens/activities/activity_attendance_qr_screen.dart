@@ -26,10 +26,11 @@ class _ActivityAttendanceQrScreenState
   final AttendanceApi _attendanceApi = AttendanceApi();
 
   Timer? _refreshTimer;
+  Timer? _countdownTimer;
   bool _isLoading = true;
   String? _error;
   String? _token;
-  DateTime? _expiresAt;
+  DateTime? _refreshAt;
 
   @override
   void initState() {
@@ -42,11 +43,13 @@ class _ActivityAttendanceQrScreenState
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _loadQr() async {
     _refreshTimer?.cancel();
+    _countdownTimer?.cancel();
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -60,14 +63,16 @@ class _ActivityAttendanceQrScreenState
       if (!mounted) return;
       setState(() {
         _token = qr.token;
-        _expiresAt = qr.expiresAt;
+        _refreshAt = qr.refreshAt;
         _isLoading = false;
       });
       _scheduleRefresh(qr.refreshAt);
+      _restartCountdownTicker();
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _error = 'failed';
+        _refreshAt = null;
         _isLoading = false;
       });
     }
@@ -81,10 +86,19 @@ class _ActivityAttendanceQrScreenState
     _refreshTimer = Timer(effectiveDelay, _loadQr);
   }
 
+  void _restartCountdownTicker() {
+    _countdownTimer?.cancel();
+    if (_refreshAt == null) return;
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {});
+    });
+  }
+
   String _countdownLabel(AppLocalizations l10n) {
-    final expiresAt = _expiresAt;
-    if (expiresAt == null) return '';
-    final remaining = expiresAt.difference(DateTime.now().toUtc());
+    final refreshAt = _refreshAt;
+    if (refreshAt == null) return '';
+    final remaining = refreshAt.difference(DateTime.now().toUtc());
     if (remaining.isNegative) {
       return l10n.activityAttendanceQrRefreshing;
     }

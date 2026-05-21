@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/network/file_api.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../shared/formatters/app_money_formatter.dart';
 import 'models/attraction_vm.dart';
 
 const double attractionTypographyScaleFactor = 0.8;
@@ -131,13 +131,10 @@ String formatAttractionPriceLabel(
   final amount = attraction.priceAmount;
   if (amount == null) return l10n.attractionPriceVaries;
 
-  final currencyCode = (attraction.priceCurrency ?? 'USD').trim().toUpperCase();
   final locale = Localizations.localeOf(context).toLanguageTag();
-  final decimalDigits = amount == amount.roundToDouble() ? 0 : 2;
-
-  return NumberFormat.currency(
-    locale: locale,
-    name: currencyCode,
-    decimalDigits: decimalDigits,
-  ).format(amount);
+  return formatAppMoney(
+    amount: amount,
+    currency: attraction.priceCurrency ?? 'USD',
+    localeName: locale,
+  );
 }

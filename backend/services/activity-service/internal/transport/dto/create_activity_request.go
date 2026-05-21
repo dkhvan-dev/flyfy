@@ -1,14 +1,16 @@
 package dto
 
 type CreateActivityRequest struct {
-	Title        string   `json:"title"`
-	Description  string   `json:"description"`
-	Format       string   `json:"format"`
-	Visibility   string   `json:"visibility"`
-	CategorySlug string   `json:"categorySlug"`
-	Tags         []string `json:"tags"`
-	LanguageCode string   `json:"languageCode"`
-	Timezone     string   `json:"timezone"`
+	Title           string   `json:"title"`
+	Description     string   `json:"description"`
+	Format          string   `json:"format"`
+	Visibility      string   `json:"visibility"`
+	CategorySlug    string   `json:"categorySlug"`
+	SubcategorySlug *string  `json:"subcategorySlug,omitempty"`
+	SubCategorySlug *string  `json:"subCategorySlug,omitempty"`
+	Tags            []string `json:"tags"`
+	LanguageCode    string   `json:"languageCode"`
+	Timezone        string   `json:"timezone"`
 
 	StartAt              string  `json:"startAt"`
 	EndAt                string  `json:"endAt"`
@@ -27,6 +29,7 @@ type CreateActivityRequest struct {
 	ConfirmationDeadline           *string `json:"confirmationDeadline,omitempty"`
 
 	CountryCode *string  `json:"countryCode,omitempty"`
+	CityID      *string  `json:"cityId,omitempty"`
 	CityName    *string  `json:"cityName,omitempty"`
 	AddressText *string  `json:"addressText,omitempty"`
 	Latitude    *float64 `json:"latitude,omitempty"`

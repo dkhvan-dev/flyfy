@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/reference_api.dart';
@@ -25,6 +24,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
+import '../../shared/formatters/app_money_formatter.dart';
 
 class ExcursionsRouteArgs {
   const ExcursionsRouteArgs({
@@ -2589,21 +2589,13 @@ class ExcursionListCard extends StatelessWidget {
     final price = _displayPriceFor(excursion);
     if (price.amount <= 0) return l10n.excursionsFreePrice;
 
-    final formatted = _formatMoney(price.amount, price.currency);
+    final formatted = formatAppMoney(
+      amount: price.amount,
+      currency: price.currency,
+      localeName: Localizations.localeOf(context).toString(),
+      useListCurrencyFormat: true,
+    );
     return l10n.excursionsPriceFrom(formatted);
-  }
-
-  String _formatMoney(double amount, String currency) {
-    final decimalDigits = amount == amount.truncateToDouble() ? 0 : 2;
-
-    try {
-      return NumberFormat.simpleCurrency(
-        name: currency,
-        decimalDigits: decimalDigits,
-      ).format(amount);
-    } catch (_) {
-      return '${amount.toStringAsFixed(decimalDigits)} $currency';
-    }
   }
 
   _ExcursionCardPrice _displayPriceFor(ExcursionVm excursion) {

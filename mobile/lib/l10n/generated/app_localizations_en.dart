@@ -3167,6 +3167,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createCategoryApply => 'Apply Category';
 
   @override
+  String get createSubcategoryLabel => 'Subcategory';
+
+  @override
+  String get createSubcategoryHint => 'Select a subcategory';
+
+  @override
+  String get createSubcategoryPickerTitle => 'Choose Subcategory';
+
+  @override
+  String get createSubcategoryApply => 'Apply';
+
+  @override
   String get createTagsLabel => 'Tags';
 
   @override
@@ -3468,7 +3480,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editLocationLocked =>
-      'Location cannot be changed after publication';
+      'Meeting address can be changed until 1 hour before the activity starts';
 
   @override
   String get editPriceRestrictionHint =>

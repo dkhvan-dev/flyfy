@@ -4,6 +4,8 @@ class UpdateActivityRequest {
     this.description,
     this.visibility,
     this.categorySlug,
+    this.subcategorySlug,
+    this.hasSubcategorySlug = false,
     this.tags,
     this.languageCode,
     this.timezone,
@@ -21,6 +23,8 @@ class UpdateActivityRequest {
     this.hasCurrency = false,
     this.countryCode,
     this.hasCountryCode = false,
+    this.cityId,
+    this.hasCityId = false,
     this.cityName,
     this.hasCityName = false,
     this.addressText,
@@ -43,6 +47,8 @@ class UpdateActivityRequest {
   final String? description;
   final String? visibility;
   final String? categorySlug;
+  final String? subcategorySlug;
+  final bool hasSubcategorySlug;
   final List<String>? tags;
   final String? languageCode;
   final String? timezone;
@@ -64,6 +70,8 @@ class UpdateActivityRequest {
 
   final String? countryCode;
   final bool hasCountryCode;
+  final String? cityId;
+  final bool hasCityId;
   final String? cityName;
   final bool hasCityName;
   final String? addressText;
@@ -87,6 +95,8 @@ class UpdateActivityRequest {
       if (description != null) 'description': description,
       if (visibility != null) 'visibility': visibility,
       if (categorySlug != null) 'categorySlug': categorySlug,
+      if (hasSubcategorySlug) 'hasSubcategorySlug': true,
+      if (subcategorySlug != null) 'subcategorySlug': subcategorySlug,
       if (tags != null) ...{'tags': tags, 'hasTags': true},
       if (languageCode != null) 'languageCode': languageCode,
       if (timezone != null) 'timezone': timezone,
@@ -104,6 +114,8 @@ class UpdateActivityRequest {
       if (currency != null) 'currency': currency,
       if (hasCountryCode) 'hasCountryCode': true,
       if (countryCode != null) 'countryCode': countryCode,
+      if (hasCityId) 'hasCityId': true,
+      if (cityId != null) 'cityId': cityId,
       if (hasCityName) 'hasCityName': true,
       if (cityName != null) 'cityName': cityName,
       if (hasAddressText) 'hasAddressText': true,

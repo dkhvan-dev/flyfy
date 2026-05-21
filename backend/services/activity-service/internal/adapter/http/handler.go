@@ -329,6 +329,11 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid coverFileId")
 		return
 	}
+	cityID, err := parseOptionalReferenceCityID(req.CityID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid cityId")
+		return
+	}
 
 	input := app.CreateActivityInput{
 		HostUserID:                     actorUserID,
@@ -337,6 +342,7 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		Format:                         enum.ActivityFormat(strings.TrimSpace(req.Format)),
 		Visibility:                     enum.ActivityVisibility(strings.TrimSpace(req.Visibility)),
 		CategorySlug:                   req.CategorySlug,
+		SubcategorySlug:                requestSubcategorySlug(req.SubcategorySlug, req.SubCategorySlug),
 		Tags:                           req.Tags,
 		LanguageCode:                   req.LanguageCode,
 		Timezone:                       req.Timezone,
@@ -352,6 +358,7 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		RequiresAttendanceConfirmation: valueOrDefaultBool(req.RequiresAttendanceConfirmation, false),
 		ConfirmationDeadline:           confirmationDeadline,
 		CountryCode:                    req.CountryCode,
+		CityID:                         cityID,
 		CityName:                       req.CityName,
 		AddressText:                    req.AddressText,
 		Latitude:                       req.Latitude,
@@ -415,14 +422,41 @@ func (h *Handler) ListActivityCategories(w http.ResponseWriter, r *http.Request)
 
 	for _, item := range items {
 		resp.Items = append(resp.Items, dto.ActivityCategoryResponse{
+			Slug:          item.Slug,
+			Name:          item.Name,
+			NameRu:        item.NameRu,
+			NameKk:        item.NameKk,
+			Aliases:       append([]string(nil), item.Aliases...),
+			Subcategories: toActivityTaxonomyItemResponses(item.Subcategories),
+			SystemTags:    toActivityTaxonomyItemResponses(item.SystemTags),
+		})
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func toActivityTaxonomyItemResponses(items []model.ActivityTaxonomyItem) []dto.ActivityTaxonomyItemResponse {
+	if len(items) == 0 {
+		return nil
+	}
+
+	resp := make([]dto.ActivityTaxonomyItemResponse, 0, len(items))
+	for _, item := range items {
+		resp = append(resp, dto.ActivityTaxonomyItemResponse{
 			Slug:   item.Slug,
 			Name:   item.Name,
 			NameRu: item.NameRu,
 			NameKk: item.NameKk,
 		})
 	}
+	return resp
+}
 
-	writeJSON(w, http.StatusOK, resp)
+func requestSubcategorySlug(primary *string, legacy *string) *string {
+	if primary != nil {
+		return primary
+	}
+	return legacy
 }
 
 func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
@@ -464,8 +498,18 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 	if v := strings.TrimSpace(q.Get("categorySlug")); v != "" {
 		filter.CategorySlug = &v
 	}
+	if v := strings.TrimSpace(q.Get("subcategorySlug")); v != "" {
+		filter.SubcategorySlug = &v
+	} else if v := strings.TrimSpace(q.Get("subCategorySlug")); v != "" {
+		filter.SubcategorySlug = &v
+	}
 	if v := strings.TrimSpace(q.Get("countryCode")); v != "" {
 		filter.CountryCode = &v
+	}
+	if v := strings.TrimSpace(q.Get("cityId")); v != "" {
+		if parsed, err := parseOptionalReferenceCityID(&v); err == nil {
+			filter.CityID = parsed
+		}
 	}
 	if v := strings.TrimSpace(q.Get("cityName")); v != "" {
 		filter.CityName = &v
@@ -535,6 +579,11 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		writeError(w, http.StatusBadRequest, "invalid coverFileId")
 		return
 	}
+	cityID, err := parseOptionalReferenceCityID(req.CityID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid cityId")
+		return
+	}
 
 	var visibility *enum.ActivityVisibility
 	if req.Visibility != nil {
@@ -561,6 +610,8 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		Description:                    req.Description,
 		Visibility:                     visibility,
 		CategorySlug:                   req.CategorySlug,
+		SubcategorySlug:                requestSubcategorySlug(req.SubcategorySlug, req.SubCategorySlug),
+		HasSubcategorySlug:             req.HasSubcategorySlug || req.HasSubCategorySlug,
 		Tags:                           req.Tags,
 		HasTags:                        req.HasTags,
 		LanguageCode:                   req.LanguageCode,
@@ -583,6 +634,8 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		HasConfirmationDeadline:        req.HasConfirmationDeadline,
 		CountryCode:                    req.CountryCode,
 		HasCountryCode:                 req.HasCountryCode,
+		CityID:                         cityID,
+		HasCityID:                      req.HasCityID,
 		CityName:                       req.CityName,
 		HasCityName:                    req.HasCityName,
 		AddressText:                    req.AddressText,
@@ -1033,6 +1086,7 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 		JoinMode:                       string(item.JoinMode),
 		ModerationStatus:               string(item.ModerationStatus),
 		CategorySlug:                   item.CategorySlug,
+		SubcategorySlug:                item.SubcategorySlug,
 		Tags:                           tags,
 		LanguageCode:                   item.LanguageCode,
 		Timezone:                       item.Timezone,
@@ -1050,6 +1104,7 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 		RequiresAttendanceConfirmation: item.RequiresAttendanceConfirmation,
 		ConfirmationDeadline:           formatOptionalTime(item.ConfirmationDeadline),
 		CountryCode:                    item.CountryCode,
+		CityID:                         item.CityID,
 		CityName:                       item.CityName,
 		AddressText:                    item.AddressText,
 		Latitude:                       item.Latitude,
@@ -1186,6 +1241,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrActivityLeaveClosed),
 		errors.Is(err, app.ErrPriceChangeForbidden),
 		errors.Is(err, app.ErrCriticalFieldsUpdateForbidden),
+		errors.Is(err, app.ErrMeetingAddressUpdateClosed),
 		errors.Is(err, app.ErrActivityMediaFileNotReady),
 		errors.Is(err, app.ErrActivityMediaFileNotAllowed),
 		errors.Is(err, app.ErrAttendanceQRUnavailable),
@@ -1204,6 +1260,7 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, model.ErrInvalidActivityModerationStatus),
 		errors.Is(err, model.ErrInvalidActivityCancellationSource),
 		errors.Is(err, model.ErrInvalidCategorySlug),
+		errors.Is(err, model.ErrInvalidActivitySubcategorySlug),
 		errors.Is(err, model.ErrInvalidLanguageCode),
 		errors.Is(err, model.ErrInvalidTimezone),
 		errors.Is(err, model.ErrInvalidActivityTimeRange),
@@ -1286,6 +1343,34 @@ func parseOptionalUUIDString(v *string) (*uuid.UUID, error) {
 	}
 
 	return &parsed, nil
+}
+
+func parseOptionalReferenceCityID(v *string) (*string, error) {
+	if v == nil || strings.TrimSpace(*v) == "" {
+		return nil, nil
+	}
+
+	normalized := strings.ToLower(strings.TrimSpace(*v))
+	if len(normalized) > 64 {
+		return nil, fmt.Errorf("city id too long")
+	}
+
+	for i, r := range normalized {
+		isLowerAlpha := r >= 'a' && r <= 'z'
+		isDigit := r >= '0' && r <= '9'
+		isHyphen := r == '-'
+		if i == 0 {
+			if !isLowerAlpha && !isDigit {
+				return nil, fmt.Errorf("city id must start with latin letter or digit")
+			}
+			continue
+		}
+		if !isLowerAlpha && !isDigit && !isHyphen {
+			return nil, fmt.Errorf("city id contains invalid character")
+		}
+	}
+
+	return &normalized, nil
 }
 
 func parseIntOrDefault(v string, fallback int) int {

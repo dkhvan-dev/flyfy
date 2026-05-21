@@ -228,11 +228,15 @@ void main() {
       final source = await File(
         'lib/screens/excursions/create_excursion_screen.dart',
       ).readAsString();
+      final pickerSource = await File(
+        'lib/shared/widgets/app_currency_picker_field.dart',
+      ).readAsString();
 
-      expect(source, contains('class _CurrencyOption'));
-      expect(source, contains('class _CurrencyPickerField'));
-      expect(source, contains('createCurrencyKzt'));
-      expect(source, contains('createCurrencyUsd'));
+      expect(source, contains('AppCurrencyPickerField('));
+      expect(source, isNot(contains('class _CurrencyOption')));
+      expect(source, isNot(contains('class _CurrencyPickerField')));
+      expect(pickerSource, contains('createCurrencyKzt'));
+      expect(pickerSource, contains('createCurrencyUsd'));
       expect(source, contains('currency: _selectedCurrencyCode'));
       expect(source, contains("'KZT'"));
       expect(source, isNot(contains('controller: _currencyCtrl')));

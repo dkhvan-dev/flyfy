@@ -22,6 +22,7 @@ var (
 	ErrInvalidActivityModerationStatus   = errors.New("invalid activity moderation status")
 	ErrInvalidActivityCancellationSource = errors.New("invalid activity cancellation source")
 	ErrInvalidCategorySlug               = errors.New("invalid category slug")
+	ErrInvalidActivitySubcategorySlug    = errors.New("invalid activity subcategory slug")
 	ErrInvalidLanguageCode               = errors.New("invalid language code")
 	ErrInvalidTimezone                   = errors.New("invalid timezone")
 	ErrInvalidActivityTimeRange          = errors.New("invalid activity time range")
@@ -62,9 +63,10 @@ type Activity struct {
 	JoinMode         enum.ActivityJoinMode
 	ModerationStatus enum.ActivityModerationStatus
 
-	CategorySlug string
-	LanguageCode string
-	Timezone     string
+	CategorySlug    string
+	SubcategorySlug *string
+	LanguageCode    string
+	Timezone        string
 
 	StartAt              time.Time
 	EndAt                time.Time
@@ -84,6 +86,7 @@ type Activity struct {
 	ConfirmationDeadline           *time.Time
 
 	CountryCode *string
+	CityID      *string
 	CityName    *string
 	AddressText *string
 	Latitude    *float64
@@ -111,13 +114,14 @@ type NewActivityParams struct {
 	HostUserID       uuid.UUID
 	SourceActivityID *uuid.UUID
 
-	Title        string
-	Description  string
-	Format       enum.ActivityFormat
-	Visibility   enum.ActivityVisibility
-	CategorySlug string
-	LanguageCode string
-	Timezone     string
+	Title           string
+	Description     string
+	Format          enum.ActivityFormat
+	Visibility      enum.ActivityVisibility
+	CategorySlug    string
+	SubcategorySlug *string
+	LanguageCode    string
+	Timezone        string
 
 	StartAt              time.Time
 	EndAt                time.Time
@@ -136,6 +140,7 @@ type NewActivityParams struct {
 	ConfirmationDeadline           *time.Time
 
 	CountryCode *string
+	CityID      *string
 	CityName    *string
 	AddressText *string
 	Latitude    *float64
@@ -164,9 +169,10 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 		JoinMode:         enum.ActivityJoinModeAutoApprove,
 		ModerationStatus: enum.ActivityModerationStatusApproved,
 
-		CategorySlug: strings.TrimSpace(params.CategorySlug),
-		LanguageCode: strings.TrimSpace(params.LanguageCode),
-		Timezone:     strings.TrimSpace(params.Timezone),
+		CategorySlug:    strings.TrimSpace(params.CategorySlug),
+		SubcategorySlug: NormalizeOptionalString(params.SubcategorySlug),
+		LanguageCode:    strings.TrimSpace(params.LanguageCode),
+		Timezone:        strings.TrimSpace(params.Timezone),
 
 		StartAt:              params.StartAt.UTC(),
 		EndAt:                params.EndAt.UTC(),
@@ -185,6 +191,7 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 		ConfirmationDeadline:           params.ConfirmationDeadline,
 
 		CountryCode: NormalizeOptionalString(params.CountryCode),
+		CityID:      NormalizeOptionalString(params.CityID),
 		CityName:    NormalizeOptionalString(params.CityName),
 		AddressText: NormalizeOptionalString(params.AddressText),
 		Latitude:    params.Latitude,
@@ -437,12 +444,12 @@ func (a *Activity) validateLocation() error {
 			return ErrInvalidMeetingURL
 		}
 	case enum.ActivityFormatOffline:
-		if a.CountryCode == nil && a.CityName == nil && a.AddressText == nil && a.MapURL == nil {
+		if a.CountryCode == nil && a.CityID == nil && a.CityName == nil && a.AddressText == nil && a.MapURL == nil {
 			return ErrInvalidOfflineLocation
 		}
 	case enum.ActivityFormatHybrid:
 		if (a.MeetingURL == nil || strings.TrimSpace(*a.MeetingURL) == "") &&
-			a.CountryCode == nil && a.CityName == nil && a.AddressText == nil && a.MapURL == nil {
+			a.CountryCode == nil && a.CityID == nil && a.CityName == nil && a.AddressText == nil && a.MapURL == nil {
 			return ErrInvalidOfflineLocation
 		}
 	default:

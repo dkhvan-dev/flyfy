@@ -58,4 +58,46 @@ void main() {
       expect(source, contains('activity == null)'));
     },
   );
+
+  test(
+    'participants sheet starts from bottom without transparent safe-area gap',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final sheetStart = source.indexOf('Future<void> _showParticipantsSheet');
+      final nextBuildStart = source.indexOf('@override', sheetStart);
+      expect(sheetStart, isNonNegative);
+      expect(nextBuildStart, greaterThan(sheetStart));
+
+      final sheetSource = source.substring(sheetStart, nextBuildStart);
+      expect(sheetSource, contains('SafeArea('));
+      expect(sheetSource, contains('bottom: false'));
+      expect(
+        sheetSource,
+        contains('MediaQuery.viewPaddingOf(sheetContext).bottom'),
+      );
+    },
+  );
+
+  test(
+    'meeting section localizes address text below map',
+    () async {
+      final source = await File(
+        'lib/screens/activities/activity_details_screen.dart',
+      ).readAsString();
+
+      final sectionStart = source.indexOf('class _MeetingSection');
+      final nextSectionStart = source.indexOf('class _MeetingMapCard');
+      expect(sectionStart, isNonNegative);
+      expect(nextSectionStart, greaterThan(sectionStart));
+
+      final sectionSource = source.substring(sectionStart, nextSectionStart);
+      expect(sectionSource, contains('AppLocalizedLocationText('));
+      expect(sectionSource, contains('addressText: activity.addressText'));
+      expect(sectionSource,
+          isNot(contains('child: Text(\n                showProtectedNotice')));
+    },
+  );
 }

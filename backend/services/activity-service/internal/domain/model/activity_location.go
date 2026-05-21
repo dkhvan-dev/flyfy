@@ -14,6 +14,7 @@ var (
 type ActivityLocation struct {
 	Format      enum.ActivityFormat
 	CountryCode *string
+	CityID      *string
 	CityName    *string
 	AddressText *string
 	Latitude    *float64
@@ -25,6 +26,7 @@ type ActivityLocation struct {
 func NewActivityLocation(
 	format enum.ActivityFormat,
 	countryCode *string,
+	cityID *string,
 	cityName *string,
 	addressText *string,
 	latitude *float64,
@@ -35,6 +37,7 @@ func NewActivityLocation(
 	item := &ActivityLocation{
 		Format:      format,
 		CountryCode: NormalizeOptionalString(countryCode),
+		CityID:      NormalizeOptionalString(cityID),
 		CityName:    NormalizeOptionalString(cityName),
 		AddressText: NormalizeOptionalString(addressText),
 		Latitude:    latitude,
@@ -62,6 +65,7 @@ func (l *ActivityLocation) Validate() error {
 		}
 	case enum.ActivityFormatOffline:
 		if l.CountryCode == nil &&
+			l.CityID == nil &&
 			l.CityName == nil &&
 			l.AddressText == nil &&
 			l.MapURL == nil {
@@ -70,6 +74,7 @@ func (l *ActivityLocation) Validate() error {
 	case enum.ActivityFormatHybrid:
 		if (l.MeetingURL == nil || strings.TrimSpace(*l.MeetingURL) == "") &&
 			l.CountryCode == nil &&
+			l.CityID == nil &&
 			l.CityName == nil &&
 			l.AddressText == nil &&
 			l.MapURL == nil {
@@ -86,6 +91,7 @@ func (l *ActivityLocation) IsOnlineAvailable() bool {
 
 func (l *ActivityLocation) IsOfflineAvailable() bool {
 	return l.CountryCode != nil ||
+		l.CityID != nil ||
 		l.CityName != nil ||
 		l.AddressText != nil ||
 		l.MapURL != nil

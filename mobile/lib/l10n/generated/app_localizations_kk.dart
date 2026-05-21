@@ -3187,6 +3187,18 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createCategoryApply => 'Қолдану';
 
   @override
+  String get createSubcategoryLabel => 'Ішкі санат';
+
+  @override
+  String get createSubcategoryHint => 'Ішкі санатты таңдаңыз';
+
+  @override
+  String get createSubcategoryPickerTitle => 'Ішкі санатты таңдаңыз';
+
+  @override
+  String get createSubcategoryApply => 'Қолдану';
+
+  @override
   String get createTagsLabel => 'Тегтер';
 
   @override
@@ -3492,7 +3504,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get editLocationLocked =>
-      'Жарияланғаннан кейін орналасқан жерді өзгерту мүмкін емес';
+      'Кездесу мекенжайын белсенділік басталғанға дейін кемінде 1 сағат қалғанда ғана өзгертуге болады';
 
   @override
   String get editPriceRestrictionHint =>

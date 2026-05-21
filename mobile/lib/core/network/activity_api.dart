@@ -78,6 +78,8 @@ class ActivityApi {
     String? hostUserId,
     String? status,
     String? categorySlug,
+    String? subcategorySlug,
+    String? cityId,
     String? cityName,
     String? query,
   }) async {
@@ -90,6 +92,9 @@ class ActivityApi {
         if ((status ?? '').trim().isNotEmpty) 'status': status,
         if ((categorySlug ?? '').trim().isNotEmpty)
           'categorySlug': categorySlug,
+        if ((subcategorySlug ?? '').trim().isNotEmpty)
+          'subcategorySlug': subcategorySlug,
+        if ((cityId ?? '').trim().isNotEmpty) 'cityId': cityId,
         if ((cityName ?? '').trim().isNotEmpty) 'cityName': cityName,
         if ((query ?? '').trim().isNotEmpty) 'q': query,
       },

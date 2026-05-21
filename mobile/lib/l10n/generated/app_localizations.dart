@@ -5818,6 +5818,30 @@ abstract class AppLocalizations {
   /// **'Apply Category'**
   String get createCategoryApply;
 
+  /// No description provided for @createSubcategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subcategory'**
+  String get createSubcategoryLabel;
+
+  /// No description provided for @createSubcategoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a subcategory'**
+  String get createSubcategoryHint;
+
+  /// No description provided for @createSubcategoryPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Subcategory'**
+  String get createSubcategoryPickerTitle;
+
+  /// No description provided for @createSubcategoryApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get createSubcategoryApply;
+
   /// No description provided for @createTagsLabel.
   ///
   /// In en, this message translates to:
@@ -6385,7 +6409,7 @@ abstract class AppLocalizations {
   /// No description provided for @editLocationLocked.
   ///
   /// In en, this message translates to:
-  /// **'Location cannot be changed after publication'**
+  /// **'Meeting address can be changed until 1 hour before the activity starts'**
   String get editLocationLocked;
 
   /// No description provided for @editPriceRestrictionHint.

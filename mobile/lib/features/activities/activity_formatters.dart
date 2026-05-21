@@ -34,6 +34,19 @@ String formatActivityDisplayStatus(
   return formatActivityStatus(activity.status, l10n);
 }
 
+String activityLocationFallbackText(
+  ActivityListItemVm activity,
+  AppLocalizations l10n,
+) {
+  final city = activity.cityName?.trim() ?? '';
+  if (city.isNotEmpty) return city;
+
+  final address = activity.addressText?.trim() ?? '';
+  if (address.isNotEmpty) return address;
+
+  return formatActivityDisplayStatus(activity, l10n);
+}
+
 String formatActivityFormat(String value, AppLocalizations l10n) {
   switch (value.toUpperCase()) {
     case 'OFFLINE':

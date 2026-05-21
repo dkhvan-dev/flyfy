@@ -5,6 +5,7 @@ class CreateActivityRequest {
     required this.format,
     required this.visibility,
     required this.categorySlug,
+    this.subcategorySlug,
     required this.languageCode,
     required this.timezone,
     required this.startAt,
@@ -17,6 +18,7 @@ class CreateActivityRequest {
     this.priceAmount,
     this.currency,
     this.countryCode,
+    this.cityId,
     this.cityName,
     this.addressText,
     this.latitude,
@@ -32,6 +34,7 @@ class CreateActivityRequest {
   final String format;
   final String visibility;
   final String categorySlug;
+  final String? subcategorySlug;
   final List<String> tags;
   final String languageCode;
   final String timezone;
@@ -44,6 +47,7 @@ class CreateActivityRequest {
   final double? priceAmount;
   final String? currency;
   final String? countryCode;
+  final String? cityId;
   final String? cityName;
   final String? addressText;
   final double? latitude;
@@ -60,6 +64,8 @@ class CreateActivityRequest {
       'format': format,
       'visibility': visibility,
       'categorySlug': categorySlug,
+      if (subcategorySlug != null && subcategorySlug!.trim().isNotEmpty)
+        'subcategorySlug': subcategorySlug,
       'tags': tags,
       'languageCode': languageCode,
       'timezone': timezone,
@@ -73,6 +79,7 @@ class CreateActivityRequest {
       if (currency != null && currency!.trim().isNotEmpty) 'currency': currency,
       if (countryCode != null && countryCode!.trim().isNotEmpty)
         'countryCode': countryCode,
+      if (cityId != null && cityId!.trim().isNotEmpty) 'cityId': cityId,
       if (cityName != null && cityName!.trim().isNotEmpty) 'cityName': cityName,
       if (addressText != null && addressText!.trim().isNotEmpty)
         'addressText': addressText,

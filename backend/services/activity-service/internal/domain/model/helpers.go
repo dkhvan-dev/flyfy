@@ -1,6 +1,10 @@
 package model
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/google/uuid"
+)
 
 func NormalizeOptionalString(v *string) *string {
 	if v == nil {
@@ -20,4 +24,11 @@ func ValueOrEmpty(v *string) string {
 		return ""
 	}
 	return strings.TrimSpace(*v)
+}
+
+func ValueOrEmptyUUID(v *uuid.UUID) string {
+	if v == nil {
+		return ""
+	}
+	return v.String()
 }

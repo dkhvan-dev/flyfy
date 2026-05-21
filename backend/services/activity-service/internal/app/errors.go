@@ -37,6 +37,7 @@ var (
 	ErrModerationStateInvalid = errors.New("activity moderation state is invalid")
 
 	ErrCriticalFieldsUpdateForbidden = errors.New("critical fields cannot be changed after publication")
+	ErrMeetingAddressUpdateClosed    = errors.New("meeting address cannot be changed within 1 hour before activity start")
 	ErrPriceChangeForbidden          = errors.New("price change is forbidden")
 
 	ErrBlockedURLDetected          = errors.New("blocked url detected")

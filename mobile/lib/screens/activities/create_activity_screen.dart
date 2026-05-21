@@ -14,9 +14,12 @@ import 'package:provider/provider.dart';
 import '../../core/device/device_context_service.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
+import '../../core/network/reference_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/activity_cover_url.dart';
+import '../../features/activities/activity_edit_policy.dart';
+import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
@@ -24,6 +27,10 @@ import '../../features/activities/models/update_activity_request.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/formatters/app_money_formatter.dart';
+import '../../shared/reference/app_location_label_resolver.dart';
+import '../../shared/widgets/app_currency_picker_field.dart';
+import '../../shared/widgets/app_localized_location_text.dart';
 
 const _inlineValidationColor = Color(0xFFFF8A65);
 
@@ -51,6 +58,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   final _pageController = PageController();
   final _imagePicker = ImagePicker();
   final _fileApi = FileApi();
+  final _referenceApi = ReferenceApi();
+  late final AppLocationLabelResolver _locationLabelResolver =
+      AppLocationLabelResolver(api: _referenceApi);
   final _deviceContextService = const DeviceContextService();
   int _currentStep = 0;
   int? _pendingProgrammaticStep;
@@ -67,7 +77,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   final _descriptionCtrl = TextEditingController();
   final _tagsCtrl = TextEditingController();
   String? _selectedCategorySlug;
+  String? _selectedSubcategorySlug;
   String? _initialCategorySlug;
+  String? _initialSubcategorySlug;
   Uint8List? _coverPreviewBytes;
   String? _coverFileId;
   bool _coverChanged = false;
@@ -91,9 +103,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   String _visibility = 'PUBLIC';
   bool _visibilityPasswordChanged = false;
   String _priceType = 'FREE';
+  String _selectedCurrencyCode = 'KZT';
+  bool _didOverrideCurrency = false;
   final _visibilityPasswordCtrl = TextEditingController();
   final _priceAmountCtrl = TextEditingController();
-  final _currencyCtrl = TextEditingController(text: 'KZT');
   final _minParticipantsCtrl = TextEditingController(
     text: '$_minActivityParticipants',
   );
@@ -102,6 +115,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   // — Meeting point / location —
   final _countryCodeCtrl = TextEditingController(text: 'KZ');
   final _cityNameCtrl = TextEditingController();
+  String? _selectedCityId;
   final _addressTextCtrl = TextEditingController();
   final _mapUrlCtrl = TextEditingController();
   final _meetingUrlCtrl = TextEditingController();
@@ -148,12 +162,27 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   bool get _shouldRepublishCancelledActivity =>
       widget.isEditMode && _isCancelledActivity;
 
+  DateTime get _meetingAddressEditStartAt =>
+      widget.activity?.startAt.toLocal() ?? _startAt;
+
+  bool get _canEditMeetingAddress {
+    if (!widget.isEditMode) {
+      return true;
+    }
+    return ActivityEditPolicy.canEditMeetingAddress(
+      startAt: _meetingAddressEditStartAt,
+      now: DateTime.now(),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     final a = widget.activity;
     _initialCategorySlug = _normalizeCategorySlug(a?.categorySlug);
     _selectedCategorySlug = _initialCategorySlug;
+    _initialSubcategorySlug = _normalizeCategorySlug(a?.subcategorySlug);
+    _selectedSubcategorySlug = _initialSubcategorySlug;
     if (a == null) {
       _startAt = _defaultStartAt();
       _endAt = _defaultEndAt(_startAt);
@@ -185,13 +214,20 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             : a.priceAmount!.toStringAsFixed(2);
       }
       if (a.currency != null && a.currency!.trim().isNotEmpty) {
-        _currencyCtrl.text = a.currency!;
+        _selectedCurrencyCode = normalizeAppCurrencyCodeOrDefault(
+          a.currency,
+          fallback: 'KZT',
+        );
+        _didOverrideCurrency = true;
       }
       if (a.countryCode != null && a.countryCode!.trim().isNotEmpty) {
         _countryCodeCtrl.text = a.countryCode!;
       }
       if (a.cityName != null && a.cityName!.trim().isNotEmpty) {
         _cityNameCtrl.text = a.cityName!;
+      }
+      if (a.cityId != null && a.cityId!.trim().isNotEmpty) {
+        _selectedCityId = a.cityId!.trim();
       }
       if (a.addressText != null && a.addressText!.trim().isNotEmpty) {
         _addressTextCtrl.text = a.addressText!;
@@ -250,7 +286,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     _endAtCtrl.dispose();
     _visibilityPasswordCtrl.dispose();
     _priceAmountCtrl.dispose();
-    _currencyCtrl.dispose();
     _minParticipantsCtrl.dispose();
     _maxParticipantsCtrl.dispose();
     _countryCodeCtrl.dispose();
@@ -268,10 +303,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   Future<void> _prefillPricingContext() async {
     final profile = context.read<SessionProvider>().profile;
-    final profileCountryCode = _normalizeCountryCode(profile?.countryCode);
-    final profileCurrencyCode = _normalizeCurrencyCode(profile?.currency);
-    final currentCountryCode = _normalizeCountryCode(_countryCodeCtrl.text);
-    final currentCurrencyCode = _normalizeCurrencyCode(_currencyCtrl.text);
+    final profileCountryCode = normalizeAppCountryCode(profile?.countryCode);
+    final profileCurrencyCode = normalizeAppCurrencyCode(profile?.currency);
+    final currentCountryCode = normalizeAppCountryCode(_countryCodeCtrl.text);
+    final currentCurrencyCode = normalizeAppCurrencyCode(_selectedCurrencyCode);
     final initialCountryCode = widget.hasInitialActivity
         ? currentCountryCode
         : (profileCountryCode ?? currentCountryCode);
@@ -300,14 +335,17 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       final suggestion = await _deviceContextService.detectLocationSuggestion();
       if (!mounted || suggestion == null) return;
 
-      final detectedCountryCode = _normalizeCountryCode(suggestion.countryCode);
+      final detectedCountryCode = normalizeAppCountryCode(
+        suggestion.countryCode,
+      );
       if (detectedCountryCode == null) return;
 
       setState(() {
         _applyCountryAndCurrency(
           detectedCountryCode,
           fallbackCurrency:
-              profileCurrencyCode ?? _normalizeCurrencyCode(_currencyCtrl.text),
+              profileCurrencyCode ??
+              normalizeAppCurrencyCode(_selectedCurrencyCode),
         );
       });
     } catch (_) {
@@ -319,171 +357,30 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     String? countryCode, {
     String? fallbackCurrency,
   }) {
-    final normalizedCountryCode = _normalizeCountryCode(countryCode);
+    final normalizedCountryCode = normalizeAppCountryCode(countryCode);
     if (normalizedCountryCode != null) {
       _countryCodeCtrl.text = normalizedCountryCode;
     }
 
     final resolvedCurrencyCode =
-        _currencyForCountryCode(normalizedCountryCode) ??
-        _normalizeCurrencyCode(fallbackCurrency);
-    if (resolvedCurrencyCode != null) {
-      _currencyCtrl.text = resolvedCurrencyCode;
+        normalizeAppCurrencyCode(fallbackCurrency) ??
+        _currencyForCountryCode(normalizedCountryCode);
+    if (resolvedCurrencyCode != null && !_didOverrideCurrency) {
+      _selectedCurrencyCode = resolvedCurrencyCode;
     }
   }
 
-  String? _normalizeCountryCode(String? value) {
-    final normalized = value?.trim().toUpperCase();
-    if (normalized == null || normalized.isEmpty) {
-      return null;
-    }
-    return normalized;
-  }
-
-  String? _normalizeCurrencyCode(String? value) {
-    final normalized = value?.trim().toUpperCase();
-    if (normalized == null || normalized.isEmpty) {
-      return null;
-    }
-    return normalized;
+  void _setSelectedCurrencyCode(String value) {
+    final normalized = normalizeAppCurrencyCodeOrDefault(value);
+    setState(() {
+      _selectedCurrencyCode = normalized;
+      _didOverrideCurrency = true;
+      _priceAmountErrorText = null;
+    });
   }
 
   String? _currencyForCountryCode(String? countryCode) {
-    switch (_normalizeCountryCode(countryCode)) {
-      case 'KZ':
-        return 'KZT';
-      case 'KG':
-        return 'KGS';
-      case 'UZ':
-        return 'UZS';
-      case 'TJ':
-        return 'TJS';
-      case 'TM':
-        return 'TMT';
-      case 'RU':
-        return 'RUB';
-      case 'BY':
-        return 'BYN';
-      case 'UA':
-        return 'UAH';
-      case 'AZ':
-        return 'AZN';
-      case 'AM':
-        return 'AMD';
-      case 'GE':
-        return 'GEL';
-      case 'TR':
-        return 'TRY';
-      case 'AE':
-        return 'AED';
-      case 'SA':
-        return 'SAR';
-      case 'QA':
-        return 'QAR';
-      case 'KW':
-        return 'KWD';
-      case 'BH':
-        return 'BHD';
-      case 'OM':
-        return 'OMR';
-      case 'EG':
-        return 'EGP';
-      case 'IL':
-        return 'ILS';
-      case 'JO':
-        return 'JOD';
-      case 'US':
-        return 'USD';
-      case 'CA':
-        return 'CAD';
-      case 'MX':
-        return 'MXN';
-      case 'BR':
-        return 'BRL';
-      case 'AR':
-        return 'ARS';
-      case 'CL':
-        return 'CLP';
-      case 'CO':
-        return 'COP';
-      case 'PE':
-        return 'PEN';
-      case 'GB':
-        return 'GBP';
-      case 'CH':
-        return 'CHF';
-      case 'NO':
-        return 'NOK';
-      case 'SE':
-        return 'SEK';
-      case 'DK':
-        return 'DKK';
-      case 'PL':
-        return 'PLN';
-      case 'CZ':
-        return 'CZK';
-      case 'HU':
-        return 'HUF';
-      case 'RO':
-        return 'RON';
-      case 'BG':
-        return 'BGN';
-      case 'RS':
-        return 'RSD';
-      case 'IS':
-        return 'ISK';
-      case 'DE':
-      case 'FR':
-      case 'ES':
-      case 'IT':
-      case 'NL':
-      case 'BE':
-      case 'AT':
-      case 'IE':
-      case 'PT':
-      case 'FI':
-      case 'GR':
-      case 'LU':
-      case 'SI':
-      case 'SK':
-      case 'EE':
-      case 'LV':
-      case 'LT':
-      case 'CY':
-      case 'MT':
-      case 'HR':
-        return 'EUR';
-      case 'IN':
-        return 'INR';
-      case 'CN':
-        return 'CNY';
-      case 'JP':
-        return 'JPY';
-      case 'KR':
-        return 'KRW';
-      case 'HK':
-        return 'HKD';
-      case 'SG':
-        return 'SGD';
-      case 'MY':
-        return 'MYR';
-      case 'TH':
-        return 'THB';
-      case 'ID':
-        return 'IDR';
-      case 'PH':
-        return 'PHP';
-      case 'VN':
-        return 'VND';
-      case 'PK':
-        return 'PKR';
-      case 'AU':
-        return 'AUD';
-      case 'NZ':
-        return 'NZD';
-      default:
-        return null;
-    }
+    return appCurrencyForCountryCode(countryCode);
   }
 
   bool get _hasExistingCoverImage {
@@ -889,8 +786,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     if (animate) {
       _pageController.animateToPage(
         step,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
       );
       return;
     }
@@ -1012,6 +909,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         if (!_validateScheduleStep(l10n)) {
           return false;
         }
+        final hasOfflineLocation =
+            _cityNameCtrl.text.trim().isNotEmpty ||
+            _addressTextCtrl.text.trim().isNotEmpty ||
+            (_mapUrlValue ?? '').isNotEmpty;
         final meetingUrlError =
             (_format == 'ONLINE' || _format == 'HYBRID') &&
                 _meetingUrlCtrl.text.trim().isEmpty
@@ -1019,8 +920,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             : null;
         final addressError =
             (_format == 'OFFLINE' || _format == 'HYBRID') &&
-                _cityNameCtrl.text.trim().isEmpty &&
-                _addressTextCtrl.text.trim().isEmpty
+                _canEditMeetingAddress &&
+                !hasOfflineLocation
             ? l10n.createLocationValidation
             : null;
         setState(() {
@@ -1128,8 +1029,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   // ── Shared field extraction helpers ────────────────────────────
 
   String? _normalizeCategorySlug(String? value) {
-    final normalized = value?.trim().toLowerCase();
-    if (normalized == null || normalized.isEmpty) {
+    final normalized = normalizeActivityTaxonomySlug(value);
+    if (normalized.isEmpty) {
       return null;
     }
     return normalized;
@@ -1137,6 +1038,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   bool get _didCategoryChange =>
       _normalizeCategorySlug(_selectedCategorySlug) != _initialCategorySlug;
+
+  bool get _didSubcategoryChange =>
+      _normalizeCategorySlug(_selectedSubcategorySlug) !=
+      _initialSubcategorySlug;
 
   bool get _startedPrivate =>
       widget.activity?.visibility.toUpperCase() == 'PRIVATE';
@@ -1191,13 +1096,15 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       : null;
 
   String? get _currencyValue =>
-      _priceType != 'FREE' ? _currencyCtrl.text.trim().toUpperCase() : null;
+      _priceType != 'FREE' ? _selectedCurrencyCode.trim().toUpperCase() : null;
 
   String? get _countryCodeValue =>
       _format != 'ONLINE' ? _countryCodeCtrl.text.trim().toUpperCase() : null;
 
   String? get _cityNameValue =>
       _format != 'ONLINE' ? _cityNameCtrl.text.trim() : null;
+
+  String? get _cityIdValue => _format != 'ONLINE' ? _selectedCityId : null;
 
   String? get _addressTextValue =>
       _format != 'ONLINE' ? _addressTextCtrl.text.trim() : null;
@@ -1282,6 +1189,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       format: _format,
       visibility: _visibility,
       categorySlug: _selectedCategorySlug!,
+      subcategorySlug: _selectedSubcategorySlug,
       tags: _parsedTags,
       languageCode: _languageCode,
       timezone: _timezone,
@@ -1294,6 +1202,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       priceAmount: _priceAmountValue,
       currency: _currencyValue,
       countryCode: _countryCodeValue,
+      cityId: _cityIdValue,
       cityName: _cityNameValue,
       addressText: _addressTextValue,
       latitude: _latitudeValue,
@@ -1360,11 +1269,15 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   }
 
   UpdateActivityRequest _buildUpdateRequest() {
+    final canEditMeetingAddress = _canEditMeetingAddress;
+
     return UpdateActivityRequest(
       title: _titleCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
       visibility: _visibility,
       categorySlug: _didCategoryChange ? _selectedCategorySlug : null,
+      subcategorySlug: _selectedSubcategorySlug,
+      hasSubcategorySlug: _didCategoryChange || _didSubcategoryChange,
       tags: _parsedTags,
       languageCode: _languageCode,
       timezone: _timezone,
@@ -1380,18 +1293,20 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       hasPriceAmount: true,
       currency: _currencyValue,
       hasCurrency: true,
-      countryCode: _countryCodeValue,
-      hasCountryCode: true,
-      cityName: _cityNameValue,
-      hasCityName: true,
-      addressText: _addressTextValue,
-      hasAddressText: true,
-      latitude: _latitudeValue,
-      hasLatitude: true,
-      longitude: _longitudeValue,
-      hasLongitude: true,
-      mapUrl: _mapUrlValue,
-      hasMapUrl: true,
+      countryCode: canEditMeetingAddress ? _countryCodeValue : null,
+      hasCountryCode: canEditMeetingAddress,
+      cityId: canEditMeetingAddress ? _cityIdValue : null,
+      hasCityId: canEditMeetingAddress,
+      cityName: canEditMeetingAddress ? _cityNameValue : null,
+      hasCityName: canEditMeetingAddress,
+      addressText: canEditMeetingAddress ? _addressTextValue : null,
+      hasAddressText: canEditMeetingAddress,
+      latitude: canEditMeetingAddress ? _latitudeValue : null,
+      hasLatitude: canEditMeetingAddress,
+      longitude: canEditMeetingAddress ? _longitudeValue : null,
+      hasLongitude: canEditMeetingAddress,
+      mapUrl: canEditMeetingAddress ? _mapUrlValue : null,
+      hasMapUrl: canEditMeetingAddress,
       meetingUrl: _meetingUrlValue,
       hasMeetingUrl: true,
       visibilityPassword: _shouldSendVisibilityPasswordChange
@@ -1466,8 +1381,38 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
     if (!mounted || selected == null) return;
     setState(() {
-      _selectedCategorySlug = _normalizeCategorySlug(selected);
+      final nextCategorySlug = _normalizeCategorySlug(selected);
+      if (nextCategorySlug != _selectedCategorySlug) {
+        _selectedSubcategorySlug = null;
+      }
+      _selectedCategorySlug = nextCategorySlug;
       _categoryErrorText = null;
+    });
+  }
+
+  Future<void> _openSubcategoryPicker(
+    AppLocalizations l10n,
+    Map<String, String> items,
+  ) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isDismissible: true,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return _CategoryPickerSheet(
+          title: l10n.createSubcategoryPickerTitle,
+          actionLabel: l10n.createSubcategoryApply,
+          items: items,
+          initialValue: _selectedSubcategorySlug,
+          iconForSlug: (_) => Icons.label_rounded,
+        );
+      },
+    );
+
+    if (!mounted || selected == null) return;
+    setState(() {
+      _selectedSubcategorySlug = _normalizeCategorySlug(selected);
     });
   }
 
@@ -1498,14 +1443,26 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   IconData _categoryIconForSlug(String slug) {
     switch (slug) {
-      case 'health-wellness':
-        return Icons.self_improvement_rounded;
+      case 'food-drinks':
+        return Icons.restaurant_rounded;
       case 'social-nightlife':
         return Icons.nightlife_rounded;
-      case 'adventure-sports':
-        return Icons.hiking_rounded;
-      case 'workshops-learning':
+      case 'culture-art':
         return Icons.palette_rounded;
+      case 'city-walks':
+        return Icons.directions_walk_rounded;
+      case 'nature-outdoor':
+      case 'adventure-sports':
+        return Icons.forest_rounded;
+      case 'sports-wellness':
+      case 'health-wellness':
+        return Icons.self_improvement_rounded;
+      case 'workshops-learning':
+        return Icons.auto_stories_rounded;
+      case 'games-entertainment':
+        return Icons.sports_esports_rounded;
+      case 'family-kids':
+        return Icons.family_restroom_rounded;
       default:
         return Icons.local_activity_rounded;
     }
@@ -1564,7 +1521,60 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     return parts.join(', ');
   }
 
+  String _reverseGeocodingLocaleIdentifier() {
+    final locale = Localizations.localeOf(context);
+    final languageCode = locale.languageCode.trim().isNotEmpty
+        ? locale.languageCode.trim().toLowerCase()
+        : 'en';
+    final countryCode =
+        normalizeAppCountryCode(_countryCodeCtrl.text) ??
+        normalizeAppCountryCode(locale.countryCode) ??
+        'US';
+
+    return '${languageCode}_$countryCode';
+  }
+
+  Future<ReferenceCity?> _resolveReferenceCity({
+    required String cityName,
+    required String countryCode,
+  }) async {
+    final city = cityName.trim();
+    final country = normalizeAppCountryCode(countryCode);
+    if (city.isEmpty || country == null) {
+      return null;
+    }
+
+    try {
+      final locale = mounted
+          ? Localizations.localeOf(context).languageCode
+          : 'en';
+      final matches = await _referenceApi.searchCities(
+        city,
+        countryCode: country,
+        lang: locale,
+        limit: 5,
+      );
+      if (matches.isEmpty) {
+        return null;
+      }
+      final normalizedCity = city.toLowerCase();
+      for (final item in matches) {
+        if (item.countryCode.trim().toUpperCase() == country &&
+            item.name.trim().toLowerCase() == normalizedCity) {
+          return item;
+        }
+      }
+      return matches.first;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _handleMapTapped(LatLng position) async {
+    if (!_canEditMeetingAddress) {
+      return;
+    }
+
     setState(() {
       _selectedLatitude = position.latitude;
       _selectedLongitude = position.longitude;
@@ -1575,6 +1585,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     _mapController.move(position, 15);
 
     try {
+      await setLocaleIdentifier(_reverseGeocodingLocaleIdentifier());
       final placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
@@ -1585,20 +1596,44 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         final placemark = placemarks.first;
         final city = _composeCityLabel(placemark);
         final address = _composeAddressLabel(placemark);
+        final isoCountryCode =
+            normalizeAppCountryCode(placemark.isoCountryCode) ?? '';
+        final referenceCity = await _resolveReferenceCity(
+          cityName: city,
+          countryCode: isoCountryCode,
+        );
+        if (!mounted) return;
+
+        final localizedCityName = referenceCity?.name.trim().isNotEmpty == true
+            ? referenceCity!.name.trim()
+            : city;
+        final reverseGeocodedAddress = formatLocationAddressLabel(
+          city: city,
+          country: isoCountryCode,
+          address: address,
+        );
+        final resolvedAddress = await _locationLabelResolver.resolveAddress(
+          countryCode: isoCountryCode,
+          cityId: referenceCity?.id,
+          cityName: city,
+          addressText: reverseGeocodedAddress,
+          localeName: Localizations.localeOf(context).toString(),
+        );
+        if (!mounted) return;
 
         setState(() {
-          final isoCountryCode = placemark.isoCountryCode?.trim() ?? '';
           if (isoCountryCode.isNotEmpty) {
             _applyCountryAndCurrency(
               isoCountryCode,
-              fallbackCurrency: _currencyCtrl.text,
+              fallbackCurrency: _selectedCurrencyCode,
             );
           }
-          if (city.isNotEmpty) {
-            _cityNameCtrl.text = city;
+          if (localizedCityName.isNotEmpty) {
+            _cityNameCtrl.text = localizedCityName;
+            _selectedCityId = referenceCity?.id;
           }
-          if (address.isNotEmpty) {
-            _addressTextCtrl.text = address;
+          if (resolvedAddress.isNotEmpty) {
+            _addressTextCtrl.text = resolvedAddress;
           }
           _addressErrorText = null;
           _isResolvingMapSelection = false;
@@ -1848,11 +1883,47 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 return _CategoryCatalogState(message: l10n.createCategoryEmpty);
               }
 
-              return _CategorySelectorField(
-                value: items[_selectedCategorySlug] ?? l10n.createCategoryHint,
-                isPlaceholder: _selectedCategorySlug == null,
-                onTap: () => _openCategoryPicker(l10n, items),
-                errorText: _categoryErrorText,
+              final selectedCategory = findActivityCategoryBySlug(
+                categories: provider.categoryItems,
+                slug: _selectedCategorySlug,
+              );
+              final selectedCategoryLabel = localizedActivityCategoryLabel(
+                categories: provider.categoryItems,
+                slug: _selectedCategorySlug,
+                languageCode: languageCode,
+              );
+              final subcategoryItems = selectedCategory == null
+                  ? const <String, String>{}
+                  : _buildSubcategoryOptions(selectedCategory, languageCode);
+              final selectedSubcategoryLabel =
+                  subcategoryItems[_selectedSubcategorySlug];
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _CategorySelectorField(
+                    value: selectedCategoryLabel.isNotEmpty
+                        ? selectedCategoryLabel
+                        : l10n.createCategoryHint,
+                    isPlaceholder: _selectedCategorySlug == null,
+                    onTap: () => _openCategoryPicker(l10n, items),
+                    errorText: _categoryErrorText,
+                  ),
+                  if (subcategoryItems.isNotEmpty) ...[
+                    SizedBox(height: blockSpacing),
+                    _Step1FieldSection(
+                      label: l10n.createSubcategoryLabel,
+                      child: _CategorySelectorField(
+                        value:
+                            selectedSubcategoryLabel ??
+                            l10n.createSubcategoryHint,
+                        isPlaceholder: _selectedSubcategorySlug == null,
+                        onTap: () =>
+                            _openSubcategoryPicker(l10n, subcategoryItems),
+                      ),
+                    ),
+                  ],
+                ],
               );
             },
           ),
@@ -1881,6 +1952,26 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     return options;
   }
 
+  Map<String, String> _buildSubcategoryOptions(
+    ActivityCategoryVm category,
+    String languageCode,
+  ) {
+    final options = <String, String>{};
+    final selectedSlug = _normalizeCategorySlug(_selectedSubcategorySlug);
+
+    if (selectedSlug != null &&
+        selectedSlug.isNotEmpty &&
+        category.subcategories.every((item) => item.slug != selectedSlug)) {
+      options[selectedSlug] = ActivityCategoryVm.humanizeSlug(selectedSlug);
+    }
+
+    for (final item in category.subcategories) {
+      options[item.slug] = item.localizedName(languageCode);
+    }
+
+    return options;
+  }
+
   // ── Step 2: Schedule ───────────────────────────────────────────
 
   Widget _buildStep2Schedule(AppLocalizations l10n) {
@@ -1890,7 +1981,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     final formatLocked = widget.isEditMode;
     final showOffline = _format == 'OFFLINE' || _format == 'HYBRID';
     final showOnline = _format == 'ONLINE' || _format == 'HYBRID';
-    final locationLocked = _isPublished && showOffline;
+    final locationLocked = showOffline && !_canEditMeetingAddress;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -1993,6 +2084,16 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                       : l10n.createMapTapHint),
             style: const TextStyle(color: AppColors.textCaption, fontSize: 12),
           ),
+          if (_countryCodeCtrl.text.trim().isNotEmpty ||
+              _cityNameCtrl.text.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _Step2LocationPreviewCard(
+              label: l10n.createLocationPreviewHint,
+              countryCode: _countryCodeCtrl.text,
+              cityId: _selectedCityId,
+              cityName: _cityNameCtrl.text,
+            ),
+          ],
           const SizedBox(height: 18),
         ],
         if (showOnline) ...[
@@ -2137,19 +2238,29 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               ),
               if (_priceType != 'FREE') ...[
                 const SizedBox(height: 16),
-                _Step3PriceField(
-                  label: l10n.createPriceAmountLabel,
-                  controller: _priceAmountCtrl,
-                  placeholder: '0.00',
-                  enabled: true,
-                  currencyCode:
-                      _normalizeCurrencyCode(_currencyCtrl.text) ?? 'KZT',
-                  suffixText: l10n.createPricePerPersonHint,
-                  errorText: _priceAmountErrorText,
-                  onChanged: (_) {
-                    if (_priceAmountErrorText == null) return;
-                    setState(() => _priceAmountErrorText = null);
-                  },
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _Step3PriceField(
+                      label: l10n.createPriceAmountLabel,
+                      controller: _priceAmountCtrl,
+                      placeholder: '0.00',
+                      enabled: true,
+                      suffixText: l10n.createPricePerPersonHint,
+                      errorText: _priceAmountErrorText,
+                      onChanged: (_) {
+                        if (_priceAmountErrorText == null) return;
+                        setState(() => _priceAmountErrorText = null);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    AppCurrencyPickerField(
+                      label: l10n.createCurrencyLabel,
+                      selectedCode: _selectedCurrencyCode,
+                      surfaceColor: const Color(0xFF3A2108),
+                      onChanged: _setSelectedCurrencyCode,
+                    ),
+                  ],
                 ),
               ],
               if (_isPublished) ...[
@@ -2327,31 +2438,31 @@ class _StepIndicator extends StatelessWidget {
       final height = media.size.height;
       final textScale = media.textScaler.scale(1);
       final isCompact = width <= 360 || textScale > 1.05;
-      final isWide = width >= 394;
-      final stepSize = isCompact ? 40.0 : (isWide ? 48.0 : 44.0);
-      final stepFontSize = isCompact ? 18.0 : (isWide ? 21.0 : 20.0);
-      final lineWidth = isCompact ? 28.0 : (isWide ? 48.0 : 34.0);
-      final lineGap = isCompact ? 10.0 : 12.0;
       final topPadding = height <= 780 || textScale > 1.05 ? 18.0 : 28.0;
       final bottomPadding = height <= 780 || textScale > 1.05 ? 22.0 : 34.0;
 
       return Padding(
-        padding: EdgeInsets.fromLTRB(24, topPadding, 24, bottomPadding),
+        padding: EdgeInsets.fromLTRB(
+          isCompact ? 22 : 28,
+          topPadding,
+          isCompact ? 22 : 28,
+          bottomPadding,
+        ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(totalSteps * 2 - 1, (index) {
             if (index.isOdd) {
               final lineIndex = index ~/ 2;
               final isDone = lineIndex < currentStep;
-              return Container(
-                width: lineWidth,
-                height: 3,
-                margin: EdgeInsets.symmetric(horizontal: lineGap),
-                decoration: BoxDecoration(
-                  color: isDone
-                      ? AppColors.success
-                      : AppColors.accent.withValues(alpha: 0.32),
-                  borderRadius: BorderRadius.circular(999),
+              return Expanded(
+                child: Container(
+                  height: 3,
+                  margin: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: isDone
+                        ? AppColors.success
+                        : AppColors.accent.withValues(alpha: 0.32),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
               );
             }
@@ -2360,18 +2471,15 @@ class _StepIndicator extends StatelessWidget {
             final isActive = stepIndex == currentStep;
             final isDone = stepIndex < currentStep;
             final isStepTappable = onStepTap != null && stepIndex < currentStep;
+            final stepSize = isActive ? 48.0 : (isDone ? 40.0 : 34.0);
             final stepChild = isDone
-                ? Icon(
-                    Icons.check_rounded,
-                    color: Colors.white,
-                    size: stepFontSize + 1,
-                  )
+                ? const Icon(Icons.check_rounded, color: Colors.white)
                 : Text(
                     '${stepIndex + 1}',
                     style: TextStyle(
                       color: isActive ? Colors.white : const Color(0xFFF6DEC2),
-                      fontSize: stepFontSize,
-                      fontWeight: FontWeight.w700,
+                      fontSize: isActive ? 20 : 15,
+                      fontWeight: FontWeight.w900,
                     ),
                   );
 
@@ -2381,7 +2489,8 @@ class _StepIndicator extends StatelessWidget {
               child: InkWell(
                 onTap: isStepTappable ? () => onStepTap!(stepIndex) : null,
                 customBorder: const CircleBorder(),
-                child: Ink(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
                   width: stepSize,
                   height: stepSize,
                   decoration: BoxDecoration(
@@ -2390,7 +2499,27 @@ class _StepIndicator extends StatelessWidget {
                         ? AppColors.success
                         : isActive
                         ? AppColors.accent
-                        : const Color(0xFF6B4208),
+                        : const Color(0xFF5A370D),
+                    boxShadow: isDone
+                        ? [
+                            BoxShadow(
+                              color: AppColors.success.withValues(alpha: 0.22),
+                              blurRadius: 22,
+                              offset: const Offset(0, 12),
+                            ),
+                          ]
+                        : isActive
+                        ? [
+                            BoxShadow(
+                              color: AppColors.accent.withValues(alpha: 0.24),
+                              blurRadius: 22,
+                              offset: const Offset(0, 10),
+                            ),
+                          ]
+                        : null,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Center(child: stepChild),
                 ),
@@ -2730,6 +2859,77 @@ class _Step2FieldSection extends StatelessWidget {
   }
 }
 
+class _Step2LocationPreviewCard extends StatelessWidget {
+  const _Step2LocationPreviewCard({
+    required this.label,
+    required this.countryCode,
+    required this.cityId,
+    required this.cityName,
+  });
+
+  final String label;
+  final String? countryCode;
+  final String? cityId;
+  final String? cityName;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = [
+      cityName?.trim(),
+      countryCode?.trim().toUpperCase(),
+    ].where((value) => value != null && value.isNotEmpty).join(', ');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C1B0D),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.10)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.public_rounded, color: AppColors.accent, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textCaption,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                AppLocalizedLocationText(
+                  countryCode: countryCode,
+                  cityId: cityId,
+                  cityName: cityName,
+                  fallbackText: fallback,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    height: 1.25,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Step2FormatSegmented extends StatelessWidget {
   const _Step2FormatSegmented({
     required this.value,
@@ -2858,6 +3058,8 @@ class _Step2PillTextField extends StatelessWidget {
             controller: controller,
             keyboardType: keyboardType,
             onChanged: onChanged,
+            maxLines: 1,
+            scrollPhysics: const BouncingScrollPhysics(),
             textAlignVertical: TextAlignVertical.center,
             style: const TextStyle(
               color: AppColors.textPrimary,
@@ -3206,7 +3408,6 @@ class _Step3PriceField extends StatelessWidget {
     required this.controller,
     required this.placeholder,
     required this.enabled,
-    required this.currencyCode,
     required this.suffixText,
     this.onChanged,
     this.errorText,
@@ -3216,7 +3417,6 @@ class _Step3PriceField extends StatelessWidget {
   final TextEditingController controller;
   final String placeholder;
   final bool enabled;
-  final String currencyCode;
   final String suffixText;
   final ValueChanged<String>? onChanged;
   final String? errorText;
@@ -3250,7 +3450,6 @@ class _Step3PriceField extends StatelessWidget {
           child: ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller,
             builder: (context, value, _) {
-              final hasValue = value.text.trim().isNotEmpty;
               return TextField(
                 controller: controller,
                 enabled: enabled,
@@ -3268,15 +3467,6 @@ class _Step3PriceField extends StatelessWidget {
                   letterSpacing: -0.6,
                 ),
                 decoration: InputDecoration(
-                  prefixText: hasValue ? '$currencyCode ' : null,
-                  prefixStyle: TextStyle(
-                    color: enabled
-                        ? AppColors.accent
-                        : AppColors.accent.withValues(alpha: 0.7),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                  ),
                   suffixText: suffixText,
                   suffixStyle: TextStyle(
                     color: enabled
@@ -3286,9 +3476,7 @@ class _Step3PriceField extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.2,
                   ),
-                  hintText: hasValue
-                      ? placeholder
-                      : '$currencyCode $placeholder',
+                  hintText: placeholder,
                   hintStyle: const TextStyle(
                     color: Color(0xFF9F8D78),
                     fontSize: 20,
@@ -3724,6 +3912,9 @@ class _Step1TextFieldState extends State<_Step1TextField> {
                 }) => null,
             maxLines: widget.maxLines,
             minLines: widget.isMultiline ? widget.maxLines : 1,
+            scrollPhysics: widget.isMultiline
+                ? null
+                : const BouncingScrollPhysics(),
             keyboardType: widget.isMultiline
                 ? TextInputType.multiline
                 : TextInputType.text,

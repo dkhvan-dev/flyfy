@@ -1,4 +1,4 @@
-import '../activity_currency.dart';
+import '../../../shared/formatters/app_money_formatter.dart';
 
 class ActivityListItemVm {
   ActivityListItemVm({
@@ -12,6 +12,7 @@ class ActivityListItemVm {
     required this.visibility,
     required this.joinMode,
     required this.categorySlug,
+    this.subcategorySlug,
     required this.languageCode,
     required this.timezone,
     required this.startAt,
@@ -22,6 +23,7 @@ class ActivityListItemVm {
     required this.requiresAttendanceConfirmation,
     this.tags = const [],
     this.cityName,
+    this.cityId,
     this.countryCode,
     this.priceAmount,
     this.currency,
@@ -53,6 +55,7 @@ class ActivityListItemVm {
   final String visibility;
   final String joinMode;
   final String categorySlug;
+  final String? subcategorySlug;
   final List<String> tags;
   final String languageCode;
   final String timezone;
@@ -64,6 +67,7 @@ class ActivityListItemVm {
   final bool requiresAttendanceConfirmation;
 
   final String? cityName;
+  final String? cityId;
   final String? countryCode;
   final double? priceAmount;
   final String? currency;
@@ -96,6 +100,9 @@ class ActivityListItemVm {
       visibility: json['visibility']?.toString() ?? '',
       joinMode: json['joinMode']?.toString() ?? '',
       categorySlug: json['categorySlug']?.toString() ?? '',
+      subcategorySlug: _nullableString(
+        json['subcategorySlug'] ?? json['subCategorySlug'],
+      ),
       tags: (json['tags'] as List<dynamic>? ?? const [])
           .map((e) => e.toString())
           .toList(),
@@ -111,6 +118,7 @@ class ActivityListItemVm {
       requiresAttendanceConfirmation:
           json['requiresAttendanceConfirmation'] == true,
       cityName: json['cityName']?.toString(),
+      cityId: json['cityId']?.toString(),
       countryCode: json['countryCode']?.toString(),
       priceAmount: (json['priceAmount'] as num?)?.toDouble(),
       currency: json['currency']?.toString(),
@@ -155,16 +163,29 @@ class ActivityListItemVm {
       completedAt!.isBefore(endAt);
 
   String? get resolvedCurrencyCode =>
-      resolveActivityCurrencyCode(currency: currency, countryCode: countryCode);
+      resolveAppCurrencyCode(currency: currency, countryCode: countryCode);
 
-  String get priceLabel {
+  String get priceLabel => formattedPriceLabel('ru');
+
+  String formattedPriceLabel(String localeName) {
     if (isFree) return 'FREE';
     if (priceAmount == null) return priceType;
-    final amount = priceAmount! % 1 == 0
-        ? priceAmount!.toStringAsFixed(0)
-        : priceAmount!.toStringAsFixed(2);
     final resolvedCurrency = resolvedCurrencyCode;
-    if (resolvedCurrency == null) return amount;
-    return '$amount $resolvedCurrency';
+    if (resolvedCurrency == null) {
+      return priceAmount! % 1 == 0
+          ? priceAmount!.toStringAsFixed(0)
+          : priceAmount!.toStringAsFixed(2);
+    }
+    return formatAppMoney(
+      amount: priceAmount!,
+      currency: resolvedCurrency,
+      localeName: localeName,
+      useListCurrencyFormat: true,
+    );
   }
+}
+
+String? _nullableString(dynamic value) {
+  final text = value?.toString().trim() ?? '';
+  return text.isEmpty ? null : text;
 }

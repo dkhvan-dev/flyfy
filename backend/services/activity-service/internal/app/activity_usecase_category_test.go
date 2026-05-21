@@ -292,6 +292,48 @@ func TestCreateActivityRejectsUnsupportedCategory(t *testing.T) {
 	}
 }
 
+func TestCreateActivityNormalizesSubcategorySlug(t *testing.T) {
+	t.Parallel()
+
+	var createdItem *model.Activity
+	repo := &activityRepoStub{
+		createActivity: func(ctx context.Context, item *model.Activity) error {
+			createdItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	input := validCreateActivityInput()
+	input.CategorySlug = "food-drinks"
+	input.SubcategorySlug = stringPtr(" Coffee-Meetup ")
+
+	item, err := uc.CreateActivity(context.Background(), input)
+	if err != nil {
+		t.Fatalf("CreateActivity() error = %v", err)
+	}
+	if item == nil || createdItem == nil {
+		t.Fatal("CreateActivity() did not persist activity")
+	}
+	if createdItem.SubcategorySlug == nil || *createdItem.SubcategorySlug != "coffee-meetup" {
+		t.Fatalf("CreateActivity() subcategory = %v, want coffee-meetup", createdItem.SubcategorySlug)
+	}
+}
+
+func TestCreateActivityRejectsSubcategoryFromAnotherCategory(t *testing.T) {
+	t.Parallel()
+
+	uc := NewActivityUseCase(&activityRepoStub{})
+	input := validCreateActivityInput()
+	input.CategorySlug = "food-drinks"
+	input.SubcategorySlug = stringPtr("karaoke")
+
+	_, err := uc.CreateActivity(context.Background(), input)
+	if !errors.Is(err, model.ErrInvalidActivitySubcategorySlug) {
+		t.Fatalf("CreateActivity() error = %v, want %v", err, model.ErrInvalidActivitySubcategorySlug)
+	}
+}
+
 func TestUpdateActivityRejectsUnsupportedCategory(t *testing.T) {
 	t.Parallel()
 
@@ -316,6 +358,50 @@ func TestUpdateActivityRejectsUnsupportedCategory(t *testing.T) {
 	})
 	if !errors.Is(err, model.ErrInvalidCategorySlug) {
 		t.Fatalf("UpdateActivity() error = %v, want %v", err, model.ErrInvalidCategorySlug)
+	}
+}
+
+func TestUpdateActivityClearsSubcategoryWhenCategoryChangesWithoutReplacement(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	var updatedItem *model.Activity
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			item := validActivity(t, activityID, actorUserID)
+			item.CategorySlug = "food-drinks"
+			item.SubcategorySlug = stringPtr("coffee-meetup")
+			return item, nil
+		},
+		updateActivity: func(ctx context.Context, item *model.Activity) error {
+			updatedItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	categorySlug := "games-entertainment"
+
+	_, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID:  actorUserID,
+		ActivityID:   activityID,
+		CategorySlug: &categorySlug,
+	})
+	if err != nil {
+		t.Fatalf("UpdateActivity() error = %v", err)
+	}
+	if updatedItem == nil {
+		t.Fatal("UpdateActivity() did not persist activity")
+	}
+	if updatedItem.CategorySlug != "games-entertainment" {
+		t.Fatalf("UpdateActivity() category = %q, want games-entertainment", updatedItem.CategorySlug)
+	}
+	if updatedItem.SubcategorySlug != nil {
+		t.Fatalf("UpdateActivity() subcategory = %v, want nil", updatedItem.SubcategorySlug)
 	}
 }
 
@@ -748,6 +834,103 @@ func TestUpdateActivityRejectsPriceChangeWhenOtherParticipantExists(t *testing.T
 	}
 }
 
+func TestUpdateActivityAllowsMeetingAddressChangeMoreThanOneHourBeforeStart(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	nextAddress := "Алматы, Казахстан, улица Байзакова 128"
+	var updatedItem *model.Activity
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			item := validActivity(t, activityID, actorUserID)
+			item.Format = enum.ActivityFormatOffline
+			item.Status = enum.ActivityStatusConfirmed
+			item.MeetingURL = nil
+			item.CountryCode = stringPtr("KZ")
+			item.CityName = stringPtr("Алматы")
+			item.AddressText = stringPtr("Алматы, Казахстан, улица Байзакова 127")
+			item.MapURL = stringPtr("https://www.openstreetmap.org/?mlat=43.248&mlon=76.912")
+			item.StartAt = time.Now().UTC().Add(2 * time.Hour)
+			item.EndAt = item.StartAt.Add(2 * time.Hour)
+			item.RegistrationDeadline = item.StartAt.Add(-1 * time.Hour)
+			return item, nil
+		},
+		updateActivity: func(ctx context.Context, item *model.Activity) error {
+			updatedItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	_, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID:    actorUserID,
+		ActivityID:     activityID,
+		AddressText:    &nextAddress,
+		HasAddressText: true,
+	})
+	if err != nil {
+		t.Fatalf("UpdateActivity() error = %v", err)
+	}
+	if updatedItem == nil {
+		t.Fatal("UpdateActivity() did not persist activity")
+	}
+	if updatedItem.AddressText == nil || *updatedItem.AddressText != nextAddress {
+		t.Fatalf("UpdateActivity() addressText = %v, want %q", updatedItem.AddressText, nextAddress)
+	}
+}
+
+func TestUpdateActivityRejectsMeetingAddressChangeWithinOneHourBeforeStart(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	nextAddress := "Алматы, Казахстан, улица Байзакова 128"
+	var updatedItem *model.Activity
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			item := validActivity(t, activityID, actorUserID)
+			item.Format = enum.ActivityFormatOffline
+			item.Status = enum.ActivityStatusConfirmed
+			item.MeetingURL = nil
+			item.CountryCode = stringPtr("KZ")
+			item.CityName = stringPtr("Алматы")
+			item.AddressText = stringPtr("Алматы, Казахстан, улица Байзакова 127")
+			item.MapURL = stringPtr("https://www.openstreetmap.org/?mlat=43.248&mlon=76.912")
+			item.StartAt = time.Now().UTC().Add(45 * time.Minute)
+			item.EndAt = item.StartAt.Add(2 * time.Hour)
+			item.RegistrationDeadline = item.StartAt.Add(-1 * time.Hour)
+			return item, nil
+		},
+		updateActivity: func(ctx context.Context, item *model.Activity) error {
+			updatedItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	_, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID:    actorUserID,
+		ActivityID:     activityID,
+		AddressText:    &nextAddress,
+		HasAddressText: true,
+	})
+	if !errors.Is(err, ErrMeetingAddressUpdateClosed) {
+		t.Fatalf("UpdateActivity() error = %v, want %v", err, ErrMeetingAddressUpdateClosed)
+	}
+	if updatedItem != nil {
+		t.Fatal("UpdateActivity() persisted forbidden meeting address change")
+	}
+}
+
 func TestGetActivityByIDAutoStartsActivityWhenStartTimePassed(t *testing.T) {
 	t.Parallel()
 
@@ -1167,6 +1350,10 @@ func validActivity(t *testing.T, activityID uuid.UUID, actorUserID uuid.UUID) *m
 
 	item.ID = activityID
 	return item
+}
+
+func stringPtr(value string) *string {
+	return &value
 }
 
 func validParticipant(

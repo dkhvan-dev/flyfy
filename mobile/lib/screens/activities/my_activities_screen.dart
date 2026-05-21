@@ -12,6 +12,7 @@ import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
+import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
@@ -19,6 +20,7 @@ import '../../features/profile/profile_guard_result.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/widgets/app_localized_location_text.dart';
 
 enum _MyActivitiesTab { hosted, attended }
 
@@ -355,19 +357,14 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
   String _activityCategoryLabel(
     ActivityListItemVm item,
-    Map<String, String> categoryLabelsBySlug,
+    List<ActivityCategoryVm> categories,
+    String languageCode,
   ) {
-    final slug = _normalizeCategorySlug(item.categorySlug);
-    if (slug.isEmpty) {
-      return '';
-    }
-
-    final localized = (categoryLabelsBySlug[slug] ?? '').trim();
-    if (localized.isNotEmpty) {
-      return localized;
-    }
-
-    return ActivityCategoryVm.humanizeSlug(slug);
+    return localizedActivityCategoryLabel(
+      categories: categories,
+      slug: item.categorySlug,
+      languageCode: languageCode,
+    );
   }
 
   Future<void> _openFilters(
@@ -450,12 +447,6 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
               final state = _activeState(provider);
               final locale = Localizations.localeOf(context);
               final localeName = locale.toString();
-              final categoryLabelsBySlug = {
-                for (final category in provider.categoryItems)
-                  if (category.slug.trim().isNotEmpty)
-                    _normalizeCategorySlug(category.slug):
-                        category.localizedName(locale.languageCode),
-              };
               final filteredItems = _filterItems(items);
               final paginatedItems = paginateItems(
                 filteredItems,
@@ -555,7 +546,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                               localeName: localeName,
                               categoryLabel: _activityCategoryLabel(
                                 paginatedItems.items[i],
-                                categoryLabelsBySlug,
+                                provider.categoryItems,
+                                locale.languageCode,
                               ),
                               onPrimaryTap: () {
                                 if (_activeTab == _MyActivitiesTab.attended) {
@@ -649,13 +641,16 @@ class _FilterStatusOption {
 }
 
 class _MyActivityMetaData {
-  const _MyActivityMetaData({required this.icon, required this.label});
+  const _MyActivityMetaData({
+    required this.icon,
+    this.label = '',
+    this.labelBuilder,
+  });
 
   final IconData icon;
   final String label;
+  final Widget Function(TextStyle style)? labelBuilder;
 }
-
-String _normalizeCategorySlug(String raw) => raw.trim().toLowerCase();
 
 IconData _activityFormatIcon(String format) {
   switch (format.toUpperCase()) {
@@ -1011,12 +1006,22 @@ class _MyActivitiesCard extends StatelessWidget {
     final dateText = DateFormat.MMMd(
       localeName,
     ).add_Hm().format(item.startAt.toLocal());
-    final locationText = item.shortLocation.isNotEmpty
-        ? item.shortLocation
-        : formatActivityDisplayStatus(item, l10n);
+    final locationFallbackText = activityLocationFallbackText(item, l10n);
     final normalizedCategoryLabel = categoryLabel.trim();
     final metaItems = <_MyActivityMetaData>[
-      _MyActivityMetaData(icon: Icons.place_outlined, label: locationText),
+      _MyActivityMetaData(
+        icon: Icons.place_outlined,
+        label: locationFallbackText,
+        labelBuilder: (style) => AppLocalizedLocationText(
+          countryCode: item.countryCode,
+          cityId: item.cityId,
+          cityName: item.cityName,
+          fallbackText: locationFallbackText,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        ),
+      ),
       _MyActivityMetaData(
         icon: _activityFormatIcon(item.format),
         label: formatActivityFormat(item.format, l10n),
@@ -1104,32 +1109,16 @@ class _MyActivitiesCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      normalizedCategoryLabel.toUpperCase(),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: const Color(0xFFFFB64D),
-                                        fontSize: compactCard ? 10 : 11,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.4,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      locationText,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: const Color(0xFFEEDFD2),
-                                        fontSize: compactCard ? 12 : 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  normalizedCategoryLabel.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: const Color(0xFFFFB64D),
+                                    fontSize: compactCard ? 10 : 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.4,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1182,6 +1171,7 @@ class _MyActivitiesCard extends StatelessWidget {
                                     child: _MetaItem(
                                       icon: meta.icon,
                                       label: meta.label,
+                                      labelBuilder: meta.labelBuilder,
                                     ),
                                   ),
                               ],
@@ -1331,10 +1321,13 @@ class _ActivityCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).toString();
     final status = item.status.toUpperCase();
     final badge = _statusBadgeStyle(status);
     final statusText = formatActivityDisplayStatus(item, l10n);
-    final priceText = item.isFree ? l10n.createPriceFree : item.priceLabel;
+    final priceText = item.isFree
+        ? l10n.createPriceFree
+        : item.formattedPriceLabel(localeName);
     final imageUrl = resolveActivityCoverUrl(item)?.trim() ?? '';
     final badgeMaxWidth = MediaQuery.sizeOf(context).width * 0.42;
 
@@ -1504,10 +1497,15 @@ class _ActivityCoverFallback extends StatelessWidget {
 }
 
 class _MetaItem extends StatelessWidget {
-  const _MetaItem({required this.icon, required this.label});
+  const _MetaItem({
+    required this.icon,
+    required this.label,
+    this.labelBuilder,
+  });
 
   final IconData icon;
   final String label;
+  final Widget Function(TextStyle style)? labelBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -1518,15 +1516,21 @@ class _MetaItem extends StatelessWidget {
         Icon(icon, size: 16, color: _MyActivitiesPalette.textMuted),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: _MyActivitiesPalette.textMuted,
-              fontSize: compact ? 12 : 13,
-              height: 1.25,
-            ),
+          child: Builder(
+            builder: (context) {
+              final style = TextStyle(
+                color: _MyActivitiesPalette.textMuted,
+                fontSize: compact ? 12 : 13,
+                height: 1.25,
+              );
+              return labelBuilder?.call(style) ??
+                  Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: style,
+                  );
+            },
           ),
         ),
       ],

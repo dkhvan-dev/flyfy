@@ -3184,6 +3184,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createCategoryApply => 'Применить';
 
   @override
+  String get createSubcategoryLabel => 'Подкатегория';
+
+  @override
+  String get createSubcategoryHint => 'Выберите подкатегорию';
+
+  @override
+  String get createSubcategoryPickerTitle => 'Выберите подкатегорию';
+
+  @override
+  String get createSubcategoryApply => 'Применить';
+
+  @override
   String get createTagsLabel => 'Теги';
 
   @override
@@ -3487,7 +3499,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get editLocationLocked =>
-      'Место проведения нельзя изменить после публикации';
+      'Адрес встречи можно изменить не позднее чем за час до начала активности';
 
   @override
   String get editPriceRestrictionHint =>

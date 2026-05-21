@@ -17,6 +17,7 @@ import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
+import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/activity_participant_vm.dart';
@@ -28,6 +29,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/widgets/app_localized_location_text.dart';
 import 'activity_payment_screen.dart';
 
 class ActivityDetailsScreen extends StatefulWidget {
@@ -836,10 +838,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       builder: (sheetContext) {
         final locale = Localizations.localeOf(sheetContext).toString();
         final dateFormat = DateFormat.MMMd(locale).add_Hm();
+        final bottomSafePadding = MediaQuery.viewPaddingOf(sheetContext).bottom;
 
         return _DetailsResponsiveTextScope(
           child: SafeArea(
             top: false,
+            bottom: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: Container(
@@ -894,7 +898,12 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                     const Divider(height: 1, color: Color(0x14FFFFFF)),
                     Expanded(
                       child: ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
+                        padding: EdgeInsets.fromLTRB(
+                          22,
+                          14,
+                          22,
+                          24 + bottomSafePadding,
+                        ),
                         itemCount: participants.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
@@ -1082,11 +1091,20 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         : Icons.event_busy_rounded;
     final lifecycleReasonColor =
         activity.isCompletedEarly ? _DetailsColors.success : AppColors.accent;
-    final categoryLabel = _resolveLocalizedCategoryLabel(
+    final baseCategoryLabel = _resolveLocalizedCategoryLabel(
       activity.categorySlug,
       provider.categoryItems,
       Localizations.localeOf(context).languageCode,
     );
+    final subcategoryLabel = localizedActivitySubcategoryLabel(
+      categories: provider.categoryItems,
+      categorySlug: activity.categorySlug,
+      subcategorySlug: activity.subcategorySlug,
+      languageCode: Localizations.localeOf(context).languageCode,
+    );
+    final categoryLabel = subcategoryLabel.isEmpty
+        ? baseCategoryLabel
+        : '$baseCategoryLabel / $subcategoryLabel';
     final hostName = _resolveHostName(
       activity.hostUserId,
       session.profile,
@@ -3062,7 +3080,7 @@ class _StatsGrid extends StatelessWidget {
     final endText = dateFormat.format(activity.endAt.toLocal());
     final pricingText = activity.isFree
         ? l10n.freeLabel
-        : '${activity.priceLabel} ${l10n.activityPerPerson}';
+        : '${activity.formattedPriceLabel(locale)} ${l10n.activityPerPerson}';
     final formatText = formatActivityFormat(activity.format, l10n);
     final capacityText = activity.capacityType.toUpperCase() == 'LIMITED' &&
             activity.maxParticipants != null
@@ -3376,6 +3394,7 @@ class _MeetingSection extends StatelessWidget {
                     label: locationLine.isNotEmpty
                         ? locationLine
                         : l10n.notSpecified,
+                    activity: activity,
                   ),
                 if (showProtectedNotice)
                   Container(
@@ -3473,18 +3492,31 @@ class _MeetingSection extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                showProtectedNotice
-                    ? l10n.activitySensitiveDetailsHint
-                    : (locationLine.isNotEmpty
-                        ? locationLine
-                        : l10n.notSpecified),
-                style: const TextStyle(
-                  color: _DetailsColors.muted,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
-              ),
+              child: showProtectedNotice
+                  ? Text(
+                      l10n.activitySensitiveDetailsHint,
+                      style: const TextStyle(
+                        color: _DetailsColors.muted,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    )
+                  : AppLocalizedLocationText(
+                      countryCode: activity.countryCode,
+                      cityId: activity.cityId,
+                      cityName: activity.cityName,
+                      addressText: activity.addressText,
+                      fallbackText: locationLine.isNotEmpty
+                          ? locationLine
+                          : l10n.notSpecified,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _DetailsColors.muted,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -3652,9 +3684,13 @@ class _MeetingPointMarker extends StatelessWidget {
 }
 
 class _MeetingLocationFallbackCard extends StatelessWidget {
-  const _MeetingLocationFallbackCard({required this.label});
+  const _MeetingLocationFallbackCard({
+    required this.label,
+    required this.activity,
+  });
 
   final String label;
+  final ActivityListItemVm activity;
 
   @override
   Widget build(BuildContext context) {
@@ -3692,8 +3728,14 @@ class _MeetingLocationFallbackCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              Text(
-                label,
+              AppLocalizedLocationText(
+                countryCode: activity.countryCode,
+                cityId: activity.cityId,
+                cityName: activity.cityName,
+                addressText: activity.addressText,
+                fallbackText: label,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
@@ -4382,7 +4424,9 @@ class _DetailsActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final priceLabel = activity.isFree ? l10n.freeLabel : activity.priceLabel;
+    final locale = Localizations.localeOf(context).toString();
+    final priceLabel =
+        activity.isFree ? l10n.freeLabel : activity.formattedPriceLabel(locale);
     final shouldShowPaymentAction =
         isJoined && !isOwner && !activity.isFree && !isPaid && onPay != null;
     final secondaryAction = showPublish
@@ -4941,35 +4985,16 @@ String _resolveHostSubtitle({
   return '';
 }
 
-String _prettyCategory(String value) {
-  final normalized = value.trim();
-  if (normalized.isEmpty) {
-    return 'Activity';
-  }
-
-  return normalized
-      .split(RegExp(r'[_\-\s]+'))
-      .where((part) => part.isNotEmpty)
-      .map(
-        (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
-      )
-      .join(' ');
-}
-
 String _resolveLocalizedCategoryLabel(
   String rawSlug,
   List<ActivityCategoryVm> categories,
   String languageCode,
 ) {
-  final normalizedSlug = rawSlug.trim().toLowerCase();
-  if (normalizedSlug.isNotEmpty) {
-    for (final category in categories) {
-      if (category.slug == normalizedSlug) {
-        return category.localizedName(languageCode);
-      }
-    }
-  }
-  return _prettyCategory(rawSlug);
+  return localizedActivityCategoryLabel(
+    categories: categories,
+    slug: rawSlug,
+    languageCode: languageCode,
+  );
 }
 
 LatLng? _resolveMeetingPoint(ActivityListItemVm activity) {

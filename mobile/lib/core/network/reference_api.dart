@@ -107,6 +107,26 @@ class ReferenceApi {
         .map((e) => ReferenceCity.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
   }
+
+  Future<ReferenceCity?> getCity(
+    String id, {
+    String lang = 'en',
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/reference/cities/${id.trim()}',
+        queryParameters: {'lang': lang},
+        options: Options(extra: {'requiresAuth': false}),
+      );
+      final data = response.data as Map<String, dynamic>?;
+      if (data == null) return null;
+      final city = data['city'] as Map<String, dynamic>?;
+      if (city == null) return null;
+      return ReferenceCity.fromJson(city);
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 class ReferenceCountry {

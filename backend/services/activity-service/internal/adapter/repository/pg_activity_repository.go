@@ -33,12 +33,12 @@ const activitySelectColumns = `
 	id, host_user_id, source_activity_id,
 	title, description,
 	format, status, visibility, join_mode, moderation_status,
-	category_slug, language_code, timezone,
+	category_slug, subcategory_slug, language_code, timezone,
 	start_at, end_at, registration_deadline,
 	capacity_type, min_participants, max_participants,
 	price_type, price_amount, currency, price_locked_at,
 	requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-	country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
+	country_code, city_id, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
 	cancellation_reason, cancellation_source, cancelled_by_user_id, cancelled_at, started_at, completed_at, completion_reason, published_at,
 	revision, created_at, updated_at
 `
@@ -47,12 +47,12 @@ const qualifiedActivitySelectColumns = `
 	a.id, a.host_user_id, a.source_activity_id,
 	a.title, a.description,
 	a.format, a.status, a.visibility, a.join_mode, a.moderation_status,
-	a.category_slug, a.language_code, a.timezone,
+	a.category_slug, a.subcategory_slug, a.language_code, a.timezone,
 	a.start_at, a.end_at, a.registration_deadline,
 	a.capacity_type, a.min_participants, a.max_participants,
 	a.price_type, a.price_amount, a.currency, a.price_locked_at,
 	a.requires_profile_completion, a.requires_attendance_confirmation, a.confirmation_deadline,
-	a.country_code, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url, a.visibility_password_hash,
+	a.country_code, a.city_id, a.city_name, a.address_text, a.latitude, a.longitude, a.map_url, a.meeting_url, a.visibility_password_hash,
 	a.cancellation_reason, a.cancellation_source, a.cancelled_by_user_id, a.cancelled_at, a.started_at, a.completed_at, a.completion_reason, a.published_at,
 	a.revision, a.created_at, a.updated_at
 `
@@ -86,26 +86,26 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			id, host_user_id, source_activity_id,
 			title, description,
 			format, status, visibility, join_mode, moderation_status,
-			category_slug, language_code, timezone,
+			category_slug, subcategory_slug, language_code, timezone,
 			start_at, end_at, registration_deadline,
 			capacity_type, min_participants, max_participants,
 			price_type, price_amount, currency, price_locked_at,
 			requires_profile_completion, requires_attendance_confirmation, confirmation_deadline,
-			country_code, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
+			country_code, city_id, city_name, address_text, latitude, longitude, map_url, meeting_url, visibility_password_hash,
 			cancellation_reason, cancellation_source, cancelled_by_user_id, cancelled_at, started_at, completed_at, completion_reason, published_at,
 			revision, created_at, updated_at
 		) VALUES (
 			$1, $2, $3,
 			$4, $5,
 			$6, $7, $8, $9, $10,
-			$11, $12, $13,
-			$14, $15, $16,
-			$17, $18, $19,
-			$20, $21, $22, $23,
-			$24, $25, $26,
-			$27, $28, $29, $30, $31, $32, $33, $34,
-			$35, $36, $37, $38, $39, $40, $41, $42,
-			$43, $44, $45
+			$11, $12, $13, $14,
+			$15, $16, $17,
+			$18, $19, $20,
+			$21, $22, $23, $24,
+			$25, $26, $27,
+			$28, $29, $30, $31, $32, $33, $34, $35, $36,
+			$37, $38, $39, $40, $41, $42, $43, $44,
+			$45, $46, $47
 		)
 	`
 
@@ -115,12 +115,12 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 		item.ID, item.HostUserID, item.SourceActivityID,
 		item.Title, item.Description,
 		string(item.Format), string(item.Status), string(item.Visibility), string(item.JoinMode), string(item.ModerationStatus),
-		item.CategorySlug, item.LanguageCode, item.Timezone,
+		item.CategorySlug, item.SubcategorySlug, item.LanguageCode, item.Timezone,
 		item.StartAt, item.EndAt, item.RegistrationDeadline,
 		string(item.CapacityType), item.MinParticipants, item.MaxParticipants,
 		string(item.PriceType), item.PriceAmount, item.Currency, item.PriceLockedAt,
 		item.RequiresProfileCompletion, item.RequiresAttendanceConfirmation, item.ConfirmationDeadline,
-		item.CountryCode, item.CityName, item.AddressText, item.Latitude, item.Longitude, item.MapURL, item.MeetingURL, item.VisibilityPasswordHash,
+		item.CountryCode, item.CityID, item.CityName, item.AddressText, item.Latitude, item.Longitude, item.MapURL, item.MeetingURL, item.VisibilityPasswordHash,
 		item.CancellationReason, optionalActivityCancellationSourceString(item.CancellationSource), item.CancelledByUserID, item.CancelledAt, item.StartedAt, item.CompletedAt, item.CompletionReason, item.PublishedAt,
 		item.Revision, item.CreatedAt, item.UpdatedAt,
 	)
@@ -145,39 +145,41 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 			join_mode = $9,
 			moderation_status = $10,
 			category_slug = $11,
-			language_code = $12,
-			timezone = $13,
-			start_at = $14,
-			end_at = $15,
-			registration_deadline = $16,
-			capacity_type = $17,
-			min_participants = $18,
-			max_participants = $19,
-			price_type = $20,
-			price_amount = $21,
-			currency = $22,
-			price_locked_at = $23,
-			requires_profile_completion = $24,
-			requires_attendance_confirmation = $25,
-			confirmation_deadline = $26,
-			country_code = $27,
-			city_name = $28,
-			address_text = $29,
-			latitude = $30,
-			longitude = $31,
-			map_url = $32,
-			meeting_url = $33,
-			visibility_password_hash = $34,
-			cancellation_reason = $35,
-			cancellation_source = $36,
-			cancelled_by_user_id = $37,
-			cancelled_at = $38,
-			started_at = $39,
-			completed_at = $40,
-			completion_reason = $41,
-			published_at = $42,
-			revision = $43,
-			updated_at = $44
+			subcategory_slug = $12,
+			language_code = $13,
+			timezone = $14,
+			start_at = $15,
+			end_at = $16,
+			registration_deadline = $17,
+			capacity_type = $18,
+			min_participants = $19,
+			max_participants = $20,
+			price_type = $21,
+			price_amount = $22,
+			currency = $23,
+			price_locked_at = $24,
+			requires_profile_completion = $25,
+			requires_attendance_confirmation = $26,
+			confirmation_deadline = $27,
+			country_code = $28,
+			city_id = $29,
+			city_name = $30,
+			address_text = $31,
+			latitude = $32,
+			longitude = $33,
+			map_url = $34,
+			meeting_url = $35,
+			visibility_password_hash = $36,
+			cancellation_reason = $37,
+			cancellation_source = $38,
+			cancelled_by_user_id = $39,
+			cancelled_at = $40,
+			started_at = $41,
+			completed_at = $42,
+			completion_reason = $43,
+			published_at = $44,
+			revision = $45,
+			updated_at = $46
 		WHERE id = $1
 	`
 
@@ -195,6 +197,7 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 		string(item.JoinMode),
 		string(item.ModerationStatus),
 		item.CategorySlug,
+		item.SubcategorySlug,
 		item.LanguageCode,
 		item.Timezone,
 		item.StartAt,
@@ -211,6 +214,7 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 		item.RequiresAttendanceConfirmation,
 		item.ConfirmationDeadline,
 		item.CountryCode,
+		item.CityID,
 		item.CityName,
 		item.AddressText,
 		item.Latitude,
@@ -296,9 +300,21 @@ func (r *PGActivityRepository) ListActivities(ctx context.Context, filter port.A
 		argPos++
 	}
 
+	if filter.SubcategorySlug != nil && strings.TrimSpace(*filter.SubcategorySlug) != "" {
+		parts = append(parts, fmt.Sprintf(" AND subcategory_slug = $%d", argPos))
+		args = append(args, strings.TrimSpace(*filter.SubcategorySlug))
+		argPos++
+	}
+
 	if filter.CountryCode != nil && strings.TrimSpace(*filter.CountryCode) != "" {
 		parts = append(parts, fmt.Sprintf(" AND country_code = $%d", argPos))
 		args = append(args, strings.TrimSpace(*filter.CountryCode))
+		argPos++
+	}
+
+	if filter.CityID != nil {
+		parts = append(parts, fmt.Sprintf(" AND city_id = $%d", argPos))
+		args = append(args, *filter.CityID)
 		argPos++
 	}
 
@@ -564,7 +580,7 @@ func (r *PGActivityRepository) ReplaceTags(ctx context.Context, activityID uuid.
 		`
 		now := time.Now().UTC()
 		for _, tag := range tags {
-			tag = strings.TrimSpace(strings.ToLower(tag))
+			tag = model.NormalizeActivityTagSlug(tag)
 			if tag == "" {
 				continue
 			}
@@ -1278,23 +1294,24 @@ func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model
 			requires_attendance_confirmation = $25,
 			confirmation_deadline = $26,
 			country_code = $27,
-			city_name = $28,
-			address_text = $29,
-			latitude = $30,
-			longitude = $31,
-			map_url = $32,
-			meeting_url = $33,
-			visibility_password_hash = $34,
-			cancellation_reason = $35,
-			cancellation_source = $36,
-			cancelled_by_user_id = $37,
-			cancelled_at = $38,
-			started_at = $39,
-			completed_at = $40,
-			completion_reason = $41,
-			published_at = $42,
-			revision = $43,
-			updated_at = $44
+			city_id = $28,
+			city_name = $29,
+			address_text = $30,
+			latitude = $31,
+			longitude = $32,
+			map_url = $33,
+			meeting_url = $34,
+			visibility_password_hash = $35,
+			cancellation_reason = $36,
+			cancellation_source = $37,
+			cancelled_by_user_id = $38,
+			cancelled_at = $39,
+			started_at = $40,
+			completed_at = $41,
+			completion_reason = $42,
+			published_at = $43,
+			revision = $44,
+			updated_at = $45
 		WHERE id = $1
 	`
 
@@ -1328,6 +1345,7 @@ func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model
 		item.RequiresAttendanceConfirmation,
 		item.ConfirmationDeadline,
 		item.CountryCode,
+		item.CityID,
 		item.CityName,
 		item.AddressText,
 		item.Latitude,
@@ -1531,6 +1549,7 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 		&moderationStatusRaw,
 
 		&item.CategorySlug,
+		&item.SubcategorySlug,
 		&item.LanguageCode,
 		&item.Timezone,
 
@@ -1552,6 +1571,7 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 		&item.ConfirmationDeadline,
 
 		&item.CountryCode,
+		&item.CityID,
 		&item.CityName,
 		&item.AddressText,
 		&item.Latitude,
