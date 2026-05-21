@@ -569,49 +569,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                         ),
                         SizedBox(
-                          height: profileScaled(context, 18, min: 16, max: 20),
-                        ),
-                        _LabeledInput(
-                          label: l10n.appLanguageTitle,
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _normalizeLocaleCode(_localeCode),
-                            dropdownColor: profileSurfaceSoft,
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: profileScaled(
-                                context,
-                                15,
-                                min: 14,
-                                max: 16,
-                              ),
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              profileScaled(context, 18, min: 16, max: 20),
-                            ),
-                            decoration: _fieldDecoration(context),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'ru',
-                                child: Text('Русский'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'en',
-                                child: Text('English'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'kk',
-                                child: Text('Қазақша'),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              if (value == null) return;
-                              setState(() {
-                                _localeCode = value;
-                              });
-                            },
-                          ),
-                        ),
-                        SizedBox(
                           height: profileScaled(context, 16, min: 14, max: 18),
                         ),
                         _LabeledInput(
@@ -871,41 +828,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  InputDecoration _fieldDecoration(BuildContext context) {
-    final radius = BorderRadius.circular(
-      profileScaled(context, 18, min: 16, max: 20),
-    );
-
-    return InputDecoration(
-      filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.04),
-      border: OutlineInputBorder(
-        borderRadius: radius,
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.04)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: radius,
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.04)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: radius,
-        borderSide: BorderSide(color: AppColors.accent.withValues(alpha: 0.3)),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: radius,
-        borderSide: const BorderSide(color: Color(0xFFE47F78)),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: radius,
-        borderSide: const BorderSide(color: Color(0xFFE47F78)),
-      ),
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: profileScaled(context, 16, min: 14, max: 18),
-        vertical: profileScaled(context, 14, min: 12, max: 16),
       ),
     );
   }

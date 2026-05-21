@@ -19,4 +19,28 @@ void main() {
     expect(updateRequestSource, isNot(contains('isPublic')));
     expect(profileModelSource, isNot(contains('isPublic')));
   });
+
+  test('profile editing does not render app language picker', () async {
+    final editProfileSource = await File(
+      'lib/screens/profile/edit_profile_screen.dart',
+    ).readAsString();
+    final detailsStart = editProfileSource.indexOf(
+      'title: l10n.profileSettingsDetailsSection',
+    );
+    final securityStart = editProfileSource.indexOf('class _SecurityLinkCard');
+
+    expect(detailsStart, isNonNegative);
+    expect(securityStart, greaterThan(detailsStart));
+
+    final detailsSource = editProfileSource.substring(
+      detailsStart,
+      securityStart,
+    );
+
+    expect(detailsSource, isNot(contains('l10n.appLanguageTitle')));
+    expect(detailsSource, isNot(contains('DropdownButtonFormField<String>')));
+    expect(detailsSource, isNot(contains("DropdownMenuItem(value: 'ru'")));
+    expect(detailsSource, isNot(contains("DropdownMenuItem(value: 'en'")));
+    expect(detailsSource, isNot(contains("DropdownMenuItem(value: 'kk'")));
+  });
 }

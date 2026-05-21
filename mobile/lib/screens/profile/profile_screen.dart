@@ -1338,18 +1338,6 @@ class _OwnProfileSections extends StatelessWidget {
           subtitle: l10n.profileSavedItemsSubtitle,
           disabled: true,
         ),
-        _ProfileMenuTile(
-          icon: Icons.calendar_month_outlined,
-          title: l10n.profileBookingsTitle,
-          subtitle: l10n.profileBookingsSubtitle,
-          disabled: true,
-        ),
-        _ProfileMenuTile(
-          icon: Icons.event_note_outlined,
-          title: l10n.myActivitiesTitle,
-          subtitle: l10n.profileMyActivitiesSubtitle,
-          onTap: () => context.push('/me/activities'),
-        ),
         if (isGuideProfile)
           _ProfileMenuTile(
             icon: Icons.dashboard_customize_outlined,

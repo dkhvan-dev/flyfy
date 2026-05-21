@@ -104,6 +104,25 @@ void main() {
     expect(gridSource, isNot(contains("value: '0'")));
   });
 
+  test('own profile menu omits bookings and my activities shortcuts', () async {
+    final source = await File(
+      'lib/screens/profile/profile_screen.dart',
+    ).readAsString();
+    final sectionsStart = source.indexOf('class _OwnProfileSections');
+    final sectionsEnd = source.indexOf('class _ForeignProfileSections');
+
+    expect(sectionsStart, isNonNegative);
+    expect(sectionsEnd, greaterThan(sectionsStart));
+
+    final sectionsSource = source.substring(sectionsStart, sectionsEnd);
+
+    expect(sectionsSource, isNot(contains('profileBookingsTitle')));
+    expect(sectionsSource, isNot(contains('profileBookingsSubtitle')));
+    expect(sectionsSource, isNot(contains('myActivitiesTitle')));
+    expect(sectionsSource, isNot(contains('profileMyActivitiesSubtitle')));
+    expect(sectionsSource, isNot(contains("context.push('/me/activities')")));
+  });
+
   test(
     'foreign guide profile loads and renders top excursion reviews',
     () async {
