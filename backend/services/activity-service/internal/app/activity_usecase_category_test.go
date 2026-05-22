@@ -120,6 +120,14 @@ func (s *activityRepoStub) ListJoinedActivitiesByUserID(ctx context.Context, use
 	return nil, nil
 }
 
+func (s *activityRepoStub) ListPublicProfileHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error) {
+	return nil, nil
+}
+
+func (s *activityRepoStub) ListPublicProfileJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error) {
+	return nil, nil
+}
+
 func (s *activityRepoStub) CountActivityCompletionStatsByUserID(ctx context.Context, userID uuid.UUID) (port.ActivityCompletionStats, error) {
 	if s.countActivityCompletionStatsByUserID != nil {
 		return s.countActivityCompletionStatsByUserID(ctx, userID)

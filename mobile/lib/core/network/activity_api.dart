@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../features/activities/models/activity_category_vm.dart';
+import '../../features/activities/models/activity_list_page_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/activities/models/activity_participant_vm.dart';
 import '../../features/activities/models/create_activity_request.dart';
@@ -19,8 +20,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -41,8 +41,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -63,8 +62,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -73,6 +71,66 @@ class ActivityApi {
         .whereType<Map<String, dynamic>>()
         .map(ActivityListItemVm.fromJson)
         .toList();
+  }
+
+  Future<ActivityListPageVm> getUserHostedActivitiesPage(
+    String userId, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final encodedUserId = Uri.encodeComponent(userId.trim());
+    final response = await _apiClient.dio.get(
+      '/activities/users/$encodedUserId/hosted',
+      queryParameters: {'limit': limit, 'offset': offset},
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    final data = response.data;
+    return ActivityListPageVm.fromJson(
+      data is Map<String, dynamic> ? data : const <String, dynamic>{},
+    );
+  }
+
+  Future<ActivityListPageVm> getUserJoinedActivitiesPage(
+    String userId, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final encodedUserId = Uri.encodeComponent(userId.trim());
+    final response = await _apiClient.dio.get(
+      '/activities/users/$encodedUserId/joined',
+      queryParameters: {'limit': limit, 'offset': offset},
+      options: Options(extra: const {'requiresAuth': false}),
+    );
+
+    final data = response.data;
+    return ActivityListPageVm.fromJson(
+      data is Map<String, dynamic> ? data : const <String, dynamic>{},
+    );
+  }
+
+  Future<List<ActivityListItemVm>> getUserRecentActivities(
+    String userId, {
+    int limit = 10,
+  }) async {
+    final pageLimit = limit < 1 ? 1 : limit;
+    final pages = await Future.wait([
+      getUserHostedActivitiesPage(userId, limit: pageLimit, offset: 0),
+      getUserJoinedActivitiesPage(userId, limit: pageLimit, offset: 0),
+    ]);
+
+    final itemsById = <String, ActivityListItemVm>{};
+    for (final page in pages) {
+      for (final item in page.items) {
+        itemsById[item.id] = item;
+      }
+    }
+
+    final items = itemsById.values.toList(growable: false)
+      ..sort((a, b) => _activityProfileSortDate(b).compareTo(
+            _activityProfileSortDate(a),
+          ));
+    return items.take(pageLimit).toList(growable: false);
   }
 
   Future<List<ActivityListItemVm>> getActivities({
@@ -105,8 +163,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -135,8 +192,7 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items =
-        (data is Map<String, dynamic>
+    final items = (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -257,4 +313,8 @@ class ActivityApi {
 
     return int.tryParse(data['totalCompleted']?.toString() ?? '') ?? 0;
   }
+}
+
+DateTime _activityProfileSortDate(ActivityListItemVm item) {
+  return item.completedAt ?? item.endAt;
 }

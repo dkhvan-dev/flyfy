@@ -13,6 +13,7 @@ import '../../screens/stories/create_story_screen.dart';
 import '../../screens/stories/story_details_screen.dart';
 import '../../screens/stories/stories_screen.dart';
 import '../../screens/profile/profile_screen.dart';
+import '../../screens/profile/profile_user_activities_screen.dart';
 import '../../screens/profile/profile_notifications_screen.dart';
 import '../../screens/profile/profile_security_screen.dart';
 import '../../screens/profile/profile_settings_screen.dart';
@@ -194,6 +195,15 @@ class AppRouter {
             final userId = state.pathParameters['userId'] ?? '';
             return _withAndroidBackSwipe(
               ProfileFollowersScreen(userId: userId),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/users/:userId/activities',
+          builder: (context, state) {
+            final userId = state.pathParameters['userId'] ?? '';
+            return _withAndroidBackSwipe(
+              ProfileUserActivitiesScreen(userId: userId),
             );
           },
         ),

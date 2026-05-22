@@ -1825,6 +1825,60 @@ func (u *ActivityUseCase) ListJoinedActivities(
 	return u.normalizeLifecycleList(ctx, joinedItems)
 }
 
+func (u *ActivityUseCase) ListPublicProfileHostedActivities(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	offset int,
+) ([]*model.Activity, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	items, err := u.repo.ListPublicProfileHostedActivitiesByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list public profile hosted activities: %w", err)
+	}
+
+	return u.normalizeLifecycleList(ctx, items)
+}
+
+func (u *ActivityUseCase) ListPublicProfileJoinedActivities(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	offset int,
+) ([]*model.Activity, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidParticipantUserID
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	items, err := u.repo.ListPublicProfileJoinedActivitiesByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list public profile joined activities: %w", err)
+	}
+
+	return u.normalizeLifecycleList(ctx, items)
+}
+
 type ActivityCompletionStats struct {
 	UserID          uuid.UUID
 	HostedCompleted int

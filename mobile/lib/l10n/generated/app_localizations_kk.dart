@@ -671,6 +671,52 @@ class AppLocalizationsKk extends AppLocalizations {
       'Backend автордың ашық витринасын бергенде, жарияланған белсенділіктер осы жерде көрсетіледі.';
 
   @override
+  String get profileRecentActivitiesTitle => 'Соңғы белсенділіктер';
+
+  @override
+  String get profileViewAllActivities => 'Барлығы';
+
+  @override
+  String get profileActivitiesLoadFailed =>
+      'Белсенділіктерді жүктеу мүмкін болмады';
+
+  @override
+  String get profileActivitiesLoadFailedHint =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get profileActivitiesEmptyTitle => 'Әзірге белсенділіктер жоқ';
+
+  @override
+  String get profileActivitiesEmptySubtitle =>
+      'Пайдаланушының аяқталған ашық белсенділіктері осы жерде көрсетіледі.';
+
+  @override
+  String get profileUserActivitiesTitle => 'Пайдаланушы белсенділіктері';
+
+  @override
+  String get profileUserActivitiesHostedTab => 'Өткізген';
+
+  @override
+  String get profileUserActivitiesVisitedTab => 'Қатысқан';
+
+  @override
+  String get profileUserActivitiesHostedEmptyTitle =>
+      'Әзірге өткізген белсенділіктер жоқ';
+
+  @override
+  String get profileUserActivitiesHostedEmptySubtitle =>
+      'Пайдаланушы автор ретінде ашық белсенділікті аяқтағанда, ол осы жерде көрсетіледі.';
+
+  @override
+  String get profileUserActivitiesVisitedEmptyTitle =>
+      'Әзірге қатысқан белсенділіктер жоқ';
+
+  @override
+  String get profileUserActivitiesVisitedEmptySubtitle =>
+      'Пайдаланушы аяқталған ашық белсенділікке қатысқанда, ол осы жерде көрсетіледі.';
+
+  @override
   String get profileBlogsTitle => 'Соңғы блогтар';
 
   @override

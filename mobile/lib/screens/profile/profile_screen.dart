@@ -14,6 +14,7 @@ import '../../core/network/excursion_api.dart';
 import '../../core/network/story_api.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
+import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -23,6 +24,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import 'edit_profile_screen.dart';
 import 'profile_style.dart';
+import 'widgets/profile_activity_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.userId, this.initialProfile});
@@ -35,6 +37,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  static const int _foreignProfileRecentActivitiesPreviewLimit = 3;
+
   final ProfileApi _profileApi = ProfileApi();
   final GuideApi _guideApi = GuideApi();
   final FileApi _fileApi = FileApi();
@@ -46,11 +50,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<UserProfileVm>? _foreignProfileFuture;
   Future<_ProfileExtras>? _extrasFuture;
   Future<int>? _activityCountFuture;
+  Future<List<ActivityListItemVm>>? _foreignRecentActivitiesFuture;
   Future<int>? _publishedStoriesCountFuture;
   Future<ExcursionReviewsPage>? _guideReviewsFuture;
   Future<GuideReviewsPage>? _directGuideReviewsFuture;
   String _extrasKey = '';
   String _activityCountKey = '';
+  String _foreignRecentActivitiesKey = '';
   String _publishedStoriesCountKey = '';
   String _guideReviewsKey = '';
   String _directGuideReviewsKey = '';
@@ -83,6 +89,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _isMessageActionLoading = false;
     _publishedStoriesCountFuture = null;
     _publishedStoriesCountKey = '';
+    _foreignRecentActivitiesFuture = null;
+    _foreignRecentActivitiesKey = '';
     _guideReviewsFuture = null;
     _guideReviewsKey = '';
     _directGuideReviewsFuture = null;
@@ -223,6 +231,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
     return _activityCountFuture!;
+  }
+
+  Future<List<ActivityListItemVm>> _recentActivitiesFutureFor(
+    UserProfileVm profile,
+  ) {
+    final key =
+        '${profile.userId.trim()}|$_foreignProfileRecentActivitiesPreviewLimit';
+    if (_foreignRecentActivitiesFuture == null ||
+        _foreignRecentActivitiesKey != key) {
+      _foreignRecentActivitiesKey = key;
+      _foreignRecentActivitiesFuture = _activityApi.getUserRecentActivities(
+        profile.userId.trim(),
+        limit: _foreignProfileRecentActivitiesPreviewLimit,
+      );
+    }
+    return _foreignRecentActivitiesFuture!;
   }
 
   Future<int> _publishedStoriesCountFutureFor(UserProfileVm profile) {
@@ -384,6 +408,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               !isOwnProfile && extras.guide?.isVerified == true
               ? _directGuideReviewsFutureFor(effectiveProfile)
               : null,
+          recentActivitiesFuture: isOwnProfile
+              ? null
+              : _recentActivitiesFutureFor(effectiveProfile),
           activityCountFuture: _activityCountFutureFor(effectiveProfile),
           publishedStoriesCountFuture: _publishedStoriesCountFutureFor(
             effectiveProfile,
@@ -414,6 +441,7 @@ class _ProfileBody extends StatelessWidget {
     required this.avatarUrl,
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
+    required this.recentActivitiesFuture,
     required this.activityCountFuture,
     required this.publishedStoriesCountFuture,
     required this.isOwnProfile,
@@ -432,6 +460,7 @@ class _ProfileBody extends StatelessWidget {
   final String? avatarUrl;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
+  final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
   final Future<int> activityCountFuture;
   final Future<int> publishedStoriesCountFuture;
   final bool isOwnProfile;
@@ -515,9 +544,11 @@ class _ProfileBody extends StatelessWidget {
           _OwnProfileSections(isGuideProfile: isGuideProfile),
         ] else ...[
           _ForeignProfileSections(
+            userId: profile.userId,
             isGuideProfile: isGuideProfile,
             guideReviewsFuture: guideReviewsFuture,
             directGuideReviewsFuture: directGuideReviewsFuture,
+            recentActivitiesFuture: recentActivitiesFuture,
           ),
         ],
       ],
@@ -1367,14 +1398,18 @@ class _OwnProfileSections extends StatelessWidget {
 
 class _ForeignProfileSections extends StatelessWidget {
   const _ForeignProfileSections({
+    required this.userId,
     required this.isGuideProfile,
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
+    required this.recentActivitiesFuture,
   });
 
+  final String userId;
   final bool isGuideProfile;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
+  final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -1393,14 +1428,9 @@ class _ForeignProfileSections extends StatelessWidget {
           _GuideExcursionReviewsSection(reviewsFuture: guideReviewsFuture!),
           SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
         ],
-        ProfileSectionHeading(
-          title: l10n.profileHostedActivitiesTitle,
-          kicker: isGuideProfile ? l10n.profileGuideTitle : null,
-        ),
-        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-        _PlaceholderShowcaseCard(
-          title: l10n.profileUnavailableTitle,
-          subtitle: l10n.profileHostedActivitiesUnavailable,
+        _ForeignRecentActivitiesSection(
+          userId: userId,
+          recentActivitiesFuture: recentActivitiesFuture,
         ),
         SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
         ProfileSectionHeading(title: l10n.profileBlogsTitle),
@@ -1409,6 +1439,119 @@ class _ForeignProfileSections extends StatelessWidget {
           title: l10n.profileUnavailableTitle,
           subtitle: l10n.profileBlogsUnavailable,
         ),
+      ],
+    );
+  }
+}
+
+class _ForeignRecentActivitiesSection extends StatelessWidget {
+  const _ForeignRecentActivitiesSection({
+    required this.userId,
+    required this.recentActivitiesFuture,
+  });
+
+  final String userId;
+  final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ProfileSectionHeading(
+                title: l10n.profileRecentActivitiesTitle,
+              ),
+            ),
+            SizedBox(width: profileScaled(context, 10, min: 8, max: 12)),
+            TextButton.icon(
+              onPressed: userId.trim().isEmpty
+                  ? null
+                  : () {
+                      context.push(
+                        '/users/${Uri.encodeComponent(userId)}/activities',
+                      );
+                    },
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: Text(l10n.profileViewAllActivities),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                padding: EdgeInsets.symmetric(
+                  horizontal: profileScaled(context, 10, min: 8, max: 12),
+                  vertical: profileScaled(context, 8, min: 6, max: 8),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        if (recentActivitiesFuture == null)
+          _PlaceholderShowcaseCard(
+            title: l10n.profileActivitiesEmptyTitle,
+            subtitle: l10n.profileActivitiesEmptySubtitle,
+          )
+        else
+          FutureBuilder<List<ActivityListItemVm>>(
+            future: recentActivitiesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const _ForeignRecentActivitiesSkeleton();
+              }
+              if (snapshot.hasError) {
+                return _PlaceholderShowcaseCard(
+                  title: l10n.profileActivitiesLoadFailed,
+                  subtitle: l10n.profileActivitiesLoadFailedHint,
+                );
+              }
+
+              final items = snapshot.data ?? const <ActivityListItemVm>[];
+              if (items.isEmpty) {
+                return _PlaceholderShowcaseCard(
+                  title: l10n.profileActivitiesEmptyTitle,
+                  subtitle: l10n.profileActivitiesEmptySubtitle,
+                );
+              }
+
+              return Column(
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    ProfileActivityCard(
+                      item: items[i],
+                      onTap: () => context.push(
+                        '/activities/${items[i].id}',
+                        extra: items[i],
+                      ),
+                    ),
+                    if (i != items.length - 1)
+                      SizedBox(height: profileScaled(context, 12, min: 10)),
+                  ],
+                ],
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _ForeignRecentActivitiesSkeleton extends StatelessWidget {
+  const _ForeignRecentActivitiesSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < 2; i++) ...[
+          Container(
+            height: profileScaled(context, 220, min: 190, max: 240),
+            decoration: profileCardDecoration(context, highlighted: true),
+          ),
+          if (i != 1) SizedBox(height: profileScaled(context, 12, min: 10)),
+        ],
       ],
     );
   }

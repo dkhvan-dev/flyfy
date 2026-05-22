@@ -90,7 +90,7 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 	}
 
 	parts := strings.Split(path, "/")
-	if len(parts) == 3 && parts[0] == "users" && parts[2] == "completion-stats" {
+	if len(parts) == 3 && parts[0] == "users" {
 		if r.Method != http.MethodGet {
 			writeError(w, http.StatusNotFound, "not found")
 			return
@@ -101,7 +101,17 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 			writeError(w, http.StatusBadRequest, "invalid user id")
 			return
 		}
-		h.GetUserActivityCompletionStats(w, r, userID)
+
+		switch parts[2] {
+		case "completion-stats":
+			h.GetUserActivityCompletionStats(w, r, userID)
+		case "hosted":
+			h.ListUserHostedActivities(w, r, userID)
+		case "joined":
+			h.ListUserJoinedActivities(w, r, userID)
+		default:
+			writeError(w, http.StatusNotFound, "not found")
+		}
 		return
 	}
 
@@ -982,6 +992,34 @@ func (h *Handler) ListActivityParticipants(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, resp)
 }
 
+func (h *Handler) writeActivityListResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+	items []*model.Activity,
+	requestedLimit int,
+) {
+	hasMore := len(items) > requestedLimit
+	if hasMore {
+		items = items[:requestedLimit]
+	}
+
+	resp := dto.ActivityListResponse{
+		Items:   make([]dto.ActivityResponse, 0, len(items)),
+		HasMore: hasMore,
+	}
+
+	for _, item := range items {
+		mapped, mapErr := h.toActivityResponse(r.Context(), item)
+		if mapErr != nil {
+			writeError(w, http.StatusInternalServerError, "failed to build activity response")
+			return
+		}
+		resp.Items = append(resp.Items, mapped)
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (h *Handler) ListMyJoinedActivities(w http.ResponseWriter, r *http.Request) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
@@ -1001,26 +1039,7 @@ func (h *Handler) ListMyJoinedActivities(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	hasMore := len(items) > joinedLimit
-	if hasMore {
-		items = items[:joinedLimit]
-	}
-
-	resp := dto.ActivityListResponse{
-		Items:   make([]dto.ActivityResponse, 0, len(items)),
-		HasMore: hasMore,
-	}
-
-	for _, item := range items {
-		mapped, mapErr := h.toActivityResponse(r.Context(), item)
-		if mapErr != nil {
-			writeError(w, http.StatusInternalServerError, "failed to build activity response")
-			return
-		}
-		resp.Items = append(resp.Items, mapped)
-	}
-
-	writeJSON(w, http.StatusOK, resp)
+	h.writeActivityListResponse(w, r, items, joinedLimit)
 }
 
 func (h *Handler) ListMyHostedActivities(w http.ResponseWriter, r *http.Request) {
@@ -1042,26 +1061,39 @@ func (h *Handler) ListMyHostedActivities(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	hasMore := len(items) > hostedLimit
-	if hasMore {
-		items = items[:hostedLimit]
+	h.writeActivityListResponse(w, r, items, hostedLimit)
+}
+
+func (h *Handler) ListUserJoinedActivities(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	joinedLimit := parseIntOrDefault(r.URL.Query().Get("limit"), 20)
+	if joinedLimit > 100 {
+		joinedLimit = 100
+	}
+	offset := parseIntOrDefault(r.URL.Query().Get("offset"), 0)
+
+	items, err := h.activityUC.ListPublicProfileJoinedActivities(r.Context(), userID, joinedLimit+1, offset)
+	if err != nil {
+		h.writeAppError(w, err, "failed to list user joined activities")
+		return
 	}
 
-	resp := dto.ActivityListResponse{
-		Items:   make([]dto.ActivityResponse, 0, len(items)),
-		HasMore: hasMore,
+	h.writeActivityListResponse(w, r, items, joinedLimit)
+}
+
+func (h *Handler) ListUserHostedActivities(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	hostedLimit := parseIntOrDefault(r.URL.Query().Get("limit"), 20)
+	if hostedLimit > 100 {
+		hostedLimit = 100
+	}
+	offset := parseIntOrDefault(r.URL.Query().Get("offset"), 0)
+
+	items, err := h.activityUC.ListPublicProfileHostedActivities(r.Context(), userID, hostedLimit+1, offset)
+	if err != nil {
+		h.writeAppError(w, err, "failed to list user hosted activities")
+		return
 	}
 
-	for _, item := range items {
-		mapped, mapErr := h.toActivityResponse(r.Context(), item)
-		if mapErr != nil {
-			writeError(w, http.StatusInternalServerError, "failed to build activity response")
-			return
-		}
-		resp.Items = append(resp.Items, mapped)
-	}
-
-	writeJSON(w, http.StatusOK, resp)
+	h.writeActivityListResponse(w, r, items, hostedLimit)
 }
 
 func (h *Handler) GetUserActivityCompletionStats(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {

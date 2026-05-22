@@ -1288,6 +1288,84 @@ abstract class AppLocalizations {
   /// **'Public hosted activities will appear here once the backend exposes the author\'s public showcase.'**
   String get profileHostedActivitiesUnavailable;
 
+  /// No description provided for @profileRecentActivitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent activities'**
+  String get profileRecentActivitiesTitle;
+
+  /// No description provided for @profileViewAllActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get profileViewAllActivities;
+
+  /// No description provided for @profileActivitiesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load activities'**
+  String get profileActivitiesLoadFailed;
+
+  /// No description provided for @profileActivitiesLoadFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get profileActivitiesLoadFailedHint;
+
+  /// No description provided for @profileActivitiesEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No activities yet'**
+  String get profileActivitiesEmptyTitle;
+
+  /// No description provided for @profileActivitiesEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed public activities for this user will appear here.'**
+  String get profileActivitiesEmptySubtitle;
+
+  /// No description provided for @profileUserActivitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User activities'**
+  String get profileUserActivitiesTitle;
+
+  /// No description provided for @profileUserActivitiesHostedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Hosted'**
+  String get profileUserActivitiesHostedTab;
+
+  /// No description provided for @profileUserActivitiesVisitedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Visited'**
+  String get profileUserActivitiesVisitedTab;
+
+  /// No description provided for @profileUserActivitiesHostedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No hosted activities yet'**
+  String get profileUserActivitiesHostedEmptyTitle;
+
+  /// No description provided for @profileUserActivitiesHostedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When this user completes a public activity as the host, it will appear here.'**
+  String get profileUserActivitiesHostedEmptySubtitle;
+
+  /// No description provided for @profileUserActivitiesVisitedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No visited activities yet'**
+  String get profileUserActivitiesVisitedEmptyTitle;
+
+  /// No description provided for @profileUserActivitiesVisitedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When this user attends a completed public activity, it will appear here.'**
+  String get profileUserActivitiesVisitedEmptySubtitle;
+
   /// No description provided for @profileBlogsTitle.
   ///
   /// In en, this message translates to:

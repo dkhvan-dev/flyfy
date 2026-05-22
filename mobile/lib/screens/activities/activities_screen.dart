@@ -14,6 +14,7 @@ import '../../core/ui/error_view.dart';
 import '../../core/ui/filter_sheet_chrome.dart';
 import '../../core/ui/pagination_bar.dart';
 import '../../core/utils/pagination.dart';
+import '../../features/activities/activity_category_art.dart';
 import '../../features/activities/activity_cover_url.dart';
 import '../../features/activities/activity_formatters.dart';
 import '../../features/activities/activity_taxonomy_resolver.dart';
@@ -592,7 +593,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   0,
                                 ),
                                 child: ErrorView(
-                                  message: provider.errorMessage ??
+                                  message:
+                                      provider.errorMessage ??
                                       l10n.activitiesLoadFailed,
                                   onRetry: () async {
                                     await provider.loadActivities();
@@ -652,10 +654,11 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   final item = paginatedItems.items[index];
                                   final categorySlug =
                                       resolvedActivityCategorySlug(
-                                    categories: provider.categoryItems,
-                                    slug: item.categorySlug,
-                                  );
-                                  final categoryLabel = categoryOptions
+                                        categories: provider.categoryItems,
+                                        slug: item.categorySlug,
+                                      );
+                                  final categoryLabel =
+                                      categoryOptions
                                           .cast<_DiscoverCategoryOption?>()
                                           .firstWhere(
                                             (option) =>
@@ -671,7 +674,8 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     item: item,
                                     layout: layout,
                                     categoryLabel: categoryLabel,
-                                    isOwner: currentUserId.isNotEmpty &&
+                                    isOwner:
+                                        currentUserId.isNotEmpty &&
                                         currentUserId == item.hostUserId,
                                     onOpenDetails: () =>
                                         _openActivityDetails(context, item.id),
@@ -976,7 +980,8 @@ class _FiltersSummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 360 ||
+    final compact =
+        MediaQuery.sizeOf(context).width < 360 ||
         MediaQuery.textScalerOf(context).scale(1) > 1.02;
 
     final summaryText = Text(
@@ -1043,7 +1048,7 @@ class _DiscoverActivityCard extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final compactMeta =
         MediaQuery.sizeOf(context).width < 360 || textScale > 1.04;
-    final artSpec = _cardArtForItem(item);
+    final artSpec = activityCardArtForItem(item);
     final badgeText = item.isFree ? l10n.createPriceFree : item.priceLabel;
     final visibilityBadge = _visibilityBadge(item.visibility, l10n);
     final dateText = DateFormat.MMMd(
@@ -1121,7 +1126,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                   children: [
                     AspectRatio(
                       aspectRatio: layout.coverAspectRatio,
-                      child: _DecorativeActivityCover(
+                      child: ActivityDecorativeCover(
                         spec: artSpec,
                         imageUrl: resolveActivityCoverUrl(item),
                       ),
@@ -1295,7 +1300,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                         final columns = compactMeta ? 1 : 2;
                         final itemWidth =
                             (constraints.maxWidth - gap * (columns - 1)) /
-                                columns;
+                            columns;
 
                         return Wrap(
                           spacing: gap,
@@ -1382,7 +1387,8 @@ class _CardMetaItem extends StatelessWidget {
         Icon(data.icon, size: iconSize, color: const Color(0xB0FFF0E0)),
         SizedBox(width: gap),
         Expanded(
-          child: data.labelBuilder?.call(labelStyle) ??
+          child:
+              data.labelBuilder?.call(labelStyle) ??
               Text(
                 data.label,
                 maxLines: 2,
@@ -1391,107 +1397,6 @@ class _CardMetaItem extends StatelessWidget {
               ),
         ),
       ],
-    );
-  }
-}
-
-class _DecorativeActivityCover extends StatelessWidget {
-  const _DecorativeActivityCover({required this.spec, this.imageUrl});
-
-  final _CardArtSpec spec;
-  final String? imageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final normalizedImageUrl = imageUrl?.trim() ?? '';
-    if (normalizedImageUrl.isNotEmpty) {
-      return Image.network(
-        normalizedImageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _DecorativeActivityCoverFallback(spec: spec),
-      );
-    }
-
-    return _DecorativeActivityCoverFallback(spec: spec);
-  }
-}
-
-class _DecorativeActivityCoverFallback extends StatelessWidget {
-  const _DecorativeActivityCoverFallback({required this.spec});
-
-  final _CardArtSpec spec;
-
-  @override
-  Widget build(BuildContext context) {
-    final largeOrb = _activitiesScaled(context, 150, min: 112, max: 162);
-    final smallOrb = _activitiesScaled(context, 170, min: 124, max: 182);
-    final iconSize = _activitiesScaled(context, 66, min: 50, max: 70);
-    final arrowSize = _activitiesScaled(context, 34, min: 26, max: 36);
-    final horizontalInset = _activitiesScaled(context, 26, min: 18, max: 28);
-    final bottomInset = _activitiesScaled(context, 14, min: 10, max: 16);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: spec.colors,
-        ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned(
-            left: -_activitiesScaled(context, 32, min: 20, max: 34),
-            top: -_activitiesScaled(context, 34, min: 22, max: 36),
-            child: Container(
-              width: largeOrb,
-              height: largeOrb,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.12),
-              ),
-            ),
-          ),
-          Positioned(
-            right: -_activitiesScaled(context, 44, min: 28, max: 46),
-            bottom: -_activitiesScaled(context, 48, min: 30, max: 50),
-            child: Container(
-              width: smallOrb,
-              height: smallOrb,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.black.withValues(alpha: 0.14),
-              ),
-            ),
-          ),
-          Positioned(
-            left: horizontalInset,
-            right: horizontalInset,
-            bottom: bottomInset,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Icon(
-                  spec.icon,
-                  size: iconSize,
-                  color: Colors.white.withValues(alpha: 0.22),
-                ),
-                Transform.rotate(
-                  angle: -0.18,
-                  child: Icon(
-                    Icons.arrow_outward_rounded,
-                    size: arrowSize,
-                    color: Colors.white.withValues(alpha: 0.18),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1690,8 +1595,9 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
         builder: (context, constraints) {
           final textScale = MediaQuery.textScalerOf(context).scale(1);
           final spacing = _activitiesScaled(context, 8, min: 6, max: 10);
-          final columns =
-              constraints.maxWidth < 340 || textScale > 1.08 ? 1 : 2;
+          final columns = constraints.maxWidth < 340 || textScale > 1.08
+              ? 1
+              : 2;
           final itemWidth =
               (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -1849,7 +1755,8 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
       title: widget.l10n.activitiesFilterVisibility,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useColumn = constraints.maxWidth < 360 ||
+          final useColumn =
+              constraints.maxWidth < 360 ||
               MediaQuery.textScalerOf(context).scale(1) > 1.04;
           final options = [
             _VisibilityOptionCard(
@@ -1893,7 +1800,8 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useColumn = constraints.maxWidth < 360 ||
+        final useColumn =
+            constraints.maxWidth < 360 ||
             MediaQuery.textScalerOf(context).scale(1) > 1.02;
         if (useColumn) {
           return Column(
@@ -2025,8 +1933,9 @@ class _CategoryFilterPill extends StatelessWidget {
     final iconWrap = _activitiesScaled(context, 34, min: 30, max: 34);
     final titleSize = _activitiesScaled(context, 13, min: 12, max: 14);
     final countSize = _activitiesScaled(context, 11, min: 10, max: 11);
-    final foreground =
-        selected ? const Color(0xFFFFFAF5) : const Color(0xE6FFF0E0);
+    final foreground = selected
+        ? const Color(0xFFFFFAF5)
+        : const Color(0xE6FFF0E0);
 
     return Material(
       color: Colors.transparent,
@@ -2739,10 +2648,12 @@ class _DiscoverFilters {
           ? this.startDate
           : startDate as DateTime?,
       endDate: identical(endDate, _unset) ? this.endDate : endDate as DateTime?,
-      minPrice:
-          identical(minPrice, _unset) ? this.minPrice : minPrice as double?,
-      maxPrice:
-          identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
+      minPrice: identical(minPrice, _unset)
+          ? this.minPrice
+          : minPrice as double?,
+      maxPrice: identical(maxPrice, _unset)
+          ? this.maxPrice
+          : maxPrice as double?,
     );
   }
 }
@@ -2773,13 +2684,6 @@ class _CardMetaData {
   final IconData icon;
   final String label;
   final Widget Function(TextStyle style)? labelBuilder;
-}
-
-class _CardArtSpec {
-  const _CardArtSpec({required this.icon, required this.colors});
-
-  final IconData icon;
-  final List<Color> colors;
 }
 
 class _ActivitiesAdaptiveLayout {
@@ -2893,9 +2797,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-            .substring(0, newValue.selection.end)
-            .replaceAll(RegExp(r'[^0-9]'), '')
-            .length;
+              .substring(0, newValue.selection.end)
+              .replaceAll(RegExp(r'[^0-9]'), '')
+              .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;
@@ -3054,11 +2958,12 @@ List<_DiscoverCategoryOption> _buildCategoryOptions(
       slug: slug,
     );
 
-    final visual = _categoryVisual(slug);
+    final visual = activityCategoryVisual(slug);
     options.add(
       _DiscoverCategoryOption(
         slug: slug,
-        label: matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
+        label:
+            matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
                 true
             ? matchedCategory!.localizedName(languageCode)
             : ActivityCategoryVm.humanizeSlug(slug),
@@ -3169,87 +3074,13 @@ List<ActivityListItemVm> _sortDiscoverItems(
       _ActivitySortField.price => _numericPrice(a).compareTo(_numericPrice(b)),
     };
 
-    final compare =
-        primaryCompare == 0 ? a.startAt.compareTo(b.startAt) : primaryCompare;
+    final compare = primaryCompare == 0
+        ? a.startAt.compareTo(b.startAt)
+        : primaryCompare;
     return sortAscending ? compare : -compare;
   });
   return sorted;
 }
-
-_CardArtSpec _categoryVisual(String slug) {
-  if (slug.contains('wellness') || slug.contains('health')) {
-    return const _CardArtSpec(
-      icon: Icons.spa_rounded,
-      colors: [Color(0xFF295E54), Color(0xFF74D2AE)],
-    );
-  }
-  if (slug.contains('nature') ||
-      slug.contains('outdoor') ||
-      slug.contains('hiking')) {
-    return const _CardArtSpec(
-      icon: Icons.forest_rounded,
-      colors: [Color(0xFF2A4B2B), Color(0xFF78C36A)],
-    );
-  }
-  if (slug.contains('food')) {
-    return const _CardArtSpec(
-      icon: Icons.restaurant_rounded,
-      colors: [Color(0xFF66371A), Color(0xFFFFA657)],
-    );
-  }
-  if (slug.contains('culture') ||
-      slug.contains('art') ||
-      slug.contains('history')) {
-    return const _CardArtSpec(
-      icon: Icons.palette_outlined,
-      colors: [Color(0xFF5A3055), Color(0xFFCB84BA)],
-    );
-  }
-  if (slug.contains('sport') || slug.contains('adventure')) {
-    return const _CardArtSpec(
-      icon: Icons.kayaking_rounded,
-      colors: [Color(0xFF5F3D1F), Color(0xFFE69B4B)],
-    );
-  }
-  if (slug.contains('workshop') ||
-      slug.contains('learning') ||
-      slug.contains('education')) {
-    return const _CardArtSpec(
-      icon: Icons.auto_stories_rounded,
-      colors: [Color(0xFF443A73), Color(0xFF9A89E2)],
-    );
-  }
-  if (slug.contains('night') || slug.contains('social')) {
-    return const _CardArtSpec(
-      icon: Icons.celebration_rounded,
-      colors: [Color(0xFF5A2348), Color(0xFFE07AB8)],
-    );
-  }
-
-  return const _CardArtSpec(
-    icon: Icons.travel_explore_rounded,
-    colors: [Color(0xFF52301B), Color(0xFFCB8B50)],
-  );
-}
-
-_CardArtSpec _cardArtForItem(ActivityListItemVm item) {
-  final fromCategory = _categoryVisual(_normalizeSlug(item.categorySlug));
-  if (item.format.toUpperCase() == 'ONLINE') {
-    return const _CardArtSpec(
-      icon: Icons.videocam_rounded,
-      colors: [Color(0xFF1F4D8A), Color(0xFF67A8F5)],
-    );
-  }
-  if (item.format.toUpperCase() == 'HYBRID') {
-    return const _CardArtSpec(
-      icon: Icons.devices_rounded,
-      colors: [Color(0xFF5E3E86), Color(0xFFB08CF6)],
-    );
-  }
-  return fromCategory;
-}
-
-String _normalizeSlug(String raw) => raw.trim().toLowerCase();
 
 double _numericPrice(ActivityListItemVm item) {
   if (item.isFree) {

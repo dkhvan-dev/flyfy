@@ -83,6 +83,8 @@ type ActivityRepository interface {
 
 	ListHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
 	ListJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
+	ListPublicProfileHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
+	ListPublicProfileJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
 	CountActivityCompletionStatsByUserID(ctx context.Context, userID uuid.UUID) (ActivityCompletionStats, error)
 
 	CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error

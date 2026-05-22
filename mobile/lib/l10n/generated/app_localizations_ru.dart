@@ -669,6 +669,51 @@ class AppLocalizationsRu extends AppLocalizations {
       'Список опубликованных активностей появится здесь, когда backend отдаст публичную витрину автора.';
 
   @override
+  String get profileRecentActivitiesTitle => 'Последние активности';
+
+  @override
+  String get profileViewAllActivities => 'Все';
+
+  @override
+  String get profileActivitiesLoadFailed => 'Не удалось загрузить активности';
+
+  @override
+  String get profileActivitiesLoadFailedHint =>
+      'Проверьте подключение и попробуйте еще раз.';
+
+  @override
+  String get profileActivitiesEmptyTitle => 'Активностей пока нет';
+
+  @override
+  String get profileActivitiesEmptySubtitle =>
+      'Завершенные публичные активности пользователя появятся здесь.';
+
+  @override
+  String get profileUserActivitiesTitle => 'Активности пользователя';
+
+  @override
+  String get profileUserActivitiesHostedTab => 'Проведенные';
+
+  @override
+  String get profileUserActivitiesVisitedTab => 'Посещенные';
+
+  @override
+  String get profileUserActivitiesHostedEmptyTitle =>
+      'Проведенных активностей пока нет';
+
+  @override
+  String get profileUserActivitiesHostedEmptySubtitle =>
+      'Когда пользователь завершит публичную активность как автор, она появится здесь.';
+
+  @override
+  String get profileUserActivitiesVisitedEmptyTitle =>
+      'Посещенных активностей пока нет';
+
+  @override
+  String get profileUserActivitiesVisitedEmptySubtitle =>
+      'Когда пользователь посетит публичную завершенную активность, она появится здесь.';
+
+  @override
   String get profileBlogsTitle => 'Последние Блоги';
 
   @override

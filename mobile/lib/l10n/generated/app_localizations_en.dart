@@ -666,6 +666,51 @@ class AppLocalizationsEn extends AppLocalizations {
       'Public hosted activities will appear here once the backend exposes the author\'s public showcase.';
 
   @override
+  String get profileRecentActivitiesTitle => 'Recent activities';
+
+  @override
+  String get profileViewAllActivities => 'All';
+
+  @override
+  String get profileActivitiesLoadFailed => 'Failed to load activities';
+
+  @override
+  String get profileActivitiesLoadFailedHint =>
+      'Check your connection and try again.';
+
+  @override
+  String get profileActivitiesEmptyTitle => 'No activities yet';
+
+  @override
+  String get profileActivitiesEmptySubtitle =>
+      'Completed public activities for this user will appear here.';
+
+  @override
+  String get profileUserActivitiesTitle => 'User activities';
+
+  @override
+  String get profileUserActivitiesHostedTab => 'Hosted';
+
+  @override
+  String get profileUserActivitiesVisitedTab => 'Visited';
+
+  @override
+  String get profileUserActivitiesHostedEmptyTitle =>
+      'No hosted activities yet';
+
+  @override
+  String get profileUserActivitiesHostedEmptySubtitle =>
+      'When this user completes a public activity as the host, it will appear here.';
+
+  @override
+  String get profileUserActivitiesVisitedEmptyTitle =>
+      'No visited activities yet';
+
+  @override
+  String get profileUserActivitiesVisitedEmptySubtitle =>
+      'When this user attends a completed public activity, it will appear here.';
+
+  @override
   String get profileBlogsTitle => 'Recent Blogs';
 
   @override

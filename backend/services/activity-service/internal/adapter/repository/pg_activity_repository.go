@@ -1452,6 +1452,103 @@ func (r *PGActivityRepository) ListJoinedActivitiesByUserID(
 	return result, rows.Err()
 }
 
+func (r *PGActivityRepository) ListPublicProfileHostedActivitiesByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	offset int,
+) ([]*model.Activity, error) {
+	const query = `
+		SELECT
+	` + activitySelectColumns + `
+		FROM activities
+		WHERE host_user_id = $1
+		  AND status = $4
+		  AND visibility = $5
+		ORDER BY completed_at DESC NULLS LAST, end_at DESC, start_at DESC, created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		userID,
+		limit,
+		offset,
+		string(enum.ActivityStatusCompleted),
+		string(enum.ActivityVisibilityPublic),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list public profile hosted activities by user id: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]*model.Activity, 0)
+	for rows.Next() {
+		item, scanErr := scanActivity(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan public profile hosted activity: %w", scanErr)
+		}
+		result = append(result, item)
+	}
+
+	return result, rows.Err()
+}
+
+func (r *PGActivityRepository) ListPublicProfileJoinedActivitiesByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	offset int,
+) ([]*model.Activity, error) {
+	const query = `
+		SELECT DISTINCT
+	` + qualifiedActivitySelectColumns + `
+		FROM activities a
+		INNER JOIN activity_participants ap ON ap.activity_id = a.id
+		WHERE ap.user_id = $1
+		  AND a.host_user_id <> $1
+		  AND a.status = $4
+		  AND a.visibility = $5
+		  AND ap.status = ANY($6)
+		ORDER BY a.completed_at DESC NULLS LAST, a.end_at DESC, a.start_at DESC, a.created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	participantStatuses := []string{
+		string(enum.ParticipantStatusApproved),
+		string(enum.ParticipantStatusConfirmed),
+		string(enum.ParticipantStatusCheckedIn),
+		string(enum.ParticipantStatusAttended),
+	}
+
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		userID,
+		limit,
+		offset,
+		string(enum.ActivityStatusCompleted),
+		string(enum.ActivityVisibilityPublic),
+		participantStatuses,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list public profile joined activities by user id: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]*model.Activity, 0)
+	for rows.Next() {
+		item, scanErr := scanActivity(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan public profile joined activity: %w", scanErr)
+		}
+		result = append(result, item)
+	}
+
+	return result, rows.Err()
+}
+
 func (r *PGActivityRepository) CountActivityCompletionStatsByUserID(
 	ctx context.Context,
 	userID uuid.UUID,
