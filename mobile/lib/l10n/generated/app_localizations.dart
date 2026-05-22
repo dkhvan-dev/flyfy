@@ -328,6 +328,30 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get profileTitle;
 
+  /// No description provided for @drawerStatusVerifiedGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified guide'**
+  String get drawerStatusVerifiedGuide;
+
+  /// No description provided for @drawerStatusGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide'**
+  String get drawerStatusGuide;
+
+  /// No description provided for @drawerStatusTraveler.
+  ///
+  /// In en, this message translates to:
+  /// **'Traveler'**
+  String get drawerStatusTraveler;
+
+  /// No description provided for @drawerStatusCompleteProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete profile'**
+  String get drawerStatusCompleteProfile;
+
   /// No description provided for @profileNotAvailable.
   ///
   /// In en, this message translates to:

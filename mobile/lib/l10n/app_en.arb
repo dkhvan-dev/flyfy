@@ -49,6 +49,10 @@
     }
   },
   "profileTitle": "Profile",
+  "drawerStatusVerifiedGuide": "Verified guide",
+  "drawerStatusGuide": "Guide",
+  "drawerStatusTraveler": "Traveler",
+  "drawerStatusCompleteProfile": "Complete profile",
   "profileNotAvailable": "Profile is not available",
   "profilePhone": "Phone",
   "profileEmail": "Email",

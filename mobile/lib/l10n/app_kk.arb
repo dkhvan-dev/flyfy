@@ -49,6 +49,10 @@
     }
   },
   "profileTitle": "Профиль",
+  "drawerStatusVerifiedGuide": "Расталған гид",
+  "drawerStatusGuide": "Гид",
+  "drawerStatusTraveler": "Саяхатшы",
+  "drawerStatusCompleteProfile": "Профильді толтырыңыз",
   "profileNotAvailable": "Профиль қолжетімсіз",
   "profilePhone": "Телефон",
   "profileEmail": "Email",

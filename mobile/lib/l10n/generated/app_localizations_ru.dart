@@ -131,6 +131,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileTitle => 'Профиль';
 
   @override
+  String get drawerStatusVerifiedGuide => 'Подтвержденный гид';
+
+  @override
+  String get drawerStatusGuide => 'Гид';
+
+  @override
+  String get drawerStatusTraveler => 'Путешественник';
+
+  @override
+  String get drawerStatusCompleteProfile => 'Заполните профиль';
+
+  @override
   String get profileNotAvailable => 'Профиль недоступен';
 
   @override

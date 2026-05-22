@@ -133,6 +133,18 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileTitle => 'Профиль';
 
   @override
+  String get drawerStatusVerifiedGuide => 'Расталған гид';
+
+  @override
+  String get drawerStatusGuide => 'Гид';
+
+  @override
+  String get drawerStatusTraveler => 'Саяхатшы';
+
+  @override
+  String get drawerStatusCompleteProfile => 'Профильді толтырыңыз';
+
+  @override
   String get profileNotAvailable => 'Профиль қолжетімсіз';
 
   @override

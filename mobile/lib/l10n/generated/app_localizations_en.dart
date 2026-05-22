@@ -130,6 +130,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTitle => 'Profile';
 
   @override
+  String get drawerStatusVerifiedGuide => 'Verified guide';
+
+  @override
+  String get drawerStatusGuide => 'Guide';
+
+  @override
+  String get drawerStatusTraveler => 'Traveler';
+
+  @override
+  String get drawerStatusCompleteProfile => 'Complete profile';
+
+  @override
   String get profileNotAvailable => 'Profile is not available';
 
   @override

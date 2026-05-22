@@ -49,6 +49,10 @@
     }
   },
   "profileTitle": "Профиль",
+  "drawerStatusVerifiedGuide": "Подтвержденный гид",
+  "drawerStatusGuide": "Гид",
+  "drawerStatusTraveler": "Путешественник",
+  "drawerStatusCompleteProfile": "Заполните профиль",
   "profileNotAvailable": "Профиль недоступен",
   "profilePhone": "Телефон",
   "profileEmail": "Email",
