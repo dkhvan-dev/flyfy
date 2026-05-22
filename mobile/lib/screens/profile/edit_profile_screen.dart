@@ -412,11 +412,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final confirmed = await _showLocationConfirmDialog(suggestion);
       if (!mounted || confirmed != true) return;
 
+      await _loadTimezones();
+      if (!mounted) return;
+
+      final detectedTimezone = await _deviceContextService.getLocalTimezone();
+      if (!mounted) return;
+
+      final resolvedTimezone = resolveReferenceTimezoneForLocation(
+        timezones: _timezones,
+        aliases: _timezoneSearchAliases,
+        cityName: suggestion.cityName,
+        countryCode: suggestion.countryCode,
+        deviceTimezoneId: detectedTimezone,
+      );
+      final resolvedTimezoneId =
+          normalizeReferenceTimezoneId(resolvedTimezone?.id) ??
+              normalizeReferenceTimezoneId(detectedTimezone);
+
       setState(() {
         if ((suggestion.countryCode ?? '').isNotEmpty) {
           _countryCodeController.text =
               normalizeReferenceCountryCode(suggestion.countryCode) ??
                   suggestion.countryCode!;
+        }
+        if (resolvedTimezoneId != null) {
+          final lang = Localizations.localeOf(context).languageCode;
+          _timezones = withDefaultReferenceTimezone(
+            _timezones,
+            resolvedTimezoneId,
+            lang: lang,
+          );
+          _timezoneSearchAliases = timezoneSearchAliasMap(_timezones);
+          _timezoneController.text = resolvedTimezoneId;
+          _timezoneSearchController.clear();
+          _timezoneSearchQuery = '';
         }
       });
     } catch (e) {
@@ -1777,10 +1806,11 @@ class _ProfileTimezoneSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final timezoneLabelLang = Localizations.localeOf(context).languageCode;
     final hasSelection = selectedTimezoneId != null;
     final selectedLabel = selectedTimezone == null
         ? selectedTimezoneId ?? searchHint
-        : _timezoneLabel(selectedTimezone!);
+        : referenceTimezoneLabel(selectedTimezone!, lang: timezoneLabelLang);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1914,7 +1944,6 @@ class _ProfileTimezoneSearchField extends StatelessWidget {
                       normalizeReferenceTimezoneId(timezone.id) ??
                           timezone.id.trim();
                   final selected = selectedTimezoneId == timezoneId;
-                  final offset = timezone.utcOffset?.trim();
 
                   return InkWell(
                     onTap: () => onTimezoneSelected(timezone),
@@ -1954,7 +1983,10 @@ class _ProfileTimezoneSearchField extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                _timezoneLabel(timezone),
+                                referenceTimezoneLabel(
+                                  timezone,
+                                  lang: timezoneLabelLang,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -1969,29 +2001,6 @@ class _ProfileTimezoneSearchField extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            SizedBox(
-                              width: profileScaled(
-                                context,
-                                10,
-                                min: 8,
-                                max: 10,
-                              ),
-                            ),
-                            Text(
-                              offset == null || offset.isEmpty
-                                  ? timezoneId
-                                  : 'UTC$offset',
-                              style: TextStyle(
-                                color: profileTextMuted,
-                                fontSize: profileScaled(
-                                  context,
-                                  12,
-                                  min: 11,
-                                  max: 12,
-                                ),
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -2003,16 +2012,6 @@ class _ProfileTimezoneSearchField extends StatelessWidget {
         ],
       ],
     );
-  }
-
-  String _timezoneLabel(ReferenceTimezone timezone) {
-    final name = timezone.name.trim();
-    final offset = timezone.utcOffset?.trim();
-    if (name.isNotEmpty && offset != null && offset.isNotEmpty) {
-      return '$name · UTC$offset';
-    }
-    if (name.isNotEmpty) return name;
-    return normalizeReferenceTimezoneId(timezone.id) ?? timezone.id.trim();
   }
 }
 

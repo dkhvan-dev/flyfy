@@ -169,6 +169,8 @@ void main() {
     expect(source, contains('withDefaultReferenceTimezone('));
     expect(source, contains('timezoneSearchAliasMap('));
     expect(source, contains('timezoneFilterSearchHaystack('));
+    expect(source, contains('referenceTimezoneLabel('));
+    expect(source, contains('lang: timezoneLabelLang'));
     expect(source, contains('_selectedTimezone()'));
     expect(source, contains('_visibleTimezones()'));
     expect(source, contains('_selectTimezone'));
@@ -182,5 +184,32 @@ void main() {
     expect(
         timezoneSection, contains('emptyLabel: l10n.profileTimezoneNoResults'));
     expect(timezoneSection, isNot(contains('_StyledTextField(')));
+  });
+
+  test('geolocation applies resolved timezone to the profile form', () async {
+    final source = await File(
+      'lib/screens/profile/edit_profile_screen.dart',
+    ).readAsString();
+
+    final methodStart = source.indexOf(
+      'Future<void> _resolveLocationFromDevice()',
+    );
+    final methodEnd = source.indexOf(
+      'Future<bool?> _showLocationConfirmDialog',
+      methodStart,
+    );
+
+    expect(methodStart, isNonNegative);
+    expect(methodEnd, greaterThan(methodStart));
+
+    final methodSource = source.substring(methodStart, methodEnd);
+
+    expect(methodSource, contains('await _loadTimezones();'));
+    expect(methodSource, contains('resolveReferenceTimezoneForLocation('));
+    expect(methodSource, contains('cityName: suggestion.cityName'));
+    expect(methodSource, contains('countryCode: suggestion.countryCode'));
+    expect(methodSource, contains('deviceTimezoneId: detectedTimezone'));
+    expect(methodSource, contains('_timezoneController.text ='));
+    expect(methodSource, contains('_timezoneSearchController.clear();'));
   });
 }

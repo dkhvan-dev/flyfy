@@ -12,225 +12,225 @@
     "id": "Asia/Almaty",
     "utcOffset": "+05:00",
     "name": {
-      "en": "Almaty time",
-      "ru": "Алматинское время",
-      "kk": "Алматы уақыты"
+      "en": "Almaty",
+      "ru": "Алматы",
+      "kk": "Алматы"
     }
   },
   {
     "id": "Asia/Aqtau",
     "utcOffset": "+05:00",
     "name": {
-      "en": "Aktau time",
-      "ru": "Актауское время",
-      "kk": "Ақтау уақыты"
+      "en": "Aktau",
+      "ru": "Актау",
+      "kk": "Ақтау"
     }
   },
   {
     "id": "Asia/Aqtobe",
     "utcOffset": "+05:00",
     "name": {
-      "en": "Aktobe time",
-      "ru": "Актюбинское время",
-      "kk": "Ақтөбе уақыты"
+      "en": "Aktobe",
+      "ru": "Актобе",
+      "kk": "Ақтөбе"
     }
   },
   {
     "id": "Asia/Atyrau",
     "utcOffset": "+05:00",
     "name": {
-      "en": "Atyrau time",
-      "ru": "Атырауское время",
-      "kk": "Атырау уақыты"
+      "en": "Atyrau",
+      "ru": "Атырау",
+      "kk": "Атырау"
     }
   },
   {
     "id": "Asia/Oral",
     "utcOffset": "+05:00",
     "name": {
-      "en": "Oral time",
-      "ru": "Уральское время",
-      "kk": "Орал уақыты"
+      "en": "Oral",
+      "ru": "Уральск",
+      "kk": "Орал"
     }
   },
   {
     "id": "Asia/Qyzylorda",
     "utcOffset": "+05:00",
     "name": {
-      "en": "Kyzylorda time",
-      "ru": "Кызылординское время",
-      "kk": "Қызылорда уақыты"
+      "en": "Kyzylorda",
+      "ru": "Кызылорда",
+      "kk": "Қызылорда"
     }
   },
   {
     "id": "Asia/Bishkek",
     "utcOffset": "+06:00",
     "name": {
-      "en": "Bishkek time",
-      "ru": "Бишкекское время",
-      "kk": "Бішкек уақыты"
+      "en": "Bishkek",
+      "ru": "Бишкек",
+      "kk": "Бішкек"
     }
   },
   {
     "id": "Asia/Tashkent",
     "utcOffset": "+05:00",
     "name": {
-      "en": "Tashkent time",
-      "ru": "Ташкентское время",
-      "kk": "Ташкент уақыты"
+      "en": "Tashkent",
+      "ru": "Ташкент",
+      "kk": "Ташкент"
     }
   },
   {
     "id": "Asia/Dubai",
     "utcOffset": "+04:00",
     "name": {
-      "en": "Dubai time",
-      "ru": "Дубайское время",
-      "kk": "Дубай уақыты"
+      "en": "Dubai",
+      "ru": "Дубай",
+      "kk": "Дубай"
     }
   },
   {
     "id": "Europe/Moscow",
     "utcOffset": "+03:00",
     "name": {
-      "en": "Moscow time",
-      "ru": "Московское время",
-      "kk": "Мәскеу уақыты"
+      "en": "Moscow",
+      "ru": "Москва",
+      "kk": "Мәскеу"
     }
   },
   {
     "id": "Europe/Istanbul",
     "utcOffset": "+03:00",
     "name": {
-      "en": "Istanbul time",
-      "ru": "Стамбульское время",
-      "kk": "Ыстамбұл уақыты"
+      "en": "Istanbul",
+      "ru": "Стамбул",
+      "kk": "Ыстамбұл"
     }
   },
   {
     "id": "Europe/London",
     "utcOffset": "+00:00",
     "name": {
-      "en": "London time",
-      "ru": "Лондонское время",
-      "kk": "Лондон уақыты"
+      "en": "London",
+      "ru": "Лондон",
+      "kk": "Лондон"
     }
   },
   {
     "id": "Europe/Paris",
     "utcOffset": "+01:00",
     "name": {
-      "en": "Paris time",
-      "ru": "Парижское время",
-      "kk": "Париж уақыты"
+      "en": "Paris",
+      "ru": "Париж",
+      "kk": "Париж"
     }
   },
   {
     "id": "Europe/Berlin",
     "utcOffset": "+01:00",
     "name": {
-      "en": "Berlin time",
-      "ru": "Берлинское время",
-      "kk": "Берлин уақыты"
+      "en": "Berlin",
+      "ru": "Берлин",
+      "kk": "Берлин"
     }
   },
   {
     "id": "Asia/Tokyo",
     "utcOffset": "+09:00",
     "name": {
-      "en": "Tokyo time",
-      "ru": "Токийское время",
-      "kk": "Токио уақыты"
+      "en": "Tokyo",
+      "ru": "Токио",
+      "kk": "Токио"
     }
   },
   {
     "id": "Asia/Seoul",
     "utcOffset": "+09:00",
     "name": {
-      "en": "Seoul time",
-      "ru": "Сеульское время",
-      "kk": "Сеул уақыты"
+      "en": "Seoul",
+      "ru": "Сеул",
+      "kk": "Сеул"
     }
   },
   {
     "id": "Asia/Shanghai",
     "utcOffset": "+08:00",
     "name": {
-      "en": "Shanghai time",
-      "ru": "Шанхайское время",
-      "kk": "Шанхай уақыты"
+      "en": "Shanghai",
+      "ru": "Шанхай",
+      "kk": "Шанхай"
     }
   },
   {
     "id": "Asia/Singapore",
     "utcOffset": "+08:00",
     "name": {
-      "en": "Singapore time",
-      "ru": "Сингапурское время",
-      "kk": "Сингапур уақыты"
+      "en": "Singapore",
+      "ru": "Сингапур",
+      "kk": "Сингапур"
     }
   },
   {
     "id": "Asia/Kolkata",
     "utcOffset": "+05:30",
     "name": {
-      "en": "India time",
-      "ru": "Индийское время",
-      "kk": "Үндістан уақыты"
+      "en": "India",
+      "ru": "Индия",
+      "kk": "Үндістан"
     }
   },
   {
     "id": "America/New_York",
     "utcOffset": "-05:00",
     "name": {
-      "en": "New York time",
-      "ru": "Нью-Йоркское время",
-      "kk": "Нью-Йорк уақыты"
+      "en": "New York",
+      "ru": "Нью-Йорк",
+      "kk": "Нью-Йорк"
     }
   },
   {
     "id": "America/Chicago",
     "utcOffset": "-06:00",
     "name": {
-      "en": "Chicago time",
-      "ru": "Чикагское время",
-      "kk": "Чикаго уақыты"
+      "en": "Chicago",
+      "ru": "Чикаго",
+      "kk": "Чикаго"
     }
   },
   {
     "id": "America/Denver",
     "utcOffset": "-07:00",
     "name": {
-      "en": "Denver time",
-      "ru": "Денверское время",
-      "kk": "Денвер уақыты"
+      "en": "Denver",
+      "ru": "Денвер",
+      "kk": "Денвер"
     }
   },
   {
     "id": "America/Los_Angeles",
     "utcOffset": "-08:00",
     "name": {
-      "en": "Los Angeles time",
-      "ru": "Лос-Анджелесское время",
-      "kk": "Лос-Анджелес уақыты"
+      "en": "Los Angeles",
+      "ru": "Лос-Анджелес",
+      "kk": "Лос-Анджелес"
     }
   },
   {
     "id": "America/Sao_Paulo",
     "utcOffset": "-03:00",
     "name": {
-      "en": "Sao Paulo time",
-      "ru": "Время Сан-Паулу",
-      "kk": "Сан-Паулу уақыты"
+      "en": "Sao Paulo",
+      "ru": "Сан-Паулу",
+      "kk": "Сан-Паулу"
     }
   },
   {
     "id": "Australia/Sydney",
     "utcOffset": "+10:00",
     "name": {
-      "en": "Sydney time",
-      "ru": "Сиднейское время",
-      "kk": "Сидней уақыты"
+      "en": "Sydney",
+      "ru": "Сидней",
+      "kk": "Сидней"
     }
   }
 ]

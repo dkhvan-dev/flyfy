@@ -22,8 +22,14 @@ func TestReferenceUseCaseListsTimezones(t *testing.T) {
 
 	for _, timezone := range timezones {
 		if timezone.ID == "Asia/Almaty" {
-			if timezone.Name.Ru == "" || timezone.Name.Ru == timezone.ID {
-				t.Fatalf("expected localized Russian timezone name, got %q", timezone.Name.Ru)
+			if timezone.Name.En != "Almaty" {
+				t.Fatalf("expected English timezone place label, got %q", timezone.Name.En)
+			}
+			if timezone.Name.Ru != "Алматы" {
+				t.Fatalf("expected Russian timezone place label, got %q", timezone.Name.Ru)
+			}
+			if timezone.Name.Kk != "Алматы" {
+				t.Fatalf("expected Kazakh timezone place label, got %q", timezone.Name.Kk)
 			}
 			if timezone.UTCOffset == "" {
 				t.Fatal("expected UTC offset for Asia/Almaty")
