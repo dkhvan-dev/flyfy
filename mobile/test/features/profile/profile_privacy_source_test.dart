@@ -27,14 +27,17 @@ void main() {
     final detailsStart = editProfileSource.indexOf(
       'title: l10n.profileSettingsDetailsSection',
     );
-    final securityStart = editProfileSource.indexOf('class _SecurityLinkCard');
+    final saveButtonStart = editProfileSource.indexOf(
+      'l10n.profileSaveChangesButton',
+      detailsStart,
+    );
 
     expect(detailsStart, isNonNegative);
-    expect(securityStart, greaterThan(detailsStart));
+    expect(saveButtonStart, greaterThan(detailsStart));
 
     final detailsSource = editProfileSource.substring(
       detailsStart,
-      securityStart,
+      saveButtonStart,
     );
 
     expect(detailsSource, isNot(contains('l10n.appLanguageTitle')));

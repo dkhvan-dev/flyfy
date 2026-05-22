@@ -192,7 +192,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 FilledButton.tonal(
                   onPressed: _confirmLogout,
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.06),
+                    backgroundColor: AppColors.destructive,
                     foregroundColor: AppColors.textPrimary,
                     minimumSize: Size(
                       double.infinity,
@@ -207,6 +207,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   child: Text(
                     l10n.logoutButton,
                     style: TextStyle(
+                      color: AppColors.textPrimary,
                       fontSize: profileScaled(context, 15, min: 14, max: 16),
                       fontWeight: FontWeight.w800,
                     ),

@@ -22,8 +22,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _phoneFocusNode = FocusNode();
-  bool _canUseBiometrics = false;
-  bool _isCheckingBiometrics = true;
   bool _showPhoneValidation = false;
 
   void _submit() async {
@@ -676,29 +674,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                             );
                                           },
                                         ),
-                                        if (!_isCheckingBiometrics &&
-                                            _canUseBiometrics) ...[
-                                          const SizedBox(height: 12),
-                                          Consumer<AuthProvider>(
-                                            builder:
-                                                (consumerContext, auth, _) {
-                                              final isAnyLoading =
-                                                  auth.isGoogleLoading ||
-                                                      auth.isAppleLoading ||
-                                                      auth.isSendingOtp ||
-                                                      auth.isVerifyingOtp;
-
-                                              return _OAuthButton(
-                                                icon: Icons.fingerprint,
-                                                label: l10n.loginWithBiometrics,
-                                                isLoading: false,
-                                                onPressed: isAnyLoading
-                                                    ? null
-                                                    : _loginWithBiometrics,
-                                              );
-                                            },
-                                          ),
-                                        ],
                                         SizedBox(
                                           height: authScaled(
                                             context,
@@ -762,10 +737,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkBiometricAvailability();
-    });
   }
 
   @override
@@ -823,48 +794,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!ctx.mounted) return;
 
     ctx.go(widget.from ?? '/');
-  }
-
-  Future<void> _checkBiometricAvailability() async {
-    final auth = context.read<AuthProvider>();
-
-    try {
-      final hasRefreshToken = await auth.hasRefreshTokenForBiometricLogin();
-
-      if (!mounted) return;
-
-      setState(() {
-        _canUseBiometrics = hasRefreshToken;
-        _isCheckingBiometrics = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-
-      setState(() {
-        _canUseBiometrics = false;
-        _isCheckingBiometrics = false;
-      });
-    }
-  }
-
-  Future<void> _loginWithBiometrics() async {
-    final ctx = context;
-    final l10n = AppLocalizations.of(ctx)!;
-    final authProvider = ctx.read<AuthProvider>();
-
-    final success = await authProvider.loginWithBiometrics();
-
-    if (!ctx.mounted) return;
-
-    if (success) {
-      await _completeAuthenticatedEntry(ctx, authProvider);
-    } else {
-      await showErrorDialog(
-        ctx,
-        title: l10n.error,
-        message: authProvider.errorMessage ?? l10n.biometricLoginFailed,
-      );
-    }
   }
 }
 

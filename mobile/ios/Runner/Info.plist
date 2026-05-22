@@ -74,8 +74,6 @@
 		<string>We use your camera so you can scan activity attendance QR codes and capture chat photos and videos.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>We use your microphone so you can record voice messages and chat videos.</string>
-		<key>NSFaceIDUsageDescription</key>
-		<string>We use Face ID to quickly and securely unlock your protected session.</string>
 
 		<key>NSAppTransportSecurity</key>
 		<dict>

@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -1254,20 +1253,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       height: profileScaled(context, 28, min: 24, max: 32),
                     ),
                   ],
-                  ProfileSectionHeading(
-                    title: l10n.profileSettingsSecuritySection,
-                  ),
-                  SizedBox(
-                    height: profileScaled(context, 14, min: 12, max: 16),
-                  ),
-                  _SecurityLinkCard(
-                    title: l10n.profileSettingsSecurityPinTitle,
-                    subtitle: l10n.profileSettingsSecurityPinSubtitle,
-                    onTap: () => context.push('/profile/security'),
-                  ),
-                  SizedBox(
-                    height: profileScaled(context, 30, min: 24, max: 34),
-                  ),
                   FilledButton(
                     onPressed: (_isSaving || _isUploadingAvatar) ? null : _save,
                     style: FilledButton.styleFrom(
@@ -2595,85 +2580,6 @@ class _ServiceChip extends StatelessWidget {
           color: color,
           fontSize: profileScaled(context, 12, min: 11, max: 12),
           fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _SecurityLinkCard extends StatelessWidget {
-  const _SecurityLinkCard({
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(
-        profileScaled(context, 22, min: 18, max: 24),
-      ),
-      child: Ink(
-        padding: EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
-        decoration: profileCardDecoration(
-          context,
-          radius: profileScaled(context, 22, min: 18, max: 24),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: profileScaled(context, 48, min: 42, max: 50),
-              height: profileScaled(context, 48, min: 42, max: 50),
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(
-                  profileScaled(context, 16, min: 14, max: 18),
-                ),
-              ),
-              child: Icon(
-                Icons.lock_outline_rounded,
-                color: AppColors.accent,
-                size: profileScaled(context, 22, min: 20, max: 24),
-              ),
-            ),
-            SizedBox(width: profileScaled(context, 14, min: 12, max: 16)),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: profileScaled(context, 16, min: 14, max: 17),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: profileScaled(context, 6, min: 4, max: 6)),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: profileTextMuted,
-                      fontSize: profileScaled(context, 13, min: 12, max: 13),
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: profileScaled(context, 10, min: 8, max: 12)),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: profileTextMuted,
-              size: profileScaled(context, 24, min: 22, max: 24),
-            ),
-          ],
         ),
       ),
     );

@@ -994,144 +994,6 @@ abstract class AppLocalizations {
   /// **'Not specified'**
   String get notSpecified;
 
-  /// No description provided for @loginWithBiometrics.
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in with biometrics'**
-  String get loginWithBiometrics;
-
-  /// No description provided for @biometricLoginFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to sign in with biometrics'**
-  String get biometricLoginFailed;
-
-  /// No description provided for @appLockLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Checking your protected session'**
-  String get appLockLoading;
-
-  /// No description provided for @appLockSetupTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Create a PIN'**
-  String get appLockSetupTitle;
-
-  /// No description provided for @appLockSetupDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'You will use this PIN for quick access if the session expires after reopening the app.'**
-  String get appLockSetupDescription;
-
-  /// No description provided for @appLockSetupConfirmDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the PIN again to confirm and save it.'**
-  String get appLockSetupConfirmDescription;
-
-  /// No description provided for @appLockSetupCreateButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue'**
-  String get appLockSetupCreateButton;
-
-  /// No description provided for @appLockSetupConfirmButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Save PIN'**
-  String get appLockSetupConfirmButton;
-
-  /// No description provided for @appLockSetupMismatch.
-  ///
-  /// In en, this message translates to:
-  /// **'PIN codes do not match'**
-  String get appLockSetupMismatch;
-
-  /// No description provided for @appLockPinInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a 4-digit PIN'**
-  String get appLockPinInvalid;
-
-  /// No description provided for @appLockPinIncorrect.
-  ///
-  /// In en, this message translates to:
-  /// **'Incorrect PIN'**
-  String get appLockPinIncorrect;
-
-  /// No description provided for @appLockUnlockTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm sign in'**
-  String get appLockUnlockTitle;
-
-  /// No description provided for @appLockPinUnlockDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your PIN to continue using the app.'**
-  String get appLockPinUnlockDescription;
-
-  /// No description provided for @appLockBiometricUnlockDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm access with Face ID, your fingerprint, or another available biometric. After 3 failed attempts, PIN unlock will be shown.'**
-  String get appLockBiometricUnlockDescription;
-
-  /// No description provided for @appLockUsePinButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Use PIN'**
-  String get appLockUsePinButton;
-
-  /// No description provided for @appLockUnlockButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Unlock'**
-  String get appLockUnlockButton;
-
-  /// No description provided for @appLockRetryBiometricButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Use biometrics'**
-  String get appLockRetryBiometricButton;
-
-  /// No description provided for @appLockBiometricEnableTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable biometric sign in?'**
-  String get appLockBiometricEnableTitle;
-
-  /// No description provided for @appLockBiometricEnableDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Next time you can quickly confirm access with Face ID or your fingerprint.'**
-  String get appLockBiometricEnableDescription;
-
-  /// No description provided for @appLockBiometricEnableButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable'**
-  String get appLockBiometricEnableButton;
-
-  /// No description provided for @appLockBiometricSkipButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Not now'**
-  String get appLockBiometricSkipButton;
-
-  /// No description provided for @appLockBiometricFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Biometric confirmation failed. Try again or switch to PIN.'**
-  String get appLockBiometricFailed;
-
-  /// No description provided for @appLockBiometricFallback.
-  ///
-  /// In en, this message translates to:
-  /// **'Biometric access is temporarily unavailable. Enter your PIN.'**
-  String get appLockBiometricFallback;
-
   /// No description provided for @profileIncompleteTitle.
   ///
   /// In en, this message translates to:
@@ -1411,7 +1273,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSecurityRowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'PIN, biometrics, and the protected local session.'**
+  /// **'Account protection, data export, and privacy controls.'**
   String get profileSecurityRowSubtitle;
 
   /// No description provided for @profileHostedActivitiesTitle.
@@ -1551,24 +1413,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add new'**
   String get profileSettingsAddNew;
-
-  /// No description provided for @profileSettingsSecuritySection.
-  ///
-  /// In en, this message translates to:
-  /// **'Security'**
-  String get profileSettingsSecuritySection;
-
-  /// No description provided for @profileSettingsSecurityPinTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'PIN & biometrics'**
-  String get profileSettingsSecurityPinTitle;
-
-  /// No description provided for @profileSettingsSecurityPinSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the security screen to manage your local sign-in protection.'**
-  String get profileSettingsSecurityPinSubtitle;
 
   /// No description provided for @profileAccountSectionTitle.
   ///
@@ -1741,14 +1585,8 @@ abstract class AppLocalizations {
   /// No description provided for @profileSecurityHeroSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'This section combines local unlock methods and upcoming account protection tools.'**
+  /// **'This section will collect account protection tools, data export, and privacy controls.'**
   String get profileSecurityHeroSubtitle;
-
-  /// No description provided for @profileSecurityLocalAccessSection.
-  ///
-  /// In en, this message translates to:
-  /// **'Local access'**
-  String get profileSecurityLocalAccessSection;
 
   /// No description provided for @profileSecurityAccountSection.
   ///
@@ -1761,66 +1599,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data & privacy'**
   String get profileSecurityDataSection;
-
-  /// No description provided for @profileSecurityPinTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'App PIN'**
-  String get profileSecurityPinTitle;
-
-  /// No description provided for @profileSecurityPinEnabledSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'A PIN is configured and is used for quick app unlock.'**
-  String get profileSecurityPinEnabledSubtitle;
-
-  /// No description provided for @profileSecurityPinMissingSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No PIN is configured yet. The app will ask to create one after the next authentication.'**
-  String get profileSecurityPinMissingSubtitle;
-
-  /// No description provided for @profileSecurityBiometricTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Biometric unlock'**
-  String get profileSecurityBiometricTitle;
-
-  /// No description provided for @profileSecurityBiometricSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Allow app unlock with Face ID, fingerprint, or other supported biometrics.'**
-  String get profileSecurityBiometricSubtitle;
-
-  /// No description provided for @profileSecurityBiometricNeedsPin.
-  ///
-  /// In en, this message translates to:
-  /// **'An app PIN must be configured first.'**
-  String get profileSecurityBiometricNeedsPin;
-
-  /// No description provided for @profileSecurityBiometricUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Biometrics are not available or not configured on this device.'**
-  String get profileSecurityBiometricUnavailable;
-
-  /// No description provided for @profileSecurityProtectedSessionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Protected session'**
-  String get profileSecurityProtectedSessionTitle;
-
-  /// No description provided for @profileSecurityProtectedSessionSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'A local session is stored. After restart, the app can be unlocked quickly.'**
-  String get profileSecurityProtectedSessionSubtitle;
-
-  /// No description provided for @profileSecurityNoStoredSessionSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No active stored session was found. Protection will turn on automatically after the next sign in.'**
-  String get profileSecurityNoStoredSessionSubtitle;
 
   /// No description provided for @profileSecurityTwoFactorTitle.
   ///

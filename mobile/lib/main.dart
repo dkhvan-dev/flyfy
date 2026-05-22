@@ -112,8 +112,7 @@ class _SuperAppState extends State<SuperApp> {
 
   Future<void> _bootstrapAuth() async {
     await _authProvider.checkAuthStatus();
-    final hasStoredSession = await _authProvider.hasStoredSessionForUnlock();
-    if (hasStoredSession) {
+    if (_authProvider.state == AuthState.authenticated) {
       await _sessionProvider.restoreSession();
       await _authProvider.checkAuthStatus();
     }

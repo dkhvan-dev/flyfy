@@ -510,82 +510,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get notSpecified => 'Не указано';
 
   @override
-  String get loginWithBiometrics => 'Войти по биометрии';
-
-  @override
-  String get biometricLoginFailed => 'Не удалось выполнить вход по биометрии';
-
-  @override
-  String get appLockLoading => 'Проверяем защищённую сессию';
-
-  @override
-  String get appLockSetupTitle => 'Создайте PIN-код';
-
-  @override
-  String get appLockSetupDescription =>
-      'PIN-код понадобится для быстрого входа в приложение, если сессия завершится после повторного открытия.';
-
-  @override
-  String get appLockSetupConfirmDescription =>
-      'Повторите PIN-код, чтобы подтвердить и сохранить его.';
-
-  @override
-  String get appLockSetupCreateButton => 'Продолжить';
-
-  @override
-  String get appLockSetupConfirmButton => 'Сохранить PIN-код';
-
-  @override
-  String get appLockSetupMismatch => 'PIN-коды не совпадают';
-
-  @override
-  String get appLockPinInvalid => 'Введите 4 цифры PIN-кода';
-
-  @override
-  String get appLockPinIncorrect => 'Неверный PIN-код';
-
-  @override
-  String get appLockUnlockTitle => 'Подтвердите вход';
-
-  @override
-  String get appLockPinUnlockDescription =>
-      'Введите PIN-код, чтобы продолжить работу в приложении.';
-
-  @override
-  String get appLockBiometricUnlockDescription =>
-      'Подтвердите вход с помощью Face ID, отпечатка пальца или другой доступной биометрии. После 3 неудачных попыток будет доступен PIN-код.';
-
-  @override
-  String get appLockUsePinButton => 'Ввести PIN-код';
-
-  @override
-  String get appLockUnlockButton => 'Разблокировать';
-
-  @override
-  String get appLockRetryBiometricButton => 'Войти по биометрии';
-
-  @override
-  String get appLockBiometricEnableTitle => 'Включить вход по биометрии?';
-
-  @override
-  String get appLockBiometricEnableDescription =>
-      'При следующем входе можно будет быстро подтверждать доступ с помощью Face ID или отпечатка пальца.';
-
-  @override
-  String get appLockBiometricEnableButton => 'Включить';
-
-  @override
-  String get appLockBiometricSkipButton => 'Пока не нужно';
-
-  @override
-  String get appLockBiometricFailed =>
-      'Биометрия не подтверждена. Попробуйте еще раз или перейдите к PIN-коду.';
-
-  @override
-  String get appLockBiometricFallback =>
-      'Доступ по биометрии временно отключен. Введите PIN-код.';
-
-  @override
   String get profileIncompleteTitle => 'Профиль заполнен не полностью';
 
   @override
@@ -735,7 +659,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileSecurityRowSubtitle =>
-      'PIN-код, биометрия и защищенная локальная сессия.';
+      'Защита аккаунта, экспорт данных и настройки приватности.';
 
   @override
   String get profileHostedActivitiesTitle => 'Активности пользователя';
@@ -814,16 +738,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileSettingsAddNew => 'Добавить';
-
-  @override
-  String get profileSettingsSecuritySection => 'Безопасность';
-
-  @override
-  String get profileSettingsSecurityPinTitle => 'PIN-код и биометрия';
-
-  @override
-  String get profileSettingsSecurityPinSubtitle =>
-      'Откройте экран безопасности, чтобы управлять локальной защитой входа.';
 
   @override
   String get profileAccountSectionTitle => 'Аккаунт';
@@ -922,53 +836,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileSecurityHeroSubtitle =>
-      'Здесь собраны локальные способы входа и будущие инструменты защиты аккаунта.';
-
-  @override
-  String get profileSecurityLocalAccessSection => 'Локальный доступ';
+      'Здесь будут собраны инструменты защиты аккаунта, экспорт данных и настройки приватности.';
 
   @override
   String get profileSecurityAccountSection => 'Защита аккаунта';
 
   @override
   String get profileSecurityDataSection => 'Данные и конфиденциальность';
-
-  @override
-  String get profileSecurityPinTitle => 'PIN-код приложения';
-
-  @override
-  String get profileSecurityPinEnabledSubtitle =>
-      'PIN-код настроен и используется для быстрой разблокировки приложения.';
-
-  @override
-  String get profileSecurityPinMissingSubtitle =>
-      'PIN-код еще не настроен. После следующей авторизации приложение предложит его создать.';
-
-  @override
-  String get profileSecurityBiometricTitle => 'Вход по биометрии';
-
-  @override
-  String get profileSecurityBiometricSubtitle =>
-      'Разрешите разблокировку приложения через Face ID, отпечаток пальца или доступную биометрию.';
-
-  @override
-  String get profileSecurityBiometricNeedsPin =>
-      'Сначала должен быть настроен PIN-код приложения.';
-
-  @override
-  String get profileSecurityBiometricUnavailable =>
-      'На этом устройстве биометрия недоступна или не настроена.';
-
-  @override
-  String get profileSecurityProtectedSessionTitle => 'Защищенная сессия';
-
-  @override
-  String get profileSecurityProtectedSessionSubtitle =>
-      'Локальная сессия сохранена. После перезапуска приложения можно быстро разблокироваться.';
-
-  @override
-  String get profileSecurityNoStoredSessionSubtitle =>
-      'Активная сохраненная сессия не найдена. После нового входа защита включится автоматически.';
 
   @override
   String get profileSecurityTwoFactorTitle => 'Дополнительная верификация';

@@ -507,82 +507,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notSpecified => 'Not specified';
 
   @override
-  String get loginWithBiometrics => 'Sign in with biometrics';
-
-  @override
-  String get biometricLoginFailed => 'Failed to sign in with biometrics';
-
-  @override
-  String get appLockLoading => 'Checking your protected session';
-
-  @override
-  String get appLockSetupTitle => 'Create a PIN';
-
-  @override
-  String get appLockSetupDescription =>
-      'You will use this PIN for quick access if the session expires after reopening the app.';
-
-  @override
-  String get appLockSetupConfirmDescription =>
-      'Enter the PIN again to confirm and save it.';
-
-  @override
-  String get appLockSetupCreateButton => 'Continue';
-
-  @override
-  String get appLockSetupConfirmButton => 'Save PIN';
-
-  @override
-  String get appLockSetupMismatch => 'PIN codes do not match';
-
-  @override
-  String get appLockPinInvalid => 'Enter a 4-digit PIN';
-
-  @override
-  String get appLockPinIncorrect => 'Incorrect PIN';
-
-  @override
-  String get appLockUnlockTitle => 'Confirm sign in';
-
-  @override
-  String get appLockPinUnlockDescription =>
-      'Enter your PIN to continue using the app.';
-
-  @override
-  String get appLockBiometricUnlockDescription =>
-      'Confirm access with Face ID, your fingerprint, or another available biometric. After 3 failed attempts, PIN unlock will be shown.';
-
-  @override
-  String get appLockUsePinButton => 'Use PIN';
-
-  @override
-  String get appLockUnlockButton => 'Unlock';
-
-  @override
-  String get appLockRetryBiometricButton => 'Use biometrics';
-
-  @override
-  String get appLockBiometricEnableTitle => 'Enable biometric sign in?';
-
-  @override
-  String get appLockBiometricEnableDescription =>
-      'Next time you can quickly confirm access with Face ID or your fingerprint.';
-
-  @override
-  String get appLockBiometricEnableButton => 'Enable';
-
-  @override
-  String get appLockBiometricSkipButton => 'Not now';
-
-  @override
-  String get appLockBiometricFailed =>
-      'Biometric confirmation failed. Try again or switch to PIN.';
-
-  @override
-  String get appLockBiometricFallback =>
-      'Biometric access is temporarily unavailable. Enter your PIN.';
-
-  @override
   String get profileIncompleteTitle => 'Profile is incomplete';
 
   @override
@@ -732,7 +656,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileSecurityRowSubtitle =>
-      'PIN, biometrics, and the protected local session.';
+      'Account protection, data export, and privacy controls.';
 
   @override
   String get profileHostedActivitiesTitle => 'Hosted activities';
@@ -811,16 +735,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileSettingsAddNew => 'Add new';
-
-  @override
-  String get profileSettingsSecuritySection => 'Security';
-
-  @override
-  String get profileSettingsSecurityPinTitle => 'PIN & biometrics';
-
-  @override
-  String get profileSettingsSecurityPinSubtitle =>
-      'Open the security screen to manage your local sign-in protection.';
 
   @override
   String get profileAccountSectionTitle => 'Account';
@@ -920,53 +834,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileSecurityHeroSubtitle =>
-      'This section combines local unlock methods and upcoming account protection tools.';
-
-  @override
-  String get profileSecurityLocalAccessSection => 'Local access';
+      'This section will collect account protection tools, data export, and privacy controls.';
 
   @override
   String get profileSecurityAccountSection => 'Account protection';
 
   @override
   String get profileSecurityDataSection => 'Data & privacy';
-
-  @override
-  String get profileSecurityPinTitle => 'App PIN';
-
-  @override
-  String get profileSecurityPinEnabledSubtitle =>
-      'A PIN is configured and is used for quick app unlock.';
-
-  @override
-  String get profileSecurityPinMissingSubtitle =>
-      'No PIN is configured yet. The app will ask to create one after the next authentication.';
-
-  @override
-  String get profileSecurityBiometricTitle => 'Biometric unlock';
-
-  @override
-  String get profileSecurityBiometricSubtitle =>
-      'Allow app unlock with Face ID, fingerprint, or other supported biometrics.';
-
-  @override
-  String get profileSecurityBiometricNeedsPin =>
-      'An app PIN must be configured first.';
-
-  @override
-  String get profileSecurityBiometricUnavailable =>
-      'Biometrics are not available or not configured on this device.';
-
-  @override
-  String get profileSecurityProtectedSessionTitle => 'Protected session';
-
-  @override
-  String get profileSecurityProtectedSessionSubtitle =>
-      'A local session is stored. After restart, the app can be unlocked quickly.';
-
-  @override
-  String get profileSecurityNoStoredSessionSubtitle =>
-      'No active stored session was found. Protection will turn on automatically after the next sign in.';
 
   @override
   String get profileSecurityTwoFactorTitle => 'Additional verification';

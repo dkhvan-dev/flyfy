@@ -511,83 +511,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get notSpecified => 'Көрсетілмеген';
 
   @override
-  String get loginWithBiometrics => 'Биометрия арқылы кіру';
-
-  @override
-  String get biometricLoginFailed => 'Биометрия арқылы кіру сәтсіз аяқталды';
-
-  @override
-  String get appLockLoading => 'Қорғалған сессия тексерілуде';
-
-  @override
-  String get appLockSetupTitle => 'PIN-код жасаңыз';
-
-  @override
-  String get appLockSetupDescription =>
-      'Қосымшаны қайта ашқаннан кейін сессия аяқталса, жылдам кіру үшін осы PIN-код қажет болады.';
-
-  @override
-  String get appLockSetupConfirmDescription =>
-      'Растау және сақтау үшін PIN-кодты қайта енгізіңіз.';
-
-  @override
-  String get appLockSetupCreateButton => 'Жалғастыру';
-
-  @override
-  String get appLockSetupConfirmButton => 'PIN-кодты сақтау';
-
-  @override
-  String get appLockSetupMismatch => 'PIN-кодтар сәйкес келмейді';
-
-  @override
-  String get appLockPinInvalid => '4 таңбалы PIN-код енгізіңіз';
-
-  @override
-  String get appLockPinIncorrect => 'PIN-код қате';
-
-  @override
-  String get appLockUnlockTitle => 'Кіруді растаңыз';
-
-  @override
-  String get appLockPinUnlockDescription =>
-      'Қосымшада жалғастыру үшін PIN-кодты енгізіңіз.';
-
-  @override
-  String get appLockBiometricUnlockDescription =>
-      'Face ID, саусақ ізі немесе басқа қолжетімді биометрия арқылы кіруді растаңыз. 3 сәтсіз әрекеттен кейін PIN-код сұралады.';
-
-  @override
-  String get appLockUsePinButton => 'PIN-код енгізу';
-
-  @override
-  String get appLockUnlockButton => 'Құлыпты ашу';
-
-  @override
-  String get appLockRetryBiometricButton => 'Биометрия арқылы кіру';
-
-  @override
-  String get appLockBiometricEnableTitle =>
-      'Биометрия арқылы кіруді қосасыз ба?';
-
-  @override
-  String get appLockBiometricEnableDescription =>
-      'Келесі жолы қолжетімділікті Face ID немесе саусақ ізі арқылы жылдам растауға болады.';
-
-  @override
-  String get appLockBiometricEnableButton => 'Қосу';
-
-  @override
-  String get appLockBiometricSkipButton => 'Әзірге емес';
-
-  @override
-  String get appLockBiometricFailed =>
-      'Биометрия расталмады. Қайта көріңіз немесе PIN-кодқа ауысыңыз.';
-
-  @override
-  String get appLockBiometricFallback =>
-      'Биометрия арқылы кіру уақытша қолжетімсіз. PIN-кодты енгізіңіз.';
-
-  @override
   String get profileIncompleteTitle => 'Профиль толық толтырылмаған';
 
   @override
@@ -738,7 +661,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileSecurityRowSubtitle =>
-      'PIN, биометрия және қорғалған жергілікті сессия.';
+      'Аккаунт қорғанысы, деректерді экспорттау және құпиялылық баптаулары.';
 
   @override
   String get profileHostedActivitiesTitle => 'Автор белсенділіктері';
@@ -817,16 +740,6 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileSettingsAddNew => 'Қосу';
-
-  @override
-  String get profileSettingsSecuritySection => 'Қауіпсіздік';
-
-  @override
-  String get profileSettingsSecurityPinTitle => 'PIN-код және биометрия';
-
-  @override
-  String get profileSettingsSecurityPinSubtitle =>
-      'Жергілікті кіру қорғанысын басқару үшін қауіпсіздік экранын ашыңыз.';
 
   @override
   String get profileAccountSectionTitle => 'Аккаунт';
@@ -926,53 +839,13 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileSecurityHeroSubtitle =>
-      'Мұнда жергілікті кіру тәсілдері мен болашақ аккаунт қорғау құралдары біріктірілген.';
-
-  @override
-  String get profileSecurityLocalAccessSection => 'Жергілікті қолжетімділік';
+      'Мұнда аккаунт қорғанысы, деректерді экспорттау және құпиялылық баптаулары жиналады.';
 
   @override
   String get profileSecurityAccountSection => 'Аккаунт қорғанысы';
 
   @override
   String get profileSecurityDataSection => 'Деректер және құпиялылық';
-
-  @override
-  String get profileSecurityPinTitle => 'Қосымша PIN-коды';
-
-  @override
-  String get profileSecurityPinEnabledSubtitle =>
-      'PIN-код бапталған және қосымшаны жылдам ашу үшін қолданылады.';
-
-  @override
-  String get profileSecurityPinMissingSubtitle =>
-      'PIN-код әлі бапталмаған. Келесі авторизациядан кейін қолданба оны жасауды ұсынады.';
-
-  @override
-  String get profileSecurityBiometricTitle => 'Биометрия арқылы ашу';
-
-  @override
-  String get profileSecurityBiometricSubtitle =>
-      'Қосымшаны Face ID, саусақ ізі немесе қолжетімді биометрия арқылы ашуға рұқсат беріңіз.';
-
-  @override
-  String get profileSecurityBiometricNeedsPin =>
-      'Алдымен қосымша PIN-коды бапталуы керек.';
-
-  @override
-  String get profileSecurityBiometricUnavailable =>
-      'Бұл құрылғыда биометрия қолжетімсіз немесе бапталмаған.';
-
-  @override
-  String get profileSecurityProtectedSessionTitle => 'Қорғалған сессия';
-
-  @override
-  String get profileSecurityProtectedSessionSubtitle =>
-      'Жергілікті сессия сақталған. Қайта іске қосқаннан кейін қолданбаны тез ашуға болады.';
-
-  @override
-  String get profileSecurityNoStoredSessionSubtitle =>
-      'Белсенді сақталған сессия табылмады. Қорғаныс келесі кіргеннен кейін автоматты түрде қосылады.';
 
   @override
   String get profileSecurityTwoFactorTitle => 'Қосымша тексеру';
