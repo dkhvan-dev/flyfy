@@ -19,6 +19,27 @@ import '../../features/profile/models/profile_follower_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 
+RelativeRect? _connectionMenuPositionFor(BuildContext buttonContext) {
+  final overlay = Overlay.of(buttonContext).context.findRenderObject();
+  final buttonBox = buttonContext.findRenderObject();
+  if (overlay is! RenderBox || buttonBox is! RenderBox) return null;
+
+  final buttonTopRight = buttonBox.localToGlobal(
+    Offset(buttonBox.size.width, 0),
+    ancestor: overlay,
+  );
+  final buttonBottomRight = buttonBox.localToGlobal(
+    buttonBox.size.bottomRight(Offset.zero),
+    ancestor: overlay,
+  );
+  return RelativeRect.fromLTRB(
+    buttonTopRight.dx,
+    buttonTopRight.dy,
+    overlay.size.width - buttonBottomRight.dx,
+    overlay.size.height - buttonBottomRight.dy,
+  );
+}
+
 class ProfileConnectionsScreen extends StatefulWidget {
   const ProfileConnectionsScreen({super.key});
 
@@ -36,6 +57,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
   final TextEditingController _searchController = TextEditingController();
   final _friendsData = _ConnectionTabData();
   final _followingData = _ConnectionTabData();
+  final _requestsPreviewData = _ConnectionTabData();
 
   late final TabController _tabController;
   Timer? _searchDebounce;
@@ -67,6 +89,7 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
     _tabController.dispose();
     _friendsData.dispose();
     _followingData.dispose();
+    _requestsPreviewData.dispose();
     super.dispose();
   }
 
@@ -101,7 +124,43 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
     await Future.wait([
       _reloadTab(_ConnectionTab.friends),
       _reloadTab(_ConnectionTab.following),
+      _reloadFriendRequestPreview(),
     ]);
+  }
+
+  Future<void> _reloadFriendRequestPreview() async {
+    final requestEpoch = ++_requestsPreviewData.requestEpoch;
+    setState(() {
+      _requestsPreviewData.loading = true;
+      _requestsPreviewData.loadingMore = false;
+      _requestsPreviewData.errorText = null;
+      _requestsPreviewData.nextOffset = null;
+      _requestsPreviewData.items = const [];
+    });
+
+    try {
+      final page = await _profileApi.getMyIncomingFriendRequests(
+        limit: 1,
+        offset: 0,
+      );
+      if (!mounted || requestEpoch != _requestsPreviewData.requestEpoch) {
+        return;
+      }
+
+      setState(() {
+        _requestsPreviewData.items = page.items;
+        _requestsPreviewData.nextOffset = page.nextOffset;
+      });
+    } catch (_) {
+      if (!mounted || requestEpoch != _requestsPreviewData.requestEpoch) {
+        return;
+      }
+      setState(() => _requestsPreviewData.errorText = '');
+    } finally {
+      if (mounted && requestEpoch == _requestsPreviewData.requestEpoch) {
+        setState(() => _requestsPreviewData.loading = false);
+      }
+    }
   }
 
   Future<void> _reloadTab(_ConnectionTab tab) async {
@@ -180,21 +239,21 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
 
     return switch (tab) {
       _ConnectionTab.friends => _profileApi.getMyFriends(
-          limit: _pageSize,
-          offset: offset,
-          query: query,
-          sort: sort,
-          sortDirection: sortDirection,
-          onlineOnly: _filters.onlineOnly,
-        ),
+        limit: _pageSize,
+        offset: offset,
+        query: query,
+        sort: sort,
+        sortDirection: sortDirection,
+        onlineOnly: _filters.onlineOnly,
+      ),
       _ConnectionTab.following => _profileApi.getMyFollowing(
-          limit: _pageSize,
-          offset: offset,
-          query: query,
-          sort: sort,
-          sortDirection: sortDirection,
-          onlineOnly: _filters.onlineOnly,
-        ),
+        limit: _pageSize,
+        offset: offset,
+        query: query,
+        sort: sort,
+        sortDirection: sortDirection,
+        onlineOnly: _filters.onlineOnly,
+      ),
     };
   }
 
@@ -228,8 +287,11 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
     final userId = user.userId.trim();
     if (userId.isEmpty) return;
 
-    final currentUserId =
-        context.read<SessionProvider>().profile?.userId.trim();
+    final currentUserId = context
+        .read<SessionProvider>()
+        .profile
+        ?.userId
+        .trim();
     if (currentUserId != null && currentUserId == userId) {
       context.push('/profile');
       return;
@@ -243,24 +305,8 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
     ProfileFollowerVm user,
     _ConnectionTab tab,
   ) async {
-    final overlay = Overlay.of(buttonContext).context.findRenderObject();
-    final buttonBox = buttonContext.findRenderObject();
-    if (overlay is! RenderBox || buttonBox is! RenderBox) return;
-
-    final buttonTopRight = buttonBox.localToGlobal(
-      Offset(buttonBox.size.width, 0),
-      ancestor: overlay,
-    );
-    final buttonBottomRight = buttonBox.localToGlobal(
-      buttonBox.size.bottomRight(Offset.zero),
-      ancestor: overlay,
-    );
-    final position = RelativeRect.fromLTRB(
-      buttonTopRight.dx,
-      buttonTopRight.dy,
-      overlay.size.width - buttonBottomRight.dx,
-      overlay.size.height - buttonBottomRight.dy,
-    );
+    final position = _connectionMenuPositionFor(buttonContext);
+    if (position == null) return;
 
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
@@ -304,7 +350,109 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
         await _unfollowUser(user);
       case _ConnectionAction.message:
         await _openDirectChat(user);
+      case _ConnectionAction.acceptFriendRequest:
+      case _ConnectionAction.declineFriendRequest:
+        break;
     }
+  }
+
+  Future<void> _showFriendRequestActions(
+    BuildContext buttonContext,
+    ProfileFollowerVm user,
+  ) async {
+    final position = _connectionMenuPositionFor(buttonContext);
+    if (position == null) return;
+
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final action = await showMenu<_ConnectionAction>(
+      context: context,
+      position: position,
+      color: const Color(0xFF2B1F14),
+      elevation: 18,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      items: [
+        PopupMenuItem(
+          value: _ConnectionAction.acceptFriendRequest,
+          child: _ConnectionPopupActionRow(
+            icon: Icons.person_add_alt_1_rounded,
+            label: l10n.profileFriendRequestAcceptAction,
+          ),
+        ),
+        PopupMenuItem(
+          value: _ConnectionAction.declineFriendRequest,
+          child: _ConnectionPopupActionRow(
+            icon: Icons.person_remove_alt_1_rounded,
+            label: l10n.profileFriendRequestDeclineAction,
+            destructive: true,
+          ),
+        ),
+      ],
+    );
+
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _ConnectionAction.acceptFriendRequest:
+        await _resolveFriendRequest(user, accept: true);
+      case _ConnectionAction.declineFriendRequest:
+        await _resolveFriendRequest(user, accept: false);
+      case _ConnectionAction.removeFriend:
+      case _ConnectionAction.unfollow:
+      case _ConnectionAction.message:
+        break;
+    }
+  }
+
+  Future<void> _resolveFriendRequest(
+    ProfileFollowerVm user, {
+    required bool accept,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _actionUserId = user.userId);
+
+    try {
+      if (accept) {
+        await _profileApi.acceptFriendRequest(user.userId);
+      } else {
+        await _profileApi.declineFriendRequest(user.userId);
+      }
+      if (!mounted) return;
+      setState(() => _requestsPreviewData.remove(user.userId));
+      if (accept) {
+        unawaited(_reloadTab(_ConnectionTab.friends));
+      }
+      unawaited(_reloadFriendRequestPreview());
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.profileFriendshipUpdateFailed;
+      await showErrorDialog(context, title: l10n.error, message: message);
+    } finally {
+      if (mounted) setState(() => _actionUserId = null);
+    }
+  }
+
+  Future<void> _handleFriendRequestResolved({required bool accepted}) async {
+    await _reloadFriendRequestPreview();
+    if (accepted) {
+      await _reloadTab(_ConnectionTab.friends);
+    }
+  }
+
+  Future<void> _showFriendRequestsSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _FriendRequestsSheet(
+        profileApi: _profileApi,
+        onOpenProfile: _openProfile,
+        onRequestResolved: _handleFriendRequestResolved,
+      ),
+    );
   }
 
   Future<void> _removeFriend(ProfileFollowerVm user) async {
@@ -350,8 +498,9 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
     setState(() => _actionUserId = user.userId);
 
     try {
-      final conversationId =
-          await _chatApi.createDirectConversation(user.userId);
+      final conversationId = await _chatApi.createDirectConversation(
+        user.userId,
+      );
       if (!mounted) return;
       context.push('/chats/$conversationId');
     } catch (e) {
@@ -413,6 +562,13 @@ class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
                     ),
                   ),
                 ),
+                _FriendRequestsPreviewSection(
+                  data: _requestsPreviewData,
+                  actionUserId: _actionUserId,
+                  onViewAll: _showFriendRequestsSheet,
+                  onTap: _openProfile,
+                  onActionsTap: _showFriendRequestActions,
+                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
                   child: _ConnectionTabBar(
@@ -463,8 +619,9 @@ class _ConnectionTabData {
   int requestEpoch = 0;
 
   void remove(String userId) {
-    items =
-        items.where((item) => item.userId != userId).toList(growable: false);
+    items = items
+        .where((item) => item.userId != userId)
+        .toList(growable: false);
   }
 
   void dispose() {
@@ -474,7 +631,13 @@ class _ConnectionTabData {
 
 enum _ConnectionTab { friends, following }
 
-enum _ConnectionAction { removeFriend, unfollow, message }
+enum _ConnectionAction {
+  removeFriend,
+  unfollow,
+  message,
+  acceptFriendRequest,
+  declineFriendRequest,
+}
 
 enum _ConnectionSortDirection {
   asc('asc'),
@@ -615,7 +778,8 @@ class _ConnectionListView extends StatelessWidget {
     BuildContext buttonContext,
     ProfileFollowerVm user,
     _ConnectionTab tab,
-  ) onActionsTap;
+  )
+  onActionsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -723,6 +887,414 @@ class _ConnectionListView extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _FriendRequestsPreviewSection extends StatelessWidget {
+  const _FriendRequestsPreviewSection({
+    required this.data,
+    required this.actionUserId,
+    required this.onViewAll,
+    required this.onTap,
+    required this.onActionsTap,
+  });
+
+  final _ConnectionTabData data;
+  final String? actionUserId;
+  final VoidCallback onViewAll;
+  final ValueChanged<ProfileFollowerVm> onTap;
+  final Future<void> Function(
+    BuildContext buttonContext,
+    ProfileFollowerVm user,
+  )
+  onActionsTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if ((data.loading && data.items.isEmpty) ||
+        data.errorText != null ||
+        data.items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final user = data.items.first;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.profileConnectionsFriendRequestsTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              if (data.nextOffset != null)
+                TextButton(
+                  onPressed: onViewAll,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.accent,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 34),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    l10n.profileConnectionsFriendRequestsViewAll,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _ConnectionUserRow(
+            user: user,
+            busy: actionUserId == user.userId,
+            onTap: () => onTap(user),
+            onActionsTap: (buttonContext) => onActionsTap(buttonContext, user),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FriendRequestsSheet extends StatefulWidget {
+  const _FriendRequestsSheet({
+    required this.profileApi,
+    required this.onOpenProfile,
+    required this.onRequestResolved,
+  });
+
+  final ProfileApi profileApi;
+  final ValueChanged<ProfileFollowerVm> onOpenProfile;
+  final Future<void> Function({required bool accepted}) onRequestResolved;
+
+  @override
+  State<_FriendRequestsSheet> createState() => _FriendRequestsSheetState();
+}
+
+class _FriendRequestsSheetState extends State<_FriendRequestsSheet> {
+  static const _sheetPageSize = 20;
+
+  final _requestsSheetData = _ConnectionTabData();
+  String? _actionUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestsSheetData.scrollController.addListener(_handleScroll);
+    unawaited(_reload());
+  }
+
+  @override
+  void dispose() {
+    _requestsSheetData.scrollController.removeListener(_handleScroll);
+    _requestsSheetData.dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!_requestsSheetData.scrollController.hasClients ||
+        _requestsSheetData.loading ||
+        _requestsSheetData.loadingMore) {
+      return;
+    }
+
+    final position = _requestsSheetData.scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 220) {
+      unawaited(_loadMore());
+    }
+  }
+
+  Future<void> _reload() async {
+    final requestEpoch = ++_requestsSheetData.requestEpoch;
+    setState(() {
+      _requestsSheetData.loading = true;
+      _requestsSheetData.loadingMore = false;
+      _requestsSheetData.errorText = null;
+      _requestsSheetData.nextOffset = null;
+      _requestsSheetData.items = const [];
+    });
+
+    try {
+      final page = await widget.profileApi.getMyIncomingFriendRequests(
+        limit: _sheetPageSize,
+        offset: 0,
+      );
+      if (!mounted || requestEpoch != _requestsSheetData.requestEpoch) return;
+      setState(() {
+        _requestsSheetData.items = page.items;
+        _requestsSheetData.nextOffset = page.nextOffset;
+      });
+    } catch (e) {
+      if (!mounted || requestEpoch != _requestsSheetData.requestEpoch) return;
+      final l10n = AppLocalizations.of(context)!;
+      setState(() {
+        _requestsSheetData.errorText = e is DioException
+            ? DioErrorMapper.toMessage(e)
+            : l10n.profileConnectionsLoadFailed;
+      });
+    } finally {
+      if (mounted && requestEpoch == _requestsSheetData.requestEpoch) {
+        setState(() => _requestsSheetData.loading = false);
+      }
+    }
+  }
+
+  Future<void> _loadMore() async {
+    final offset = _requestsSheetData.nextOffset;
+    if (offset == null) return;
+
+    final requestEpoch = _requestsSheetData.requestEpoch;
+    setState(() => _requestsSheetData.loadingMore = true);
+
+    try {
+      final page = await widget.profileApi.getMyIncomingFriendRequests(
+        limit: _sheetPageSize,
+        offset: offset,
+      );
+      if (!mounted || requestEpoch != _requestsSheetData.requestEpoch) return;
+
+      final merged = <String, ProfileFollowerVm>{
+        for (final item in _requestsSheetData.items) item.userId: item,
+      };
+      for (final item in page.items) {
+        merged[item.userId] = item;
+      }
+
+      setState(() {
+        _requestsSheetData.items = merged.values.toList(growable: false);
+        _requestsSheetData.nextOffset = page.nextOffset;
+      });
+    } catch (_) {
+      if (!mounted || requestEpoch != _requestsSheetData.requestEpoch) return;
+    } finally {
+      if (mounted && requestEpoch == _requestsSheetData.requestEpoch) {
+        setState(() => _requestsSheetData.loadingMore = false);
+      }
+    }
+  }
+
+  Future<void> _showRequestActions(
+    BuildContext buttonContext,
+    ProfileFollowerVm user,
+  ) async {
+    final position = _connectionMenuPositionFor(buttonContext);
+    if (position == null) return;
+
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final action = await showMenu<_ConnectionAction>(
+      context: context,
+      position: position,
+      color: const Color(0xFF2B1F14),
+      elevation: 18,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      items: [
+        PopupMenuItem(
+          value: _ConnectionAction.acceptFriendRequest,
+          child: _ConnectionPopupActionRow(
+            icon: Icons.person_add_alt_1_rounded,
+            label: l10n.profileFriendRequestAcceptAction,
+          ),
+        ),
+        PopupMenuItem(
+          value: _ConnectionAction.declineFriendRequest,
+          child: _ConnectionPopupActionRow(
+            icon: Icons.person_remove_alt_1_rounded,
+            label: l10n.profileFriendRequestDeclineAction,
+            destructive: true,
+          ),
+        ),
+      ],
+    );
+
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _ConnectionAction.acceptFriendRequest:
+        await _resolveRequest(user, accept: true);
+      case _ConnectionAction.declineFriendRequest:
+        await _resolveRequest(user, accept: false);
+      case _ConnectionAction.removeFriend:
+      case _ConnectionAction.unfollow:
+      case _ConnectionAction.message:
+        break;
+    }
+  }
+
+  Future<void> _resolveRequest(
+    ProfileFollowerVm user, {
+    required bool accept,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _actionUserId = user.userId);
+
+    try {
+      if (accept) {
+        await widget.profileApi.acceptFriendRequest(user.userId);
+      } else {
+        await widget.profileApi.declineFriendRequest(user.userId);
+      }
+      if (!mounted) return;
+      setState(() => _requestsSheetData.remove(user.userId));
+      await widget.onRequestResolved(accepted: accept);
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.profileFriendshipUpdateFailed;
+      await showErrorDialog(context, title: l10n.error, message: message);
+    } finally {
+      if (mounted) setState(() => _actionUserId = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return AppDismissibleModalSheet(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+          maxWidth: 520,
+        ),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xFF21170D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: Color(0x293A270F))),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppFilterSheetHeader(
+                title: l10n.profileConnectionsFriendRequestsTitle,
+                clearLabel: l10n.cancel,
+                onClear: () => Navigator.of(context).maybePop(),
+                height: 74,
+                horizontalPadding: 22,
+                titleFontSize: 18,
+              ),
+              Flexible(child: _buildContent(context, l10n)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, AppLocalizations l10n) {
+    if (_requestsSheetData.loading) {
+      return ListView(
+        controller: _requestsSheetData.scrollController,
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: const [
+          SizedBox(height: 120),
+          Center(
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.6,
+                color: AppColors.accent,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (_requestsSheetData.errorText != null &&
+        _requestsSheetData.items.isEmpty) {
+      return ListView(
+        controller: _requestsSheetData.scrollController,
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 84, 24, 24),
+        children: [
+          _ConnectionStateMessage(
+            icon: Icons.wifi_off_rounded,
+            title: l10n.profileConnectionsLoadFailed,
+            subtitle: _requestsSheetData.errorText!,
+          ),
+        ],
+      );
+    }
+
+    if (_requestsSheetData.items.isEmpty) {
+      return ListView(
+        controller: _requestsSheetData.scrollController,
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 84, 24, 24),
+        children: [
+          _ConnectionStateMessage(
+            icon: Icons.person_add_alt_1_rounded,
+            title: l10n.profileConnectionsFriendRequestsEmptyTitle,
+            subtitle: l10n.profileConnectionsFriendRequestsEmptySubtitle,
+          ),
+        ],
+      );
+    }
+
+    return ListView.separated(
+      controller: _requestsSheetData.scrollController,
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+      itemCount:
+          _requestsSheetData.items.length +
+          (_requestsSheetData.loadingMore ? 1 : 0),
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        if (index >= _requestsSheetData.items.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: AppColors.accent,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final user = _requestsSheetData.items[index];
+        return _ConnectionUserRow(
+          user: user,
+          busy: _actionUserId == user.userId,
+          onTap: () => widget.onOpenProfile(user),
+          onActionsTap: (buttonContext) =>
+              _showRequestActions(buttonContext, user),
+        );
+      },
     );
   }
 }

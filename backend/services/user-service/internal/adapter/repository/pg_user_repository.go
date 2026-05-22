@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -1041,6 +1042,56 @@ func (r *PGUserRepository) ListFriendsByUserID(
 	return scanProfileListRows(rows, "friend profile")
 }
 
+func (r *PGUserRepository) ListIncomingFriendRequestsByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+	options port.UserConnectionListOptions,
+) ([]*model.UserFriendRequest, error) {
+	const query = `
+		SELECT
+			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
+			p.is_profile_completed,
+			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
+			u.last_seen_at,
+			p.created_at, p.updated_at,
+			fr.requested_at
+		FROM user_friendships fr
+		JOIN user_profiles p ON p.user_id = fr.requester_user_id
+		JOIN users u ON u.id = p.user_id
+		WHERE fr.addressee_user_id = $1
+		  AND fr.status = 'PENDING'
+		  AND u.is_deleted = FALSE
+		  AND (
+			$2 = ''
+			OR COALESCE(p.display_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.first_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.last_name, '') ILIKE '%' || $2 || '%'
+			OR TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%' || $2 || '%'
+		  )
+		ORDER BY fr.requested_at DESC, p.user_id ASC
+		LIMIT $3 OFFSET $4
+	`
+
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		userID,
+		strings.TrimSpace(options.SearchQuery),
+		options.Limit,
+		options.Offset,
+	)
+	if err != nil {
+		if isUndefinedRelation(err, "user_friendships") {
+			return []*model.UserFriendRequest{}, nil
+		}
+		return nil, fmt.Errorf("query incoming friend requests by user id: %w", err)
+	}
+	defer rows.Close()
+
+	return scanFriendRequestListRows(rows)
+}
+
 func (r *PGUserRepository) ListFollowingByUserID(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -1163,6 +1214,42 @@ func scanProfileListRows(rows pgx.Rows, itemName string) ([]*model.UserProfile, 
 			return nil, fmt.Errorf("scan %s: %w", itemName, err)
 		}
 		result = append(result, &item)
+	}
+
+	return result, rows.Err()
+}
+
+func scanFriendRequestListRows(rows pgx.Rows) ([]*model.UserFriendRequest, error) {
+	var result []*model.UserFriendRequest
+	for rows.Next() {
+		var profile model.UserProfile
+		var requestedAt time.Time
+		if err := rows.Scan(
+			&profile.UserID,
+			&profile.FirstName,
+			&profile.LastName,
+			&profile.DisplayName,
+			&profile.Bio,
+			&profile.BirthDate,
+			&profile.AvatarFileID,
+			&profile.CityID,
+			&profile.CountryCode,
+			&profile.Locale,
+			&profile.Timezone,
+			&profile.Currency,
+			&profile.IsProfileCompleted,
+			&profile.IsOnline,
+			&profile.LastSeenAt,
+			&profile.CreatedAt,
+			&profile.UpdatedAt,
+			&requestedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan incoming friend request: %w", err)
+		}
+		result = append(result, &model.UserFriendRequest{
+			Profile:     &profile,
+			RequestedAt: requestedAt,
+		})
 	}
 
 	return result, rows.Err()

@@ -764,6 +764,11 @@ type FollowersPage struct {
 	NextOffset *int
 }
 
+type FriendRequestsPage struct {
+	Items      []*model.UserFriendRequest
+	NextOffset *int
+}
+
 type ProfileConnectionsListInput struct {
 	Limit         int
 	Offset        int
@@ -831,6 +836,55 @@ func (u *UserUseCase) ListFriends(
 	input ProfileConnectionsListInput,
 ) (*FollowersPage, error) {
 	return u.listProfileConnections(ctx, userID, input, u.repo.ListFriendsByUserID)
+}
+
+func (u *UserUseCase) ListIncomingFriendRequests(
+	ctx context.Context,
+	userID uuid.UUID,
+	input ProfileConnectionsListInput,
+) (*FriendRequestsPage, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+
+	limit := normalizeConnectionsLimit(input.Limit)
+	offset := input.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	user, err := u.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get user by id: %w", err)
+	}
+	if user == nil || user.IsDeleted {
+		return nil, ErrUserNotFound
+	}
+
+	items, err := u.repo.ListIncomingFriendRequestsByUserID(
+		ctx,
+		userID,
+		port.UserConnectionListOptions{
+			SearchQuery: input.SearchQuery,
+			Limit:       limit + 1,
+			Offset:      offset,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list incoming friend requests: %w", err)
+	}
+
+	var nextOffset *int
+	if len(items) > limit {
+		next := offset + limit
+		nextOffset = &next
+		items = items[:limit]
+	}
+
+	return &FriendRequestsPage{
+		Items:      items,
+		NextOffset: nextOffset,
+	}, nil
 }
 
 func (u *UserUseCase) ListFollowing(

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -148,6 +149,77 @@ func TestListFriendsUsesAcceptedFriendshipsOnly(t *testing.T) {
 	}
 	if page.Items[0].UserID != friendID {
 		t.Fatalf("friend id = %s, want %s", page.Items[0].UserID, friendID)
+	}
+}
+
+func TestListIncomingFriendRequestsUsesMostRecentPendingRequests(t *testing.T) {
+	ctx := context.Background()
+	viewerID := uuid.New()
+	olderRequesterID := uuid.New()
+	newerRequesterID := uuid.New()
+	acceptedRequesterID := uuid.New()
+	repo := newFriendshipTestRepository(
+		viewerID,
+		olderRequesterID,
+		newerRequesterID,
+		acceptedRequesterID,
+	)
+	useCase := NewUserUseCase(repo, nil)
+
+	if _, err := useCase.SendFriendRequest(ctx, olderRequesterID, viewerID); err != nil {
+		t.Fatalf("SendFriendRequest older returned error: %v", err)
+	}
+	if _, err := useCase.SendFriendRequest(ctx, newerRequesterID, viewerID); err != nil {
+		t.Fatalf("SendFriendRequest newer returned error: %v", err)
+	}
+	if _, err := useCase.SendFriendRequest(ctx, acceptedRequesterID, viewerID); err != nil {
+		t.Fatalf("SendFriendRequest accepted returned error: %v", err)
+	}
+	if _, err := useCase.AcceptFriendRequest(ctx, viewerID, acceptedRequesterID); err != nil {
+		t.Fatalf("AcceptFriendRequest returned error: %v", err)
+	}
+
+	now := time.Now().UTC()
+	olderRequestedAt := now.Add(-2 * time.Hour)
+	newerRequestedAt := now.Add(-30 * time.Minute)
+	repo.setFriendshipRequestedAt(olderRequesterID, viewerID, olderRequestedAt)
+	repo.setFriendshipRequestedAt(newerRequesterID, viewerID, newerRequestedAt)
+
+	page, err := useCase.ListIncomingFriendRequests(ctx, viewerID, ProfileConnectionsListInput{
+		Limit:  1,
+		Offset: 0,
+	})
+	if err != nil {
+		t.Fatalf("ListIncomingFriendRequests returned error: %v", err)
+	}
+	if len(page.Items) != 1 {
+		t.Fatalf("request length = %d, want 1", len(page.Items))
+	}
+	if page.Items[0].Profile.UserID != newerRequesterID {
+		t.Fatalf("requester id = %s, want %s", page.Items[0].Profile.UserID, newerRequesterID)
+	}
+	if !page.Items[0].RequestedAt.Equal(newerRequestedAt) {
+		t.Fatalf("requested at = %s, want %s", page.Items[0].RequestedAt, newerRequestedAt)
+	}
+	if page.NextOffset == nil || *page.NextOffset != 1 {
+		t.Fatalf("next offset = %v, want 1", page.NextOffset)
+	}
+
+	nextPage, err := useCase.ListIncomingFriendRequests(ctx, viewerID, ProfileConnectionsListInput{
+		Limit:  1,
+		Offset: 1,
+	})
+	if err != nil {
+		t.Fatalf("ListIncomingFriendRequests next page returned error: %v", err)
+	}
+	if len(nextPage.Items) != 1 {
+		t.Fatalf("next request length = %d, want 1", len(nextPage.Items))
+	}
+	if nextPage.Items[0].Profile.UserID != olderRequesterID {
+		t.Fatalf("next requester id = %s, want %s", nextPage.Items[0].Profile.UserID, olderRequesterID)
+	}
+	if nextPage.NextOffset != nil {
+		t.Fatalf("next page offset = %v, want nil", *nextPage.NextOffset)
 	}
 }
 
@@ -326,6 +398,18 @@ func (r *friendshipTestRepository) DeleteFriendship(
 	return nil
 }
 
+func (r *friendshipTestRepository) setFriendshipRequestedAt(
+	requesterUserID uuid.UUID,
+	addresseeUserID uuid.UUID,
+	requestedAt time.Time,
+) {
+	item := r.friendships[friendshipPairKey(requesterUserID, addresseeUserID)]
+	if item == nil {
+		return
+	}
+	item.RequestedAt = requestedAt
+}
+
 func (r *friendshipTestRepository) CreateUserAggregate(
 	context.Context,
 	*model.User,
@@ -449,6 +533,31 @@ func (r *friendshipTestRepository) ListFriendsByUserID(
 	return paginateTestProfiles(result, options.Limit, options.Offset), nil
 }
 
+func (r *friendshipTestRepository) ListIncomingFriendRequestsByUserID(
+	_ context.Context,
+	userID uuid.UUID,
+	options port.UserConnectionListOptions,
+) ([]*model.UserFriendRequest, error) {
+	result := make([]*model.UserFriendRequest, 0)
+	for _, friendship := range r.friendships {
+		if friendship.AddresseeUserID != userID ||
+			friendship.Status != enum.FriendshipStatusPending {
+			continue
+		}
+		result = append(result, &model.UserFriendRequest{
+			Profile:     r.profileForUserID(friendship.RequesterUserID),
+			RequestedAt: friendship.RequestedAt,
+		})
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		if result[i].RequestedAt.Equal(result[j].RequestedAt) {
+			return result[i].Profile.UserID.String() < result[j].Profile.UserID.String()
+		}
+		return result[i].RequestedAt.After(result[j].RequestedAt)
+	})
+	return paginateTestFriendRequests(result, options.Limit, options.Offset), nil
+}
+
 func (r *friendshipTestRepository) ListFollowingByUserID(
 	_ context.Context,
 	userID uuid.UUID,
@@ -491,6 +600,24 @@ func paginateTestProfiles(
 	}
 	if offset >= len(items) {
 		return []*model.UserProfile{}
+	}
+	end := offset + limit
+	if limit <= 0 || end > len(items) {
+		end = len(items)
+	}
+	return items[offset:end]
+}
+
+func paginateTestFriendRequests(
+	items []*model.UserFriendRequest,
+	limit int,
+	offset int,
+) []*model.UserFriendRequest {
+	if offset < 0 {
+		offset = 0
+	}
+	if offset >= len(items) {
+		return []*model.UserFriendRequest{}
 	}
 	end := offset + limit
 	if limit <= 0 || end > len(items) {

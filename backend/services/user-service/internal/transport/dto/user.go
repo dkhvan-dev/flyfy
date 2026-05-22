@@ -117,6 +117,7 @@ type FollowersListItemResponse struct {
 	AvatarFileID *string `json:"avatarFileId,omitempty"`
 	IsOnline     bool    `json:"isOnline"`
 	LastSeenAt   *string `json:"lastSeenAt,omitempty"`
+	RequestedAt  *string `json:"requestedAt,omitempty"`
 }
 
 type FollowersListResponse struct {

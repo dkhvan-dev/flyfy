@@ -34,8 +34,9 @@ class ProfileApi {
       final statusCode = e.response?.statusCode;
       final data = e.response?.data;
 
-      final errorMessage =
-          data is Map<String, dynamic> ? data['error']?.toString() : null;
+      final errorMessage = data is Map<String, dynamic>
+          ? data['error']?.toString()
+          : null;
 
       final isUserNotFound =
           statusCode == 404 && errorMessage == 'user not found';
@@ -118,6 +119,19 @@ class ProfileApi {
       sort: sort,
       sortDirection: sortDirection,
       onlineOnly: onlineOnly,
+    );
+    return ProfileFollowersPageVm.fromJson(data);
+  }
+
+  Future<ProfileFollowersPageVm> getMyIncomingFriendRequests({
+    int limit = 20,
+    int offset = 0,
+    String? query,
+  }) async {
+    final data = await _apiClient.getMyIncomingFriendRequests(
+      limit: limit,
+      offset: offset,
+      query: query,
     );
     return ProfileFollowersPageVm.fromJson(data);
   }

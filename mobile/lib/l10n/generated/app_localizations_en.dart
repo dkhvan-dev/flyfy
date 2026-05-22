@@ -673,6 +673,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show users who are currently online.';
 
   @override
+  String get profileConnectionsFriendRequestsTitle => 'Friend requests';
+
+  @override
+  String get profileConnectionsFriendRequestsViewAll => 'All requests';
+
+  @override
+  String get profileConnectionsFriendRequestsEmptyTitle => 'No friend requests';
+
+  @override
+  String get profileConnectionsFriendRequestsEmptySubtitle =>
+      'New incoming friend requests will appear here.';
+
+  @override
   String get profileJourneyTitle => 'My journey';
 
   @override
@@ -825,6 +838,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileFriendRequestTitle => 'Friend request';
+
+  @override
+  String get profileFriendRequestAcceptAction => 'Add';
+
+  @override
+  String get profileFriendRequestDeclineAction => 'Decline';
 
   @override
   String get profileAcceptFriendAction => 'Accept';

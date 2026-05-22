@@ -5,6 +5,7 @@ class ProfileFollowerVm {
     this.avatarFileId,
     this.isOnline = false,
     this.lastSeenAt,
+    this.requestedAt,
   });
 
   final String userId;
@@ -12,6 +13,7 @@ class ProfileFollowerVm {
   final String? avatarFileId;
   final bool isOnline;
   final DateTime? lastSeenAt;
+  final DateTime? requestedAt;
 
   factory ProfileFollowerVm.fromJson(Map<String, dynamic> json) {
     return ProfileFollowerVm(
@@ -20,6 +22,7 @@ class ProfileFollowerVm {
       avatarFileId: json['avatarFileId']?.toString(),
       isOnline: json['isOnline'] == true,
       lastSeenAt: DateTime.tryParse(json['lastSeenAt']?.toString() ?? ''),
+      requestedAt: DateTime.tryParse(json['requestedAt']?.toString() ?? ''),
     );
   }
 

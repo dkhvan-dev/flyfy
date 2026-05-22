@@ -1306,6 +1306,30 @@ abstract class AppLocalizations {
   /// **'Show users who are currently online.'**
   String get profileConnectionsFilterOnlineOnlySubtitle;
 
+  /// No description provided for @profileConnectionsFriendRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend requests'**
+  String get profileConnectionsFriendRequestsTitle;
+
+  /// No description provided for @profileConnectionsFriendRequestsViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All requests'**
+  String get profileConnectionsFriendRequestsViewAll;
+
+  /// No description provided for @profileConnectionsFriendRequestsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No friend requests'**
+  String get profileConnectionsFriendRequestsEmptyTitle;
+
+  /// No description provided for @profileConnectionsFriendRequestsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New incoming friend requests will appear here.'**
+  String get profileConnectionsFriendRequestsEmptySubtitle;
+
   /// No description provided for @profileJourneyTitle.
   ///
   /// In en, this message translates to:
@@ -1581,6 +1605,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Friend request'**
   String get profileFriendRequestTitle;
+
+  /// No description provided for @profileFriendRequestAcceptAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get profileFriendRequestAcceptAction;
+
+  /// No description provided for @profileFriendRequestDeclineAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get profileFriendRequestDeclineAction;
 
   /// No description provided for @profileAcceptFriendAction.
   ///

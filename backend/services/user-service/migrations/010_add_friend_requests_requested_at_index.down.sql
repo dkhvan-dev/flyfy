@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_user_friendships_addressee_pending_requested_at;

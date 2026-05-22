@@ -676,6 +676,19 @@ class AppLocalizationsRu extends AppLocalizations {
       'Показывать пользователей, которые сейчас в сети.';
 
   @override
+  String get profileConnectionsFriendRequestsTitle => 'Запросы в друзья';
+
+  @override
+  String get profileConnectionsFriendRequestsViewAll => 'Все запросы';
+
+  @override
+  String get profileConnectionsFriendRequestsEmptyTitle => 'Запросов нет';
+
+  @override
+  String get profileConnectionsFriendRequestsEmptySubtitle =>
+      'Новые входящие запросы в друзья появятся здесь.';
+
+  @override
   String get profileJourneyTitle => 'Мой путь';
 
   @override
@@ -828,6 +841,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileFriendRequestTitle => 'Запрос в друзья';
+
+  @override
+  String get profileFriendRequestAcceptAction => 'Добавить';
+
+  @override
+  String get profileFriendRequestDeclineAction => 'Отклонить';
 
   @override
   String get profileAcceptFriendAction => 'Принять';

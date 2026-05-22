@@ -67,6 +67,11 @@ type UserRepository interface {
 		userID uuid.UUID,
 		options UserConnectionListOptions,
 	) ([]*model.UserProfile, error)
+	ListIncomingFriendRequestsByUserID(
+		ctx context.Context,
+		userID uuid.UUID,
+		options UserConnectionListOptions,
+	) ([]*model.UserFriendRequest, error)
 	ListFollowingByUserID(
 		ctx context.Context,
 		userID uuid.UUID,

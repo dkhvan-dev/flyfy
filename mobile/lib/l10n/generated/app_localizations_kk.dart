@@ -678,6 +678,19 @@ class AppLocalizationsKk extends AppLocalizations {
       'Қазір желіде отырған пайдаланушыларды көрсету.';
 
   @override
+  String get profileConnectionsFriendRequestsTitle => 'Достық сұраулары';
+
+  @override
+  String get profileConnectionsFriendRequestsViewAll => 'Барлық сұраулар';
+
+  @override
+  String get profileConnectionsFriendRequestsEmptyTitle => 'Сұраулар жоқ';
+
+  @override
+  String get profileConnectionsFriendRequestsEmptySubtitle =>
+      'Жаңа кіріс достық сұраулары осы жерде көрсетіледі.';
+
+  @override
   String get profileJourneyTitle => 'Менің жолым';
 
   @override
@@ -831,6 +844,12 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileFriendRequestTitle => 'Достық сұрауы';
+
+  @override
+  String get profileFriendRequestAcceptAction => 'Қосу';
+
+  @override
+  String get profileFriendRequestDeclineAction => 'Қабылдамау';
 
   @override
   String get profileAcceptFriendAction => 'Қабылдау';

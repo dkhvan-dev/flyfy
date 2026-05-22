@@ -25,6 +25,11 @@ type UserFriendship struct {
 	UpdatedAt       time.Time
 }
 
+type UserFriendRequest struct {
+	Profile     *UserProfile
+	RequestedAt time.Time
+}
+
 func (f *UserFriendship) Validate() error {
 	if f.ID == uuid.Nil {
 		return ErrInvalidFriendshipID

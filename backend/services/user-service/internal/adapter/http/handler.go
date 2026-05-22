@@ -30,6 +30,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", h.Health)
 	mux.HandleFunc("POST /v1/users/me/init", h.InitMe)
 	mux.HandleFunc("GET /v1/users/me/friends", h.ListMyFriends)
+	mux.HandleFunc("GET /v1/users/me/friend-requests/incoming", h.ListMyIncomingFriendRequests)
 	mux.HandleFunc("GET /v1/users/me/following", h.ListMyFollowing)
 	mux.HandleFunc("GET /v1/users/me", h.GetMe)
 	mux.HandleFunc("POST /v1/users/me/presence", h.UpdateMyPresence)
@@ -250,6 +251,25 @@ func (h *Handler) ListMyFriends(w http.ResponseWriter, r *http.Request) {
 	h.writeProfileConnectionsPage(w, page)
 }
 
+func (h *Handler) ListMyIncomingFriendRequests(w http.ResponseWriter, r *http.Request) {
+	currentUserID, ok := h.currentUserIDFromRequest(w, r)
+	if !ok {
+		return
+	}
+
+	page, err := h.useCase.ListIncomingFriendRequests(
+		r.Context(),
+		currentUserID,
+		parseProfileConnectionsListInput(r),
+	)
+	if err != nil {
+		h.writeProfileConnectionsError(w, err, "failed to list incoming friend requests")
+		return
+	}
+
+	h.writeFriendRequestsPage(w, page)
+}
+
 func (h *Handler) ListMyFollowing(w http.ResponseWriter, r *http.Request) {
 	currentUserID, ok := h.currentUserIDFromRequest(w, r)
 	if !ok {
@@ -363,6 +383,44 @@ func (h *Handler) writeProfileConnectionsPage(
 			AvatarFileID: avatarFileID,
 			IsOnline:     item.IsOnline,
 			LastSeenAt:   lastSeenAt,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, dto.FollowersListResponse{
+		Items:      resp,
+		NextOffset: page.NextOffset,
+	})
+}
+
+func (h *Handler) writeFriendRequestsPage(
+	w http.ResponseWriter,
+	page *app.FriendRequestsPage,
+) {
+	resp := make([]dto.FollowersListItemResponse, 0, len(page.Items))
+	for _, item := range page.Items {
+		if item == nil || item.Profile == nil {
+			continue
+		}
+
+		var avatarFileID *string
+		if item.Profile.AvatarFileID != nil {
+			v := item.Profile.AvatarFileID.String()
+			avatarFileID = &v
+		}
+		var lastSeenAt *string
+		if item.Profile.LastSeenAt != nil {
+			v := item.Profile.LastSeenAt.UTC().Format(time.RFC3339)
+			lastSeenAt = &v
+		}
+		requestedAt := item.RequestedAt.UTC().Format(time.RFC3339)
+
+		resp = append(resp, dto.FollowersListItemResponse{
+			UserID:       item.Profile.UserID.String(),
+			DisplayName:  item.Profile.DisplayName,
+			AvatarFileID: avatarFileID,
+			IsOnline:     item.Profile.IsOnline,
+			LastSeenAt:   lastSeenAt,
+			RequestedAt:  &requestedAt,
 		})
 	}
 
