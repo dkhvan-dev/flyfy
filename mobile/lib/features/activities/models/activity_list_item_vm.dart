@@ -21,6 +21,7 @@ class ActivityListItemVm {
     required this.priceType,
     required this.requiresProfileCompletion,
     required this.requiresAttendanceConfirmation,
+    this.allowsParticipantInvites = false,
     this.tags = const [],
     this.cityName,
     this.cityId,
@@ -65,6 +66,7 @@ class ActivityListItemVm {
   final String priceType;
   final bool requiresProfileCompletion;
   final bool requiresAttendanceConfirmation;
+  final bool allowsParticipantInvites;
 
   final String? cityName;
   final String? cityId;
@@ -108,15 +110,18 @@ class ActivityListItemVm {
           .toList(),
       languageCode: json['languageCode']?.toString() ?? 'ru',
       timezone: json['timezone']?.toString() ?? 'Asia/Almaty',
-      startAt: DateTime.tryParse(json['startAt']?.toString() ?? '') ??
+      startAt:
+          DateTime.tryParse(json['startAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      endAt: DateTime.tryParse(json['endAt']?.toString() ?? '') ??
+      endAt:
+          DateTime.tryParse(json['endAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       capacityType: json['capacityType']?.toString() ?? '',
       priceType: json['priceType']?.toString() ?? 'FREE',
       requiresProfileCompletion: json['requiresProfileCompletion'] == true,
       requiresAttendanceConfirmation:
           json['requiresAttendanceConfirmation'] == true,
+      allowsParticipantInvites: json['allowsParticipantInvites'] == true,
       cityName: json['cityName']?.toString(),
       cityId: json['cityId']?.toString(),
       countryCode: json['countryCode']?.toString(),

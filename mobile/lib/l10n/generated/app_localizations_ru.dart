@@ -1341,6 +1341,44 @@ class AppLocalizationsRu extends AppLocalizations {
   String get activityDetailsViewAll => 'Показать всех';
 
   @override
+  String get activityInviteFriendsButton => 'Пригласить друзей';
+
+  @override
+  String get activityInviteFriendsTitle => 'Пригласить друзей';
+
+  @override
+  String get activityInviteFriendsSearchHint => 'Поиск друзей';
+
+  @override
+  String get activityInviteFriendsEmptyTitle => 'Нет друзей для приглашения';
+
+  @override
+  String get activityInviteFriendsEmptySubtitle =>
+      'Добавьте друзей или попробуйте другой поиск.';
+
+  @override
+  String get activityInviteFriendsLoadFailed => 'Не удалось загрузить друзей';
+
+  @override
+  String get activityInviteFriendsRetryHint =>
+      'Проверьте подключение и попробуйте еще раз.';
+
+  @override
+  String activityInviteFriendsSend(int count) {
+    return 'Пригласить ($count)';
+  }
+
+  @override
+  String get activityInviteFriendsSuccess => 'Приглашения отправлены';
+
+  @override
+  String get activityInviteFriendsFailed => 'Не удалось отправить приглашения';
+
+  @override
+  String get activityInviteFriendsAuthRequired =>
+      'Войдите, чтобы приглашать друзей';
+
+  @override
   String get activityDetailsLinkCopied => 'Ссылка скопирована';
 
   @override
@@ -1423,6 +1461,9 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get activityParticipantsLoadFailed =>
       'Не удалось загрузить участников';
+
+  @override
+  String get participantStatusInvited => 'Приглашен';
 
   @override
   String get participantStatusRequested => 'Запрос отправлен';
@@ -3421,6 +3462,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get createUnlimitedParticipantsLabel => 'Безлимитное число участников';
+
+  @override
+  String get createAllowParticipantInvitesLabel =>
+      'Разрешить участникам приглашать друзей';
+
+  @override
+  String get createAllowParticipantInvitesHint =>
+      'Автор активности всегда может приглашать своих друзей. Другие пользователи смогут приглашать только своих друзей, если эта опция включена.';
 
   @override
   String get createParticipantsMinShort => 'МИН';

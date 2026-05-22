@@ -133,6 +133,15 @@ func (h *Handler) dispatchActivitySubRoutes(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if len(parts) == 3 && parts[1] == "participants" && parts[2] == "invite-friends" {
+		if r.Method == http.MethodPost {
+			h.InviteFriends(w, r, activityID)
+			return
+		}
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+
 	if len(parts) != 2 {
 		writeError(w, http.StatusNotFound, "not found")
 		return
@@ -381,6 +390,7 @@ func (h *Handler) CreateActivity(w http.ResponseWriter, r *http.Request) {
 		Currency:                       req.Currency,
 		RequiresProfileCompletion:      valueOrDefaultBool(req.RequiresProfileCompletion, true),
 		RequiresAttendanceConfirmation: valueOrDefaultBool(req.RequiresAttendanceConfirmation, false),
+		AllowsParticipantInvites:       valueOrDefaultBool(req.AllowsParticipantInvites, false),
 		ConfirmationDeadline:           confirmationDeadline,
 		CountryCode:                    req.CountryCode,
 		CityID:                         cityID,
@@ -655,6 +665,7 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request, activit
 		HasCurrency:                    req.HasCurrency,
 		RequiresProfileCompletion:      req.RequiresProfileCompletion,
 		RequiresAttendanceConfirmation: req.RequiresAttendanceConfirmation,
+		AllowsParticipantInvites:       req.AllowsParticipantInvites,
 		ConfirmationDeadline:           confirmationDeadline,
 		HasConfirmationDeadline:        req.HasConfirmationDeadline,
 		CountryCode:                    req.CountryCode,
@@ -946,6 +957,53 @@ func (h *Handler) JoinActivity(w http.ResponseWriter, r *http.Request, activityI
 	writeJSON(w, http.StatusOK, toParticipantResponse(item))
 }
 
+func (h *Handler) InviteFriends(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
+	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "missing authenticated user")
+		return
+	}
+
+	var req dto.InviteFriendsRequest
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	inviteeUserIDs := make([]uuid.UUID, 0, len(req.UserIDs))
+	for _, value := range req.UserIDs {
+		parsed, parseErr := uuid.Parse(strings.TrimSpace(value))
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "invalid invited user id")
+			return
+		}
+		inviteeUserIDs = append(inviteeUserIDs, parsed)
+	}
+
+	result, err := h.joinUC.InviteFriends(r.Context(), app.InviteFriendsInput{
+		ActivityID:     activityID,
+		ActorUserID:    actorUserID,
+		InviteeUserIDs: inviteeUserIDs,
+	})
+	if err != nil {
+		h.writeAppError(w, err, "failed to invite friends")
+		return
+	}
+
+	resp := dto.InviteFriendsResponse{
+		Invited:        make([]dto.ParticipantResponse, 0, len(result.Invited)),
+		SkippedUserIDs: make([]string, 0, len(result.SkippedUserIDs)),
+	}
+	for _, item := range result.Invited {
+		resp.Invited = append(resp.Invited, toParticipantResponse(item))
+	}
+	for _, userID := range result.SkippedUserIDs {
+		resp.SkippedUserIDs = append(resp.SkippedUserIDs, userID.String())
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (h *Handler) LeaveActivity(w http.ResponseWriter, r *http.Request, activityID uuid.UUID) {
 	actorUserID, err := resolveActorUserID(r.Context(), h.actorResolver)
 	if err != nil {
@@ -1181,6 +1239,7 @@ func (h *Handler) toActivityResponse(ctx context.Context, item *model.Activity) 
 		PriceLockedAt:                  formatOptionalTime(item.PriceLockedAt),
 		RequiresProfileCompletion:      item.RequiresProfileCompletion,
 		RequiresAttendanceConfirmation: item.RequiresAttendanceConfirmation,
+		AllowsParticipantInvites:       item.AllowsParticipantInvites,
 		ConfirmationDeadline:           formatOptionalTime(item.ConfirmationDeadline),
 		CountryCode:                    item.CountryCode,
 		CityID:                         item.CityID,
@@ -1368,8 +1427,12 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrActivityMediaFileNotFound):
 		writeError(w, http.StatusNotFound, err.Error())
 
-	case errors.Is(err, app.ErrAttendanceAccessDenied):
+	case errors.Is(err, app.ErrAttendanceAccessDenied),
+		errors.Is(err, app.ErrActivityInvitationForbidden):
 		writeError(w, http.StatusForbidden, err.Error())
+
+	case errors.Is(err, app.ErrFriendshipVerificationUnavailable):
+		writeError(w, http.StatusServiceUnavailable, err.Error())
 
 	case errors.Is(err, app.ErrActivityAlreadyPublished),
 		errors.Is(err, app.ErrActivityAlreadyStarted),

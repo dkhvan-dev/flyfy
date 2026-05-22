@@ -3,6 +3,7 @@ package enum
 type ParticipantStatus string
 
 const (
+	ParticipantStatusInvited             ParticipantStatus = "INVITED"
 	ParticipantStatusRequested           ParticipantStatus = "REQUESTED"
 	ParticipantStatusApproved            ParticipantStatus = "APPROVED"
 	ParticipantStatusWaitlisted          ParticipantStatus = "WAITLISTED"
@@ -20,7 +21,8 @@ const (
 
 func (v ParticipantStatus) IsValid() bool {
 	switch v {
-	case ParticipantStatusRequested,
+	case ParticipantStatusInvited,
+		ParticipantStatusRequested,
 		ParticipantStatusApproved,
 		ParticipantStatusWaitlisted,
 		ParticipantStatusPendingPayment,

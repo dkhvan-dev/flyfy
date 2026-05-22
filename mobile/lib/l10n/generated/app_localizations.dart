@@ -2512,6 +2512,72 @@ abstract class AppLocalizations {
   /// **'View all'**
   String get activityDetailsViewAll;
 
+  /// No description provided for @activityInviteFriendsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite friends'**
+  String get activityInviteFriendsButton;
+
+  /// No description provided for @activityInviteFriendsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite friends'**
+  String get activityInviteFriendsTitle;
+
+  /// No description provided for @activityInviteFriendsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search friends'**
+  String get activityInviteFriendsSearchHint;
+
+  /// No description provided for @activityInviteFriendsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No friends to invite'**
+  String get activityInviteFriendsEmptyTitle;
+
+  /// No description provided for @activityInviteFriendsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add friends or try another search.'**
+  String get activityInviteFriendsEmptySubtitle;
+
+  /// No description provided for @activityInviteFriendsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load friends'**
+  String get activityInviteFriendsLoadFailed;
+
+  /// No description provided for @activityInviteFriendsRetryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get activityInviteFriendsRetryHint;
+
+  /// No description provided for @activityInviteFriendsSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite ({count})'**
+  String activityInviteFriendsSend(int count);
+
+  /// No description provided for @activityInviteFriendsSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitations sent'**
+  String get activityInviteFriendsSuccess;
+
+  /// No description provided for @activityInviteFriendsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send invitations'**
+  String get activityInviteFriendsFailed;
+
+  /// No description provided for @activityInviteFriendsAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to invite friends'**
+  String get activityInviteFriendsAuthRequired;
+
   /// No description provided for @activityDetailsLinkCopied.
   ///
   /// In en, this message translates to:
@@ -2667,6 +2733,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load participants right now'**
   String get activityParticipantsLoadFailed;
+
+  /// No description provided for @participantStatusInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited'**
+  String get participantStatusInvited;
 
   /// No description provided for @participantStatusRequested.
   ///
@@ -6267,6 +6339,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlimited participants'**
   String get createUnlimitedParticipantsLabel;
+
+  /// No description provided for @createAllowParticipantInvitesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow participants to invite friends'**
+  String get createAllowParticipantInvitesLabel;
+
+  /// No description provided for @createAllowParticipantInvitesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The activity author can always invite their friends. Other users can invite only their own friends when this option is enabled.'**
+  String get createAllowParticipantInvitesHint;
 
   /// No description provided for @createParticipantsMinShort.
   ///

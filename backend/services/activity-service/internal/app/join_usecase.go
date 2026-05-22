@@ -47,6 +47,17 @@ type JoinActivityInput struct {
 	VisibilityPassword *string
 }
 
+type InviteFriendsInput struct {
+	ActivityID     uuid.UUID
+	ActorUserID    uuid.UUID
+	InviteeUserIDs []uuid.UUID
+}
+
+type InviteFriendsResult struct {
+	Invited        []*model.ActivityParticipant
+	SkippedUserIDs []uuid.UUID
+}
+
 type LeaveActivityInput struct {
 	ActivityID uuid.UUID
 	UserID     uuid.UUID
@@ -137,29 +148,43 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			}
 		}
 
-		participant, err := model.NewActivityParticipant(model.NewActivityParticipantParams{
-			ActivityID: input.ActivityID,
-			UserID:     input.UserID,
-			Status:     status,
-		})
-		if err != nil {
-			return err
+		participant := existing
+		acceptedInvitation := participant != nil && participant.Status == enum.ParticipantStatusInvited
+		if acceptedInvitation {
+			if err = participant.SetStatus(status, now); err != nil {
+				return err
+			}
+			if err = txRepo.UpdateParticipant(ctx, participant); err != nil {
+				return fmt.Errorf("update invited participant: %w", err)
+			}
+		} else {
+			participant, err = model.NewActivityParticipant(model.NewActivityParticipantParams{
+				ActivityID: input.ActivityID,
+				UserID:     input.UserID,
+				Status:     status,
+			})
+			if err != nil {
+				return err
+			}
+
+			if status == enum.ParticipantStatusApproved || status == enum.ParticipantStatusConfirmed {
+				nowCopy := now
+				participant.ApprovedAt = &nowCopy
+			}
+			if status == enum.ParticipantStatusWaitlisted {
+				nowCopy := now
+				participant.WaitlistedAt = &nowCopy
+			}
+
+			if err = txRepo.CreateParticipant(ctx, participant); err != nil {
+				return fmt.Errorf("create participant: %w", err)
+			}
 		}
 
-		if status == enum.ParticipantStatusApproved || status == enum.ParticipantStatusConfirmed {
-			nowCopy := now
-			participant.ApprovedAt = &nowCopy
-		}
 		if status == enum.ParticipantStatusWaitlisted {
-			nowCopy := now
-			participant.WaitlistedAt = &nowCopy
 			activity.Status = enum.ActivityStatusFull
 			activity.Revision++
 			activity.UpdatedAt = now
-		}
-
-		if err = txRepo.CreateParticipant(ctx, participant); err != nil {
-			return fmt.Errorf("create participant: %w", err)
 		}
 
 		participantEvent, participantEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
@@ -169,8 +194,9 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 			EventType:     string(status),
 			ActorUserID:   &input.UserID,
 			PayloadJSON: mustJSON(map[string]any{
-				"status":      string(status),
-				"paymentMode": paymentModeForParticipant(activity, status),
+				"status":             string(status),
+				"paymentMode":        paymentModeForParticipant(activity, status),
+				"acceptedInvitation": acceptedInvitation,
 			}),
 		})
 		if participantEventErr == nil {
@@ -266,6 +292,202 @@ func (u *JoinUseCase) JoinActivity(ctx context.Context, input JoinActivityInput)
 	}
 
 	return created, nil
+}
+
+func (u *JoinUseCase) InviteFriends(ctx context.Context, input InviteFriendsInput) (*InviteFriendsResult, error) {
+	if input.ActivityID == uuid.Nil {
+		return nil, ErrInvalidActivityID
+	}
+	if input.ActorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+
+	inviteeUserIDs := uniqueInviteeUserIDs(input.InviteeUserIDs, input.ActorUserID)
+	if len(inviteeUserIDs) == 0 {
+		return nil, ErrInvalidParticipantUserID
+	}
+
+	result := &InviteFriendsResult{
+		Invited:        make([]*model.ActivityParticipant, 0, len(inviteeUserIDs)),
+		SkippedUserIDs: make([]uuid.UUID, 0),
+	}
+
+	activity, err := u.repo.GetActivityByID(ctx, input.ActivityID)
+	if err != nil {
+		return nil, fmt.Errorf("get activity by id for invitation: %w", err)
+	}
+	if err = validateInvitationActivity(activity, input.ActorUserID, time.Now().UTC()); err != nil {
+		return nil, err
+	}
+
+	friendInviteeUserIDs, skippedNonFriendUserIDs, err := u.filterFriendInviteeUserIDs(
+		ctx,
+		input.ActorUserID,
+		inviteeUserIDs,
+	)
+	if err != nil {
+		return nil, err
+	}
+	result.SkippedUserIDs = append(result.SkippedUserIDs, skippedNonFriendUserIDs...)
+	if len(friendInviteeUserIDs) == 0 {
+		return result, nil
+	}
+	inviteeUserIDs = friendInviteeUserIDs
+
+	err = u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
+		activity, err := txRepo.GetActivityByIDForUpdate(ctx, input.ActivityID)
+		if err != nil {
+			return fmt.Errorf("get activity by id for invitation: %w", err)
+		}
+		now := time.Now().UTC()
+		if err = validateInvitationActivity(activity, input.ActorUserID, now); err != nil {
+			return err
+		}
+
+		if activity.Visibility == enum.ActivityVisibilityPrivate && activity.HostUserID != input.ActorUserID {
+			actorParticipant, actorErr := txRepo.GetParticipantByActivityAndUserForUpdate(ctx, input.ActivityID, input.ActorUserID)
+			if actorErr != nil {
+				return fmt.Errorf("get invitation actor participant: %w", actorErr)
+			}
+			if actorParticipant == nil || !actorParticipant.Status.IsActive() {
+				return ErrActivityJoinClosed
+			}
+		}
+
+		for _, inviteeUserID := range inviteeUserIDs {
+			existing, participantErr := txRepo.GetParticipantByActivityAndUserForUpdate(
+				ctx,
+				input.ActivityID,
+				inviteeUserID,
+			)
+			if participantErr != nil {
+				return fmt.Errorf("get invited participant by activity and user: %w", participantErr)
+			}
+			if existing != nil && (existing.Status.IsActive() || existing.Status == enum.ParticipantStatusInvited) {
+				result.SkippedUserIDs = append(result.SkippedUserIDs, inviteeUserID)
+				continue
+			}
+
+			participant, createErr := model.NewActivityParticipant(model.NewActivityParticipantParams{
+				ActivityID: input.ActivityID,
+				UserID:     inviteeUserID,
+				Status:     enum.ParticipantStatusInvited,
+			})
+			if createErr != nil {
+				return createErr
+			}
+			if err = txRepo.CreateParticipant(ctx, participant); err != nil {
+				return fmt.Errorf("create invited participant: %w", err)
+			}
+
+			participantEvent, participantEventErr := model.NewParticipantEvent(model.NewParticipantEventParams{
+				ActivityID:    activity.ID,
+				ParticipantID: participant.ID,
+				UserID:        participant.UserID,
+				EventType:     string(enum.ParticipantStatusInvited),
+				ActorUserID:   &input.ActorUserID,
+				PayloadJSON: mustJSON(map[string]any{
+					"status":    string(enum.ParticipantStatusInvited),
+					"invitedBy": input.ActorUserID.String(),
+				}),
+			})
+			if participantEventErr == nil {
+				if err = txRepo.CreateParticipantEvent(ctx, participantEvent); err != nil {
+					return fmt.Errorf("create participant invitation event: %w", err)
+				}
+			}
+
+			result.Invited = append(result.Invited, participant)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (u *JoinUseCase) filterFriendInviteeUserIDs(
+	ctx context.Context,
+	actorUserID uuid.UUID,
+	inviteeUserIDs []uuid.UUID,
+) ([]uuid.UUID, []uuid.UUID, error) {
+	if u.userProfileResolver == nil {
+		return nil, nil, ErrFriendshipVerificationUnavailable
+	}
+
+	friendUserIDs, err := u.userProfileResolver.FilterFriendUserIDs(ctx, actorUserID, inviteeUserIDs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w: %v", ErrFriendshipVerificationUnavailable, err)
+	}
+
+	friendSet := make(map[uuid.UUID]struct{}, len(friendUserIDs))
+	for _, userID := range friendUserIDs {
+		if userID == uuid.Nil || userID == actorUserID {
+			continue
+		}
+		friendSet[userID] = struct{}{}
+	}
+
+	allowed := make([]uuid.UUID, 0, len(inviteeUserIDs))
+	skipped := make([]uuid.UUID, 0)
+	for _, userID := range inviteeUserIDs {
+		if _, ok := friendSet[userID]; ok {
+			allowed = append(allowed, userID)
+			continue
+		}
+		skipped = append(skipped, userID)
+	}
+
+	return allowed, skipped, nil
+}
+
+func uniqueInviteeUserIDs(items []uuid.UUID, actorUserID uuid.UUID) []uuid.UUID {
+	seen := make(map[uuid.UUID]struct{}, len(items))
+	result := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if item == uuid.Nil || item == actorUserID {
+			continue
+		}
+		if _, ok := seen[item]; ok {
+			continue
+		}
+		seen[item] = struct{}{}
+		result = append(result, item)
+	}
+	return result
+}
+
+func validateInvitationActivity(activity *model.Activity, actorUserID uuid.UUID, now time.Time) error {
+	if activity == nil {
+		return ErrActivityNotFound
+	}
+	if !canInviteToActivity(activity) {
+		return ErrActivityJoinClosed
+	}
+	if activity.HostUserID != actorUserID && !activity.AllowsParticipantInvites {
+		return ErrActivityInvitationForbidden
+	}
+	if !activity.RegistrationDeadline.IsZero() && now.After(activity.RegistrationDeadline) {
+		return ErrActivityJoinClosed
+	}
+	return nil
+}
+
+func canInviteToActivity(activity *model.Activity) bool {
+	if activity == nil {
+		return false
+	}
+	switch activity.Status {
+	case enum.ActivityStatusPublished,
+		enum.ActivityStatusEnrollmentOpen,
+		enum.ActivityStatusFull:
+		return true
+	default:
+		return false
+	}
 }
 
 func activityCoverFileID(media []*model.ActivityMedia) string {

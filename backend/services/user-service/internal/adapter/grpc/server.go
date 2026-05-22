@@ -260,6 +260,44 @@ func (s *Server) ListPublicUserIdsByCountryCodes(
 	return resp, nil
 }
 
+func (s *Server) FilterFriendUserIds(
+	ctx context.Context,
+	req *userv1.FilterFriendUserIdsRequest,
+) (*userv1.FilterFriendUserIdsResponse, error) {
+	userID, err := uuid.Parse(strings.TrimSpace(req.GetUserId()))
+	if err != nil {
+		return nil, mapError(app.ErrInvalidUserID)
+	}
+
+	rawIDs := req.GetCandidateUserIds()
+	candidateUserIDs := make([]uuid.UUID, 0, len(rawIDs))
+	for _, raw := range rawIDs {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+		parsed, parseErr := uuid.Parse(raw)
+		if parseErr != nil {
+			return nil, mapError(app.ErrInvalidUserID)
+		}
+		candidateUserIDs = append(candidateUserIDs, parsed)
+	}
+
+	friendUserIDs, err := s.useCase.FilterFriendUserIDs(ctx, userID, candidateUserIDs)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	resp := &userv1.FilterFriendUserIdsResponse{
+		FriendUserIds: make([]string, 0, len(friendUserIDs)),
+	}
+	for _, friendUserID := range friendUserIDs {
+		resp.FriendUserIds = append(resp.FriendUserIds, friendUserID.String())
+	}
+
+	return resp, nil
+}
+
 func (s *Server) GetUserBySubject(
 	ctx context.Context,
 	req *userv1.GetUserBySubjectRequest,

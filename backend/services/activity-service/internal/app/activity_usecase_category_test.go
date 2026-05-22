@@ -184,6 +184,25 @@ type paymentGatewayStub struct {
 	void      func(ctx context.Context, input port.PaymentChildInput) (*port.PaymentTransaction, error)
 }
 
+type userProfileResolverStub struct {
+	displayNameForUserID func(ctx context.Context, userID uuid.UUID) (string, error)
+	filterFriendUserIDs  func(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error)
+}
+
+func (s userProfileResolverStub) DisplayNameForUserID(ctx context.Context, userID uuid.UUID) (string, error) {
+	if s.displayNameForUserID != nil {
+		return s.displayNameForUserID(ctx, userID)
+	}
+	return "", nil
+}
+
+func (s userProfileResolverStub) FilterFriendUserIDs(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error) {
+	if s.filterFriendUserIDs != nil {
+		return s.filterFriendUserIDs(ctx, userID, candidateUserIDs)
+	}
+	return candidateUserIDs, nil
+}
+
 func (s paymentGatewayStub) Authorize(ctx context.Context, input port.PaymentCreateInput) (*port.PaymentTransaction, error) {
 	if s.authorize != nil {
 		return s.authorize(ctx, input)
@@ -533,6 +552,33 @@ func TestCreateActivityPublishesByDefault(t *testing.T) {
 	}
 }
 
+func TestCreateActivityPersistsParticipantInviteSetting(t *testing.T) {
+	t.Parallel()
+
+	var createdItem *model.Activity
+	repo := &activityRepoStub{
+		createActivity: func(ctx context.Context, item *model.Activity) error {
+			createdItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	input := validCreateActivityInput()
+	input.AllowsParticipantInvites = true
+
+	item, err := uc.CreateActivity(context.Background(), input)
+	if err != nil {
+		t.Fatalf("CreateActivity() error = %v", err)
+	}
+	if item == nil || createdItem == nil {
+		t.Fatal("CreateActivity() did not persist activity")
+	}
+	if !createdItem.AllowsParticipantInvites {
+		t.Fatal("CreateActivity() did not persist AllowsParticipantInvites=true")
+	}
+}
+
 func TestCreateActivityCreatesHostParticipantAsCheckedIn(t *testing.T) {
 	t.Parallel()
 
@@ -565,6 +611,46 @@ func TestCreateActivityCreatesHostParticipantAsCheckedIn(t *testing.T) {
 	}
 	if createdParticipant.CheckedInAt == nil {
 		t.Fatal("CreateActivity() host participant checkedInAt is nil")
+	}
+}
+
+func TestUpdateActivityChangesParticipantInviteSetting(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	var updatedItem *model.Activity
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			item := validActivity(t, activityID, actorUserID)
+			item.AllowsParticipantInvites = false
+			return item, nil
+		},
+		updateActivity: func(ctx context.Context, item *model.Activity) error {
+			updatedItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	allowInvites := true
+
+	_, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID:              actorUserID,
+		ActivityID:               activityID,
+		AllowsParticipantInvites: &allowInvites,
+	})
+	if err != nil {
+		t.Fatalf("UpdateActivity() error = %v", err)
+	}
+	if updatedItem == nil {
+		t.Fatal("UpdateActivity() did not persist activity")
+	}
+	if !updatedItem.AllowsParticipantInvites {
+		t.Fatal("UpdateActivity() did not set AllowsParticipantInvites=true")
 	}
 }
 
@@ -1201,6 +1287,9 @@ func TestJoinPaidActivityAuthorizesPaymentAndConfirmsParticipant(t *testing.T) {
 	createdEventTypes := make([]string, 0)
 
 	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
 		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
 			txRepo := &activityTxRepoStub{
 				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
@@ -1252,6 +1341,330 @@ func TestJoinPaidActivityAuthorizesPaymentAndConfirmsParticipant(t *testing.T) {
 	}
 	if !containsString(createdEventTypes, ParticipantEventTypePaymentAuthorizationSucceeded) {
 		t.Fatalf("created event types = %v, want authorization event", createdEventTypes)
+	}
+}
+
+func TestInviteFriendsCreatesInvitedParticipantsAndSkipsExistingParticipants(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	actorUserID := uuid.New()
+	inviteeUserID := uuid.New()
+	existingParticipantUserID := uuid.New()
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+	activity.AllowsParticipantInvites = true
+
+	existingParticipant := validParticipant(
+		t,
+		activityID,
+		existingParticipantUserID,
+		enum.ParticipantStatusApproved,
+	)
+	createdParticipants := make([]*model.ActivityParticipant, 0)
+	createdEventTypes := make([]string, 0)
+
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					if requestedUserID == existingParticipantUserID {
+						return existingParticipant, nil
+					}
+					return nil, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipants = append(createdParticipants, item)
+					return nil
+				},
+				createParticipantEvent: func(ctx context.Context, item *model.ParticipantEvent) error {
+					createdEventTypes = append(createdEventTypes, item.EventType)
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	resolver := userProfileResolverStub{
+		filterFriendUserIDs: func(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error) {
+			return []uuid.UUID{inviteeUserID, existingParticipantUserID}, nil
+		},
+	}
+
+	uc := NewJoinUseCase(repo, nil, resolver)
+	result, err := uc.InviteFriends(context.Background(), InviteFriendsInput{
+		ActivityID:  activityID,
+		ActorUserID: actorUserID,
+		InviteeUserIDs: []uuid.UUID{
+			inviteeUserID,
+			existingParticipantUserID,
+			inviteeUserID,
+			actorUserID,
+			uuid.Nil,
+		},
+	})
+	if err != nil {
+		t.Fatalf("InviteFriends() error = %v", err)
+	}
+	if result == nil {
+		t.Fatal("InviteFriends() result is nil")
+	}
+	if len(createdParticipants) != 1 {
+		t.Fatalf("created participants = %d, want 1", len(createdParticipants))
+	}
+	if createdParticipants[0].UserID != inviteeUserID {
+		t.Fatalf("created participant user = %s, want %s", createdParticipants[0].UserID, inviteeUserID)
+	}
+	if createdParticipants[0].Status != enum.ParticipantStatusInvited {
+		t.Fatalf("created participant status = %s, want %s", createdParticipants[0].Status, enum.ParticipantStatusInvited)
+	}
+	if createdParticipants[0].Status.OccupiesSlot() {
+		t.Fatal("invited participant must not occupy capacity slot")
+	}
+	if len(result.SkippedUserIDs) != 1 || result.SkippedUserIDs[0] != existingParticipantUserID {
+		t.Fatalf("skipped users = %v, want [%s]", result.SkippedUserIDs, existingParticipantUserID)
+	}
+	if !containsString(createdEventTypes, string(enum.ParticipantStatusInvited)) {
+		t.Fatalf("created event types = %v, want invited event", createdEventTypes)
+	}
+}
+
+func TestInviteFriendsSkipsUsersWhoAreNotActorFriends(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	actorUserID := uuid.New()
+	friendUserID := uuid.New()
+	nonFriendUserID := uuid.New()
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+	activity.AllowsParticipantInvites = true
+
+	createdParticipants := make([]*model.ActivityParticipant, 0)
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					return nil, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipants = append(createdParticipants, item)
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+	resolver := userProfileResolverStub{
+		filterFriendUserIDs: func(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error) {
+			if userID != actorUserID {
+				t.Fatalf("FilterFriendUserIDs() userID = %s, want %s", userID, actorUserID)
+			}
+			return []uuid.UUID{friendUserID}, nil
+		},
+	}
+
+	uc := NewJoinUseCase(repo, nil, resolver)
+	result, err := uc.InviteFriends(context.Background(), InviteFriendsInput{
+		ActivityID:     activityID,
+		ActorUserID:    actorUserID,
+		InviteeUserIDs: []uuid.UUID{friendUserID, nonFriendUserID},
+	})
+	if err != nil {
+		t.Fatalf("InviteFriends() error = %v", err)
+	}
+	if len(createdParticipants) != 1 || createdParticipants[0].UserID != friendUserID {
+		t.Fatalf("created participants = %v, want only friend %s", createdParticipants, friendUserID)
+	}
+	if result == nil || len(result.SkippedUserIDs) != 1 || result.SkippedUserIDs[0] != nonFriendUserID {
+		t.Fatalf("skipped users = %v, want [%s]", result.SkippedUserIDs, nonFriendUserID)
+	}
+}
+
+func TestInviteFriendsRejectsNonHostWhenParticipantInvitesDisabled(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	actorUserID := uuid.New()
+	inviteeUserID := uuid.New()
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+	activity.AllowsParticipantInvites = false
+
+	var createdParticipant *model.ActivityParticipant
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	uc := NewJoinUseCase(repo, nil)
+	_, err := uc.InviteFriends(context.Background(), InviteFriendsInput{
+		ActivityID:     activityID,
+		ActorUserID:    actorUserID,
+		InviteeUserIDs: []uuid.UUID{inviteeUserID},
+	})
+	if !errors.Is(err, ErrActivityInvitationForbidden) {
+		t.Fatalf("InviteFriends() error = %v, want %v", err, ErrActivityInvitationForbidden)
+	}
+	if createdParticipant != nil {
+		t.Fatal("InviteFriends() created participant even though participant invites are disabled")
+	}
+}
+
+func TestInviteFriendsAllowsHostWhenParticipantInvitesDisabled(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	inviteeUserID := uuid.New()
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+	activity.AllowsParticipantInvites = false
+
+	var createdParticipant *model.ActivityParticipant
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			return activity, nil
+		},
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	resolver := userProfileResolverStub{
+		filterFriendUserIDs: func(ctx context.Context, userID uuid.UUID, candidateUserIDs []uuid.UUID) ([]uuid.UUID, error) {
+			return []uuid.UUID{inviteeUserID}, nil
+		},
+	}
+
+	uc := NewJoinUseCase(repo, nil, resolver)
+	_, err := uc.InviteFriends(context.Background(), InviteFriendsInput{
+		ActivityID:     activityID,
+		ActorUserID:    hostUserID,
+		InviteeUserIDs: []uuid.UUID{inviteeUserID},
+	})
+	if err != nil {
+		t.Fatalf("InviteFriends() error = %v", err)
+	}
+	if createdParticipant == nil {
+		t.Fatal("InviteFriends() did not create host invitation")
+	}
+	if createdParticipant.UserID != inviteeUserID {
+		t.Fatalf("invited user = %s, want %s", createdParticipant.UserID, inviteeUserID)
+	}
+}
+
+func TestJoinActivityAcceptsExistingInvitation(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	hostUserID := uuid.New()
+	userID := uuid.New()
+
+	activity := validActivity(t, activityID, hostUserID)
+	activity.Status = enum.ActivityStatusEnrollmentOpen
+	invitation := validParticipant(t, activityID, userID, enum.ParticipantStatusInvited)
+
+	var createdParticipant *model.ActivityParticipant
+	var updatedParticipant *model.ActivityParticipant
+	createdEventTypes := make([]string, 0)
+
+	repo := &activityRepoStub{
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			txRepo := &activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					return activity, nil
+				},
+				getParticipantByActivityAndUserForUpdate: func(ctx context.Context, requestedID uuid.UUID, requestedUserID uuid.UUID) (*model.ActivityParticipant, error) {
+					return invitation, nil
+				},
+				countOccupiedSlotsForUpdate: func(ctx context.Context, requestedID uuid.UUID) (int, error) {
+					return 0, nil
+				},
+				createParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					createdParticipant = item
+					return nil
+				},
+				updateParticipant: func(ctx context.Context, item *model.ActivityParticipant) error {
+					updatedParticipant = item
+					return nil
+				},
+				createParticipantEvent: func(ctx context.Context, item *model.ParticipantEvent) error {
+					createdEventTypes = append(createdEventTypes, item.EventType)
+					return nil
+				},
+			}
+			return fn(txRepo)
+		},
+	}
+
+	uc := NewJoinUseCase(repo, nil)
+	participant, err := uc.JoinActivity(context.Background(), JoinActivityInput{
+		ActivityID: activityID,
+		UserID:     userID,
+	})
+	if err != nil {
+		t.Fatalf("JoinActivity() error = %v", err)
+	}
+	if createdParticipant != nil {
+		t.Fatal("JoinActivity() created duplicate participant for existing invitation")
+	}
+	if updatedParticipant == nil {
+		t.Fatal("JoinActivity() did not update invited participant")
+	}
+	if participant.ID != invitation.ID {
+		t.Fatalf("participant id = %s, want invitation id %s", participant.ID, invitation.ID)
+	}
+	if participant.Status != enum.ParticipantStatusApproved {
+		t.Fatalf("participant status = %s, want %s", participant.Status, enum.ParticipantStatusApproved)
+	}
+	if participant.ApprovedAt == nil {
+		t.Fatal("accepted invited participant ApprovedAt is nil")
+	}
+	if !containsString(createdEventTypes, string(enum.ParticipantStatusApproved)) {
+		t.Fatalf("created event types = %v, want approved event", createdEventTypes)
 	}
 }
 

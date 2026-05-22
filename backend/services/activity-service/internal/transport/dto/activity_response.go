@@ -35,6 +35,7 @@ type ActivityResponse struct {
 
 	RequiresProfileCompletion      bool    `json:"requiresProfileCompletion"`
 	RequiresAttendanceConfirmation bool    `json:"requiresAttendanceConfirmation"`
+	AllowsParticipantInvites       bool    `json:"allowsParticipantInvites"`
 	ConfirmationDeadline           *string `json:"confirmationDeadline,omitempty"`
 
 	CountryCode   *string  `json:"countryCode,omitempty"`

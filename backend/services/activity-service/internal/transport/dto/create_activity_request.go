@@ -26,6 +26,7 @@ type CreateActivityRequest struct {
 
 	RequiresProfileCompletion      *bool   `json:"requiresProfileCompletion,omitempty"`
 	RequiresAttendanceConfirmation *bool   `json:"requiresAttendanceConfirmation,omitempty"`
+	AllowsParticipantInvites       *bool   `json:"allowsParticipantInvites,omitempty"`
 	ConfirmationDeadline           *string `json:"confirmationDeadline,omitempty"`
 
 	CountryCode *string  `json:"countryCode,omitempty"`

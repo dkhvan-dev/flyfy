@@ -256,6 +256,17 @@ class ActivityApi {
         .toList();
   }
 
+  Future<void> inviteFriends(String activityId, List<String> userIds) async {
+    if (userIds.isEmpty) {
+      return;
+    }
+
+    await _apiClient.dio.post(
+      '/activities/$activityId/participants/invite-friends',
+      data: {'userIds': userIds},
+    );
+  }
+
   Future<Map<String, dynamic>> joinActivity(
     String activityId, {
     String? visibilityPassword,

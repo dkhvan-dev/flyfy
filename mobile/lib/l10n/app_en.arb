@@ -436,6 +436,24 @@
     }
   },
   "activityDetailsViewAll": "View all",
+  "activityInviteFriendsButton": "Invite friends",
+  "activityInviteFriendsTitle": "Invite friends",
+  "activityInviteFriendsSearchHint": "Search friends",
+  "activityInviteFriendsEmptyTitle": "No friends to invite",
+  "activityInviteFriendsEmptySubtitle": "Add friends or try another search.",
+  "activityInviteFriendsLoadFailed": "Could not load friends",
+  "activityInviteFriendsRetryHint": "Check your connection and try again.",
+  "activityInviteFriendsSend": "Invite ({count})",
+  "@activityInviteFriendsSend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityInviteFriendsSuccess": "Invitations sent",
+  "activityInviteFriendsFailed": "Could not send invitations",
+  "activityInviteFriendsAuthRequired": "Sign in to invite friends",
   "activityDetailsLinkCopied": "Link copied",
   "activityDetailsHostedBadge": "Hosted by you",
   "activityDetailsJoinedBadge": "Joined",
@@ -472,6 +490,7 @@
   "activityParticipantFallbackName": "Participant",
   "activityParticipantsEmpty": "No participants yet",
   "activityParticipantsLoadFailed": "Could not load participants right now",
+  "participantStatusInvited": "Invited",
   "participantStatusRequested": "Requested",
   "participantStatusApproved": "Approved",
   "participantStatusWaitlisted": "Waitlisted",
@@ -1262,6 +1281,8 @@
   "createMaxParticipantsLabel": "Maximum",
   "createParticipantLimitsTitle": "Participant Limits",
   "createUnlimitedParticipantsLabel": "Unlimited participants",
+  "createAllowParticipantInvitesLabel": "Allow participants to invite friends",
+  "createAllowParticipantInvitesHint": "The activity author can always invite their friends. Other users can invite only their own friends when this option is enabled.",
   "createParticipantsMinShort": "MIN",
   "createParticipantsMaxShort": "MAX",
   "createNoLimitPlaceholder": "No limit",

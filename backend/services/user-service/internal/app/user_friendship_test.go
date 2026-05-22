@@ -151,6 +151,41 @@ func TestListFriendsUsesAcceptedFriendshipsOnly(t *testing.T) {
 	}
 }
 
+func TestFilterFriendUserIDsReturnsOnlyAcceptedFriendships(t *testing.T) {
+	ctx := context.Background()
+	viewerID := uuid.New()
+	friendID := uuid.New()
+	pendingID := uuid.New()
+	strangerID := uuid.New()
+	repo := newFriendshipTestRepository(viewerID, friendID, pendingID, strangerID)
+	useCase := NewUserUseCase(repo, nil)
+
+	if _, err := useCase.SendFriendRequest(ctx, viewerID, friendID); err != nil {
+		t.Fatalf("SendFriendRequest friend returned error: %v", err)
+	}
+	if _, err := useCase.AcceptFriendRequest(ctx, friendID, viewerID); err != nil {
+		t.Fatalf("AcceptFriendRequest friend returned error: %v", err)
+	}
+	if _, err := useCase.SendFriendRequest(ctx, viewerID, pendingID); err != nil {
+		t.Fatalf("SendFriendRequest pending returned error: %v", err)
+	}
+
+	got, err := useCase.FilterFriendUserIDs(ctx, viewerID, []uuid.UUID{
+		friendID,
+		pendingID,
+		strangerID,
+		friendID,
+		uuid.Nil,
+		viewerID,
+	})
+	if err != nil {
+		t.Fatalf("FilterFriendUserIDs returned error: %v", err)
+	}
+	if len(got) != 1 || got[0] != friendID {
+		t.Fatalf("filtered ids = %v, want [%s]", got, friendID)
+	}
+}
+
 func TestListFollowingPaginatesFollowedUsers(t *testing.T) {
 	ctx := context.Background()
 	viewerID := uuid.New()

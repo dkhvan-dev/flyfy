@@ -74,6 +74,40 @@ func (r *UserResolver) DisplayNameForUserID(ctx context.Context, userID uuid.UUI
 	return fullName, nil
 }
 
+func (r *UserResolver) FilterFriendUserIDs(
+	ctx context.Context,
+	userID uuid.UUID,
+	candidateUserIDs []uuid.UUID,
+) ([]uuid.UUID, error) {
+	req := &userv1.FilterFriendUserIdsRequest{
+		UserId:           userID.String(),
+		CandidateUserIds: make([]string, 0, len(candidateUserIDs)),
+	}
+	for _, candidateUserID := range candidateUserIDs {
+		if candidateUserID == uuid.Nil || candidateUserID == userID {
+			continue
+		}
+		req.CandidateUserIds = append(req.CandidateUserIds, candidateUserID.String())
+	}
+
+	resp, err := r.client.FilterFriendUserIds(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	rawIDs := resp.GetFriendUserIds()
+	result := make([]uuid.UUID, 0, len(rawIDs))
+	for _, raw := range rawIDs {
+		parsed, parseErr := uuid.Parse(strings.TrimSpace(raw))
+		if parseErr != nil {
+			continue
+		}
+		result = append(result, parsed)
+	}
+
+	return result, nil
+}
+
 func aggregateRoles(aggregate *userv1.UserAggregate) []string {
 	if aggregate == nil {
 		return nil

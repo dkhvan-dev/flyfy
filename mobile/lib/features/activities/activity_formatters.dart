@@ -62,6 +62,8 @@ String formatActivityFormat(String value, AppLocalizations l10n) {
 
 String formatParticipantStatus(String value, AppLocalizations l10n) {
   switch (value.toUpperCase()) {
+    case 'INVITED':
+      return l10n.participantStatusInvited;
     case 'REQUESTED':
       return l10n.participantStatusRequested;
     case 'APPROVED':

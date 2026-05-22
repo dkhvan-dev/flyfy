@@ -316,4 +316,26 @@ void main() {
       expect(requestSource, contains('hasMapUrl: canEditMeetingAddress'));
     },
   );
+
+  test(
+    'create and edit activity expose participant friend invite setting',
+    () async {
+      final source = await File(
+        'lib/screens/activities/create_activity_screen.dart',
+      ).readAsString();
+      final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+      expect(source, contains('bool _allowsParticipantInvites = false;'));
+      expect(source, contains('_setAllowsParticipantInvites'));
+      expect(source, contains('a.allowsParticipantInvites'));
+      expect(
+        source,
+        contains('allowsParticipantInvites: _allowsParticipantInvites'),
+      );
+      expect(source, contains('createAllowParticipantInvitesLabel'));
+      expect(source, contains('createAllowParticipantInvitesHint'));
+      expect(l10nSource, contains('createAllowParticipantInvitesLabel'));
+      expect(l10nSource, contains('createAllowParticipantInvitesHint'));
+    },
+  );
 }

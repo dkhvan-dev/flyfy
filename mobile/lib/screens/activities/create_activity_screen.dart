@@ -100,6 +100,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   String _capacityType = 'UNLIMITED';
   int _minParticipants = _minActivityParticipants;
   int _maxParticipants = 15;
+  bool _allowsParticipantInvites = false;
   String _visibility = 'PUBLIC';
   bool _visibilityPasswordChanged = false;
   String _priceType = 'FREE';
@@ -198,6 +199,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       _languageCode = a.languageCode;
       _timezone = a.timezone;
       _capacityType = a.capacityType.toUpperCase();
+      _allowsParticipantInvites = a.allowsParticipantInvites;
       if (a.minParticipants != null) {
         _minParticipants = a.minParticipants! < _minActivityParticipants
             ? _minActivityParticipants
@@ -538,6 +540,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         }
       }
     });
+  }
+
+  void _setAllowsParticipantInvites(bool value) {
+    setState(() => _allowsParticipantInvites = value);
   }
 
   void _handleMinParticipantsChanged(String value) {
@@ -1196,6 +1202,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       startAt: _startAt,
       endAt: _endAt,
       capacityType: _capacityType,
+      allowsParticipantInvites: _allowsParticipantInvites,
       minParticipants: _minParticipantsValue,
       maxParticipants: _maxParticipantsValue,
       priceType: _priceType,
@@ -1284,6 +1291,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       startAt: _startAtChanged ? _startAt : null,
       endAt: _endAtChanged ? _endAt : null,
       capacityType: _capacityType,
+      allowsParticipantInvites: _allowsParticipantInvites,
       minParticipants: _minParticipantsValue,
       hasMinParticipants: true,
       maxParticipants: _maxParticipantsValue,
@@ -2281,11 +2289,27 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           icon: Icons.groups_outlined,
           title: l10n.createParticipantLimitsTitle,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _Step3ToggleRow(
                 label: l10n.createUnlimitedParticipantsLabel,
                 value: isUnlimited,
                 onChanged: _setUnlimitedParticipants,
+              ),
+              const SizedBox(height: 16),
+              _Step3ToggleRow(
+                label: l10n.createAllowParticipantInvitesLabel,
+                value: _allowsParticipantInvites,
+                onChanged: _setAllowsParticipantInvites,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.createAllowParticipantInvitesHint,
+                style: const TextStyle(
+                  color: AppColors.textCaption,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
               ),
               const SizedBox(height: 16),
               isNarrow

@@ -436,6 +436,24 @@
     }
   },
   "activityDetailsViewAll": "Барлығын көру",
+  "activityInviteFriendsButton": "Достарды шақыру",
+  "activityInviteFriendsTitle": "Достарды шақыру",
+  "activityInviteFriendsSearchHint": "Достарды іздеу",
+  "activityInviteFriendsEmptyTitle": "Шақыратын дос жоқ",
+  "activityInviteFriendsEmptySubtitle": "Достар қосыңыз немесе басқа іздеу жасап көріңіз.",
+  "activityInviteFriendsLoadFailed": "Достарды жүктеу мүмкін болмады",
+  "activityInviteFriendsRetryHint": "Қосылымды тексеріп, қайталап көріңіз.",
+  "activityInviteFriendsSend": "Шақыру ({count})",
+  "@activityInviteFriendsSend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityInviteFriendsSuccess": "Шақырулар жіберілді",
+  "activityInviteFriendsFailed": "Шақыруларды жіберу мүмкін болмады",
+  "activityInviteFriendsAuthRequired": "Достарды шақыру үшін кіріңіз",
   "activityDetailsLinkCopied": "Сілтеме көшірілді",
   "activityDetailsHostedBadge": "Сіздің белсенділігіңіз",
   "activityDetailsJoinedBadge": "Сіз қатысасыз",
@@ -472,6 +490,7 @@
   "activityParticipantFallbackName": "Қатысушы",
   "activityParticipantsEmpty": "Әзірге қатысушы жоқ",
   "activityParticipantsLoadFailed": "Қатысушыларды жүктеу мүмкін болмады",
+  "participantStatusInvited": "Шақырылды",
   "participantStatusRequested": "Сұрау жіберілді",
   "participantStatusApproved": "Расталды",
   "participantStatusWaitlisted": "Күту тізімінде",
@@ -1262,6 +1281,8 @@
   "createMaxParticipantsLabel": "Максимум",
   "createParticipantLimitsTitle": "Қатысушылар лимиті",
   "createUnlimitedParticipantsLabel": "Қатысушылар саны шектеусіз",
+  "createAllowParticipantInvitesLabel": "Қатысушыларға достарын шақыруға рұқсат беру",
+  "createAllowParticipantInvitesHint": "Белсенділік авторы өз достарын әрқашан шақыра алады. Басқа пайдаланушылар бұл опция қосылған кезде ғана өз достарын шақыра алады.",
   "createParticipantsMinShort": "МИН",
   "createParticipantsMaxShort": "МАКС",
   "createNoLimitPlaceholder": "Шектеу жоқ",

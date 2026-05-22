@@ -26,13 +26,15 @@ var (
 	ErrActivityShouldBeCancelledInstead = errors.New("activity should be cancelled instead of completed")
 	ErrActivityExtendDurationInvalid    = errors.New("activity can only be extended by 30 or 60 minutes")
 
-	ErrActivityJoinClosed          = errors.New("activity join is closed")
-	ErrActivityFull                = errors.New("activity is full")
-	ErrAlreadyJoined               = errors.New("user already joined activity")
-	ErrParticipantScheduleConflict = errors.New("user already joined another activity with overlapping time")
-	ErrParticipantAlreadyCancelled = errors.New("participant already cancelled")
-	ErrParticipantStateInvalid     = errors.New("participant state is invalid for this action")
-	ErrActivityLeaveClosed         = errors.New("activity cannot be left after it has started")
+	ErrActivityJoinClosed                = errors.New("activity join is closed")
+	ErrActivityInvitationForbidden       = errors.New("activity does not allow participant invitations")
+	ErrFriendshipVerificationUnavailable = errors.New("friendship verification unavailable")
+	ErrActivityFull                      = errors.New("activity is full")
+	ErrAlreadyJoined                     = errors.New("user already joined activity")
+	ErrParticipantScheduleConflict       = errors.New("user already joined another activity with overlapping time")
+	ErrParticipantAlreadyCancelled       = errors.New("participant already cancelled")
+	ErrParticipantStateInvalid           = errors.New("participant state is invalid for this action")
+	ErrActivityLeaveClosed               = errors.New("activity cannot be left after it has started")
 
 	ErrModerationStateInvalid = errors.New("activity moderation state is invalid")
 

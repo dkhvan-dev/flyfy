@@ -12,6 +12,7 @@ class CreateActivityRequest {
     required this.endAt,
     required this.capacityType,
     required this.priceType,
+    this.allowsParticipantInvites = false,
     this.tags = const [],
     this.minParticipants,
     this.maxParticipants,
@@ -44,6 +45,7 @@ class CreateActivityRequest {
   final int? minParticipants;
   final int? maxParticipants;
   final String priceType;
+  final bool allowsParticipantInvites;
   final double? priceAmount;
   final String? currency;
   final String? countryCode;
@@ -73,6 +75,7 @@ class CreateActivityRequest {
       'endAt': endAt.toUtc().toIso8601String(),
       'capacityType': capacityType,
       'priceType': priceType,
+      'allowsParticipantInvites': allowsParticipantInvites,
       if (minParticipants != null) 'minParticipants': minParticipants,
       if (maxParticipants != null) 'maxParticipants': maxParticipants,
       if (priceAmount != null) 'priceAmount': priceAmount,

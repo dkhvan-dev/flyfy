@@ -83,6 +83,7 @@ type Activity struct {
 
 	RequiresProfileCompletion      bool
 	RequiresAttendanceConfirmation bool
+	AllowsParticipantInvites       bool
 	ConfirmationDeadline           *time.Time
 
 	CountryCode *string
@@ -137,6 +138,7 @@ type NewActivityParams struct {
 
 	RequiresProfileCompletion      bool
 	RequiresAttendanceConfirmation bool
+	AllowsParticipantInvites       bool
 	ConfirmationDeadline           *time.Time
 
 	CountryCode *string
@@ -188,6 +190,7 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 
 		RequiresProfileCompletion:      params.RequiresProfileCompletion,
 		RequiresAttendanceConfirmation: params.RequiresAttendanceConfirmation,
+		AllowsParticipantInvites:       params.AllowsParticipantInvites,
 		ConfirmationDeadline:           params.ConfirmationDeadline,
 
 		CountryCode: NormalizeOptionalString(params.CountryCode),

@@ -1669,6 +1669,102 @@ func (x *ListPublicUserIdsByCountryCodesResponse) GetUserIds() []string {
 	return nil
 }
 
+type FilterFriendUserIdsRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	UserId           string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	CandidateUserIds []string               `protobuf:"bytes,2,rep,name=candidate_user_ids,json=candidateUserIds,proto3" json:"candidate_user_ids,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *FilterFriendUserIdsRequest) Reset() {
+	*x = FilterFriendUserIdsRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FilterFriendUserIdsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FilterFriendUserIdsRequest) ProtoMessage() {}
+
+func (x *FilterFriendUserIdsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FilterFriendUserIdsRequest.ProtoReflect.Descriptor instead.
+func (*FilterFriendUserIdsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *FilterFriendUserIdsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *FilterFriendUserIdsRequest) GetCandidateUserIds() []string {
+	if x != nil {
+		return x.CandidateUserIds
+	}
+	return nil
+}
+
+type FilterFriendUserIdsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FriendUserIds []string               `protobuf:"bytes,1,rep,name=friend_user_ids,json=friendUserIds,proto3" json:"friend_user_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FilterFriendUserIdsResponse) Reset() {
+	*x = FilterFriendUserIdsResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FilterFriendUserIdsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FilterFriendUserIdsResponse) ProtoMessage() {}
+
+func (x *FilterFriendUserIdsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FilterFriendUserIdsResponse.ProtoReflect.Descriptor instead.
+func (*FilterFriendUserIdsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *FilterFriendUserIdsResponse) GetFriendUserIds() []string {
+	if x != nil {
+		return x.FriendUserIds
+	}
+	return nil
+}
+
 type GetUserBySubjectRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SubjectId     string                 `protobuf:"bytes,1,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
@@ -1678,7 +1774,7 @@ type GetUserBySubjectRequest struct {
 
 func (x *GetUserBySubjectRequest) Reset() {
 	*x = GetUserBySubjectRequest{}
-	mi := &file_user_v1_user_proto_msgTypes[24]
+	mi := &file_user_v1_user_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1690,7 +1786,7 @@ func (x *GetUserBySubjectRequest) String() string {
 func (*GetUserBySubjectRequest) ProtoMessage() {}
 
 func (x *GetUserBySubjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[24]
+	mi := &file_user_v1_user_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1703,7 +1799,7 @@ func (x *GetUserBySubjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserBySubjectRequest.ProtoReflect.Descriptor instead.
 func (*GetUserBySubjectRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{24}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *GetUserBySubjectRequest) GetSubjectId() string {
@@ -1722,7 +1818,7 @@ type GetUserBySubjectResponse struct {
 
 func (x *GetUserBySubjectResponse) Reset() {
 	*x = GetUserBySubjectResponse{}
-	mi := &file_user_v1_user_proto_msgTypes[25]
+	mi := &file_user_v1_user_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1734,7 +1830,7 @@ func (x *GetUserBySubjectResponse) String() string {
 func (*GetUserBySubjectResponse) ProtoMessage() {}
 
 func (x *GetUserBySubjectResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[25]
+	mi := &file_user_v1_user_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1747,7 +1843,7 @@ func (x *GetUserBySubjectResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserBySubjectResponse.ProtoReflect.Descriptor instead.
 func (*GetUserBySubjectResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{25}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *GetUserBySubjectResponse) GetAggregate() *UserAggregate {
@@ -1916,12 +2012,17 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"&ListPublicUserIdsByCountryCodesRequest\x12#\n" +
 	"\rcountry_codes\x18\x01 \x03(\tR\fcountryCodes\"D\n" +
 	"'ListPublicUserIdsByCountryCodesResponse\x12\x19\n" +
-	"\buser_ids\x18\x01 \x03(\tR\auserIds\"8\n" +
+	"\buser_ids\x18\x01 \x03(\tR\auserIds\"c\n" +
+	"\x1aFilterFriendUserIdsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12,\n" +
+	"\x12candidate_user_ids\x18\x02 \x03(\tR\x10candidateUserIds\"E\n" +
+	"\x1bFilterFriendUserIdsResponse\x12&\n" +
+	"\x0ffriend_user_ids\x18\x01 \x03(\tR\rfriendUserIds\"8\n" +
 	"\x17GetUserBySubjectRequest\x12\x1d\n" +
 	"\n" +
 	"subject_id\x18\x01 \x01(\tR\tsubjectId\"P\n" +
 	"\x18GetUserBySubjectResponse\x124\n" +
-	"\taggregate\x18\x01 \x01(\v2\x16.user.v1.UserAggregateR\taggregate2\xdc\a\n" +
+	"\taggregate\x18\x01 \x01(\v2\x16.user.v1.UserAggregateR\taggregate2\xbe\b\n" +
 	"\vUserService\x12o\n" +
 	"\x18GetOrCreateUserBySubject\x12(.user.v1.GetOrCreateUserBySubjectRequest\x1a).user.v1.GetOrCreateUserBySubjectResponse\x12H\n" +
 	"\vGetUserById\x12\x1b.user.v1.GetUserByIdRequest\x1a\x1c.user.v1.GetUserByIdResponse\x12Q\n" +
@@ -1931,7 +2032,8 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\rGrantUserRole\x12\x1d.user.v1.GrantUserRoleRequest\x1a\x1e.user.v1.GrantUserRoleResponse\x12]\n" +
 	"\x12ListPublicProfiles\x12\".user.v1.ListPublicProfilesRequest\x1a#.user.v1.ListPublicProfilesResponse\x12u\n" +
 	"\x1aGetPublicProfilesByUserIds\x12*.user.v1.GetPublicProfilesByUserIdsRequest\x1a+.user.v1.GetPublicProfilesByUserIdsResponse\x12\x84\x01\n" +
-	"\x1fListPublicUserIdsByCountryCodes\x12/.user.v1.ListPublicUserIdsByCountryCodesRequest\x1a0.user.v1.ListPublicUserIdsByCountryCodesResponse\x12W\n" +
+	"\x1fListPublicUserIdsByCountryCodes\x12/.user.v1.ListPublicUserIdsByCountryCodesRequest\x1a0.user.v1.ListPublicUserIdsByCountryCodesResponse\x12`\n" +
+	"\x13FilterFriendUserIds\x12#.user.v1.FilterFriendUserIdsRequest\x1a$.user.v1.FilterFriendUserIdsResponse\x12W\n" +
 	"\x10GetUserBySubject\x12 .user.v1.GetUserBySubjectRequest\x1a!.user.v1.GetUserBySubjectResponseB9Z7github.com/dkhvan-dev/flyfy/proto/gen/go/user/v1;userv1b\x06proto3"
 
 var (
@@ -1946,7 +2048,7 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_user_v1_user_proto_goTypes = []any{
 	(*GetOrCreateUserBySubjectRequest)(nil),         // 0: user.v1.GetOrCreateUserBySubjectRequest
 	(*GetOrCreateUserBySubjectResponse)(nil),        // 1: user.v1.GetOrCreateUserBySubjectResponse
@@ -1972,8 +2074,10 @@ var file_user_v1_user_proto_goTypes = []any{
 	(*GetPublicProfilesByUserIdsResponse)(nil),      // 21: user.v1.GetPublicProfilesByUserIdsResponse
 	(*ListPublicUserIdsByCountryCodesRequest)(nil),  // 22: user.v1.ListPublicUserIdsByCountryCodesRequest
 	(*ListPublicUserIdsByCountryCodesResponse)(nil), // 23: user.v1.ListPublicUserIdsByCountryCodesResponse
-	(*GetUserBySubjectRequest)(nil),                 // 24: user.v1.GetUserBySubjectRequest
-	(*GetUserBySubjectResponse)(nil),                // 25: user.v1.GetUserBySubjectResponse
+	(*FilterFriendUserIdsRequest)(nil),              // 24: user.v1.FilterFriendUserIdsRequest
+	(*FilterFriendUserIdsResponse)(nil),             // 25: user.v1.FilterFriendUserIdsResponse
+	(*GetUserBySubjectRequest)(nil),                 // 26: user.v1.GetUserBySubjectRequest
+	(*GetUserBySubjectResponse)(nil),                // 27: user.v1.GetUserBySubjectResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
 	8,  // 0: user.v1.GetOrCreateUserBySubjectResponse.aggregate:type_name -> user.v1.UserAggregate
@@ -1997,19 +2101,21 @@ var file_user_v1_user_proto_depIdxs = []int32{
 	17, // 18: user.v1.UserService.ListPublicProfiles:input_type -> user.v1.ListPublicProfilesRequest
 	20, // 19: user.v1.UserService.GetPublicProfilesByUserIds:input_type -> user.v1.GetPublicProfilesByUserIdsRequest
 	22, // 20: user.v1.UserService.ListPublicUserIdsByCountryCodes:input_type -> user.v1.ListPublicUserIdsByCountryCodesRequest
-	24, // 21: user.v1.UserService.GetUserBySubject:input_type -> user.v1.GetUserBySubjectRequest
-	1,  // 22: user.v1.UserService.GetOrCreateUserBySubject:output_type -> user.v1.GetOrCreateUserBySubjectResponse
-	3,  // 23: user.v1.UserService.GetUserById:output_type -> user.v1.GetUserByIdResponse
-	5,  // 24: user.v1.UserService.GetUserProfile:output_type -> user.v1.GetUserProfileResponse
-	7,  // 25: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
-	14, // 26: user.v1.UserService.UpdateUserSettings:output_type -> user.v1.UpdateUserSettingsResponse
-	16, // 27: user.v1.UserService.GrantUserRole:output_type -> user.v1.GrantUserRoleResponse
-	18, // 28: user.v1.UserService.ListPublicProfiles:output_type -> user.v1.ListPublicProfilesResponse
-	21, // 29: user.v1.UserService.GetPublicProfilesByUserIds:output_type -> user.v1.GetPublicProfilesByUserIdsResponse
-	23, // 30: user.v1.UserService.ListPublicUserIdsByCountryCodes:output_type -> user.v1.ListPublicUserIdsByCountryCodesResponse
-	25, // 31: user.v1.UserService.GetUserBySubject:output_type -> user.v1.GetUserBySubjectResponse
-	22, // [22:32] is the sub-list for method output_type
-	12, // [12:22] is the sub-list for method input_type
+	24, // 21: user.v1.UserService.FilterFriendUserIds:input_type -> user.v1.FilterFriendUserIdsRequest
+	26, // 22: user.v1.UserService.GetUserBySubject:input_type -> user.v1.GetUserBySubjectRequest
+	1,  // 23: user.v1.UserService.GetOrCreateUserBySubject:output_type -> user.v1.GetOrCreateUserBySubjectResponse
+	3,  // 24: user.v1.UserService.GetUserById:output_type -> user.v1.GetUserByIdResponse
+	5,  // 25: user.v1.UserService.GetUserProfile:output_type -> user.v1.GetUserProfileResponse
+	7,  // 26: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
+	14, // 27: user.v1.UserService.UpdateUserSettings:output_type -> user.v1.UpdateUserSettingsResponse
+	16, // 28: user.v1.UserService.GrantUserRole:output_type -> user.v1.GrantUserRoleResponse
+	18, // 29: user.v1.UserService.ListPublicProfiles:output_type -> user.v1.ListPublicProfilesResponse
+	21, // 30: user.v1.UserService.GetPublicProfilesByUserIds:output_type -> user.v1.GetPublicProfilesByUserIdsResponse
+	23, // 31: user.v1.UserService.ListPublicUserIdsByCountryCodes:output_type -> user.v1.ListPublicUserIdsByCountryCodesResponse
+	25, // 32: user.v1.UserService.FilterFriendUserIds:output_type -> user.v1.FilterFriendUserIdsResponse
+	27, // 33: user.v1.UserService.GetUserBySubject:output_type -> user.v1.GetUserBySubjectResponse
+	23, // [23:34] is the sub-list for method output_type
+	12, // [12:23] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
 	12, // [12:12] is the sub-list for extension extendee
 	0,  // [0:12] is the sub-list for field type_name
@@ -2027,7 +2133,7 @@ func file_user_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   26,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

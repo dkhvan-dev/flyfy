@@ -1342,6 +1342,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityDetailsViewAll => 'View all';
 
   @override
+  String get activityInviteFriendsButton => 'Invite friends';
+
+  @override
+  String get activityInviteFriendsTitle => 'Invite friends';
+
+  @override
+  String get activityInviteFriendsSearchHint => 'Search friends';
+
+  @override
+  String get activityInviteFriendsEmptyTitle => 'No friends to invite';
+
+  @override
+  String get activityInviteFriendsEmptySubtitle =>
+      'Add friends or try another search.';
+
+  @override
+  String get activityInviteFriendsLoadFailed => 'Could not load friends';
+
+  @override
+  String get activityInviteFriendsRetryHint =>
+      'Check your connection and try again.';
+
+  @override
+  String activityInviteFriendsSend(int count) {
+    return 'Invite ($count)';
+  }
+
+  @override
+  String get activityInviteFriendsSuccess => 'Invitations sent';
+
+  @override
+  String get activityInviteFriendsFailed => 'Could not send invitations';
+
+  @override
+  String get activityInviteFriendsAuthRequired => 'Sign in to invite friends';
+
+  @override
   String get activityDetailsLinkCopied => 'Link copied';
 
   @override
@@ -1424,6 +1461,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get activityParticipantsLoadFailed =>
       'Could not load participants right now';
+
+  @override
+  String get participantStatusInvited => 'Invited';
 
   @override
   String get participantStatusRequested => 'Requested';
@@ -3403,6 +3443,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createUnlimitedParticipantsLabel => 'Unlimited participants';
+
+  @override
+  String get createAllowParticipantInvitesLabel =>
+      'Allow participants to invite friends';
+
+  @override
+  String get createAllowParticipantInvitesHint =>
+      'The activity author can always invite their friends. Other users can invite only their own friends when this option is enabled.';
 
   @override
   String get createParticipantsMinShort => 'MIN';

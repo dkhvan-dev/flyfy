@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -24,6 +25,7 @@ import '../../features/activities/models/activity_participant_vm.dart';
 import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../features/profile/data/profile_api.dart';
+import '../../features/profile/models/profile_follower_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
@@ -176,7 +178,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
 
   void _handleBackSwipeEnd(DragEndDetails details) {
     final primaryVelocity = details.primaryVelocity ?? 0;
-    final shouldGoBack = _isTrackingBackSwipe &&
+    final shouldGoBack =
+        _isTrackingBackSwipe &&
         Navigator.of(context).canPop() &&
         (_backSwipeDistance >= _backSwipeMinDistance ||
             primaryVelocity >= _backSwipeMinVelocity);
@@ -472,8 +475,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<ActivityProvider>();
     setState(
-      () => _pendingAction =
-          minutes == 30 ? _FooterAction.extend30 : _FooterAction.extend60,
+      () => _pendingAction = minutes == 30
+          ? _FooterAction.extend30
+          : _FooterAction.extend60,
     );
     final updated = await provider.extendActivity(
       widget.activityId,
@@ -825,6 +829,7 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
     List<ActivityParticipantVm> participants,
     AppLocalizations l10n,
     String hostUserId,
+    bool canInviteFriends,
   ) async {
     if (participants.isEmpty) {
       return;
@@ -872,26 +877,61 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(22, 18, 22, 10),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              l10n.activityGoingTitle(participants.length),
-                              style: const TextStyle(
-                                color: _DetailsColors.text,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  l10n.activityGoingTitle(participants.length),
+                                  style: const TextStyle(
+                                    color: _DetailsColors.text,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () =>
+                                    Navigator.of(sheetContext).pop(),
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: _DetailsColors.text,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (canInviteFriends) ...[
+                            const SizedBox(height: 10),
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.of(sheetContext).pop();
+                                unawaited(_showInviteFriendsSheet(l10n));
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.accent,
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 40),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              icon: const Icon(
+                                Icons.person_add_alt_1_rounded,
+                                size: 19,
+                              ),
+                              label: Text(
+                                l10n.activityInviteFriendsButton,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0,
+                                ),
                               ),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.of(sheetContext).pop(),
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              color: _DetailsColors.text,
-                            ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -918,8 +958,9 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                                 imageUrl: _resolveUserAvatarUrl(
                                   participant.userId,
                                   resolvedProfiles: _resolvedProfiles,
-                                  currentProfile:
-                                      context.read<SessionProvider>().profile,
+                                  currentProfile: context
+                                      .read<SessionProvider>()
+                                      .profile,
                                 ),
                                 radius: 21,
                                 borderColor: _DetailsColors.sheet,
@@ -979,6 +1020,54 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
         );
       },
     );
+  }
+
+  Future<void> _showInviteFriendsSheet(AppLocalizations l10n) async {
+    if (context.read<AuthProvider>().state != AuthState.authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.activityInviteFriendsAuthRequired)),
+      );
+      return;
+    }
+
+    final currentUserId =
+        (context.read<SessionProvider>().profile?.userId ?? '').trim();
+    final excludedUserIds = <String>{
+      if (currentUserId.isNotEmpty) currentUserId,
+      for (final participant in _participants)
+        if (participant.userId.trim().isNotEmpty) participant.userId.trim(),
+    };
+
+    final invited = await showModalBottomSheet<bool>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _DetailsResponsiveTextScope(
+          child: _InviteFriendsSheet(
+            activityId: widget.activityId,
+            activityApi: _activityApi,
+            profileApi: _profileApi,
+            excludedUserIds: excludedUserIds,
+          ),
+        );
+      },
+    );
+
+    if (invited != true || !mounted) {
+      return;
+    }
+
+    await _loadParticipants();
+    if (!mounted) return;
+    await _loadVisibleProfiles(
+      _visibleActivity(context.read<ActivityProvider>()),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.activityInviteFriendsSuccess)));
   }
 
   @override
@@ -1043,14 +1132,17 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       );
     }
 
-    final activeParticipants = _participants
-        .where((participant) => participant.isActive)
-        .toList()
-      ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
-    final occupyingCount =
-        _participants.where((participant) => participant.occupiesSlot).length;
+    final activeParticipants =
+        _participants.where((participant) => participant.isActive).toList()
+          ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
+    final occupyingCount = _participants
+        .where((participant) => participant.occupiesSlot)
+        .length;
     final isOwner =
         currentUserId.isNotEmpty && currentUserId == activity.hostUserId;
+    final canInviteFriends =
+        context.read<AuthProvider>().state == AuthState.authenticated &&
+        (isOwner || activity.allowsParticipantInvites);
     ActivityParticipantVm? currentParticipant;
     if (!isOwner && currentUserId.isNotEmpty) {
       for (final participant in activeParticipants) {
@@ -1076,21 +1168,23 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
       activity,
       isOwner: isOwner,
     );
-    final canShowAttendanceQr = isOwner &&
+    final canShowAttendanceQr =
+        isOwner &&
         !const {'CANCELLED', 'COMPLETED', 'ARCHIVED'}.contains(status);
     final lifecycleReason = activity.isCompletedEarly
         ? (activity.completionReason ?? '').trim()
         : status == 'CANCELLED'
-            ? (activity.cancellationReason ?? '').trim()
-            : '';
+        ? (activity.cancellationReason ?? '').trim()
+        : '';
     final lifecycleReasonTitle = activity.isCompletedEarly
         ? l10n.activityCompleteReasonLabel
         : l10n.activityCancelReasonLabel;
     final lifecycleReasonIcon = activity.isCompletedEarly
         ? Icons.task_alt_rounded
         : Icons.event_busy_rounded;
-    final lifecycleReasonColor =
-        activity.isCompletedEarly ? _DetailsColors.success : AppColors.accent;
+    final lifecycleReasonColor = activity.isCompletedEarly
+        ? _DetailsColors.success
+        : AppColors.accent;
     final baseCategoryLabel = _resolveLocalizedCategoryLabel(
       activity.categorySlug,
       provider.categoryItems,
@@ -1155,8 +1249,8 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                   final heroHeight = width < 360
                       ? 292.0
                       : width > 430
-                          ? 348.0
-                          : 326.0;
+                      ? 348.0
+                      : 326.0;
                   final compact = width < 360;
 
                   return RefreshIndicator(
@@ -1261,10 +1355,11 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           loadFailed: _participantsError != null,
                           onViewAll: activeParticipants.isNotEmpty
                               ? () => _showParticipantsSheet(
-                                    activeParticipants,
-                                    l10n,
-                                    activity.hostUserId,
-                                  )
+                                  activeParticipants,
+                                  l10n,
+                                  activity.hostUserId,
+                                  canInviteFriends,
+                                )
                               : null,
                         ),
                         const SizedBox(height: 8),
@@ -1278,19 +1373,24 @@ class _ActivityDetailsScreenState extends State<ActivityDetailsScreen> {
                           canCancelActivity: canCancelActivity,
                           canExtendActivity: canExtendActivity,
                           canCompleteActivity: canCompleteActivity,
-                          isLeaving: provider.actionState ==
+                          isLeaving:
+                              provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.leave,
-                          isExtending30: provider.actionState ==
+                          isExtending30:
+                              provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.extend30,
-                          isExtending60: provider.actionState ==
+                          isExtending60:
+                              provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.extend60,
-                          isCompleting: provider.actionState ==
+                          isCompleting:
+                              provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.complete,
-                          isCancelling: provider.actionState ==
+                          isCancelling:
+                              provider.actionState ==
                                   ActivityActionState.loading &&
                               _pendingAction == _FooterAction.cancel,
                           onLeaveTap: _handleLeave,
@@ -1765,7 +1865,8 @@ class _PrivateActivityPasswordDialogState
                                     letterSpacing: 0.2,
                                   ),
                                   decoration: InputDecoration(
-                                    hintText: widget.l10n
+                                    hintText: widget
+                                        .l10n
                                         .activityPrivateJoinPasswordPlaceholder,
                                     hintStyle: TextStyle(
                                       color: Colors.white.withValues(
@@ -1783,9 +1884,9 @@ class _PrivateActivityPasswordDialogState
                                       onPressed: _isSubmitting
                                           ? null
                                           : () => setState(
-                                                () => _obscureText =
-                                                    !_obscureText,
-                                              ),
+                                              () =>
+                                                  _obscureText = !_obscureText,
+                                            ),
                                       icon: Icon(
                                         _obscureText
                                             ? Icons.visibility_outlined
@@ -1802,8 +1903,9 @@ class _PrivateActivityPasswordDialogState
                                     }
                                     setState(() => _errorText = null);
                                   },
-                                  onSubmitted:
-                                      _isSubmitting ? null : (_) => _submit(),
+                                  onSubmitted: _isSubmitting
+                                      ? null
+                                      : (_) => _submit(),
                                 ),
                               ),
                               if (_errorText != null) ...[
@@ -1860,17 +1962,17 @@ class _PrivateActivityPasswordDialogState
                                             ? const SizedBox(
                                                 width: 24,
                                                 height: 24,
-                                                child:
-                                                    CircularProgressIndicator(
+                                                child: CircularProgressIndicator(
                                                   strokeWidth: 2.6,
                                                   valueColor:
                                                       AlwaysStoppedAnimation(
-                                                    Colors.white,
-                                                  ),
+                                                        Colors.white,
+                                                      ),
                                                 ),
                                               )
                                             : Text(
-                                                widget.l10n
+                                                widget
+                                                    .l10n
                                                     .activityPrivateJoinSubmit,
                                                 style: TextStyle(
                                                   color: Colors.white,
@@ -2264,11 +2366,13 @@ class _SheetActionButton extends StatelessWidget {
     final minHeight = _detailsScaled(context, 52, min: 48, max: 54);
     final iconSize = _detailsScaled(context, 16, min: 15, max: 18);
 
-    final backgroundColor =
-        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.06);
+    final backgroundColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.06);
     final foregroundColor = isPrimary ? Colors.white : _DetailsColors.text;
-    final borderColor =
-        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
+    final borderColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.1);
 
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -3082,7 +3186,8 @@ class _StatsGrid extends StatelessWidget {
         ? l10n.freeLabel
         : '${activity.formattedPriceLabel(locale)} ${l10n.activityPerPerson}';
     final formatText = formatActivityFormat(activity.format, l10n);
-    final capacityText = activity.capacityType.toUpperCase() == 'LIMITED' &&
+    final capacityText =
+        activity.capacityType.toUpperCase() == 'LIMITED' &&
             activity.maxParticipants != null
         ? l10n.activityPeopleMax(activity.maxParticipants!)
         : l10n.activityUnlimitedSpots;
@@ -3283,7 +3388,8 @@ class _MeetingSection extends StatelessWidget {
     final mapHeight = _detailsScaled(context, 220, min: 190, max: 236);
 
     final hasMeetingLink = (activity.meetingUrl ?? '').trim().isNotEmpty;
-    final hasLocation = (activity.addressText ?? '').trim().isNotEmpty ||
+    final hasLocation =
+        (activity.addressText ?? '').trim().isNotEmpty ||
         activity.shortLocation.isNotEmpty;
     if (!hasMeetingLink && !hasLocation) {
       return const SizedBox.shrink();
@@ -4149,6 +4255,591 @@ class _MeetingOwnerQrAction extends StatelessWidget {
   }
 }
 
+class _InviteFriendsSheet extends StatefulWidget {
+  const _InviteFriendsSheet({
+    required this.activityId,
+    required this.activityApi,
+    required this.profileApi,
+    required this.excludedUserIds,
+  });
+
+  final String activityId;
+  final ActivityApi activityApi;
+  final ProfileApi profileApi;
+  final Set<String> excludedUserIds;
+
+  @override
+  State<_InviteFriendsSheet> createState() => _InviteFriendsSheetState();
+}
+
+class _InviteFriendsSheetState extends State<_InviteFriendsSheet> {
+  static const int _pageSize = 20;
+
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final Set<String> _selectedFriendIds = <String>{};
+  final Set<String> _invitedFriendIds = <String>{};
+
+  Timer? _searchDebounce;
+  List<ProfileFollowerVm> _friends = const [];
+  int? _nextOffset = 0;
+  bool _loading = true;
+  bool _loadingMore = false;
+  bool _submitting = false;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_handleSearchChanged);
+    _scrollController.addListener(_handleScroll);
+    unawaited(_reload());
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController
+      ..removeListener(_handleSearchChanged)
+      ..dispose();
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleSearchChanged() {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 320),
+      () => unawaited(_reload()),
+    );
+  }
+
+  void _handleScroll() {
+    if (_loading || _loadingMore || _nextOffset == null) {
+      return;
+    }
+    if (_scrollController.position.extentAfter < 260) {
+      unawaited(_loadMore());
+    }
+  }
+
+  Future<void> _reload() async {
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _loadingMore = false;
+        _errorText = null;
+        _nextOffset = 0;
+      });
+    }
+    await _fetchFriends(append: false);
+  }
+
+  Future<void> _loadMore() async {
+    if (_nextOffset == null) {
+      return;
+    }
+    if (mounted) {
+      setState(() {
+        _loadingMore = true;
+        _errorText = null;
+      });
+    }
+    await _fetchFriends(append: true);
+  }
+
+  Future<void> _fetchFriends({required bool append}) async {
+    final offset = append ? _nextOffset : 0;
+    if (offset == null) {
+      return;
+    }
+
+    try {
+      final page = await widget.profileApi.getMyFriends(
+        limit: _pageSize,
+        offset: offset,
+        query: _searchController.text.trim(),
+        sort: 'name',
+        sortDirection: 'asc',
+      );
+      if (!mounted) return;
+
+      final incoming = page.items
+          .where(_canInviteFriend)
+          .toList(growable: false);
+      final merged = <String, ProfileFollowerVm>{
+        if (append)
+          for (final friend in _friends) friend.userId: friend,
+        for (final friend in incoming) friend.userId: friend,
+      };
+
+      setState(() {
+        _friends = merged.values.toList(growable: false);
+        _nextOffset = page.nextOffset;
+        _loading = false;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadingMore = false;
+        _errorText = 'failed';
+      });
+    }
+  }
+
+  bool _canInviteFriend(ProfileFollowerVm friend) {
+    final userId = friend.userId.trim();
+    return userId.isNotEmpty &&
+        !widget.excludedUserIds.contains(userId) &&
+        !_invitedFriendIds.contains(userId);
+  }
+
+  void _toggleFriend(String userId) {
+    setState(() {
+      if (!_selectedFriendIds.add(userId)) {
+        _selectedFriendIds.remove(userId);
+      }
+    });
+  }
+
+  Future<void> _submit(AppLocalizations l10n) async {
+    if (_selectedFriendIds.isEmpty || _submitting) {
+      return;
+    }
+
+    final userIds = _selectedFriendIds.toList(growable: false);
+    setState(() => _submitting = true);
+    try {
+      await widget.activityApi.inviteFriends(widget.activityId, userIds);
+      if (!mounted) return;
+      setState(() {
+        _invitedFriendIds.addAll(userIds);
+        _selectedFriendIds.clear();
+        _friends = _friends.where(_canInviteFriend).toList(growable: false);
+        _submitting = false;
+      });
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.activityInviteFriendsFailed)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bottomSafePadding = MediaQuery.viewPaddingOf(context).bottom;
+    final selectedCount = _selectedFriendIds.length;
+    final canSubmit = selectedCount > 0 && !_submitting;
+
+    return SafeArea(
+      top: false,
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+            ),
+            decoration: BoxDecoration(
+              color: _DetailsColors.sheet,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 18, 10, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.activityInviteFriendsTitle,
+                          style: const TextStyle(
+                            color: _DetailsColors.text,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: _DetailsColors.text,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 0, 22, 14),
+                  child: _InviteFriendSearchField(
+                    controller: _searchController,
+                    hintText: l10n.activityInviteFriendsSearchHint,
+                  ),
+                ),
+                const Divider(height: 1, color: Color(0x14FFFFFF)),
+                Expanded(child: _buildBody(l10n)),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    22,
+                    12,
+                    22,
+                    18 + bottomSafePadding,
+                  ),
+                  child: IgnorePointer(
+                    ignoring: !canSubmit,
+                    child: Opacity(
+                      opacity: canSubmit ? 1 : 0.48,
+                      child: AppFilterApplyButton(
+                        label: l10n.activityInviteFriendsSend(selectedCount),
+                        icon: Icons.send_rounded,
+                        isLoading: _submitting,
+                        onTap: () => unawaited(_submit(l10n)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(AppLocalizations l10n) {
+    if (_loading && _friends.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      );
+    }
+
+    if (_errorText != null && _friends.isEmpty) {
+      return _InviteFriendsMessage(
+        icon: Icons.wifi_off_rounded,
+        title: l10n.activityInviteFriendsLoadFailed,
+        subtitle: l10n.activityInviteFriendsRetryHint,
+        onRetry: () => unawaited(_reload()),
+      );
+    }
+
+    if (_friends.isEmpty) {
+      return _InviteFriendsMessage(
+        icon: Icons.group_add_rounded,
+        title: l10n.activityInviteFriendsEmptyTitle,
+        subtitle: l10n.activityInviteFriendsEmptySubtitle,
+        onRetry: null,
+      );
+    }
+
+    return ListView.separated(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
+      itemCount: _friends.length + (_loadingMore ? 1 : 0),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        if (index >= _friends.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: AppColors.accent,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final friend = _friends[index];
+        final selected = _selectedFriendIds.contains(friend.userId);
+        return _InviteFriendRow(
+          friend: friend,
+          selected: selected,
+          onTap: () => _toggleFriend(friend.userId),
+        );
+      },
+    );
+  }
+}
+
+class _InviteFriendSearchField extends StatelessWidget {
+  const _InviteFriendSearchField({
+    required this.controller,
+    required this.hintText,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 54),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B1F14),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsetsDirectional.fromSTEB(15, 0, 14, 0),
+      child: Row(
+        children: [
+          const Icon(Icons.search_rounded, color: AppColors.accent, size: 24),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              textInputAction: TextInputAction.search,
+              cursorColor: AppColors.accent,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: hintText,
+                hintStyle: const TextStyle(color: Color(0xFF9F8B7D)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InviteFriendRow extends StatelessWidget {
+  const _InviteFriendRow({
+    required this.friend,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ProfileFollowerVm friend;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final title = friend.displayNameOrFallback('user_${friend.userId}');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.14)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.06),
+            ),
+          ),
+          child: Row(
+            children: [
+              _InviteFriendAvatar(friend: friend),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    if (friend.isOnline) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        l10n.chatPresenceOnline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.accent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Checkbox(
+                value: selected,
+                onChanged: (_) => onTap(),
+                activeColor: AppColors.accent,
+                checkColor: AppColors.textPrimary,
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.32)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InviteFriendAvatar extends StatelessWidget {
+  const _InviteFriendAvatar({required this.friend});
+
+  final ProfileFollowerVm friend;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = resolvePublicFileContentUrl(friend.avatarFileId ?? '');
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: ClipOval(
+        child: ColoredBox(
+          color: const Color(0xFF171009),
+          child: imageUrl == null
+              ? Center(
+                  child: Text(
+                    friend.initials,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                )
+              : Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Center(
+                    child: Text(
+                      friend.initials,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InviteFriendsMessage extends StatelessWidget {
+  const _InviteFriendsMessage({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onRetry,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AppColors.accent, size: 34),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: _DetailsColors.muted,
+                fontSize: 13,
+                height: 1.35,
+              ),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 14),
+              TextButton(
+                onPressed: onRetry,
+                child: Text(
+                  MaterialLocalizations.of(
+                    context,
+                  ).refreshIndicatorSemanticLabel,
+                  style: const TextStyle(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ParticipantsSection extends StatelessWidget {
   const _ParticipantsSection({
     required this.l10n,
@@ -4425,8 +5116,9 @@ class _DetailsActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context).toString();
-    final priceLabel =
-        activity.isFree ? l10n.freeLabel : activity.formattedPriceLabel(locale);
+    final priceLabel = activity.isFree
+        ? l10n.freeLabel
+        : activity.formattedPriceLabel(locale);
     final shouldShowPaymentAction =
         isJoined && !isOwner && !activity.isFree && !isPaid && onPay != null;
     final secondaryAction = showPublish
@@ -4438,15 +5130,16 @@ class _DetailsActionBar extends StatelessWidget {
             action: _FooterAction.publish,
           )
         : shouldShowPaymentAction
-            ? _FooterButtonSpec(
-                label: l10n.activityDetailsChatButton,
-                icon: Icons.forum_rounded,
-                onTap: onOpenChat ?? () {},
-                style: _FooterButtonStyle.secondary,
-                action: null,
-              )
-            : null;
-    final isRepeatableOwnerActivity = isOwner &&
+        ? _FooterButtonSpec(
+            label: l10n.activityDetailsChatButton,
+            icon: Icons.forum_rounded,
+            onTap: onOpenChat ?? () {},
+            style: _FooterButtonStyle.secondary,
+            action: null,
+          )
+        : null;
+    final isRepeatableOwnerActivity =
+        isOwner &&
         const {
           'CANCELLED',
           'COMPLETED',
@@ -4464,28 +5157,28 @@ class _DetailsActionBar extends StatelessWidget {
             action: null,
           )
         : isJoined
-            ? shouldShowPaymentAction
-                ? _FooterButtonSpec(
-                    label: l10n.activityPaymentPayButton,
-                    icon: Icons.payments_rounded,
-                    onTap: onPay ?? () {},
-                    style: _FooterButtonStyle.primary,
-                    action: null,
-                  )
-                : _FooterButtonSpec(
-                    label: l10n.activityDetailsChatButton,
-                    icon: Icons.forum_rounded,
-                    onTap: onOpenChat ?? () {},
-                    style: _FooterButtonStyle.primary,
-                    action: null,
-                  )
-            : _FooterButtonSpec(
-                label: l10n.activityJoinActivity,
-                icon: Icons.chevron_right_rounded,
-                onTap: onJoin,
-                style: _FooterButtonStyle.primary,
-                action: _FooterAction.join,
-              );
+        ? shouldShowPaymentAction
+              ? _FooterButtonSpec(
+                  label: l10n.activityPaymentPayButton,
+                  icon: Icons.payments_rounded,
+                  onTap: onPay ?? () {},
+                  style: _FooterButtonStyle.primary,
+                  action: null,
+                )
+              : _FooterButtonSpec(
+                  label: l10n.activityDetailsChatButton,
+                  icon: Icons.forum_rounded,
+                  onTap: onOpenChat ?? () {},
+                  style: _FooterButtonStyle.primary,
+                  action: null,
+                )
+        : _FooterButtonSpec(
+            label: l10n.activityJoinActivity,
+            icon: Icons.chevron_right_rounded,
+            onTap: onJoin,
+            style: _FooterButtonStyle.primary,
+            action: _FooterAction.join,
+          );
     final priceBlockLabel = isPaid
         ? l10n.activityPaymentStatusLabel
         : l10n.activityDetailsTotalLabel;
@@ -4511,7 +5204,8 @@ class _DetailsActionBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final stackVertically = constraints.maxWidth < 390 ||
+            final stackVertically =
+                constraints.maxWidth < 390 ||
                 (secondaryAction != null && constraints.maxWidth < 430);
             if (stackVertically) {
               return Column(
@@ -4540,7 +5234,8 @@ class _DetailsActionBar extends StatelessWidget {
                           width: double.infinity,
                           child: _FooterButton(
                             spec: secondaryAction,
-                            isBusy: isBusy &&
+                            isBusy:
+                                isBusy &&
                                 pendingAction == secondaryAction.action,
                           ),
                         ),
@@ -4580,7 +5275,8 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: secondaryAction,
-                                isBusy: isBusy &&
+                                isBusy:
+                                    isBusy &&
                                     pendingAction == secondaryAction.action,
                               ),
                             ),
@@ -4588,7 +5284,8 @@ class _DetailsActionBar extends StatelessWidget {
                             Expanded(
                               child: _FooterButton(
                                 spec: primaryAction,
-                                isBusy: isBusy &&
+                                isBusy:
+                                    isBusy &&
                                     pendingAction == primaryAction.action,
                               ),
                             ),
@@ -4685,10 +5382,12 @@ class _FooterButton extends StatelessWidget {
     final iconSize = _detailsScaled(context, 18, min: 16, max: 19);
 
     final isPrimary = spec.style == _FooterButtonStyle.primary;
-    final backgroundColor =
-        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.08);
-    final borderColor =
-        isPrimary ? AppColors.accent : Colors.white.withValues(alpha: 0.1);
+    final backgroundColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.08);
+    final borderColor = isPrimary
+        ? AppColors.accent
+        : Colors.white.withValues(alpha: 0.1);
     final foreground = isPrimary ? Colors.white : _DetailsColors.text;
 
     return ConstrainedBox(
@@ -5116,6 +5815,8 @@ Color _activityStatusColor(String status) {
 
 Color _statusPillColor(String status) {
   switch (status.toUpperCase()) {
+    case 'INVITED':
+      return const Color(0x2280B7FF);
     case 'APPROVED':
     case 'CONFIRMED':
     case 'CHECKED_IN':
@@ -5131,6 +5832,8 @@ Color _statusPillColor(String status) {
 
 Color _statusTextColor(String status) {
   switch (status.toUpperCase()) {
+    case 'INVITED':
+      return const Color(0xFF80B7FF);
     case 'APPROVED':
     case 'CONFIRMED':
     case 'CHECKED_IN':

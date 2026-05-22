@@ -1351,6 +1351,45 @@ class AppLocalizationsKk extends AppLocalizations {
   String get activityDetailsViewAll => 'Барлығын көру';
 
   @override
+  String get activityInviteFriendsButton => 'Достарды шақыру';
+
+  @override
+  String get activityInviteFriendsTitle => 'Достарды шақыру';
+
+  @override
+  String get activityInviteFriendsSearchHint => 'Достарды іздеу';
+
+  @override
+  String get activityInviteFriendsEmptyTitle => 'Шақыратын дос жоқ';
+
+  @override
+  String get activityInviteFriendsEmptySubtitle =>
+      'Достар қосыңыз немесе басқа іздеу жасап көріңіз.';
+
+  @override
+  String get activityInviteFriendsLoadFailed =>
+      'Достарды жүктеу мүмкін болмады';
+
+  @override
+  String get activityInviteFriendsRetryHint =>
+      'Қосылымды тексеріп, қайталап көріңіз.';
+
+  @override
+  String activityInviteFriendsSend(int count) {
+    return 'Шақыру ($count)';
+  }
+
+  @override
+  String get activityInviteFriendsSuccess => 'Шақырулар жіберілді';
+
+  @override
+  String get activityInviteFriendsFailed => 'Шақыруларды жіберу мүмкін болмады';
+
+  @override
+  String get activityInviteFriendsAuthRequired =>
+      'Достарды шақыру үшін кіріңіз';
+
+  @override
   String get activityDetailsLinkCopied => 'Сілтеме көшірілді';
 
   @override
@@ -1433,6 +1472,9 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get activityParticipantsLoadFailed =>
       'Қатысушыларды жүктеу мүмкін болмады';
+
+  @override
+  String get participantStatusInvited => 'Шақырылды';
 
   @override
   String get participantStatusRequested => 'Сұрау жіберілді';
@@ -3424,6 +3466,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get createUnlimitedParticipantsLabel => 'Қатысушылар саны шектеусіз';
+
+  @override
+  String get createAllowParticipantInvitesLabel =>
+      'Қатысушыларға достарын шақыруға рұқсат беру';
+
+  @override
+  String get createAllowParticipantInvitesHint =>
+      'Белсенділік авторы өз достарын әрқашан шақыра алады. Басқа пайдаланушылар бұл опция қосылған кезде ғана өз достарын шақыра алады.';
 
   @override
   String get createParticipantsMinShort => 'МИН';

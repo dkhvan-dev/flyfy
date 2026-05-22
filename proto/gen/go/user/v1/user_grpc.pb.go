@@ -28,6 +28,7 @@ const (
 	UserService_ListPublicProfiles_FullMethodName              = "/user.v1.UserService/ListPublicProfiles"
 	UserService_GetPublicProfilesByUserIds_FullMethodName      = "/user.v1.UserService/GetPublicProfilesByUserIds"
 	UserService_ListPublicUserIdsByCountryCodes_FullMethodName = "/user.v1.UserService/ListPublicUserIdsByCountryCodes"
+	UserService_FilterFriendUserIds_FullMethodName             = "/user.v1.UserService/FilterFriendUserIds"
 	UserService_GetUserBySubject_FullMethodName                = "/user.v1.UserService/GetUserBySubject"
 )
 
@@ -44,6 +45,7 @@ type UserServiceClient interface {
 	ListPublicProfiles(ctx context.Context, in *ListPublicProfilesRequest, opts ...grpc.CallOption) (*ListPublicProfilesResponse, error)
 	GetPublicProfilesByUserIds(ctx context.Context, in *GetPublicProfilesByUserIdsRequest, opts ...grpc.CallOption) (*GetPublicProfilesByUserIdsResponse, error)
 	ListPublicUserIdsByCountryCodes(ctx context.Context, in *ListPublicUserIdsByCountryCodesRequest, opts ...grpc.CallOption) (*ListPublicUserIdsByCountryCodesResponse, error)
+	FilterFriendUserIds(ctx context.Context, in *FilterFriendUserIdsRequest, opts ...grpc.CallOption) (*FilterFriendUserIdsResponse, error)
 	GetUserBySubject(ctx context.Context, in *GetUserBySubjectRequest, opts ...grpc.CallOption) (*GetUserBySubjectResponse, error)
 }
 
@@ -145,6 +147,16 @@ func (c *userServiceClient) ListPublicUserIdsByCountryCodes(ctx context.Context,
 	return out, nil
 }
 
+func (c *userServiceClient) FilterFriendUserIds(ctx context.Context, in *FilterFriendUserIdsRequest, opts ...grpc.CallOption) (*FilterFriendUserIdsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FilterFriendUserIdsResponse)
+	err := c.cc.Invoke(ctx, UserService_FilterFriendUserIds_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) GetUserBySubject(ctx context.Context, in *GetUserBySubjectRequest, opts ...grpc.CallOption) (*GetUserBySubjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUserBySubjectResponse)
@@ -168,6 +180,7 @@ type UserServiceServer interface {
 	ListPublicProfiles(context.Context, *ListPublicProfilesRequest) (*ListPublicProfilesResponse, error)
 	GetPublicProfilesByUserIds(context.Context, *GetPublicProfilesByUserIdsRequest) (*GetPublicProfilesByUserIdsResponse, error)
 	ListPublicUserIdsByCountryCodes(context.Context, *ListPublicUserIdsByCountryCodesRequest) (*ListPublicUserIdsByCountryCodesResponse, error)
+	FilterFriendUserIds(context.Context, *FilterFriendUserIdsRequest) (*FilterFriendUserIdsResponse, error)
 	GetUserBySubject(context.Context, *GetUserBySubjectRequest) (*GetUserBySubjectResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
@@ -205,6 +218,9 @@ func (UnimplementedUserServiceServer) GetPublicProfilesByUserIds(context.Context
 }
 func (UnimplementedUserServiceServer) ListPublicUserIdsByCountryCodes(context.Context, *ListPublicUserIdsByCountryCodesRequest) (*ListPublicUserIdsByCountryCodesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPublicUserIdsByCountryCodes not implemented")
+}
+func (UnimplementedUserServiceServer) FilterFriendUserIds(context.Context, *FilterFriendUserIdsRequest) (*FilterFriendUserIdsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method FilterFriendUserIds not implemented")
 }
 func (UnimplementedUserServiceServer) GetUserBySubject(context.Context, *GetUserBySubjectRequest) (*GetUserBySubjectResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUserBySubject not implemented")
@@ -392,6 +408,24 @@ func _UserService_ListPublicUserIdsByCountryCodes_Handler(srv interface{}, ctx c
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_FilterFriendUserIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FilterFriendUserIdsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).FilterFriendUserIds(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_FilterFriendUserIds_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).FilterFriendUserIds(ctx, req.(*FilterFriendUserIdsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_GetUserBySubject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetUserBySubjectRequest)
 	if err := dec(in); err != nil {
@@ -452,6 +486,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPublicUserIdsByCountryCodes",
 			Handler:    _UserService_ListPublicUserIdsByCountryCodes_Handler,
+		},
+		{
+			MethodName: "FilterFriendUserIds",
+			Handler:    _UserService_FilterFriendUserIds_Handler,
 		},
 		{
 			MethodName: "GetUserBySubject",

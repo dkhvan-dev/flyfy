@@ -125,6 +125,7 @@ type CreateActivityInput struct {
 
 	RequiresProfileCompletion      bool
 	RequiresAttendanceConfirmation bool
+	AllowsParticipantInvites       bool
 	ConfirmationDeadline           *time.Time
 
 	CountryCode *string
@@ -172,6 +173,7 @@ type UpdateActivityInput struct {
 
 	RequiresProfileCompletion      *bool
 	RequiresAttendanceConfirmation *bool
+	AllowsParticipantInvites       *bool
 	ConfirmationDeadline           *time.Time
 	HasConfirmationDeadline        bool
 
@@ -270,6 +272,7 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		Currency:                       input.Currency,
 		RequiresProfileCompletion:      input.RequiresProfileCompletion,
 		RequiresAttendanceConfirmation: input.RequiresAttendanceConfirmation,
+		AllowsParticipantInvites:       input.AllowsParticipantInvites,
 		ConfirmationDeadline:           input.ConfirmationDeadline,
 		CountryCode:                    input.CountryCode,
 		CityID:                         input.CityID,
@@ -799,7 +802,8 @@ func (u *ActivityUseCase) cancelActivityInTx(
 	}
 
 	for _, participant := range participants {
-		if participant == nil || !participant.Status.IsActive() {
+		if participant == nil ||
+			(!participant.Status.IsActive() && participant.Status != enum.ParticipantStatusInvited) {
 			continue
 		}
 
@@ -1445,6 +1449,9 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 	if input.RequiresAttendanceConfirmation != nil {
 		item.RequiresAttendanceConfirmation = *input.RequiresAttendanceConfirmation
 	}
+	if input.AllowsParticipantInvites != nil {
+		item.AllowsParticipantInvites = *input.AllowsParticipantInvites
+	}
 	if input.HasConfirmationDeadline {
 		item.ConfirmationDeadline = input.ConfirmationDeadline
 	}
@@ -1646,7 +1653,8 @@ func hasOtherPriceBlockingParticipants(
 		}
 
 		switch participant.Status {
-		case enum.ParticipantStatusCancelled,
+		case enum.ParticipantStatusInvited,
+			enum.ParticipantStatusCancelled,
 			enum.ParticipantStatusLateCancelled,
 			enum.ParticipantStatusCancelledByActivity,
 			enum.ParticipantStatusDeclined,

@@ -14,6 +14,7 @@ service UserService {
   rpc ListPublicProfiles(ListPublicProfilesRequest) returns (ListPublicProfilesResponse);
   rpc GetPublicProfilesByUserIds(GetPublicProfilesByUserIdsRequest) returns (GetPublicProfilesByUserIdsResponse);
   rpc ListPublicUserIdsByCountryCodes(ListPublicUserIdsByCountryCodesRequest) returns (ListPublicUserIdsByCountryCodesResponse);
+  rpc FilterFriendUserIds(FilterFriendUserIdsRequest) returns (FilterFriendUserIdsResponse);
   rpc GetUserBySubject(GetUserBySubjectRequest) returns (GetUserBySubjectResponse);
 }
 
@@ -191,6 +192,15 @@ message ListPublicUserIdsByCountryCodesRequest {
 
 message ListPublicUserIdsByCountryCodesResponse {
   repeated string user_ids = 1;
+}
+
+message FilterFriendUserIdsRequest {
+  string user_id = 1;
+  repeated string candidate_user_ids = 2;
+}
+
+message FilterFriendUserIdsResponse {
+  repeated string friend_user_ids = 1;
 }
 
 message GetUserBySubjectRequest {

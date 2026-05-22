@@ -436,6 +436,24 @@
     }
   },
   "activityDetailsViewAll": "Показать всех",
+  "activityInviteFriendsButton": "Пригласить друзей",
+  "activityInviteFriendsTitle": "Пригласить друзей",
+  "activityInviteFriendsSearchHint": "Поиск друзей",
+  "activityInviteFriendsEmptyTitle": "Нет друзей для приглашения",
+  "activityInviteFriendsEmptySubtitle": "Добавьте друзей или попробуйте другой поиск.",
+  "activityInviteFriendsLoadFailed": "Не удалось загрузить друзей",
+  "activityInviteFriendsRetryHint": "Проверьте подключение и попробуйте еще раз.",
+  "activityInviteFriendsSend": "Пригласить ({count})",
+  "@activityInviteFriendsSend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityInviteFriendsSuccess": "Приглашения отправлены",
+  "activityInviteFriendsFailed": "Не удалось отправить приглашения",
+  "activityInviteFriendsAuthRequired": "Войдите, чтобы приглашать друзей",
   "activityDetailsLinkCopied": "Ссылка скопирована",
   "activityDetailsHostedBadge": "Ваша активность",
   "activityDetailsJoinedBadge": "Вы участвуете",
@@ -472,6 +490,7 @@
   "activityParticipantFallbackName": "Участник",
   "activityParticipantsEmpty": "Пока никто не записался",
   "activityParticipantsLoadFailed": "Не удалось загрузить участников",
+  "participantStatusInvited": "Приглашен",
   "participantStatusRequested": "Запрос отправлен",
   "participantStatusApproved": "Подтвержден",
   "participantStatusWaitlisted": "В листе ожидания",
@@ -1262,6 +1281,8 @@
   "createMaxParticipantsLabel": "Максимум",
   "createParticipantLimitsTitle": "Лимиты участников",
   "createUnlimitedParticipantsLabel": "Безлимитное число участников",
+  "createAllowParticipantInvitesLabel": "Разрешить участникам приглашать друзей",
+  "createAllowParticipantInvitesHint": "Автор активности всегда может приглашать своих друзей. Другие пользователи смогут приглашать только своих друзей, если эта опция включена.",
   "createParticipantsMinShort": "МИН",
   "createParticipantsMaxShort": "МАКС",
   "createNoLimitPlaceholder": "Без лимита",

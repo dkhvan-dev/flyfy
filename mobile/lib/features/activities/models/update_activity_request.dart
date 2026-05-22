@@ -17,6 +17,7 @@ class UpdateActivityRequest {
     this.maxParticipants,
     this.hasMaxParticipants = false,
     this.priceType,
+    this.allowsParticipantInvites,
     this.priceAmount,
     this.hasPriceAmount = false,
     this.currency,
@@ -63,6 +64,7 @@ class UpdateActivityRequest {
   final bool hasMaxParticipants;
 
   final String? priceType;
+  final bool? allowsParticipantInvites;
   final double? priceAmount;
   final bool hasPriceAmount;
   final String? currency;
@@ -108,6 +110,8 @@ class UpdateActivityRequest {
       if (hasMaxParticipants) 'hasMaxParticipants': true,
       if (maxParticipants != null) 'maxParticipants': maxParticipants,
       if (priceType != null) 'priceType': priceType,
+      if (allowsParticipantInvites != null)
+        'allowsParticipantInvites': allowsParticipantInvites,
       if (hasPriceAmount) 'hasPriceAmount': true,
       if (priceAmount != null) 'priceAmount': priceAmount,
       if (hasCurrency) 'hasCurrency': true,
