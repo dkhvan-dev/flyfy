@@ -42,7 +42,7 @@ void main() {
     expect(sheetSource, contains('SingleChildScrollView'));
   });
 
-  test('logout confirmation uses branded adaptive dialog chrome', () async {
+  test('logout confirmation uses excursions filter sheet palette', () async {
     final source =
         await File('lib/screens/home/home_screen.dart').readAsString();
     final confirmStart = source.indexOf('Future<void> _confirmLogout()');
@@ -61,9 +61,14 @@ void main() {
     expect(confirmSource, contains('_LogoutConfirmDialog('));
     expect(confirmSource, isNot(contains('AlertDialog(')));
     expect(dialogSource, contains('Icons.logout_rounded'));
-    expect(dialogSource, contains('LinearGradient'));
+    expect(dialogSource, contains('Color(0xFF21170D)'));
+    expect(dialogSource, contains('Color(0x293A270F)'));
+    expect(dialogSource, contains('Color(0xFF2C2118)'));
+    expect(dialogSource, contains('Color(0xFF3B260D)'));
     expect(dialogSource, contains('Wrap('));
     expect(dialogSource, contains('AppColors.accent'));
+    expect(dialogSource, isNot(contains('Color(0xFF243435)')));
+    expect(dialogSource, isNot(contains('Color(0xFF7ED7C1)')));
   });
 
   test('excursions quick action opens the excursions list screen', () async {

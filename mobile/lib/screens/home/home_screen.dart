@@ -1003,19 +1003,8 @@ class _LogoutConfirmDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF243435),
-                  Color(0xFF201713),
-                  Color(0xFF121817),
-                ],
-                stops: [0, 0.54, 1],
-              ),
-              border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.24),
-              ),
+              color: const Color(0xFF21170D),
+              border: Border.all(color: const Color(0x293A270F)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.34),
@@ -1035,7 +1024,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
                       height: 190,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.accent.withValues(alpha: 0.12),
+                        color: AppColors.accent.withValues(alpha: 0.08),
                       ),
                     ),
                   ),
@@ -1049,7 +1038,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
                       height: 210,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF7ED7C1).withValues(alpha: 0.08),
+                        color: AppColors.accent.withValues(alpha: 0.04),
                       ),
                     ),
                   ),
@@ -1072,17 +1061,13 @@ class _LogoutConfirmDialog extends StatelessWidget {
                           height: isCompact ? 54 : 58,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                AppColors.accent.withValues(alpha: 0.95),
-                                const Color(0xFFFFC46A),
-                              ],
+                            color: const Color(0xFF2C2118),
+                            border: Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.24),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.accent.withValues(alpha: 0.24),
+                                color: AppColors.accent.withValues(alpha: 0.14),
                                 blurRadius: 22,
                                 offset: const Offset(0, 10),
                               ),
@@ -1090,7 +1075,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
                           ),
                           child: const Icon(
                             Icons.logout_rounded,
-                            color: Color(0xFF1D1711),
+                            color: AppColors.accent,
                             size: 27,
                           ),
                         ),
@@ -1179,7 +1164,7 @@ class _LogoutDialogActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foregroundColor =
-        isPrimary ? const Color(0xFF1D1711) : const Color(0xFFFFE9C8);
+        isPrimary ? AppColors.textPrimary : const Color(0xFFD8C7B7);
 
     return Material(
       color: Colors.transparent,
@@ -1190,19 +1175,10 @@ class _LogoutDialogActionButton extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 48),
           child: Ink(
             decoration: BoxDecoration(
-              gradient: isPrimary
-                  ? const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFFFFB347), Color(0xFFFFD083)],
-                    )
-                  : null,
-              color: isPrimary ? null : Colors.white.withValues(alpha: 0.055),
+              color: isPrimary ? AppColors.accent : const Color(0xFF2C2118),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isPrimary
-                    ? Colors.transparent
-                    : AppColors.accent.withValues(alpha: 0.20),
+                color: isPrimary ? AppColors.accent : const Color(0xFF3B260D),
               ),
             ),
             child: Center(

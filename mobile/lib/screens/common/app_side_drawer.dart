@@ -1061,14 +1061,23 @@ class _DrawerFooterAction extends StatelessWidget {
           height: layout.footerButtonSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: isAccent
-                ? const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFFFB347), Color(0xFFF98C06)],
-                  )
+            color: isAccent
+                ? const Color(0xFF2C2118)
+                : Colors.white.withValues(alpha: 0.04),
+            border: Border.all(
+              color: isAccent
+                  ? const Color(0xFF3B260D)
+                  : Colors.white.withValues(alpha: 0.06),
+            ),
+            boxShadow: isAccent
+                ? [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.10),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
                 : null,
-            color: isAccent ? null : Colors.white.withValues(alpha: 0.04),
           ),
           child: Icon(
             icon,

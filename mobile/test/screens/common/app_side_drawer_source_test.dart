@@ -90,4 +90,27 @@ void main() {
     expect(badgeIndex, isNonNegative);
     expect(badgeIndex, greaterThan(nicknameIndex));
   });
+
+  test('drawer login footer action keeps accent icon readable', () async {
+    final source = await File(
+      'lib/screens/common/app_side_drawer.dart',
+    ).readAsString();
+    final actionStart = source.indexOf('class _DrawerFooterAction');
+    final actionEnd = source.indexOf('class _LanguageOptionTile', actionStart);
+
+    expect(actionStart, isNonNegative);
+    expect(actionEnd, greaterThan(actionStart));
+
+    final actionSource = source.substring(actionStart, actionEnd);
+
+    expect(actionSource, contains('Color(0xFF2C2118)'));
+    expect(actionSource, contains('Color(0xFF3B260D)'));
+    expect(actionSource, contains('AppColors.accent'));
+    expect(actionSource, contains('isAccent'));
+    expect(actionSource, contains('? const Color(0xFF2C2118)'));
+    expect(
+      actionSource,
+      isNot(contains('colors: [Color(0xFFFFB347), Color(0xFFF98C06)]')),
+    );
+  });
 }
