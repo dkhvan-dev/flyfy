@@ -624,6 +624,58 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileFollowersLoadFailed => 'Не удалось загрузить фолловеров';
 
   @override
+  String get profileConnectionsTitle => 'Друзья и подписки';
+
+  @override
+  String get profileConnectionsSubtitle =>
+      'Управляйте друзьями и пользователями, которых вы отслеживаете.';
+
+  @override
+  String get profileConnectionsSearchHint => 'Поиск людей';
+
+  @override
+  String get profileConnectionsFriendsTab => 'Друзья';
+
+  @override
+  String get profileConnectionsFollowingTab => 'Подписки';
+
+  @override
+  String get profileConnectionsFriendsEmptyTitle => 'Друзей пока нет';
+
+  @override
+  String get profileConnectionsFriendsEmptySubtitle =>
+      'Когда заявка в друзья будет принята, пользователь появится здесь.';
+
+  @override
+  String get profileConnectionsFollowingEmptyTitle => 'Подписок пока нет';
+
+  @override
+  String get profileConnectionsFollowingEmptySubtitle =>
+      'Пользователи, которых вы отслеживаете, появятся здесь.';
+
+  @override
+  String get profileConnectionsLoadFailed => 'Не удалось загрузить список';
+
+  @override
+  String get profileConnectionsSortRecent => 'Новые';
+
+  @override
+  String get profileConnectionsSortName => 'Имя';
+
+  @override
+  String get profileConnectionsFiltersTitle => 'Фильтры';
+
+  @override
+  String get profileConnectionsFiltersShowResults => 'Показать результаты';
+
+  @override
+  String get profileConnectionsFilterOnlineOnly => 'Только онлайн';
+
+  @override
+  String get profileConnectionsFilterOnlineOnlySubtitle =>
+      'Показывать пользователей, которые сейчас в сети.';
+
+  @override
   String get profileJourneyTitle => 'Мой путь';
 
   @override
@@ -761,6 +813,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileUnfollowConfirm => 'Отписаться';
+
+  @override
+  String get profileUnfollowAction => 'Перестать отслеживать';
 
   @override
   String get profileFollowUpdateFailed => 'Не удалось обновить подписку';

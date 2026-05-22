@@ -29,6 +29,8 @@ func NewHandler(useCase *app.UserUseCase) *Handler {
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", h.Health)
 	mux.HandleFunc("POST /v1/users/me/init", h.InitMe)
+	mux.HandleFunc("GET /v1/users/me/friends", h.ListMyFriends)
+	mux.HandleFunc("GET /v1/users/me/following", h.ListMyFollowing)
 	mux.HandleFunc("GET /v1/users/me", h.GetMe)
 	mux.HandleFunc("POST /v1/users/me/presence", h.UpdateMyPresence)
 	mux.HandleFunc("PUT /v1/users/me/profile", h.UpdateMyProfile)
@@ -226,6 +228,122 @@ func (h *Handler) ListFollowers(w http.ResponseWriter, r *http.Request, userID u
 		return
 	}
 
+	h.writeProfileConnectionsPage(w, page)
+}
+
+func (h *Handler) ListMyFriends(w http.ResponseWriter, r *http.Request) {
+	currentUserID, ok := h.currentUserIDFromRequest(w, r)
+	if !ok {
+		return
+	}
+
+	page, err := h.useCase.ListFriends(
+		r.Context(),
+		currentUserID,
+		parseProfileConnectionsListInput(r),
+	)
+	if err != nil {
+		h.writeProfileConnectionsError(w, err, "failed to list friends")
+		return
+	}
+
+	h.writeProfileConnectionsPage(w, page)
+}
+
+func (h *Handler) ListMyFollowing(w http.ResponseWriter, r *http.Request) {
+	currentUserID, ok := h.currentUserIDFromRequest(w, r)
+	if !ok {
+		return
+	}
+
+	page, err := h.useCase.ListFollowing(
+		r.Context(),
+		currentUserID,
+		parseProfileConnectionsListInput(r),
+	)
+	if err != nil {
+		h.writeProfileConnectionsError(w, err, "failed to list following")
+		return
+	}
+
+	h.writeProfileConnectionsPage(w, page)
+}
+
+func (h *Handler) currentUserIDFromRequest(
+	w http.ResponseWriter,
+	r *http.Request,
+) (uuid.UUID, bool) {
+	subject := strings.TrimSpace(SubjectFromContext(r.Context()))
+	if subject == "" {
+		writeError(w, http.StatusUnauthorized, "missing authenticated subject")
+		return uuid.Nil, false
+	}
+
+	aggregate, err := h.useCase.GetAggregateBySubject(r.Context(), subject)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidSubjectID):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, app.ErrUserNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to resolve current user")
+		}
+		return uuid.Nil, false
+	}
+
+	return aggregate.User.ID, true
+}
+
+func parseProfileConnectionsListInput(r *http.Request) app.ProfileConnectionsListInput {
+	limit := 20
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			offset = parsed
+		}
+	}
+
+	onlineOnly := false
+	if raw := strings.TrimSpace(r.URL.Query().Get("onlineOnly")); raw != "" {
+		onlineOnly = strings.EqualFold(raw, "true") || raw == "1"
+	}
+
+	return app.ProfileConnectionsListInput{
+		Limit:         limit,
+		Offset:        offset,
+		SearchQuery:   r.URL.Query().Get("q"),
+		Sort:          r.URL.Query().Get("sort"),
+		SortDirection: r.URL.Query().Get("sortDirection"),
+		OnlineOnly:    onlineOnly,
+	}
+}
+
+func (h *Handler) writeProfileConnectionsError(
+	w http.ResponseWriter,
+	err error,
+	message string,
+) {
+	switch {
+	case errors.Is(err, app.ErrInvalidUserID):
+		writeError(w, http.StatusBadRequest, err.Error())
+	case errors.Is(err, app.ErrUserNotFound):
+		writeError(w, http.StatusNotFound, err.Error())
+	default:
+		writeError(w, http.StatusInternalServerError, message)
+	}
+}
+
+func (h *Handler) writeProfileConnectionsPage(
+	w http.ResponseWriter,
+	page *app.FollowersPage,
+) {
 	resp := make([]dto.FollowersListItemResponse, 0, len(page.Items))
 	for _, item := range page.Items {
 		var avatarFileID *string

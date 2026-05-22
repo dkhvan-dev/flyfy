@@ -2156,6 +2156,12 @@ class _OwnProfileSections extends StatelessWidget {
           subtitle: l10n.profileSavedItemsSubtitle,
           disabled: true,
         ),
+        _ProfileMenuTile(
+          icon: Icons.people_alt_outlined,
+          title: l10n.profileConnectionsTitle,
+          subtitle: l10n.profileConnectionsSubtitle,
+          onTap: () => context.push('/profile/connections'),
+        ),
         if (isGuideProfile)
           _ProfileMenuTile(
             icon: Icons.dashboard_customize_outlined,

@@ -626,6 +626,58 @@ class AppLocalizationsKk extends AppLocalizations {
       'Фолловерлерді жүктеу мүмкін болмады';
 
   @override
+  String get profileConnectionsTitle => 'Достар және жазылымдар';
+
+  @override
+  String get profileConnectionsSubtitle =>
+      'Достарыңызды және бақылап жүрген пайдаланушыларды басқарыңыз.';
+
+  @override
+  String get profileConnectionsSearchHint => 'Адамдарды іздеу';
+
+  @override
+  String get profileConnectionsFriendsTab => 'Достар';
+
+  @override
+  String get profileConnectionsFollowingTab => 'Жазылымдар';
+
+  @override
+  String get profileConnectionsFriendsEmptyTitle => 'Әзірге достар жоқ';
+
+  @override
+  String get profileConnectionsFriendsEmptySubtitle =>
+      'Достық сұрауы қабылданғанда, пайдаланушы осында шығады.';
+
+  @override
+  String get profileConnectionsFollowingEmptyTitle => 'Әзірге жазылымдар жоқ';
+
+  @override
+  String get profileConnectionsFollowingEmptySubtitle =>
+      'Сіз бақылап жүрген пайдаланушылар осында шығады.';
+
+  @override
+  String get profileConnectionsLoadFailed => 'Тізімді жүктеу мүмкін болмады';
+
+  @override
+  String get profileConnectionsSortRecent => 'Жаңалары';
+
+  @override
+  String get profileConnectionsSortName => 'Аты';
+
+  @override
+  String get profileConnectionsFiltersTitle => 'Сүзгілер';
+
+  @override
+  String get profileConnectionsFiltersShowResults => 'Нәтижелерді көрсету';
+
+  @override
+  String get profileConnectionsFilterOnlineOnly => 'Тек онлайн';
+
+  @override
+  String get profileConnectionsFilterOnlineOnlySubtitle =>
+      'Қазір желіде отырған пайдаланушыларды көрсету.';
+
+  @override
   String get profileJourneyTitle => 'Менің жолым';
 
   @override
@@ -764,6 +816,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileUnfollowConfirm => 'Бас тарту';
+
+  @override
+  String get profileUnfollowAction => 'Бақылауды тоқтату';
 
   @override
   String get profileFollowUpdateFailed => 'Жазылу күйін жаңарту мүмкін болмады';

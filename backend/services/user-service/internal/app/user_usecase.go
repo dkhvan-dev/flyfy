@@ -732,6 +732,15 @@ type FollowersPage struct {
 	NextOffset *int
 }
 
+type ProfileConnectionsListInput struct {
+	Limit         int
+	Offset        int
+	SearchQuery   string
+	Sort          string
+	SortDirection string
+	OnlineOnly    bool
+}
+
 func (u *UserUseCase) ListFollowers(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -782,6 +791,81 @@ func (u *UserUseCase) ListFollowers(
 		Items:      items,
 		NextOffset: nextOffset,
 	}, nil
+}
+
+func (u *UserUseCase) ListFriends(
+	ctx context.Context,
+	userID uuid.UUID,
+	input ProfileConnectionsListInput,
+) (*FollowersPage, error) {
+	return u.listProfileConnections(ctx, userID, input, u.repo.ListFriendsByUserID)
+}
+
+func (u *UserUseCase) ListFollowing(
+	ctx context.Context,
+	userID uuid.UUID,
+	input ProfileConnectionsListInput,
+) (*FollowersPage, error) {
+	return u.listProfileConnections(ctx, userID, input, u.repo.ListFollowingByUserID)
+}
+
+func (u *UserUseCase) listProfileConnections(
+	ctx context.Context,
+	userID uuid.UUID,
+	input ProfileConnectionsListInput,
+	list func(context.Context, uuid.UUID, port.UserConnectionListOptions) ([]*model.UserProfile, error),
+) (*FollowersPage, error) {
+	if userID == uuid.Nil {
+		return nil, ErrInvalidUserID
+	}
+
+	limit := normalizeConnectionsLimit(input.Limit)
+	offset := input.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	user, err := u.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get user by id: %w", err)
+	}
+	if user == nil || user.IsDeleted {
+		return nil, ErrUserNotFound
+	}
+
+	items, err := list(ctx, userID, port.UserConnectionListOptions{
+		SearchQuery:   input.SearchQuery,
+		Sort:          input.Sort,
+		SortDirection: input.SortDirection,
+		OnlineOnly:    input.OnlineOnly,
+		Limit:         limit + 1,
+		Offset:        offset,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list profile connections: %w", err)
+	}
+
+	var nextOffset *int
+	if len(items) > limit {
+		next := offset + limit
+		nextOffset = &next
+		items = items[:limit]
+	}
+
+	return &FollowersPage{
+		Items:      items,
+		NextOffset: nextOffset,
+	}, nil
+}
+
+func normalizeConnectionsLimit(limit int) int {
+	if limit <= 0 {
+		return 20
+	}
+	if limit > 100 {
+		return 100
+	}
+	return limit
 }
 
 type InitIdentityHints struct {

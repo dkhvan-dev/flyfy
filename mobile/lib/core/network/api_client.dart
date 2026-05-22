@@ -226,6 +226,52 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getMyFriends({
+    int limit = 20,
+    int offset = 0,
+    String? query,
+    String? sort,
+    String? sortDirection,
+    bool onlineOnly = false,
+  }) async {
+    final response = await _dio.get(
+      '/users/me/friends',
+      queryParameters: <String, dynamic>{
+        'limit': limit,
+        'offset': offset,
+        if ((query ?? '').trim().isNotEmpty) 'q': query!.trim(),
+        if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
+        if ((sortDirection ?? '').trim().isNotEmpty)
+          'sortDirection': sortDirection,
+        if (onlineOnly) 'onlineOnly': true,
+      },
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getMyFollowing({
+    int limit = 20,
+    int offset = 0,
+    String? query,
+    String? sort,
+    String? sortDirection,
+    bool onlineOnly = false,
+  }) async {
+    final response = await _dio.get(
+      '/users/me/following',
+      queryParameters: <String, dynamic>{
+        'limit': limit,
+        'offset': offset,
+        if ((query ?? '').trim().isNotEmpty) 'q': query!.trim(),
+        if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
+        if ((sortDirection ?? '').trim().isNotEmpty)
+          'sortDirection': sortDirection,
+        if (onlineOnly) 'onlineOnly': true,
+      },
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<void> sendCode(String phone) async {
     await _dio.post('/auth/phone/send-code', data: {'phone': phone});
   }

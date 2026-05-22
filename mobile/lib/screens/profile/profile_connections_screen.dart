@@ -1,0 +1,1151 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/network/chat_api.dart';
+import '../../core/network/dio_error_mapper.dart';
+import '../../core/network/file_api.dart';
+import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_inline_sort_row.dart';
+import '../../core/ui/app_list_search_field.dart';
+import '../../core/ui/error_dialog.dart';
+import '../../core/ui/filter_sheet_chrome.dart';
+import '../../features/chat/utils/chat_presence_status.dart';
+import '../../features/profile/data/profile_api.dart';
+import '../../features/profile/models/profile_follower_vm.dart';
+import '../../l10n/generated/app_localizations.dart';
+import '../../providers/session_provider.dart';
+
+class ProfileConnectionsScreen extends StatefulWidget {
+  const ProfileConnectionsScreen({super.key});
+
+  @override
+  State<ProfileConnectionsScreen> createState() =>
+      _ProfileConnectionsScreenState();
+}
+
+class _ProfileConnectionsScreenState extends State<ProfileConnectionsScreen>
+    with SingleTickerProviderStateMixin {
+  static const _pageSize = 20;
+
+  final ProfileApi _profileApi = ProfileApi();
+  final ChatApi _chatApi = ChatApi();
+  final TextEditingController _searchController = TextEditingController();
+  final _friendsData = _ConnectionTabData();
+  final _followingData = _ConnectionTabData();
+
+  late final TabController _tabController;
+  Timer? _searchDebounce;
+  _ConnectionSortMode _sortMode = _ConnectionSortMode.recent;
+  _ConnectionSortDirection _sortDirection = _ConnectionSortDirection.desc;
+  _ConnectionFilters _filters = const _ConnectionFilters();
+  String? _actionUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _searchController.addListener(_handleSearchChanged);
+    _friendsData.scrollController.addListener(
+      () => _handleScroll(_ConnectionTab.friends),
+    );
+    _followingData.scrollController.addListener(
+      () => _handleScroll(_ConnectionTab.following),
+    );
+    unawaited(_reloadAll());
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController
+      ..removeListener(_handleSearchChanged)
+      ..dispose();
+    _tabController.dispose();
+    _friendsData.dispose();
+    _followingData.dispose();
+    super.dispose();
+  }
+
+  void _handleSearchChanged() {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 280),
+      () => unawaited(_reloadAll()),
+    );
+  }
+
+  void _handleScroll(_ConnectionTab tab) {
+    final data = _dataFor(tab);
+    if (!data.scrollController.hasClients || data.loading || data.loadingMore) {
+      return;
+    }
+
+    final position = data.scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 220) {
+      unawaited(_loadMore(tab));
+    }
+  }
+
+  _ConnectionTabData _dataFor(_ConnectionTab tab) {
+    return switch (tab) {
+      _ConnectionTab.friends => _friendsData,
+      _ConnectionTab.following => _followingData,
+    };
+  }
+
+  Future<void> _reloadAll() async {
+    await Future.wait([
+      _reloadTab(_ConnectionTab.friends),
+      _reloadTab(_ConnectionTab.following),
+    ]);
+  }
+
+  Future<void> _reloadTab(_ConnectionTab tab) async {
+    final data = _dataFor(tab);
+    final requestEpoch = ++data.requestEpoch;
+    setState(() {
+      data.loading = true;
+      data.loadingMore = false;
+      data.errorText = null;
+      data.nextOffset = null;
+      data.items = const [];
+    });
+
+    try {
+      final page = await _fetchPage(tab, offset: 0);
+      if (!mounted || requestEpoch != data.requestEpoch) return;
+
+      setState(() {
+        data.items = page.items;
+        data.nextOffset = page.nextOffset;
+      });
+    } catch (e) {
+      if (!mounted || requestEpoch != data.requestEpoch) return;
+      final l10n = AppLocalizations.of(context)!;
+      setState(() {
+        data.errorText = e is DioException
+            ? DioErrorMapper.toMessage(e)
+            : l10n.profileConnectionsLoadFailed;
+      });
+    } finally {
+      if (mounted && requestEpoch == data.requestEpoch) {
+        setState(() => data.loading = false);
+      }
+    }
+  }
+
+  Future<void> _loadMore(_ConnectionTab tab) async {
+    final data = _dataFor(tab);
+    final offset = data.nextOffset;
+    if (offset == null) return;
+
+    final requestEpoch = data.requestEpoch;
+    setState(() => data.loadingMore = true);
+
+    try {
+      final page = await _fetchPage(tab, offset: offset);
+      if (!mounted || requestEpoch != data.requestEpoch) return;
+
+      final merged = <String, ProfileFollowerVm>{
+        for (final item in data.items) item.userId: item,
+      };
+      for (final item in page.items) {
+        merged[item.userId] = item;
+      }
+
+      setState(() {
+        data.items = merged.values.toList(growable: false);
+        data.nextOffset = page.nextOffset;
+      });
+    } catch (_) {
+      if (!mounted || requestEpoch != data.requestEpoch) return;
+    } finally {
+      if (mounted && requestEpoch == data.requestEpoch) {
+        setState(() => data.loadingMore = false);
+      }
+    }
+  }
+
+  Future<ProfileFollowersPageVm> _fetchPage(
+    _ConnectionTab tab, {
+    required int offset,
+  }) {
+    final sort = _sortMode.wireName;
+    final sortDirection = _sortDirection.wireName;
+    final query = _searchController.text;
+
+    return switch (tab) {
+      _ConnectionTab.friends => _profileApi.getMyFriends(
+          limit: _pageSize,
+          offset: offset,
+          query: query,
+          sort: sort,
+          sortDirection: sortDirection,
+          onlineOnly: _filters.onlineOnly,
+        ),
+      _ConnectionTab.following => _profileApi.getMyFollowing(
+          limit: _pageSize,
+          offset: offset,
+          query: query,
+          sort: sort,
+          sortDirection: sortDirection,
+          onlineOnly: _filters.onlineOnly,
+        ),
+    };
+  }
+
+  void _handleSortChanged(_ConnectionSortMode mode) {
+    setState(() {
+      if (_sortMode == mode) {
+        _sortDirection = _sortDirection.toggled;
+      } else {
+        _sortMode = mode;
+        _sortDirection = mode.defaultDirection;
+      }
+    });
+    unawaited(_reloadAll());
+  }
+
+  Future<void> _showFilters() async {
+    final selectedFilters = await showModalBottomSheet<_ConnectionFilters>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ConnectionFiltersSheet(initialFilters: _filters),
+    );
+
+    if (selectedFilters == null || !mounted) return;
+    setState(() => _filters = selectedFilters);
+    unawaited(_reloadAll());
+  }
+
+  void _openProfile(ProfileFollowerVm user) {
+    final userId = user.userId.trim();
+    if (userId.isEmpty) return;
+
+    final currentUserId =
+        context.read<SessionProvider>().profile?.userId.trim();
+    if (currentUserId != null && currentUserId == userId) {
+      context.push('/profile');
+      return;
+    }
+
+    context.push('/users/${Uri.encodeComponent(userId)}/profile');
+  }
+
+  Future<void> _showUserActions(
+    BuildContext buttonContext,
+    ProfileFollowerVm user,
+    _ConnectionTab tab,
+  ) async {
+    final overlay = Overlay.of(buttonContext).context.findRenderObject();
+    final buttonBox = buttonContext.findRenderObject();
+    if (overlay is! RenderBox || buttonBox is! RenderBox) return;
+
+    final buttonTopRight = buttonBox.localToGlobal(
+      Offset(buttonBox.size.width, 0),
+      ancestor: overlay,
+    );
+    final buttonBottomRight = buttonBox.localToGlobal(
+      buttonBox.size.bottomRight(Offset.zero),
+      ancestor: overlay,
+    );
+    final position = RelativeRect.fromLTRB(
+      buttonTopRight.dx,
+      buttonTopRight.dy,
+      overlay.size.width - buttonBottomRight.dx,
+      overlay.size.height - buttonBottomRight.dy,
+    );
+
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final action = await showMenu<_ConnectionAction>(
+      context: context,
+      position: position,
+      color: const Color(0xFF2B1F14),
+      elevation: 18,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      items: [
+        PopupMenuItem(
+          value: tab == _ConnectionTab.friends
+              ? _ConnectionAction.removeFriend
+              : _ConnectionAction.unfollow,
+          child: _ConnectionPopupActionRow(
+            icon: tab == _ConnectionTab.friends
+                ? Icons.person_remove_alt_1_rounded
+                : Icons.person_off_rounded,
+            label: tab == _ConnectionTab.friends
+                ? l10n.profileRemoveFriendAction
+                : l10n.profileUnfollowAction,
+            destructive: true,
+          ),
+        ),
+        PopupMenuItem(
+          value: _ConnectionAction.message,
+          child: _ConnectionPopupActionRow(
+            icon: Icons.chat_bubble_outline_rounded,
+            label: l10n.profileMessageAction,
+          ),
+        ),
+      ],
+    );
+
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _ConnectionAction.removeFriend:
+        await _removeFriend(user);
+      case _ConnectionAction.unfollow:
+        await _unfollowUser(user);
+      case _ConnectionAction.message:
+        await _openDirectChat(user);
+    }
+  }
+
+  Future<void> _removeFriend(ProfileFollowerVm user) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _actionUserId = user.userId);
+
+    try {
+      await _profileApi.removeFriend(user.userId);
+      if (!mounted) return;
+      setState(() => _friendsData.remove(user.userId));
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.profileFriendshipUpdateFailed;
+      await showErrorDialog(context, title: l10n.error, message: message);
+    } finally {
+      if (mounted) setState(() => _actionUserId = null);
+    }
+  }
+
+  Future<void> _unfollowUser(ProfileFollowerVm user) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _actionUserId = user.userId);
+
+    try {
+      await _profileApi.unfollowUser(user.userId);
+      if (!mounted) return;
+      setState(() => _followingData.remove(user.userId));
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.profileFollowUpdateFailed;
+      await showErrorDialog(context, title: l10n.error, message: message);
+    } finally {
+      if (mounted) setState(() => _actionUserId = null);
+    }
+  }
+
+  Future<void> _openDirectChat(ProfileFollowerVm user) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _actionUserId = user.userId);
+
+    try {
+      final conversationId =
+          await _chatApi.createDirectConversation(user.userId);
+      if (!mounted) return;
+      context.push('/chats/$conversationId');
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is DioException
+          ? DioErrorMapper.toMessage(e)
+          : l10n.profileMessageOpenFailed;
+      await showErrorDialog(context, title: l10n.error, message: message);
+    } finally {
+      if (mounted) setState(() => _actionUserId = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+                  child: _ConnectionHeader(title: l10n.profileConnectionsTitle),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 20, 18, 0),
+                  child: AppListSearchField(
+                    controller: _searchController,
+                    hintText: l10n.profileConnectionsSearchHint,
+                    filterTooltip: l10n.myActivitiesFilterButton,
+                    activeFilterCount: _filters.activeCount,
+                    showClearButton: true,
+                    onFilterTap: _showFilters,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 12, 0, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: AppInlineSortRow<_ConnectionSortMode>(
+                      label: l10n.excursionsSortLabel,
+                      options: [
+                        for (final mode in _ConnectionSortMode.values)
+                          AppInlineSortOption(
+                            value: mode,
+                            label: mode.label(l10n),
+                          ),
+                      ],
+                      selectedValue: _sortMode,
+                      isAscending:
+                          _sortDirection == _ConnectionSortDirection.asc,
+                      onSelected: _handleSortChanged,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+                  child: _ConnectionTabBar(
+                    controller: _tabController,
+                    friendsLabel: l10n.profileConnectionsFriendsTab,
+                    followingLabel: l10n.profileConnectionsFollowingTab,
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _ConnectionListView(
+                        tab: _ConnectionTab.friends,
+                        data: _friendsData,
+                        actionUserId: _actionUserId,
+                        onRefresh: () => _reloadTab(_ConnectionTab.friends),
+                        onTap: _openProfile,
+                        onActionsTap: _showUserActions,
+                      ),
+                      _ConnectionListView(
+                        tab: _ConnectionTab.following,
+                        data: _followingData,
+                        actionUserId: _actionUserId,
+                        onRefresh: () => _reloadTab(_ConnectionTab.following),
+                        onTap: _openProfile,
+                        onActionsTap: _showUserActions,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectionTabData {
+  final ScrollController scrollController = ScrollController();
+  List<ProfileFollowerVm> items = const [];
+  bool loading = true;
+  bool loadingMore = false;
+  String? errorText;
+  int? nextOffset;
+  int requestEpoch = 0;
+
+  void remove(String userId) {
+    items =
+        items.where((item) => item.userId != userId).toList(growable: false);
+  }
+
+  void dispose() {
+    scrollController.dispose();
+  }
+}
+
+enum _ConnectionTab { friends, following }
+
+enum _ConnectionAction { removeFriend, unfollow, message }
+
+enum _ConnectionSortDirection {
+  asc('asc'),
+  desc('desc');
+
+  const _ConnectionSortDirection(this.wireName);
+
+  final String wireName;
+
+  _ConnectionSortDirection get toggled => this == asc ? desc : asc;
+}
+
+enum _ConnectionSortMode {
+  recent('recent', _ConnectionSortDirection.desc),
+  name('name', _ConnectionSortDirection.asc);
+
+  const _ConnectionSortMode(this.wireName, this.defaultDirection);
+
+  final String wireName;
+  final _ConnectionSortDirection defaultDirection;
+
+  String label(AppLocalizations l10n) {
+    return switch (this) {
+      recent => l10n.profileConnectionsSortRecent,
+      name => l10n.profileConnectionsSortName,
+    };
+  }
+}
+
+class _ConnectionFilters {
+  const _ConnectionFilters({this.onlineOnly = false});
+
+  final bool onlineOnly;
+
+  int get activeCount => onlineOnly ? 1 : 0;
+
+  _ConnectionFilters copyWith({bool? onlineOnly}) {
+    return _ConnectionFilters(onlineOnly: onlineOnly ?? this.onlineOnly);
+  }
+}
+
+class _ConnectionHeader extends StatelessWidget {
+  const _ConnectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          onPressed: () => context.pop(),
+          style: IconButton.styleFrom(
+            backgroundColor: const Color(0xFF2B1F14),
+            foregroundColor: AppColors.textPrimary,
+            minimumSize: const Size(44, 44),
+          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 25,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ConnectionTabBar extends StatelessWidget {
+  const _ConnectionTabBar({
+    required this.controller,
+    required this.friendsLabel,
+    required this.followingLabel,
+  });
+
+  final TabController controller;
+  final String friendsLabel;
+  final String followingLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B1F14),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: TabBar(
+        controller: controller,
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: AppColors.textPrimary,
+        unselectedLabelColor: const Color(0xFFA98D74),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 14,
+        ),
+        indicator: BoxDecoration(
+          color: AppColors.accent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.accent),
+        ),
+        tabs: [
+          Tab(text: friendsLabel),
+          Tab(text: followingLabel),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectionListView extends StatelessWidget {
+  const _ConnectionListView({
+    required this.tab,
+    required this.data,
+    required this.actionUserId,
+    required this.onRefresh,
+    required this.onTap,
+    required this.onActionsTap,
+  });
+
+  final _ConnectionTab tab;
+  final _ConnectionTabData data;
+  final String? actionUserId;
+  final RefreshCallback onRefresh;
+  final ValueChanged<ProfileFollowerVm> onTap;
+  final Future<void> Function(
+    BuildContext buttonContext,
+    ProfileFollowerVm user,
+    _ConnectionTab tab,
+  ) onActionsTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return RefreshIndicator(
+      color: AppColors.accent,
+      backgroundColor: const Color(0xFF2B1F14),
+      onRefresh: onRefresh,
+      child: Builder(
+        builder: (context) {
+          if (data.loading) {
+            return ListView(
+              controller: data.scrollController,
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              children: const [
+                SizedBox(height: 180),
+                Center(
+                  child: SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.6,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          if (data.errorText != null && data.items.isEmpty) {
+            return ListView(
+              controller: data.scrollController,
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 110, 24, 24),
+              children: [
+                _ConnectionStateMessage(
+                  icon: Icons.wifi_off_rounded,
+                  title: l10n.profileConnectionsLoadFailed,
+                  subtitle: data.errorText!,
+                ),
+              ],
+            );
+          }
+
+          if (data.items.isEmpty) {
+            return ListView(
+              controller: data.scrollController,
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 110, 24, 24),
+              children: [
+                _ConnectionStateMessage(
+                  icon: Icons.people_outline_rounded,
+                  title: tab == _ConnectionTab.friends
+                      ? l10n.profileConnectionsFriendsEmptyTitle
+                      : l10n.profileConnectionsFollowingEmptyTitle,
+                  subtitle: tab == _ConnectionTab.friends
+                      ? l10n.profileConnectionsFriendsEmptySubtitle
+                      : l10n.profileConnectionsFollowingEmptySubtitle,
+                ),
+              ],
+            );
+          }
+
+          return ListView.separated(
+            controller: data.scrollController,
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+            itemCount: data.items.length + (data.loadingMore ? 1 : 0),
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              if (index >= data.items.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: AppColors.accent,
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final user = data.items[index];
+              return _ConnectionUserRow(
+                user: user,
+                busy: actionUserId == user.userId,
+                onTap: () => onTap(user),
+                onActionsTap: (buttonContext) =>
+                    onActionsTap(buttonContext, user, tab),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ConnectionUserRow extends StatelessWidget {
+  const _ConnectionUserRow({
+    required this.user,
+    required this.busy,
+    required this.onTap,
+    required this.onActionsTap,
+  });
+
+  final ProfileFollowerVm user;
+  final bool busy;
+  final VoidCallback onTap;
+  final Future<void> Function(BuildContext buttonContext) onActionsTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final displayName = user.displayNameOrFallback(l10n.chatUserFallbackName);
+    final presence = chatPresenceStatusLabelForValues(
+      l10n,
+      isOnline: user.isOnline,
+      lastSeenAt: user.lastSeenAt,
+    );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2B1F14),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          ),
+          child: Row(
+            children: [
+              _ConnectionAvatar(user: user),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Row(
+                      children: [
+                        if (user.isOnline) ...[
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Text(
+                            presence,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: user.isOnline
+                                  ? AppColors.accent
+                                  : const Color(0xFFA98D74),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (busy)
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: AppColors.accent,
+                  ),
+                )
+              else
+                Builder(
+                  builder: (buttonContext) => IconButton(
+                    tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+                    onPressed: () => unawaited(onActionsTap(buttonContext)),
+                    style: IconButton.styleFrom(
+                      foregroundColor: AppColors.accent,
+                      minimumSize: const Size(42, 42),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: const Icon(Icons.more_horiz_rounded),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectionAvatar extends StatelessWidget {
+  const _ConnectionAvatar({required this.user});
+
+  final ProfileFollowerVm user;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = resolvePublicFileContentUrl(user.avatarFileId ?? '');
+    return Container(
+      width: 54,
+      height: 54,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: ClipOval(
+        child: ColoredBox(
+          color: const Color(0xFF171009),
+          child: imageUrl == null
+              ? _ConnectionAvatarFallback(initials: user.initials)
+              : Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      _ConnectionAvatarFallback(initials: user.initials),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectionAvatarFallback extends StatelessWidget {
+  const _ConnectionAvatarFallback({required this.initials});
+
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF44301F), Color(0xFF171009)],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectionStateMessage extends StatelessWidget {
+  const _ConnectionStateMessage({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: const Color(0xFFA98D74), size: 42),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          subtitle,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Color(0xFFA98D74),
+            fontSize: 14,
+            height: 1.42,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ConnectionPopupActionRow extends StatelessWidget {
+  const _ConnectionPopupActionRow({
+    required this.icon,
+    required this.label,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = destructive ? AppColors.destruct : AppColors.textPrimary;
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ConnectionFiltersSheet extends StatefulWidget {
+  const _ConnectionFiltersSheet({required this.initialFilters});
+
+  final _ConnectionFilters initialFilters;
+
+  @override
+  State<_ConnectionFiltersSheet> createState() =>
+      _ConnectionFiltersSheetState();
+}
+
+class _ConnectionFiltersSheetState extends State<_ConnectionFiltersSheet> {
+  late _ConnectionFilters _filters;
+
+  @override
+  void initState() {
+    super.initState();
+    _filters = widget.initialFilters;
+  }
+
+  void _clear() {
+    setState(() => _filters = const _ConnectionFilters());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return AppDismissibleModalSheet(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.72,
+          maxWidth: 520,
+        ),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xFF21170D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: Color(0x293A270F))),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppFilterSheetHeader(
+                title: l10n.profileConnectionsFiltersTitle,
+                clearLabel: l10n.excursionsFiltersClear,
+                onClear: _clear,
+                height: 74,
+                horizontalPadding: 22,
+                titleFontSize: 18,
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ConnectionFilterToggle(
+                        icon: Icons.circle_rounded,
+                        title: l10n.profileConnectionsFilterOnlineOnly,
+                        subtitle:
+                            l10n.profileConnectionsFilterOnlineOnlySubtitle,
+                        value: _filters.onlineOnly,
+                        onChanged: (value) {
+                          setState(() {
+                            _filters = _filters.copyWith(onlineOnly: value);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(22, 0, 22, bottomInset + 18),
+                child: AppFilterApplyButton(
+                  label: l10n.profileConnectionsFiltersShowResults,
+                  onTap: () => Navigator.of(context).pop(_filters),
+                  borderRadius: 14,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectionFilterToggle extends StatelessWidget {
+  const _ConnectionFilterToggle({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(18),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF2C2118),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.accent, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFBDAA98),
+                        fontSize: 13,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Switch.adaptive(
+                value: value,
+                activeThumbColor: AppColors.accent,
+                activeTrackColor: AppColors.accent.withValues(alpha: 0.32),
+                onChanged: onChanged,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

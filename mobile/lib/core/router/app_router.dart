@@ -18,6 +18,7 @@ import '../../screens/profile/profile_notifications_screen.dart';
 import '../../screens/profile/profile_security_screen.dart';
 import '../../screens/profile/profile_settings_screen.dart';
 import '../../screens/profile/guide_verification_screen.dart';
+import '../../screens/profile/profile_connections_screen.dart';
 import '../../screens/profile/profile_followers_screen.dart';
 import '../../screens/activities/activities_screen.dart';
 import '../../screens/activities/activity_details_screen.dart';
@@ -197,6 +198,11 @@ class AppRouter {
               ProfileFollowersScreen(userId: userId),
             );
           },
+        ),
+        GoRoute(
+          path: '/profile/connections',
+          builder: (context, state) =>
+              _withAndroidBackSwipe(const ProfileConnectionsScreen()),
         ),
         GoRoute(
           path: '/users/:userId/activities',

@@ -621,6 +621,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileFollowersLoadFailed => 'Failed to load followers';
 
   @override
+  String get profileConnectionsTitle => 'Friends and following';
+
+  @override
+  String get profileConnectionsSubtitle =>
+      'Manage your friends and the people you follow.';
+
+  @override
+  String get profileConnectionsSearchHint => 'Search people';
+
+  @override
+  String get profileConnectionsFriendsTab => 'Friends';
+
+  @override
+  String get profileConnectionsFollowingTab => 'Following';
+
+  @override
+  String get profileConnectionsFriendsEmptyTitle => 'No friends yet';
+
+  @override
+  String get profileConnectionsFriendsEmptySubtitle =>
+      'When a friend request is accepted, that user will appear here.';
+
+  @override
+  String get profileConnectionsFollowingEmptyTitle => 'No following yet';
+
+  @override
+  String get profileConnectionsFollowingEmptySubtitle =>
+      'People you follow will appear here.';
+
+  @override
+  String get profileConnectionsLoadFailed => 'Failed to load the list';
+
+  @override
+  String get profileConnectionsSortRecent => 'Recent';
+
+  @override
+  String get profileConnectionsSortName => 'Name';
+
+  @override
+  String get profileConnectionsFiltersTitle => 'Filters';
+
+  @override
+  String get profileConnectionsFiltersShowResults => 'Show results';
+
+  @override
+  String get profileConnectionsFilterOnlineOnly => 'Online only';
+
+  @override
+  String get profileConnectionsFilterOnlineOnlySubtitle =>
+      'Show users who are currently online.';
+
+  @override
   String get profileJourneyTitle => 'My journey';
 
   @override
@@ -758,6 +810,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileUnfollowConfirm => 'Unfollow';
+
+  @override
+  String get profileUnfollowAction => 'Stop following';
 
   @override
   String get profileFollowUpdateFailed => 'Failed to update follow status';

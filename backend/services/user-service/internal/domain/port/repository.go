@@ -9,6 +9,15 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/model"
 )
 
+type UserConnectionListOptions struct {
+	SearchQuery   string
+	Sort          string
+	SortDirection string
+	OnlineOnly    bool
+	Limit         int
+	Offset        int
+}
+
 type UserRepository interface {
 	CreateUserAggregate(
 		ctx context.Context,
@@ -52,6 +61,16 @@ type UserRepository interface {
 		searchQuery string,
 		limit int,
 		offset int,
+	) ([]*model.UserProfile, error)
+	ListFriendsByUserID(
+		ctx context.Context,
+		userID uuid.UUID,
+		options UserConnectionListOptions,
+	) ([]*model.UserProfile, error)
+	ListFollowingByUserID(
+		ctx context.Context,
+		userID uuid.UUID,
+		options UserConnectionListOptions,
 	) ([]*model.UserProfile, error)
 
 	PatchUserIdentityBySubject(

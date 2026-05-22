@@ -103,6 +103,44 @@ class ProfileApi {
     return ProfileFollowersPageVm.fromJson(data);
   }
 
+  Future<ProfileFollowersPageVm> getMyFriends({
+    int limit = 20,
+    int offset = 0,
+    String? query,
+    String? sort,
+    String? sortDirection,
+    bool onlineOnly = false,
+  }) async {
+    final data = await _apiClient.getMyFriends(
+      limit: limit,
+      offset: offset,
+      query: query,
+      sort: sort,
+      sortDirection: sortDirection,
+      onlineOnly: onlineOnly,
+    );
+    return ProfileFollowersPageVm.fromJson(data);
+  }
+
+  Future<ProfileFollowersPageVm> getMyFollowing({
+    int limit = 20,
+    int offset = 0,
+    String? query,
+    String? sort,
+    String? sortDirection,
+    bool onlineOnly = false,
+  }) async {
+    final data = await _apiClient.getMyFollowing(
+      limit: limit,
+      offset: offset,
+      query: query,
+      sort: sort,
+      sortDirection: sortDirection,
+      onlineOnly: onlineOnly,
+    );
+    return ProfileFollowersPageVm.fromJson(data);
+  }
+
   Future<UserSettingsVm> updateMeSettings({
     bool? notificationsPushEnabled,
     bool? notificationsEmailEnabled,

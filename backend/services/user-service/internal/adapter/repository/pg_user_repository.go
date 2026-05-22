@@ -14,6 +14,7 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/model"
+	"github.com/dkhvan-dev/flyfy/backend/services/user-service/internal/domain/port"
 )
 
 type PGUserRepository struct {
@@ -430,7 +431,7 @@ func (r *PGUserRepository) ListRolesByUserID(ctx context.Context, userID uuid.UU
 			roleRaw string
 		)
 
-		if err = rows.Scan(
+		if err := rows.Scan(
 			&item.ID,
 			&item.UserID,
 			&roleRaw,
@@ -865,7 +866,7 @@ func (r *PGUserRepository) GetPublicProfilesByUserIDs(ctx context.Context, userI
 	var result []*model.UserProfile
 	for rows.Next() {
 		var item model.UserProfile
-		if err = rows.Scan(
+		if err := rows.Scan(
 			&item.UserID,
 			&item.FirstName,
 			&item.LastName,
@@ -974,10 +975,173 @@ func (r *PGUserRepository) ListFollowersByUserID(
 	}
 	defer rows.Close()
 
+	return scanProfileListRows(rows, "follower profile")
+}
+
+func (r *PGUserRepository) ListFriendsByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+	options port.UserConnectionListOptions,
+) ([]*model.UserProfile, error) {
+	orderClause := buildProfileConnectionOrderClause(
+		options.Sort,
+		options.SortDirection,
+		"fr.updated_at",
+	)
+	query := `
+		SELECT
+			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
+			p.is_profile_completed,
+			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
+			u.last_seen_at,
+			p.created_at, p.updated_at
+		FROM user_friendships fr
+		JOIN user_profiles p
+			ON p.user_id = CASE
+				WHEN fr.requester_user_id = $1 THEN fr.addressee_user_id
+				ELSE fr.requester_user_id
+			END
+		JOIN users u ON u.id = p.user_id
+		WHERE (fr.requester_user_id = $1 OR fr.addressee_user_id = $1)
+		  AND fr.status = 'ACCEPTED'
+		  AND u.is_deleted = FALSE
+		  AND (
+			$2 = ''
+			OR COALESCE(p.display_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.first_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.last_name, '') ILIKE '%' || $2 || '%'
+			OR TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%' || $2 || '%'
+		  )
+		  AND (
+			$3 = FALSE
+			OR COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE)
+		  )
+		` + orderClause + `
+		LIMIT $4 OFFSET $5
+	`
+
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		userID,
+		strings.TrimSpace(options.SearchQuery),
+		options.OnlineOnly,
+		options.Limit,
+		options.Offset,
+	)
+	if err != nil {
+		if isUndefinedRelation(err, "user_friendships") {
+			return []*model.UserProfile{}, nil
+		}
+		return nil, fmt.Errorf("query friends by user id: %w", err)
+	}
+	defer rows.Close()
+
+	return scanProfileListRows(rows, "friend profile")
+}
+
+func (r *PGUserRepository) ListFollowingByUserID(
+	ctx context.Context,
+	userID uuid.UUID,
+	options port.UserConnectionListOptions,
+) ([]*model.UserProfile, error) {
+	orderClause := buildProfileConnectionOrderClause(
+		options.Sort,
+		options.SortDirection,
+		"f.created_at",
+	)
+	query := `
+		SELECT
+			p.user_id, p.first_name, p.last_name, p.display_name, p.bio, p.birth_date,
+			p.avatar_file_id, p.city_id, p.country_code, p.locale, p.timezone, p.currency,
+			p.is_profile_completed,
+			COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE) AS is_online,
+			u.last_seen_at,
+			p.created_at, p.updated_at
+		FROM user_follows f
+		JOIN user_profiles p ON p.user_id = f.followed_user_id
+		JOIN users u ON u.id = p.user_id
+		WHERE f.follower_user_id = $1
+		  AND u.is_deleted = FALSE
+		  AND (
+			$2 = ''
+			OR COALESCE(p.display_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.first_name, '') ILIKE '%' || $2 || '%'
+			OR COALESCE(p.last_name, '') ILIKE '%' || $2 || '%'
+			OR TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) ILIKE '%' || $2 || '%'
+		  )
+		  AND (
+			$3 = FALSE
+			OR COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE)
+		  )
+		` + orderClause + `
+		LIMIT $4 OFFSET $5
+	`
+
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		userID,
+		strings.TrimSpace(options.SearchQuery),
+		options.OnlineOnly,
+		options.Limit,
+		options.Offset,
+	)
+	if err != nil {
+		if isUndefinedRelation(err, "user_follows") {
+			return []*model.UserProfile{}, nil
+		}
+		return nil, fmt.Errorf("query following by user id: %w", err)
+	}
+	defer rows.Close()
+
+	return scanProfileListRows(rows, "following profile")
+}
+
+func buildProfileConnectionOrderClause(
+	sort string,
+	direction string,
+	recentExpr string,
+) string {
+	sortDirection := "DESC"
+	if strings.EqualFold(strings.TrimSpace(direction), "asc") {
+		sortDirection = "ASC"
+	}
+
+	nameExpr := "LOWER(COALESCE(NULLIF(p.display_name, ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.user_id::text))"
+	onlineExpr := "COALESCE(u.last_seen_at >= NOW() - INTERVAL '2 minutes', FALSE)"
+
+	switch strings.ToLower(strings.TrimSpace(sort)) {
+	case "name":
+		return fmt.Sprintf(
+			" ORDER BY %s %s, %s DESC, p.user_id ASC ",
+			nameExpr,
+			sortDirection,
+			recentExpr,
+		)
+	case "online":
+		return fmt.Sprintf(
+			" ORDER BY %s %s, %s DESC, %s ASC, p.user_id ASC ",
+			onlineExpr,
+			sortDirection,
+			recentExpr,
+			nameExpr,
+		)
+	default:
+		return fmt.Sprintf(
+			" ORDER BY %s %s, p.created_at DESC, p.user_id ASC ",
+			recentExpr,
+			sortDirection,
+		)
+	}
+}
+
+func scanProfileListRows(rows pgx.Rows, itemName string) ([]*model.UserProfile, error) {
 	var result []*model.UserProfile
 	for rows.Next() {
 		var item model.UserProfile
-		if err = rows.Scan(
+		if err := rows.Scan(
 			&item.UserID,
 			&item.FirstName,
 			&item.LastName,
@@ -996,7 +1160,7 @@ func (r *PGUserRepository) ListFollowersByUserID(
 			&item.CreatedAt,
 			&item.UpdatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("scan follower profile: %w", err)
+			return nil, fmt.Errorf("scan %s: %w", itemName, err)
 		}
 		result = append(result, &item)
 	}

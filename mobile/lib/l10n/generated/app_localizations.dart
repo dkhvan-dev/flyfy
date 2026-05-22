@@ -1210,6 +1210,102 @@ abstract class AppLocalizations {
   /// **'Failed to load followers'**
   String get profileFollowersLoadFailed;
 
+  /// No description provided for @profileConnectionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends and following'**
+  String get profileConnectionsTitle;
+
+  /// No description provided for @profileConnectionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your friends and the people you follow.'**
+  String get profileConnectionsSubtitle;
+
+  /// No description provided for @profileConnectionsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search people'**
+  String get profileConnectionsSearchHint;
+
+  /// No description provided for @profileConnectionsFriendsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get profileConnectionsFriendsTab;
+
+  /// No description provided for @profileConnectionsFollowingTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get profileConnectionsFollowingTab;
+
+  /// No description provided for @profileConnectionsFriendsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No friends yet'**
+  String get profileConnectionsFriendsEmptyTitle;
+
+  /// No description provided for @profileConnectionsFriendsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When a friend request is accepted, that user will appear here.'**
+  String get profileConnectionsFriendsEmptySubtitle;
+
+  /// No description provided for @profileConnectionsFollowingEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No following yet'**
+  String get profileConnectionsFollowingEmptyTitle;
+
+  /// No description provided for @profileConnectionsFollowingEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'People you follow will appear here.'**
+  String get profileConnectionsFollowingEmptySubtitle;
+
+  /// No description provided for @profileConnectionsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load the list'**
+  String get profileConnectionsLoadFailed;
+
+  /// No description provided for @profileConnectionsSortRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get profileConnectionsSortRecent;
+
+  /// No description provided for @profileConnectionsSortName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get profileConnectionsSortName;
+
+  /// No description provided for @profileConnectionsFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get profileConnectionsFiltersTitle;
+
+  /// No description provided for @profileConnectionsFiltersShowResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Show results'**
+  String get profileConnectionsFiltersShowResults;
+
+  /// No description provided for @profileConnectionsFilterOnlineOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Online only'**
+  String get profileConnectionsFilterOnlineOnly;
+
+  /// No description provided for @profileConnectionsFilterOnlineOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show users who are currently online.'**
+  String get profileConnectionsFilterOnlineOnlySubtitle;
+
   /// No description provided for @profileJourneyTitle.
   ///
   /// In en, this message translates to:
@@ -1455,6 +1551,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unfollow'**
   String get profileUnfollowConfirm;
+
+  /// No description provided for @profileUnfollowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop following'**
+  String get profileUnfollowAction;
 
   /// No description provided for @profileFollowUpdateFailed.
   ///
