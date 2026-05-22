@@ -95,6 +95,36 @@ void main() {
     expect(source, isNot(contains("onHomeTap: () => context.go('/')")));
   });
 
+  test('promo carousel is passive and sizes cards from content metrics',
+      () async {
+    final source =
+        await File('lib/screens/home/home_screen.dart').readAsString();
+    final carouselStart = source.indexOf('class _PromoCarousel');
+    final carouselEnd = source.indexOf('class _PromoCard');
+    final cardStart = carouselEnd;
+    final cardEnd = source.indexOf('class _TopDestinationsRow');
+    final dataStart = source.indexOf('class _PromoCardData');
+    final dataEnd = source.indexOf('const List<_LanguageOption>', dataStart);
+
+    expect(carouselStart, isNonNegative);
+    expect(carouselEnd, greaterThan(carouselStart));
+    expect(cardEnd, greaterThan(cardStart));
+    expect(dataStart, isNonNegative);
+    expect(dataEnd, greaterThan(dataStart));
+
+    final carouselSource = source.substring(carouselStart, carouselEnd);
+    final cardSource = source.substring(cardStart, cardEnd);
+    final dataSource = source.substring(dataStart, dataEnd);
+
+    expect(carouselSource, contains('_homePromoCardHeight('));
+    expect(carouselSource, isNot(contains('required this.onTap')));
+    expect(cardSource, isNot(contains('InkWell(')));
+    expect(cardSource, isNot(contains('_HomePrimaryPill')));
+    expect(cardSource, isNot(contains('data.buttonLabel')));
+    expect(dataSource, isNot(contains('buttonLabel')));
+    expect(source, isNot(contains('homePromoExplore')));
+  });
+
   test('top destinations use backend attraction categories, not tag fallback',
       () async {
     final source =

@@ -248,14 +248,12 @@ class _HomeScreenState extends State<HomeScreen> {
         eyebrow: l10n.homePromoExclusive,
         title: l10n.homePromoYachtTitle,
         description: l10n.homePromoYachtDescription,
-        buttonLabel: l10n.homePromoExplore,
         imageUrl: _promoYachtImageUrl,
       ),
       _PromoCardData(
         eyebrow: l10n.homePromoAdventure,
         title: l10n.homePromoMountainTitle,
         description: l10n.homePromoMountainDescription,
-        buttonLabel: l10n.homePromoExplore,
         imageUrl: _promoMountainImageUrl,
       ),
     ];
@@ -890,10 +888,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       SizedBox(height: isCompact ? 30 : 36),
                                       _QuickActionsGrid(actions: quickActions),
                                       SizedBox(height: isCompact ? 38 : 52),
-                                      _PromoCarousel(
-                                        promos: promos,
-                                        onTap: _openActivities,
-                                      ),
+                                      _PromoCarousel(promos: promos),
                                       SizedBox(height: isCompact ? 20 : 24),
                                       _SectionHeader(
                                         title: l10n.homeTopDestinations,
@@ -1599,10 +1594,9 @@ class _QuickActionsGrid extends StatelessWidget {
 }
 
 class _PromoCarousel extends StatelessWidget {
-  const _PromoCarousel({required this.promos, required this.onTap});
+  const _PromoCarousel({required this.promos});
 
   final List<_PromoCardData> promos;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1613,9 +1607,11 @@ class _PromoCarousel extends StatelessWidget {
         final textScale = _homeTextScaleFactor(context);
         final cardWidth = viewportWidth * (isCompact ? 0.86 : 0.84);
         final visualHeight = cardWidth * 0.63;
-        final minContentHeight = (isCompact ? 190.0 : 204.0) * textScale;
-        final cardHeight =
-            visualHeight < minContentHeight ? minContentHeight : visualHeight;
+        final cardHeight = _homePromoCardHeight(
+          visualHeight: visualHeight,
+          isCompact: isCompact,
+          textScale: textScale,
+        );
 
         return MediaQuery(
           data: MediaQuery.of(
@@ -1634,7 +1630,7 @@ class _PromoCarousel extends StatelessWidget {
                   itemBuilder: (context, index) {
                     return SizedBox(
                       width: cardWidth,
-                      child: _PromoCard(data: promos[index], onTap: onTap),
+                      child: _PromoCard(data: promos[index]),
                     );
                   },
                 ),
@@ -1648,10 +1644,9 @@ class _PromoCarousel extends StatelessWidget {
 }
 
 class _PromoCard extends StatelessWidget {
-  const _PromoCard({required this.data, required this.onTap});
+  const _PromoCard({required this.data});
 
   final _PromoCardData data;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1659,126 +1654,90 @@ class _PromoCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.22),
-                blurRadius: 35,
-                offset: const Offset(0, 14),
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 35,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _NetworkCardImage(imageUrl: data.imageUrl),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      const Color(0xFF1C150C).withValues(alpha: 0.90),
+                      const Color(0xFF1C150C).withValues(alpha: 0.38),
+                      const Color(0xFF1C150C).withValues(alpha: 0.05),
+                    ],
+                    stops: const [0, 0.48, 1],
+                  ),
+                ),
+              ),
+              FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: 0.66,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCompact ? 20 : 24,
+                    vertical: isCompact ? 22 : 28,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        data.eyebrow,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.accent,
+                          fontSize: isCompact ? 9 : 10,
+                          height: 1.1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        data.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: const Color(0xFFFFFBF6),
+                          fontSize: isCompact ? 20 : 22,
+                          height: 1.08,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        data.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.78),
+                          fontSize: isCompact ? 12 : 13,
+                          height: 1.32,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _NetworkCardImage(imageUrl: data.imageUrl),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        const Color(0xFF1C150C).withValues(alpha: 0.90),
-                        const Color(0xFF1C150C).withValues(alpha: 0.38),
-                        const Color(0xFF1C150C).withValues(alpha: 0.05),
-                      ],
-                      stops: const [0, 0.48, 1],
-                    ),
-                  ),
-                ),
-                FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: 0.66,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isCompact ? 20 : 24,
-                      vertical: isCompact ? 22 : 28,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          data.eyebrow,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppColors.accent,
-                            fontSize: isCompact ? 9 : 10,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2.2,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          data.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: const Color(0xFFFFFBF6),
-                            fontSize: isCompact ? 20 : 22,
-                            height: 1.08,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 7),
-                        Text(
-                          data.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.78),
-                            fontSize: isCompact ? 12 : 13,
-                            height: 1.32,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        _HomePrimaryPill(label: data.buttonLabel),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HomePrimaryPill extends StatelessWidget {
-  const _HomePrimaryPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 375;
-
-    return Container(
-      constraints: BoxConstraints(minHeight: isCompact ? 34 : 36),
-      padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 20),
-      decoration: BoxDecoration(
-        color: AppColors.accent,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: isCompact ? 13 : 14,
-          fontWeight: FontWeight.w900,
         ),
       ),
     );
@@ -3586,14 +3545,12 @@ class _PromoCardData {
     required this.eyebrow,
     required this.title,
     required this.description,
-    required this.buttonLabel,
     required this.imageUrl,
   });
 
   final String eyebrow;
   final String title;
   final String description;
-  final String buttonLabel;
   final String imageUrl;
 }
 
@@ -3614,6 +3571,37 @@ double _homeTextScaleFactor(BuildContext context) {
   final bodySize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14.0;
   final scale = MediaQuery.textScalerOf(context).scale(bodySize) / bodySize;
   return scale.clamp(1.0, 1.6).toDouble();
+}
+
+double _homePromoCardHeight({
+  required double visualHeight,
+  required bool isCompact,
+  required double textScale,
+}) {
+  final contentHeight = _homePromoCardContentHeight(
+    isCompact: isCompact,
+    textScale: textScale,
+  );
+  return visualHeight < contentHeight ? contentHeight : visualHeight;
+}
+
+double _homePromoCardContentHeight({
+  required bool isCompact,
+  required double textScale,
+}) {
+  final verticalPadding = isCompact ? 22.0 : 28.0;
+  final eyebrowFontSize = isCompact ? 9.0 : 10.0;
+  final titleFontSize = isCompact ? 20.0 : 22.0;
+  final descriptionFontSize = isCompact ? 12.0 : 13.0;
+  final safetyPadding = isCompact ? 4.0 : 6.0;
+
+  return verticalPadding * 2 +
+      eyebrowFontSize * 1.1 * textScale +
+      8 +
+      titleFontSize * 1.08 * textScale * 2 +
+      7 +
+      descriptionFontSize * 1.32 * textScale * 2 +
+      safetyPadding;
 }
 
 double _homeTopDestinationTitleBlockHeight({
