@@ -34,3 +34,19 @@ func (r SystemRole) IsValid() bool {
 		return false
 	}
 }
+
+type FriendshipStatus string
+
+const (
+	FriendshipStatusPending  FriendshipStatus = "PENDING"
+	FriendshipStatusAccepted FriendshipStatus = "ACCEPTED"
+)
+
+func (s FriendshipStatus) IsValid() bool {
+	switch s {
+	case FriendshipStatusPending, FriendshipStatusAccepted:
+		return true
+	default:
+		return false
+	}
+}

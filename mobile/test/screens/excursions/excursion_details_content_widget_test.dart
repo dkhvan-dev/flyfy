@@ -446,6 +446,7 @@ final _guideProfile1 = UserProfileVm(
   roles: ['GUIDE'],
   followersCount: 0,
   isFollowedByMe: false,
+  friendshipStatus: UserFriendshipStatus.none,
   firstName: 'Aruzhan',
   lastName: 'Sadykova',
   displayName: '@aru_guide',
@@ -460,6 +461,7 @@ final _guideProfile2 = UserProfileVm(
   roles: ['GUIDE'],
   followersCount: 0,
   isFollowedByMe: false,
+  friendshipStatus: UserFriendshipStatus.none,
   firstName: 'Nurlan',
   lastName: 'Baimukhan',
 );

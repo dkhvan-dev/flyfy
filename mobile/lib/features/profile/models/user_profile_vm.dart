@@ -1,3 +1,24 @@
+enum UserFriendshipStatus {
+  none,
+  outgoingRequest,
+  incomingRequest,
+  friends;
+
+  static UserFriendshipStatus fromWire(String? value) {
+    switch ((value ?? '').trim().toUpperCase()) {
+      case 'OUTGOING_REQUEST':
+        return UserFriendshipStatus.outgoingRequest;
+      case 'INCOMING_REQUEST':
+        return UserFriendshipStatus.incomingRequest;
+      case 'FRIENDS':
+        return UserFriendshipStatus.friends;
+      case 'NONE':
+      default:
+        return UserFriendshipStatus.none;
+    }
+  }
+}
+
 class UserProfileVm {
   UserProfileVm({
     required this.userId,
@@ -8,6 +29,7 @@ class UserProfileVm {
     required this.roles,
     required this.followersCount,
     required this.isFollowedByMe,
+    required this.friendshipStatus,
     this.primaryPhone,
     this.primaryEmail,
     this.firstName,
@@ -30,6 +52,7 @@ class UserProfileVm {
   final List<String> roles;
   final int followersCount;
   final bool isFollowedByMe;
+  final UserFriendshipStatus friendshipStatus;
 
   final String? primaryPhone;
   final String? primaryEmail;
@@ -51,6 +74,7 @@ class UserProfileVm {
     final reputation = json['reputation'] as Map<String, dynamic>?;
     final rawRoles = json['roles'];
     final followers = json['followers'] as Map<String, dynamic>? ?? const {};
+    final friendship = json['friendship'] as Map<String, dynamic>? ?? const {};
 
     return UserProfileVm(
       userId: user['id']?.toString() ?? '',
@@ -73,14 +97,20 @@ class UserProfileVm {
           : const [],
       followersCount: int.tryParse(followers['count']?.toString() ?? '') ?? 0,
       isFollowedByMe: followers['isFollowedByMe'] == true,
+      friendshipStatus: UserFriendshipStatus.fromWire(
+        friendship['status']?.toString(),
+      ),
       settings: settings == null ? null : UserSettingsVm.fromJson(settings),
-      reputation: reputation == null
-          ? null
-          : UserReputationVm.fromJson(reputation),
+      reputation:
+          reputation == null ? null : UserReputationVm.fromJson(reputation),
     );
   }
 
-  UserProfileVm copyWith({int? followersCount, bool? isFollowedByMe}) {
+  UserProfileVm copyWith({
+    int? followersCount,
+    bool? isFollowedByMe,
+    UserFriendshipStatus? friendshipStatus,
+  }) {
     return UserProfileVm(
       userId: userId,
       status: status,
@@ -90,6 +120,7 @@ class UserProfileVm {
       roles: roles,
       followersCount: followersCount ?? this.followersCount,
       isFollowedByMe: isFollowedByMe ?? this.isFollowedByMe,
+      friendshipStatus: friendshipStatus ?? this.friendshipStatus,
       primaryPhone: primaryPhone,
       primaryEmail: primaryEmail,
       firstName: firstName,

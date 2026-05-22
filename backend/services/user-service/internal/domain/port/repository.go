@@ -29,12 +29,16 @@ type UserRepository interface {
 	ListRolesByUserID(ctx context.Context, userID uuid.UUID) ([]*model.UserSystemRole, error)
 	CountFollowersByUserID(ctx context.Context, userID uuid.UUID) (int, error)
 	IsFollowing(ctx context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) (bool, error)
+	GetFriendship(ctx context.Context, userAID uuid.UUID, userBID uuid.UUID) (*model.UserFriendship, error)
 
 	UpdateProfile(ctx context.Context, profile *model.UserProfile) error
 	UpdateLastSeen(ctx context.Context, userID uuid.UUID) (*model.User, error)
 	UpdateSettings(ctx context.Context, settings *model.UserSettings) error
 	FollowUser(ctx context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) error
 	UnfollowUser(ctx context.Context, followerUserID uuid.UUID, followedUserID uuid.UUID) error
+	CreateFriendRequest(ctx context.Context, requesterUserID uuid.UUID, addresseeUserID uuid.UUID) error
+	AcceptFriendRequest(ctx context.Context, requesterUserID uuid.UUID, addresseeUserID uuid.UUID) error
+	DeleteFriendship(ctx context.Context, userAID uuid.UUID, userBID uuid.UUID) error
 
 	GrantRole(ctx context.Context, role *model.UserSystemRole) error
 	HasRole(ctx context.Context, userID uuid.UUID, role enum.SystemRole) (bool, error)

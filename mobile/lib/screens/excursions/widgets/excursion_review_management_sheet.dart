@@ -28,6 +28,7 @@ Future<ExcursionReviewAction?> showExcursionReviewActionsSheet(
   final l10n = AppLocalizations.of(context)!;
   return showModalBottomSheet<ExcursionReviewAction>(
     context: context,
+    isDismissible: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
@@ -94,6 +95,7 @@ Future<ExcursionReviewEditDraft?> showExcursionReviewEditSheet(
 }) {
   return showModalBottomSheet<ExcursionReviewEditDraft>(
     context: context,
+    isDismissible: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,

@@ -132,6 +132,7 @@ class _ProfileUserActivitiesScreenState
 
     final result = await showModalBottomSheet<_ProfileActivityFilters>(
       context: context,
+      isDismissible: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {

@@ -750,7 +750,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileFollowingAction => 'Following';
 
   @override
+  String get profileUnfollowTitle => 'Unfollow user?';
+
+  @override
+  String get profileUnfollowDescription =>
+      'You will stop seeing this user\'s updates in your feed.';
+
+  @override
+  String get profileUnfollowConfirm => 'Unfollow';
+
+  @override
   String get profileFollowUpdateFailed => 'Failed to update follow status';
+
+  @override
+  String get profileAddFriendAction => 'Add friend';
+
+  @override
+  String get profileFriendRequestSentAction => 'Request sent';
+
+  @override
+  String get profileFriendRequestTitle => 'Friend request';
+
+  @override
+  String get profileAcceptFriendAction => 'Accept';
+
+  @override
+  String get profileDeclineFriendAction => 'Decline';
+
+  @override
+  String get profileFriendsAction => 'Friends';
+
+  @override
+  String get profileRemoveFriendAction => 'Remove friend';
+
+  @override
+  String get profileRemoveFriendTitle => 'Remove friend?';
+
+  @override
+  String get profileRemoveFriendDescription =>
+      'You will no longer be able to invite this user as a friend until a new request is accepted.';
+
+  @override
+  String get profileRemoveFriendConfirm => 'Remove';
+
+  @override
+  String get profileFriendshipUpdateFailed =>
+      'Failed to update friendship status';
 
   @override
   String get profileMessageAction => 'Message';

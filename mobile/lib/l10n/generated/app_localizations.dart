@@ -1438,11 +1438,95 @@ abstract class AppLocalizations {
   /// **'Following'**
   String get profileFollowingAction;
 
+  /// No description provided for @profileUnfollowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow user?'**
+  String get profileUnfollowTitle;
+
+  /// No description provided for @profileUnfollowDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You will stop seeing this user\'s updates in your feed.'**
+  String get profileUnfollowDescription;
+
+  /// No description provided for @profileUnfollowConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow'**
+  String get profileUnfollowConfirm;
+
   /// No description provided for @profileFollowUpdateFailed.
   ///
   /// In en, this message translates to:
   /// **'Failed to update follow status'**
   String get profileFollowUpdateFailed;
+
+  /// No description provided for @profileAddFriendAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add friend'**
+  String get profileAddFriendAction;
+
+  /// No description provided for @profileFriendRequestSentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent'**
+  String get profileFriendRequestSentAction;
+
+  /// No description provided for @profileFriendRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend request'**
+  String get profileFriendRequestTitle;
+
+  /// No description provided for @profileAcceptFriendAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get profileAcceptFriendAction;
+
+  /// No description provided for @profileDeclineFriendAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get profileDeclineFriendAction;
+
+  /// No description provided for @profileFriendsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get profileFriendsAction;
+
+  /// No description provided for @profileRemoveFriendAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove friend'**
+  String get profileRemoveFriendAction;
+
+  /// No description provided for @profileRemoveFriendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove friend?'**
+  String get profileRemoveFriendTitle;
+
+  /// No description provided for @profileRemoveFriendDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You will no longer be able to invite this user as a friend until a new request is accepted.'**
+  String get profileRemoveFriendDescription;
+
+  /// No description provided for @profileRemoveFriendConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get profileRemoveFriendConfirm;
+
+  /// No description provided for @profileFriendshipUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update friendship status'**
+  String get profileFriendshipUpdateFailed;
 
   /// No description provided for @profileMessageAction.
   ///

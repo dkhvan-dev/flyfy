@@ -63,6 +63,31 @@ class ProfileApi {
     await _apiClient.unfollowUser(userId);
   }
 
+  Future<UserFriendshipStatus> sendFriendRequest(String userId) async {
+    final data = await _apiClient.sendFriendRequest(userId);
+    return UserFriendshipStatus.fromWire(data['status']?.toString());
+  }
+
+  Future<UserFriendshipStatus> cancelFriendRequest(String userId) async {
+    final data = await _apiClient.cancelFriendRequest(userId);
+    return UserFriendshipStatus.fromWire(data['status']?.toString());
+  }
+
+  Future<UserFriendshipStatus> declineFriendRequest(String userId) async {
+    final data = await _apiClient.declineFriendRequest(userId);
+    return UserFriendshipStatus.fromWire(data['status']?.toString());
+  }
+
+  Future<UserFriendshipStatus> acceptFriendRequest(String userId) async {
+    final data = await _apiClient.acceptFriendRequest(userId);
+    return UserFriendshipStatus.fromWire(data['status']?.toString());
+  }
+
+  Future<UserFriendshipStatus> removeFriend(String userId) async {
+    final data = await _apiClient.removeFriend(userId);
+    return UserFriendshipStatus.fromWire(data['status']?.toString());
+  }
+
   Future<ProfileFollowersPageVm> getFollowers(
     String userId, {
     int limit = 20,

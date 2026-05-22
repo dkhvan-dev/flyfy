@@ -184,6 +184,31 @@ class ApiClient {
     await _dio.delete('/users/$userId/follow');
   }
 
+  Future<Map<String, dynamic>> sendFriendRequest(String userId) async {
+    final response = await _dio.post('/users/$userId/friend-request');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> cancelFriendRequest(String userId) async {
+    final response = await _dio.delete('/users/$userId/friend-request');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> declineFriendRequest(String userId) async {
+    final response = await _dio.delete('/users/$userId/friend-request');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> acceptFriendRequest(String userId) async {
+    final response = await _dio.post('/users/$userId/friendship');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> removeFriend(String userId) async {
+    final response = await _dio.delete('/users/$userId/friendship');
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> getUserFollowers(
     String userId, {
     int limit = 20,

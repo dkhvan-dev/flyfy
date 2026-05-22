@@ -348,7 +348,16 @@ func toInitMeResponse(aggregate *app.UserAggregate) dto.InitMeResponse {
 			Count:          aggregate.Followers.FollowersCount,
 			IsFollowedByMe: aggregate.Followers.IsFollowedByMe,
 		},
+		Friendship: toUserFriendshipResponse(aggregate.Friendship),
 	}
+}
+
+func toUserFriendshipResponse(friendship app.UserFriendshipSummary) dto.UserFriendshipResponse {
+	status := friendship.Status
+	if status == "" {
+		status = app.FriendshipStatusNone
+	}
+	return dto.UserFriendshipResponse{Status: string(status)}
 }
 
 func toUserResponse(user *model.User) dto.UserResponse {
@@ -519,7 +528,7 @@ func (h *Handler) handleUserActions(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/v1/users/")
 	path = strings.Trim(path, "/")
 	parts := strings.Split(path, "/")
-	if len(parts) != 2 || parts[1] != "follow" {
+	if len(parts) != 2 {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
@@ -532,9 +541,27 @@ func (h *Handler) handleUserActions(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodPost:
-		h.FollowUser(w, r, currentUser.User.ID, targetUserID)
+		switch parts[1] {
+		case "follow":
+			h.FollowUser(w, r, currentUser.User.ID, targetUserID)
+		case "friend-request":
+			h.SendFriendRequest(w, r, currentUser.User.ID, targetUserID)
+		case "friendship":
+			h.AcceptFriendRequest(w, r, currentUser.User.ID, targetUserID)
+		default:
+			writeError(w, http.StatusNotFound, "not found")
+		}
 	case http.MethodDelete:
-		h.UnfollowUser(w, r, currentUser.User.ID, targetUserID)
+		switch parts[1] {
+		case "follow":
+			h.UnfollowUser(w, r, currentUser.User.ID, targetUserID)
+		case "friend-request":
+			h.CancelFriendRequest(w, r, currentUser.User.ID, targetUserID)
+		case "friendship":
+			h.RemoveFriend(w, r, currentUser.User.ID, targetUserID)
+		default:
+			writeError(w, http.StatusNotFound, "not found")
+		}
 	default:
 		writeError(w, http.StatusNotFound, "not found")
 	}
@@ -584,6 +611,82 @@ func (h *Handler) UnfollowUser(
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) SendFriendRequest(
+	w http.ResponseWriter,
+	r *http.Request,
+	requesterUserID uuid.UUID,
+	addresseeUserID uuid.UUID,
+) {
+	summary, err := h.useCase.SendFriendRequest(r.Context(), requesterUserID, addresseeUserID)
+	if err != nil {
+		h.writeFriendshipActionError(w, err, "failed to send friend request")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toUserFriendshipResponse(summary))
+}
+
+func (h *Handler) CancelFriendRequest(
+	w http.ResponseWriter,
+	r *http.Request,
+	requesterUserID uuid.UUID,
+	addresseeUserID uuid.UUID,
+) {
+	summary, err := h.useCase.CancelFriendRequest(r.Context(), requesterUserID, addresseeUserID)
+	if err != nil {
+		h.writeFriendshipActionError(w, err, "failed to cancel friend request")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toUserFriendshipResponse(summary))
+}
+
+func (h *Handler) AcceptFriendRequest(
+	w http.ResponseWriter,
+	r *http.Request,
+	addresseeUserID uuid.UUID,
+	requesterUserID uuid.UUID,
+) {
+	summary, err := h.useCase.AcceptFriendRequest(r.Context(), addresseeUserID, requesterUserID)
+	if err != nil {
+		h.writeFriendshipActionError(w, err, "failed to accept friend request")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toUserFriendshipResponse(summary))
+}
+
+func (h *Handler) RemoveFriend(
+	w http.ResponseWriter,
+	r *http.Request,
+	viewerUserID uuid.UUID,
+	targetUserID uuid.UUID,
+) {
+	summary, err := h.useCase.RemoveFriend(r.Context(), viewerUserID, targetUserID)
+	if err != nil {
+		h.writeFriendshipActionError(w, err, "failed to remove friend")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toUserFriendshipResponse(summary))
+}
+
+func (h *Handler) writeFriendshipActionError(w http.ResponseWriter, err error, fallback string) {
+	switch {
+	case errors.Is(err, app.ErrInvalidUserID),
+		errors.Is(err, app.ErrCannotFriendSelf):
+		writeError(w, http.StatusBadRequest, err.Error())
+	case errors.Is(err, app.ErrFriendshipFeatureUnavailable):
+		writeError(w, http.StatusServiceUnavailable, err.Error())
+	case errors.Is(err, app.ErrFriendRequestNotFound):
+		writeError(w, http.StatusConflict, err.Error())
+	case errors.Is(err, app.ErrUserNotFound):
+		writeError(w, http.StatusNotFound, err.Error())
+	default:
+		writeError(w, http.StatusInternalServerError, fallback)
+	}
 }
 
 func (h *Handler) UpdateMySettings(w http.ResponseWriter, r *http.Request) {

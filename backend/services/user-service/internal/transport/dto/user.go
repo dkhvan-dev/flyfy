@@ -7,11 +7,16 @@ type InitMeResponse struct {
 	Reputation UserReputationResponse `json:"reputation"`
 	Roles      []string               `json:"roles"`
 	Followers  UserFollowResponse     `json:"followers"`
+	Friendship UserFriendshipResponse `json:"friendship"`
 }
 
 type UserFollowResponse struct {
 	Count          int  `json:"count"`
 	IsFollowedByMe bool `json:"isFollowedByMe"`
+}
+
+type UserFriendshipResponse struct {
+	Status string `json:"status"`
 }
 
 type UserResponse struct {

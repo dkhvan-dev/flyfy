@@ -21,11 +21,25 @@ type UserAggregate struct {
 	Reputation *model.UserReputation
 	Roles      []*model.UserSystemRole
 	Followers  UserFollowSummary
+	Friendship UserFriendshipSummary
 }
 
 type UserFollowSummary struct {
 	FollowersCount int
 	IsFollowedByMe bool
+}
+
+type FriendshipStatus string
+
+const (
+	FriendshipStatusNone            FriendshipStatus = "NONE"
+	FriendshipStatusOutgoingRequest FriendshipStatus = "OUTGOING_REQUEST"
+	FriendshipStatusIncomingRequest FriendshipStatus = "INCOMING_REQUEST"
+	FriendshipStatusFriends         FriendshipStatus = "FRIENDS"
+)
+
+type UserFriendshipSummary struct {
+	Status FriendshipStatus
 }
 
 type UserUseCase struct {
@@ -209,6 +223,14 @@ func (u *UserUseCase) getAggregateByUserIDForViewer(
 		}
 	}
 
+	friendship := UserFriendshipSummary{Status: FriendshipStatusNone}
+	if viewerUserID != nil && *viewerUserID != uuid.Nil && *viewerUserID != userID {
+		friendship, err = u.GetFriendshipSummary(ctx, *viewerUserID, userID)
+		if err != nil {
+			return nil, fmt.Errorf("get friendship summary: %w", err)
+		}
+	}
+
 	return &UserAggregate{
 		User:       user,
 		Profile:    profile,
@@ -219,6 +241,7 @@ func (u *UserUseCase) getAggregateByUserIDForViewer(
 			FollowersCount: followersCount,
 			IsFollowedByMe: isFollowedByMe,
 		},
+		Friendship: friendship,
 	}, nil
 }
 
@@ -283,6 +306,189 @@ func (u *UserUseCase) UnfollowUser(
 	}
 
 	return nil
+}
+
+func (u *UserUseCase) GetFriendshipSummary(
+	ctx context.Context,
+	viewerUserID uuid.UUID,
+	targetUserID uuid.UUID,
+) (UserFriendshipSummary, error) {
+	if viewerUserID == uuid.Nil || targetUserID == uuid.Nil {
+		return UserFriendshipSummary{}, ErrInvalidUserID
+	}
+	if viewerUserID == targetUserID {
+		return UserFriendshipSummary{Status: FriendshipStatusNone}, nil
+	}
+
+	friendship, err := u.repo.GetFriendship(ctx, viewerUserID, targetUserID)
+	if err != nil {
+		return UserFriendshipSummary{}, fmt.Errorf("get friendship: %w", err)
+	}
+	return friendshipSummaryForViewer(friendship, viewerUserID), nil
+}
+
+func (u *UserUseCase) SendFriendRequest(
+	ctx context.Context,
+	requesterUserID uuid.UUID,
+	addresseeUserID uuid.UUID,
+) (UserFriendshipSummary, error) {
+	if requesterUserID == uuid.Nil || addresseeUserID == uuid.Nil {
+		return UserFriendshipSummary{}, ErrInvalidUserID
+	}
+	if requesterUserID == addresseeUserID {
+		return UserFriendshipSummary{}, ErrCannotFriendSelf
+	}
+
+	addresseeUser, err := u.repo.GetUserByID(ctx, addresseeUserID)
+	if err != nil {
+		return UserFriendshipSummary{}, fmt.Errorf("get addressee user by id: %w", err)
+	}
+	if addresseeUser == nil || addresseeUser.IsDeleted {
+		return UserFriendshipSummary{}, ErrUserNotFound
+	}
+
+	existing, err := u.repo.GetFriendship(ctx, requesterUserID, addresseeUserID)
+	if err != nil {
+		return UserFriendshipSummary{}, fmt.Errorf("get existing friendship: %w", err)
+	}
+	if existing != nil {
+		return friendshipSummaryForViewer(existing, requesterUserID), nil
+	}
+
+	if err = u.repo.CreateFriendRequest(ctx, requesterUserID, addresseeUserID); err != nil {
+		if errors.Is(err, ErrFriendshipAlreadyExists) {
+			return u.GetFriendshipSummary(ctx, requesterUserID, addresseeUserID)
+		}
+		return UserFriendshipSummary{}, fmt.Errorf("create friend request: %w", err)
+	}
+
+	return u.GetFriendshipSummary(ctx, requesterUserID, addresseeUserID)
+}
+
+func (u *UserUseCase) AcceptFriendRequest(
+	ctx context.Context,
+	addresseeUserID uuid.UUID,
+	requesterUserID uuid.UUID,
+) (UserFriendshipSummary, error) {
+	if addresseeUserID == uuid.Nil || requesterUserID == uuid.Nil {
+		return UserFriendshipSummary{}, ErrInvalidUserID
+	}
+	if addresseeUserID == requesterUserID {
+		return UserFriendshipSummary{}, ErrCannotFriendSelf
+	}
+
+	existing, err := u.repo.GetFriendship(ctx, addresseeUserID, requesterUserID)
+	if err != nil {
+		return UserFriendshipSummary{}, fmt.Errorf("get existing friendship: %w", err)
+	}
+	if existing == nil {
+		return UserFriendshipSummary{}, ErrFriendRequestNotFound
+	}
+	if existing.Status == enum.FriendshipStatusAccepted {
+		return UserFriendshipSummary{Status: FriendshipStatusFriends}, nil
+	}
+	if existing.RequesterUserID != requesterUserID ||
+		existing.AddresseeUserID != addresseeUserID ||
+		existing.Status != enum.FriendshipStatusPending {
+		return UserFriendshipSummary{}, ErrFriendRequestNotFound
+	}
+
+	if err = u.repo.AcceptFriendRequest(ctx, requesterUserID, addresseeUserID); err != nil {
+		return UserFriendshipSummary{}, fmt.Errorf("accept friend request: %w", err)
+	}
+
+	return u.GetFriendshipSummary(ctx, addresseeUserID, requesterUserID)
+}
+
+func (u *UserUseCase) CancelFriendRequest(
+	ctx context.Context,
+	requesterUserID uuid.UUID,
+	addresseeUserID uuid.UUID,
+) (UserFriendshipSummary, error) {
+	if requesterUserID == uuid.Nil || addresseeUserID == uuid.Nil {
+		return UserFriendshipSummary{}, ErrInvalidUserID
+	}
+	if requesterUserID == addresseeUserID {
+		return UserFriendshipSummary{}, ErrCannotFriendSelf
+	}
+
+	existing, err := u.repo.GetFriendship(ctx, requesterUserID, addresseeUserID)
+	if err != nil {
+		return UserFriendshipSummary{}, fmt.Errorf("get existing friendship: %w", err)
+	}
+	if existing == nil {
+		return UserFriendshipSummary{Status: FriendshipStatusNone}, nil
+	}
+	if existing.Status == enum.FriendshipStatusPending &&
+		((existing.RequesterUserID == requesterUserID &&
+			existing.AddresseeUserID == addresseeUserID) ||
+			(existing.RequesterUserID == addresseeUserID &&
+				existing.AddresseeUserID == requesterUserID)) {
+		if err = u.repo.DeleteFriendship(ctx, requesterUserID, addresseeUserID); err != nil {
+			return UserFriendshipSummary{}, fmt.Errorf("delete friend request: %w", err)
+		}
+		return UserFriendshipSummary{Status: FriendshipStatusNone}, nil
+	}
+
+	return friendshipSummaryForViewer(existing, requesterUserID), nil
+}
+
+func (u *UserUseCase) DeclineFriendRequest(
+	ctx context.Context,
+	addresseeUserID uuid.UUID,
+	requesterUserID uuid.UUID,
+) (UserFriendshipSummary, error) {
+	return u.CancelFriendRequest(ctx, addresseeUserID, requesterUserID)
+}
+
+func (u *UserUseCase) RemoveFriend(
+	ctx context.Context,
+	viewerUserID uuid.UUID,
+	targetUserID uuid.UUID,
+) (UserFriendshipSummary, error) {
+	if viewerUserID == uuid.Nil || targetUserID == uuid.Nil {
+		return UserFriendshipSummary{}, ErrInvalidUserID
+	}
+	if viewerUserID == targetUserID {
+		return UserFriendshipSummary{}, ErrCannotFriendSelf
+	}
+
+	existing, err := u.repo.GetFriendship(ctx, viewerUserID, targetUserID)
+	if err != nil {
+		return UserFriendshipSummary{}, fmt.Errorf("get existing friendship: %w", err)
+	}
+	if existing == nil {
+		return UserFriendshipSummary{Status: FriendshipStatusNone}, nil
+	}
+	if existing.Status != enum.FriendshipStatusAccepted {
+		return friendshipSummaryForViewer(existing, viewerUserID), nil
+	}
+
+	if err = u.repo.DeleteFriendship(ctx, viewerUserID, targetUserID); err != nil {
+		return UserFriendshipSummary{}, fmt.Errorf("delete friendship: %w", err)
+	}
+	return UserFriendshipSummary{Status: FriendshipStatusNone}, nil
+}
+
+func friendshipSummaryForViewer(
+	friendship *model.UserFriendship,
+	viewerUserID uuid.UUID,
+) UserFriendshipSummary {
+	if friendship == nil {
+		return UserFriendshipSummary{Status: FriendshipStatusNone}
+	}
+	if friendship.Status == enum.FriendshipStatusAccepted {
+		return UserFriendshipSummary{Status: FriendshipStatusFriends}
+	}
+	if friendship.Status == enum.FriendshipStatusPending {
+		if friendship.RequesterUserID == viewerUserID {
+			return UserFriendshipSummary{Status: FriendshipStatusOutgoingRequest}
+		}
+		if friendship.AddresseeUserID == viewerUserID {
+			return UserFriendshipSummary{Status: FriendshipStatusIncomingRequest}
+		}
+	}
+	return UserFriendshipSummary{Status: FriendshipStatusNone}
 }
 
 type UpdateProfileInput struct {

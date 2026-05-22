@@ -490,6 +490,51 @@ func (r *PGUserRepository) IsFollowing(
 	return exists, nil
 }
 
+func (r *PGUserRepository) GetFriendship(
+	ctx context.Context,
+	userAID uuid.UUID,
+	userBID uuid.UUID,
+) (*model.UserFriendship, error) {
+	const query = `
+		SELECT id,
+		       requester_user_id,
+		       addressee_user_id,
+		       status,
+		       requested_at,
+		       responded_at,
+		       updated_at
+		FROM user_friendships
+		WHERE (requester_user_id = $1 AND addressee_user_id = $2)
+		   OR (requester_user_id = $2 AND addressee_user_id = $1)
+		LIMIT 1
+	`
+
+	var (
+		item      model.UserFriendship
+		statusRaw string
+	)
+	if err := r.pool.QueryRow(ctx, query, userAID, userBID).Scan(
+		&item.ID,
+		&item.RequesterUserID,
+		&item.AddresseeUserID,
+		&statusRaw,
+		&item.RequestedAt,
+		&item.RespondedAt,
+		&item.UpdatedAt,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		if isUndefinedRelation(err, "user_friendships") {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get friendship: %w", err)
+	}
+
+	item.Status = enum.FriendshipStatus(statusRaw)
+	return &item, nil
+}
+
 func (r *PGUserRepository) UpdateProfile(ctx context.Context, profile *model.UserProfile) error {
 	const query = `
 		UPDATE user_profiles
@@ -574,6 +619,86 @@ func (r *PGUserRepository) UnfollowUser(
 			return app.ErrFollowFeatureUnavailable
 		}
 		return fmt.Errorf("delete user follow: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PGUserRepository) CreateFriendRequest(
+	ctx context.Context,
+	requesterUserID uuid.UUID,
+	addresseeUserID uuid.UUID,
+) error {
+	const query = `
+		INSERT INTO user_friendships (
+			requester_user_id,
+			addressee_user_id,
+			status,
+			requested_at,
+			updated_at
+		)
+		VALUES ($1, $2, 'PENDING', NOW(), NOW())
+	`
+
+	if _, err := r.pool.Exec(ctx, query, requesterUserID, addresseeUserID); err != nil {
+		if isUndefinedRelation(err, "user_friendships") {
+			return app.ErrFriendshipFeatureUnavailable
+		}
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return app.ErrFriendshipAlreadyExists
+		}
+		return fmt.Errorf("insert friend request: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PGUserRepository) AcceptFriendRequest(
+	ctx context.Context,
+	requesterUserID uuid.UUID,
+	addresseeUserID uuid.UUID,
+) error {
+	const query = `
+		UPDATE user_friendships
+		SET status = 'ACCEPTED',
+		    responded_at = NOW(),
+		    updated_at = NOW()
+		WHERE requester_user_id = $1
+		  AND addressee_user_id = $2
+		  AND status = 'PENDING'
+	`
+
+	tag, err := r.pool.Exec(ctx, query, requesterUserID, addresseeUserID)
+	if err != nil {
+		if isUndefinedRelation(err, "user_friendships") {
+			return app.ErrFriendshipFeatureUnavailable
+		}
+		return fmt.Errorf("accept friend request: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return app.ErrFriendRequestNotFound
+	}
+
+	return nil
+}
+
+func (r *PGUserRepository) DeleteFriendship(
+	ctx context.Context,
+	userAID uuid.UUID,
+	userBID uuid.UUID,
+) error {
+	const query = `
+		DELETE FROM user_friendships
+		WHERE (requester_user_id = $1 AND addressee_user_id = $2)
+		   OR (requester_user_id = $2 AND addressee_user_id = $1)
+	`
+
+	if _, err := r.pool.Exec(ctx, query, userAID, userBID); err != nil {
+		if isUndefinedRelation(err, "user_friendships") {
+			return app.ErrFriendshipFeatureUnavailable
+		}
+		return fmt.Errorf("delete friendship: %w", err)
 	}
 
 	return nil

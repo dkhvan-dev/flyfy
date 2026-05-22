@@ -65,10 +65,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _publishedStoriesCountKey = '';
   String _guideReviewsKey = '';
   String _directGuideReviewsKey = '';
-  String _followOverrideUserId = '';
+  String _relationshipOverrideUserId = '';
   int? _followersCountOverride;
   bool? _isFollowedByMeOverride;
+  UserFriendshipStatus? _friendshipStatusOverride;
   bool _isFollowActionLoading = false;
+  bool _isFriendshipActionLoading = false;
   bool _isMessageActionLoading = false;
 
   @override
@@ -87,10 +89,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _configureForeignProfileFuture() {
-    _followOverrideUserId = '';
+    _relationshipOverrideUserId = '';
     _followersCountOverride = null;
     _isFollowedByMeOverride = null;
+    _friendshipStatusOverride = null;
     _isFollowActionLoading = false;
+    _isFriendshipActionLoading = false;
     _isMessageActionLoading = false;
     _publishedStoriesCountFuture = null;
     _publishedStoriesCountKey = '';
@@ -113,14 +117,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _foreignProfileFuture = _profileApi.getUserById(userId);
   }
 
-  UserProfileVm _profileWithFollowOverrides(UserProfileVm profile) {
-    if (_followOverrideUserId != profile.userId.trim()) {
+  UserProfileVm _profileWithRelationshipOverrides(UserProfileVm profile) {
+    if (_relationshipOverrideUserId != profile.userId.trim()) {
       return profile;
     }
 
     return profile.copyWith(
       followersCount: _followersCountOverride,
       isFollowedByMe: _isFollowedByMeOverride,
+      friendshipStatus: _friendshipStatusOverride,
     );
   }
 
@@ -131,13 +136,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final currentProfile = _profileWithFollowOverrides(profile);
+    final currentProfile = _profileWithRelationshipOverrides(profile);
     final willFollow = !currentProfile.isFollowedByMe;
+    if (!willFollow) {
+      final confirmed = await _confirmUnfollowUser();
+      if (!confirmed || !mounted) {
+        return;
+      }
+    }
+
     final nextFollowersCount =
         currentProfile.followersCount + (willFollow ? 1 : -1);
 
     setState(() {
-      _followOverrideUserId = userId;
+      _relationshipOverrideUserId = userId;
       _isFollowedByMeOverride = willFollow;
       _followersCountOverride = nextFollowersCount < 0 ? 0 : nextFollowersCount;
       _isFollowActionLoading = true;
@@ -152,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _followOverrideUserId = userId;
+        _relationshipOverrideUserId = userId;
         _isFollowedByMeOverride = currentProfile.isFollowedByMe;
         _followersCountOverride = currentProfile.followersCount;
       });
@@ -166,6 +178,164 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     }
+  }
+
+  Future<void> _handleFriendshipAction(UserProfileVm profile) async {
+    final l10n = AppLocalizations.of(context)!;
+    final userId = profile.userId.trim();
+    if (userId.isEmpty || _isFriendshipActionLoading) {
+      return;
+    }
+
+    final currentProfile = _profileWithRelationshipOverrides(profile);
+    final currentStatus = currentProfile.friendshipStatus;
+    if (currentStatus == UserFriendshipStatus.friends) {
+      final confirmed = await _confirmRemoveFriend();
+      if (!confirmed || !mounted) {
+        return;
+      }
+    }
+
+    final optimisticStatus = _optimisticFriendshipStatus(currentStatus);
+
+    setState(() {
+      _relationshipOverrideUserId = userId;
+      _friendshipStatusOverride = optimisticStatus;
+      _isFriendshipActionLoading = true;
+    });
+
+    try {
+      final resolvedStatus = switch (currentStatus) {
+        UserFriendshipStatus.none => await _profileApi.sendFriendRequest(
+            userId,
+          ),
+        UserFriendshipStatus.outgoingRequest =>
+          await _profileApi.cancelFriendRequest(userId),
+        UserFriendshipStatus.incomingRequest =>
+          await _profileApi.acceptFriendRequest(userId),
+        UserFriendshipStatus.friends => await _profileApi.removeFriend(userId),
+      };
+
+      if (!mounted) return;
+      setState(() {
+        _relationshipOverrideUserId = userId;
+        _friendshipStatusOverride = resolvedStatus;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _relationshipOverrideUserId = userId;
+        _friendshipStatusOverride = currentStatus;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.profileFriendshipUpdateFailed)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFriendshipActionLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleDeclineFriendRequest(UserProfileVm profile) async {
+    final l10n = AppLocalizations.of(context)!;
+    final userId = profile.userId.trim();
+    if (userId.isEmpty || _isFriendshipActionLoading) {
+      return;
+    }
+
+    final currentProfile = _profileWithRelationshipOverrides(profile);
+    if (currentProfile.friendshipStatus !=
+        UserFriendshipStatus.incomingRequest) {
+      return;
+    }
+
+    setState(() {
+      _relationshipOverrideUserId = userId;
+      _friendshipStatusOverride = UserFriendshipStatus.none;
+      _isFriendshipActionLoading = true;
+    });
+
+    try {
+      final resolvedStatus = await _profileApi.declineFriendRequest(userId);
+      if (!mounted) return;
+      setState(() {
+        _relationshipOverrideUserId = userId;
+        _friendshipStatusOverride = resolvedStatus;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _relationshipOverrideUserId = userId;
+        _friendshipStatusOverride = currentProfile.friendshipStatus;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.profileFriendshipUpdateFailed)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFriendshipActionLoading = false;
+        });
+      }
+    }
+  }
+
+  UserFriendshipStatus _optimisticFriendshipStatus(
+    UserFriendshipStatus status,
+  ) {
+    return switch (status) {
+      UserFriendshipStatus.none => UserFriendshipStatus.outgoingRequest,
+      UserFriendshipStatus.outgoingRequest => UserFriendshipStatus.none,
+      UserFriendshipStatus.incomingRequest => UserFriendshipStatus.friends,
+      UserFriendshipStatus.friends => UserFriendshipStatus.none,
+    };
+  }
+
+  Future<bool> _confirmRemoveFriend() async {
+    final l10n = AppLocalizations.of(context)!;
+    return _showRelationshipConfirmDialog(
+      title: l10n.profileRemoveFriendTitle,
+      description: l10n.profileRemoveFriendDescription,
+      confirmLabel: l10n.profileRemoveFriendConfirm,
+      icon: Icons.person_remove_alt_1_rounded,
+    );
+  }
+
+  Future<bool> _confirmUnfollowUser() async {
+    final l10n = AppLocalizations.of(context)!;
+    return _showRelationshipConfirmDialog(
+      title: l10n.profileUnfollowTitle,
+      description: l10n.profileUnfollowDescription,
+      confirmLabel: l10n.profileUnfollowConfirm,
+      icon: Icons.visibility_off_rounded,
+    );
+  }
+
+  Future<bool> _showRelationshipConfirmDialog({
+    required String title,
+    required String description,
+    required String confirmLabel,
+    required IconData icon,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return _ProfileRelationshipConfirmDialog(
+          title: title,
+          description: description,
+          cancelLabel: l10n.cancel,
+          confirmLabel: confirmLabel,
+          icon: icon,
+          onCancel: () => Navigator.of(dialogContext).pop(false),
+          onConfirm: () => Navigator.of(dialogContext).pop(true),
+        );
+      },
+    );
+    return result == true;
   }
 
   Future<void> _openDirectChat(UserProfileVm profile) async {
@@ -412,7 +582,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    final effectiveProfile = _profileWithFollowOverrides(profile);
+    final effectiveProfile = _profileWithRelationshipOverrides(profile);
 
     return FutureBuilder<_ProfileExtras>(
       future: _extrasFutureFor(effectiveProfile),
@@ -427,27 +597,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : null,
           directGuideReviewsFuture:
               !isOwnProfile && extras.guide?.isVerified == true
-              ? _directGuideReviewsFutureFor(effectiveProfile)
-              : null,
+                  ? _directGuideReviewsFutureFor(effectiveProfile)
+                  : null,
           recentActivitiesFuture: isOwnProfile
               ? null
               : _recentActivitiesFutureFor(effectiveProfile),
-          popularStoriesFuture: isOwnProfile
-              ? null
-              : _popularStoriesFutureFor(effectiveProfile),
+          popularStoriesFuture:
+              isOwnProfile ? null : _popularStoriesFutureFor(effectiveProfile),
           activityCountFuture: _activityCountFutureFor(effectiveProfile),
           publishedStoriesCountFuture: _publishedStoriesCountFutureFor(
             effectiveProfile,
           ),
           isOwnProfile: isOwnProfile,
           isFollowActionLoading: _isFollowActionLoading,
+          isFriendshipActionLoading: _isFriendshipActionLoading,
           isMessageActionLoading: _isMessageActionLoading,
-          onToggleFollow: isOwnProfile
+          onToggleFollow:
+              isOwnProfile ? null : () => _toggleFollow(effectiveProfile),
+          onFriendshipAction: isOwnProfile
               ? null
-              : () => _toggleFollow(effectiveProfile),
-          onMessageTap: isOwnProfile
+              : () => _handleFriendshipAction(effectiveProfile),
+          onDeclineFriendship: isOwnProfile
               ? null
-              : () => _openDirectChat(effectiveProfile),
+              : () => _handleDeclineFriendRequest(effectiveProfile),
+          onMessageTap:
+              isOwnProfile ? null : () => _openDirectChat(effectiveProfile),
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
@@ -471,8 +645,11 @@ class _ProfileBody extends StatelessWidget {
     required this.publishedStoriesCountFuture,
     required this.isOwnProfile,
     required this.isFollowActionLoading,
+    required this.isFriendshipActionLoading,
     required this.isMessageActionLoading,
     required this.onToggleFollow,
+    required this.onFriendshipAction,
+    required this.onDeclineFriendship,
     required this.onMessageTap,
     required this.onSettingsTap,
     required this.onCopyProfileLink,
@@ -491,8 +668,11 @@ class _ProfileBody extends StatelessWidget {
   final Future<int> publishedStoriesCountFuture;
   final bool isOwnProfile;
   final bool isFollowActionLoading;
+  final bool isFriendshipActionLoading;
   final bool isMessageActionLoading;
   final Future<void> Function()? onToggleFollow;
+  final Future<void> Function()? onFriendshipAction;
+  final Future<void> Function()? onDeclineFriendship;
   final Future<void> Function()? onMessageTap;
   final VoidCallback? onSettingsTap;
   final VoidCallback onCopyProfileLink;
@@ -559,9 +739,13 @@ class _ProfileBody extends StatelessWidget {
           SizedBox(height: profileScaled(context, 22, min: 18, max: 24)),
           _ForeignProfileActions(
             isFollowedByMe: profile.isFollowedByMe,
+            friendshipStatus: profile.friendshipStatus,
             isBusy: isFollowActionLoading,
+            isFriendshipActionLoading: isFriendshipActionLoading,
             isMessageBusy: isMessageActionLoading,
             onToggleFollow: onToggleFollow,
+            onFriendshipAction: onFriendshipAction,
+            onDeclineFriendship: onDeclineFriendship,
             onMessageTap: onMessageTap,
           ),
         ],
@@ -770,13 +954,10 @@ class _ProfileHero extends StatelessWidget {
     }
     final normalized = value.replaceAll(RegExp(r'[_-]+'), ' ');
     final words = normalized.split(RegExp(r'\s+'));
-    return words
-        .where((word) => word.isNotEmpty)
-        .map((word) {
-          final lower = word.toLowerCase();
-          return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
-        })
-        .join(' ');
+    return words.where((word) => word.isNotEmpty).map((word) {
+      final lower = word.toLowerCase();
+      return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+    }).join(' ');
   }
 }
 
@@ -1029,20 +1210,20 @@ class _BecomeGuideCard extends StatelessWidget {
     final title = isPending
         ? l10n.guideVerificationPendingTitle
         : isRejected
-        ? l10n.guideVerificationRejectedTitle
-        : l10n.profileBecomeGuideTitle;
+            ? l10n.guideVerificationRejectedTitle
+            : l10n.profileBecomeGuideTitle;
     final subtitle = isPending
         ? l10n.guideVerificationPendingSubtitle
         : isRejected
-        ? l10n.guideVerificationRejectedSubtitle
-        : isDraft
-        ? l10n.guideVerificationDraftSubtitle
-        : l10n.profileBecomeGuideSubtitle;
+            ? l10n.guideVerificationRejectedSubtitle
+            : isDraft
+                ? l10n.guideVerificationDraftSubtitle
+                : l10n.profileBecomeGuideSubtitle;
     final buttonLabel = isPending
         ? l10n.guideVerificationViewApplicationButton
         : isRejected || isDraft
-        ? l10n.guideVerificationContinueButton
-        : l10n.becomeGuideButton;
+            ? l10n.guideVerificationContinueButton
+            : l10n.becomeGuideButton;
 
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
@@ -1271,109 +1452,588 @@ class _ProfileStatCard extends StatelessWidget {
   }
 }
 
+class _ProfileRelationshipConfirmDialog extends StatelessWidget {
+  const _ProfileRelationshipConfirmDialog({
+    required this.title,
+    required this.description,
+    required this.cancelLabel,
+    required this.confirmLabel,
+    required this.icon,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  final String title;
+  final String description;
+  final String cancelLabel;
+  final String confirmLabel;
+  final IconData icon;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final isCompact = mediaQuery.size.width < 375;
+    final maxDialogHeight =
+        (mediaQuery.size.height - mediaQuery.viewPadding.vertical - 48)
+            .clamp(300.0, mediaQuery.size.height)
+            .toDouble();
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 16 : 24,
+        vertical: 24,
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 386, maxHeight: maxDialogHeight),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(
+            profileScaled(context, 28, min: 24, max: 28),
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF2B1808).withValues(alpha: 0.99),
+                  const Color(0xFF201208),
+                ],
+              ),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.34),
+                  blurRadius: 34,
+                  offset: const Offset(0, 18),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  isCompact ? 22 : 26,
+                  isCompact ? 22 : 26,
+                  isCompact ? 22 : 26,
+                  isCompact ? 20 : 24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: profileScaled(context, 56, min: 52, max: 58),
+                      height: profileScaled(context, 56, min: 52, max: 58),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.accent.withValues(alpha: 0.95),
+                            const Color(0xFFFFC46A),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.22),
+                            blurRadius: 22,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        icon,
+                        color: const Color(0xFF1D1711),
+                        size: profileScaled(context, 27, min: 25, max: 28),
+                      ),
+                    ),
+                    SizedBox(
+                        height: profileScaled(context, 20, min: 18, max: 20)),
+                    Text(
+                      title,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: profileScaled(context, 23, min: 21, max: 23),
+                        height: 1.12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(
+                        height: profileScaled(context, 10, min: 8, max: 10)),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        color: profileTextSoft.withValues(alpha: 0.9),
+                        fontSize: profileScaled(context, 15, min: 14, max: 15),
+                        height: 1.45,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(
+                        height: profileScaled(context, 26, min: 22, max: 26)),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final textScale =
+                            MediaQuery.of(context).textScaler.scale(1);
+                        final shouldStack =
+                            constraints.maxWidth < 318 || textScale > 1.25;
+                        final actionWidth = shouldStack
+                            ? constraints.maxWidth
+                            : (constraints.maxWidth - 12) / 2;
+
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          alignment: WrapAlignment.end,
+                          children: [
+                            SizedBox(
+                              width: actionWidth,
+                              child: _ActivitiesStyleConfirmAction(
+                                label: cancelLabel,
+                                onTap: onCancel,
+                                isPrimary: false,
+                              ),
+                            ),
+                            SizedBox(
+                              width: actionWidth,
+                              child: _ActivitiesStyleConfirmAction(
+                                label: confirmLabel,
+                                onTap: onConfirm,
+                                isPrimary: true,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivitiesStyleConfirmAction extends StatelessWidget {
+  const _ActivitiesStyleConfirmAction({
+    required this.label,
+    required this.onTap,
+    required this.isPrimary,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor = isPrimary
+        ? const Color(0xFF1D1711)
+        : AppColors.textPrimary.withValues(alpha: 0.92);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: isPrimary
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFB347), Color(0xFFFFD083)],
+                    )
+                  : null,
+              color: isPrimary ? null : Colors.white.withValues(alpha: 0.055),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isPrimary
+                    ? Colors.transparent
+                    : AppColors.accent.withValues(alpha: 0.20),
+              ),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: foregroundColor,
+                    fontSize: profileScaled(context, 15, min: 14, max: 15),
+                    height: 1.1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ForeignProfileActions extends StatelessWidget {
   const _ForeignProfileActions({
     required this.isFollowedByMe,
+    required this.friendshipStatus,
     required this.isBusy,
+    required this.isFriendshipActionLoading,
     required this.isMessageBusy,
     required this.onToggleFollow,
+    required this.onFriendshipAction,
+    required this.onDeclineFriendship,
     required this.onMessageTap,
   });
 
   final bool isFollowedByMe;
+  final UserFriendshipStatus friendshipStatus;
   final bool isBusy;
+  final bool isFriendshipActionLoading;
   final bool isMessageBusy;
   final Future<void> Function()? onToggleFollow;
+  final Future<void> Function()? onFriendshipAction;
+  final Future<void> Function()? onDeclineFriendship;
   final Future<void> Function()? onMessageTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Row(
+    final gap = profileScaled(context, 12, min: 10, max: 14);
+    final hasIncomingRequest =
+        friendshipStatus == UserFriendshipStatus.incomingRequest;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: isFollowedByMe
-              ? OutlinedButton(
-                  onPressed: isBusy
-                      ? null
-                      : () async {
-                          await onToggleFollow?.call();
-                        },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: AppColors.accent.withValues(alpha: 0.45),
-                    ),
-                    foregroundColor: AppColors.accent,
-                    backgroundColor: AppColors.accent.withValues(alpha: 0.08),
-                    minimumSize: Size(
-                      double.infinity,
-                      profileScaled(context, 52, min: 48, max: 54),
-                    ),
-                    disabledForegroundColor: AppColors.accent.withValues(
-                      alpha: 0.6,
-                    ),
-                  ),
-                  child: Text(
-                    isBusy
-                        ? l10n.profileFollowingAction
-                        : l10n.profileFollowingAction,
-                  ),
-                )
-              : FilledButton(
-                  onPressed: isBusy
-                      ? null
-                      : () async {
-                          await onToggleFollow?.call();
-                        },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: AppColors.textPrimary,
-                    minimumSize: Size(
-                      double.infinity,
-                      profileScaled(context, 52, min: 48, max: 54),
-                    ),
-                    disabledBackgroundColor: profileSurfaceMuted,
-                    disabledForegroundColor: profileTextSoft,
-                  ),
-                  child: Text(
-                    isBusy
-                        ? l10n.profileFollowingAction
-                        : l10n.profileFollowAction,
-                  ),
-                ),
-        ),
-        SizedBox(width: profileScaled(context, 14, min: 10, max: 16)),
-        Expanded(
-          child: OutlinedButton(
-            onPressed: isMessageBusy
-                ? null
-                : () async {
-                    await onMessageTap?.call();
-                  },
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-              foregroundColor: profileTextSoft,
-              backgroundColor: profileSurfaceMuted.withValues(alpha: 0.62),
-              minimumSize: Size(
-                double.infinity,
-                profileScaled(context, 52, min: 48, max: 54),
-              ),
-              disabledForegroundColor: profileTextSoft,
-            ),
-            child: isMessageBusy
-                ? SizedBox(
-                    width: profileScaled(context, 18, min: 16, max: 18),
-                    height: profileScaled(context, 18, min: 16, max: 18),
-                    child: const CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      color: AppColors.accent,
-                    ),
-                  )
-                : Text(l10n.profileMessageAction),
-          ),
-        ),
+        if (!hasIncomingRequest) ...[
+          _ProfileActionSlot(child: _friendshipButton(context, l10n)),
+          SizedBox(height: gap),
+        ],
+        _secondaryActionRow(context, l10n, gap),
+        if (hasIncomingRequest) ...[
+          SizedBox(height: gap),
+          _incomingFriendRequestSection(context, l10n, gap),
+        ],
       ],
     );
+  }
+
+  Widget _secondaryActionRow(
+    BuildContext context,
+    AppLocalizations l10n,
+    double gap,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.of(context).textScaler.scale(1);
+        final shouldStack = constraints.maxWidth < 360 || textScale > 1.2;
+        final actionWidth = shouldStack
+            ? constraints.maxWidth
+            : (constraints.maxWidth - gap) / 2;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            SizedBox(
+              width: actionWidth,
+              child: _ProfileActionSlot(child: _followButton(context, l10n)),
+            ),
+            SizedBox(
+              width: actionWidth,
+              child: _ProfileActionSlot(child: _messageButton(context, l10n)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _incomingFriendRequestSection(
+    BuildContext context,
+    AppLocalizations l10n,
+    double gap,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(profileScaled(context, 14, min: 12, max: 16)),
+      decoration: BoxDecoration(
+        color: profileSurfaceMuted.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(
+          profileScaled(context, 18, min: 16, max: 20),
+        ),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.profileFriendRequestTitle,
+            style: TextStyle(
+              color: profileTextSoft,
+              fontSize: profileScaled(context, 13, min: 12, max: 14),
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+          SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final textScale = MediaQuery.of(context).textScaler.scale(1);
+              final shouldStack = constraints.maxWidth < 360 || textScale > 1.2;
+              final actionWidth = shouldStack
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - gap) / 2;
+
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  SizedBox(
+                    width: actionWidth,
+                    child: _ProfileActionSlot(
+                      child: _acceptFriendRequestButton(context, l10n),
+                    ),
+                  ),
+                  SizedBox(
+                    width: actionWidth,
+                    child: _ProfileActionSlot(
+                      child: _declineFriendRequestButton(context, l10n),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _followButton(BuildContext context, AppLocalizations l10n) {
+    return isFollowedByMe
+        ? OutlinedButton(
+            onPressed: isBusy
+                ? null
+                : () async {
+                    await onToggleFollow?.call();
+                  },
+            style: _outlinedActionStyle(context, accent: true),
+            child: Text(l10n.profileFollowingAction),
+          )
+        : FilledButton(
+            onPressed: isBusy
+                ? null
+                : () async {
+                    await onToggleFollow?.call();
+                  },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.textPrimary,
+              minimumSize: _actionButtonSize(context),
+              disabledBackgroundColor: profileSurfaceMuted,
+              disabledForegroundColor: profileTextSoft,
+            ),
+            child: Text(
+              isBusy ? l10n.profileFollowingAction : l10n.profileFollowAction,
+            ),
+          );
+  }
+
+  Widget _friendshipButton(BuildContext context, AppLocalizations l10n) {
+    final label = switch (friendshipStatus) {
+      UserFriendshipStatus.none => l10n.profileAddFriendAction,
+      UserFriendshipStatus.outgoingRequest =>
+        l10n.profileFriendRequestSentAction,
+      UserFriendshipStatus.incomingRequest => l10n.profileAcceptFriendAction,
+      UserFriendshipStatus.friends => l10n.profileRemoveFriendAction,
+    };
+
+    final isPrimary = friendshipStatus == UserFriendshipStatus.none ||
+        friendshipStatus == UserFriendshipStatus.incomingRequest;
+    final isDestructive = friendshipStatus == UserFriendshipStatus.friends;
+
+    final child = isFriendshipActionLoading
+        ? SizedBox(
+            width: profileScaled(context, 18, min: 16, max: 18),
+            height: profileScaled(context, 18, min: 16, max: 18),
+            child: CircularProgressIndicator(
+              strokeWidth: 2.2,
+              color: isPrimary
+                  ? AppColors.textPrimary
+                  : isDestructive
+                      ? AppColors.destruct
+                      : AppColors.accent,
+            ),
+          )
+        : Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
+
+    if (isPrimary) {
+      return FilledButton(
+        onPressed: isFriendshipActionLoading
+            ? null
+            : () async {
+                await onFriendshipAction?.call();
+              },
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: AppColors.textPrimary,
+          minimumSize: _actionButtonSize(context),
+          disabledBackgroundColor: profileSurfaceMuted,
+          disabledForegroundColor: profileTextSoft,
+        ),
+        child: child,
+      );
+    }
+
+    return OutlinedButton(
+      onPressed: isFriendshipActionLoading
+          ? null
+          : () async {
+              await onFriendshipAction?.call();
+            },
+      style: _outlinedActionStyle(context, destructive: isDestructive),
+      child: child,
+    );
+  }
+
+  Widget _acceptFriendRequestButton(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return FilledButton(
+      onPressed: isFriendshipActionLoading
+          ? null
+          : () async {
+              await onFriendshipAction?.call();
+            },
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.accent,
+        foregroundColor: AppColors.textPrimary,
+        minimumSize: _actionButtonSize(context),
+        disabledBackgroundColor: profileSurfaceMuted,
+        disabledForegroundColor: profileTextSoft,
+      ),
+      child: Text(
+        l10n.profileAcceptFriendAction,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _declineFriendRequestButton(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return OutlinedButton(
+      onPressed: isFriendshipActionLoading
+          ? null
+          : () async {
+              await onDeclineFriendship?.call();
+            },
+      style: _outlinedActionStyle(context, destructive: true),
+      child: Text(
+        l10n.profileDeclineFriendAction,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _messageButton(BuildContext context, AppLocalizations l10n) {
+    return OutlinedButton(
+      onPressed: isMessageBusy
+          ? null
+          : () async {
+              await onMessageTap?.call();
+            },
+      style: _outlinedActionStyle(context, accent: true),
+      child: isMessageBusy
+          ? SizedBox(
+              width: profileScaled(context, 18, min: 16, max: 18),
+              height: profileScaled(context, 18, min: 16, max: 18),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: AppColors.accent,
+              ),
+            )
+          : Text(l10n.profileMessageAction),
+    );
+  }
+
+  ButtonStyle _outlinedActionStyle(
+    BuildContext context, {
+    bool accent = false,
+    bool destructive = false,
+  }) {
+    final color = destructive
+        ? AppColors.destruct
+        : accent
+            ? AppColors.accent
+            : profileTextSoft;
+
+    return OutlinedButton.styleFrom(
+      side: BorderSide(
+        color: destructive
+            ? AppColors.destruct.withValues(alpha: 0.52)
+            : accent
+                ? AppColors.accent.withValues(alpha: 0.45)
+                : Colors.white.withValues(alpha: 0.08),
+      ),
+      foregroundColor: color,
+      backgroundColor: destructive
+          ? AppColors.destruct.withValues(alpha: 0.1)
+          : accent
+              ? AppColors.accent.withValues(alpha: 0.08)
+              : profileSurfaceMuted.withValues(alpha: 0.62),
+      minimumSize: _actionButtonSize(context),
+      disabledForegroundColor: destructive
+          ? AppColors.destruct.withValues(alpha: 0.62)
+          : accent
+              ? AppColors.accent.withValues(alpha: 0.6)
+              : profileTextSoft,
+    );
+  }
+
+  Size _actionButtonSize(BuildContext context) {
+    return Size(
+      double.infinity,
+      profileScaled(context, 52, min: 48, max: 54),
+    );
+  }
+}
+
+class _ProfileActionSlot extends StatelessWidget {
+  const _ProfileActionSlot({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(width: double.infinity, child: child);
   }
 }
 
@@ -1832,9 +2492,8 @@ class _ProfileGuideReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
                 backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                backgroundImage: avatarUrl == null
-                    ? null
-                    : NetworkImage(avatarUrl),
+                backgroundImage:
+                    avatarUrl == null ? null : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
@@ -1939,9 +2598,8 @@ class _ProfileDirectGuideReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
                 backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                backgroundImage: avatarUrl == null
-                    ? null
-                    : NetworkImage(avatarUrl),
+                backgroundImage:
+                    avatarUrl == null ? null : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
@@ -2116,9 +2774,8 @@ class _ProfileMenuTile extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color: effectiveDisabled
-                        ? profileDisabled
-                        : AppColors.accent,
+                    color:
+                        effectiveDisabled ? profileDisabled : AppColors.accent,
                   ),
                 ),
                 SizedBox(width: profileScaled(context, 14, min: 12, max: 14)),

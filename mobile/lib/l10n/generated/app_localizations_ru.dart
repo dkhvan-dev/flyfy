@@ -753,7 +753,52 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileFollowingAction => 'Вы подписаны';
 
   @override
+  String get profileUnfollowTitle => 'Отписаться от пользователя?';
+
+  @override
+  String get profileUnfollowDescription =>
+      'Вы перестанете отслеживать обновления этого пользователя в своей ленте.';
+
+  @override
+  String get profileUnfollowConfirm => 'Отписаться';
+
+  @override
   String get profileFollowUpdateFailed => 'Не удалось обновить подписку';
+
+  @override
+  String get profileAddFriendAction => 'Добавить в друзья';
+
+  @override
+  String get profileFriendRequestSentAction => 'Заявка отправлена';
+
+  @override
+  String get profileFriendRequestTitle => 'Запрос в друзья';
+
+  @override
+  String get profileAcceptFriendAction => 'Принять';
+
+  @override
+  String get profileDeclineFriendAction => 'Отклонить';
+
+  @override
+  String get profileFriendsAction => 'В друзьях';
+
+  @override
+  String get profileRemoveFriendAction => 'Удалить друга';
+
+  @override
+  String get profileRemoveFriendTitle => 'Удалить друга?';
+
+  @override
+  String get profileRemoveFriendDescription =>
+      'Вы больше не сможете приглашать этого пользователя как друга, пока новая заявка не будет принята.';
+
+  @override
+  String get profileRemoveFriendConfirm => 'Удалить';
+
+  @override
+  String get profileFriendshipUpdateFailed =>
+      'Не удалось обновить статус дружбы';
 
   @override
   String get profileMessageAction => 'Написать';

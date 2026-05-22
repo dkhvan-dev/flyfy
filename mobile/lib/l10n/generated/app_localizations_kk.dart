@@ -756,7 +756,52 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileFollowingAction => 'Жазылған';
 
   @override
+  String get profileUnfollowTitle => 'Пайдаланушыдан бас тарту керек пе?';
+
+  @override
+  String get profileUnfollowDescription =>
+      'Бұл пайдаланушының жаңартуларын лентаңызда бақыламайсыз.';
+
+  @override
+  String get profileUnfollowConfirm => 'Бас тарту';
+
+  @override
   String get profileFollowUpdateFailed => 'Жазылу күйін жаңарту мүмкін болмады';
+
+  @override
+  String get profileAddFriendAction => 'Дос қосу';
+
+  @override
+  String get profileFriendRequestSentAction => 'Өтінім жіберілді';
+
+  @override
+  String get profileFriendRequestTitle => 'Достық сұрауы';
+
+  @override
+  String get profileAcceptFriendAction => 'Қабылдау';
+
+  @override
+  String get profileDeclineFriendAction => 'Қабылдамау';
+
+  @override
+  String get profileFriendsAction => 'Достар';
+
+  @override
+  String get profileRemoveFriendAction => 'Досты жою';
+
+  @override
+  String get profileRemoveFriendTitle => 'Досты жою керек пе?';
+
+  @override
+  String get profileRemoveFriendDescription =>
+      'Жаңа өтінім қабылданғанша, бұл пайдаланушыны дос ретінде шақыра алмайсыз.';
+
+  @override
+  String get profileRemoveFriendConfirm => 'Жою';
+
+  @override
+  String get profileFriendshipUpdateFailed =>
+      'Достық күйін жаңарту мүмкін болмады';
 
   @override
   String get profileMessageAction => 'Жазу';
