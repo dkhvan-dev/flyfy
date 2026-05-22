@@ -3,7 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/navigation/android_back_swipe_scope.dart';
-import '../../core/network/file_api.dart';
+import '../../core/network/reference_api.dart';
+import '../../core/reference/country_filter_utils.dart';
+import '../../core/reference/currency_filter_utils.dart';
+import '../../core/reference/timezone_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/profile/models/user_profile_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -20,27 +23,106 @@ class ProfileSettingsScreen extends StatefulWidget {
 }
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
-  final FileApi _fileApi = FileApi();
+  final ReferenceApi _referenceApi = ReferenceApi();
 
-  Future<String?>? _avatarFuture;
-  String _avatarKey = '';
+  Future<_ProfileReferenceLabels>? _referenceLabelsFuture;
+  String _referenceLabelsKey = '';
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final profile = context.watch<SessionProvider>().profile;
-    final avatarFileId = (profile?.avatarFileId ?? '').trim();
-    if (_avatarFuture == null || _avatarKey != avatarFileId) {
-      _avatarKey = avatarFileId;
-      _avatarFuture = _resolveAvatarUrl(avatarFileId);
+    final lang = Localizations.localeOf(context).languageCode;
+    final nextKey = [
+      lang,
+      profile?.countryCode ?? '',
+      profile?.timezone ?? '',
+      profile?.currency ?? '',
+    ].join('|');
+
+    if (_referenceLabelsFuture == null || _referenceLabelsKey != nextKey) {
+      _referenceLabelsKey = nextKey;
+      _referenceLabelsFuture = _resolveReferenceLabels(profile, lang);
     }
   }
 
-  Future<String?> _resolveAvatarUrl(String avatarFileId) async {
-    if (avatarFileId.isEmpty) {
-      return null;
+  Future<_ProfileReferenceLabels> _resolveReferenceLabels(
+    UserProfileVm? profile,
+    String lang,
+  ) async {
+    final countryCode = normalizeReferenceCountryCode(profile?.countryCode);
+    final timezoneId = normalizeReferenceTimezoneId(profile?.timezone);
+    final currencyCode = normalizeReferenceCurrencyCode(profile?.currency);
+
+    final labels = await Future.wait<String?>([
+      _resolveCountryLabel(countryCode, lang),
+      _resolveTimezoneLabel(timezoneId, lang),
+      _resolveCurrencyLabel(currencyCode, lang),
+    ]);
+
+    return _ProfileReferenceLabels(
+      country: labels[0],
+      timezone: labels[1],
+      currency: labels[2],
+    );
+  }
+
+  Future<String?> _resolveCountryLabel(String? countryCode, String lang) async {
+    if (countryCode == null) return null;
+
+    final country = await _referenceApi.getCountry(countryCode, lang: lang);
+    final name = country?.name.trim() ?? '';
+    return name.isEmpty ? countryCode : name;
+  }
+
+  Future<String?> _resolveTimezoneLabel(String? timezoneId, String lang) async {
+    if (timezoneId == null) return null;
+
+    try {
+      final timezones = withDefaultReferenceTimezone(
+        await _referenceApi.listTimezones(lang: lang),
+        timezoneId,
+        lang: lang,
+      );
+      for (final timezone in timezones) {
+        if (normalizeReferenceTimezoneId(timezone.id) == timezoneId) {
+          return referenceTimezoneLabel(timezone, lang: lang);
+        }
+      }
+    } catch (_) {
+      // Fallback below keeps the profile usable on poor networks.
     }
-    return _fileApi.publicContentUrl(avatarFileId);
+
+    return referenceTimezoneLabel(
+      ReferenceTimezone(
+        id: timezoneId,
+        name: localizedReferenceTimezoneFallbackName(timezoneId, lang),
+      ),
+      lang: lang,
+    );
+  }
+
+  Future<String?> _resolveCurrencyLabel(
+    String? currencyCode,
+    String lang,
+  ) async {
+    if (currencyCode == null) return null;
+
+    try {
+      final currencies = withDefaultReferenceCurrency(
+        await _referenceApi.listCurrencies(lang: lang),
+        currencyCode,
+      );
+      for (final currency in currencies) {
+        if (normalizeReferenceCurrencyCode(currency.code) == currencyCode) {
+          return referenceCurrencyLabel(currency);
+        }
+      }
+    } catch (_) {
+      // Fallback below keeps the profile usable on poor networks.
+    }
+
+    return currencyCode;
   }
 
   Future<void> _openEditProfile() async {
@@ -51,8 +133,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
 
     if (updated == true && mounted) {
-      _avatarFuture = null;
-      _avatarKey = '';
+      _referenceLabelsFuture = null;
+      _referenceLabelsKey = '';
       await context.read<SessionProvider>().reloadProfile();
       if (mounted) {
         setState(() {});
@@ -138,17 +220,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               children: [
                 _SubpageTopBar(title: l10n.profileSettingsPageTitle),
                 SizedBox(height: profileScaled(context, 26, min: 18, max: 30)),
-                FutureBuilder<String?>(
-                  future: _avatarFuture,
+                ProfileSectionHeading(title: l10n.profileOverviewSectionTitle),
+                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+                FutureBuilder<_ProfileReferenceLabels>(
+                  future: _referenceLabelsFuture,
                   builder: (context, snapshot) {
-                    return _ProfileSettingsHero(
+                    return _ProfileOverviewCard(
                       profile: profile,
-                      avatarUrl: snapshot.data,
-                      onEdit: _openEditProfile,
+                      labels: snapshot.data,
                     );
                   },
                 ),
-                SizedBox(height: profileScaled(context, 30, min: 24, max: 32)),
+                SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
                 ProfileSectionHeading(title: l10n.profileAccountSectionTitle),
                 SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
                 _SettingsActionTile(
@@ -168,25 +251,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   title: l10n.profileSecurityRowTitle,
                   subtitle: l10n.profileSecurityRowSubtitle,
                   onTap: () => context.push('/profile/security'),
-                ),
-                SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-                ProfileSectionHeading(title: l10n.profileOverviewSectionTitle),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                _ProfileOverviewCard(profile: profile),
-                SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-                ProfileSectionHeading(title: l10n.profileMoreSectionTitle),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                _SettingsActionTile(
-                  icon: Icons.explore_outlined,
-                  title: l10n.profileGuideWorkspaceTitle,
-                  subtitle: l10n.profileGuideWorkspaceSubtitle,
-                  disabled: true,
-                ),
-                _SettingsActionTile(
-                  icon: Icons.help_outline_rounded,
-                  title: l10n.profileSupportTitle,
-                  subtitle: l10n.profileSupportSubtitle,
-                  disabled: true,
                 ),
                 SizedBox(height: profileScaled(context, 26, min: 20, max: 30)),
                 FilledButton.tonal(
@@ -260,156 +324,35 @@ class _SubpageTopBar extends StatelessWidget {
   }
 }
 
-class _ProfileSettingsHero extends StatelessWidget {
-  const _ProfileSettingsHero({
-    required this.profile,
-    required this.avatarUrl,
-    required this.onEdit,
-  });
+class _ProfileReferenceLabels {
+  const _ProfileReferenceLabels({this.country, this.timezone, this.currency});
 
-  final UserProfileVm profile;
-  final String? avatarUrl;
-  final Future<void> Function() onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Container(
-      padding: EdgeInsets.all(profileScaled(context, 22, min: 18, max: 24)),
-      decoration: profileCardDecoration(
-        context,
-        highlighted: true,
-        radius: profileScaled(context, 28, min: 22, max: 30),
-      ),
-      child: Column(
-        children: [
-          _SettingsAvatar(
-            initials: profile.initials,
-            avatarUrl: avatarUrl,
-            isGuide: profile.isGuide,
-          ),
-          SizedBox(height: profileScaled(context, 18, min: 14, max: 20)),
-          Text(
-            profile.preferredName,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: profileScaled(context, 26, min: 22, max: 28),
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.8,
-            ),
-          ),
-          SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: profileScaled(context, 10, min: 8, max: 10),
-            runSpacing: profileScaled(context, 10, min: 8, max: 10),
-            children: [
-              _MiniPill(
-                text: profile.isGuide
-                    ? l10n.profileVerifiedExplorer
-                    : l10n.profileTitle,
-                highlighted: profile.isGuide,
-              ),
-            ],
-          ),
-          SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingsAvatar extends StatelessWidget {
-  const _SettingsAvatar({
-    required this.initials,
-    required this.avatarUrl,
-    required this.isGuide,
-  });
-
-  final String initials;
-  final String? avatarUrl;
-  final bool isGuide;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = profileScaled(context, 112, min: 96, max: 120);
-
-    return Container(
-      width: size,
-      height: size,
-      padding: EdgeInsets.all(profileScaled(context, 4, min: 3, max: 5)),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFE5C48D), Color(0xFF8B5506)],
-        ),
-      ),
-      child: ClipOval(
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFEEF3F6), Color(0xFFB9CAD5)],
-            ),
-          ),
-          child: avatarUrl == null
-              ? Center(
-                  child: Text(
-                    initials,
-                    style: TextStyle(
-                      color: const Color(0xFF516572),
-                      fontSize: profileScaled(context, 34, min: 28, max: 36),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                )
-              : Image.network(
-                  avatarUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Center(
-                    child: Text(
-                      initials,
-                      style: TextStyle(
-                        color: const Color(0xFF516572),
-                        fontSize: profileScaled(context, 34, min: 28, max: 36),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
+  final String? country;
+  final String? timezone;
+  final String? currency;
 }
 
 class _ProfileOverviewCard extends StatelessWidget {
-  const _ProfileOverviewCard({required this.profile});
+  const _ProfileOverviewCard({required this.profile, this.labels});
 
   final UserProfileVm profile;
+  final _ProfileReferenceLabels? labels;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final items = [
-      (l10n.profileLocale, (profile.locale).toUpperCase()),
-      (l10n.profileTimezone, profile.timezone),
       (
         l10n.profileCountry,
-        (profile.countryCode ?? '').trim().isEmpty
-            ? l10n.notSpecified
-            : profile.countryCode!.trim(),
+        _resolvedValue(labels?.country, profile.countryCode, l10n.notSpecified),
+      ),
+      (
+        l10n.profileTimezone,
+        _resolvedValue(labels?.timezone, profile.timezone, l10n.notSpecified),
       ),
       (
         l10n.profileCurrency,
-        (profile.currency ?? '').trim().isEmpty
-            ? l10n.notSpecified
-            : profile.currency!.trim(),
+        _resolvedValue(labels?.currency, profile.currency, l10n.notSpecified),
       ),
     ];
 
@@ -468,6 +411,18 @@ class _ProfileOverviewCard extends StatelessWidget {
       ),
     );
   }
+
+  String _resolvedValue(
+    String? localized,
+    String? fallback,
+    String emptyLabel,
+  ) {
+    final localizedValue = (localized ?? '').trim();
+    if (localizedValue.isNotEmpty) return localizedValue;
+
+    final fallbackValue = (fallback ?? '').trim();
+    return fallbackValue.isEmpty ? emptyLabel : fallbackValue;
+  }
 }
 
 class _SettingsActionTile extends StatelessWidget {
@@ -476,18 +431,16 @@ class _SettingsActionTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.onTap,
-    this.disabled = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
-  final bool disabled;
 
   @override
   Widget build(BuildContext context) {
-    final effectiveDisabled = disabled || onTap == null;
+    final effectiveDisabled = onTap == null;
     return Padding(
       padding: EdgeInsets.only(
         bottom: profileScaled(context, 14, min: 10, max: 14),
@@ -559,43 +512,6 @@ class _SettingsActionTile extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniPill extends StatelessWidget {
-  const _MiniPill({required this.text, this.highlighted = false});
-
-  final String text;
-  final bool highlighted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: profileScaled(context, 12, min: 10, max: 14),
-        vertical: profileScaled(context, 7, min: 6, max: 8),
-      ),
-      decoration: BoxDecoration(
-        color: highlighted
-            ? AppColors.accent.withValues(alpha: 0.12)
-            : Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: highlighted
-              ? AppColors.accent.withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.06),
-        ),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: highlighted ? AppColors.accent : profileTextSoft,
-          fontSize: profileScaled(context, 11, min: 10, max: 12),
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.8,
         ),
       ),
     );

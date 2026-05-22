@@ -914,14 +914,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final padding = profileScaled(context, 20, min: 14, max: 20);
     final previewName = _previewName(profile);
     final previewInitials = _previewInitials(profile);
-    final isGuide = profile?.isGuide ?? false;
-    final serviceCityChips = [
-      if (_countryCodeController.text.trim().isNotEmpty)
-        _countryCodeController.text.trim(),
-      _timezoneController.text.trim(),
-      _currencyController.text.trim(),
-      _localeCode.toUpperCase(),
-    ].where((item) => item.isNotEmpty).toList(growable: false);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -941,7 +933,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   profileScaled(context, 28, min: 20, max: 34),
                 ),
                 children: [
-                  _EditProfileTopBar(title: l10n.profileSettingsPageTitle),
+                  _EditProfileTopBar(title: l10n.editProfileButton),
                   SizedBox(
                     height: profileScaled(context, 26, min: 18, max: 30),
                   ),
@@ -1161,98 +1153,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   SizedBox(
                     height: profileScaled(context, 28, min: 24, max: 32),
                   ),
-                  if (isGuide) ...[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: ProfileSectionHeading(
-                            title: l10n.profileSettingsServiceCitiesSection,
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(
-                            bottom: profileScaled(context, 4, min: 2, max: 4),
-                          ),
-                          child: Text(
-                            l10n.profileSettingsAddNew,
-                            style: TextStyle(
-                              color: profileDisabled,
-                              fontSize: profileScaled(
-                                context,
-                                12,
-                                min: 11,
-                                max: 12,
-                              ),
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height: profileScaled(context, 14, min: 12, max: 16),
-                    ),
-                    _ProfileSectionCard(
-                      disabled: true,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Wrap(
-                            spacing: profileScaled(
-                              context,
-                              10,
-                              min: 8,
-                              max: 10,
-                            ),
-                            runSpacing: profileScaled(
-                              context,
-                              10,
-                              min: 8,
-                              max: 10,
-                            ),
-                            children: [
-                              for (final item in serviceCityChips.take(4))
-                                _ServiceChip(
-                                  text: item,
-                                  active: item == serviceCityChips.first,
-                                ),
-                              _ServiceChip(
-                                text: l10n.profileDisabledSoon,
-                                active: false,
-                                disabled: true,
-                              ),
-                            ],
-                          ),
-                          SizedBox(
-                            height: profileScaled(
-                              context,
-                              14,
-                              min: 12,
-                              max: 16,
-                            ),
-                          ),
-                          Text(
-                            l10n.profileSettingsServiceCitiesUnavailable,
-                            style: TextStyle(
-                              color: profileDisabled,
-                              fontSize: profileScaled(
-                                context,
-                                13,
-                                min: 12,
-                                max: 13,
-                              ),
-                              height: 1.45,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      height: profileScaled(context, 28, min: 24, max: 32),
-                    ),
-                  ],
                   FilledButton(
                     onPressed: (_isSaving || _isUploadingAvatar) ? null : _save,
                     style: FilledButton.styleFrom(
@@ -1339,7 +1239,7 @@ class _EditProfileTopBar extends StatelessWidget {
               horizontal: profileScaled(context, 12, min: 8, max: 12),
             ),
             child: Text(
-              title.toUpperCase(),
+              title,
               textAlign: TextAlign.left,
               style: TextStyle(
                 color: AppColors.textPrimary,
@@ -2418,10 +2318,9 @@ class _ProfileCurrencySearchField extends StatelessWidget {
 }
 
 class _ProfileSectionCard extends StatelessWidget {
-  const _ProfileSectionCard({required this.child, this.disabled = false});
+  const _ProfileSectionCard({required this.child});
 
   final Widget child;
-  final bool disabled;
 
   @override
   Widget build(BuildContext context) {
@@ -2430,7 +2329,6 @@ class _ProfileSectionCard extends StatelessWidget {
       padding: EdgeInsets.all(profileScaled(context, 18, min: 14, max: 20)),
       decoration: profileCardDecoration(
         context,
-        disabled: disabled,
         radius: profileScaled(context, 22, min: 18, max: 24),
       ),
       child: child,
@@ -2529,57 +2427,6 @@ class _StyledTextField extends StatelessWidget {
         contentPadding: EdgeInsets.symmetric(
           horizontal: profileScaled(context, 16, min: 14, max: 18),
           vertical: profileScaled(context, 14, min: 12, max: 16),
-        ),
-      ),
-    );
-  }
-}
-
-class _ServiceChip extends StatelessWidget {
-  const _ServiceChip({
-    required this.text,
-    required this.active,
-    this.disabled = false,
-  });
-
-  final String text;
-  final bool active;
-  final bool disabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = disabled
-        ? profileDisabled
-        : active
-            ? AppColors.accent
-            : profileTextSoft;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: profileScaled(context, 14, min: 12, max: 16),
-        vertical: profileScaled(context, 9, min: 8, max: 10),
-      ),
-      decoration: BoxDecoration(
-        color: disabled
-            ? Colors.white.withValues(alpha: 0.03)
-            : active
-                ? AppColors.accent.withValues(alpha: 0.12)
-                : Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: disabled
-              ? Colors.white.withValues(alpha: 0.04)
-              : active
-                  ? AppColors.accent.withValues(alpha: 0.18)
-                  : Colors.white.withValues(alpha: 0.05),
-        ),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: profileScaled(context, 12, min: 11, max: 12),
-          fontWeight: FontWeight.w800,
         ),
       ),
     );

@@ -137,6 +137,22 @@ void main() {
     expect(source, contains('key: _countryFieldKey'));
   });
 
+  test('edit profile screen uses edit title and omits service cities',
+      () async {
+    final source = await File(
+      'lib/screens/profile/edit_profile_screen.dart',
+    ).readAsString();
+
+    expect(
+        source, contains('_EditProfileTopBar(title: l10n.editProfileButton)'));
+    expect(source, isNot(contains('title.toUpperCase()')));
+    expect(source, isNot(contains('profileSettingsPageTitle')));
+    expect(source, isNot(contains('serviceCityChips')));
+    expect(source, isNot(contains('profileSettingsServiceCitiesSection')));
+    expect(source, isNot(contains('profileSettingsServiceCitiesUnavailable')));
+    expect(source, isNot(contains('class _ServiceChip')));
+  });
+
   test('edit profile timezone uses localized searchable reference selector',
       () async {
     final source = await File(

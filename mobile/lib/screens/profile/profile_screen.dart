@@ -11,7 +11,10 @@ import '../../core/network/chat_api.dart';
 import '../../core/network/dio_error_mapper.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/excursion_api.dart';
+import '../../core/network/reference_api.dart';
 import '../../core/network/story_api.dart';
+import '../../core/reference/country_filter_utils.dart';
+import '../../core/reference/currency_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
@@ -49,6 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ChatApi _chatApi = ChatApi();
   final ExcursionApi _excursionApi = ExcursionApi();
   final StoryApi _storyApi = StoryApi();
+  final ReferenceApi _referenceApi = ReferenceApi();
 
   Future<UserProfileVm>? _foreignProfileFuture;
   Future<_ProfileExtras>? _extrasFuture;
@@ -364,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<_ProfileExtras> _loadExtras(UserProfileVm profile) async {
+  Future<_ProfileExtras> _loadExtras(UserProfileVm profile, String lang) async {
     Future<GuideProfileVm?> loadGuide() async {
       try {
         return await _guideApi.getGuideProfileByUserIdOrNull(profile.userId);
@@ -381,20 +385,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return _fileApi.publicContentUrl(avatarFileId);
     }
 
-    final results = await Future.wait<Object?>([loadGuide(), loadAvatar()]);
+    final results = await Future.wait<Object?>([
+      loadGuide(),
+      loadAvatar(),
+      _resolveProfileReferenceLabels(profile, lang),
+    ]);
 
     return _ProfileExtras(
       guide: results[0] as GuideProfileVm?,
       avatarUrl: results[1] as String?,
+      referenceLabels: results[2] as _ProfileReferenceLabels,
     );
   }
 
-  Future<_ProfileExtras> _extrasFutureFor(UserProfileVm profile) {
+  Future<_ProfileReferenceLabels> _resolveProfileReferenceLabels(
+    UserProfileVm profile,
+    String lang,
+  ) async {
+    final countryCode = normalizeReferenceCountryCode(profile.countryCode);
+    final currencyCode = normalizeReferenceCurrencyCode(profile.currency);
+    final labels = await Future.wait<String?>([
+      _resolveProfileCountryLabel(countryCode, lang),
+      _resolveProfileCurrencyLabel(currencyCode, lang),
+    ]);
+
+    return _ProfileReferenceLabels(country: labels[0], currency: labels[1]);
+  }
+
+  Future<String?> _resolveProfileCountryLabel(
+    String? countryCode,
+    String lang,
+  ) async {
+    if (countryCode == null) return null;
+
+    final country = await _referenceApi.getCountry(countryCode, lang: lang);
+    final name = country?.name.trim() ?? '';
+    return name.isEmpty ? null : name;
+  }
+
+  Future<String?> _resolveProfileCurrencyLabel(
+    String? currencyCode,
+    String lang,
+  ) async {
+    if (currencyCode == null) return null;
+
+    try {
+      final currencies = withDefaultReferenceCurrency(
+        await _referenceApi.listCurrencies(lang: lang),
+        currencyCode,
+      );
+      for (final currency in currencies) {
+        if (normalizeReferenceCurrencyCode(currency.code) == currencyCode) {
+          final label = referenceCurrencyLabel(currency).trim();
+          return label.isEmpty || label == currencyCode ? null : label;
+        }
+      }
+    } catch (_) {
+      // Profile badges are optional; avoid showing raw codes on lookup failure.
+    }
+
+    return null;
+  }
+
+  Future<_ProfileExtras> _extrasFutureFor(UserProfileVm profile, String lang) {
     final key =
-        '${profile.userId.trim()}|${(profile.avatarFileId ?? '').trim()}|${profile.roles.join(",")}';
+        '${profile.userId.trim()}|${(profile.avatarFileId ?? '').trim()}|${profile.roles.join(",")}|${profile.countryCode ?? ""}|${profile.currency ?? ""}|$lang';
     if (_extrasFuture == null || _extrasKey != key) {
       _extrasKey = key;
-      _extrasFuture = _loadExtras(profile);
+      _extrasFuture = _loadExtras(profile, lang);
     }
     return _extrasFuture!;
   }
@@ -583,15 +641,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final effectiveProfile = _profileWithRelationshipOverrides(profile);
+    final lang = Localizations.localeOf(context).languageCode;
 
     return FutureBuilder<_ProfileExtras>(
-      future: _extrasFutureFor(effectiveProfile),
+      future: _extrasFutureFor(effectiveProfile, lang),
       builder: (context, snapshot) {
         final extras = snapshot.data ?? const _ProfileExtras();
         return _ProfileBody(
           profile: effectiveProfile,
           guide: extras.guide,
           avatarUrl: extras.avatarUrl,
+          referenceLabels: extras.referenceLabels,
           guideReviewsFuture: !isOwnProfile && extras.guide?.isVerified == true
               ? _guideReviewsFutureFor(effectiveProfile)
               : null,
@@ -637,6 +697,7 @@ class _ProfileBody extends StatelessWidget {
     required this.profile,
     required this.guide,
     required this.avatarUrl,
+    required this.referenceLabels,
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
     required this.recentActivitiesFuture,
@@ -660,6 +721,7 @@ class _ProfileBody extends StatelessWidget {
   final UserProfileVm profile;
   final GuideProfileVm? guide;
   final String? avatarUrl;
+  final _ProfileReferenceLabels referenceLabels;
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
@@ -718,6 +780,7 @@ class _ProfileBody extends StatelessWidget {
           profile: profile,
           guide: guide,
           avatarUrl: avatarUrl,
+          referenceLabels: referenceLabels,
           isOwnProfile: isOwnProfile,
           isGuideProfile: isGuideProfile,
         ),
@@ -825,6 +888,7 @@ class _ProfileHero extends StatelessWidget {
     required this.profile,
     required this.guide,
     required this.avatarUrl,
+    required this.referenceLabels,
     required this.isOwnProfile,
     required this.isGuideProfile,
   });
@@ -832,6 +896,7 @@ class _ProfileHero extends StatelessWidget {
   final UserProfileVm profile;
   final GuideProfileVm? guide;
   final String? avatarUrl;
+  final _ProfileReferenceLabels referenceLabels;
   final bool isOwnProfile;
   final bool isGuideProfile;
 
@@ -945,8 +1010,8 @@ class _ProfileHero extends StatelessWidget {
     }
 
     if (values.isEmpty) {
-      final country = (profile.countryCode ?? '').trim();
-      final currency = (profile.currency ?? '').trim();
+      final country = (referenceLabels.country ?? '').trim();
+      final currency = (referenceLabels.currency ?? '').trim();
       if (country.isNotEmpty) {
         values.add(country);
       }
@@ -1568,9 +1633,7 @@ class _ProfileRelationshipConfirmDialog extends StatelessWidget {
                   const Color(0xFF201208),
                 ],
               ),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.04),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.34),
@@ -1620,7 +1683,8 @@ class _ProfileRelationshipConfirmDialog extends StatelessWidget {
                       ),
                     ),
                     SizedBox(
-                        height: profileScaled(context, 20, min: 18, max: 20)),
+                      height: profileScaled(context, 20, min: 18, max: 20),
+                    ),
                     Text(
                       title,
                       maxLines: 3,
@@ -1633,7 +1697,8 @@ class _ProfileRelationshipConfirmDialog extends StatelessWidget {
                       ),
                     ),
                     SizedBox(
-                        height: profileScaled(context, 10, min: 8, max: 10)),
+                      height: profileScaled(context, 10, min: 8, max: 10),
+                    ),
                     Text(
                       description,
                       style: TextStyle(
@@ -1644,11 +1709,13 @@ class _ProfileRelationshipConfirmDialog extends StatelessWidget {
                       ),
                     ),
                     SizedBox(
-                        height: profileScaled(context, 26, min: 22, max: 26)),
+                      height: profileScaled(context, 26, min: 22, max: 26),
+                    ),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final textScale =
-                            MediaQuery.of(context).textScaler.scale(1);
+                        final textScale = MediaQuery.of(
+                          context,
+                        ).textScaler.scale(1);
                         final shouldStack =
                             constraints.maxWidth < 318 || textScale > 1.25;
                         final actionWidth = shouldStack
@@ -2084,10 +2151,7 @@ class _ForeignProfileActions extends StatelessWidget {
   }
 
   Size _actionButtonSize(BuildContext context) {
-    return Size(
-      double.infinity,
-      profileScaled(context, 52, min: 48, max: 54),
-    );
+    return Size(double.infinity, profileScaled(context, 52, min: 48, max: 54));
   }
 }
 
@@ -2103,10 +2167,7 @@ class _ProfileActionSlot extends StatelessWidget {
 }
 
 class _GuideCalendarAction extends StatelessWidget {
-  const _GuideCalendarAction({
-    required this.label,
-    required this.onTap,
-  });
+  const _GuideCalendarAction({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -2117,11 +2178,7 @@ class _GuideCalendarAction extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: onTap,
         icon: const Icon(Icons.calendar_month_rounded),
-        label: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.accent,
           backgroundColor: AppColors.accent.withValues(alpha: 0.08),
@@ -2169,21 +2226,6 @@ class _OwnProfileSections extends StatelessWidget {
             subtitle: l10n.profileGuideDashboardSubtitle,
             onTap: () => context.push('/profile/guide-dashboard'),
           ),
-        SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-        ProfileSectionHeading(title: l10n.profilePreferencesTitle),
-        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-        _ProfileMenuTile(
-          icon: Icons.notifications_none_rounded,
-          title: l10n.profileNotificationsRowTitle,
-          subtitle: l10n.profileNotificationsRowSubtitle,
-          onTap: () => context.push('/profile/notifications'),
-        ),
-        _ProfileMenuTile(
-          icon: Icons.lock_outline_rounded,
-          title: l10n.profileSecurityRowTitle,
-          subtitle: l10n.profileSecurityRowSubtitle,
-          onTap: () => context.push('/profile/security'),
-        ),
       ],
     );
   }
@@ -3004,10 +3046,22 @@ class _PlaceholderShowcaseCard extends StatelessWidget {
 }
 
 class _ProfileExtras {
-  const _ProfileExtras({this.guide, this.avatarUrl});
+  const _ProfileExtras({
+    this.guide,
+    this.avatarUrl,
+    this.referenceLabels = const _ProfileReferenceLabels(),
+  });
 
   final GuideProfileVm? guide;
   final String? avatarUrl;
+  final _ProfileReferenceLabels referenceLabels;
+}
+
+class _ProfileReferenceLabels {
+  const _ProfileReferenceLabels({this.country, this.currency});
+
+  final String? country;
+  final String? currency;
 }
 
 String _reviewInitial(String value) {
