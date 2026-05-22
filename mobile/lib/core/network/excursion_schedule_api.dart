@@ -1,9 +1,11 @@
+import 'package:dio/dio.dart';
+
 import '../../features/excursions/models/excursion_schedule_vm.dart';
 import 'api_client.dart';
 
 class ExcursionScheduleApi {
   ExcursionScheduleApi({ApiClient? apiClient})
-    : _apiClient = apiClient ?? ApiClient();
+      : _apiClient = apiClient ?? ApiClient();
 
   final ApiClient _apiClient;
 
@@ -38,6 +40,24 @@ class ExcursionScheduleApi {
         'to': to.toUtc().toIso8601String(),
         'seats': seats <= 0 ? 1 : seats,
       },
+    );
+
+    return _parseItems(response.data);
+  }
+
+  Future<List<ExcursionScheduleSlotVm>> getPublicGuideSchedule({
+    required String guideUserId,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final encodedGuideUserId = Uri.encodeComponent(guideUserId.trim());
+    final response = await _apiClient.dio.get(
+      '/excursion-guides/$encodedGuideUserId/schedule',
+      queryParameters: <String, dynamic>{
+        'from': from.toUtc().toIso8601String(),
+        'to': to.toUtc().toIso8601String(),
+      },
+      options: Options(extra: const <String, dynamic>{'requiresAuth': false}),
     );
 
     return _parseItems(response.data);
@@ -114,9 +134,8 @@ class ExcursionScheduleApi {
   }
 
   List<ExcursionScheduleSlotVm> _parseItems(Object? data) {
-    final items = data is Map<String, dynamic>
-        ? data['items'] as List<dynamic>?
-        : null;
+    final items =
+        data is Map<String, dynamic> ? data['items'] as List<dynamic>? : null;
     return (items ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(ExcursionScheduleSlotVm.fromJson)

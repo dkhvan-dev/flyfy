@@ -748,6 +748,13 @@ class _ProfileBody extends StatelessWidget {
             onDeclineFriendship: onDeclineFriendship,
             onMessageTap: onMessageTap,
           ),
+          if (isGuideProfile) ...[
+            SizedBox(height: profileScaled(context, 12, min: 10, max: 14)),
+            _GuideCalendarAction(
+              label: l10n.guideCalendarTitle,
+              onTap: () => context.push('/guides/${profile.userId}/calendar'),
+            ),
+          ],
         ],
         SizedBox(height: profileScaled(context, 32, min: 24, max: 36)),
         if (isOwnProfile) ...[
@@ -867,6 +874,10 @@ class _ProfileHero extends StatelessWidget {
               letterSpacing: 1.5,
             ),
           ),
+          if (guide?.isVerified == true) ...[
+            SizedBox(height: profileScaled(context, 8, min: 6, max: 8)),
+            _GuideRatingBadge(guide: guide!),
+          ],
         ],
         if (badges.isNotEmpty) ...[
           SizedBox(height: profileScaled(context, 18, min: 14, max: 20)),
@@ -958,6 +969,60 @@ class _ProfileHero extends StatelessWidget {
       final lower = word.toLowerCase();
       return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
     }).join(' ');
+  }
+}
+
+class _GuideRatingBadge extends StatelessWidget {
+  const _GuideRatingBadge({required this.guide});
+
+  final GuideProfileVm guide;
+
+  @override
+  Widget build(BuildContext context) {
+    final rating =
+        guide.ratingAvg <= 0 ? '0.0' : guide.ratingAvg.toStringAsFixed(1);
+    final maxWidth = MediaQuery.sizeOf(context).width -
+        profileScaled(context, 56, min: 36, max: 56);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.22)),
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: profileScaled(context, 12, min: 10, max: 12),
+            vertical: profileScaled(context, 7, min: 6, max: 7),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.star_rounded,
+                size: profileScaled(context, 17, min: 15, max: 17),
+                color: AppColors.accent,
+              ),
+              SizedBox(width: profileScaled(context, 6, min: 5, max: 6)),
+              Flexible(
+                child: Text(
+                  rating,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: profileScaled(context, 13, min: 12, max: 13),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -2034,6 +2099,41 @@ class _ProfileActionSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(width: double.infinity, child: child);
+  }
+}
+
+class _GuideCalendarAction extends StatelessWidget {
+  const _GuideCalendarAction({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ProfileActionSlot(
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: const Icon(Icons.calendar_month_rounded),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.accent,
+          backgroundColor: AppColors.accent.withValues(alpha: 0.08),
+          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.45)),
+          minimumSize: Size(
+            double.infinity,
+            profileScaled(context, 52, min: 48, max: 54),
+          ),
+          disabledForegroundColor: AppColors.accent.withValues(alpha: 0.6),
+        ),
+      ),
+    );
   }
 }
 

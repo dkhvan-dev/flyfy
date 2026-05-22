@@ -1979,7 +1979,7 @@ func TestCreateExcursionBookingReturnsExistingWhenInsertHitsIdempotencyConflict(
 
 func TestCreateGuideScheduleSlotRejectsOverlap(t *testing.T) {
 	guideUserID := uuid.New()
-	start := time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC)
+	start := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Second)
 	repo := &excursionRepoStub{
 		gotOffer: &model.ExcursionOffer{
 			ID:                uuid.New(),
@@ -2017,7 +2017,7 @@ func TestCreateGuideScheduleSlotAcceptsLegacyExcursionID(t *testing.T) {
 	legacyExcursionID := uuid.New()
 	offerID := uuid.New()
 	productID := uuid.New()
-	start := time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC)
+	start := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Second)
 	repo := &excursionRepoStub{
 		gotOfferByLegacy: &model.ExcursionOffer{
 			ID:                offerID,
@@ -2416,7 +2416,7 @@ func TestCreateGuideScheduleSeriesCreatesWeeklySlots(t *testing.T) {
 	slots, err := uc.CreateGuideScheduleSeries(context.Background(), CreateGuideScheduleSeriesInput{
 		ActorUserID:     guideUserID,
 		OfferID:         offerID,
-		StartsOn:        time.Date(2026, 5, 18, 0, 0, 0, 0, time.UTC),
+		StartsOn:        time.Now().UTC().AddDate(0, 0, 7),
 		OccurrenceLimit: &limit,
 		StartTime:       "09:00",
 		Timezone:        "Asia/Almaty",
@@ -2454,7 +2454,7 @@ func TestCreateExcursionBookingUsesScheduleSlotAndLocksCapacity(t *testing.T) {
 	slotID := uuid.New()
 	offerID := uuid.New()
 	productID := uuid.New()
-	startAt := time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC)
+	startAt := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Second)
 	repo := &excursionRepoStub{
 		gotOffer: &model.ExcursionOffer{
 			ID:             offerID,
@@ -3029,6 +3029,32 @@ func TestListGuideScheduleIncludesCompletedSlotsForReadonlyHistory(t *testing.T)
 		}
 	}
 	t.Fatalf("status filters = %v, want completed included for guide calendar history", repo.listScheduleFilter.Statuses)
+}
+
+func TestListPublicGuideScheduleUsesRequestedGuideUser(t *testing.T) {
+	guideUserID := uuid.New()
+	now := time.Now().UTC()
+	repo := &excursionRepoStub{}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	_, err := uc.ListPublicGuideSchedule(context.Background(), ListPublicGuideScheduleInput{
+		GuideUserID: guideUserID,
+		From:        now.Add(-24 * time.Hour),
+		To:          now.Add(24 * time.Hour),
+	})
+
+	if err != nil {
+		t.Fatalf("ListPublicGuideSchedule() error = %v", err)
+	}
+	if repo.listScheduleFilter.GuideUserID == nil || *repo.listScheduleFilter.GuideUserID != guideUserID {
+		t.Fatalf("guide filter = %v, want %s", repo.listScheduleFilter.GuideUserID, guideUserID)
+	}
+	for _, status := range repo.listScheduleFilter.Statuses {
+		if status == enum.ExcursionScheduleSlotStatusCompleted {
+			return
+		}
+	}
+	t.Fatalf("status filters = %v, want completed included for readonly public guide calendar", repo.listScheduleFilter.Statuses)
 }
 
 func TestAutoCompleteDueExcursionScheduleSlotsCompletesEndedSlots(t *testing.T) {

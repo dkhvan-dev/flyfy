@@ -269,6 +269,12 @@ type ListGuideScheduleInput struct {
 	To          time.Time
 }
 
+type ListPublicGuideScheduleInput struct {
+	GuideUserID uuid.UUID
+	From        time.Time
+	To          time.Time
+}
+
 type ListPublicExcursionScheduleInput struct {
 	ProductID uuid.UUID
 	OfferID   uuid.UUID
@@ -894,7 +900,18 @@ func (u *ExcursionUseCase) ListGuideSchedule(ctx context.Context, input ListGuid
 	if input.ActorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
 	}
-	if input.From.IsZero() || input.To.IsZero() || !input.From.Before(input.To) {
+	return u.listGuideScheduleForGuide(ctx, input.ActorUserID, input.From, input.To)
+}
+
+func (u *ExcursionUseCase) ListPublicGuideSchedule(ctx context.Context, input ListPublicGuideScheduleInput) ([]*model.ExcursionScheduleSlot, error) {
+	if input.GuideUserID == uuid.Nil {
+		return nil, model.ErrInvalidGuideUserID
+	}
+	return u.listGuideScheduleForGuide(ctx, input.GuideUserID, input.From, input.To)
+}
+
+func (u *ExcursionUseCase) listGuideScheduleForGuide(ctx context.Context, guideUserID uuid.UUID, from time.Time, to time.Time) ([]*model.ExcursionScheduleSlot, error) {
+	if from.IsZero() || to.IsZero() || !from.Before(to) {
 		return nil, model.ErrInvalidExcursionScheduleInterval
 	}
 	now := time.Now().UTC()
@@ -907,11 +924,10 @@ func (u *ExcursionUseCase) ListGuideSchedule(ctx context.Context, input ListGuid
 	if _, err := u.AutoCompleteDueExcursionScheduleSlots(ctx, 100); err != nil {
 		return nil, err
 	}
-	guideUserID := input.ActorUserID
 	items, err := u.repo.ListExcursionScheduleSlots(ctx, port.ExcursionScheduleFilter{
 		GuideUserID: &guideUserID,
-		From:        input.From,
-		To:          input.To,
+		From:        from,
+		To:          to,
 		Statuses: []enum.ExcursionScheduleSlotStatus{
 			enum.ExcursionScheduleSlotStatusAvailable,
 			enum.ExcursionScheduleSlotStatusBooked,

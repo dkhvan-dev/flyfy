@@ -43,6 +43,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/excursions/{id}", h.GetExcursion)
 	mux.HandleFunc("GET /v1/excursions/{id}/cover", h.GetExcursionCover)
 	mux.HandleFunc("GET /v1/guides/excursion-languages", h.ListGuideExcursionLanguages)
+	mux.HandleFunc("GET /v1/excursion-guides/{guideUserId}/schedule", h.ListPublicGuideSchedule)
 
 	mux.HandleFunc("POST /v1/me/excursions", h.CreateExcursion)
 	mux.HandleFunc("GET /v1/me/excursions", h.ListMyExcursions)
@@ -337,6 +338,37 @@ func (h *Handler) ListGuideSchedule(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		h.writeUseCaseError(w, r, err, "failed to list guide schedule")
+		return
+	}
+	response := make([]dto.GuideScheduleSlotResponse, 0, len(items))
+	for _, item := range items {
+		response = append(response, toGuideScheduleSlotResponse(item))
+	}
+	writeJSON(w, http.StatusOK, dto.GuideScheduleListResponse{Items: response})
+}
+
+func (h *Handler) ListPublicGuideSchedule(w http.ResponseWriter, r *http.Request) {
+	guideUserID, ok := parsePathUUID(w, r, "guideUserId", "invalid guide user id")
+	if !ok {
+		return
+	}
+	from, err := time.Parse(time.RFC3339, strings.TrimSpace(r.URL.Query().Get("from")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid from")
+		return
+	}
+	to, err := time.Parse(time.RFC3339, strings.TrimSpace(r.URL.Query().Get("to")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid to")
+		return
+	}
+	items, err := h.useCase.ListPublicGuideSchedule(r.Context(), app.ListPublicGuideScheduleInput{
+		GuideUserID: guideUserID,
+		From:        from,
+		To:          to,
+	})
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list public guide schedule")
 		return
 	}
 	response := make([]dto.GuideScheduleSlotResponse, 0, len(items))

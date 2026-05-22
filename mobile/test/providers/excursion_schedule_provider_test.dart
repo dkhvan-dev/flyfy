@@ -38,6 +38,26 @@ void main() {
     expect(api.loadCalls, 1);
   });
 
+  test('loadWeek can request a public guide schedule by user id', () async {
+    final api = _FakeExcursionScheduleApi(slots: [_slot('public-slot')]);
+    final provider = ExcursionScheduleProvider(scheduleApi: api);
+
+    await provider.loadWeek(DateTime(2026, 6, 3), guideUserId: 'guide-1');
+
+    expect(provider.state, ExcursionScheduleState.success);
+    expect(api.loadCalls, 0);
+    expect(api.publicLoadCalls, 1);
+    expect(api.lastGuideUserId, 'guide-1');
+    expect(provider.isDateInLoadedWeek(DateTime(2026, 6, 4)), isFalse);
+    expect(
+      provider.isDateInLoadedWeek(
+        DateTime(2026, 6, 4),
+        guideUserId: 'guide-1',
+      ),
+      isTrue,
+    );
+  });
+
   test('mutations update local slot list', () async {
     final created = _slot('created', DateTime.utc(2026, 6, 3, 8));
     final updated = _slot('created', DateTime.utc(2026, 6, 5, 9));
@@ -140,8 +160,10 @@ class _FakeExcursionScheduleApi extends ExcursionScheduleApi {
   final ExcursionScheduleSlotVm? updatedSlot;
   final ExcursionScheduleSlotVm? closedSlot;
   int loadCalls = 0;
+  int publicLoadCalls = 0;
   DateTime? lastFrom;
   DateTime? lastTo;
+  String? lastGuideUserId;
 
   @override
   Future<List<ExcursionScheduleSlotVm>> getGuideSchedule({
@@ -149,6 +171,19 @@ class _FakeExcursionScheduleApi extends ExcursionScheduleApi {
     required DateTime to,
   }) async {
     loadCalls++;
+    lastFrom = from;
+    lastTo = to;
+    return slots;
+  }
+
+  @override
+  Future<List<ExcursionScheduleSlotVm>> getPublicGuideSchedule({
+    required String guideUserId,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    publicLoadCalls++;
+    lastGuideUserId = guideUserId;
     lastFrom = from;
     lastTo = to;
     return slots;

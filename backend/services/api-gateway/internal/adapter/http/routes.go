@@ -183,6 +183,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			RewritePrefix:      "/v1/excursion-products",
 		},
 		{
+			Name:               "public-guide-excursion-schedule",
+			Prefix:             apiPrefix + "/excursion-guides",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "excursion",
+			RateLimitPerMinute: &excursionLimit,
+			RewritePrefix:      "/v1/excursion-guides",
+		},
+		{
 			Name:               "excursion-reviews",
 			Prefix:             apiPrefix + "/excursion-reviews",
 			AuthMode:           RouteAuthPublic,

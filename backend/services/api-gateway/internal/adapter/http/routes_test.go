@@ -89,6 +89,20 @@ func TestExcursionRoutesProxyToExcursionService(t *testing.T) {
 	if schedulePolicy.RewritePrefix != "/v1/me/excursion-schedule" {
 		t.Fatalf("schedule rewrite prefix = %q, want /v1/me/excursion-schedule", schedulePolicy.RewritePrefix)
 	}
+
+	publicGuideSchedulePolicy := matchRoutePolicy("/api/v1/excursion-guides/guide-user-1/schedule", "/api/v1")
+	if publicGuideSchedulePolicy == nil {
+		t.Fatal("expected public guide excursion schedule route policy")
+	}
+	if publicGuideSchedulePolicy.Upstream != "excursion" {
+		t.Fatalf("public guide schedule upstream = %q, want excursion", publicGuideSchedulePolicy.Upstream)
+	}
+	if publicGuideSchedulePolicy.AuthMode != RouteAuthPublic {
+		t.Fatalf("public guide schedule auth mode = %q, want public", publicGuideSchedulePolicy.AuthMode)
+	}
+	if publicGuideSchedulePolicy.RewritePrefix != "/v1/excursion-guides" {
+		t.Fatalf("public guide schedule rewrite prefix = %q, want /v1/excursion-guides", publicGuideSchedulePolicy.RewritePrefix)
+	}
 }
 
 func TestExcursionProductRoutesProxyToExcursionService(t *testing.T) {

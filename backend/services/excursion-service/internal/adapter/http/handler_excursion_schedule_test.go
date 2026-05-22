@@ -20,7 +20,7 @@ import (
 func TestCreateGuideScheduleSlotParsesRequest(t *testing.T) {
 	actorUserID := uuid.New()
 	offerID := uuid.New()
-	startAt := time.Date(2026, 5, 22, 9, 0, 0, 0, time.UTC)
+	startAt := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Second)
 	repo := &excursionScheduleHTTPRepoStub{
 		offer: &model.ExcursionOffer{
 			ID:              offerID,
@@ -186,6 +186,57 @@ func TestListPublicExcursionScheduleParsesQuery(t *testing.T) {
 	}
 	if repo.listScheduleFilter.OfferID == nil || *repo.listScheduleFilter.OfferID != offerID {
 		t.Fatalf("offer filter = %v, want %s", repo.listScheduleFilter.OfferID, offerID)
+	}
+}
+
+func TestListPublicGuideScheduleParsesPathAndQuery(t *testing.T) {
+	guideUserID := uuid.New()
+	startAt := time.Date(2026, 6, 3, 9, 0, 0, 0, time.UTC)
+	repo := &excursionScheduleHTTPRepoStub{
+		scheduleSlots: []*model.ExcursionScheduleSlot{
+			{
+				ID:             uuid.New(),
+				GuideProfileID: uuid.New(),
+				GuideUserID:    guideUserID,
+				OfferID:        uuid.New(),
+				ProductID:      uuid.New(),
+				StartAt:        startAt,
+				EndAt:          startAt.Add(2 * time.Hour),
+				Timezone:       "Asia/Almaty",
+				Capacity:       8,
+				Status:         enum.ExcursionScheduleSlotStatusAvailable,
+				Title:          "Almaty old town",
+			},
+		},
+	}
+	handler := NewHandler(app.NewExcursionUseCase(repo, nil, nil), nil)
+	mux := http.NewServeMux()
+	handler.Register(mux)
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/v1/excursion-guides/"+guideUserID.String()+"/schedule?from=2026-06-01T00:00:00Z&to=2026-06-08T00:00:00Z",
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Items []struct {
+			Title string `json:"title"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(payload.Items) != 1 || payload.Items[0].Title != "Almaty old town" {
+		t.Fatalf("payload = %+v", payload)
+	}
+	if repo.listScheduleFilter.GuideUserID == nil || *repo.listScheduleFilter.GuideUserID != guideUserID {
+		t.Fatalf("guide filter = %v, want %s", repo.listScheduleFilter.GuideUserID, guideUserID)
 	}
 }
 

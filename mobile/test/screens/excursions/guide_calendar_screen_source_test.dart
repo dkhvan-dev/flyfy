@@ -11,6 +11,10 @@ void main() {
 
     expect(router, contains("path: '/profile/guide-dashboard/calendar'"));
     expect(router, contains('GuideCalendarScreen'));
+    expect(router, contains("path: '/guides/:guideUserId/calendar'"));
+    expect(router, contains('GuideCalendarScreen('));
+    expect(router, contains('guideUserId: guideUserId'));
+    expect(router, contains('readOnly: true'));
     expect(
       dashboard,
       contains("context.push('/profile/guide-dashboard/calendar')"),
@@ -31,6 +35,15 @@ void main() {
     expect(source, contains('CustomScrollView'));
     expect(source, contains('backgroundColor: AppColors.accent'));
     expect(source, contains('foregroundColor: AppColors.textPrimary'));
+    expect(source, contains('const GuideCalendarScreen({'));
+    expect(source, contains('this.guideUserId'));
+    expect(source, contains('this.readOnly = false'));
+    expect(source, contains('final String? guideUserId;'));
+    expect(source, contains('final bool readOnly;'));
+    expect(source, contains('guideUserId: widget.guideUserId'));
+    expect(source, contains('if (!widget.readOnly)'));
+    expect(source, contains('onSlotTap: widget.readOnly'));
+    expect(source, contains('_openSlotSheet(selectedDate, slot)'));
     expect(source, isNot(contains('height: 700')));
   });
 

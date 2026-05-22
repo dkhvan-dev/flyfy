@@ -24,6 +24,7 @@ class ExcursionScheduleProvider extends ChangeNotifier {
   bool _isActionConflict = false;
   DateTime? _loadedWeekStart;
   DateTime? _loadedWeekEnd;
+  String? _loadedGuideUserId;
 
   ExcursionScheduleState get state => _state;
   ExcursionScheduleActionState get actionState => _actionState;
@@ -33,9 +34,14 @@ class ExcursionScheduleProvider extends ChangeNotifier {
   String? get actionErrorMessage => _actionErrorMessage;
   bool get isActionConflict => _isActionConflict;
 
-  Future<void> loadWeek(DateTime anchor) async {
+  Future<void> loadWeek(DateTime anchor, {String? guideUserId}) async {
     final weekStart = _mondayStart(anchor);
     final weekEnd = weekStart.add(const Duration(days: 7));
+    final normalizedGuideUserId = guideUserId?.trim();
+    final publicGuideUserId =
+        normalizedGuideUserId == null || normalizedGuideUserId.isEmpty
+            ? null
+            : normalizedGuideUserId;
 
     _selectedDate = anchor;
     _state = ExcursionScheduleState.loading;
@@ -43,13 +49,20 @@ class ExcursionScheduleProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final slots = await _scheduleApi.getGuideSchedule(
-        from: weekStart.toUtc(),
-        to: weekEnd.toUtc(),
-      );
+      final slots = publicGuideUserId == null
+          ? await _scheduleApi.getGuideSchedule(
+              from: weekStart.toUtc(),
+              to: weekEnd.toUtc(),
+            )
+          : await _scheduleApi.getPublicGuideSchedule(
+              guideUserId: publicGuideUserId,
+              from: weekStart.toUtc(),
+              to: weekEnd.toUtc(),
+            );
       _slots = _sortSlots(slots);
       _loadedWeekStart = weekStart;
       _loadedWeekEnd = weekEnd;
+      _loadedGuideUserId = publicGuideUserId;
       _state = ExcursionScheduleState.success;
     } on DioException catch (e) {
       _errorMessage = DioErrorMapper.toMessage(e);
@@ -238,10 +251,16 @@ class ExcursionScheduleProvider extends ChangeNotifier {
     return isDateInLoadedWeek(selected);
   }
 
-  bool isDateInLoadedWeek(DateTime day) {
+  bool isDateInLoadedWeek(DateTime day, {String? guideUserId}) {
     final start = _loadedWeekStart;
     final end = _loadedWeekEnd;
     if (start == null || end == null) return false;
+    final normalizedGuideUserId = guideUserId?.trim();
+    final expectedGuideUserId =
+        normalizedGuideUserId == null || normalizedGuideUserId.isEmpty
+            ? null
+            : normalizedGuideUserId;
+    if (_loadedGuideUserId != expectedGuideUserId) return false;
     return !day.isBefore(start) && day.isBefore(end);
   }
 

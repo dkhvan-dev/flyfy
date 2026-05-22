@@ -158,4 +158,34 @@ void main() {
       expect(source, contains('directGuideReviewsFuture:'));
     },
   );
+
+  test('foreign verified guide profile shows rating and calendar action',
+      () async {
+    final source = await File(
+      'lib/screens/profile/profile_screen.dart',
+    ).readAsString();
+    final heroStart = source.indexOf('class _ProfileHero');
+    final heroEnd = source.indexOf('class _ProfileAvatar');
+    final bodyStart = source.indexOf('class _ProfileBody');
+    final bodyEnd = source.indexOf('class _ProfileTopBar');
+
+    expect(heroStart, isNonNegative);
+    expect(heroEnd, greaterThan(heroStart));
+    expect(bodyStart, isNonNegative);
+    expect(bodyEnd, greaterThan(bodyStart));
+
+    final heroSource = source.substring(heroStart, heroEnd);
+    final bodySource = source.substring(bodyStart, bodyEnd);
+
+    expect(heroSource, contains('class _GuideRatingBadge'));
+    expect(heroSource, contains('_GuideRatingBadge(guide: guide!)'));
+    expect(heroSource, contains('guide.ratingAvg'));
+    expect(heroSource, isNot(contains('profileGuideRatingSummary(')));
+    expect(heroSource, isNot(contains('guide.reviewsCount')));
+    expect(bodySource, contains('guideCalendarTitle'));
+    expect(
+      bodySource,
+      contains("context.push('/guides/\${profile.userId}/calendar')"),
+    );
+  });
 }

@@ -12,7 +12,14 @@ import 'widgets/guide_calendar_timeline.dart';
 import 'widgets/guide_schedule_slot_sheet.dart';
 
 class GuideCalendarScreen extends StatefulWidget {
-  const GuideCalendarScreen({super.key});
+  const GuideCalendarScreen({
+    super.key,
+    this.guideUserId,
+    this.readOnly = false,
+  });
+
+  final String? guideUserId;
+  final bool readOnly;
 
   @override
   State<GuideCalendarScreen> createState() => _GuideCalendarScreenState();
@@ -24,8 +31,13 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<ExcursionProvider>().loadGuideDashboardData();
-      context.read<ExcursionScheduleProvider>().loadWeek(DateTime.now());
+      if (!widget.readOnly) {
+        context.read<ExcursionProvider>().loadGuideDashboardData();
+      }
+      context.read<ExcursionScheduleProvider>().loadWeek(
+            DateTime.now(),
+            guideUserId: widget.guideUserId,
+          );
     });
   }
 
@@ -42,7 +54,10 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
             return RefreshIndicator(
               color: AppColors.accent,
               backgroundColor: const Color(0xFF2A2118),
-              onRefresh: () => provider.loadWeek(selectedDate),
+              onRefresh: () => provider.loadWeek(
+                selectedDate,
+                guideUserId: widget.guideUserId,
+              ),
               child: CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(
@@ -71,15 +86,16 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          FilledButton.icon(
-                            onPressed: () => _openSlotSheet(selectedDate),
-                            icon: const Icon(Icons.add_rounded),
-                            label: Text(l10n.guideCalendarAddSlot),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.accent,
-                              foregroundColor: AppColors.textPrimary,
+                          if (!widget.readOnly)
+                            FilledButton.icon(
+                              onPressed: () => _openSlotSheet(selectedDate),
+                              icon: const Icon(Icons.add_rounded),
+                              label: Text(l10n.guideCalendarAddSlot),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.accent,
+                                foregroundColor: AppColors.textPrimary,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -89,10 +105,16 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
                       selectedDate: selectedDate,
                       slots: provider.slots,
                       onDateSelected: (day) {
-                        if (provider.isDateInLoadedWeek(day)) {
+                        if (provider.isDateInLoadedWeek(
+                          day,
+                          guideUserId: widget.guideUserId,
+                        )) {
                           provider.selectDate(day);
                         } else {
-                          provider.loadWeek(day);
+                          provider.loadWeek(
+                            day,
+                            guideUserId: widget.guideUserId,
+                          );
                         }
                       },
                     ),
@@ -101,7 +123,9 @@ class _GuideCalendarScreenState extends State<GuideCalendarScreen> {
                   GuideCalendarTimeline(
                     slots: selectedSlots,
                     isLoading: provider.state == ExcursionScheduleState.loading,
-                    onSlotTap: (slot) => _openSlotSheet(selectedDate, slot),
+                    onSlotTap: widget.readOnly
+                        ? null
+                        : (slot) => _openSlotSheet(selectedDate, slot),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 32)),
                 ],

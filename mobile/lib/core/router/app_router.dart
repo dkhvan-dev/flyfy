@@ -313,6 +313,18 @@ class AppRouter {
               _withAndroidBackSwipe(const GuidesScreen()),
         ),
         GoRoute(
+          path: '/guides/:guideUserId/calendar',
+          builder: (context, state) {
+            final guideUserId = state.pathParameters['guideUserId'] ?? '';
+            return _withAndroidBackSwipe(
+              GuideCalendarScreen(
+                guideUserId: guideUserId,
+                readOnly: true,
+              ),
+            );
+          },
+        ),
+        GoRoute(
           path: '/excursions/create',
           pageBuilder: (context, state) {
             return _buildActivityEditorPage(
@@ -533,6 +545,10 @@ class AppRouter {
     }
 
     if (location.startsWith('/stories/')) {
+      return true;
+    }
+
+    if (location.startsWith('/guides/')) {
       return true;
     }
 
