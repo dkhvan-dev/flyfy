@@ -9,6 +9,7 @@ import '../../core/network/story_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../features/activities/activity_cover_url.dart';
+import '../../features/activities/activity_taxonomy_resolver.dart';
 import '../../features/activities/models/activity_category_vm.dart';
 import '../../features/activities/models/activity_list_item_vm.dart';
 import '../../features/attractions/attraction_ui.dart';
@@ -76,6 +77,10 @@ class _HomeScreenState extends State<HomeScreen> {
       final provider = context.read<ActivityProvider>();
       if (provider.state == ActivitiesState.initial && provider.items.isEmpty) {
         provider.loadActivities();
+      }
+      if (provider.categoryState == ActivitiesState.initial &&
+          provider.categoryItems.isEmpty) {
+        provider.loadActivityCategories();
       }
       final currentUserId =
           (context.read<SessionProvider>().profile?.userId ?? '').trim();
@@ -184,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final currentUserId =
         (context.read<SessionProvider>().profile?.userId ?? '').trim();
     await provider.refreshActivities();
+    await provider.loadActivityCategories(force: true);
     if (currentUserId.isNotEmpty) {
       await Future.wait<void>([
         provider.refreshMyActivities(),
@@ -346,13 +352,11 @@ class _HomeScreenState extends State<HomeScreen> {
         final iconSize = (isCompact ? 50.0 : 58.0) * visualScale;
         final topPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 28.0);
         final bottomPadding = isShortLayout ? 20.0 : (isCompact ? 24.0 : 30.0);
-        final handleToIconGap = isShortLayout
-            ? 20.0
-            : (isCompact ? 26.0 : 34.0);
+        final handleToIconGap =
+            isShortLayout ? 20.0 : (isCompact ? 26.0 : 34.0);
         final iconToTitleGap = isShortLayout ? 18.0 : (isCompact ? 22.0 : 26.0);
-        final titleToOptionsGap = isShortLayout
-            ? 22.0
-            : (isCompact ? 28.0 : 34.0);
+        final titleToOptionsGap =
+            isShortLayout ? 22.0 : (isCompact ? 28.0 : 34.0);
         final optionGap = isShortLayout ? 12.0 : (isCompact ? 14.0 : 16.0);
 
         return SafeArea(
@@ -1155,9 +1159,8 @@ class _LogoutDialogActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foregroundColor = isPrimary
-        ? const Color(0xFF1D1711)
-        : const Color(0xFFFFE9C8);
+    final foregroundColor =
+        isPrimary ? const Color(0xFF1D1711) : const Color(0xFFFFE9C8);
 
     return Material(
       color: Colors.transparent,
@@ -1485,9 +1488,8 @@ class _QuickActionsGrid extends StatelessWidget {
         final minContentHeight =
             iconSize + iconLabelGap + 13 + verticalPadding * 2;
         final visualHeight = tileWidth * (isCompact ? 0.82 : 0.76);
-        final tileHeight = visualHeight < minContentHeight
-            ? minContentHeight
-            : visualHeight;
+        final tileHeight =
+            visualHeight < minContentHeight ? minContentHeight : visualHeight;
 
         return GridView.builder(
           shrinkWrap: true,
@@ -1502,15 +1504,12 @@ class _QuickActionsGrid extends StatelessWidget {
           itemBuilder: (context, index) {
             final action = actions[index];
             final isEnabled = action.onTap != null;
-            final foregroundColor = isEnabled
-                ? AppColors.accent
-                : const Color(0xFF8E8A84);
-            final textColor = isEnabled
-                ? const Color(0xFFF2E5D7)
-                : const Color(0xFFB1AAA2);
-            final backgroundColor = isEnabled
-                ? const Color(0xFF43280D)
-                : const Color(0xFF3D3935);
+            final foregroundColor =
+                isEnabled ? AppColors.accent : const Color(0xFF8E8A84);
+            final textColor =
+                isEnabled ? const Color(0xFFF2E5D7) : const Color(0xFFB1AAA2);
+            final backgroundColor =
+                isEnabled ? const Color(0xFF43280D) : const Color(0xFF3D3935);
 
             return Material(
               color: Colors.transparent,
@@ -1591,9 +1590,8 @@ class _PromoCarousel extends StatelessWidget {
         final cardWidth = viewportWidth * (isCompact ? 0.86 : 0.84);
         final visualHeight = cardWidth * 0.63;
         final minContentHeight = (isCompact ? 190.0 : 204.0) * textScale;
-        final cardHeight = visualHeight < minContentHeight
-            ? minContentHeight
-            : visualHeight;
+        final cardHeight =
+            visualHeight < minContentHeight ? minContentHeight : visualHeight;
 
         return MediaQuery(
           data: MediaQuery.of(
@@ -2803,12 +2801,12 @@ class _RecommendedActivitiesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final languageCode = Localizations.localeOf(context).languageCode;
     final recommendedItems = _filterHomeRecommendedItems(
       publicItems: provider.items,
       currentUserId: currentUserId,
     );
-    final isLoadingPublic =
-        provider.state == ActivitiesState.loading ||
+    final isLoadingPublic = provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
     final hasLoadError = provider.state == ActivitiesState.error;
 
@@ -2932,6 +2930,8 @@ class _RecommendedActivitiesSection extends StatelessWidget {
         for (var index = 0; index < items.length; index++) ...[
           _RecommendedActivityCard(
             item: items[index],
+            categories: provider.categoryItems,
+            languageCode: languageCode,
             isJoined: joinedIds.contains(items[index].id),
             onTap: () => onActivityTap(items[index].id),
           ),
@@ -2945,11 +2945,15 @@ class _RecommendedActivitiesSection extends StatelessWidget {
 class _RecommendedActivityCard extends StatelessWidget {
   const _RecommendedActivityCard({
     required this.item,
+    required this.categories,
+    required this.languageCode,
     required this.isJoined,
     required this.onTap,
   });
 
   final ActivityListItemVm item;
+  final List<ActivityCategoryVm> categories;
+  final String languageCode;
   final bool isJoined;
   final VoidCallback onTap;
 
@@ -2960,7 +2964,25 @@ class _RecommendedActivityCard extends StatelessWidget {
   }
 
   String _categoryLabel() {
-    return ActivityCategoryVm.humanizeSlug(item.categorySlug);
+    final categoryLabel = localizedActivityCategoryLabel(
+      categories: categories,
+      slug: item.categorySlug,
+      languageCode: languageCode,
+    ).trim();
+    final subcategoryLabel = localizedActivitySubcategoryLabel(
+      categories: categories,
+      categorySlug: item.categorySlug,
+      subcategorySlug: item.subcategorySlug,
+      languageCode: languageCode,
+    ).trim();
+
+    if (subcategoryLabel.isEmpty || subcategoryLabel == categoryLabel) {
+      return categoryLabel;
+    }
+    if (categoryLabel.isEmpty) {
+      return subcategoryLabel;
+    }
+    return '$categoryLabel / $subcategoryLabel';
   }
 
   @override
@@ -2968,9 +2990,8 @@ class _RecommendedActivityCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 360;
-    final buttonLabel = isJoined
-        ? l10n.activityDetailsJoinedBadge
-        : l10n.activityJoinSession;
+    final buttonLabel =
+        isJoined ? l10n.activityDetailsJoinedBadge : l10n.activityJoinSession;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -3005,8 +3026,8 @@ class _RecommendedActivityCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: const Color(0xFFFFF7EF),
-                            fontSize: isCompact ? 17 : 19,
-                            height: 1.12,
+                            fontSize: isCompact ? 15 : 16,
+                            height: 1.16,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -3017,7 +3038,7 @@ class _RecommendedActivityCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: const Color(0xFFAFA5BA),
-                            fontSize: isCompact ? 13 : 14,
+                            fontSize: isCompact ? 11.5 : 12,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -3030,7 +3051,7 @@ class _RecommendedActivityCard extends StatelessWidget {
                               item.isFree ? l10n.freeLabel : item.priceLabel,
                               style: TextStyle(
                                 color: const Color(0xFFFF9F1A),
-                                fontSize: isCompact ? 19 : 22,
+                                fontSize: isCompact ? 16 : 17,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -3039,7 +3060,7 @@ class _RecommendedActivityCard extends StatelessWidget {
                                 l10n.createPricePerPersonHint,
                                 style: TextStyle(
                                   color: const Color(0xFFAFA5BA),
-                                  fontSize: isCompact ? 12 : 13,
+                                  fontSize: isCompact ? 11 : 11.5,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -3098,7 +3119,7 @@ class _ActivityJoinButton extends StatelessWidget {
                     maxLines: 1,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: isCompact ? 14 : 16,
+                      fontSize: isCompact ? 12 : 13,
                       height: 1,
                       fontWeight: FontWeight.w900,
                     ),

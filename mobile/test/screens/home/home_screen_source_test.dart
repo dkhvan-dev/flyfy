@@ -112,4 +112,42 @@ void main() {
     expect(labelSource, contains('l10n.attractionFilterCategoryOther'));
     expect(labelSource, isNot(contains('for (final tag in attraction.tags)')));
   });
+
+  test(
+    'recommended activities use localized taxonomy labels and compact text',
+    () async {
+      final source =
+          await File('lib/screens/home/home_screen.dart').readAsString();
+      final sectionStart = source.indexOf(
+        'class _RecommendedActivitiesSection',
+      );
+      final cardStart = source.indexOf('class _RecommendedActivityCard');
+      final buttonStart = source.indexOf('class _ActivityJoinButton');
+
+      expect(sectionStart, isNonNegative);
+      expect(cardStart, greaterThan(sectionStart));
+      expect(buttonStart, greaterThan(cardStart));
+
+      final sectionSource = source.substring(sectionStart, cardStart);
+      final cardSource = source.substring(cardStart, buttonStart);
+
+      expect(
+        source,
+        contains(
+          "import '../../features/activities/activity_taxonomy_resolver.dart';",
+        ),
+      );
+      expect(source, contains('provider.loadActivityCategories();'));
+      expect(sectionSource, contains('categories: provider.categoryItems'));
+      expect(sectionSource, contains('languageCode:'));
+      expect(cardSource, contains('localizedActivityCategoryLabel('));
+      expect(cardSource, contains('localizedActivitySubcategoryLabel('));
+      expect(cardSource,
+          contains("return '\$categoryLabel / \$subcategoryLabel';"));
+      expect(cardSource, isNot(contains('ActivityCategoryVm.humanizeSlug')));
+      expect(cardSource, contains('fontSize: isCompact ? 15 : 16'));
+      expect(cardSource, contains('fontSize: isCompact ? 11.5 : 12'));
+      expect(cardSource, contains('fontSize: isCompact ? 16 : 17'));
+    },
+  );
 }
