@@ -1580,6 +1580,35 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeCurrentLocationLabel => 'Текущая локация';
 
   @override
+  String get homeLocationSheetTitle => 'Выбор локации';
+
+  @override
+  String get homeLocationSelected => 'Выбранная локация';
+
+  @override
+  String get homeLocationUseCurrent => 'Использовать мою текущую локацию';
+
+  @override
+  String get homeLocationDetecting => 'Определяем локацию...';
+
+  @override
+  String get homeLocationSearchHint => 'Поиск города';
+
+  @override
+  String get homeLocationNoResults => 'Города не найдены';
+
+  @override
+  String get homeLocationSearchFailed =>
+      'Не удалось найти локации. Попробуйте ещё раз.';
+
+  @override
+  String get homeLocationDetectionFailed =>
+      'Не удалось определить локацию. Проверьте разрешения геолокации и попробуйте снова.';
+
+  @override
+  String get homeLocationApply => 'Применить локацию';
+
+  @override
   String homeExploringLocation(Object location) {
     return '$location';
   }

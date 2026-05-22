@@ -527,6 +527,15 @@
   "homeTransportTitle": "Transport",
   "homeTransportSubtitle": "Plan your trips in advance",
   "homeCurrentLocationLabel": "Current location",
+  "homeLocationSheetTitle": "Choose location",
+  "homeLocationSelected": "Selected location",
+  "homeLocationUseCurrent": "Use my current location",
+  "homeLocationDetecting": "Detecting location...",
+  "homeLocationSearchHint": "Search city",
+  "homeLocationNoResults": "No cities found",
+  "homeLocationSearchFailed": "Failed to search locations. Try again.",
+  "homeLocationDetectionFailed": "Could not detect your location. Check location permissions and try again.",
+  "homeLocationApply": "Apply location",
   "homeExploringLocation": "{location}",
   "@homeExploringLocation": {
     "placeholders": {

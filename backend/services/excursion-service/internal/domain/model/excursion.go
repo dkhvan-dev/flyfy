@@ -23,6 +23,7 @@ var (
 	ErrInvalidExcursionDuration            = errors.New("invalid excursion duration")
 	ErrInvalidExcursionGroupSize           = errors.New("invalid excursion group size")
 	ErrInvalidExcursionMeeting             = errors.New("invalid excursion meeting point")
+	ErrInvalidExcursionLocation            = errors.New("invalid excursion location")
 	ErrInvalidExcursionPrice               = errors.New("invalid excursion price")
 	ErrInvalidExcursionCurrency            = errors.New("invalid excursion currency")
 	ErrExcursionLanguageRequired           = errors.New("excursion language is required")
@@ -294,6 +295,9 @@ func (t *Excursion) Validate() error {
 	if strings.TrimSpace(t.MeetingPoint) == "" {
 		return ErrInvalidExcursionMeeting
 	}
+	if err := validateExcursionLocation(t.CountryCode, t.CityName, t.Latitude, t.Longitude); err != nil {
+		return err
+	}
 	if t.PriceAmount < 0 || t.PriceAmount > maxExcursionPrice {
 		return ErrInvalidExcursionPrice
 	}
@@ -301,6 +305,27 @@ func (t *Excursion) Validate() error {
 		return ErrInvalidExcursionCurrency
 	}
 
+	return nil
+}
+
+func validateExcursionLocation(
+	countryCode *string,
+	cityName *string,
+	latitude *float64,
+	longitude *float64,
+) error {
+	if countryCode == nil ||
+		strings.TrimSpace(*countryCode) == "" ||
+		cityName == nil ||
+		strings.TrimSpace(*cityName) == "" {
+		return ErrInvalidExcursionLocation
+	}
+	if latitude == nil || longitude == nil {
+		return ErrInvalidExcursionLocation
+	}
+	if *latitude < -90 || *latitude > 90 || *longitude < -180 || *longitude > 180 {
+		return ErrInvalidExcursionLocation
+	}
 	return nil
 }
 

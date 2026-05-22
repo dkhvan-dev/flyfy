@@ -22,6 +22,10 @@ import (
 )
 
 func TestUpdateExcursionUsesContiguousPlaceholders(t *testing.T) {
+	lat := 43.238949
+	lng := 76.889709
+	country := "KZ"
+	city := "Almaty"
 	item, err := model.NewExcursion(model.NewExcursionParams{
 		GuideProfileID:  uuid.New(),
 		GuideUserID:     uuid.New(),
@@ -32,7 +36,11 @@ func TestUpdateExcursionUsesContiguousPlaceholders(t *testing.T) {
 		Visibility:      enum.ExcursionVisibilityPublic,
 		DurationMinutes: 240,
 		MaxGroupSize:    8,
+		CountryCode:     &country,
+		CityName:        &city,
 		MeetingPoint:    "Hotel pickup",
+		Latitude:        &lat,
+		Longitude:       &lng,
 		PriceAmount:     120,
 		Currency:        "USD",
 	})
@@ -806,6 +814,10 @@ func decodeTranslationsArg(t *testing.T, arg any) model.ExcursionTranslations {
 
 func validRepositoryExcursion(t *testing.T) *model.Excursion {
 	t.Helper()
+	lat := 43.238949
+	lng := 76.889709
+	country := "KZ"
+	city := "Almaty"
 	item, err := model.NewExcursion(model.NewExcursionParams{
 		GuideProfileID:  uuid.New(),
 		GuideUserID:     uuid.New(),
@@ -816,7 +828,11 @@ func validRepositoryExcursion(t *testing.T) *model.Excursion {
 		Visibility:      enum.ExcursionVisibilityPublic,
 		DurationMinutes: 240,
 		MaxGroupSize:    8,
+		CountryCode:     &country,
+		CityName:        &city,
 		MeetingPoint:    "Hotel pickup",
+		Latitude:        &lat,
+		Longitude:       &lng,
 		PriceAmount:     120,
 		Currency:        "USD",
 	})

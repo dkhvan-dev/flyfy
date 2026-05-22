@@ -971,6 +971,8 @@ func TestUpdateActivityAllowsMeetingAddressChangeMoreThanOneHourBeforeStart(t *t
 			item.CountryCode = stringPtr("KZ")
 			item.CityName = stringPtr("Алматы")
 			item.AddressText = stringPtr("Алматы, Казахстан, улица Байзакова 127")
+			item.Latitude = floatPtr(43.248)
+			item.Longitude = floatPtr(76.912)
 			item.MapURL = stringPtr("https://www.openstreetmap.org/?mlat=43.248&mlon=76.912")
 			item.StartAt = time.Now().UTC().Add(2 * time.Hour)
 			item.EndAt = item.StartAt.Add(2 * time.Hour)
@@ -1021,6 +1023,8 @@ func TestUpdateActivityRejectsMeetingAddressChangeWithinOneHourBeforeStart(t *te
 			item.CountryCode = stringPtr("KZ")
 			item.CityName = stringPtr("Алматы")
 			item.AddressText = stringPtr("Алматы, Казахстан, улица Байзакова 127")
+			item.Latitude = floatPtr(43.248)
+			item.Longitude = floatPtr(76.912)
 			item.MapURL = stringPtr("https://www.openstreetmap.org/?mlat=43.248&mlon=76.912")
 			item.StartAt = time.Now().UTC().Add(45 * time.Minute)
 			item.EndAt = item.StartAt.Add(2 * time.Hour)
@@ -1824,6 +1828,10 @@ func validActivity(t *testing.T, activityID uuid.UUID, actorUserID uuid.UUID) *m
 }
 
 func stringPtr(value string) *string {
+	return &value
+}
+
+func floatPtr(value float64) *float64 {
 	return &value
 }
 

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'features/attendance/attendance_sync_manager.dart';
 import 'providers/auth_provider.dart';
+import 'providers/home_location_provider.dart';
 import 'providers/session_provider.dart';
 import 'providers/locale_provider.dart';
 import 'core/router/app_router.dart';
@@ -64,6 +65,7 @@ class _SuperAppState extends State<SuperApp> {
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
         ChangeNotifierProvider<SessionProvider>.value(value: _sessionProvider),
         ChangeNotifierProvider<LocaleProvider>.value(value: _localeProvider),
+        ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionProvider()),
         ChangeNotifierProvider(create: (_) => ExcursionScheduleProvider()),

@@ -1580,6 +1580,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeCurrentLocationLabel => 'Current location';
 
   @override
+  String get homeLocationSheetTitle => 'Choose location';
+
+  @override
+  String get homeLocationSelected => 'Selected location';
+
+  @override
+  String get homeLocationUseCurrent => 'Use my current location';
+
+  @override
+  String get homeLocationDetecting => 'Detecting location...';
+
+  @override
+  String get homeLocationSearchHint => 'Search city';
+
+  @override
+  String get homeLocationNoResults => 'No cities found';
+
+  @override
+  String get homeLocationSearchFailed =>
+      'Failed to search locations. Try again.';
+
+  @override
+  String get homeLocationDetectionFailed =>
+      'Could not detect your location. Check location permissions and try again.';
+
+  @override
+  String get homeLocationApply => 'Apply location';
+
+  @override
   String homeExploringLocation(Object location) {
     return '$location';
   }

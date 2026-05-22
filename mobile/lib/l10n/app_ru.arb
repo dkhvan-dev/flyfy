@@ -527,6 +527,15 @@
   "homeTransportTitle": "Транспорт",
   "homeTransportSubtitle": "Планируйте перемещения заранее",
   "homeCurrentLocationLabel": "Текущая локация",
+  "homeLocationSheetTitle": "Выбор локации",
+  "homeLocationSelected": "Выбранная локация",
+  "homeLocationUseCurrent": "Использовать мою текущую локацию",
+  "homeLocationDetecting": "Определяем локацию...",
+  "homeLocationSearchHint": "Поиск города",
+  "homeLocationNoResults": "Города не найдены",
+  "homeLocationSearchFailed": "Не удалось найти локации. Попробуйте ещё раз.",
+  "homeLocationDetectionFailed": "Не удалось определить локацию. Проверьте разрешения геолокации и попробуйте снова.",
+  "homeLocationApply": "Применить локацию",
   "homeExploringLocation": "{location}",
   "@homeExploringLocation": {
     "placeholders": {

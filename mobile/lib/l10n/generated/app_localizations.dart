@@ -2956,6 +2956,60 @@ abstract class AppLocalizations {
   /// **'Current location'**
   String get homeCurrentLocationLabel;
 
+  /// No description provided for @homeLocationSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose location'**
+  String get homeLocationSheetTitle;
+
+  /// No description provided for @homeLocationSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected location'**
+  String get homeLocationSelected;
+
+  /// No description provided for @homeLocationUseCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my current location'**
+  String get homeLocationUseCurrent;
+
+  /// No description provided for @homeLocationDetecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Detecting location...'**
+  String get homeLocationDetecting;
+
+  /// No description provided for @homeLocationSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search city'**
+  String get homeLocationSearchHint;
+
+  /// No description provided for @homeLocationNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No cities found'**
+  String get homeLocationNoResults;
+
+  /// No description provided for @homeLocationSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to search locations. Try again.'**
+  String get homeLocationSearchFailed;
+
+  /// No description provided for @homeLocationDetectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not detect your location. Check location permissions and try again.'**
+  String get homeLocationDetectionFailed;
+
+  /// No description provided for @homeLocationApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply location'**
+  String get homeLocationApply;
+
   /// No description provided for @homeExploringLocation.
   ///
   /// In en, this message translates to:

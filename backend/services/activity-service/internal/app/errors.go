@@ -45,6 +45,12 @@ var (
 	ErrBlockedURLDetected          = errors.New("blocked url detected")
 	ErrActivityCreationRateLimited = errors.New("activity creation rate limited")
 
+	ErrActivityLocationIncomplete             = errors.New("activity location is incomplete")
+	ErrActivityLocationCoordinatesRequired    = errors.New("activity location coordinates are required")
+	ErrActivityLocationCoordinatesInvalid     = errors.New("activity location coordinates are invalid")
+	ErrActivityLocationOfflineFieldsForbidden = errors.New("online activity cannot include offline location fields")
+	ErrActivityLocationMeetingURLForbidden    = errors.New("offline activity cannot include meeting url")
+
 	ErrActivityMediaFileNotFound   = errors.New("activity media file not found")
 	ErrActivityMediaFileNotReady   = errors.New("activity media file is not ready")
 	ErrActivityMediaFileNotAllowed = errors.New("activity media file is not allowed")

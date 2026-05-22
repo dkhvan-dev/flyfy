@@ -239,6 +239,20 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		return nil, err
 	}
 
+	if err := u.policy.ValidateActivityLocation(
+		input.Format,
+		input.CountryCode,
+		input.CityID,
+		input.CityName,
+		input.AddressText,
+		input.Latitude,
+		input.Longitude,
+		input.MapURL,
+		input.MeetingURL,
+	); err != nil {
+		return nil, err
+	}
+
 	visibilityPassword, err := normalizeVisibilityPassword(
 		input.Visibility,
 		input.VisibilityPassword,
@@ -1504,6 +1518,20 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		return nil, err
 	}
 
+	if err = u.policy.ValidateActivityLocation(
+		item.Format,
+		item.CountryCode,
+		item.CityID,
+		item.CityName,
+		item.AddressText,
+		item.Latitude,
+		item.Longitude,
+		item.MapURL,
+		item.MeetingURL,
+	); err != nil {
+		return nil, err
+	}
+
 	if input.HasCoverFileID {
 		if err = u.validateCoverMediaFile(ctx, input.CoverFileID); err != nil {
 			return nil, err
@@ -2073,6 +2101,8 @@ func locationSnapshot(item *model.Activity) string {
 		model.ValueOrEmpty(item.CityID),
 		model.ValueOrEmpty(item.CityName),
 		model.ValueOrEmpty(item.AddressText),
+		optionalFloatString(item.Latitude),
+		optionalFloatString(item.Longitude),
 		model.ValueOrEmpty(item.MapURL),
 		model.ValueOrEmpty(item.MeetingURL),
 	}, "|")
@@ -2085,6 +2115,15 @@ func meetingAddressSnapshot(item *model.Activity) string {
 		model.ValueOrEmpty(item.CityID),
 		model.ValueOrEmpty(item.CityName),
 		model.ValueOrEmpty(item.AddressText),
+		optionalFloatString(item.Latitude),
+		optionalFloatString(item.Longitude),
 		model.ValueOrEmpty(item.MapURL),
 	}, "|")
+}
+
+func optionalFloatString(value *float64) string {
+	if value == nil {
+		return ""
+	}
+	return fmt.Sprintf("%g", *value)
 }

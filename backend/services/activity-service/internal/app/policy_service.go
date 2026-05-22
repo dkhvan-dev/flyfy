@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/model"
 	"github.com/dkhvan-dev/flyfy/backend/services/activity-service/internal/domain/port"
 	"github.com/google/uuid"
@@ -65,6 +66,86 @@ func (s *PolicyService) ValidateURLs(ctx context.Context, urls ...*string) error
 	return nil
 }
 
+func (s *PolicyService) ValidateActivityLocation(
+	format enum.ActivityFormat,
+	countryCode *string,
+	cityID *string,
+	cityName *string,
+	addressText *string,
+	latitude *float64,
+	longitude *float64,
+	mapURL *string,
+	meetingURL *string,
+) error {
+	if !format.IsValid() {
+		return model.ErrInvalidActivityFormat
+	}
+
+	hasOfflineFields := hasLocationText(countryCode) ||
+		hasLocationText(cityID) ||
+		hasLocationText(cityName) ||
+		hasLocationText(addressText) ||
+		hasLocationText(mapURL) ||
+		latitude != nil ||
+		longitude != nil
+	hasMeetingURL := hasLocationText(meetingURL)
+
+	if (latitude == nil) != (longitude == nil) {
+		return ErrActivityLocationCoordinatesRequired
+	}
+	if latitude != nil && longitude != nil &&
+		(*latitude < -90 || *latitude > 90 || *longitude < -180 || *longitude > 180) {
+		return ErrActivityLocationCoordinatesInvalid
+	}
+
+	switch format {
+	case enum.ActivityFormatOnline:
+		if hasOfflineFields {
+			return ErrActivityLocationOfflineFieldsForbidden
+		}
+		if !hasMeetingURL {
+			return model.ErrInvalidMeetingURL
+		}
+
+	case enum.ActivityFormatOffline:
+		if hasMeetingURL {
+			return ErrActivityLocationMeetingURLForbidden
+		}
+		if err := validateOfflineActivityLocation(countryCode, cityID, cityName, latitude, longitude); err != nil {
+			return err
+		}
+
+	case enum.ActivityFormatHybrid:
+		if !hasMeetingURL && !hasOfflineFields {
+			return model.ErrInvalidOfflineLocation
+		}
+		if hasOfflineFields {
+			if err := validateOfflineActivityLocation(countryCode, cityID, cityName, latitude, longitude); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func validateOfflineActivityLocation(
+	countryCode *string,
+	cityID *string,
+	cityName *string,
+	latitude *float64,
+	longitude *float64,
+) error {
+	if !hasLocationText(countryCode) ||
+		(!hasLocationText(cityID) && !hasLocationText(cityName)) {
+		return ErrActivityLocationIncomplete
+	}
+	if latitude == nil || longitude == nil {
+		return ErrActivityLocationCoordinatesRequired
+	}
+	return nil
+}
+
 func normalizeURL(raw *string) string {
 	if raw == nil {
 		return ""
@@ -76,6 +157,10 @@ func normalizeURL(raw *string) string {
 	}
 
 	return value
+}
+
+func hasLocationText(raw *string) bool {
+	return raw != nil && strings.TrimSpace(*raw) != ""
 }
 
 func matchesBlockedPattern(rawURL string, pattern *model.BlockedURLPattern) bool {

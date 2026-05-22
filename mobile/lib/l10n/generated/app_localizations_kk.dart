@@ -1592,6 +1592,35 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeCurrentLocationLabel => 'Ағымдағы локация';
 
   @override
+  String get homeLocationSheetTitle => 'Локацияны таңдау';
+
+  @override
+  String get homeLocationSelected => 'Таңдалған локация';
+
+  @override
+  String get homeLocationUseCurrent => 'Қазіргі локациямды пайдалану';
+
+  @override
+  String get homeLocationDetecting => 'Локация анықталуда...';
+
+  @override
+  String get homeLocationSearchHint => 'Қаланы іздеу';
+
+  @override
+  String get homeLocationNoResults => 'Қалалар табылмады';
+
+  @override
+  String get homeLocationSearchFailed =>
+      'Локацияларды іздеу сәтсіз аяқталды. Қайталап көріңіз.';
+
+  @override
+  String get homeLocationDetectionFailed =>
+      'Локацияңызды анықтау мүмкін болмады. Геолокация рұқсаттарын тексеріп, қайта көріңіз.';
+
+  @override
+  String get homeLocationApply => 'Локацияны қолдану';
+
+  @override
   String homeExploringLocation(Object location) {
     return '$location';
   }

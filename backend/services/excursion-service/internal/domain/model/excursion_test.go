@@ -30,8 +30,8 @@ func TestNewExcursionRequiresValidGuideAndCoreFields(t *testing.T) {
 	}
 }
 
-func TestExcursionPublishRequiresBookableDetails(t *testing.T) {
-	excursion, err := NewExcursion(NewExcursionParams{
+func TestNewExcursionRequiresCompletePhysicalLocation(t *testing.T) {
+	_, err := NewExcursion(NewExcursionParams{
 		GuideProfileID:  uuid.New(),
 		GuideUserID:     uuid.New(),
 		Title:           "Almaty Mountain Escape",
@@ -42,6 +42,65 @@ func TestExcursionPublishRequiresBookableDetails(t *testing.T) {
 		DurationMinutes: 240,
 		MaxGroupSize:    8,
 		MeetingPoint:    "Hotel pickup",
+		PriceAmount:     120,
+		Currency:        "USD",
+	})
+
+	if err != ErrInvalidExcursionLocation {
+		t.Fatalf("error = %v, want %v", err, ErrInvalidExcursionLocation)
+	}
+}
+
+func TestNewExcursionRejectsCoordinatesOutOfRange(t *testing.T) {
+	lat := 43.238949
+	lng := 181.0
+	country := "KZ"
+	city := "Almaty"
+
+	_, err := NewExcursion(NewExcursionParams{
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     uuid.New(),
+		Title:           "Almaty Mountain Escape",
+		Summary:         "Private mountain route",
+		Description:     "A guided route through the most scenic mountain stops around Almaty.",
+		CategorySlug:    "nature",
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		CountryCode:     &country,
+		CityName:        &city,
+		MeetingPoint:    "Hotel pickup",
+		Latitude:        &lat,
+		Longitude:       &lng,
+		PriceAmount:     120,
+		Currency:        "USD",
+	})
+
+	if err != ErrInvalidExcursionLocation {
+		t.Fatalf("error = %v, want %v", err, ErrInvalidExcursionLocation)
+	}
+}
+
+func TestExcursionPublishRequiresBookableDetails(t *testing.T) {
+	lat := 43.238949
+	lng := 76.889709
+	country := "KZ"
+	city := "Almaty"
+	excursion, err := NewExcursion(NewExcursionParams{
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     uuid.New(),
+		Title:           "Almaty Mountain Escape",
+		Summary:         "Private mountain route",
+		Description:     "A guided route through the most scenic mountain stops around Almaty.",
+		CategorySlug:    "nature",
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 240,
+		MaxGroupSize:    8,
+		CountryCode:     &country,
+		CityName:        &city,
+		MeetingPoint:    "Hotel pickup",
+		Latitude:        &lat,
+		Longitude:       &lng,
 		PriceAmount:     120,
 		Currency:        "USD",
 	})
@@ -75,6 +134,10 @@ func TestExcursionPublishRequiresBookableDetails(t *testing.T) {
 }
 
 func TestExcursionPublishRejectsMissingItinerary(t *testing.T) {
+	lat := 43.238949
+	lng := 76.889709
+	country := "KZ"
+	city := "Almaty"
 	excursion, err := NewExcursion(NewExcursionParams{
 		GuideProfileID:  uuid.New(),
 		GuideUserID:     uuid.New(),
@@ -85,7 +148,11 @@ func TestExcursionPublishRejectsMissingItinerary(t *testing.T) {
 		Visibility:      enum.ExcursionVisibilityPublic,
 		DurationMinutes: 240,
 		MaxGroupSize:    8,
+		CountryCode:     &country,
+		CityName:        &city,
 		MeetingPoint:    "Hotel pickup",
+		Latitude:        &lat,
+		Longitude:       &lng,
 		PriceAmount:     120,
 		Currency:        "USD",
 	})
@@ -306,6 +373,10 @@ func TestNewExcursionItineraryItemNormalizesBlankAttractionName(t *testing.T) {
 
 func newValidExcursion(t *testing.T) *Excursion {
 	t.Helper()
+	lat := 43.238949
+	lng := 76.889709
+	country := "KZ"
+	city := "Almaty"
 	excursion, err := NewExcursion(NewExcursionParams{
 		GuideProfileID:  uuid.New(),
 		GuideUserID:     uuid.New(),
@@ -316,7 +387,11 @@ func newValidExcursion(t *testing.T) *Excursion {
 		Visibility:      enum.ExcursionVisibilityPublic,
 		DurationMinutes: 240,
 		MaxGroupSize:    8,
+		CountryCode:     &country,
+		CityName:        &city,
 		MeetingPoint:    "Hotel pickup",
+		Latitude:        &lat,
+		Longitude:       &lng,
 		PriceAmount:     120,
 		Currency:        "USD",
 	})

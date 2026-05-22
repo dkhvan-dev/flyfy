@@ -527,6 +527,15 @@
   "homeTransportTitle": "Көлік",
   "homeTransportSubtitle": "Қозғалысты алдын ала жоспарлаңыз",
   "homeCurrentLocationLabel": "Ағымдағы локация",
+  "homeLocationSheetTitle": "Локацияны таңдау",
+  "homeLocationSelected": "Таңдалған локация",
+  "homeLocationUseCurrent": "Қазіргі локациямды пайдалану",
+  "homeLocationDetecting": "Локация анықталуда...",
+  "homeLocationSearchHint": "Қаланы іздеу",
+  "homeLocationNoResults": "Қалалар табылмады",
+  "homeLocationSearchFailed": "Локацияларды іздеу сәтсіз аяқталды. Қайталап көріңіз.",
+  "homeLocationDetectionFailed": "Локацияңызды анықтау мүмкін болмады. Геолокация рұқсаттарын тексеріп, қайта көріңіз.",
+  "homeLocationApply": "Локацияны қолдану",
   "homeExploringLocation": "{location}",
   "@homeExploringLocation": {
     "placeholders": {

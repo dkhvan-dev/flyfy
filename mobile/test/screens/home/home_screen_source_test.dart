@@ -100,6 +100,58 @@ void main() {
     expect(source, isNot(contains("onHomeTap: () => context.go('/')")));
   });
 
+  test('home location is managed by a discovery provider and resolver',
+      () async {
+    final source =
+        await File('lib/screens/home/home_screen.dart').readAsString();
+
+    expect(source, contains('HomeLocationProvider'));
+    expect(source, contains('HomeLocationPickerSheet'));
+    expect(source, contains('AppLocalizedLocationText'));
+    expect(source, contains('onLocationTap: _openLocationSheet'));
+    expect(source, isNot(contains('_localizedCountryNames')));
+    expect(source, isNot(contains('_localizedCityNames')));
+  });
+
+  test('home location sheet uses city search and localized selected preview',
+      () async {
+    final sheetSource = await File(
+      'lib/screens/home/widgets/home_location_picker_sheet.dart',
+    ).readAsString();
+    final ruArb = await File('lib/l10n/app_ru.arb').readAsString();
+
+    final previewStart = sheetSource.indexOf('class _CurrentLocationPreview');
+    final previewEnd = sheetSource.indexOf('class _DetectLocationButton');
+
+    expect(previewStart, isNonNegative);
+    expect(previewEnd, greaterThan(previewStart));
+
+    final previewSource = sheetSource.substring(previewStart, previewEnd);
+
+    expect(ruArb, contains('"homeLocationSearchHint": "Поиск города"'));
+    expect(previewSource, contains('AppLocalizedLocationText'));
+    expect(previewSource, contains('countryCode: location.countryCode'));
+    expect(previewSource, contains('cityId: location.cityId'));
+    expect(previewSource, contains('cityName: location.cityName'));
+    expect(previewSource, isNot(contains('Text(\n                  value,')));
+    expect(sheetSource, contains('Icons.location_off_rounded'));
+    expect(sheetSource, contains('color: AppColors.accent'));
+  });
+
+  test('home discovery location stays out of activity creation requests',
+      () async {
+    final providerSource =
+        await File('lib/providers/home_location_provider.dart').readAsString();
+    final createActivitySource =
+        await File('lib/screens/activities/create_activity_screen.dart')
+            .readAsString();
+
+    expect(providerSource, contains('class HomeLocationProvider'));
+    expect(providerSource, contains('flyfy_home_location_preference'));
+    expect(createActivitySource, isNot(contains('HomeLocationProvider')));
+    expect(createActivitySource, isNot(contains('homeLocationProvider')));
+  });
+
   test('promo carousel is passive and sizes cards from content metrics',
       () async {
     final source =

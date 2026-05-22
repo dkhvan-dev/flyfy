@@ -16,15 +16,17 @@ import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../features/profile/data/guide_api.dart';
-import '../../features/profile/models/user_profile_vm.dart';
 import '../../features/stories/models/story_vm.dart';
 import '../../features/stories/story_ui.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/home_location_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/widgets/app_localized_location_text.dart';
 import '../common/app_side_drawer.dart';
+import 'widgets/home_location_picker_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -52,15 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _topStoriesRequestStarted = false;
   bool _showGuideBadge = false;
 
-  static const Map<String, Map<String, String>> _localizedCountryNames = {
-    'KZ': {'en': 'Kazakhstan', 'ru': 'Казахстан', 'kk': 'Қазақстан'},
-  };
-
-  static const Map<String, Map<String, String>> _localizedCityNames = {
-    'Almaty': {'en': 'Almaty', 'ru': 'Алматы', 'kk': 'Алматы'},
-    'Astana': {'en': 'Astana', 'ru': 'Астана', 'kk': 'Астана'},
-  };
-
   static const _promoYachtImageUrl =
       'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=900&q=80';
   static const _promoMountainImageUrl =
@@ -76,6 +69,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<ActivityProvider>();
+      final sessionProvider = context.read<SessionProvider>();
+      context.read<HomeLocationProvider>().load(
+            profile: sessionProvider.profile,
+          );
       if (provider.state == ActivitiesState.initial && provider.items.isEmpty) {
         provider.loadActivities();
       }
@@ -83,8 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
           provider.categoryItems.isEmpty) {
         provider.loadActivityCategories();
       }
-      final currentUserId =
-          (context.read<SessionProvider>().profile?.userId ?? '').trim();
+      final currentUserId = (sessionProvider.profile?.userId ?? '').trim();
       if (currentUserId.isNotEmpty &&
           provider.joinedState == ActivitiesState.initial &&
           provider.joinedItems.isEmpty) {
@@ -223,6 +219,24 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadTopAttractions(force: true),
       _loadTopStories(force: true),
     ]);
+  }
+
+  Future<void> _openLocationSheet() async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.58),
+      builder: (_) => HomeLocationPickerSheet(
+        profile: context.read<SessionProvider>().profile,
+      ),
+    );
+
+    if (changed == true && mounted) {
+      await context.read<ActivityProvider>().refreshActivities();
+    }
   }
 
   List<_FeatureEntryData> _buildFeatureEntries(AppLocalizations l10n) {
@@ -634,44 +648,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  String _resolveLocation(UserProfileVm? profile, Locale locale) {
-    final languageCode = locale.languageCode;
-    final timezone = (profile?.timezone ?? '').trim();
-    final city = _resolveLocalizedCity(timezone, languageCode);
-    final country = _resolveLocalizedCountry(
-      (profile?.countryCode ?? '').trim(),
-      languageCode,
-    );
-
-    if (country.isNotEmpty && city.isNotEmpty) {
-      return '$country, $city';
-    }
-    if (city.isNotEmpty) return city;
-    if (country.isNotEmpty) return country;
-
-    return _localizedCityNames['Almaty']?[languageCode] ?? 'Almaty';
-  }
-
-  String _resolveLocalizedCountry(String countryCode, String languageCode) {
-    if (countryCode.isEmpty) return '';
-
-    final normalizedCode = countryCode.toUpperCase();
-    return _localizedCountryNames[normalizedCode]?[languageCode] ??
-        normalizedCode;
-  }
-
-  String _resolveLocalizedCity(String timezone, String languageCode) {
-    if (timezone.isEmpty) return '';
-
-    final timezoneParts = timezone.split('/');
-    if (timezoneParts.length > 1 && timezoneParts.last.trim().isNotEmpty) {
-      final cityKey = timezoneParts.last.trim().replaceAll('_', ' ');
-      return _localizedCityNames[cityKey]?[languageCode] ?? cityKey;
-    }
-
-    return '';
-  }
-
   String _resolveLanguageLabel(String code) {
     return code.toUpperCase();
   }
@@ -682,20 +658,26 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = context.watch<AuthProvider>();
     final session = context.watch<SessionProvider>();
     final activityProvider = context.watch<ActivityProvider>();
+    final homeLocationProvider = context.watch<HomeLocationProvider>();
     final isLoggedIn = auth.state == AuthState.authenticated;
     final profile = session.profile;
     final currentUserId = (profile?.userId ?? '').trim();
-    final location = _resolveLocation(profile, Localizations.localeOf(context));
     final languageCode = Localizations.localeOf(context).languageCode;
-    final locationCity = _resolveLocalizedCity(
-      (profile?.timezone ?? '').trim(),
-      languageCode,
-    );
+    if (!homeLocationProvider.isLoaded && !homeLocationProvider.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<HomeLocationProvider>().load(profile: profile);
+      });
+    } else if (homeLocationProvider.shouldSyncProfile(profile)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<HomeLocationProvider>().syncProfileFallback(profile);
+      });
+    }
+    final homeLocation = homeLocationProvider.effectiveLocation;
+    final location = homeLocation.fallbackLabel;
     final featureEntries = _buildFeatureEntries(l10n);
     final promos = _buildPromoCards(l10n);
-    final locationTitle = locationCity.isNotEmpty
-        ? locationCity
-        : location.split(',').last.trim();
 
     if (currentUserId.isEmpty) {
       _requestedHostedActivitiesForUserId = null;
@@ -849,8 +831,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   _HomeHeader(
-                    location: locationTitle,
+                    location: homeLocation,
                     currentLocationLabel: l10n.homeCurrentLocationLabel,
+                    onLocationTap: _openLocationSheet,
                     onMenuTap: _openDrawer,
                     onNotificationsTap: () {},
                   ),
@@ -940,6 +923,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         },
                                         onEmptyTap: _openActivities,
                                         onActivityTap: _openActivityDetails,
+                                        location: homeLocation,
                                       ),
                                     ],
                                   ),
@@ -1212,12 +1196,14 @@ class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.location,
     required this.currentLocationLabel,
+    required this.onLocationTap,
     required this.onMenuTap,
     required this.onNotificationsTap,
   });
 
-  final String location;
+  final HomeLocationPreference location;
   final String currentLocationLabel;
+  final VoidCallback onLocationTap;
   final VoidCallback onMenuTap;
   final VoidCallback onNotificationsTap;
 
@@ -1250,68 +1236,86 @@ class _HomeHeader extends StatelessWidget {
             onTap: onMenuTap,
           ),
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: isCompact ? 34 : 38,
-                  height: isCompact ? 34 : 38,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.accent.withValues(alpha: 0.08),
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.08),
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onLocationTap,
+                  borderRadius: BorderRadius.circular(22),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 8 : 10,
+                      vertical: 4,
                     ),
-                  ),
-                  child: Icon(
-                    Icons.location_on_rounded,
-                    color: AppColors.accent,
-                    size: isCompact ? 18 : 20,
-                  ),
-                ),
-                SizedBox(width: isCompact ? 8 : 10),
-                Flexible(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        currentLocationLabel,
-                        style: TextStyle(
-                          color: const Color(0xFFFFB347),
-                          fontSize: isCompact ? 10 : 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              location,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: const Color(0xFFFFF7EF),
-                                fontSize: isCompact ? 16 : 17,
-                                fontWeight: FontWeight.w700,
-                              ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: isCompact ? 34 : 38,
+                          height: isCompact ? 34 : 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.accent.withValues(alpha: 0.08),
+                            border: Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.08),
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.expand_more_rounded,
-                            color: Colors.white.withValues(alpha: 0.72),
-                            size: isCompact ? 14 : 16,
+                          child: Icon(
+                            Icons.location_on_rounded,
+                            color: AppColors.accent,
+                            size: isCompact ? 18 : 20,
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        SizedBox(width: isCompact ? 8 : 10),
+                        Flexible(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                currentLocationLabel,
+                                style: TextStyle(
+                                  color: const Color(0xFFFFB347),
+                                  fontSize: isCompact ? 10 : 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: AppLocalizedLocationText(
+                                      countryCode: location.countryCode,
+                                      cityId: location.cityId,
+                                      cityName: location.cityName,
+                                      fallbackText: location.fallbackLabel,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: const Color(0xFFFFF7EF),
+                                        fontSize: isCompact ? 16 : 17,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.expand_more_rounded,
+                                    color: Colors.white.withValues(alpha: 0.72),
+                                    size: isCompact ? 14 : 16,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
           _HeaderActionButton(
@@ -2746,6 +2750,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
     required this.provider,
     required this.l10n,
     required this.currentUserId,
+    required this.location,
     required this.onRetry,
     required this.onEmptyTap,
     required this.onActivityTap,
@@ -2754,6 +2759,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
   final ActivityProvider provider;
   final AppLocalizations l10n;
   final String currentUserId;
+  final HomeLocationPreference location;
   final VoidCallback onRetry;
   final VoidCallback onEmptyTap;
   final ValueChanged<String> onActivityTap;
@@ -2764,6 +2770,7 @@ class _RecommendedActivitiesSection extends StatelessWidget {
     final recommendedItems = _filterHomeRecommendedItems(
       publicItems: provider.items,
       currentUserId: currentUserId,
+      location: location,
     );
     final isLoadingPublic = provider.state == ActivitiesState.loading ||
         provider.state == ActivitiesState.initial;
@@ -3764,12 +3771,14 @@ String _truncateHomeStoryExcerpt(String value) {
 List<ActivityListItemVm> _filterHomeRecommendedItems({
   required List<ActivityListItemVm> publicItems,
   required String? currentUserId,
+  required HomeLocationPreference location,
 }) {
   final itemsById = <String, ActivityListItemVm>{};
   final normalizedUserId = (currentUserId ?? '').trim();
 
   for (final item in publicItems) {
-    if (_isHomeRecommendedActivity(item, normalizedUserId)) {
+    if (_isHomeRecommendedActivity(item, normalizedUserId) &&
+        _matchesHomeLocation(item, location)) {
       itemsById[item.id] = item;
     }
   }
@@ -3790,6 +3799,38 @@ bool _isHomeRecommendedActivity(ActivityListItemVm item, String currentUserId) {
   final now = DateTime.now().toUtc();
   final closesAt = (item.registrationDeadline ?? item.startAt).toUtc();
   return now.isBefore(closesAt);
+}
+
+bool _matchesHomeLocation(
+  ActivityListItemVm item,
+  HomeLocationPreference location,
+) {
+  final selectedCityId = (location.cityId ?? '').trim();
+  if (selectedCityId.isNotEmpty) {
+    return (item.cityId ?? '').trim() == selectedCityId;
+  }
+
+  final selectedCityName = _normalizeLocationText(location.cityName);
+  final selectedCountryCode = _normalizeLocationText(location.countryCode);
+  if (selectedCityName.isEmpty && selectedCountryCode.isEmpty) {
+    return true;
+  }
+
+  final itemCityName = _normalizeLocationText(item.cityName);
+  final itemCountryCode = _normalizeLocationText(item.countryCode);
+  if (selectedCityName.isNotEmpty && itemCityName != selectedCityName) {
+    return false;
+  }
+  if (selectedCountryCode.isNotEmpty &&
+      itemCountryCode.isNotEmpty &&
+      itemCountryCode != selectedCountryCode) {
+    return false;
+  }
+  return selectedCityName.isNotEmpty || selectedCountryCode.isNotEmpty;
+}
+
+String _normalizeLocationText(String? value) {
+  return (value ?? '').trim().toLowerCase();
 }
 
 bool _isHomeRegistrationOpenStatus(String status) {
