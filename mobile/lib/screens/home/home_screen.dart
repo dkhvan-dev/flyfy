@@ -35,6 +35,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final ScrollController _scrollController = ScrollController();
   final GuideApi _guideApi = GuideApi();
   final AttractionApi _attractionApi = AttractionApi();
   final StoryApi _storyApi = StoryApi();
@@ -92,6 +93,28 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadTopAttractions();
       _loadTopStories();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleHomeNavTap() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (!_scrollController.hasClients) {
+      context.go('/');
+      return;
+    }
+
+    unawaited(
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      ),
+    );
   }
 
   Future<void> _confirmLogout() async {
@@ -778,7 +801,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: CommonBottomNavigationBar(
         activeItem: AppBottomNavItem.home,
-        onHomeTap: () => context.go('/'),
+        onHomeTap: _handleHomeNavTap,
         onQrTap: () => context.push('/qr'),
         onMapTap: () => context.push('/map'),
         onServicesTap: () {},
@@ -843,6 +866,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           final horizontalPadding = isCompact ? 13.0 : 16.0;
 
                           return CustomScrollView(
+                            controller: _scrollController,
                             physics: const AlwaysScrollableScrollPhysics(
                               parent: BouncingScrollPhysics(),
                             ),

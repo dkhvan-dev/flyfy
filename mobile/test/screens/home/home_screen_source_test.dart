@@ -75,6 +75,26 @@ void main() {
     expect(source, contains('onTap: _openExcursions'));
   });
 
+  test('home nav tap scrolls the current home feed to the top', () async {
+    final source =
+        await File('lib/screens/home/home_screen.dart').readAsString();
+    final stateStart = source.indexOf('class _HomeScreenState');
+    final buildStart = source.indexOf('@override\n  Widget build');
+
+    expect(stateStart, isNonNegative);
+    expect(buildStart, greaterThan(stateStart));
+
+    final stateSource = source.substring(stateStart, buildStart);
+
+    expect(stateSource, contains('final ScrollController _scrollController'));
+    expect(stateSource, contains('void _handleHomeNavTap()'));
+    expect(stateSource, contains('_scrollController.animateTo('));
+    expect(stateSource, contains('void dispose()'));
+    expect(source, contains('controller: _scrollController'));
+    expect(source, contains('onHomeTap: _handleHomeNavTap'));
+    expect(source, isNot(contains("onHomeTap: () => context.go('/')")));
+  });
+
   test('top destinations use backend attraction categories, not tag fallback',
       () async {
     final source =
