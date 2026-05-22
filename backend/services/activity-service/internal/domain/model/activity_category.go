@@ -91,8 +91,8 @@ var activityCategoryCatalog = []ActivityCategory{
 	{
 		Slug:    "nature-outdoor",
 		Name:    "Nature & Outdoor",
-		NameRu:  "Природа и outdoor",
-		NameKk:  "Табиғат және outdoor",
+		NameRu:  "Природа и активный отдых",
+		NameKk:  "Табиғат және белсенді демалыс",
 		Aliases: []string{"adventure-sports"},
 		Subcategories: []ActivityTaxonomyItem{
 			taxonomyItem("hiking", "Hiking", "Хайкинг", "Жорық"),
@@ -109,8 +109,8 @@ var activityCategoryCatalog = []ActivityCategory{
 	{
 		Slug:    "sports-wellness",
 		Name:    "Sports & Wellness",
-		NameRu:  "Спорт и wellness",
-		NameKk:  "Спорт және wellness",
+		NameRu:  "Спорт и здоровье",
+		NameKk:  "Спорт және денсаулық",
 		Aliases: []string{"health-wellness"},
 		Subcategories: []ActivityTaxonomyItem{
 			taxonomyItem("yoga-meditation", "Yoga or meditation", "Йога или медитация", "Йога немесе медитация"),

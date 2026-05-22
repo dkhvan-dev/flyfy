@@ -90,6 +90,19 @@ func TestListActivityCategoriesReturnsLocalizedTaxonomy(t *testing.T) {
 		}
 	}
 
+	if got := seen["nature-outdoor"].NameRu; got != "Природа и активный отдых" {
+		t.Fatalf("nature-outdoor Russian name = %q, want Природа и активный отдых", got)
+	}
+	if got := seen["nature-outdoor"].NameKk; got != "Табиғат және белсенді демалыс" {
+		t.Fatalf("nature-outdoor Kazakh name = %q, want Табиғат және белсенді демалыс", got)
+	}
+	if got := seen["sports-wellness"].NameRu; got != "Спорт и здоровье" {
+		t.Fatalf("sports-wellness Russian name = %q, want Спорт и здоровье", got)
+	}
+	if got := seen["sports-wellness"].NameKk; got != "Спорт және денсаулық" {
+		t.Fatalf("sports-wellness Kazakh name = %q, want Спорт және денсаулық", got)
+	}
+
 	if seen["food-drinks"].Subcategories[0].Slug != "coffee-meetup" {
 		t.Fatalf("food-drinks first subcategory = %q, want coffee-meetup", seen["food-drinks"].Subcategories[0].Slug)
 	}
