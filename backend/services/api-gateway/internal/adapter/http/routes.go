@@ -295,6 +295,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 			Cacheable:     true,
 		},
 		{
+			Name:          "reference-timezones",
+			Prefix:        apiPrefix + "/reference/timezones",
+			AuthMode:      RouteAuthPublic,
+			Upstream:      "reference",
+			RewritePrefix: "/v1/timezones",
+			Cacheable:     true,
+		},
+		{
 			Name:               "attraction-reviews",
 			Prefix:             apiPrefix + "/attractions/",
 			AuthMode:           RouteAuthPublic,

@@ -148,6 +148,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileTimezone => 'Уақыт белдеуі';
 
   @override
+  String get profileTimezoneSearchHint =>
+      'Уақыт белдеуін, қаланы немесе UTC іздеу';
+
+  @override
+  String get profileTimezoneNoResults => 'Уақыт белдеулері табылмады';
+
+  @override
   String get profileCountry => 'Ел';
 
   @override

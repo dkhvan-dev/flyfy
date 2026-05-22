@@ -11,6 +11,7 @@ import '../../core/device/device_context_service.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/reference/country_filter_utils.dart';
+import '../../core/reference/timezone_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -46,18 +47,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _countryCodeController;
   late final TextEditingController _countrySearchController;
   late final TextEditingController _timezoneController;
+  late final TextEditingController _timezoneSearchController;
   late final TextEditingController _currencyController;
 
   late String _localeCode;
   List<ReferenceCountry> _countries = const [];
   Map<String, Set<String>> _countrySearchAliases = const {};
+  List<ReferenceTimezone> _timezones = const [];
+  Map<String, Set<String>> _timezoneSearchAliases = const {};
   Future<void>? _countriesLoadFuture;
+  Future<void>? _timezonesLoadFuture;
   String _countrySearchQuery = '';
+  String _timezoneSearchQuery = '';
   String? _avatarFileId;
 
   Future<String?>? _avatarFuture;
   Uint8List? _avatarPreviewBytes;
   bool _isCountriesLoading = false;
+  bool _isTimezonesLoading = false;
   bool _isSaving = false;
   bool _isResolvingLocation = false;
   bool _isUploadingAvatar = false;
@@ -85,6 +92,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _timezoneController = TextEditingController(
       text: profile?.timezone ?? 'Asia/Almaty',
     );
+    _timezoneSearchController = TextEditingController()
+      ..addListener(_handleTimezoneSearchChanged);
     _currencyController = TextEditingController(
       text: profile?.currency ?? 'KZT',
     );
@@ -101,6 +110,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_prefillTimezoneFromDevice());
       unawaited(_loadCountries());
+      unawaited(_loadTimezones());
     });
   }
 
@@ -115,6 +125,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ..removeListener(_handleCountrySearchChanged)
       ..dispose();
     _timezoneController.dispose();
+    _timezoneSearchController
+      ..removeListener(_handleTimezoneSearchChanged)
+      ..dispose();
     _currencyController.dispose();
     super.dispose();
   }
@@ -130,6 +143,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (nextQuery == _countrySearchQuery) return;
 
     setState(() => _countrySearchQuery = nextQuery);
+  }
+
+  void _handleTimezoneSearchChanged() {
+    final nextQuery = _timezoneSearchController.text.trim();
+    if (nextQuery == _timezoneSearchQuery) return;
+
+    setState(() => _timezoneSearchQuery = nextQuery);
   }
 
   Future<void> _loadCountries() {
@@ -179,6 +199,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  Future<void> _loadTimezones() {
+    if (_timezones.isNotEmpty) return Future.value();
+    final inFlight = _timezonesLoadFuture;
+    if (inFlight != null) return inFlight;
+
+    final future = _loadTimezonesInner();
+    _timezonesLoadFuture = future;
+    return future.whenComplete(() => _timezonesLoadFuture = null);
+  }
+
+  Future<void> _loadTimezonesInner() async {
+    if (!mounted) return;
+
+    setState(() => _isTimezonesLoading = true);
+    final lang = Localizations.localeOf(context).languageCode;
+    final selectedTimezoneId = normalizeReferenceTimezoneId(
+      _timezoneController.text,
+    );
+
+    try {
+      final timezones = withDefaultReferenceTimezone(
+        await _referenceApi.listTimezones(lang: lang),
+        selectedTimezoneId,
+        lang: lang,
+      );
+      final aliases = await _loadTimezoneSearchAliases(timezones, lang);
+      if (!mounted) return;
+
+      setState(() {
+        _timezones = timezones;
+        _timezoneSearchAliases = aliases;
+        _isTimezonesLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      final timezones = withDefaultReferenceTimezone(
+        const [],
+        selectedTimezoneId,
+        lang: lang,
+      );
+
+      setState(() {
+        _timezones = timezones;
+        _timezoneSearchAliases = timezoneSearchAliasMap(timezones);
+        _isTimezonesLoading = false;
+      });
+    }
+  }
+
   Future<Map<String, Set<String>>> _loadCountrySearchAliases(
     List<ReferenceCountry> countries,
     String currentLang,
@@ -197,6 +266,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return countrySearchAliasMap([
       ...countries,
       for (final localizedCountries in localizedLists) ...localizedCountries,
+    ]);
+  }
+
+  Future<Map<String, Set<String>>> _loadTimezoneSearchAliases(
+    List<ReferenceTimezone> timezones,
+    String currentLang,
+  ) async {
+    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
+    final localizedLists = await Future.wait(
+      languages.map((lang) async {
+        try {
+          return await _referenceApi.listTimezones(lang: lang);
+        } catch (_) {
+          return const <ReferenceTimezone>[];
+        }
+      }),
+    );
+
+    return timezoneSearchAliasMap([
+      ...timezones,
+      for (final localizedTimezones in localizedLists) ...localizedTimezones,
     ]);
   }
 
@@ -229,6 +319,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         .toList(growable: false);
   }
 
+  ReferenceTimezone? _selectedTimezone() {
+    final timezoneId = normalizeReferenceTimezoneId(_timezoneController.text);
+    if (timezoneId == null) return null;
+
+    for (final timezone in _timezones) {
+      if (normalizeReferenceTimezoneId(timezone.id) == timezoneId) {
+        return timezone;
+      }
+    }
+    return null;
+  }
+
+  List<ReferenceTimezone> _visibleTimezones() {
+    final query = normalizeCountrySearchText(_timezoneSearchQuery);
+    if (query.isEmpty) return const [];
+
+    return _timezones
+        .where(
+          (timezone) => timezoneFilterSearchHaystack(
+            timezone,
+            _timezoneSearchAliases,
+          ).contains(query),
+        )
+        .take(24)
+        .toList(growable: false);
+  }
+
   void _selectCountry(ReferenceCountry country) {
     final normalized = normalizeReferenceCountryCode(country.code);
     if (normalized == null) return;
@@ -245,6 +362,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _countryCodeController.clear();
       _countrySearchController.clear();
       _countrySearchQuery = '';
+    });
+  }
+
+  void _selectTimezone(ReferenceTimezone timezone) {
+    final normalized = normalizeReferenceTimezoneId(timezone.id);
+    if (normalized == null) return;
+
+    setState(() {
+      _timezoneController.text = normalized;
+      _timezoneSearchController.clear();
+      _timezoneSearchQuery = '';
     });
   }
 
@@ -783,9 +911,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                         _LabeledInput(
                           label: l10n.profileTimezone,
-                          child: _StyledTextField(
-                            controller: _timezoneController,
-                            hintText: 'Asia/Almaty',
+                          child: _ProfileTimezoneSearchField(
+                            selectedTimezone: _selectedTimezone(),
+                            selectedTimezoneId: normalizeReferenceTimezoneId(
+                              _timezoneController.text,
+                            ),
+                            searchController: _timezoneSearchController,
+                            visibleTimezones: _visibleTimezones(),
+                            isLoading: _isTimezonesLoading,
+                            searchQuery: _timezoneSearchQuery,
+                            searchHint: l10n.profileTimezoneSearchHint,
+                            emptyLabel: l10n.profileTimezoneNoResults,
+                            onTimezoneSelected: _selectTimezone,
                           ),
                         ),
                         SizedBox(
@@ -1612,6 +1749,270 @@ class _ProfileCountrySearchField extends StatelessWidget {
     final name = country.name.trim();
     if (name.isNotEmpty) return name;
     return normalizeReferenceCountryCode(country.code) ?? country.code.trim();
+  }
+}
+
+class _ProfileTimezoneSearchField extends StatelessWidget {
+  const _ProfileTimezoneSearchField({
+    required this.selectedTimezone,
+    required this.selectedTimezoneId,
+    required this.searchController,
+    required this.visibleTimezones,
+    required this.isLoading,
+    required this.searchQuery,
+    required this.searchHint,
+    required this.emptyLabel,
+    required this.onTimezoneSelected,
+  });
+
+  final ReferenceTimezone? selectedTimezone;
+  final String? selectedTimezoneId;
+  final TextEditingController searchController;
+  final List<ReferenceTimezone> visibleTimezones;
+  final bool isLoading;
+  final String searchQuery;
+  final String searchHint;
+  final String emptyLabel;
+  final ValueChanged<ReferenceTimezone> onTimezoneSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSelection = selectedTimezoneId != null;
+    final selectedLabel = selectedTimezone == null
+        ? selectedTimezoneId ?? searchHint
+        : _timezoneLabel(selectedTimezone!);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hasSelection) ...[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(
+                profileScaled(context, 18, min: 16, max: 20),
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: profileScaled(context, 14, min: 12, max: 16),
+                vertical: profileScaled(context, 11, min: 10, max: 12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.schedule_rounded,
+                    color: AppColors.accent,
+                    size: profileScaled(context, 20, min: 18, max: 21),
+                  ),
+                  SizedBox(width: profileScaled(context, 10, min: 8, max: 10)),
+                  Expanded(
+                    child: Text(
+                      selectedLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: profileScaled(context, 15, min: 14, max: 16),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+        ],
+        TextField(
+          controller: searchController,
+          enabled: !isLoading,
+          cursorColor: AppColors.accent,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: profileScaled(context, 14, min: 13, max: 15),
+            fontWeight: FontWeight.w700,
+          ),
+          decoration: InputDecoration(
+            hintText: searchHint,
+            hintStyle: TextStyle(
+              color: profileTextMuted,
+              fontSize: profileScaled(context, 14, min: 13, max: 15),
+              fontWeight: FontWeight.w600,
+            ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: AppColors.accent,
+            ),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.04),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: profileScaled(context, 14, min: 12, max: 16),
+              vertical: profileScaled(context, 13, min: 11, max: 14),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                profileScaled(context, 16, min: 14, max: 18),
+              ),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                profileScaled(context, 16, min: 14, max: 18),
+              ),
+              borderSide: BorderSide(
+                color: Colors.white.withValues(alpha: 0.05),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                profileScaled(context, 16, min: 14, max: 18),
+              ),
+              borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+            ),
+          ),
+        ),
+        if (isLoading) ...[
+          SizedBox(height: profileScaled(context, 12, min: 10, max: 12)),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              width: profileScaled(context, 22, min: 20, max: 24),
+              height: profileScaled(context, 22, min: 20, max: 24),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: AppColors.accent,
+              ),
+            ),
+          ),
+        ] else if (searchQuery.trim().isNotEmpty) ...[
+          SizedBox(height: profileScaled(context, 12, min: 10, max: 12)),
+          if (visibleTimezones.isEmpty)
+            Text(
+              emptyLabel,
+              style: TextStyle(
+                color: profileTextMuted,
+                fontSize: profileScaled(context, 13, min: 12, max: 13),
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          else
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: profileScaled(context, 224, min: 180, max: 240),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                itemCount: visibleTimezones.length,
+                separatorBuilder: (_, _) =>
+                    SizedBox(height: profileScaled(context, 8, min: 7, max: 8)),
+                itemBuilder: (context, index) {
+                  final timezone = visibleTimezones[index];
+                  final timezoneId =
+                      normalizeReferenceTimezoneId(timezone.id) ??
+                          timezone.id.trim();
+                  final selected = selectedTimezoneId == timezoneId;
+                  final offset = timezone.utcOffset?.trim();
+
+                  return InkWell(
+                    onTap: () => onTimezoneSelected(timezone),
+                    borderRadius: BorderRadius.circular(
+                      profileScaled(context, 14, min: 12, max: 16),
+                    ),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppColors.accent.withValues(alpha: 0.16)
+                            : Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(
+                          profileScaled(context, 14, min: 12, max: 16),
+                        ),
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.accent
+                              : Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: profileScaled(
+                            context,
+                            13,
+                            min: 11,
+                            max: 14,
+                          ),
+                          vertical: profileScaled(
+                            context,
+                            11,
+                            min: 10,
+                            max: 12,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _timezoneLabel(timezone),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: profileScaled(
+                                    context,
+                                    14,
+                                    min: 13,
+                                    max: 15,
+                                  ),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: profileScaled(
+                                context,
+                                10,
+                                min: 8,
+                                max: 10,
+                              ),
+                            ),
+                            Text(
+                              offset == null || offset.isEmpty
+                                  ? timezoneId
+                                  : 'UTC$offset',
+                              style: TextStyle(
+                                color: profileTextMuted,
+                                fontSize: profileScaled(
+                                  context,
+                                  12,
+                                  min: 11,
+                                  max: 12,
+                                ),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  String _timezoneLabel(ReferenceTimezone timezone) {
+    final name = timezone.name.trim();
+    final offset = timezone.utcOffset?.trim();
+    if (name.isNotEmpty && offset != null && offset.isNotEmpty) {
+      return '$name · UTC$offset';
+    }
+    if (name.isNotEmpty) return name;
+    return normalizeReferenceTimezoneId(timezone.id) ?? timezone.id.trim();
   }
 }
 

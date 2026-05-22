@@ -18,15 +18,16 @@ type MemoryRepository struct {
 	countries  []model.Country
 	cities     []model.City
 	currencies []model.Currency
+	timezones  []model.Timezone
 
-	countryByCode    map[string]*model.Country
-	citiesByCountry  map[string][]model.City
-	currencyByCode   map[string]*model.Currency
-	cityByID         map[string]*model.City
+	countryByCode   map[string]*model.Country
+	citiesByCountry map[string][]model.City
+	currencyByCode  map[string]*model.Currency
+	cityByID        map[string]*model.City
 
 	// search indexes: normalized tokens → items
-	countrySearchTokens []searchEntry[model.Country]
-	citySearchTokens    []searchEntry[model.City]
+	countrySearchTokens  []searchEntry[model.Country]
+	citySearchTokens     []searchEntry[model.City]
 	currencySearchTokens []searchEntry[model.Currency]
 }
 
@@ -37,10 +38,10 @@ type searchEntry[T any] struct {
 
 func NewMemoryRepository(dataFS fs.FS) (*MemoryRepository, error) {
 	repo := &MemoryRepository{
-		countryByCode:  make(map[string]*model.Country),
+		countryByCode:   make(map[string]*model.Country),
 		citiesByCountry: make(map[string][]model.City),
-		currencyByCode: make(map[string]*model.Currency),
-		cityByID:       make(map[string]*model.City),
+		currencyByCode:  make(map[string]*model.Currency),
+		cityByID:        make(map[string]*model.City),
 	}
 
 	if err := repo.loadCountries(dataFS); err != nil {
@@ -51,6 +52,9 @@ func NewMemoryRepository(dataFS fs.FS) (*MemoryRepository, error) {
 	}
 	if err := repo.loadCurrencies(dataFS); err != nil {
 		return nil, fmt.Errorf("load currencies: %w", err)
+	}
+	if err := repo.loadTimezones(dataFS); err != nil {
+		return nil, fmt.Errorf("load timezones: %w", err)
 	}
 
 	repo.buildSearchIndexes()
@@ -110,6 +114,17 @@ func (r *MemoryRepository) loadCurrencies(dataFS fs.FS) error {
 	return nil
 }
 
+func (r *MemoryRepository) loadTimezones(dataFS fs.FS) error {
+	data, err := fs.ReadFile(dataFS, "timezones.json")
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, &r.timezones); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *MemoryRepository) buildSearchIndexes() {
 	for i := range r.countries {
 		c := &r.countries[i]
@@ -161,6 +176,10 @@ func (r *MemoryRepository) CityByID(id string) *model.City {
 
 func (r *MemoryRepository) AllCurrencies() []model.Currency {
 	return r.currencies
+}
+
+func (r *MemoryRepository) AllTimezones() []model.Timezone {
+	return r.timezones
 }
 
 func (r *MemoryRepository) CurrencyByCode(code string) *model.Currency {

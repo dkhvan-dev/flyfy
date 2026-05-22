@@ -27,6 +27,12 @@ type CurrencyResponse struct {
 	Name     string `json:"name"`
 }
 
+type TimezoneResponse struct {
+	ID        string `json:"id"`
+	UTCOffset string `json:"utcOffset"`
+	Name      string `json:"name"`
+}
+
 type CountryDetailResponse struct {
 	Country  CountryResponse  `json:"country"`
 	Currency CurrencyResponse `json:"currency"`
@@ -84,6 +90,22 @@ func MapCurrencies(currencies []model.Currency, lang string) []CurrencyResponse 
 	out := make([]CurrencyResponse, len(currencies))
 	for i, c := range currencies {
 		out[i] = MapCurrency(c, lang)
+	}
+	return out
+}
+
+func MapTimezone(t model.Timezone, lang string) TimezoneResponse {
+	return TimezoneResponse{
+		ID:        t.ID,
+		UTCOffset: t.UTCOffset,
+		Name:      t.Name.Get(lang),
+	}
+}
+
+func MapTimezones(timezones []model.Timezone, lang string) []TimezoneResponse {
+	out := make([]TimezoneResponse, len(timezones))
+	for i, t := range timezones {
+		out[i] = MapTimezone(t, lang)
 	}
 	return out
 }

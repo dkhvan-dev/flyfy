@@ -54,6 +54,8 @@
   "profileEmail": "Email",
   "profileLocale": "Language",
   "profileTimezone": "Time zone",
+  "profileTimezoneSearchHint": "Search time zone, city, or UTC",
+  "profileTimezoneNoResults": "No time zones found",
   "profileCountry": "Country",
   "profileCurrency": "Currency",
   "editProfileButton": "Edit profile",

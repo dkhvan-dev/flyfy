@@ -41,3 +41,9 @@ type Currency struct {
 	Symbol   string        `json:"symbol"`
 	Name     LocalizedName `json:"name"`
 }
+
+type Timezone struct {
+	ID        string        `json:"id"`
+	UTCOffset string        `json:"utcOffset"`
+	Name      LocalizedName `json:"name"`
+}

@@ -1,0 +1,236 @@
+[
+  {
+    "id": "UTC",
+    "utcOffset": "+00:00",
+    "name": {
+      "en": "UTC",
+      "ru": "UTC",
+      "kk": "UTC"
+    }
+  },
+  {
+    "id": "Asia/Almaty",
+    "utcOffset": "+05:00",
+    "name": {
+      "en": "Almaty time",
+      "ru": "Алматинское время",
+      "kk": "Алматы уақыты"
+    }
+  },
+  {
+    "id": "Asia/Aqtau",
+    "utcOffset": "+05:00",
+    "name": {
+      "en": "Aktau time",
+      "ru": "Актауское время",
+      "kk": "Ақтау уақыты"
+    }
+  },
+  {
+    "id": "Asia/Aqtobe",
+    "utcOffset": "+05:00",
+    "name": {
+      "en": "Aktobe time",
+      "ru": "Актюбинское время",
+      "kk": "Ақтөбе уақыты"
+    }
+  },
+  {
+    "id": "Asia/Atyrau",
+    "utcOffset": "+05:00",
+    "name": {
+      "en": "Atyrau time",
+      "ru": "Атырауское время",
+      "kk": "Атырау уақыты"
+    }
+  },
+  {
+    "id": "Asia/Oral",
+    "utcOffset": "+05:00",
+    "name": {
+      "en": "Oral time",
+      "ru": "Уральское время",
+      "kk": "Орал уақыты"
+    }
+  },
+  {
+    "id": "Asia/Qyzylorda",
+    "utcOffset": "+05:00",
+    "name": {
+      "en": "Kyzylorda time",
+      "ru": "Кызылординское время",
+      "kk": "Қызылорда уақыты"
+    }
+  },
+  {
+    "id": "Asia/Bishkek",
+    "utcOffset": "+06:00",
+    "name": {
+      "en": "Bishkek time",
+      "ru": "Бишкекское время",
+      "kk": "Бішкек уақыты"
+    }
+  },
+  {
+    "id": "Asia/Tashkent",
+    "utcOffset": "+05:00",
+    "name": {
+      "en": "Tashkent time",
+      "ru": "Ташкентское время",
+      "kk": "Ташкент уақыты"
+    }
+  },
+  {
+    "id": "Asia/Dubai",
+    "utcOffset": "+04:00",
+    "name": {
+      "en": "Dubai time",
+      "ru": "Дубайское время",
+      "kk": "Дубай уақыты"
+    }
+  },
+  {
+    "id": "Europe/Moscow",
+    "utcOffset": "+03:00",
+    "name": {
+      "en": "Moscow time",
+      "ru": "Московское время",
+      "kk": "Мәскеу уақыты"
+    }
+  },
+  {
+    "id": "Europe/Istanbul",
+    "utcOffset": "+03:00",
+    "name": {
+      "en": "Istanbul time",
+      "ru": "Стамбульское время",
+      "kk": "Ыстамбұл уақыты"
+    }
+  },
+  {
+    "id": "Europe/London",
+    "utcOffset": "+00:00",
+    "name": {
+      "en": "London time",
+      "ru": "Лондонское время",
+      "kk": "Лондон уақыты"
+    }
+  },
+  {
+    "id": "Europe/Paris",
+    "utcOffset": "+01:00",
+    "name": {
+      "en": "Paris time",
+      "ru": "Парижское время",
+      "kk": "Париж уақыты"
+    }
+  },
+  {
+    "id": "Europe/Berlin",
+    "utcOffset": "+01:00",
+    "name": {
+      "en": "Berlin time",
+      "ru": "Берлинское время",
+      "kk": "Берлин уақыты"
+    }
+  },
+  {
+    "id": "Asia/Tokyo",
+    "utcOffset": "+09:00",
+    "name": {
+      "en": "Tokyo time",
+      "ru": "Токийское время",
+      "kk": "Токио уақыты"
+    }
+  },
+  {
+    "id": "Asia/Seoul",
+    "utcOffset": "+09:00",
+    "name": {
+      "en": "Seoul time",
+      "ru": "Сеульское время",
+      "kk": "Сеул уақыты"
+    }
+  },
+  {
+    "id": "Asia/Shanghai",
+    "utcOffset": "+08:00",
+    "name": {
+      "en": "Shanghai time",
+      "ru": "Шанхайское время",
+      "kk": "Шанхай уақыты"
+    }
+  },
+  {
+    "id": "Asia/Singapore",
+    "utcOffset": "+08:00",
+    "name": {
+      "en": "Singapore time",
+      "ru": "Сингапурское время",
+      "kk": "Сингапур уақыты"
+    }
+  },
+  {
+    "id": "Asia/Kolkata",
+    "utcOffset": "+05:30",
+    "name": {
+      "en": "India time",
+      "ru": "Индийское время",
+      "kk": "Үндістан уақыты"
+    }
+  },
+  {
+    "id": "America/New_York",
+    "utcOffset": "-05:00",
+    "name": {
+      "en": "New York time",
+      "ru": "Нью-Йоркское время",
+      "kk": "Нью-Йорк уақыты"
+    }
+  },
+  {
+    "id": "America/Chicago",
+    "utcOffset": "-06:00",
+    "name": {
+      "en": "Chicago time",
+      "ru": "Чикагское время",
+      "kk": "Чикаго уақыты"
+    }
+  },
+  {
+    "id": "America/Denver",
+    "utcOffset": "-07:00",
+    "name": {
+      "en": "Denver time",
+      "ru": "Денверское время",
+      "kk": "Денвер уақыты"
+    }
+  },
+  {
+    "id": "America/Los_Angeles",
+    "utcOffset": "-08:00",
+    "name": {
+      "en": "Los Angeles time",
+      "ru": "Лос-Анджелесское время",
+      "kk": "Лос-Анджелес уақыты"
+    }
+  },
+  {
+    "id": "America/Sao_Paulo",
+    "utcOffset": "-03:00",
+    "name": {
+      "en": "Sao Paulo time",
+      "ru": "Время Сан-Паулу",
+      "kk": "Сан-Паулу уақыты"
+    }
+  },
+  {
+    "id": "Australia/Sydney",
+    "utcOffset": "+10:00",
+    "name": {
+      "en": "Sydney time",
+      "ru": "Сиднейское время",
+      "kk": "Сидней уақыты"
+    }
+  }
+]

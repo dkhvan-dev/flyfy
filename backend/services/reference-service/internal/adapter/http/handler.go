@@ -34,6 +34,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/currencies", h.ListCurrencies)
 	mux.HandleFunc("GET /v1/currencies/search", h.SearchCurrencies)
 	mux.HandleFunc("GET /v1/currencies/{code}", h.GetCurrency)
+
+	mux.HandleFunc("GET /v1/timezones", h.ListTimezones)
 }
 
 func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
@@ -176,6 +178,15 @@ func (h *Handler) GetCurrency(w http.ResponseWriter, r *http.Request) {
 	}
 	setCacheControl(w, 86400)
 	writeJSON(w, http.StatusOK, dto.MapCurrency(*currency, lang))
+}
+
+// --- Timezones ---
+
+func (h *Handler) ListTimezones(w http.ResponseWriter, r *http.Request) {
+	lang := parseLang(r)
+	timezones := h.uc.ListTimezones()
+	setCacheControl(w, 86400)
+	writeJSON(w, http.StatusOK, dto.MapTimezones(timezones, lang))
 }
 
 // --- Helpers ---

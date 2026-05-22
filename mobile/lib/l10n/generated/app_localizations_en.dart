@@ -145,6 +145,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTimezone => 'Time zone';
 
   @override
+  String get profileTimezoneSearchHint => 'Search time zone, city, or UTC';
+
+  @override
+  String get profileTimezoneNoResults => 'No time zones found';
+
+  @override
   String get profileCountry => 'Country';
 
   @override

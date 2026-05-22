@@ -72,3 +72,9 @@ func (uc *ReferenceUseCase) SearchCurrencies(query string, limit int) []model.Cu
 	}
 	return uc.repo.SearchCurrencies(query, limit)
 }
+
+// Timezones
+
+func (uc *ReferenceUseCase) ListTimezones() []model.Timezone {
+	return uc.repo.AllTimezones()
+}

@@ -54,6 +54,8 @@
   "profileEmail": "Email",
   "profileLocale": "Тіл",
   "profileTimezone": "Уақыт белдеуі",
+  "profileTimezoneSearchHint": "Уақыт белдеуін, қаланы немесе UTC іздеу",
+  "profileTimezoneNoResults": "Уақыт белдеулері табылмады",
   "profileCountry": "Ел",
   "profileCurrency": "Валюта",
   "editProfileButton": "Профильді өңдеу",

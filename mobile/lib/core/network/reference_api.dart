@@ -127,6 +127,20 @@ class ReferenceApi {
       return null;
     }
   }
+
+  Future<List<ReferenceTimezone>> listTimezones({
+    String lang = 'en',
+  }) async {
+    final response = await _dio.get(
+      '/reference/timezones',
+      queryParameters: {'lang': lang},
+      options: Options(extra: {'requiresAuth': false}),
+    );
+    final list = response.data as List<dynamic>? ?? [];
+    return list
+        .map((e) => ReferenceTimezone.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
 }
 
 class ReferenceCountry {
@@ -168,6 +182,26 @@ class ReferenceCity {
       countryCode: json['countryCode']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       population: int.tryParse(json['population']?.toString() ?? '') ?? 0,
+    );
+  }
+}
+
+class ReferenceTimezone {
+  const ReferenceTimezone({
+    required this.id,
+    required this.name,
+    this.utcOffset,
+  });
+
+  final String id;
+  final String name;
+  final String? utcOffset;
+
+  factory ReferenceTimezone.fromJson(Map<String, dynamic> json) {
+    return ReferenceTimezone(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      utcOffset: json['utcOffset']?.toString(),
     );
   }
 }

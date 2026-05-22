@@ -136,4 +136,51 @@ void main() {
     expect(source, contains('key: _lastNameFieldKey'));
     expect(source, contains('key: _countryFieldKey'));
   });
+
+  test('edit profile timezone uses localized searchable reference selector',
+      () async {
+    final source = await File(
+      'lib/screens/profile/edit_profile_screen.dart',
+    ).readAsString();
+    final referenceApiSource =
+        await File('lib/core/network/reference_api.dart').readAsString();
+    final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+    final timezoneStart = source.indexOf('label: l10n.profileTimezone');
+    final currencyStart = source.indexOf(
+      'label: l10n.profileCurrency',
+      timezoneStart,
+    );
+
+    expect(timezoneStart, isNonNegative);
+    expect(currencyStart, greaterThan(timezoneStart));
+
+    final timezoneSection = source.substring(timezoneStart, currencyStart);
+
+    expect(referenceApiSource, contains('Future<List<ReferenceTimezone>>'));
+    expect(referenceApiSource, contains("'/reference/timezones'"));
+    expect(referenceApiSource, contains('class ReferenceTimezone'));
+    expect(l10nSource, contains('profileTimezoneSearchHint'));
+    expect(l10nSource, contains('profileTimezoneNoResults'));
+    expect(source, contains('_timezoneSearchController'));
+    expect(source, contains('List<ReferenceTimezone> _timezones'));
+    expect(source, contains('Map<String, Set<String>> _timezoneSearchAliases'));
+    expect(source, contains('_loadTimezones'));
+    expect(source, contains('withDefaultReferenceTimezone('));
+    expect(source, contains('timezoneSearchAliasMap('));
+    expect(source, contains('timezoneFilterSearchHaystack('));
+    expect(source, contains('_selectedTimezone()'));
+    expect(source, contains('_visibleTimezones()'));
+    expect(source, contains('_selectTimezone'));
+    expect(source, contains('class _ProfileTimezoneSearchField'));
+
+    expect(timezoneSection, contains('_ProfileTimezoneSearchField('));
+    expect(timezoneSection, contains('selectedTimezone: _selectedTimezone()'));
+    expect(timezoneSection, contains('visibleTimezones: _visibleTimezones()'));
+    expect(timezoneSection,
+        contains('searchHint: l10n.profileTimezoneSearchHint'));
+    expect(
+        timezoneSection, contains('emptyLabel: l10n.profileTimezoneNoResults'));
+    expect(timezoneSection, isNot(contains('_StyledTextField(')));
+  });
 }

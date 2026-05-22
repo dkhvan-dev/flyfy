@@ -54,6 +54,8 @@
   "profileEmail": "Email",
   "profileLocale": "Язык",
   "profileTimezone": "Часовой пояс",
+  "profileTimezoneSearchHint": "Поиск часового пояса, города или UTC",
+  "profileTimezoneNoResults": "Часовые пояса не найдены",
   "profileCountry": "Страна",
   "profileCurrency": "Валюта",
   "editProfileButton": "Редактировать профиль",

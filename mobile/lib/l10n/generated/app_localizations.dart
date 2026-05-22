@@ -358,6 +358,18 @@ abstract class AppLocalizations {
   /// **'Time zone'**
   String get profileTimezone;
 
+  /// No description provided for @profileTimezoneSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search time zone, city, or UTC'**
+  String get profileTimezoneSearchHint;
+
+  /// No description provided for @profileTimezoneNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No time zones found'**
+  String get profileTimezoneNoResults;
+
   /// No description provided for @profileCountry.
   ///
   /// In en, this message translates to:

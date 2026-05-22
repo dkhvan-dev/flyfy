@@ -146,6 +146,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileTimezone => 'Часовой пояс';
 
   @override
+  String get profileTimezoneSearchHint =>
+      'Поиск часового пояса, города или UTC';
+
+  @override
+  String get profileTimezoneNoResults => 'Часовые пояса не найдены';
+
+  @override
   String get profileCountry => 'Страна';
 
   @override
