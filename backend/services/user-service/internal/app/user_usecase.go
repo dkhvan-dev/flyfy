@@ -660,5 +660,10 @@ func computeProfileCompleted(profile *model.UserProfile) bool {
 		lastName = strings.TrimSpace(*profile.LastName)
 	}
 
-	return firstName != "" && lastName != ""
+	countryCode := ""
+	if profile.CountryCode != nil {
+		countryCode = strings.TrimSpace(*profile.CountryCode)
+	}
+
+	return firstName != "" && lastName != "" && countryCode != ""
 }

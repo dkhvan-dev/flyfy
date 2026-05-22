@@ -563,7 +563,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'Fill in your first and last name to unlock all FlyFy features';
+      'Fill in your first name, last name, and country to unlock all FlyFy features';
 
   @override
   String get fillNowButton => 'Fill now';
@@ -599,11 +599,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastNameRequired => 'Enter last name';
 
   @override
+  String get profileCountryRequired => 'Select your country';
+
+  @override
   String get profileRequiredTitle => 'Complete your profile';
 
   @override
   String get profileRequiredDescription =>
-      'To continue, enter your first and last name in your profile. This helps reduce fake accounts and increases trust between users.';
+      'To continue, enter your first name, last name, and country in your profile. This helps reduce fake accounts and increases trust between users.';
 
   @override
   String get myProfileTitle => 'My Profile';

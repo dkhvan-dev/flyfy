@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -8,6 +9,8 @@ import 'package:provider/provider.dart';
 
 import '../../core/device/device_context_service.dart';
 import '../../core/network/file_api.dart';
+import '../../core/network/reference_api.dart';
+import '../../core/reference/country_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
 import '../../features/profile/data/profile_api.dart';
@@ -27,8 +30,12 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _firstNameFieldKey = GlobalKey();
+  final _lastNameFieldKey = GlobalKey();
+  final _countryFieldKey = GlobalKey();
   final _profileApi = ProfileApi();
   final _fileApi = FileApi();
+  final _referenceApi = ReferenceApi();
   final _deviceContextService = const DeviceContextService();
   final _imagePicker = ImagePicker();
 
@@ -37,14 +44,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _displayNameController;
   late final TextEditingController _bioController;
   late final TextEditingController _countryCodeController;
+  late final TextEditingController _countrySearchController;
   late final TextEditingController _timezoneController;
   late final TextEditingController _currencyController;
 
   late String _localeCode;
+  List<ReferenceCountry> _countries = const [];
+  Map<String, Set<String>> _countrySearchAliases = const {};
+  Future<void>? _countriesLoadFuture;
+  String _countrySearchQuery = '';
   String? _avatarFileId;
 
   Future<String?>? _avatarFuture;
   Uint8List? _avatarPreviewBytes;
+  bool _isCountriesLoading = false;
   bool _isSaving = false;
   bool _isResolvingLocation = false;
   bool _isUploadingAvatar = false;
@@ -67,6 +80,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _countryCodeController = TextEditingController(
       text: profile?.countryCode ?? '',
     );
+    _countrySearchController = TextEditingController()
+      ..addListener(_handleCountrySearchChanged);
     _timezoneController = TextEditingController(
       text: profile?.timezone ?? 'Asia/Almaty',
     );
@@ -84,7 +99,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _avatarFuture = _loadAvatarUrl(profile?.avatarFileId);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _prefillTimezoneFromDevice();
+      unawaited(_prefillTimezoneFromDevice());
+      unawaited(_loadCountries());
     });
   }
 
@@ -95,6 +111,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _displayNameController.dispose();
     _bioController.dispose();
     _countryCodeController.dispose();
+    _countrySearchController
+      ..removeListener(_handleCountrySearchChanged)
+      ..dispose();
     _timezoneController.dispose();
     _currencyController.dispose();
     super.dispose();
@@ -104,6 +123,129 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _handleCountrySearchChanged() {
+    final nextQuery = _countrySearchController.text.trim();
+    if (nextQuery == _countrySearchQuery) return;
+
+    setState(() => _countrySearchQuery = nextQuery);
+  }
+
+  Future<void> _loadCountries() {
+    if (_countries.isNotEmpty) return Future.value();
+    final inFlight = _countriesLoadFuture;
+    if (inFlight != null) return inFlight;
+
+    final future = _loadCountriesInner();
+    _countriesLoadFuture = future;
+    return future.whenComplete(() => _countriesLoadFuture = null);
+  }
+
+  Future<void> _loadCountriesInner() async {
+    if (!mounted) return;
+
+    setState(() => _isCountriesLoading = true);
+    final lang = Localizations.localeOf(context).languageCode;
+    final selectedCountryCode = normalizeReferenceCountryCode(
+      _countryCodeController.text,
+    );
+
+    try {
+      final countries = withDefaultReferenceCountry(
+        await _referenceApi.listCountries(lang: lang),
+        selectedCountryCode,
+      );
+      final aliases = await _loadCountrySearchAliases(countries, lang);
+      if (!mounted) return;
+
+      setState(() {
+        _countries = countries;
+        _countrySearchAliases = aliases;
+        _isCountriesLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      final countries = withDefaultReferenceCountry(
+        const [],
+        selectedCountryCode,
+      );
+
+      setState(() {
+        _countries = countries;
+        _countrySearchAliases = countrySearchAliasMap(countries);
+        _isCountriesLoading = false;
+      });
+    }
+  }
+
+  Future<Map<String, Set<String>>> _loadCountrySearchAliases(
+    List<ReferenceCountry> countries,
+    String currentLang,
+  ) async {
+    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
+    final localizedLists = await Future.wait(
+      languages.map((lang) async {
+        try {
+          return await _referenceApi.listCountries(lang: lang);
+        } catch (_) {
+          return const <ReferenceCountry>[];
+        }
+      }),
+    );
+
+    return countrySearchAliasMap([
+      ...countries,
+      for (final localizedCountries in localizedLists) ...localizedCountries,
+    ]);
+  }
+
+  ReferenceCountry? _selectedCountry() {
+    final countryCode = normalizeReferenceCountryCode(
+      _countryCodeController.text,
+    );
+    if (countryCode == null) return null;
+
+    for (final country in _countries) {
+      if (normalizeReferenceCountryCode(country.code) == countryCode) {
+        return country;
+      }
+    }
+    return null;
+  }
+
+  List<ReferenceCountry> _visibleCountries() {
+    final query = normalizeCountrySearchText(_countrySearchQuery);
+    if (query.isEmpty) return const [];
+
+    return _countries
+        .where(
+          (country) => countryFilterSearchHaystack(
+            country,
+            _countrySearchAliases,
+          ).contains(query),
+        )
+        .take(24)
+        .toList(growable: false);
+  }
+
+  void _selectCountry(ReferenceCountry country) {
+    final normalized = normalizeReferenceCountryCode(country.code);
+    if (normalized == null) return;
+
+    setState(() {
+      _countryCodeController.text = normalized;
+      _countrySearchController.clear();
+      _countrySearchQuery = '';
+    });
+  }
+
+  void _clearCountry() {
+    setState(() {
+      _countryCodeController.clear();
+      _countrySearchController.clear();
+      _countrySearchQuery = '';
+    });
   }
 
   Future<String?> _loadAvatarUrl(String? avatarFileId) async {
@@ -144,7 +286,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       setState(() {
         if ((suggestion.countryCode ?? '').isNotEmpty) {
-          _countryCodeController.text = suggestion.countryCode!;
+          _countryCodeController.text =
+              normalizeReferenceCountryCode(suggestion.countryCode) ??
+                  suggestion.countryCode!;
         }
       });
     } catch (e) {
@@ -212,7 +356,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final localeProvider = context.read<LocaleProvider>();
     final navigator = Navigator.of(context);
 
-    if (!_formKey.currentState!.validate()) return;
+    final isValid = _formKey.currentState!.validate();
+    if (!isValid) {
+      await _scrollToFirstInvalidRequiredField();
+      return;
+    }
 
     setState(() {
       _isSaving = true;
@@ -269,6 +417,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
       }
     }
+  }
+
+  Future<void> _scrollToFirstInvalidRequiredField() async {
+    if (_firstNameController.text.trim().isEmpty) {
+      await _scrollToField(_firstNameFieldKey);
+      return;
+    }
+
+    if (_lastNameController.text.trim().isEmpty) {
+      await _scrollToField(_lastNameFieldKey);
+      return;
+    }
+
+    if (normalizeReferenceCountryCode(_countryCodeController.text) == null) {
+      await _scrollToField(_countryFieldKey);
+    }
+  }
+
+  Future<void> _scrollToField(GlobalKey key) async {
+    final fieldContext = key.currentContext;
+    if (fieldContext == null) return;
+
+    const invalidFieldScrollAlignment = 0.42;
+
+    await Scrollable.ensureVisible(
+      fieldContext,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      alignment: invalidFieldScrollAlignment,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
+    );
   }
 
   Future<void> _pickAvatar() async {
@@ -530,6 +709,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: Column(
                       children: [
                         _LabeledInput(
+                          key: _firstNameFieldKey,
                           label: l10n.firstNameLabel,
                           child: _StyledTextField(
                             controller: _firstNameController,
@@ -546,6 +726,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           height: profileScaled(context, 16, min: 14, max: 18),
                         ),
                         _LabeledInput(
+                          key: _lastNameFieldKey,
                           label: l10n.lastNameLabel,
                           child: _StyledTextField(
                             controller: _lastNameController,
@@ -572,11 +753,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           height: profileScaled(context, 16, min: 14, max: 18),
                         ),
                         _LabeledInput(
+                          key: _countryFieldKey,
                           label: l10n.profileCountry,
-                          child: _StyledTextField(
-                            controller: _countryCodeController,
-                            hintText: 'KZ',
-                            textCapitalization: TextCapitalization.characters,
+                          child: _ProfileCountrySearchField(
+                            value: _countryCodeController.text,
+                            selectedCountry: _selectedCountry(),
+                            selectedCountryCode: normalizeReferenceCountryCode(
+                              _countryCodeController.text,
+                            ),
+                            validator: (value) {
+                              if (normalizeReferenceCountryCode(value) ==
+                                  null) {
+                                return l10n.profileCountryRequired;
+                              }
+                              return null;
+                            },
+                            searchController: _countrySearchController,
+                            visibleCountries: _visibleCountries(),
+                            isLoading: _isCountriesLoading,
+                            searchQuery: _countrySearchQuery,
+                            searchHint: l10n.excursionsFilterCountrySearchHint,
+                            emptyLabel: l10n.excursionsFilterCountryNoResults,
+                            onCountrySelected: _selectCountry,
+                            onClearCountry: _clearCountry,
                           ),
                         ),
                         SizedBox(
@@ -1093,6 +1292,329 @@ class _ContactPill extends StatelessWidget {
   }
 }
 
+class _ProfileCountrySearchField extends StatelessWidget {
+  const _ProfileCountrySearchField({
+    required this.value,
+    required this.selectedCountry,
+    required this.selectedCountryCode,
+    required this.validator,
+    required this.searchController,
+    required this.visibleCountries,
+    required this.isLoading,
+    required this.searchQuery,
+    required this.searchHint,
+    required this.emptyLabel,
+    required this.onCountrySelected,
+    required this.onClearCountry,
+  });
+
+  final String value;
+  final ReferenceCountry? selectedCountry;
+  final String? selectedCountryCode;
+  final String? Function(String?) validator;
+  final TextEditingController searchController;
+  final List<ReferenceCountry> visibleCountries;
+  final bool isLoading;
+  final String searchQuery;
+  final String searchHint;
+  final String emptyLabel;
+  final ValueChanged<ReferenceCountry> onCountrySelected;
+  final VoidCallback onClearCountry;
+
+  @override
+  Widget build(BuildContext context) {
+    return FormField<String>(
+      key: ValueKey(normalizeReferenceCountryCode(value) ?? ''),
+      initialValue: normalizeReferenceCountryCode(value),
+      validator: validator,
+      builder: (field) {
+        final hasSelection = selectedCountryCode != null;
+        final selectedLabel = selectedCountry == null
+            ? selectedCountryCode
+            : _countryLabel(selectedCountry!);
+        final errorText = field.errorText;
+        final hasError = errorText != null;
+        const errorColor = Color(0xFFE47F78);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (hasSelection) ...[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(
+                    profileScaled(context, 18, min: 16, max: 20),
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: profileScaled(context, 14, min: 12, max: 16),
+                    vertical: profileScaled(context, 11, min: 10, max: 12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.public_rounded,
+                        color: AppColors.accent,
+                        size: profileScaled(context, 20, min: 18, max: 21),
+                      ),
+                      SizedBox(
+                        width: profileScaled(context, 10, min: 8, max: 10),
+                      ),
+                      Expanded(
+                        child: Text(
+                          selectedLabel ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: profileScaled(
+                              context,
+                              15,
+                              min: 14,
+                              max: 16,
+                            ),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).deleteButtonTooltip,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () {
+                          field.didChange(null);
+                          onClearCountry();
+                        },
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: profileTextMuted,
+                          size: profileScaled(context, 20, min: 18, max: 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+            ],
+            TextField(
+              controller: searchController,
+              enabled: !isLoading,
+              cursorColor: AppColors.accent,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: profileScaled(context, 14, min: 13, max: 15),
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: InputDecoration(
+                hintText: searchHint,
+                hintStyle: TextStyle(
+                  color: profileTextMuted,
+                  fontSize: profileScaled(context, 14, min: 13, max: 15),
+                  fontWeight: FontWeight.w600,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color:
+                      hasError && !hasSelection ? errorColor : AppColors.accent,
+                ),
+                errorText: hasSelection ? null : errorText,
+                errorStyle: TextStyle(
+                  color: errorColor,
+                  fontSize: profileScaled(context, 12, min: 11, max: 12),
+                  fontWeight: FontWeight.w600,
+                ),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.04),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: profileScaled(context, 14, min: 12, max: 16),
+                  vertical: profileScaled(context, 13, min: 11, max: 14),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    profileScaled(context, 16, min: 14, max: 18),
+                  ),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    profileScaled(context, 16, min: 14, max: 18),
+                  ),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    profileScaled(context, 16, min: 14, max: 18),
+                  ),
+                  borderSide: const BorderSide(
+                    color: AppColors.accent,
+                    width: 1.2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    profileScaled(context, 16, min: 14, max: 18),
+                  ),
+                  borderSide: const BorderSide(color: errorColor),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    profileScaled(context, 16, min: 14, max: 18),
+                  ),
+                  borderSide: const BorderSide(color: errorColor, width: 1.2),
+                ),
+              ),
+            ),
+            if (isLoading) ...[
+              SizedBox(height: profileScaled(context, 12, min: 10, max: 12)),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: profileScaled(context, 22, min: 20, max: 24),
+                  height: profileScaled(context, 22, min: 20, max: 24),
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ),
+            ] else if (searchQuery.trim().isNotEmpty) ...[
+              SizedBox(height: profileScaled(context, 12, min: 10, max: 12)),
+              if (visibleCountries.isEmpty)
+                Text(
+                  emptyLabel,
+                  style: TextStyle(
+                    color: profileTextMuted,
+                    fontSize: profileScaled(context, 13, min: 12, max: 13),
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              else
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: profileScaled(context, 224, min: 180, max: 240),
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: visibleCountries.length,
+                    separatorBuilder: (_, _) => SizedBox(
+                      height: profileScaled(context, 8, min: 7, max: 8),
+                    ),
+                    itemBuilder: (context, index) {
+                      final country = visibleCountries[index];
+                      final code =
+                          normalizeReferenceCountryCode(country.code) ??
+                              country.code.trim().toUpperCase();
+                      final selected = selectedCountryCode == code;
+
+                      return InkWell(
+                        onTap: () {
+                          field.didChange(code);
+                          onCountrySelected(country);
+                        },
+                        borderRadius: BorderRadius.circular(
+                          profileScaled(context, 14, min: 12, max: 16),
+                        ),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? AppColors.accent.withValues(alpha: 0.16)
+                                : Colors.white.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(
+                              profileScaled(context, 14, min: 12, max: 16),
+                            ),
+                            border: Border.all(
+                              color: selected
+                                  ? AppColors.accent
+                                  : Colors.white.withValues(alpha: 0.05),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: profileScaled(
+                                context,
+                                13,
+                                min: 11,
+                                max: 14,
+                              ),
+                              vertical: profileScaled(
+                                context,
+                                11,
+                                min: 10,
+                                max: 12,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _countryLabel(country),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: profileScaled(
+                                        context,
+                                        14,
+                                        min: 13,
+                                        max: 15,
+                                      ),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: profileScaled(
+                                    context,
+                                    10,
+                                    min: 8,
+                                    max: 10,
+                                  ),
+                                ),
+                                Text(
+                                  code,
+                                  style: TextStyle(
+                                    color: profileTextMuted,
+                                    fontSize: profileScaled(
+                                      context,
+                                      12,
+                                      min: 11,
+                                      max: 12,
+                                    ),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  String _countryLabel(ReferenceCountry country) {
+    final name = country.name.trim();
+    if (name.isNotEmpty) return name;
+    return normalizeReferenceCountryCode(country.code) ?? country.code.trim();
+  }
+}
+
 class _ProfileSectionCard extends StatelessWidget {
   const _ProfileSectionCard({required this.child, this.disabled = false});
 
@@ -1115,7 +1637,7 @@ class _ProfileSectionCard extends StatelessWidget {
 }
 
 class _LabeledInput extends StatelessWidget {
-  const _LabeledInput({required this.label, required this.child});
+  const _LabeledInput({super.key, required this.label, required this.child});
 
   final String label;
   final Widget child;
@@ -1229,8 +1751,8 @@ class _ServiceChip extends StatelessWidget {
     final color = disabled
         ? profileDisabled
         : active
-        ? AppColors.accent
-        : profileTextSoft;
+            ? AppColors.accent
+            : profileTextSoft;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -1241,15 +1763,15 @@ class _ServiceChip extends StatelessWidget {
         color: disabled
             ? Colors.white.withValues(alpha: 0.03)
             : active
-            ? AppColors.accent.withValues(alpha: 0.12)
-            : Colors.white.withValues(alpha: 0.04),
+                ? AppColors.accent.withValues(alpha: 0.12)
+                : Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: disabled
               ? Colors.white.withValues(alpha: 0.04)
               : active
-              ? AppColors.accent.withValues(alpha: 0.18)
-              : Colors.white.withValues(alpha: 0.05),
+                  ? AppColors.accent.withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.05),
         ),
       ),
       child: Text(

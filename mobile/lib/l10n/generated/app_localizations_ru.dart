@@ -565,7 +565,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'Заполните имя и фамилию, чтобы пользоваться всеми возможностями FlyFy';
+      'Заполните имя, фамилию и страну, чтобы пользоваться всеми возможностями FlyFy';
 
   @override
   String get fillNowButton => 'Заполнить';
@@ -601,11 +601,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lastNameRequired => 'Укажите фамилию';
 
   @override
+  String get profileCountryRequired => 'Выберите страну';
+
+  @override
   String get profileRequiredTitle => 'Заполните профиль';
 
   @override
   String get profileRequiredDescription =>
-      'Чтобы продолжить, укажите имя и фамилию в профиле. Это помогает снизить количество фейковых аккаунтов и повышает доверие между пользователями.';
+      'Чтобы продолжить, укажите имя, фамилию и страну в профиле. Это помогает снизить количество фейковых аккаунтов и повышает доверие между пользователями.';
 
   @override
   String get myProfileTitle => 'Мой профиль';

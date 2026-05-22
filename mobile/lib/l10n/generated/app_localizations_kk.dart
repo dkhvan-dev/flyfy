@@ -566,7 +566,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileIncompleteDescription =>
-      'FlyFy мүмкіндіктерін толық пайдалану үшін атыңыз бен тегіңізді толтырыңыз';
+      'FlyFy мүмкіндіктерін толық пайдалану үшін атыңызды, тегіңізді және еліңізді толтырыңыз';
 
   @override
   String get fillNowButton => 'Толтыру';
@@ -602,11 +602,14 @@ class AppLocalizationsKk extends AppLocalizations {
   String get lastNameRequired => 'Тегіңізді енгізіңіз';
 
   @override
+  String get profileCountryRequired => 'Елді таңдаңыз';
+
+  @override
   String get profileRequiredTitle => 'Профильді толтырыңыз';
 
   @override
   String get profileRequiredDescription =>
-      'Жалғастыру үшін профиліңізде атыңыз бен тегіңізді көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.';
+      'Жалғастыру үшін профиліңізде атыңызды, тегіңізді және еліңізді көрсетіңіз. Бұл жалған аккаунттарды азайтып, пайдаланушылар арасындағы сенімді арттырады.';
 
   @override
   String get myProfileTitle => 'Менің профилім';

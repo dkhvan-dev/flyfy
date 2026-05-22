@@ -1093,7 +1093,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileIncompleteDescription.
   ///
   /// In en, this message translates to:
-  /// **'Fill in your first and last name to unlock all FlyFy features'**
+  /// **'Fill in your first name, last name, and country to unlock all FlyFy features'**
   String get profileIncompleteDescription;
 
   /// No description provided for @fillNowButton.
@@ -1162,6 +1162,12 @@ abstract class AppLocalizations {
   /// **'Enter last name'**
   String get lastNameRequired;
 
+  /// No description provided for @profileCountryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your country'**
+  String get profileCountryRequired;
+
   /// No description provided for @profileRequiredTitle.
   ///
   /// In en, this message translates to:
@@ -1171,7 +1177,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileRequiredDescription.
   ///
   /// In en, this message translates to:
-  /// **'To continue, enter your first and last name in your profile. This helps reduce fake accounts and increases trust between users.'**
+  /// **'To continue, enter your first name, last name, and country in your profile. This helps reduce fake accounts and increases trust between users.'**
   String get profileRequiredDescription;
 
   /// No description provided for @myProfileTitle.
