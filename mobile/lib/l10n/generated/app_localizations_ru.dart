@@ -714,6 +714,29 @@ class AppLocalizationsRu extends AppLocalizations {
       'Когда пользователь посетит публичную завершенную активность, она появится здесь.';
 
   @override
+  String get profilePopularStoriesTitle => 'Популярные истории';
+
+  @override
+  String get profileViewAllStories => 'Все';
+
+  @override
+  String get profileStoriesLoadFailed => 'Не удалось загрузить истории';
+
+  @override
+  String get profileStoriesLoadFailedHint =>
+      'Проверьте подключение и попробуйте еще раз.';
+
+  @override
+  String get profileStoriesEmptyTitle => 'Историй пока нет';
+
+  @override
+  String get profileStoriesEmptySubtitle =>
+      'Опубликованные истории пользователя появятся здесь.';
+
+  @override
+  String get profileUserStoriesTitle => 'Истории пользователя';
+
+  @override
   String get profileBlogsTitle => 'Последние Блоги';
 
   @override

@@ -711,6 +711,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'When this user attends a completed public activity, it will appear here.';
 
   @override
+  String get profilePopularStoriesTitle => 'Popular stories';
+
+  @override
+  String get profileViewAllStories => 'All';
+
+  @override
+  String get profileStoriesLoadFailed => 'Failed to load stories';
+
+  @override
+  String get profileStoriesLoadFailedHint =>
+      'Check your connection and try again.';
+
+  @override
+  String get profileStoriesEmptyTitle => 'No stories yet';
+
+  @override
+  String get profileStoriesEmptySubtitle =>
+      'Published stories from this user will appear here.';
+
+  @override
+  String get profileUserStoriesTitle => 'User stories';
+
+  @override
   String get profileBlogsTitle => 'Recent Blogs';
 
   @override

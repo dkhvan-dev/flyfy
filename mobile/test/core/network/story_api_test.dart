@@ -73,6 +73,32 @@ void main() {
       expect(adapter.requiresAuth, isFalse);
     },
   );
+
+  test(
+    'getUserPopularStories filters author stories by views',
+    () async {
+      final adapter = _JsonAdapter({
+        'items': [_storyJson('one')],
+        'total': 1,
+      });
+      final api = StoryApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final stories = await api.getUserPopularStories(' user-1 ', limit: 3);
+
+      expect(stories.single.id, 'one');
+      expect(adapter.requestPath, '/api/v1/stories');
+      expect(adapter.queryParameters['authorId'], 'user-1');
+      expect(adapter.queryParameters['sort'], 'popular_desc');
+      expect(adapter.queryParameters['limit'], '4');
+      expect(adapter.queryParameters['offset'], '0');
+    },
+  );
 }
 
 Map<String, Object?> _storyJson(String id) {
@@ -110,6 +136,7 @@ class _JsonAdapter implements HttpClientAdapter {
 
   final Map<String, Object?> payload;
   String? requestPath;
+  Map<String, String> queryParameters = const {};
   bool? requiresAuth;
 
   @override
@@ -119,6 +146,7 @@ class _JsonAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     requestPath = options.uri.path;
+    queryParameters = options.uri.queryParameters;
     requiresAuth = options.extra['requiresAuth'] as bool?;
     return ResponseBody.fromString(
       jsonEncode(payload),

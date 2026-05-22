@@ -717,6 +717,29 @@ class AppLocalizationsKk extends AppLocalizations {
       'Пайдаланушы аяқталған ашық белсенділікке қатысқанда, ол осы жерде көрсетіледі.';
 
   @override
+  String get profilePopularStoriesTitle => 'Танымал хикаялар';
+
+  @override
+  String get profileViewAllStories => 'Барлығы';
+
+  @override
+  String get profileStoriesLoadFailed => 'Хикаяларды жүктеу мүмкін болмады';
+
+  @override
+  String get profileStoriesLoadFailedHint =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get profileStoriesEmptyTitle => 'Әзірге хикаялар жоқ';
+
+  @override
+  String get profileStoriesEmptySubtitle =>
+      'Пайдаланушының жарияланған хикаялары осы жерде көрсетіледі.';
+
+  @override
+  String get profileUserStoriesTitle => 'Пайдаланушы хикаялары';
+
+  @override
   String get profileBlogsTitle => 'Соңғы блогтар';
 
   @override

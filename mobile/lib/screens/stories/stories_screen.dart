@@ -36,9 +36,10 @@ extension _StorySortDirectionX on _StorySortDirection {
 }
 
 class StoriesScreen extends StatefulWidget {
-  const StoriesScreen({super.key, this.myOnly = false});
+  const StoriesScreen({super.key, this.myOnly = false, this.authorId});
 
   final bool myOnly;
+  final String? authorId;
 
   @override
   State<StoriesScreen> createState() => _StoriesScreenState();
@@ -73,6 +74,10 @@ class _StoriesScreenState extends State<StoriesScreen> {
   _StorySortDirection _sortDirection = _StorySortDirection.desc;
 
   String get _sortQueryParam => '${_sort}_${_sortDirection.querySuffix}';
+  String? get _authorIdFilter {
+    final value = (widget.authorId ?? '').trim();
+    return value.isEmpty ? null : value;
+  }
 
   @override
   void initState() {
@@ -217,6 +222,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
               sort: _sortQueryParam,
               limit: _pageSize,
               offset: (normalizedPage - 1) * _pageSize,
+              authorId: widget.authorId,
             );
 
       if (!mounted) {
@@ -282,8 +288,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
       return;
     }
     final categoryChanged = selected.category != _selectedCategory;
-    final placeChanged =
-        normalizeReferenceCountryCode(selected.place?.code) !=
+    final placeChanged = normalizeReferenceCountryCode(selected.place?.code) !=
         normalizeReferenceCountryCode(_selectedPlace?.code);
     if (!categoryChanged && !placeChanged) {
       return;
@@ -300,9 +305,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
     required ReferenceCountry? place,
   }) async {
     final trimmedCategory = category?.trim() ?? '';
-    final categories = trimmedCategory.isEmpty
-        ? null
-        : <String>[trimmedCategory];
+    final categories =
+        trimmedCategory.isEmpty ? null : <String>[trimmedCategory];
     final page = widget.myOnly
         ? await _api.listMyStoriesPage(
             search: _searchQuery,
@@ -317,6 +321,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
             place: normalizeReferenceCountryCode(place?.code),
             sort: _sortQueryParam,
             limit: 1,
+            authorId: widget.authorId,
           );
     return page.total;
   }
@@ -375,9 +380,8 @@ class _StoriesScreenState extends State<StoriesScreen> {
       return;
     }
     setState(() {
-      final next = _stories
-          .where((item) => item.id != story.id)
-          .toList(growable: true);
+      final next =
+          _stories.where((item) => item.id != story.id).toList(growable: true);
       next.insert(0, story);
       next.sort((a, b) => b.sortDate.compareTo(a.sortDate));
       _stories = next;
@@ -557,7 +561,9 @@ class _StoriesScreenState extends State<StoriesScreen> {
               AppListScreenHeader(
                 title: widget.myOnly
                     ? l10n.myStoriesTitle
-                    : l10n.storiesDiscoverTitle,
+                    : _authorIdFilter == null
+                        ? l10n.storiesDiscoverTitle
+                        : l10n.profileUserStoriesTitle,
                 notificationsTooltip: l10n.profileNotificationsRowTitle,
                 onBackTap: _goBack,
                 onNotificationsTap: () => context.push('/notifications'),
@@ -587,7 +593,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                               filterTooltip: l10n.storyFiltersTitle,
                               activeFilterCount:
                                   (_selectedCategory == null ? 0 : 1) +
-                                  (_selectedPlace == null ? 0 : 1),
+                                      (_selectedPlace == null ? 0 : 1),
                               onFilterTap: _openFilters,
                             ),
                             SizedBox(height: adaptive.scale(18)),
@@ -1066,11 +1072,10 @@ class _StoryFiltersResult {
   final ReferenceCountry? place;
 }
 
-typedef _StoryFiltersPreviewCountLoader =
-    Future<int> Function({
-      required String? category,
-      required ReferenceCountry? place,
-    });
+typedef _StoryFiltersPreviewCountLoader = Future<int> Function({
+  required String? category,
+  required ReferenceCountry? place,
+});
 
 class _StoryFiltersSheet extends StatefulWidget {
   const _StoryFiltersSheet({
@@ -1332,7 +1337,7 @@ class _StoryFiltersSheetState extends State<_StoryFiltersSheet> {
                   final country = visibleCountries[index];
                   final normalizedCode =
                       normalizeReferenceCountryCode(country.code) ??
-                      country.code.trim().toUpperCase();
+                          country.code.trim().toUpperCase();
                   final selected = countryCode == normalizedCode;
 
                   return _StoryCountryResultTile(

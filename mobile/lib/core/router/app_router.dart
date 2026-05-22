@@ -208,6 +208,13 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/users/:userId/stories',
+          builder: (context, state) {
+            final userId = state.pathParameters['userId'] ?? '';
+            return _withAndroidBackSwipe(StoriesScreen(authorId: userId));
+          },
+        ),
+        GoRoute(
           path: '/activities',
           builder: (context, state) =>
               _withAndroidBackSwipe(const ActivitiesScreen()),

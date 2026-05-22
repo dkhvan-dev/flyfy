@@ -75,6 +75,45 @@ class StoryApi {
     return page.items;
   }
 
+  Future<StoryListPage> getUserStoriesPage(
+    String userId, {
+    String? search,
+    List<String>? categories,
+    String? place,
+    String? sort,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final trimmedUserId = userId.trim();
+    if (trimmedUserId.isEmpty) {
+      return const StoryListPage(items: [], hasMore: false, total: 0);
+    }
+
+    return listStoriesPage(
+      search: search,
+      categories: categories,
+      place: place,
+      sort: sort,
+      limit: limit,
+      offset: offset,
+      authorId: trimmedUserId,
+    );
+  }
+
+  Future<List<StoryVm>> getUserPopularStories(
+    String userId, {
+    int limit = 3,
+  }) async {
+    final page = await getUserStoriesPage(
+      userId,
+      sort: 'popular_desc',
+      limit: limit,
+      offset: 0,
+    );
+
+    return page.items;
+  }
+
   Future<StoryListPage> listMyStoriesPage({
     String? search,
     List<String>? categories,

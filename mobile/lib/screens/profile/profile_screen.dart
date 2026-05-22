@@ -20,11 +20,13 @@ import '../../features/profile/data/guide_api.dart';
 import '../../features/profile/data/profile_api.dart';
 import '../../features/profile/models/guide_profile_vm.dart';
 import '../../features/profile/models/user_profile_vm.dart';
+import '../../features/stories/models/story_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import 'edit_profile_screen.dart';
 import 'profile_style.dart';
 import 'widgets/profile_activity_card.dart';
+import 'widgets/profile_story_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.userId, this.initialProfile});
@@ -38,6 +40,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   static const int _foreignProfileRecentActivitiesPreviewLimit = 3;
+  static const int _foreignProfilePopularStoriesPreviewLimit = 3;
 
   final ProfileApi _profileApi = ProfileApi();
   final GuideApi _guideApi = GuideApi();
@@ -51,12 +54,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<_ProfileExtras>? _extrasFuture;
   Future<int>? _activityCountFuture;
   Future<List<ActivityListItemVm>>? _foreignRecentActivitiesFuture;
+  Future<List<StoryVm>>? _foreignPopularStoriesFuture;
   Future<int>? _publishedStoriesCountFuture;
   Future<ExcursionReviewsPage>? _guideReviewsFuture;
   Future<GuideReviewsPage>? _directGuideReviewsFuture;
   String _extrasKey = '';
   String _activityCountKey = '';
   String _foreignRecentActivitiesKey = '';
+  String _foreignPopularStoriesKey = '';
   String _publishedStoriesCountKey = '';
   String _guideReviewsKey = '';
   String _directGuideReviewsKey = '';
@@ -91,6 +96,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _publishedStoriesCountKey = '';
     _foreignRecentActivitiesFuture = null;
     _foreignRecentActivitiesKey = '';
+    _foreignPopularStoriesFuture = null;
+    _foreignPopularStoriesKey = '';
     _guideReviewsFuture = null;
     _guideReviewsKey = '';
     _directGuideReviewsFuture = null;
@@ -247,6 +254,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
     return _foreignRecentActivitiesFuture!;
+  }
+
+  Future<List<StoryVm>> _popularStoriesFutureFor(UserProfileVm profile) {
+    final key =
+        '${profile.userId.trim()}|$_foreignProfilePopularStoriesPreviewLimit';
+    if (_foreignPopularStoriesFuture == null ||
+        _foreignPopularStoriesKey != key) {
+      _foreignPopularStoriesKey = key;
+      _foreignPopularStoriesFuture = _storyApi.getUserPopularStories(
+        profile.userId.trim(),
+        limit: _foreignProfilePopularStoriesPreviewLimit,
+      );
+    }
+    return _foreignPopularStoriesFuture!;
   }
 
   Future<int> _publishedStoriesCountFutureFor(UserProfileVm profile) {
@@ -406,11 +427,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : null,
           directGuideReviewsFuture:
               !isOwnProfile && extras.guide?.isVerified == true
-              ? _directGuideReviewsFutureFor(effectiveProfile)
-              : null,
+                  ? _directGuideReviewsFutureFor(effectiveProfile)
+                  : null,
           recentActivitiesFuture: isOwnProfile
               ? null
               : _recentActivitiesFutureFor(effectiveProfile),
+          popularStoriesFuture:
+              isOwnProfile ? null : _popularStoriesFutureFor(effectiveProfile),
           activityCountFuture: _activityCountFutureFor(effectiveProfile),
           publishedStoriesCountFuture: _publishedStoriesCountFutureFor(
             effectiveProfile,
@@ -418,12 +441,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           isOwnProfile: isOwnProfile,
           isFollowActionLoading: _isFollowActionLoading,
           isMessageActionLoading: _isMessageActionLoading,
-          onToggleFollow: isOwnProfile
-              ? null
-              : () => _toggleFollow(effectiveProfile),
-          onMessageTap: isOwnProfile
-              ? null
-              : () => _openDirectChat(effectiveProfile),
+          onToggleFollow:
+              isOwnProfile ? null : () => _toggleFollow(effectiveProfile),
+          onMessageTap:
+              isOwnProfile ? null : () => _openDirectChat(effectiveProfile),
           onSettingsTap: isOwnProfile ? _openSettings : null,
           onEditProfile: isOwnProfile ? _openEditProfile : null,
           onCopyProfileLink: () => _copyProfileLink(effectiveProfile),
@@ -442,6 +463,7 @@ class _ProfileBody extends StatelessWidget {
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
     required this.recentActivitiesFuture,
+    required this.popularStoriesFuture,
     required this.activityCountFuture,
     required this.publishedStoriesCountFuture,
     required this.isOwnProfile,
@@ -461,6 +483,7 @@ class _ProfileBody extends StatelessWidget {
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
+  final Future<List<StoryVm>>? popularStoriesFuture;
   final Future<int> activityCountFuture;
   final Future<int> publishedStoriesCountFuture;
   final bool isOwnProfile;
@@ -549,6 +572,7 @@ class _ProfileBody extends StatelessWidget {
             guideReviewsFuture: guideReviewsFuture,
             directGuideReviewsFuture: directGuideReviewsFuture,
             recentActivitiesFuture: recentActivitiesFuture,
+            popularStoriesFuture: popularStoriesFuture,
           ),
         ],
       ],
@@ -743,13 +767,10 @@ class _ProfileHero extends StatelessWidget {
     }
     final normalized = value.replaceAll(RegExp(r'[_-]+'), ' ');
     final words = normalized.split(RegExp(r'\s+'));
-    return words
-        .where((word) => word.isNotEmpty)
-        .map((word) {
-          final lower = word.toLowerCase();
-          return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
-        })
-        .join(' ');
+    return words.where((word) => word.isNotEmpty).map((word) {
+      final lower = word.toLowerCase();
+      return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+    }).join(' ');
   }
 }
 
@@ -1002,20 +1023,20 @@ class _BecomeGuideCard extends StatelessWidget {
     final title = isPending
         ? l10n.guideVerificationPendingTitle
         : isRejected
-        ? l10n.guideVerificationRejectedTitle
-        : l10n.profileBecomeGuideTitle;
+            ? l10n.guideVerificationRejectedTitle
+            : l10n.profileBecomeGuideTitle;
     final subtitle = isPending
         ? l10n.guideVerificationPendingSubtitle
         : isRejected
-        ? l10n.guideVerificationRejectedSubtitle
-        : isDraft
-        ? l10n.guideVerificationDraftSubtitle
-        : l10n.profileBecomeGuideSubtitle;
+            ? l10n.guideVerificationRejectedSubtitle
+            : isDraft
+                ? l10n.guideVerificationDraftSubtitle
+                : l10n.profileBecomeGuideSubtitle;
     final buttonLabel = isPending
         ? l10n.guideVerificationViewApplicationButton
         : isRejected || isDraft
-        ? l10n.guideVerificationContinueButton
-        : l10n.becomeGuideButton;
+            ? l10n.guideVerificationContinueButton
+            : l10n.becomeGuideButton;
 
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
@@ -1403,6 +1424,7 @@ class _ForeignProfileSections extends StatelessWidget {
     required this.guideReviewsFuture,
     required this.directGuideReviewsFuture,
     required this.recentActivitiesFuture,
+    required this.popularStoriesFuture,
   });
 
   final String userId;
@@ -1410,11 +1432,10 @@ class _ForeignProfileSections extends StatelessWidget {
   final Future<ExcursionReviewsPage>? guideReviewsFuture;
   final Future<GuideReviewsPage>? directGuideReviewsFuture;
   final Future<List<ActivityListItemVm>>? recentActivitiesFuture;
+  final Future<List<StoryVm>>? popularStoriesFuture;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1433,11 +1454,9 @@ class _ForeignProfileSections extends StatelessWidget {
           recentActivitiesFuture: recentActivitiesFuture,
         ),
         SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-        ProfileSectionHeading(title: l10n.profileBlogsTitle),
-        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-        _PlaceholderShowcaseCard(
-          title: l10n.profileUnavailableTitle,
-          subtitle: l10n.profileBlogsUnavailable,
+        _ForeignPopularStoriesSection(
+          userId: userId,
+          popularStoriesFuture: popularStoriesFuture,
         ),
       ],
     );
@@ -1551,6 +1570,119 @@ class _ForeignRecentActivitiesSkeleton extends StatelessWidget {
             decoration: profileCardDecoration(context, highlighted: true),
           ),
           if (i != 1) SizedBox(height: profileScaled(context, 12, min: 10)),
+        ],
+      ],
+    );
+  }
+}
+
+class _ForeignPopularStoriesSection extends StatelessWidget {
+  const _ForeignPopularStoriesSection({
+    required this.userId,
+    required this.popularStoriesFuture,
+  });
+
+  final String userId;
+  final Future<List<StoryVm>>? popularStoriesFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ProfileSectionHeading(
+                title: l10n.profilePopularStoriesTitle,
+              ),
+            ),
+            SizedBox(width: profileScaled(context, 10, min: 8, max: 12)),
+            TextButton.icon(
+              onPressed: userId.trim().isEmpty
+                  ? null
+                  : () {
+                      context.push(
+                        '/users/${Uri.encodeComponent(userId)}/stories',
+                      );
+                    },
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: Text(l10n.profileViewAllStories),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                padding: EdgeInsets.symmetric(
+                  horizontal: profileScaled(context, 10, min: 8, max: 12),
+                  vertical: profileScaled(context, 8, min: 6, max: 8),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
+        if (popularStoriesFuture == null)
+          _PlaceholderShowcaseCard(
+            title: l10n.profileStoriesEmptyTitle,
+            subtitle: l10n.profileStoriesEmptySubtitle,
+          )
+        else
+          FutureBuilder<List<StoryVm>>(
+            future: popularStoriesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const _ForeignPopularStoriesSkeleton();
+              }
+              if (snapshot.hasError) {
+                return _PlaceholderShowcaseCard(
+                  title: l10n.profileStoriesLoadFailed,
+                  subtitle: l10n.profileStoriesLoadFailedHint,
+                );
+              }
+
+              final stories = snapshot.data ?? const <StoryVm>[];
+              if (stories.isEmpty) {
+                return _PlaceholderShowcaseCard(
+                  title: l10n.profileStoriesEmptyTitle,
+                  subtitle: l10n.profileStoriesEmptySubtitle,
+                );
+              }
+
+              return Column(
+                children: [
+                  for (var i = 0; i < stories.length; i++) ...[
+                    ProfileStoryCard(
+                      story: stories[i],
+                      onTap: () => context.push(
+                        '/stories/${Uri.encodeComponent(stories[i].slug)}',
+                        extra: stories[i],
+                      ),
+                    ),
+                    if (i != stories.length - 1)
+                      SizedBox(height: profileScaled(context, 12, min: 10)),
+                  ],
+                ],
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _ForeignPopularStoriesSkeleton extends StatelessWidget {
+  const _ForeignPopularStoriesSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < 3; i++) ...[
+          Container(
+            height: profileScaled(context, 120, min: 108, max: 132),
+            decoration: profileCardDecoration(context, highlighted: true),
+          ),
+          if (i != 2) SizedBox(height: profileScaled(context, 12, min: 10)),
         ],
       ],
     );
@@ -1694,9 +1826,8 @@ class _ProfileGuideReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
                 backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                backgroundImage: avatarUrl == null
-                    ? null
-                    : NetworkImage(avatarUrl),
+                backgroundImage:
+                    avatarUrl == null ? null : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
@@ -1801,9 +1932,8 @@ class _ProfileDirectGuideReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: profileScaled(context, 18, min: 16, max: 20),
                 backgroundColor: AppColors.accent.withValues(alpha: 0.16),
-                backgroundImage: avatarUrl == null
-                    ? null
-                    : NetworkImage(avatarUrl),
+                backgroundImage:
+                    avatarUrl == null ? null : NetworkImage(avatarUrl),
                 child: avatarUrl == null
                     ? Text(
                         _reviewInitial(authorName),
@@ -1978,9 +2108,8 @@ class _ProfileMenuTile extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color: effectiveDisabled
-                        ? profileDisabled
-                        : AppColors.accent,
+                    color:
+                        effectiveDisabled ? profileDisabled : AppColors.accent,
                   ),
                 ),
                 SizedBox(width: profileScaled(context, 14, min: 12, max: 14)),

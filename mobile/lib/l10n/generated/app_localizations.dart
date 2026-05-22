@@ -1366,6 +1366,48 @@ abstract class AppLocalizations {
   /// **'When this user attends a completed public activity, it will appear here.'**
   String get profileUserActivitiesVisitedEmptySubtitle;
 
+  /// No description provided for @profilePopularStoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular stories'**
+  String get profilePopularStoriesTitle;
+
+  /// No description provided for @profileViewAllStories.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get profileViewAllStories;
+
+  /// No description provided for @profileStoriesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load stories'**
+  String get profileStoriesLoadFailed;
+
+  /// No description provided for @profileStoriesLoadFailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get profileStoriesLoadFailedHint;
+
+  /// No description provided for @profileStoriesEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No stories yet'**
+  String get profileStoriesEmptyTitle;
+
+  /// No description provided for @profileStoriesEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Published stories from this user will appear here.'**
+  String get profileStoriesEmptySubtitle;
+
+  /// No description provided for @profileUserStoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User stories'**
+  String get profileUserStoriesTitle;
+
   /// No description provided for @profileBlogsTitle.
   ///
   /// In en, this message translates to:
