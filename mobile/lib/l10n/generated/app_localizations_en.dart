@@ -3420,6 +3420,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter a password from 4 to 64 characters';
 
   @override
+  String get createVisibilityPasswordAsciiValidation =>
+      'Use only English letters, numbers, and symbols';
+
+  @override
   String get createVisibilityPasswordEditHint =>
       'Leave blank to keep the current password';
 

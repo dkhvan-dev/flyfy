@@ -1273,6 +1273,7 @@
   "createVisibilityPasswordLabel": "Белсенділік құпиясөзі",
   "createVisibilityPasswordPlaceholder": "Құпиясөзді енгізіңіз",
   "createVisibilityPasswordValidation": "4-тен 64 таңбаға дейінгі құпиясөзді енгізіңіз",
+  "createVisibilityPasswordAsciiValidation": "Тек ағылшын әріптерін, сандарды және символдарды қолданыңыз",
   "createVisibilityPasswordEditHint": "Ағымдағы құпиясөзді сақтау үшін өрісті бос қалдырыңыз",
   "createCapacitySection": "ОРЫН САНЫ",
   "createCapacityUnlimited": "Шектеусіз",

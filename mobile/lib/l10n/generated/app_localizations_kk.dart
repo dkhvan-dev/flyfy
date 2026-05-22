@@ -3443,6 +3443,10 @@ class AppLocalizationsKk extends AppLocalizations {
       '4-тен 64 таңбаға дейінгі құпиясөзді енгізіңіз';
 
   @override
+  String get createVisibilityPasswordAsciiValidation =>
+      'Тек ағылшын әріптерін, сандарды және символдарды қолданыңыз';
+
+  @override
   String get createVisibilityPasswordEditHint =>
       'Ағымдағы құпиясөзді сақтау үшін өрісті бос қалдырыңыз';
 

@@ -757,6 +757,21 @@ func TestCreateActivityPrivateRequiresPassword(t *testing.T) {
 	}
 }
 
+func TestCreateActivityPrivateRejectsNonASCIIVisibilityPassword(t *testing.T) {
+	t.Parallel()
+
+	uc := NewActivityUseCase(&activityRepoStub{})
+	input := validCreateActivityInput()
+	input.Visibility = enum.ActivityVisibilityPrivate
+	password := "пароль123!"
+	input.VisibilityPassword = &password
+
+	_, err := uc.CreateActivity(context.Background(), input)
+	if !errors.Is(err, model.ErrInvalidVisibilityPassword) {
+		t.Fatalf("CreateActivity() error = %v, want %v", err, model.ErrInvalidVisibilityPassword)
+	}
+}
+
 func TestCreateActivityPrivateHashesPassword(t *testing.T) {
 	t.Parallel()
 

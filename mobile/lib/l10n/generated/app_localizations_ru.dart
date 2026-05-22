@@ -3439,6 +3439,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Введите пароль длиной от 4 до 64 символов';
 
   @override
+  String get createVisibilityPasswordAsciiValidation =>
+      'Используйте только английские буквы, цифры и символы';
+
+  @override
   String get createVisibilityPasswordEditHint =>
       'Оставьте поле пустым, чтобы сохранить текущий пароль';
 

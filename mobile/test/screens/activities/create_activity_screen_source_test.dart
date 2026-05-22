@@ -338,4 +338,18 @@ void main() {
       expect(l10nSource, contains('createAllowParticipantInvitesHint'));
     },
   );
+
+  test('activity private password accepts only english ascii input', () async {
+    final source = await File(
+      'lib/screens/activities/create_activity_screen.dart',
+    ).readAsString();
+    final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+    expect(source, contains('_activityPasswordInputFormatter'));
+    expect(source, contains('RegExp(r\'[\\x20-\\x7E]\')'));
+    expect(source, contains('_isActivityPasswordAscii'));
+    expect(source, contains('inputFormatters: _activityPasswordFormatters'));
+    expect(source, contains('createVisibilityPasswordAsciiValidation'));
+    expect(l10nSource, contains('createVisibilityPasswordAsciiValidation'));
+  });
 }

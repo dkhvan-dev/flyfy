@@ -1273,6 +1273,7 @@
   "createVisibilityPasswordLabel": "Пароль активности",
   "createVisibilityPasswordPlaceholder": "Введите пароль",
   "createVisibilityPasswordValidation": "Введите пароль длиной от 4 до 64 символов",
+  "createVisibilityPasswordAsciiValidation": "Используйте только английские буквы, цифры и символы",
   "createVisibilityPasswordEditHint": "Оставьте поле пустым, чтобы сохранить текущий пароль",
   "createCapacitySection": "КОЛИЧЕСТВО МЕСТ",
   "createCapacityUnlimited": "Без ограничений",

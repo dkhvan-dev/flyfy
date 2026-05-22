@@ -6292,6 +6292,12 @@ abstract class AppLocalizations {
   /// **'Enter a password from 4 to 64 characters'**
   String get createVisibilityPasswordValidation;
 
+  /// No description provided for @createVisibilityPasswordAsciiValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use only English letters, numbers, and symbols'**
+  String get createVisibilityPasswordAsciiValidation;
+
   /// No description provided for @createVisibilityPasswordEditHint.
   ///
   /// In en, this message translates to:

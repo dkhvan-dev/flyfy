@@ -27,8 +27,20 @@ func normalizeVisibilityPassword(
 		len(trimmed) > maxVisibilityPasswordLength {
 		return nil, model.ErrInvalidVisibilityPassword
 	}
+	if !isVisibilityPasswordASCII(trimmed) {
+		return nil, model.ErrInvalidVisibilityPassword
+	}
 
 	return &trimmed, nil
+}
+
+func isVisibilityPasswordASCII(value string) bool {
+	for _, r := range value {
+		if r < 0x20 || r > 0x7E {
+			return false
+		}
+	}
+	return true
 }
 
 func hashVisibilityPassword(password *string) (*string, error) {

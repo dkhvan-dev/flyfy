@@ -33,6 +33,17 @@ import '../../shared/widgets/app_currency_picker_field.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 
 const _inlineValidationColor = Color(0xFFFF8A65);
+final _activityPasswordInputFormatter = FilteringTextInputFormatter.allow(
+  RegExp(r'[\x20-\x7E]'),
+);
+final _activityPasswordFormatters = <TextInputFormatter>[
+  _activityPasswordInputFormatter,
+];
+final _activityPasswordAsciiPattern = RegExp(r'^[\x20-\x7E]+$');
+
+bool _isActivityPasswordAscii(String value) {
+  return _activityPasswordAsciiPattern.hasMatch(value);
+}
 
 class CreateActivityScreen extends StatefulWidget {
   const CreateActivityScreen({
@@ -949,6 +960,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           final password = _visibilityPasswordValue ?? '';
           if (password.length < 4 || password.length > 64) {
             visibilityPasswordError = l10n.createVisibilityPasswordValidation;
+          } else if (!_isActivityPasswordAscii(password)) {
+            visibilityPasswordError =
+                l10n.createVisibilityPasswordAsciiValidation;
           }
         }
         if (_capacityType == 'LIMITED') {
@@ -2203,6 +2217,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             controller: _visibilityPasswordCtrl,
             placeholder: l10n.createVisibilityPasswordPlaceholder,
             obscureText: true,
+            inputFormatters: _activityPasswordFormatters,
             onChanged: _handleVisibilityPasswordChanged,
             errorText: _visibilityPasswordErrorText,
           ),
@@ -3528,6 +3543,7 @@ class _Step3TextField extends StatelessWidget {
     required this.placeholder,
     this.onChanged,
     this.obscureText = false,
+    this.inputFormatters,
     this.errorText,
   });
 
@@ -3536,6 +3552,7 @@ class _Step3TextField extends StatelessWidget {
   final String placeholder;
   final ValueChanged<String>? onChanged;
   final bool obscureText;
+  final List<TextInputFormatter>? inputFormatters;
   final String? errorText;
 
   @override
@@ -3568,6 +3585,7 @@ class _Step3TextField extends StatelessWidget {
             controller: controller,
             onChanged: onChanged,
             obscureText: obscureText,
+            inputFormatters: inputFormatters,
             textAlignVertical: TextAlignVertical.center,
             style: const TextStyle(
               color: AppColors.textPrimary,
