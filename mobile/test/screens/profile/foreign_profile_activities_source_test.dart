@@ -30,6 +30,12 @@ void main() {
       final backendHandlerSource = await File(
         '../backend/services/activity-service/internal/adapter/http/handler.go',
       ).readAsString();
+      final backendUseCaseSource = await File(
+        '../backend/services/activity-service/internal/app/activity_usecase.go',
+      ).readAsString();
+      final backendRepositorySource = await File(
+        '../backend/services/activity-service/internal/adapter/repository/pg_activity_repository.go',
+      ).readAsString();
 
       expect(
         profileSource,
@@ -70,6 +76,10 @@ void main() {
         recentActivitiesSectionSource,
         isNot(contains('profileGuideTitle')),
       );
+      expect(
+        recentActivitiesSectionSource,
+        contains('ProfileCompactActivityCard('),
+      );
       expect(profileSource, contains('context.push('));
       expect(
         profileSource,
@@ -91,6 +101,26 @@ void main() {
       expect(userActivitiesSource, contains('FlyfyPaginationBar'));
       expect(userActivitiesSource, contains('getUserHostedActivitiesPage'));
       expect(userActivitiesSource, contains('getUserJoinedActivitiesPage'));
+      expect(userActivitiesSource, contains('AppListSearchField('));
+      expect(userActivitiesSource, contains('AppInlineSortRow<'));
+      expect(
+          userActivitiesSource, contains('AlignmentDirectional.centerStart'));
+      expect(userActivitiesSource, contains('showModalBottomSheet'));
+      expect(userActivitiesSource, contains('AppDismissibleModalSheet('));
+      expect(userActivitiesSource, contains('_ProfileActivityFilters'));
+      expect(userActivitiesSource, contains('previewCountBuilder'));
+      expect(userActivitiesSource, contains('activitiesShowResults('));
+      expect(userActivitiesSource, contains('_openFilters'));
+      expect(userActivitiesSource, contains('_handleSearchChanged'));
+      expect(userActivitiesSource, contains('_activeFilterCount'));
+      expect(userActivitiesSource, contains('_sortQueryParam'));
+      expect(
+        userActivitiesSource,
+        contains('categorySlug: _filters.categorySlug'),
+      );
+      expect(userActivitiesSource, contains('format: _filters.format'));
+      expect(userActivitiesSource, contains('priceType: _filters.priceType'));
+      expect(userActivitiesSource, contains('query: _searchQuery'));
       expect(userActivitiesSource, isNot(contains('NestedScrollView')));
       expect(userActivitiesSource, isNot(contains('SliverPersistentHeader')));
       expect(
@@ -109,6 +139,11 @@ void main() {
         profileActivityCardSource,
         contains('activityCardArtForItem(item)'),
       );
+      expect(
+        profileActivityCardSource,
+        contains('class ProfileCompactActivityCard'),
+      );
+      expect(profileActivityCardSource, contains('_compactActivityMetaText'));
       expect(
         profileActivityCardSource,
         isNot(contains('final fallback = DecoratedBox')),
@@ -148,6 +183,15 @@ void main() {
         apiSource,
         contains('Future<ActivityListPageVm> getUserJoinedActivitiesPage'),
       );
+      expect(apiSource, contains('String? query'));
+      expect(apiSource, contains('String? categorySlug'));
+      expect(apiSource, contains('String? format'));
+      expect(apiSource, contains('String? priceType'));
+      expect(apiSource, contains('String? sort'));
+      expect(apiSource, contains("if ((query ?? '').trim().isNotEmpty)"));
+      expect(apiSource, contains("'categorySlug': categorySlug!.trim()"));
+      expect(apiSource, contains("'priceType': priceType!.trim()"));
+      expect(apiSource, contains("'sort': sort!.trim()"));
       expect(
         apiSource,
         contains('Future<List<ActivityListItemVm>> getUserRecentActivities'),
@@ -169,6 +213,26 @@ void main() {
         backendHandlerSource,
         contains('ListPublicProfileJoinedActivities'),
       );
+      expect(
+        backendHandlerSource,
+        contains('profileActivityListInputFromRequest'),
+      );
+      expect(backendHandlerSource, contains('query.Get("q")'));
+      expect(backendHandlerSource, contains('query.Get("categorySlug")'));
+      expect(backendHandlerSource, contains('query.Get("priceType")'));
+      expect(
+        backendUseCaseSource,
+        contains('type PublicProfileActivityListInput'),
+      );
+      expect(
+        backendUseCaseSource,
+        contains('strings.TrimSpace(input.SearchQuery)'),
+      );
+      expect(
+        backendRepositorySource,
+        contains('appendPublicProfileActivityFilters'),
+      );
+      expect(backendRepositorySource, contains('publicProfileActivityOrderBy'));
     },
   );
 }

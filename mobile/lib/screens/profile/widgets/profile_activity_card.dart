@@ -113,6 +113,155 @@ class ProfileActivityCard extends StatelessWidget {
   }
 }
 
+class ProfileCompactActivityCard extends StatelessWidget {
+  const ProfileCompactActivityCard({
+    super.key,
+    required this.item,
+    required this.onTap,
+  });
+
+  final ActivityListItemVm item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).toString();
+    final metaText = _compactActivityMetaText(item, l10n, localeName);
+    final priceText = item.isFree
+        ? l10n.createPriceFree
+        : item.formattedPriceLabel(localeName);
+    final locationFallbackText = activityLocationFallbackText(item, l10n);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(
+          profileScaled(context, 22, min: 18, max: 22),
+        ),
+        child: Ink(
+          decoration: profileCardDecoration(context, highlighted: true),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final padding = profileScaled(context, 12, min: 10);
+              final gap = profileScaled(context, 14, min: 12, max: 16);
+              final availableWidth = constraints.maxWidth.isFinite
+                  ? constraints.maxWidth - padding * 2
+                  : MediaQuery.sizeOf(context).width - padding * 2;
+              final coverSize = (availableWidth * 0.36).clamp(58.0, 108.0);
+
+              return Padding(
+                padding: EdgeInsets.all(padding),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      flex: 0,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints.tightFor(
+                          width: coverSize,
+                          height: coverSize,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            profileScaled(context, 18, min: 14, max: 20),
+                          ),
+                          child: _ProfileActivityCover(item: item),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            metaText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: profileScaled(
+                                context,
+                                12,
+                                min: 11,
+                                max: 12,
+                              ),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: profileScaled(context, 7, min: 6)),
+                          Text(
+                            item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: profileScaled(
+                                context,
+                                15,
+                                min: 14,
+                                max: 16,
+                              ),
+                              fontWeight: FontWeight.w900,
+                              height: 1.16,
+                            ),
+                          ),
+                          SizedBox(height: profileScaled(context, 8, min: 6)),
+                          _ProfileActivityLocationLine(
+                            item: item,
+                            fallbackText: locationFallbackText,
+                            compact: true,
+                          ),
+                          SizedBox(height: profileScaled(context, 9, min: 7)),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: _ProfileActivityTinyBadge(
+                                  icon: _formatIcon(item.format),
+                                  label: formatActivityFormat(
+                                    item.format,
+                                    l10n,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: profileScaled(context, 7, min: 6),
+                              ),
+                              Flexible(
+                                child: _ProfileActivityTinyBadge(
+                                  icon: Icons.payments_outlined,
+                                  label: priceText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _compactActivityMetaText(
+  ActivityListItemVm item,
+  AppLocalizations l10n,
+  String localeName,
+) {
+  final date = item.completedAt ?? item.endAt;
+  final dateText = DateFormat.MMMd(localeName).format(date.toLocal());
+  final statusText = formatActivityDisplayStatus(item, l10n);
+  return '$dateText • $statusText';
+}
+
 class _ProfileActivityCover extends StatelessWidget {
   const _ProfileActivityCover({required this.item});
 
@@ -237,16 +386,23 @@ class _ProfileActivityLocationLine extends StatelessWidget {
   const _ProfileActivityLocationLine({
     required this.item,
     required this.fallbackText,
+    this.compact = false,
   });
 
   final ActivityListItemVm item;
   final String fallbackText;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final style = TextStyle(
       color: profileTextMuted,
-      fontSize: profileScaled(context, 13, min: 12, max: 13),
+      fontSize: profileScaled(
+        context,
+        compact ? 12 : 13,
+        min: compact ? 11 : 12,
+        max: 13,
+      ),
       fontWeight: FontWeight.w700,
     );
 
@@ -257,7 +413,7 @@ class _ProfileActivityLocationLine extends StatelessWidget {
           padding: EdgeInsets.only(top: profileScaled(context, 1, min: 0)),
           child: Icon(
             Icons.place_outlined,
-            size: profileScaled(context, 17, min: 15, max: 17),
+            size: profileScaled(context, compact ? 15 : 17, min: 14, max: 17),
             color: AppColors.accent.withValues(alpha: 0.82),
           ),
         ),
@@ -271,6 +427,40 @@ class _ProfileActivityLocationLine extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: style,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileActivityTinyBadge extends StatelessWidget {
+  const _ProfileActivityTinyBadge({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: profileScaled(context, 14, min: 13, max: 15),
+          color: AppColors.accent.withValues(alpha: 0.78),
+        ),
+        SizedBox(width: profileScaled(context, 5, min: 4)),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: profileScaled(context, 12, min: 11, max: 13),
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],

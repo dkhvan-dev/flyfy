@@ -24,6 +24,17 @@ type ActivityFilter struct {
 	Offset          int
 }
 
+type PublicProfileActivityFilter struct {
+	UserID       uuid.UUID
+	SearchQuery  string
+	CategorySlug string
+	Format       string
+	PriceType    string
+	Sort         string
+	Limit        int
+	Offset       int
+}
+
 type JoinAvailability struct {
 	OccupiedSlots int
 	HasWaitlist   bool
@@ -83,8 +94,8 @@ type ActivityRepository interface {
 
 	ListHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
 	ListJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
-	ListPublicProfileHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
-	ListPublicProfileJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error)
+	ListPublicProfileHostedActivities(ctx context.Context, filter PublicProfileActivityFilter) ([]*model.Activity, error)
+	ListPublicProfileJoinedActivities(ctx context.Context, filter PublicProfileActivityFilter) ([]*model.Activity, error)
 	CountActivityCompletionStatsByUserID(ctx context.Context, userID uuid.UUID) (ActivityCompletionStats, error)
 
 	CreateParticipant(ctx context.Context, item *model.ActivityParticipant) error

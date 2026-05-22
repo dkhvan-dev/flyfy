@@ -37,27 +37,54 @@ void main() {
     },
   );
 
-  test('getUserRecentActivities merges hosted and joined profile pages',
-      () async {
+  test(
+    'getUserRecentActivities merges hosted and joined profile pages',
+    () async {
+      final adapter = _ActivityProfileListAdapter(
+        hostedPayload: {
+          'items': [
+            _activityPayload(
+              id: 'hosted-old',
+              completedAt: '2026-01-10T10:00:00Z',
+            ),
+          ],
+          'hasMore': false,
+        },
+        joinedPayload: {
+          'items': [
+            _activityPayload(
+              id: 'joined-new',
+              completedAt: '2026-01-12T10:00:00Z',
+            ),
+          ],
+          'hasMore': false,
+        },
+      );
+      final api = ActivityApi(
+        apiClient: ApiClient(
+          dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+            ..httpClientAdapter = adapter,
+          secureStorage: _FakeSecureStorage(),
+        ),
+      );
+
+      final items = await api.getUserRecentActivities('user-1', limit: 2);
+
+      expect(items.map((item) => item.id), ['joined-new', 'hosted-old']);
+      expect(adapter.requestPaths, [
+        '/api/v1/activities/users/user-1/hosted',
+        '/api/v1/activities/users/user-1/joined',
+      ]);
+      expect(adapter.requiresAuthValues, everyElement(isFalse));
+      expect(adapter.limits, everyElement('2'));
+      expect(adapter.offsets, everyElement('0'));
+    },
+  );
+
+  test('profile activity pages send search filters and sort', () async {
     final adapter = _ActivityProfileListAdapter(
-      hostedPayload: {
-        'items': [
-          _activityPayload(
-            id: 'hosted-old',
-            completedAt: '2026-01-10T10:00:00Z',
-          ),
-        ],
-        'hasMore': false,
-      },
-      joinedPayload: {
-        'items': [
-          _activityPayload(
-            id: 'joined-new',
-            completedAt: '2026-01-12T10:00:00Z',
-          ),
-        ],
-        'hasMore': false,
-      },
+      hostedPayload: {'items': const [], 'hasMore': false},
+      joinedPayload: {'items': const [], 'hasMore': false},
     );
     final api = ActivityApi(
       apiClient: ApiClient(
@@ -67,16 +94,49 @@ void main() {
       ),
     );
 
-    final items = await api.getUserRecentActivities('user-1', limit: 2);
+    await api.getUserHostedActivitiesPage(
+      'user-1',
+      limit: 10,
+      offset: 20,
+      query: ' Алматы ',
+      categorySlug: 'nature-outdoor',
+      format: 'offline',
+      priceType: 'free',
+      sort: 'date_desc',
+    );
 
-    expect(items.map((item) => item.id), ['joined-new', 'hosted-old']);
+    await api.getUserJoinedActivitiesPage(
+      'user-1',
+      limit: 10,
+      offset: 0,
+      query: 'bike',
+      categorySlug: 'sports-wellness',
+      format: 'online',
+      priceType: 'paid',
+      sort: 'price_asc',
+    );
+
     expect(adapter.requestPaths, [
       '/api/v1/activities/users/user-1/hosted',
       '/api/v1/activities/users/user-1/joined',
     ]);
+    expect(adapter.queryParameters[0], containsPair('q', 'Алматы'));
+    expect(
+      adapter.queryParameters[0],
+      containsPair('categorySlug', 'nature-outdoor'),
+    );
+    expect(adapter.queryParameters[0], containsPair('format', 'offline'));
+    expect(adapter.queryParameters[0], containsPair('priceType', 'free'));
+    expect(adapter.queryParameters[0], containsPair('sort', 'date_desc'));
+    expect(adapter.queryParameters[1], containsPair('q', 'bike'));
+    expect(
+      adapter.queryParameters[1],
+      containsPair('categorySlug', 'sports-wellness'),
+    );
+    expect(adapter.queryParameters[1], containsPair('format', 'online'));
+    expect(adapter.queryParameters[1], containsPair('priceType', 'paid'));
+    expect(adapter.queryParameters[1], containsPair('sort', 'price_asc'));
     expect(adapter.requiresAuthValues, everyElement(isFalse));
-    expect(adapter.limits, everyElement('2'));
-    expect(adapter.offsets, everyElement('0'));
   });
 }
 
@@ -128,6 +188,7 @@ class _ActivityProfileListAdapter implements HttpClientAdapter {
   final List<bool?> requiresAuthValues = [];
   final List<String?> limits = [];
   final List<String?> offsets = [];
+  final List<Map<String, String>> queryParameters = [];
 
   @override
   Future<ResponseBody> fetch(
@@ -139,9 +200,11 @@ class _ActivityProfileListAdapter implements HttpClientAdapter {
     requiresAuthValues.add(options.extra['requiresAuth'] as bool?);
     limits.add(options.uri.queryParameters['limit']);
     offsets.add(options.uri.queryParameters['offset']);
+    queryParameters.add(Map<String, String>.from(options.uri.queryParameters));
 
-    final payload =
-        options.uri.path.endsWith('/hosted') ? hostedPayload : joinedPayload;
+    final payload = options.uri.path.endsWith('/hosted')
+        ? hostedPayload
+        : joinedPayload;
     return ResponseBody.fromString(
       jsonEncode(payload),
       200,

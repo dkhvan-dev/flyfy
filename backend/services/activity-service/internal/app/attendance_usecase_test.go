@@ -84,11 +84,11 @@ func (s *attendanceRepoStub) ListJoinedActivitiesByUserID(ctx context.Context, u
 	return nil, nil
 }
 
-func (s *attendanceRepoStub) ListPublicProfileHostedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error) {
+func (s *attendanceRepoStub) ListPublicProfileHostedActivities(ctx context.Context, filter port.PublicProfileActivityFilter) ([]*model.Activity, error) {
 	return nil, nil
 }
 
-func (s *attendanceRepoStub) ListPublicProfileJoinedActivitiesByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) ([]*model.Activity, error) {
+func (s *attendanceRepoStub) ListPublicProfileJoinedActivities(ctx context.Context, filter port.PublicProfileActivityFilter) ([]*model.Activity, error) {
 	return nil, nil
 }
 

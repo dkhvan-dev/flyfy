@@ -20,7 +20,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -41,7 +42,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -62,7 +64,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -77,11 +80,24 @@ class ActivityApi {
     String userId, {
     int limit = 20,
     int offset = 0,
+    String? query,
+    String? categorySlug,
+    String? format,
+    String? priceType,
+    String? sort,
   }) async {
     final encodedUserId = Uri.encodeComponent(userId.trim());
     final response = await _apiClient.dio.get(
       '/activities/users/$encodedUserId/hosted',
-      queryParameters: {'limit': limit, 'offset': offset},
+      queryParameters: _profileActivityQueryParameters(
+        limit: limit,
+        offset: offset,
+        query: query,
+        categorySlug: categorySlug,
+        format: format,
+        priceType: priceType,
+        sort: sort,
+      ),
       options: Options(extra: const {'requiresAuth': false}),
     );
 
@@ -95,11 +111,24 @@ class ActivityApi {
     String userId, {
     int limit = 20,
     int offset = 0,
+    String? query,
+    String? categorySlug,
+    String? format,
+    String? priceType,
+    String? sort,
   }) async {
     final encodedUserId = Uri.encodeComponent(userId.trim());
     final response = await _apiClient.dio.get(
       '/activities/users/$encodedUserId/joined',
-      queryParameters: {'limit': limit, 'offset': offset},
+      queryParameters: _profileActivityQueryParameters(
+        limit: limit,
+        offset: offset,
+        query: query,
+        categorySlug: categorySlug,
+        format: format,
+        priceType: priceType,
+        sort: sort,
+      ),
       options: Options(extra: const {'requiresAuth': false}),
     );
 
@@ -107,6 +136,27 @@ class ActivityApi {
     return ActivityListPageVm.fromJson(
       data is Map<String, dynamic> ? data : const <String, dynamic>{},
     );
+  }
+
+  Map<String, Object?> _profileActivityQueryParameters({
+    required int limit,
+    required int offset,
+    String? query,
+    String? categorySlug,
+    String? format,
+    String? priceType,
+    String? sort,
+  }) {
+    return {
+      'limit': limit,
+      'offset': offset,
+      if ((query ?? '').trim().isNotEmpty) 'q': query!.trim(),
+      if ((categorySlug ?? '').trim().isNotEmpty)
+        'categorySlug': categorySlug!.trim(),
+      if ((format ?? '').trim().isNotEmpty) 'format': format!.trim(),
+      if ((priceType ?? '').trim().isNotEmpty) 'priceType': priceType!.trim(),
+      if ((sort ?? '').trim().isNotEmpty) 'sort': sort!.trim(),
+    };
   }
 
   Future<List<ActivityListItemVm>> getUserRecentActivities(
@@ -127,9 +177,10 @@ class ActivityApi {
     }
 
     final items = itemsById.values.toList(growable: false)
-      ..sort((a, b) => _activityProfileSortDate(b).compareTo(
-            _activityProfileSortDate(a),
-          ));
+      ..sort(
+        (a, b) =>
+            _activityProfileSortDate(b).compareTo(_activityProfileSortDate(a)),
+      );
     return items.take(pageLimit).toList(growable: false);
   }
 
@@ -163,7 +214,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];
@@ -192,7 +244,8 @@ class ActivityApi {
     );
 
     final data = response.data;
-    final items = (data is Map<String, dynamic>
+    final items =
+        (data is Map<String, dynamic>
             ? data['items'] as List<dynamic>?
             : null) ??
         const [];

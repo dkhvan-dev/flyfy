@@ -1070,8 +1070,9 @@ func (h *Handler) ListUserJoinedActivities(w http.ResponseWriter, r *http.Reques
 		joinedLimit = 100
 	}
 	offset := parseIntOrDefault(r.URL.Query().Get("offset"), 0)
+	input := profileActivityListInputFromRequest(r, userID, joinedLimit+1, offset)
 
-	items, err := h.activityUC.ListPublicProfileJoinedActivities(r.Context(), userID, joinedLimit+1, offset)
+	items, err := h.activityUC.ListPublicProfileJoinedActivities(r.Context(), input)
 	if err != nil {
 		h.writeAppError(w, err, "failed to list user joined activities")
 		return
@@ -1086,14 +1087,30 @@ func (h *Handler) ListUserHostedActivities(w http.ResponseWriter, r *http.Reques
 		hostedLimit = 100
 	}
 	offset := parseIntOrDefault(r.URL.Query().Get("offset"), 0)
+	input := profileActivityListInputFromRequest(r, userID, hostedLimit+1, offset)
 
-	items, err := h.activityUC.ListPublicProfileHostedActivities(r.Context(), userID, hostedLimit+1, offset)
+	items, err := h.activityUC.ListPublicProfileHostedActivities(r.Context(), input)
 	if err != nil {
 		h.writeAppError(w, err, "failed to list user hosted activities")
 		return
 	}
 
 	h.writeActivityListResponse(w, r, items, hostedLimit)
+}
+
+func profileActivityListInputFromRequest(r *http.Request, userID uuid.UUID, limit int, offset int) app.PublicProfileActivityListInput {
+	query := r.URL.Query()
+
+	return app.PublicProfileActivityListInput{
+		UserID:       userID,
+		SearchQuery:  strings.TrimSpace(query.Get("q")),
+		CategorySlug: strings.TrimSpace(query.Get("categorySlug")),
+		Format:       strings.TrimSpace(query.Get("format")),
+		PriceType:    strings.TrimSpace(query.Get("priceType")),
+		Sort:         strings.TrimSpace(query.Get("sort")),
+		Limit:        limit,
+		Offset:       offset,
+	}
 }
 
 func (h *Handler) GetUserActivityCompletionStats(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {

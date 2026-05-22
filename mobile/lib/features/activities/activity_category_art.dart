@@ -38,62 +38,72 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final largeCircle = _activityArtScaled(context, 150, min: 112, max: 162);
-    final smallCircle = _activityArtScaled(context, 170, min: 124, max: 182);
-    final iconSize = _activityArtScaled(context, 66, min: 50, max: 70);
-    final arrowSize = _activityArtScaled(context, 34, min: 26, max: 36);
-    final horizontalInset = _activityArtScaled(context, 26, min: 18, max: 28);
-    final bottomInset = _activityArtScaled(context, 14, min: 10, max: 16);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fallbackSide = MediaQuery.sizeOf(context).shortestSide * 0.28;
+        final width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : fallbackSide;
+        final height = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : fallbackSide;
+        final shortestSide = width < height ? width : height;
+        final artScale = shortestSide.clamp(1.0, 180.0) / 108;
+        final largeCircle = shortestSide * 1.34;
+        final smallCircle = shortestSide * 1.5;
+        final iconSize = shortestSide * 0.42 * artScale.clamp(0.72, 1.0);
+        final arrowSize = shortestSide * 0.22 * artScale.clamp(0.78, 1.0);
+        final horizontalInset = shortestSide * 0.12;
+        final bottomInset = shortestSide * 0.1;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: spec.colors,
-        ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned(
-            left: -_activityArtScaled(context, 32, min: 20, max: 34),
-            top: -_activityArtScaled(context, 34, min: 22, max: 36),
-            child: Container(
-              width: largeCircle,
-              height: largeCircle,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.12),
-              ),
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: spec.colors,
             ),
           ),
-          Positioned(
-            right: -_activityArtScaled(context, 44, min: 28, max: 46),
-            bottom: -_activityArtScaled(context, 48, min: 30, max: 50),
-            child: Container(
-              width: smallCircle,
-              height: smallCircle,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.black.withValues(alpha: 0.14),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned(
+                left: -shortestSide * 0.28,
+                top: -shortestSide * 0.3,
+                child: Container(
+                  width: largeCircle,
+                  height: largeCircle,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.12),
+                  ),
+                ),
               ),
-            ),
-          ),
-          Positioned(
-            left: horizontalInset,
-            right: horizontalInset,
-            bottom: bottomInset,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Icon(
+              Positioned(
+                right: -shortestSide * 0.4,
+                bottom: -shortestSide * 0.42,
+                child: Container(
+                  width: smallCircle,
+                  height: smallCircle,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.14),
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                start: horizontalInset,
+                bottom: bottomInset,
+                child: Icon(
                   spec.icon,
                   size: iconSize,
                   color: Colors.white.withValues(alpha: 0.22),
                 ),
-                Transform.rotate(
+              ),
+              PositionedDirectional(
+                end: horizontalInset,
+                bottom: bottomInset,
+                child: Transform.rotate(
                   angle: -0.18,
                   child: Icon(
                     Icons.arrow_outward_rounded,
@@ -101,11 +111,11 @@ class ActivityDecorativeCoverFallback extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.18),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -182,44 +192,4 @@ ActivityCardArtSpec activityCardArtForItem(ActivityListItemVm item) {
     );
   }
   return fromCategory;
-}
-
-double _activityArtScaled(
-  BuildContext context,
-  double value, {
-  double? min,
-  double? max,
-}) {
-  final scaled = value * _activityArtUiScale(context);
-  if (min == null && max == null) {
-    return scaled;
-  }
-  return scaled.clamp(min ?? scaled, max ?? scaled);
-}
-
-double _activityArtUiScale(BuildContext context) {
-  final mediaQuery = MediaQuery.of(context);
-  final shortSide = mediaQuery.size.shortestSide;
-  final height = mediaQuery.size.height;
-
-  double scale;
-  if (shortSide <= 320) {
-    scale = 0.88;
-  } else if (shortSide <= 360) {
-    scale = 0.94;
-  } else if (shortSide <= 390) {
-    scale = 0.98;
-  } else if (shortSide >= 430) {
-    scale = 1.04;
-  } else {
-    scale = 1;
-  }
-
-  if (height < 700) {
-    scale *= 0.96;
-  } else if (height > 920) {
-    scale *= 1.02;
-  }
-
-  return scale.clamp(0.86, 1.08);
 }

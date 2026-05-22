@@ -1827,24 +1827,28 @@ func (u *ActivityUseCase) ListJoinedActivities(
 
 func (u *ActivityUseCase) ListPublicProfileHostedActivities(
 	ctx context.Context,
-	userID uuid.UUID,
-	limit int,
-	offset int,
+	input PublicProfileActivityListInput,
 ) ([]*model.Activity, error) {
+	userID := input.UserID
 	if userID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
 	}
+	limit := input.Limit
 	if limit <= 0 {
 		limit = 20
 	}
 	if limit > 100 {
 		limit = 100
 	}
+	offset := input.Offset
 	if offset < 0 {
 		offset = 0
 	}
 
-	items, err := u.repo.ListPublicProfileHostedActivitiesByUserID(ctx, userID, limit, offset)
+	items, err := u.repo.ListPublicProfileHostedActivities(
+		ctx,
+		input.toRepositoryFilter(limit, offset),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("list public profile hosted activities: %w", err)
 	}
@@ -1854,29 +1858,66 @@ func (u *ActivityUseCase) ListPublicProfileHostedActivities(
 
 func (u *ActivityUseCase) ListPublicProfileJoinedActivities(
 	ctx context.Context,
-	userID uuid.UUID,
-	limit int,
-	offset int,
+	input PublicProfileActivityListInput,
 ) ([]*model.Activity, error) {
+	userID := input.UserID
 	if userID == uuid.Nil {
 		return nil, ErrInvalidParticipantUserID
 	}
+	limit := input.Limit
 	if limit <= 0 {
 		limit = 20
 	}
 	if limit > 100 {
 		limit = 100
 	}
+	offset := input.Offset
 	if offset < 0 {
 		offset = 0
 	}
 
-	items, err := u.repo.ListPublicProfileJoinedActivitiesByUserID(ctx, userID, limit, offset)
+	items, err := u.repo.ListPublicProfileJoinedActivities(
+		ctx,
+		input.toRepositoryFilter(limit, offset),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("list public profile joined activities: %w", err)
 	}
 
 	return u.normalizeLifecycleList(ctx, items)
+}
+
+type PublicProfileActivityListInput struct {
+	UserID       uuid.UUID
+	SearchQuery  string
+	CategorySlug string
+	Format       string
+	PriceType    string
+	Sort         string
+	Limit        int
+	Offset       int
+}
+
+func (input PublicProfileActivityListInput) toRepositoryFilter(limit int, offset int) port.PublicProfileActivityFilter {
+	return port.PublicProfileActivityFilter{
+		UserID:       input.UserID,
+		SearchQuery:  strings.TrimSpace(input.SearchQuery),
+		CategorySlug: strings.TrimSpace(input.CategorySlug),
+		Format:       strings.ToUpper(strings.TrimSpace(input.Format)),
+		PriceType:    strings.ToUpper(strings.TrimSpace(input.PriceType)),
+		Sort:         normalizePublicProfileActivitySort(input.Sort),
+		Limit:        limit,
+		Offset:       offset,
+	}
+}
+
+func normalizePublicProfileActivitySort(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "date_asc", "price_asc", "price_desc":
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return "date_desc"
+	}
 }
 
 type ActivityCompletionStats struct {

@@ -1452,34 +1452,45 @@ func (r *PGActivityRepository) ListJoinedActivitiesByUserID(
 	return result, rows.Err()
 }
 
-func (r *PGActivityRepository) ListPublicProfileHostedActivitiesByUserID(
+func (r *PGActivityRepository) ListPublicProfileHostedActivities(
 	ctx context.Context,
-	userID uuid.UUID,
-	limit int,
-	offset int,
+	filter port.PublicProfileActivityFilter,
 ) ([]*model.Activity, error) {
-	const query = `
+	query := `
 		SELECT
 	` + activitySelectColumns + `
 		FROM activities
 		WHERE host_user_id = $1
 		  AND status = $4
 		  AND visibility = $5
-		ORDER BY completed_at DESC NULLS LAST, end_at DESC, start_at DESC, created_at DESC
-		LIMIT $2 OFFSET $3
 	`
-
-	rows, err := r.pool.Query(
-		ctx,
-		query,
-		userID,
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
+	}
+	args := []any{
+		filter.UserID,
 		limit,
 		offset,
 		string(enum.ActivityStatusCompleted),
 		string(enum.ActivityVisibilityPublic),
+	}
+	where, args := appendPublicProfileActivityFilters("", filter, args)
+	query += where
+	query += " ORDER BY " + publicProfileActivityOrderBy("", filter.Sort)
+	query += " LIMIT $2 OFFSET $3"
+
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		args...,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("list public profile hosted activities by user id: %w", err)
+		return nil, fmt.Errorf("list public profile hosted activities: %w", err)
 	}
 	defer rows.Close()
 
@@ -1495,13 +1506,11 @@ func (r *PGActivityRepository) ListPublicProfileHostedActivitiesByUserID(
 	return result, rows.Err()
 }
 
-func (r *PGActivityRepository) ListPublicProfileJoinedActivitiesByUserID(
+func (r *PGActivityRepository) ListPublicProfileJoinedActivities(
 	ctx context.Context,
-	userID uuid.UUID,
-	limit int,
-	offset int,
+	filter port.PublicProfileActivityFilter,
 ) ([]*model.Activity, error) {
-	const query = `
+	query := `
 		SELECT DISTINCT
 	` + qualifiedActivitySelectColumns + `
 		FROM activities a
@@ -1511,8 +1520,6 @@ func (r *PGActivityRepository) ListPublicProfileJoinedActivitiesByUserID(
 		  AND a.status = $4
 		  AND a.visibility = $5
 		  AND ap.status = ANY($6)
-		ORDER BY a.completed_at DESC NULLS LAST, a.end_at DESC, a.start_at DESC, a.created_at DESC
-		LIMIT $2 OFFSET $3
 	`
 
 	participantStatuses := []string{
@@ -1521,19 +1528,34 @@ func (r *PGActivityRepository) ListPublicProfileJoinedActivitiesByUserID(
 		string(enum.ParticipantStatusCheckedIn),
 		string(enum.ParticipantStatusAttended),
 	}
-
-	rows, err := r.pool.Query(
-		ctx,
-		query,
-		userID,
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
+	}
+	args := []any{
+		filter.UserID,
 		limit,
 		offset,
 		string(enum.ActivityStatusCompleted),
 		string(enum.ActivityVisibilityPublic),
 		participantStatuses,
+	}
+	where, args := appendPublicProfileActivityFilters("a", filter, args)
+	query += where
+	query += " ORDER BY " + publicProfileActivityOrderBy("a", filter.Sort)
+	query += " LIMIT $2 OFFSET $3"
+
+	rows, err := r.pool.Query(
+		ctx,
+		query,
+		args...,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("list public profile joined activities by user id: %w", err)
+		return nil, fmt.Errorf("list public profile joined activities: %w", err)
 	}
 	defer rows.Close()
 
@@ -1547,6 +1569,99 @@ func (r *PGActivityRepository) ListPublicProfileJoinedActivitiesByUserID(
 	}
 
 	return result, rows.Err()
+}
+
+func appendPublicProfileActivityFilters(alias string, filter port.PublicProfileActivityFilter, args []any) (string, []any) {
+	var builder strings.Builder
+	column := func(name string) string {
+		if alias == "" {
+			return name
+		}
+		return alias + "." + name
+	}
+
+	if query := strings.TrimSpace(filter.SearchQuery); query != "" {
+		args = append(args, "%"+strings.ToLower(query)+"%")
+		placeholder := len(args)
+		fmt.Fprintf(
+			&builder,
+			" AND (LOWER(%s) LIKE $%d OR LOWER(%s) LIKE $%d OR LOWER(COALESCE(%s, '')) LIKE $%d OR LOWER(COALESCE(%s, '')) LIKE $%d)",
+			column("title"),
+			placeholder,
+			column("description"),
+			placeholder,
+			column("city_name"),
+			placeholder,
+			column("address_text"),
+			placeholder,
+		)
+	}
+
+	if categorySlug := strings.TrimSpace(filter.CategorySlug); categorySlug != "" {
+		args = append(args, categorySlug)
+		fmt.Fprintf(
+			&builder,
+			" AND LOWER(%s) = LOWER($%d)",
+			column("category_slug"),
+			len(args),
+		)
+	}
+
+	if format := strings.TrimSpace(filter.Format); format != "" {
+		args = append(args, strings.ToUpper(format))
+		fmt.Fprintf(&builder, " AND %s = $%d", column("format"), len(args))
+	}
+
+	if priceType := strings.TrimSpace(filter.PriceType); priceType != "" {
+		args = append(args, strings.ToUpper(priceType))
+		fmt.Fprintf(&builder, " AND %s = $%d", column("price_type"), len(args))
+	}
+
+	return builder.String(), args
+}
+
+func publicProfileActivityOrderBy(alias string, sort string) string {
+	column := func(name string) string {
+		if alias == "" {
+			return name
+		}
+		return alias + "." + name
+	}
+
+	switch strings.ToLower(strings.TrimSpace(sort)) {
+	case "date_asc":
+		return fmt.Sprintf(
+			"%s ASC NULLS LAST, %s ASC, %s ASC, %s ASC",
+			column("completed_at"),
+			column("end_at"),
+			column("start_at"),
+			column("created_at"),
+		)
+	case "price_asc":
+		return fmt.Sprintf(
+			"%s ASC NULLS FIRST, %s DESC NULLS LAST, %s DESC, %s DESC",
+			column("price_amount"),
+			column("completed_at"),
+			column("end_at"),
+			column("created_at"),
+		)
+	case "price_desc":
+		return fmt.Sprintf(
+			"%s DESC NULLS LAST, %s DESC NULLS LAST, %s DESC, %s DESC",
+			column("price_amount"),
+			column("completed_at"),
+			column("end_at"),
+			column("created_at"),
+		)
+	default:
+		return fmt.Sprintf(
+			"%s DESC NULLS LAST, %s DESC, %s DESC, %s DESC",
+			column("completed_at"),
+			column("end_at"),
+			column("start_at"),
+			column("created_at"),
+		)
+	}
 }
 
 func (r *PGActivityRepository) CountActivityCompletionStatsByUserID(
