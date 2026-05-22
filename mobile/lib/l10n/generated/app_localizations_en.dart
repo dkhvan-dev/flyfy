@@ -157,6 +157,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileCurrency => 'Currency';
 
   @override
+  String get profileCurrencySearchHint => 'Search currency, code, or symbol';
+
+  @override
+  String get profileCurrencyNoResults => 'No currencies found';
+
+  @override
   String get editProfileButton => 'Edit profile';
 
   @override

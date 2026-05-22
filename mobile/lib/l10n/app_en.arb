@@ -58,6 +58,8 @@
   "profileTimezoneNoResults": "No time zones found",
   "profileCountry": "Country",
   "profileCurrency": "Currency",
+  "profileCurrencySearchHint": "Search currency, code, or symbol",
+  "profileCurrencyNoResults": "No currencies found",
   "editProfileButton": "Edit profile",
   "becomeGuideButton": "Become a guide",
   "guideVerificationTitle": "Guide application",

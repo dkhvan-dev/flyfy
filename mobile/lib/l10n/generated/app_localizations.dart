@@ -382,6 +382,18 @@ abstract class AppLocalizations {
   /// **'Currency'**
   String get profileCurrency;
 
+  /// No description provided for @profileCurrencySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search currency, code, or symbol'**
+  String get profileCurrencySearchHint;
+
+  /// No description provided for @profileCurrencyNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No currencies found'**
+  String get profileCurrencyNoResults;
+
   /// No description provided for @editProfileButton.
   ///
   /// In en, this message translates to:

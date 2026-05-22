@@ -186,6 +186,62 @@ void main() {
     expect(timezoneSection, isNot(contains('_StyledTextField(')));
   });
 
+  test('edit profile currency uses localized searchable reference selector',
+      () async {
+    final source = await File(
+      'lib/screens/profile/edit_profile_screen.dart',
+    ).readAsString();
+    final referenceApiSource =
+        await File('lib/core/network/reference_api.dart').readAsString();
+    final l10nSource = await File('lib/l10n/app_ru.arb').readAsString();
+
+    final currencyStart = source.indexOf('label: l10n.profileCurrency');
+    final locationButtonStart = source.indexOf(
+      'onPressed: _isResolvingLocation',
+      currencyStart,
+    );
+
+    expect(currencyStart, isNonNegative);
+    expect(locationButtonStart, greaterThan(currencyStart));
+
+    final currencySection = source.substring(
+      currencyStart,
+      locationButtonStart,
+    );
+
+    expect(referenceApiSource, contains('Future<List<ReferenceCurrency>>'));
+    expect(referenceApiSource, contains("'/reference/currencies'"));
+    expect(referenceApiSource, contains('class ReferenceCurrency'));
+    expect(l10nSource, contains('profileCurrencySearchHint'));
+    expect(l10nSource, contains('profileCurrencyNoResults'));
+    expect(
+      source,
+      contains("import '../../core/reference/currency_filter_utils.dart';"),
+    );
+    expect(source, contains('_currencySearchController'));
+    expect(source, contains('List<ReferenceCurrency> _currencies'));
+    expect(source, contains('Map<String, Set<String>> _currencySearchAliases'));
+    expect(source, contains('_loadCurrencies'));
+    expect(source, contains('withDefaultReferenceCurrency('));
+    expect(source, contains('currencySearchAliasMap('));
+    expect(source, contains('currencyFilterSearchHaystack('));
+    expect(source, contains('referenceCurrencyLabel('));
+    expect(source, contains('_selectedCurrency()'));
+    expect(source, contains('_visibleCurrencies()'));
+    expect(source, contains('_selectCurrency'));
+    expect(source, contains('class _ProfileCurrencySearchField'));
+
+    expect(currencySection, contains('_ProfileCurrencySearchField('));
+    expect(currencySection, contains('selectedCurrency: _selectedCurrency()'));
+    expect(
+        currencySection, contains('visibleCurrencies: _visibleCurrencies()'));
+    expect(currencySection,
+        contains('searchHint: l10n.profileCurrencySearchHint'));
+    expect(
+        currencySection, contains('emptyLabel: l10n.profileCurrencyNoResults'));
+    expect(currencySection, isNot(contains('_StyledTextField(')));
+  });
+
   test('geolocation applies resolved timezone to the profile form', () async {
     final source = await File(
       'lib/screens/profile/edit_profile_screen.dart',

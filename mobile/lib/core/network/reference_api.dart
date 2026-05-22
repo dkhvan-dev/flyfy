@@ -141,6 +141,20 @@ class ReferenceApi {
         .map((e) => ReferenceTimezone.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
   }
+
+  Future<List<ReferenceCurrency>> listCurrencies({
+    String lang = 'en',
+  }) async {
+    final response = await _dio.get(
+      '/reference/currencies',
+      queryParameters: {'lang': lang},
+      options: Options(extra: {'requiresAuth': false}),
+    );
+    final list = response.data as List<dynamic>? ?? [];
+    return list
+        .map((e) => ReferenceCurrency.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
 }
 
 class ReferenceCountry {
@@ -202,6 +216,32 @@ class ReferenceTimezone {
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       utcOffset: json['utcOffset']?.toString(),
+    );
+  }
+}
+
+class ReferenceCurrency {
+  const ReferenceCurrency({
+    required this.code,
+    required this.numeric,
+    required this.decimals,
+    required this.symbol,
+    required this.name,
+  });
+
+  final String code;
+  final String numeric;
+  final int decimals;
+  final String symbol;
+  final String name;
+
+  factory ReferenceCurrency.fromJson(Map<String, dynamic> json) {
+    return ReferenceCurrency(
+      code: json['code']?.toString() ?? '',
+      numeric: json['numeric']?.toString() ?? '',
+      decimals: int.tryParse(json['decimals']?.toString() ?? '') ?? 2,
+      symbol: json['symbol']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
     );
   }
 }

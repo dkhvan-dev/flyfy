@@ -161,6 +161,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get profileCurrency => 'Валюта';
 
   @override
+  String get profileCurrencySearchHint =>
+      'Валютаны, кодты немесе таңбаны іздеу';
+
+  @override
+  String get profileCurrencyNoResults => 'Валюталар табылмады';
+
+  @override
   String get editProfileButton => 'Профильді өңдеу';
 
   @override

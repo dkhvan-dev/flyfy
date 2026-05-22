@@ -58,6 +58,8 @@
   "profileTimezoneNoResults": "Часовые пояса не найдены",
   "profileCountry": "Страна",
   "profileCurrency": "Валюта",
+  "profileCurrencySearchHint": "Поиск валюты, кода или символа",
+  "profileCurrencyNoResults": "Валюты не найдены",
   "editProfileButton": "Редактировать профиль",
   "becomeGuideButton": "Стать гидом",
   "guideVerificationTitle": "Заявка на статус гида",

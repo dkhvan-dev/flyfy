@@ -58,6 +58,8 @@
   "profileTimezoneNoResults": "Уақыт белдеулері табылмады",
   "profileCountry": "Ел",
   "profileCurrency": "Валюта",
+  "profileCurrencySearchHint": "Валютаны, кодты немесе таңбаны іздеу",
+  "profileCurrencyNoResults": "Валюталар табылмады",
   "editProfileButton": "Профильді өңдеу",
   "becomeGuideButton": "Гид болу",
   "guideVerificationTitle": "Гид мәртебесіне өтінім",

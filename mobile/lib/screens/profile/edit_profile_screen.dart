@@ -11,6 +11,7 @@ import '../../core/device/device_context_service.dart';
 import '../../core/network/file_api.dart';
 import '../../core/network/reference_api.dart';
 import '../../core/reference/country_filter_utils.dart';
+import '../../core/reference/currency_filter_utils.dart';
 import '../../core/reference/timezone_filter_utils.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/error_dialog.dart';
@@ -49,22 +50,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _timezoneController;
   late final TextEditingController _timezoneSearchController;
   late final TextEditingController _currencyController;
+  late final TextEditingController _currencySearchController;
 
   late String _localeCode;
   List<ReferenceCountry> _countries = const [];
   Map<String, Set<String>> _countrySearchAliases = const {};
   List<ReferenceTimezone> _timezones = const [];
   Map<String, Set<String>> _timezoneSearchAliases = const {};
+  List<ReferenceCurrency> _currencies = const [];
+  Map<String, Set<String>> _currencySearchAliases = const {};
   Future<void>? _countriesLoadFuture;
   Future<void>? _timezonesLoadFuture;
+  Future<void>? _currenciesLoadFuture;
   String _countrySearchQuery = '';
   String _timezoneSearchQuery = '';
+  String _currencySearchQuery = '';
   String? _avatarFileId;
 
   Future<String?>? _avatarFuture;
   Uint8List? _avatarPreviewBytes;
   bool _isCountriesLoading = false;
   bool _isTimezonesLoading = false;
+  bool _isCurrenciesLoading = false;
   bool _isSaving = false;
   bool _isResolvingLocation = false;
   bool _isUploadingAvatar = false;
@@ -97,6 +104,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _currencyController = TextEditingController(
       text: profile?.currency ?? 'KZT',
     );
+    _currencySearchController = TextEditingController()
+      ..addListener(_handleCurrencySearchChanged);
 
     _localeCode = _normalizeLocaleCode(
       profile?.locale,
@@ -111,6 +120,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       unawaited(_prefillTimezoneFromDevice());
       unawaited(_loadCountries());
       unawaited(_loadTimezones());
+      unawaited(_loadCurrencies());
     });
   }
 
@@ -129,6 +139,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ..removeListener(_handleTimezoneSearchChanged)
       ..dispose();
     _currencyController.dispose();
+    _currencySearchController
+      ..removeListener(_handleCurrencySearchChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -150,6 +163,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (nextQuery == _timezoneSearchQuery) return;
 
     setState(() => _timezoneSearchQuery = nextQuery);
+  }
+
+  void _handleCurrencySearchChanged() {
+    final nextQuery = _currencySearchController.text.trim();
+    if (nextQuery == _currencySearchQuery) return;
+
+    setState(() => _currencySearchQuery = nextQuery);
   }
 
   Future<void> _loadCountries() {
@@ -248,6 +268,53 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  Future<void> _loadCurrencies() {
+    if (_currencies.isNotEmpty) return Future.value();
+    final inFlight = _currenciesLoadFuture;
+    if (inFlight != null) return inFlight;
+
+    final future = _loadCurrenciesInner();
+    _currenciesLoadFuture = future;
+    return future.whenComplete(() => _currenciesLoadFuture = null);
+  }
+
+  Future<void> _loadCurrenciesInner() async {
+    if (!mounted) return;
+
+    setState(() => _isCurrenciesLoading = true);
+    final lang = Localizations.localeOf(context).languageCode;
+    final selectedCurrencyCode = normalizeReferenceCurrencyCode(
+      _currencyController.text,
+    );
+
+    try {
+      final currencies = withDefaultReferenceCurrency(
+        await _referenceApi.listCurrencies(lang: lang),
+        selectedCurrencyCode,
+      );
+      final aliases = await _loadCurrencySearchAliases(currencies, lang);
+      if (!mounted) return;
+
+      setState(() {
+        _currencies = currencies;
+        _currencySearchAliases = aliases;
+        _isCurrenciesLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      final currencies = withDefaultReferenceCurrency(
+        const [],
+        selectedCurrencyCode,
+      );
+
+      setState(() {
+        _currencies = currencies;
+        _currencySearchAliases = currencySearchAliasMap(currencies);
+        _isCurrenciesLoading = false;
+      });
+    }
+  }
+
   Future<Map<String, Set<String>>> _loadCountrySearchAliases(
     List<ReferenceCountry> countries,
     String currentLang,
@@ -287,6 +354,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return timezoneSearchAliasMap([
       ...timezones,
       for (final localizedTimezones in localizedLists) ...localizedTimezones,
+    ]);
+  }
+
+  Future<Map<String, Set<String>>> _loadCurrencySearchAliases(
+    List<ReferenceCurrency> currencies,
+    String currentLang,
+  ) async {
+    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
+    final localizedLists = await Future.wait(
+      languages.map((lang) async {
+        try {
+          return await _referenceApi.listCurrencies(lang: lang);
+        } catch (_) {
+          return const <ReferenceCurrency>[];
+        }
+      }),
+    );
+
+    return currencySearchAliasMap([
+      ...currencies,
+      for (final localizedCurrencies in localizedLists) ...localizedCurrencies,
     ]);
   }
 
@@ -346,6 +434,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         .toList(growable: false);
   }
 
+  ReferenceCurrency? _selectedCurrency() {
+    final currencyCode = normalizeReferenceCurrencyCode(
+      _currencyController.text,
+    );
+    if (currencyCode == null) return null;
+
+    for (final currency in _currencies) {
+      if (normalizeReferenceCurrencyCode(currency.code) == currencyCode) {
+        return currency;
+      }
+    }
+    return null;
+  }
+
+  List<ReferenceCurrency> _visibleCurrencies() {
+    final query = normalizeCurrencySearchText(_currencySearchQuery);
+    if (query.isEmpty) return const [];
+
+    return _currencies
+        .where(
+          (currency) => currencyFilterSearchHaystack(
+            currency,
+            _currencySearchAliases,
+          ).contains(query),
+        )
+        .take(24)
+        .toList(growable: false);
+  }
+
   void _selectCountry(ReferenceCountry country) {
     final normalized = normalizeReferenceCountryCode(country.code);
     if (normalized == null) return;
@@ -373,6 +490,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _timezoneController.text = normalized;
       _timezoneSearchController.clear();
       _timezoneSearchQuery = '';
+    });
+  }
+
+  void _selectCurrency(ReferenceCurrency currency) {
+    final normalized = normalizeReferenceCurrencyCode(currency.code);
+    if (normalized == null) return;
+
+    setState(() {
+      _currencyController.text = normalized;
+      _currencySearchController.clear();
+      _currencySearchQuery = '';
     });
   }
 
@@ -959,10 +1087,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                         _LabeledInput(
                           label: l10n.profileCurrency,
-                          child: _StyledTextField(
-                            controller: _currencyController,
-                            hintText: 'KZT',
-                            textCapitalization: TextCapitalization.characters,
+                          child: _ProfileCurrencySearchField(
+                            selectedCurrency: _selectedCurrency(),
+                            selectedCurrencyCode:
+                                normalizeReferenceCurrencyCode(
+                              _currencyController.text,
+                            ),
+                            searchController: _currencySearchController,
+                            visibleCurrencies: _visibleCurrencies(),
+                            isLoading: _isCurrenciesLoading,
+                            searchQuery: _currencySearchQuery,
+                            searchHint: l10n.profileCurrencySearchHint,
+                            emptyLabel: l10n.profileCurrencyNoResults,
+                            onCurrencySelected: _selectCurrency,
                           ),
                         ),
                         SizedBox(
@@ -2015,6 +2152,286 @@ class _ProfileTimezoneSearchField extends StatelessWidget {
   }
 }
 
+class _ProfileCurrencySearchField extends StatelessWidget {
+  const _ProfileCurrencySearchField({
+    required this.selectedCurrency,
+    required this.selectedCurrencyCode,
+    required this.searchController,
+    required this.visibleCurrencies,
+    required this.isLoading,
+    required this.searchQuery,
+    required this.searchHint,
+    required this.emptyLabel,
+    required this.onCurrencySelected,
+  });
+
+  final ReferenceCurrency? selectedCurrency;
+  final String? selectedCurrencyCode;
+  final TextEditingController searchController;
+  final List<ReferenceCurrency> visibleCurrencies;
+  final bool isLoading;
+  final String searchQuery;
+  final String searchHint;
+  final String emptyLabel;
+  final ValueChanged<ReferenceCurrency> onCurrencySelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSelection = selectedCurrencyCode != null;
+    final selectedLabel = selectedCurrency == null
+        ? selectedCurrencyCode ?? searchHint
+        : referenceCurrencyLabel(selectedCurrency!);
+    final selectedSymbol = selectedCurrency?.symbol.trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hasSelection) ...[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(
+                profileScaled(context, 18, min: 16, max: 20),
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: profileScaled(context, 14, min: 12, max: 16),
+                vertical: profileScaled(context, 11, min: 10, max: 12),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    selectedSymbol == null || selectedSymbol.isEmpty
+                        ? selectedCurrencyCode ?? ''
+                        : selectedSymbol,
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontSize: profileScaled(context, 18, min: 16, max: 20),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(width: profileScaled(context, 10, min: 8, max: 10)),
+                  Expanded(
+                    child: Text(
+                      selectedLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: profileScaled(context, 15, min: 14, max: 16),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: profileScaled(context, 10, min: 8, max: 12)),
+        ],
+        TextField(
+          controller: searchController,
+          enabled: !isLoading,
+          cursorColor: AppColors.accent,
+          textCapitalization: TextCapitalization.words,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: profileScaled(context, 14, min: 13, max: 15),
+            fontWeight: FontWeight.w700,
+          ),
+          decoration: InputDecoration(
+            hintText: searchHint,
+            hintStyle: TextStyle(
+              color: profileTextMuted,
+              fontSize: profileScaled(context, 14, min: 13, max: 15),
+              fontWeight: FontWeight.w600,
+            ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: AppColors.accent,
+            ),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.04),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: profileScaled(context, 14, min: 12, max: 16),
+              vertical: profileScaled(context, 13, min: 11, max: 14),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                profileScaled(context, 16, min: 14, max: 18),
+              ),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                profileScaled(context, 16, min: 14, max: 18),
+              ),
+              borderSide: BorderSide(
+                color: Colors.white.withValues(alpha: 0.05),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                profileScaled(context, 16, min: 14, max: 18),
+              ),
+              borderSide: const BorderSide(color: AppColors.accent, width: 1.2),
+            ),
+          ),
+        ),
+        if (isLoading) ...[
+          SizedBox(height: profileScaled(context, 12, min: 10, max: 12)),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              width: profileScaled(context, 22, min: 20, max: 24),
+              height: profileScaled(context, 22, min: 20, max: 24),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: AppColors.accent,
+              ),
+            ),
+          ),
+        ] else if (searchQuery.trim().isNotEmpty) ...[
+          SizedBox(height: profileScaled(context, 12, min: 10, max: 12)),
+          if (visibleCurrencies.isEmpty)
+            Text(
+              emptyLabel,
+              style: TextStyle(
+                color: profileTextMuted,
+                fontSize: profileScaled(context, 13, min: 12, max: 13),
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          else
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: profileScaled(context, 224, min: 180, max: 240),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                itemCount: visibleCurrencies.length,
+                separatorBuilder: (_, _) =>
+                    SizedBox(height: profileScaled(context, 8, min: 7, max: 8)),
+                itemBuilder: (context, index) {
+                  final currency = visibleCurrencies[index];
+                  final currencyCode =
+                      normalizeReferenceCurrencyCode(currency.code) ??
+                          currency.code.trim();
+                  final selected = selectedCurrencyCode == currencyCode;
+                  final symbol = currency.symbol.trim();
+
+                  return InkWell(
+                    onTap: () => onCurrencySelected(currency),
+                    borderRadius: BorderRadius.circular(
+                      profileScaled(context, 14, min: 12, max: 16),
+                    ),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppColors.accent.withValues(alpha: 0.16)
+                            : Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(
+                          profileScaled(context, 14, min: 12, max: 16),
+                        ),
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.accent
+                              : Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: profileScaled(
+                            context,
+                            13,
+                            min: 11,
+                            max: 14,
+                          ),
+                          vertical: profileScaled(
+                            context,
+                            11,
+                            min: 10,
+                            max: 12,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              symbol.isEmpty ? currencyCode : symbol,
+                              style: TextStyle(
+                                color: AppColors.accent,
+                                fontSize: profileScaled(
+                                  context,
+                                  16,
+                                  min: 14,
+                                  max: 18,
+                                ),
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(
+                              width: profileScaled(
+                                context,
+                                10,
+                                min: 8,
+                                max: 10,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                referenceCurrencyLabel(currency),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: profileScaled(
+                                    context,
+                                    14,
+                                    min: 13,
+                                    max: 15,
+                                  ),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: profileScaled(
+                                context,
+                                10,
+                                min: 8,
+                                max: 10,
+                              ),
+                            ),
+                            Text(
+                              currencyCode,
+                              style: TextStyle(
+                                color: profileTextMuted,
+                                fontSize: profileScaled(
+                                  context,
+                                  12,
+                                  min: 11,
+                                  max: 12,
+                                ),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
 class _ProfileSectionCard extends StatelessWidget {
   const _ProfileSectionCard({required this.child, this.disabled = false});
 
@@ -2070,7 +2487,6 @@ class _StyledTextField extends StatelessWidget {
     this.validator,
     this.minLines = 1,
     this.maxLines = 1,
-    this.textCapitalization = TextCapitalization.sentences,
   });
 
   final TextEditingController controller;
@@ -2078,7 +2494,6 @@ class _StyledTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final int minLines;
   final int maxLines;
-  final TextCapitalization textCapitalization;
 
   @override
   Widget build(BuildContext context) {
@@ -2091,7 +2506,7 @@ class _StyledTextField extends StatelessWidget {
       validator: validator,
       minLines: minLines,
       maxLines: maxLines,
-      textCapitalization: textCapitalization,
+      textCapitalization: TextCapitalization.sentences,
       style: TextStyle(
         color: AppColors.textPrimary,
         fontSize: profileScaled(context, 15, min: 14, max: 16),

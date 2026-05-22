@@ -159,6 +159,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileCurrency => 'Валюта';
 
   @override
+  String get profileCurrencySearchHint => 'Поиск валюты, кода или символа';
+
+  @override
+  String get profileCurrencyNoResults => 'Валюты не найдены';
+
+  @override
   String get editProfileButton => 'Редактировать профиль';
 
   @override
