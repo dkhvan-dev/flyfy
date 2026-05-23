@@ -721,6 +721,39 @@ func (u *ExcursionUseCase) ListGuideExcursionLanguageCodes(ctx context.Context, 
 	return languages, nil
 }
 
+func (u *ExcursionUseCase) ListGuideUserIDsByExcursionCity(ctx context.Context, filter port.GuideExcursionCityFilter) ([]uuid.UUID, error) {
+	filter = normalizeGuideExcursionCityFilter(filter)
+	if filter.CityName == nil {
+		return []uuid.UUID{}, nil
+	}
+
+	guideUserIDs, err := u.repo.ListGuideUserIDsByExcursionCity(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("list guide user ids by excursion city: %w", err)
+	}
+	return uniqueUUIDs(guideUserIDs), nil
+}
+
+func normalizeGuideExcursionCityFilter(filter port.GuideExcursionCityFilter) port.GuideExcursionCityFilter {
+	if filter.CityName != nil {
+		cityName := strings.TrimSpace(*filter.CityName)
+		if cityName == "" {
+			filter.CityName = nil
+		} else {
+			filter.CityName = &cityName
+		}
+	}
+	if filter.CountryCode != nil {
+		countryCode := strings.ToUpper(strings.TrimSpace(*filter.CountryCode))
+		if countryCode == "" {
+			filter.CountryCode = nil
+		} else {
+			filter.CountryCode = &countryCode
+		}
+	}
+	return filter
+}
+
 func (u *ExcursionUseCase) CreateGuideScheduleSlot(ctx context.Context, input CreateGuideScheduleSlotInput) (*model.ExcursionScheduleSlot, error) {
 	if input.ActorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID

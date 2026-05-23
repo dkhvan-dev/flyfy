@@ -108,6 +108,11 @@ type GuideReviewFilter struct {
 	Offset      int
 }
 
+type GuideExcursionCityFilter struct {
+	CountryCode *string
+	CityName    *string
+}
+
 type ExcursionReviewSort string
 
 const (
@@ -145,6 +150,7 @@ type ExcursionRepository interface {
 	GetExcursionProductCardByID(ctx context.Context, productID uuid.UUID) (*model.ExcursionProductCard, error)
 	ListExcursionOffers(ctx context.Context, filter ExcursionOfferFilter) ([]*model.ExcursionOffer, error)
 	ListExcursionLanguageCodesByGuideUserIDs(ctx context.Context, guideUserIDs []uuid.UUID) (map[uuid.UUID][]string, error)
+	ListGuideUserIDsByExcursionCity(ctx context.Context, filter GuideExcursionCityFilter) ([]uuid.UUID, error)
 	HasActiveExcursionForGuideLandmark(ctx context.Context, guideUserID uuid.UUID, landmarkID uuid.UUID) (bool, error)
 	GetExcursionOfferByID(ctx context.Context, offerID uuid.UUID) (*model.ExcursionOffer, error)
 	GetExcursionOfferByLegacyExcursionID(ctx context.Context, legacyExcursionID uuid.UUID) (*model.ExcursionOffer, error)

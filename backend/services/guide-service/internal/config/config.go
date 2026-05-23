@@ -18,6 +18,7 @@ type Config struct {
 	Security    SecurityConfig
 	UserService UserServiceConfig
 	FileManager FileManagerConfig
+	Excursion   ExcursionServiceConfig
 }
 
 type AppConfig struct {
@@ -107,6 +108,10 @@ type UserServiceConfig struct {
 
 type FileManagerConfig struct {
 	Target string `env:"FILE_MANAGER_GRPC_TARGET, default=dns:///file-manager-service:9093"`
+}
+
+type ExcursionServiceConfig struct {
+	BaseURL string `env:"EXCURSION_SERVICE_HTTP_URL, default=http://excursion-service:8093"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

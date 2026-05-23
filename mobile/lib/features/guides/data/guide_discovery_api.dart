@@ -16,6 +16,9 @@ class GuideDiscoveryApi {
     String? sort,
     double? minRating,
     int? minExperienceYears,
+    String? cityId,
+    String? cityName,
+    String? cityCountryCode,
     Iterable<String> countryCodes = const [],
     Iterable<String> languageCodes = const [],
     Iterable<String> specializationCodes = const [],
@@ -37,6 +40,17 @@ class GuideDiscoveryApi {
     }
     if (minExperienceYears != null) {
       queryParameters['minExperienceYears'] = minExperienceYears;
+    }
+
+    final normalizedCityName = cityName?.trim();
+    if (normalizedCityName != null && normalizedCityName.isNotEmpty) {
+      queryParameters['cityName'] = normalizedCityName;
+    }
+
+    final normalizedCityCountryCode = cityCountryCode?.trim();
+    if (normalizedCityCountryCode != null &&
+        normalizedCityCountryCode.isNotEmpty) {
+      queryParameters['cityCountryCode'] = normalizedCityCountryCode;
     }
 
     final countries = _compactCodes(countryCodes);

@@ -146,21 +146,64 @@ func TestListGuideExcursionLanguagesRejectsTooManyGuideUserIDs(t *testing.T) {
 	}
 }
 
+func TestListGuideUserIDsByExcursionCityParsesCityFilterAndReturnsGuideIDs(t *testing.T) {
+	guideUserID := uuid.New()
+	repo := &excursionOffersRepoStub{
+		excursionCityGuideUserIDs: []uuid.UUID{guideUserID},
+	}
+	handler := NewHandler(app.NewExcursionUseCase(repo, nil, nil), nil)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/v1/guides/by-excursion-city?cityName=Алматы&countryCode=KZ",
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	handler.ListGuideUserIDsByExcursionCity(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if repo.lastExcursionCityGuideFilter.CityName == nil ||
+		*repo.lastExcursionCityGuideFilter.CityName != "Алматы" {
+		t.Fatalf("city filter = %#v, want Алматы", repo.lastExcursionCityGuideFilter.CityName)
+	}
+	if repo.lastExcursionCityGuideFilter.CountryCode == nil ||
+		*repo.lastExcursionCityGuideFilter.CountryCode != "KZ" {
+		t.Fatalf("country filter = %#v, want KZ", repo.lastExcursionCityGuideFilter.CountryCode)
+	}
+
+	var payload struct {
+		Items []struct {
+			GuideUserID string `json:"guideUserId"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(payload.Items) != 1 || payload.Items[0].GuideUserID != guideUserID.String() {
+		t.Fatalf("unexpected payload: %+v", payload)
+	}
+}
+
 type excursionOffersRepoStub struct {
-	lastOfferFilter       port.ExcursionOfferFilter
-	listReviewFilter      port.ExcursionReviewFilter
-	listGuideReviewFilter port.GuideReviewFilter
-	lastGuideUserIDs      []uuid.UUID
-	guideLanguageCodes    map[uuid.UUID][]string
-	booking               *model.ExcursionBooking
-	existingReview        *model.ExcursionReview
-	createdReview         *model.ExcursionReview
-	updatedReview         *model.ExcursionReview
-	deletedReview         *model.ExcursionReview
-	existingGuideReview   *model.GuideReview
-	createdGuideReview    *model.GuideReview
-	updatedGuideReview    *model.GuideReview
-	deletedGuideReview    *model.GuideReview
+	lastOfferFilter              port.ExcursionOfferFilter
+	listReviewFilter             port.ExcursionReviewFilter
+	listGuideReviewFilter        port.GuideReviewFilter
+	lastGuideUserIDs             []uuid.UUID
+	lastExcursionCityGuideFilter port.GuideExcursionCityFilter
+	guideLanguageCodes           map[uuid.UUID][]string
+	excursionCityGuideUserIDs    []uuid.UUID
+	booking                      *model.ExcursionBooking
+	existingReview               *model.ExcursionReview
+	createdReview                *model.ExcursionReview
+	updatedReview                *model.ExcursionReview
+	deletedReview                *model.ExcursionReview
+	existingGuideReview          *model.GuideReview
+	createdGuideReview           *model.GuideReview
+	updatedGuideReview           *model.GuideReview
+	deletedGuideReview           *model.GuideReview
 }
 
 func (s *excursionOffersRepoStub) CreateExcursionAggregate(context.Context, *model.Excursion, port.ExcursionRelations) error {
@@ -207,6 +250,11 @@ func (s *excursionOffersRepoStub) ListExcursionOffers(_ context.Context, filter 
 func (s *excursionOffersRepoStub) ListExcursionLanguageCodesByGuideUserIDs(_ context.Context, guideUserIDs []uuid.UUID) (map[uuid.UUID][]string, error) {
 	s.lastGuideUserIDs = append([]uuid.UUID(nil), guideUserIDs...)
 	return s.guideLanguageCodes, nil
+}
+
+func (s *excursionOffersRepoStub) ListGuideUserIDsByExcursionCity(_ context.Context, filter port.GuideExcursionCityFilter) ([]uuid.UUID, error) {
+	s.lastExcursionCityGuideFilter = filter
+	return s.excursionCityGuideUserIDs, nil
 }
 
 func (s *excursionOffersRepoStub) HasActiveExcursionForGuideLandmark(context.Context, uuid.UUID, uuid.UUID) (bool, error) {

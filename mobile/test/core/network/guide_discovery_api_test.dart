@@ -75,6 +75,9 @@ void main() {
         sort: 'experience_desc',
         minRating: 4.5,
         minExperienceYears: 3,
+        cityId: 'almaty',
+        cityName: 'Алматы',
+        cityCountryCode: 'KZ',
         countryCodes: const ['KZ'],
         languageCodes: const ['en', 'ru'],
         specializationCodes: const ['mountain_guide'],
@@ -93,6 +96,9 @@ void main() {
       expect(publicRequest.queryParameters['sort'], 'experience_desc');
       expect(publicRequest.queryParameters['minRating'], 4.5);
       expect(publicRequest.queryParameters['minExperienceYears'], 3);
+      expect(publicRequest.queryParameters.containsKey('cityId'), isFalse);
+      expect(publicRequest.queryParameters['cityName'], 'Алматы');
+      expect(publicRequest.queryParameters['cityCountryCode'], 'KZ');
       expect(publicRequest.queryParameters['countries'], 'KZ');
       expect(publicRequest.queryParameters['languages'], 'en,ru');
       expect(

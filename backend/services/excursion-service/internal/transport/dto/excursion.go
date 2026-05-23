@@ -200,6 +200,14 @@ type GuideExcursionLanguageListResponse struct {
 	Items []GuideExcursionLanguageResponse `json:"items"`
 }
 
+type GuideUserIDResponse struct {
+	GuideUserID string `json:"guideUserId"`
+}
+
+type GuideUserIDListResponse struct {
+	Items []GuideUserIDResponse `json:"items"`
+}
+
 type CreateExcursionBookingRequest struct {
 	ProductID      string  `json:"productId"`
 	OfferID        string  `json:"offerId"`

@@ -536,6 +536,10 @@
   "homeLocationSearchFailed": "Не удалось найти локации. Попробуйте ещё раз.",
   "homeLocationDetectionFailed": "Не удалось определить локацию. Проверьте разрешения геолокации и попробуйте снова.",
   "homeLocationApply": "Применить локацию",
+  "locationFilterCitySection": "Город",
+  "locationFilterAllCities": "Все города",
+  "locationFilterCitySearchHint": "Поиск города",
+  "locationFilterCityNoResults": "Город не найден",
   "homeExploringLocation": "{location}",
   "@homeExploringLocation": {
     "placeholders": {
@@ -604,6 +608,7 @@
   "attractionsLoadFailed": "Не удалось загрузить достопримечательности",
   "attractionsSeeAll": "Смотреть все",
   "attractionsNoResults": "Достопримечательности не найдены",
+  "attractionsNoResultsSubtitle": "Попробуйте выбрать другой город в фильтрах.",
   "attractionsFiltersTitle": "Фильтры",
   "attractionsSortLabel": "Сортировать",
   "attractionsSortRating": "Рейтинг",
@@ -836,7 +841,7 @@
   "excursionsFilterLanguageNoResults": "Язык не найден",
   "excursionsLoadFailed": "Не удалось загрузить экскурсии",
   "excursionsEmptyTitle": "Экскурсий пока нет",
-  "excursionsEmptySubtitle": "Здесь появятся маршруты проверенных гидов.",
+  "excursionsEmptySubtitle": "Здесь появятся маршруты проверенных гидов. Попробуйте выбрать другой город в фильтрах.",
   "excursionsEmptySearchSubtitle": "Попробуйте другой город, категорию или название экскурсии.",
   "excursionsNoAttractionExcursionsTitle": "Экскурсий по этой достопримечательности пока нет",
   "excursionsNoAttractionExcursionsSubtitle": "Показываем другие доступные экскурсии. Как только гиды добавят маршрут по этой достопримечательности, он появится здесь.",
@@ -872,9 +877,9 @@
   },
   "guidesLoadFailed": "Не удалось загрузить гидов",
   "guidesEmptyTitle": "Гидов пока нет",
-  "guidesEmptySubtitle": "Здесь появятся проверенные локальные эксперты.",
+  "guidesEmptySubtitle": "Здесь появятся проверенные локальные эксперты. Попробуйте выбрать другой город в фильтрах.",
   "guidesNoResultsTitle": "Гиды не найдены",
-  "guidesNoResultsSubtitle": "Попробуйте другое имя, специализацию, язык или фильтр.",
+  "guidesNoResultsSubtitle": "Попробуйте другой город, имя, специализацию, язык или фильтр.",
   "guidesSpecialtyMountainGuide": "Горный гид",
   "guidesSpecialtyCityHistorian": "Городской историк",
   "guidesSpecialtyCulinaryExpert": "Кулинарный эксперт",
@@ -1641,7 +1646,7 @@
   "activitiesFilterVisibility": "Видимость",
   "activitiesDiscoverTitle": "Активности",
   "activitiesFilteredEmptyTitle": "По этим фильтрам ничего не найдено",
-  "activitiesFilteredEmptySubtitle": "Попробуйте расширить категорию, диапазон дат или стоимость",
+  "activitiesFilteredEmptySubtitle": "Попробуйте расширить категорию, диапазон дат, стоимость или выбрать другой город",
   "activitiesResultsCount": "{count, plural, =0{Нет активностей} one{{count} активность} few{{count} активности} many{{count} активностей} other{{count} активности}}",
   "@activitiesResultsCount": {
     "placeholders": {

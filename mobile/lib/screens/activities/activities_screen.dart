@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +27,9 @@ import '../../features/profile/profile_guard_result.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 import '../common/app_side_drawer.dart';
 
@@ -56,15 +59,44 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
   int _currentPage = 1;
   _ActivitySortField _sortField = _ActivitySortField.date;
   bool _sortAscending = true;
+  bool _hasAppliedDefaultCityFilter = false;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_initializeDefaultCityFilter());
       final provider = context.read<ActivityProvider>();
       provider.loadActivities();
       provider.loadActivityCategories();
+    });
+  }
+
+  Future<void> _initializeDefaultCityFilter() async {
+    final provider = context.read<HomeLocationProvider>();
+    if (!provider.isLoaded && !provider.isLoading) {
+      await provider.load();
+    }
+    if (!mounted) return;
+    _applyDefaultCityFilter(provider);
+  }
+
+  void _applyDefaultCityFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultCityFilter || _filters.city != null) return;
+    _hasAppliedDefaultCityFilter = true;
+
+    final location = provider.selectedLocation;
+    final city = AppCityFilterValue.fromParts(
+      cityId: location?.cityId,
+      cityName: location?.cityName,
+      countryCode: location?.countryCode,
+    );
+    if (city == null) return;
+
+    setState(() {
+      _filters = _filters.copyWith(city: city);
+      _currentPage = 1;
     });
   }
 
@@ -528,8 +560,9 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                       ),
                                     ),
                                   ),
-                                  if (_searchQuery.isNotEmpty ||
-                                      _filters.hasAnyValue) ...[
+                                  if (filteredItems.isNotEmpty &&
+                                      (_searchQuery.isNotEmpty ||
+                                          _filters.hasAnyValue)) ...[
                                     SizedBox(
                                       height: _activitiesScaled(
                                         context,
@@ -593,8 +626,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   0,
                                 ),
                                 child: ErrorView(
-                                  message:
-                                      provider.errorMessage ??
+                                  message: provider.errorMessage ??
                                       l10n.activitiesLoadFailed,
                                   onRetry: () async {
                                     await provider.loadActivities();
@@ -654,11 +686,10 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                   final item = paginatedItems.items[index];
                                   final categorySlug =
                                       resolvedActivityCategorySlug(
-                                        categories: provider.categoryItems,
-                                        slug: item.categorySlug,
-                                      );
-                                  final categoryLabel =
-                                      categoryOptions
+                                    categories: provider.categoryItems,
+                                    slug: item.categorySlug,
+                                  );
+                                  final categoryLabel = categoryOptions
                                           .cast<_DiscoverCategoryOption?>()
                                           .firstWhere(
                                             (option) =>
@@ -674,8 +705,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                                     item: item,
                                     layout: layout,
                                     categoryLabel: categoryLabel,
-                                    isOwner:
-                                        currentUserId.isNotEmpty &&
+                                    isOwner: currentUserId.isNotEmpty &&
                                         currentUserId == item.hostUserId,
                                     onOpenDetails: () =>
                                         _openActivityDetails(context, item.id),
@@ -980,8 +1010,7 @@ class _FiltersSummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact =
-        MediaQuery.sizeOf(context).width < 360 ||
+    final compact = MediaQuery.sizeOf(context).width < 360 ||
         MediaQuery.textScalerOf(context).scale(1) > 1.02;
 
     final summaryText = Text(
@@ -1300,7 +1329,7 @@ class _DiscoverActivityCard extends StatelessWidget {
                         final columns = compactMeta ? 1 : 2;
                         final itemWidth =
                             (constraints.maxWidth - gap * (columns - 1)) /
-                            columns;
+                                columns;
 
                         return Wrap(
                           spacing: gap,
@@ -1387,8 +1416,7 @@ class _CardMetaItem extends StatelessWidget {
         Icon(data.icon, size: iconSize, color: const Color(0xB0FFF0E0)),
         SizedBox(width: gap),
         Expanded(
-          child:
-              data.labelBuilder?.call(labelStyle) ??
+          child: data.labelBuilder?.call(labelStyle) ??
               Text(
                 data.label,
                 maxLines: 2,
@@ -1505,6 +1533,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
   late final TextEditingController _endDateController;
   late Set<String> _selectedSlugs;
   late Set<String> _selectedVisibilities;
+  late AppCityFilterValue? _selectedCity;
   String? _startError;
   String? _endError;
   bool _controllerUpdateInProgress = false;
@@ -1515,6 +1544,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
     final initial = widget.initialFilters;
     _selectedSlugs = Set<String>.from(initial.categorySlugs);
     _selectedVisibilities = Set<String>.from(initial.visibilities);
+    _selectedCity = initial.city;
     _minPriceController = TextEditingController(
       text: initial.minPrice?.toStringAsFixed(0) ?? '',
     )..addListener(_handleFieldChanged);
@@ -1561,6 +1591,8 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildCitySection(),
+          _FilterSectionDivider(),
           _buildCategorySection(context),
           _FilterSectionDivider(),
           _buildDateSection(context),
@@ -1570,6 +1602,17 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
           _buildVisibilitySection(context),
         ],
       ),
+    );
+  }
+
+  Widget _buildCitySection() {
+    return AppCityFilterSection(
+      title: widget.l10n.locationFilterCitySection,
+      allCitiesLabel: widget.l10n.locationFilterAllCities,
+      searchHint: widget.l10n.locationFilterCitySearchHint,
+      noResultsText: widget.l10n.locationFilterCityNoResults,
+      selectedCity: _selectedCity,
+      onChanged: (city) => setState(() => _selectedCity = city),
     );
   }
 
@@ -1595,9 +1638,8 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
         builder: (context, constraints) {
           final textScale = MediaQuery.textScalerOf(context).scale(1);
           final spacing = _activitiesScaled(context, 8, min: 6, max: 10);
-          final columns = constraints.maxWidth < 340 || textScale > 1.08
-              ? 1
-              : 2;
+          final columns =
+              constraints.maxWidth < 340 || textScale > 1.08 ? 1 : 2;
           final itemWidth =
               (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -1755,8 +1797,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
       title: widget.l10n.activitiesFilterVisibility,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final useColumn =
-              constraints.maxWidth < 360 ||
+          final useColumn = constraints.maxWidth < 360 ||
               MediaQuery.textScalerOf(context).scale(1) > 1.04;
           final options = [
             _VisibilityOptionCard(
@@ -1800,8 +1841,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useColumn =
-            constraints.maxWidth < 360 ||
+        final useColumn = constraints.maxWidth < 360 ||
             MediaQuery.textScalerOf(context).scale(1) > 1.02;
         if (useColumn) {
           return Column(
@@ -1838,6 +1878,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
     setState(() {
       _selectedSlugs.clear();
       _selectedVisibilities.clear();
+      _selectedCity = null;
       _updateControllers(() {
         _minPriceController.clear();
         _maxPriceController.clear();
@@ -1889,6 +1930,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
 
     Navigator.of(context).pop(
       _DiscoverFilters(
+        city: _selectedCity,
         categorySlugs: Set<String>.unmodifiable(_selectedSlugs),
         visibilities: Set<String>.unmodifiable(
           _normalizeVisibilitySelection(_selectedVisibilities),
@@ -1903,6 +1945,7 @@ class _DiscoverFiltersSheetState extends State<_DiscoverFiltersSheet> {
 
   _DiscoverFilters _draftFilters() {
     return _DiscoverFilters(
+      city: _selectedCity,
       categorySlugs: _selectedSlugs,
       visibilities: _normalizeVisibilitySelection(_selectedVisibilities),
       startDate: _parseDate(_startDateController.text),
@@ -1933,9 +1976,8 @@ class _CategoryFilterPill extends StatelessWidget {
     final iconWrap = _activitiesScaled(context, 34, min: 30, max: 34);
     final titleSize = _activitiesScaled(context, 13, min: 12, max: 14);
     final countSize = _activitiesScaled(context, 11, min: 10, max: 11);
-    final foreground = selected
-        ? const Color(0xFFFFFAF5)
-        : const Color(0xE6FFF0E0);
+    final foreground =
+        selected ? const Color(0xFFFFFAF5) : const Color(0xE6FFF0E0);
 
     return Material(
       color: Colors.transparent,
@@ -2604,6 +2646,7 @@ class _DiscoverFilters {
   static const Object _unset = Object();
 
   const _DiscoverFilters({
+    this.city,
     this.categorySlugs = const {},
     this.visibilities = const {},
     this.startDate,
@@ -2612,6 +2655,7 @@ class _DiscoverFilters {
     this.maxPrice,
   });
 
+  final AppCityFilterValue? city;
   final Set<String> categorySlugs;
   final Set<String> visibilities;
   final DateTime? startDate;
@@ -2623,17 +2667,20 @@ class _DiscoverFilters {
   bool get hasPriceRange => minPrice != null || maxPrice != null;
   bool get hasVisibilityFilter => visibilities.isNotEmpty;
   int get activeGroupCount =>
+      (city == null ? 0 : 1) +
       (categorySlugs.isNotEmpty ? 1 : 0) +
       (hasDateRange ? 1 : 0) +
       (hasPriceRange ? 1 : 0) +
       (hasVisibilityFilter ? 1 : 0);
   bool get hasAnyValue =>
       categorySlugs.isNotEmpty ||
+      city != null ||
       hasVisibilityFilter ||
       hasDateRange ||
       hasPriceRange;
 
   _DiscoverFilters copyWith({
+    Object? city = _unset,
     Set<String>? categorySlugs,
     Set<String>? visibilities,
     Object? startDate = _unset,
@@ -2642,18 +2689,17 @@ class _DiscoverFilters {
     Object? maxPrice = _unset,
   }) {
     return _DiscoverFilters(
+      city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
       categorySlugs: categorySlugs ?? this.categorySlugs,
       visibilities: visibilities ?? this.visibilities,
       startDate: identical(startDate, _unset)
           ? this.startDate
           : startDate as DateTime?,
       endDate: identical(endDate, _unset) ? this.endDate : endDate as DateTime?,
-      minPrice: identical(minPrice, _unset)
-          ? this.minPrice
-          : minPrice as double?,
-      maxPrice: identical(maxPrice, _unset)
-          ? this.maxPrice
-          : maxPrice as double?,
+      minPrice:
+          identical(minPrice, _unset) ? this.minPrice : minPrice as double?,
+      maxPrice:
+          identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
     );
   }
 }
@@ -2797,9 +2843,9 @@ class _DateTextInputFormatter extends TextInputFormatter {
     final digitsBeforeSelection = newValue.selection.end <= 0
         ? 0
         : newValue.text
-              .substring(0, newValue.selection.end)
-              .replaceAll(RegExp(r'[^0-9]'), '')
-              .length;
+            .substring(0, newValue.selection.end)
+            .replaceAll(RegExp(r'[^0-9]'), '')
+            .length;
 
     var selectionOffset = 0;
     var seenDigits = 0;
@@ -2962,8 +3008,7 @@ List<_DiscoverCategoryOption> _buildCategoryOptions(
     options.add(
       _DiscoverCategoryOption(
         slug: slug,
-        label:
-            matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
+        label: matchedCategory?.localizedName(languageCode).trim().isNotEmpty ==
                 true
             ? matchedCategory!.localizedName(languageCode)
             : ActivityCategoryVm.humanizeSlug(slug),
@@ -3007,6 +3052,15 @@ List<ActivityListItemVm> _applyDiscoverFilters(
 
     if (filters.visibilities.isNotEmpty &&
         !filters.visibilities.contains(visibility)) {
+      return false;
+    }
+
+    if (filters.city != null &&
+        !filters.city!.matches(
+          cityId: item.cityId,
+          cityName: item.cityName,
+          countryCode: item.countryCode,
+        )) {
       return false;
     }
 
@@ -3074,9 +3128,8 @@ List<ActivityListItemVm> _sortDiscoverItems(
       _ActivitySortField.price => _numericPrice(a).compareTo(_numericPrice(b)),
     };
 
-    final compare = primaryCompare == 0
-        ? a.startAt.compareTo(b.startAt)
-        : primaryCompare;
+    final compare =
+        primaryCompare == 0 ? a.startAt.compareTo(b.startAt) : primaryCompare;
     return sortAscending ? compare : -compare;
   });
   return sorted;

@@ -1609,6 +1609,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeLocationApply => 'Apply location';
 
   @override
+  String get locationFilterCitySection => 'City';
+
+  @override
+  String get locationFilterAllCities => 'All cities';
+
+  @override
+  String get locationFilterCitySearchHint => 'Search city';
+
+  @override
+  String get locationFilterCityNoResults => 'City not found';
+
+  @override
   String homeExploringLocation(Object location) {
     return '$location';
   }
@@ -1771,6 +1783,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attractionsNoResults => 'No attractions found';
+
+  @override
+  String get attractionsNoResultsSubtitle =>
+      'Try choosing another city in filters.';
 
   @override
   String get attractionsFiltersTitle => 'Filters';
@@ -2371,11 +2387,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get excursionsEmptySubtitle =>
-      'Verified guide routes will appear here.';
+      'Verified guide routes will appear here. Try choosing another city in filters.';
 
   @override
   String get excursionsEmptySearchSubtitle =>
-      'Try another destination, category, or excursion name.';
+      'Try another city, category, or excursion name.';
 
   @override
   String get excursionsNoAttractionExcursionsTitle =>
@@ -2463,14 +2479,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guidesEmptyTitle => 'No guides yet';
 
   @override
-  String get guidesEmptySubtitle => 'Verified local experts will appear here.';
+  String get guidesEmptySubtitle =>
+      'Verified local experts will appear here. Try choosing another city in filters.';
 
   @override
   String get guidesNoResultsTitle => 'No guides found';
 
   @override
   String get guidesNoResultsSubtitle =>
-      'Try another name, expertise, language, or filter.';
+      'Try another city, name, expertise, language, or filter.';
 
   @override
   String get guidesSpecialtyMountainGuide => 'Mountain Guide';
@@ -4364,7 +4381,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activitiesFilteredEmptySubtitle =>
-      'Try widening the category, date range, or pricing filters';
+      'Try widening the category, date range, pricing filters, or choose another city';
 
   @override
   String activitiesResultsCount(num count) {

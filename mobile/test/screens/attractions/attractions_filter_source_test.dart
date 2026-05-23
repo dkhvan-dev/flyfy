@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('attractions filter starts with localized searchable country filter',
+  test('attractions filter starts with localized searchable city filter',
       () async {
     final screenSource = await File(
       'lib/screens/attractions/attractions_screen.dart',
@@ -14,58 +14,45 @@ void main() {
 
     expect(
       sheetSource,
-      contains("import '../../core/network/reference_api.dart';"),
+      contains("import '../../shared/widgets/app_city_filter_section.dart';"),
     );
-    expect(
-      sheetSource,
-      contains("import '../../core/reference/country_filter_utils.dart';"),
-    );
-    expect(sheetSource, contains('final String? countryCode'));
-    expect(sheetSource, contains('countryCode == null ? 0 : 1'));
-    expect(sheetSource, contains('List<ReferenceCountry> countries'));
-    expect(
-        sheetSource, contains('Map<String, Set<String>> countrySearchAliases'));
-    expect(sheetSource, contains('_countrySearchController'));
-    expect(sheetSource, contains('_visibleCountries'));
-    expect(sheetSource, contains('countryFilterSearchHaystack'));
-    expect(sheetSource, contains('attractionFilterCountrySection'));
-    expect(sheetSource, contains('attractionFilterCountrySearchHint'));
-    expect(sheetSource, contains('attractionFilterCountryNoResults'));
-    expect(sheetSource, contains('_selectCountry(country.code)'));
+    expect(sheetSource, contains('final AppCityFilterValue? city'));
+    expect(sheetSource, contains('String? get cityId => city?.cityId'));
+    expect(sheetSource, contains('city == null ? 0 : 1'));
+    expect(sheetSource, contains('AppCityFilterSection'));
+    expect(sheetSource, contains('locationFilterCitySection'));
+    expect(sheetSource, contains('locationFilterCitySearchHint'));
+    expect(sheetSource, contains('locationFilterCityNoResults'));
+    expect(sheetSource, contains('cityId: staged.cityId'));
+    expect(sheetSource, isNot(contains('country_filter_utils.dart')));
+    expect(sheetSource, isNot(contains('List<ReferenceCountry> countries')));
 
-    final countrySectionStart = sheetSource.indexOf(
-      'header: l10n.attractionFilterCountrySection',
-    );
+    final citySectionStart = sheetSource.indexOf('AppCityFilterSection(');
     final categorySectionStart = sheetSource.indexOf(
       'header: l10n.attractionFilterCategoriesSection',
     );
-    expect(countrySectionStart, isNonNegative);
-    expect(categorySectionStart, greaterThan(countrySectionStart));
+    expect(citySectionStart, isNonNegative);
+    expect(categorySectionStart, greaterThan(citySectionStart));
 
-    final countrySection = sheetSource.substring(
-      countrySectionStart,
+    final citySection = sheetSource.substring(
+      citySectionStart,
       categorySectionStart,
     );
-    expect(countrySection, contains('TextField'));
-    expect(countrySection, contains('selectedCountry == null'));
-    expect(countrySection, isNot(contains('Wrap(')));
+    expect(citySection, contains('AppCityFilterSection'));
+    expect(citySection, isNot(contains('Wrap(')));
 
     expect(screenSource,
-        contains("import '../../core/network/reference_api.dart';"));
+        contains("import '../../providers/home_location_provider.dart';"));
     expect(
       screenSource,
-      contains("import '../../core/reference/country_filter_utils.dart';"),
+      contains("import '../../shared/widgets/app_city_filter_section.dart';"),
     );
-    expect(screenSource,
-        contains("import '../../providers/session_provider.dart';"));
-    expect(screenSource, contains('final ReferenceApi _referenceApi'));
-    expect(screenSource, contains('List<ReferenceCountry> _countries'));
-    expect(screenSource, contains('_defaultCountryCode()'));
-    expect(screenSource, contains('_applyDefaultCountryFilter()'));
-    expect(screenSource, contains('countryCode: defaultCountryCode'));
-    expect(screenSource, contains('_loadCountrySearchAliases'));
+    expect(screenSource, contains('HomeLocationProvider'));
+    expect(screenSource, contains('selectedLocation'));
+    expect(screenSource, contains('_initializeDefaultCityFilter'));
+    expect(screenSource, contains('_applyDefaultCityFilter'));
+    expect(screenSource, contains('cityId: _filters.cityId'));
     expect(screenSource, contains('countryCode: _filters.countryCode'));
-    expect(
-        screenSource, contains('countrySearchAliases: _countrySearchAliases'));
+    expect(screenSource, isNot(contains('profile?.countryCode')));
   });
 }

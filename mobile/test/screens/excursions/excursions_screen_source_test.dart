@@ -64,61 +64,60 @@ void main() {
     },
   );
 
-  test('excursions filter sheet starts with country dictionary filter',
+  test('excursions filter sheet starts with current-location city filter',
       () async {
     final source = await File(
       'lib/screens/excursions/excursions_screen.dart',
     ).readAsString();
 
-    expect(source, contains("import '../../core/network/reference_api.dart';"));
-    expect(source, contains('final ReferenceApi _referenceApi'));
-    expect(source, contains('List<ReferenceCountry> _countries'));
-    expect(source, contains('_defaultCountryCode()'));
-    expect(source, contains('_applyDefaultCountryFilter()'));
-    expect(source, contains('countryCode: defaultCountryCode'));
-    expect(source, contains('excursionsFilterCountry'));
-    expect(source, contains('widget.countries'));
-    expect(source, contains('_selectCountry(country.code)'));
-    expect(source, contains('excursion.countryCode'));
+    expect(
+      source,
+      contains("import '../../providers/home_location_provider.dart';"),
+    );
+    expect(
+      source,
+      contains("import '../../shared/widgets/app_city_filter_section.dart';"),
+    );
+    expect(source, contains('HomeLocationProvider'));
+    expect(source, contains('selectedLocation'));
+    expect(source, contains('_initializeDefaultCityFilter'));
+    expect(source, contains('_applyDefaultCityFilter'));
+    expect(source, contains('final AppCityFilterValue? city'));
+    expect(source, contains('AppCityFilterSection'));
+    expect(source, contains('locationFilterCitySection'));
+    expect(source, contains('filters.city'));
+    expect(source, contains('excursion.cityName'));
+    expect(source, contains('countryCode: excursion.countryCode'));
+    expect(source, isNot(contains('profile?.countryCode')));
   });
 
   test(
-    'excursions country filter is compact and searchable by localized aliases',
+    'excursions city filter is compact and searchable through shared selector',
     () async {
       final source = await File(
         'lib/screens/excursions/excursions_screen.dart',
       ).readAsString();
 
-      expect(
-        source,
-        contains('Map<String, Set<String>> _countrySearchAliases'),
-      );
-      expect(source, contains('_loadCountrySearchAliases'));
-      expect(source, contains('excursionsFilterCountrySearchHint'));
-      expect(source, contains('_countrySearchController'));
-      expect(source, contains('_selectedCountry()'));
-      expect(source, contains('_visibleCountries'));
-      expect(source, contains('_countrySearchHaystack'));
-      expect(source, contains('_countrySearchQuery.trim().toLowerCase()'));
-      expect(source, contains('widget.countrySearchAliases'));
-      expect(source, contains('country.phoneCode'));
+      expect(source, contains('AppCityFilterSection'));
+      expect(source, contains('locationFilterCitySearchHint'));
+      expect(source, contains('locationFilterCityNoResults'));
+      expect(source, isNot(contains('_countrySearchController')));
+      expect(source, isNot(contains('_selectedCountry()')));
+      expect(source, isNot(contains('_visibleCountries')));
 
-      final countrySectionStart = source.indexOf(
-        'title: l10n.excursionsFilterCountry',
-      );
+      final citySectionStart = source.indexOf('AppCityFilterSection(');
       final categorySectionStart = source.indexOf(
         'title: l10n.excursionsFilterCategories',
       );
-      expect(countrySectionStart, isNonNegative);
-      expect(categorySectionStart, greaterThan(countrySectionStart));
+      expect(citySectionStart, isNonNegative);
+      expect(categorySectionStart, greaterThan(citySectionStart));
 
-      final countrySection = source.substring(
-        countrySectionStart,
+      final citySection = source.substring(
+        citySectionStart,
         categorySectionStart,
       );
-      expect(countrySection, contains('TextField'));
-      expect(countrySection, contains('selectedCountry == null'));
-      expect(countrySection, isNot(contains('Wrap(')));
+      expect(citySection, contains('AppCityFilterSection'));
+      expect(citySection, isNot(contains('Wrap(')));
     },
   );
 

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/network/reference_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
@@ -22,9 +21,11 @@ import '../../features/excursions/excursion_cover_url.dart';
 import '../../features/excursions/excursion_localization.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/excursion_provider.dart';
 import '../../shared/formatters/app_money_formatter.dart';
+import '../../shared/widgets/app_city_filter_section.dart';
 
 class ExcursionsRouteArgs {
   const ExcursionsRouteArgs({
@@ -106,11 +107,6 @@ const _languageFilterCodes = [
   'es',
   'tr',
 ];
-
-String? _normalizeExcursionCountryCode(String? code) {
-  final normalized = code?.trim().toUpperCase() ?? '';
-  return normalized.isEmpty ? null : normalized;
-}
 
 String _normalizeExcursionSearchText(String value) {
   return value
@@ -385,36 +381,15 @@ double? _parseExcursionPriceInput(String value) {
   return parsed;
 }
 
-List<ReferenceCountry> _withDefaultExcursionCountry(
-  List<ReferenceCountry> countries,
-  String? defaultCountryCode,
-) {
-  if (defaultCountryCode == null) return countries;
-  final hasDefault = countries.any(
-    (country) => country.code.trim().toUpperCase() == defaultCountryCode,
-  );
-  if (hasDefault) return countries;
-
-  return [
-    ReferenceCountry(code: defaultCountryCode, name: defaultCountryCode),
-    ...countries,
-  ];
-}
-
 class _ExcursionsScreenState extends State<ExcursionsScreen> {
   final AttractionApi _attractionApi = AttractionApi();
-  final ReferenceApi _referenceApi = ReferenceApi();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  List<ReferenceCountry> _countries = const [];
-  Map<String, Set<String>> _countrySearchAliases = const {};
   Map<String, AttractionVm> _localizedLandmarks = const {};
   final Set<String> _loadingLocalizedLandmarkIds = <String>{};
   String? _localizedLandmarksLocale;
-  bool _isCountriesLoading = false;
-  bool _hasAppliedDefaultCountryFilter = false;
-  Future<void>? _countriesLoadFuture;
+  bool _hasAppliedDefaultCityFilter = false;
   _ExcursionsSortMode _sortMode = _ExcursionsSortMode.createdAt;
   _ExcursionsSortDirection _sortDirection = _ExcursionsSortDirection.desc;
   _ExcursionsFilters _filters = const _ExcursionsFilters();
@@ -426,8 +401,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _applyDefaultCountryFilter();
-      unawaited(_loadCountries());
+      unawaited(_initializeDefaultCityFilter());
       context.read<ExcursionProvider>().loadExcursions();
     });
   }
@@ -453,109 +427,28 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     super.dispose();
   }
 
-  String? _defaultCountryCode() {
-    return _normalizeExcursionCountryCode(
-      context.read<SessionProvider>().profile?.countryCode,
-    );
-  }
-
-  void _applyDefaultCountryFilter() {
-    if (!mounted || _hasAppliedDefaultCountryFilter) return;
-    _hasAppliedDefaultCountryFilter = true;
-
-    final defaultCountryCode = _defaultCountryCode();
-    if (defaultCountryCode == null || _filters.countryCode != null) return;
-
-    setState(() {
-      _filters = _filters.copyWith(countryCode: defaultCountryCode);
-    });
-  }
-
-  Future<void> _loadCountries() {
-    if (_countries.isNotEmpty) return Future.value();
-    final inFlight = _countriesLoadFuture;
-    if (inFlight != null) return inFlight;
-
-    final future = _loadCountriesInner();
-    _countriesLoadFuture = future;
-    return future.whenComplete(() => _countriesLoadFuture = null);
-  }
-
-  Future<void> _loadCountriesInner() async {
+  Future<void> _initializeDefaultCityFilter() async {
+    final provider = context.read<HomeLocationProvider>();
+    if (!provider.isLoaded && !provider.isLoading) {
+      await provider.load();
+    }
     if (!mounted) return;
-
-    setState(() => _isCountriesLoading = true);
-    final lang = Localizations.localeOf(context).languageCode;
-    final defaultCountryCode = _defaultCountryCode();
-
-    try {
-      final countries = _withDefaultExcursionCountry(
-        await _referenceApi.listCountries(lang: lang),
-        defaultCountryCode,
-      );
-      final countrySearchAliases = await _loadCountrySearchAliases(
-        countries,
-        lang,
-      );
-      if (!mounted) return;
-      setState(() {
-        _countries = countries;
-        _countrySearchAliases = countrySearchAliases;
-        _isCountriesLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      final countries =
-          _withDefaultExcursionCountry(const [], defaultCountryCode);
-      setState(() {
-        _countries = countries;
-        _countrySearchAliases = _countrySearchAliasMap(countries);
-        _isCountriesLoading = false;
-      });
-    }
+    _applyDefaultCityFilter(provider);
   }
 
-  Future<Map<String, Set<String>>> _loadCountrySearchAliases(
-    List<ReferenceCountry> countries,
-    String currentLang,
-  ) async {
-    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
-    final localizedLists = await Future.wait(
-      languages.map((lang) async {
-        try {
-          return await _referenceApi.listCountries(lang: lang);
-        } catch (_) {
-          return const <ReferenceCountry>[];
-        }
-      }),
+  void _applyDefaultCityFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultCityFilter || _filters.city != null) return;
+    _hasAppliedDefaultCityFilter = true;
+
+    final location = provider.selectedLocation;
+    final city = AppCityFilterValue.fromParts(
+      cityId: location?.cityId,
+      cityName: location?.cityName,
+      countryCode: location?.countryCode,
     );
+    if (city == null) return;
 
-    return _countrySearchAliasMap([
-      ...countries,
-      for (final localizedCountries in localizedLists) ...localizedCountries,
-    ]);
-  }
-
-  Map<String, Set<String>> _countrySearchAliasMap(
-    List<ReferenceCountry> countries,
-  ) {
-    final aliases = <String, Set<String>>{};
-    for (final country in countries) {
-      final code = _normalizeExcursionCountryCode(country.code);
-      if (code == null) continue;
-
-      final countryAliases = aliases.putIfAbsent(code, () => <String>{});
-      countryAliases
-        ..add(code)
-        ..add(country.code.trim())
-        ..add(country.name.trim());
-
-      final phoneCode = country.phoneCode?.trim();
-      if (phoneCode != null && phoneCode.isNotEmpty) {
-        countryAliases.add(phoneCode);
-      }
-    }
-    return aliases;
+    setState(() => _filters = _filters.copyWith(city: city));
   }
 
   void _handleSearchChanged() {
@@ -686,8 +579,6 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
   }
 
   Future<void> _showFilters() async {
-    await _loadCountries();
-    if (!mounted) return;
     final excursionsSnapshot = context.read<ExcursionProvider>().excursions;
     final selectedFilters = await showModalBottomSheet<_ExcursionsFilters>(
       context: context,
@@ -696,9 +587,6 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _ExcursionsFiltersSheet(
         initialFilters: _filters,
-        countries: _countries,
-        countrySearchAliases: _countrySearchAliases,
-        isCountriesLoading: _isCountriesLoading,
         resultCountBuilder: (filters) =>
             _visibleExcursions(excursionsSnapshot, filtersOverride: filters)
                 .length,
@@ -989,10 +877,6 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     String lang,
   ) {
     final landmark = _localizedLandmarkFor(excursion);
-    final countryCode = _normalizeExcursionCountryCode(excursion.countryCode);
-    final countryAliases = countryCode == null
-        ? const <String>{}
-        : _countrySearchAliases[countryCode] ?? const <String>{};
     final values = <String>[
       excursion.id,
       localizedExcursionTitle(
@@ -1032,7 +916,6 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
       excursion.priceAmount.toString(),
       excursion.durationMinutes.toString(),
       excursion.maxGroupSize.toString(),
-      ...countryAliases,
       ...excursion.tags,
       for (final code in excursion.languageCodes) ...[
         code,
@@ -1187,7 +1070,7 @@ class _ExcursionsSearchField extends StatelessWidget {
 
 class _ExcursionsFilters {
   const _ExcursionsFilters({
-    this.countryCode,
+    this.city,
     this.categorySlugs = const <String>{},
     this.languageCodes = const <String>{},
     this.duration,
@@ -1195,7 +1078,7 @@ class _ExcursionsFilters {
     this.priceMax,
   });
 
-  final String? countryCode;
+  final AppCityFilterValue? city;
   final Set<String> categorySlugs;
   final Set<String> languageCodes;
   final _ExcursionsDurationFilter? duration;
@@ -1203,7 +1086,7 @@ class _ExcursionsFilters {
   final double? priceMax;
 
   int get activeCount =>
-      (countryCode == null ? 0 : 1) +
+      (city == null ? 0 : 1) +
       categorySlugs.length +
       languageCodes.length +
       (duration == null ? 0 : 1) +
@@ -1211,8 +1094,7 @@ class _ExcursionsFilters {
       (priceMax == null ? 0 : 1);
 
   _ExcursionsFilters copyWith({
-    String? countryCode,
-    bool clearCountryCode = false,
+    Object? city = _unset,
     Set<String>? categorySlugs,
     Set<String>? languageCodes,
     _ExcursionsDurationFilter? duration,
@@ -1223,7 +1105,7 @@ class _ExcursionsFilters {
     bool clearPriceMax = false,
   }) {
     return _ExcursionsFilters(
-      countryCode: clearCountryCode ? null : countryCode ?? this.countryCode,
+      city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
       categorySlugs: categorySlugs ?? this.categorySlugs,
       languageCodes: languageCodes ?? this.languageCodes,
       duration: clearDuration ? null : duration ?? this.duration,
@@ -1232,12 +1114,17 @@ class _ExcursionsFilters {
     );
   }
 
+  static const Object _unset = Object();
+
   bool matches(ExcursionVm excursion) {
-    final country = countryCode;
-    if (country != null) {
-      final excursionCountry =
-          _normalizeExcursionCountryCode(excursion.countryCode);
-      if (excursionCountry == null || excursionCountry != country) return false;
+    final selectedCity = city;
+    if (selectedCity != null) {
+      if (!selectedCity.matches(
+        cityName: excursion.cityName,
+        countryCode: excursion.countryCode,
+      )) {
+        return false;
+      }
     }
 
     if (categorySlugs.isNotEmpty) {
@@ -1299,16 +1186,10 @@ class _ExcursionsFilters {
 class _ExcursionsFiltersSheet extends StatefulWidget {
   const _ExcursionsFiltersSheet({
     required this.initialFilters,
-    required this.countries,
-    required this.countrySearchAliases,
-    required this.isCountriesLoading,
     required this.resultCountBuilder,
   });
 
   final _ExcursionsFilters initialFilters;
-  final List<ReferenceCountry> countries;
-  final Map<String, Set<String>> countrySearchAliases;
-  final bool isCountriesLoading;
   final int Function(_ExcursionsFilters filters) resultCountBuilder;
 
   @override
@@ -1318,19 +1199,15 @@ class _ExcursionsFiltersSheet extends StatefulWidget {
 
 class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
   late _ExcursionsFilters _filters;
-  late final TextEditingController _countrySearchController;
   late final TextEditingController _languageSearchController;
   late final TextEditingController _priceFromController;
   late final TextEditingController _priceToController;
-  String _countrySearchQuery = '';
   String _languageSearchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _filters = widget.initialFilters;
-    _countrySearchController = TextEditingController()
-      ..addListener(_handleCountrySearchChanged);
     _languageSearchController = TextEditingController()
       ..addListener(_handleLanguageSearchChanged);
     _priceFromController = TextEditingController(
@@ -1343,9 +1220,6 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
 
   @override
   void dispose() {
-    _countrySearchController
-      ..removeListener(_handleCountrySearchChanged)
-      ..dispose();
     _languageSearchController
       ..removeListener(_handleLanguageSearchChanged)
       ..dispose();
@@ -1358,13 +1232,6 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     super.dispose();
   }
 
-  void _handleCountrySearchChanged() {
-    final nextQuery = _countrySearchController.text.trim();
-    if (nextQuery == _countrySearchQuery) return;
-
-    setState(() => _countrySearchQuery = nextQuery);
-  }
-
   void _handleLanguageSearchChanged() {
     final nextQuery = _languageSearchController.text.trim();
     if (nextQuery == _languageSearchQuery) return;
@@ -1373,28 +1240,12 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
   }
 
   void _clear() {
-    _countrySearchController.clear();
     _languageSearchController.clear();
     _priceFromController.clear();
     _priceToController.clear();
     setState(() {
       _filters = const _ExcursionsFilters();
-      _countrySearchQuery = '';
       _languageSearchQuery = '';
-    });
-  }
-
-  void _selectCountry(String code) {
-    final normalized = _normalizeExcursionCountryCode(code);
-    if (normalized == null) return;
-
-    setState(() {
-      _filters = _filters.copyWith(
-        countryCode: normalized,
-        clearCountryCode: _filters.countryCode == normalized,
-      );
-      _countrySearchController.clear();
-      _countrySearchQuery = '';
     });
   }
 
@@ -1443,48 +1294,6 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     });
   }
 
-  String _countryLabel(ReferenceCountry country) {
-    final name = country.name.trim();
-    if (name.isNotEmpty) return name;
-    return country.code.trim().toUpperCase();
-  }
-
-  ReferenceCountry? _selectedCountry() {
-    final countryCode = _filters.countryCode;
-    if (countryCode == null) return null;
-
-    for (final country in widget.countries) {
-      if (_normalizeExcursionCountryCode(country.code) == countryCode) {
-        return country;
-      }
-    }
-    return null;
-  }
-
-  List<ReferenceCountry> _visibleCountries() {
-    final query = _countrySearchQuery.trim().toLowerCase();
-    if (query.isEmpty) return const [];
-
-    return widget.countries
-        .where((country) => _countrySearchHaystack(country).contains(query))
-        .take(24)
-        .toList(growable: false);
-  }
-
-  String _countrySearchHaystack(ReferenceCountry country) {
-    final countryCode = _normalizeExcursionCountryCode(country.code);
-    final aliases = countryCode == null
-        ? const <String>{}
-        : widget.countrySearchAliases[countryCode] ?? const <String>{};
-
-    return [
-      country.code,
-      country.name,
-      if (country.phoneCode != null) country.phoneCode!,
-      ...aliases,
-    ].map((value) => value.trim().toLowerCase()).join(' ');
-  }
-
   String? _selectedLanguage(AppLocalizations l10n) {
     if (_filters.languageCodes.isEmpty) return null;
     return localizedExcursionLanguageLabel(l10n, _filters.languageCodes.first);
@@ -1528,8 +1337,6 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     final l10n = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final resultCount = widget.resultCountBuilder(_filters);
-    final selectedCountry = _selectedCountry();
-    final visibleCountries = _visibleCountries();
     final selectedLanguage = _selectedLanguage(l10n);
     final visibleLanguages = _visibleLanguages(l10n);
 
@@ -1563,222 +1370,17 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _ExcursionsFilterSection(
-                        title: l10n.excursionsFilterCountry,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2C2118),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.08),
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.public_rounded,
-                                      color: AppColors.accent,
-                                      size: 21,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        selectedCountry == null
-                                            ? _filters.countryCode ??
-                                                l10n.excursionsFilterCountryAll
-                                            : _countryLabel(selectedCountry),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: AppColors.textPrimary,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ),
-                                    if (_filters.countryCode != null)
-                                      IconButton(
-                                        tooltip: l10n.excursionsFiltersClear,
-                                        visualDensity: VisualDensity.compact,
-                                        onPressed: () => setState(() {
-                                          _filters = _filters.copyWith(
-                                            clearCountryCode: true,
-                                          );
-                                        }),
-                                        icon: const Icon(
-                                          Icons.close_rounded,
-                                          color: Color(0xFFBDAA98),
-                                          size: 20,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _countrySearchController,
-                              enabled: widget.countries.isNotEmpty,
-                              cursorColor: AppColors.accent,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              decoration: InputDecoration(
-                                hintText:
-                                    l10n.excursionsFilterCountrySearchHint,
-                                hintStyle: const TextStyle(
-                                  color: Color(0xFF9D8877),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                prefixIcon: const Icon(
-                                  Icons.search_rounded,
-                                  color: AppColors.accent,
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFF171009),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.06),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.accent,
-                                    width: 1.2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (widget.isCountriesLoading &&
-                                widget.countries.isEmpty) ...[
-                              const SizedBox(height: 12),
-                              const Align(
-                                alignment: Alignment.centerLeft,
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                    color: AppColors.accent,
-                                  ),
-                                ),
-                              ),
-                            ] else if (_countrySearchQuery.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              if (visibleCountries.isEmpty)
-                                Text(
-                                  l10n.excursionsFilterCountryNoResults,
-                                  style: const TextStyle(
-                                    color: Color(0xFFBDAA98),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                )
-                              else
-                                ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxHeight: 224,
-                                  ),
-                                  child: ListView.separated(
-                                    shrinkWrap: true,
-                                    physics: const BouncingScrollPhysics(),
-                                    itemCount: visibleCountries.length,
-                                    separatorBuilder: (_, _) =>
-                                        const SizedBox(height: 8),
-                                    itemBuilder: (context, index) {
-                                      final country = visibleCountries[index];
-                                      final code =
-                                          _normalizeExcursionCountryCode(
-                                                country.code,
-                                              ) ??
-                                              country.code.trim().toUpperCase();
-                                      final selected =
-                                          _filters.countryCode == code;
-
-                                      return InkWell(
-                                        onTap: () =>
-                                            _selectCountry(country.code),
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            color: selected
-                                                ? AppColors.accent.withValues(
-                                                    alpha: 0.18,
-                                                  )
-                                                : const Color(0xFF2C2118),
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                            border: Border.all(
-                                              color: selected
-                                                  ? AppColors.accent
-                                                  : Colors.white.withValues(
-                                                      alpha: 0.07,
-                                                    ),
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 13,
-                                              vertical: 11,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    _countryLabel(country),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      color:
-                                                          AppColors.textPrimary,
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Text(
-                                                  code,
-                                                  style: const TextStyle(
-                                                    color: Color(0xFFBDAA98),
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w800,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                            ],
-                          ],
-                        ),
+                      AppCityFilterSection(
+                        title: l10n.locationFilterCitySection,
+                        allCitiesLabel: l10n.locationFilterAllCities,
+                        searchHint: l10n.locationFilterCitySearchHint,
+                        noResultsText: l10n.locationFilterCityNoResults,
+                        selectedCity: _filters.city,
+                        onChanged: (city) {
+                          setState(() {
+                            _filters = _filters.copyWith(city: city);
+                          });
+                        },
                       ),
                       const SizedBox(height: 30),
                       _ExcursionsFilterSection(

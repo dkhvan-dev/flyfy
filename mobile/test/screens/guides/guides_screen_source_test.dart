@@ -10,8 +10,14 @@ void main() {
         await File('lib/screens/guides/guides_screen.dart').readAsString();
 
     expect(source, contains('class GuidesScreen'));
-    expect(source, contains("import '../../core/network/reference_api.dart';"));
-    expect(source, contains("import '../../providers/session_provider.dart';"));
+    expect(
+      source,
+      contains("import '../../providers/home_location_provider.dart';"),
+    );
+    expect(
+      source,
+      contains("import '../../shared/widgets/app_city_filter_section.dart';"),
+    );
     expect(
         source, contains("import '../../core/ui/app_inline_sort_row.dart';"));
     expect(
@@ -23,10 +29,14 @@ void main() {
     expect(source, contains('guidesSearchHint'));
     expect(source, contains('showModalBottomSheet<_GuideFilters>'));
     expect(source, contains('class _GuidesFiltersSheet'));
-    expect(source, contains('ReferenceCountry'));
-    expect(source, contains('_loadCountries'));
-    expect(source, contains('_defaultCountryCode'));
-    expect(source, contains('countryCodes:'));
+    expect(source, contains('HomeLocationProvider'));
+    expect(source, contains('selectedLocation'));
+    expect(source, contains('_initializeGuides'));
+    expect(source, contains('_applyDefaultCityFilter'));
+    expect(source, contains('cityId: _filters.city?.cityId'));
+    expect(source, contains('cityName: _filters.city?.cityName'));
+    expect(source, contains('cityCountryCode: _filters.city?.countryCode'));
+    expect(source, isNot(contains('profile?.countryCode')));
     expect(source, contains('AppFilterSheetHeader'));
     expect(source, contains('AppFilterApplyButton'));
     expect(source, contains('guideSearchMatches('));
@@ -45,35 +55,34 @@ void main() {
     expect(apiSource, contains("'requiresAuth': false"));
   });
 
-  test('guides country filter is searchable by localized aliases', () async {
+  test('guides city filter uses shared searchable city selector', () async {
     final source =
         await File('lib/screens/guides/guides_screen.dart').readAsString();
 
-    expect(source, contains('Map<String, Set<String>> _countrySearchAliases'));
-    expect(source, contains('_loadCountrySearchAliases'));
-    expect(source, contains('guidesFilterCountrySearchHint'));
-    expect(source, contains('guidesFilterCountryNoResults'));
-    expect(source, contains('_countrySearchController'));
-    expect(source, contains('_selectedCountry()'));
-    expect(source, contains('_visibleCountries'));
-    expect(source, contains('_countrySearchAliasesFor'));
+    expect(source, contains('final AppCityFilterValue? city'));
+    expect(source, contains('AppCityFilterSection'));
+    expect(source, contains('locationFilterCitySection'));
+    expect(source, contains('locationFilterCitySearchHint'));
+    expect(source, contains('locationFilterCityNoResults'));
+    expect(source, contains('_setCity(AppCityFilterValue? city)'));
+    expect(source, isNot(contains('_countrySearchController')));
+    expect(source, isNot(contains('_selectedCountry()')));
+    expect(source, isNot(contains('_visibleCountries')));
     expect(source, contains('guideSearchMatches('));
-    expect(source, contains('country.phoneCode'));
 
-    final countrySectionStart = source.indexOf('title: l10n.profileCountry');
+    final citySectionStart = source.indexOf('AppCityFilterSection(');
     final expertiseSectionStart = source.indexOf(
       'title: l10n.guidesFilterExpertise',
     );
-    expect(countrySectionStart, isNonNegative);
-    expect(expertiseSectionStart, greaterThan(countrySectionStart));
+    expect(citySectionStart, isNonNegative);
+    expect(expertiseSectionStart, greaterThan(citySectionStart));
 
-    final countrySection = source.substring(
-      countrySectionStart,
+    final citySection = source.substring(
+      citySectionStart,
       expertiseSectionStart,
     );
-    expect(countrySection, contains('TextField'));
-    expect(countrySection, contains('selectedCountry == null'));
-    expect(countrySection, isNot(contains('Wrap(')));
+    expect(citySection, contains('AppCityFilterSection'));
+    expect(citySection, isNot(contains('Wrap(')));
   });
 
   test('guides language filter uses searchable single-select field', () async {

@@ -43,6 +43,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/excursions/{id}", h.GetExcursion)
 	mux.HandleFunc("GET /v1/excursions/{id}/cover", h.GetExcursionCover)
 	mux.HandleFunc("GET /v1/guides/excursion-languages", h.ListGuideExcursionLanguages)
+	mux.HandleFunc("GET /v1/guides/by-excursion-city", h.ListGuideUserIDsByExcursionCity)
 	mux.HandleFunc("GET /v1/excursion-guides/{guideUserId}/schedule", h.ListPublicGuideSchedule)
 
 	mux.HandleFunc("POST /v1/me/excursions", h.CreateExcursion)
@@ -270,6 +271,32 @@ func (h *Handler) ListGuideExcursionLanguages(w http.ResponseWriter, r *http.Req
 		return
 	}
 	writeJSON(w, http.StatusOK, toGuideExcursionLanguageListResponse(guideUserIDs, languages))
+}
+
+func (h *Handler) ListGuideUserIDsByExcursionCity(w http.ResponseWriter, r *http.Request) {
+	cityName := strings.TrimSpace(r.URL.Query().Get("cityName"))
+	if cityName == "" {
+		writeError(w, http.StatusBadRequest, "cityName is required")
+		return
+	}
+	var countryCode *string
+	if raw := strings.TrimSpace(r.URL.Query().Get("countryCode")); raw != "" {
+		normalized := strings.ToUpper(raw)
+		countryCode = &normalized
+	}
+
+	guideUserIDs, err := h.useCase.ListGuideUserIDsByExcursionCity(
+		r.Context(),
+		port.GuideExcursionCityFilter{
+			CityName:    &cityName,
+			CountryCode: countryCode,
+		},
+	)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list guide user ids by excursion city")
+		return
+	}
+	writeJSON(w, http.StatusOK, toGuideUserIDListResponse(guideUserIDs))
 }
 
 func (h *Handler) ListMyExcursions(w http.ResponseWriter, r *http.Request) {
@@ -1480,6 +1507,21 @@ func toGuideExcursionLanguageListResponse(guideUserIDs []uuid.UUID, languages ma
 		resp.Items = append(resp.Items, dto.GuideExcursionLanguageResponse{
 			GuideUserID:   guideUserID.String(),
 			LanguageCodes: append([]string(nil), codes...),
+		})
+	}
+	return resp
+}
+
+func toGuideUserIDListResponse(guideUserIDs []uuid.UUID) dto.GuideUserIDListResponse {
+	resp := dto.GuideUserIDListResponse{
+		Items: make([]dto.GuideUserIDResponse, 0, len(guideUserIDs)),
+	}
+	for _, guideUserID := range guideUserIDs {
+		if guideUserID == uuid.Nil {
+			continue
+		}
+		resp.Items = append(resp.Items, dto.GuideUserIDResponse{
+			GuideUserID: guideUserID.String(),
 		})
 	}
 	return resp

@@ -3010,6 +3010,30 @@ abstract class AppLocalizations {
   /// **'Apply location'**
   String get homeLocationApply;
 
+  /// No description provided for @locationFilterCitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get locationFilterCitySection;
+
+  /// No description provided for @locationFilterAllCities.
+  ///
+  /// In en, this message translates to:
+  /// **'All cities'**
+  String get locationFilterAllCities;
+
+  /// No description provided for @locationFilterCitySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search city'**
+  String get locationFilterCitySearchHint;
+
+  /// No description provided for @locationFilterCityNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'City not found'**
+  String get locationFilterCityNoResults;
+
   /// No description provided for @homeExploringLocation.
   ///
   /// In en, this message translates to:
@@ -3315,6 +3339,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No attractions found'**
   String get attractionsNoResults;
+
+  /// No description provided for @attractionsNoResultsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try choosing another city in filters.'**
+  String get attractionsNoResultsSubtitle;
 
   /// No description provided for @attractionsFiltersTitle.
   ///
@@ -4447,13 +4477,13 @@ abstract class AppLocalizations {
   /// No description provided for @excursionsEmptySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Verified guide routes will appear here.'**
+  /// **'Verified guide routes will appear here. Try choosing another city in filters.'**
   String get excursionsEmptySubtitle;
 
   /// No description provided for @excursionsEmptySearchSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Try another destination, category, or excursion name.'**
+  /// **'Try another city, category, or excursion name.'**
   String get excursionsEmptySearchSubtitle;
 
   /// No description provided for @excursionsNoAttractionExcursionsTitle.
@@ -4603,7 +4633,7 @@ abstract class AppLocalizations {
   /// No description provided for @guidesEmptySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Verified local experts will appear here.'**
+  /// **'Verified local experts will appear here. Try choosing another city in filters.'**
   String get guidesEmptySubtitle;
 
   /// No description provided for @guidesNoResultsTitle.
@@ -4615,7 +4645,7 @@ abstract class AppLocalizations {
   /// No description provided for @guidesNoResultsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Try another name, expertise, language, or filter.'**
+  /// **'Try another city, name, expertise, language, or filter.'**
   String get guidesNoResultsSubtitle;
 
   /// No description provided for @guidesSpecialtyMountainGuide.
@@ -8009,7 +8039,7 @@ abstract class AppLocalizations {
   /// No description provided for @activitiesFilteredEmptySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Try widening the category, date range, or pricing filters'**
+  /// **'Try widening the category, date range, pricing filters, or choose another city'**
   String get activitiesFilteredEmptySubtitle;
 
   /// No description provided for @activitiesResultsCount.

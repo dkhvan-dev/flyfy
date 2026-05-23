@@ -1621,6 +1621,18 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeLocationApply => 'Локацияны қолдану';
 
   @override
+  String get locationFilterCitySection => 'Қала';
+
+  @override
+  String get locationFilterAllCities => 'Барлық қалалар';
+
+  @override
+  String get locationFilterCitySearchHint => 'Қаланы іздеу';
+
+  @override
+  String get locationFilterCityNoResults => 'Қала табылмады';
+
+  @override
   String homeExploringLocation(Object location) {
     return '$location';
   }
@@ -1785,6 +1797,10 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get attractionsNoResults => 'Көрікті жерлер табылмады';
+
+  @override
+  String get attractionsNoResultsSubtitle =>
+      'Сүзгілерден басқа қаланы таңдаңыз.';
 
   @override
   String get attractionsFiltersTitle => 'Сүзгілер';
@@ -2390,11 +2406,11 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get excursionsEmptySubtitle =>
-      'Мұнда тексерілген гидтердің маршруттары пайда болады.';
+      'Мұнда тексерілген гидтердің маршруттары пайда болады. Сүзгілерден басқа қаланы таңдаңыз.';
 
   @override
   String get excursionsEmptySearchSubtitle =>
-      'Басқа қала, санат немесе экскурсия атауын қолданып көріңіз.';
+      'Басқа қаланы, санатты немесе экскурсия атауын қолданып көріңіз.';
 
   @override
   String get excursionsNoAttractionExcursionsTitle =>
@@ -2484,14 +2500,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guidesEmptySubtitle =>
-      'Мұнда тексерілген жергілікті сарапшылар пайда болады.';
+      'Мұнда тексерілген жергілікті сарапшылар пайда болады. Сүзгілерден басқа қаланы таңдаңыз.';
 
   @override
   String get guidesNoResultsTitle => 'Гидтер табылмады';
 
   @override
   String get guidesNoResultsSubtitle =>
-      'Басқа ат, мамандану, тіл немесе сүзгіні қолданып көріңіз.';
+      'Басқа қаланы, атты, мамандануды, тілді немесе сүзгіні қолданып көріңіз.';
 
   @override
   String get guidesSpecialtyMountainGuide => 'Тау гиді';
@@ -4398,7 +4414,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get activitiesFilteredEmptySubtitle =>
-      'Санатты, күн аралығын немесе баға шегін кеңейтіп көріңіз';
+      'Санатты, күн аралығын, баға шегін кеңейтіп немесе басқа қаланы таңдаңыз';
 
   @override
   String activitiesResultsCount(num count) {

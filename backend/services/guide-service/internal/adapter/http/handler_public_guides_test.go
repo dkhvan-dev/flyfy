@@ -88,11 +88,14 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 			},
 		},
 		nil,
+		&publicGuideExcursionCoverageClientStub{
+			guideUserIDs: []uuid.UUID{userID},
+		},
 	))
 
 	req := httptest.NewRequest(
 		nethttp.MethodGet,
-		"/v1/guides/public?limit=8&offset=16&q=almaty&sort=experience_desc&minRating=4.5&minExperienceYears=3&countries=KZ,GE&languages=en,ru&specializations=mountain_guide,city_historian",
+		"/v1/guides/public?limit=8&offset=16&q=almaty&sort=experience_desc&minRating=4.5&minExperienceYears=3&cityId=almaty&cityName=Алматы&cityCountryCode=KZ&countries=KZ,GE&languages=en,ru&specializations=mountain_guide,city_historian",
 		nil,
 	)
 	rec := httptest.NewRecorder()
@@ -120,6 +123,9 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 	}
 	if !reflect.DeepEqual(repo.lastFilter.CountryCodes, []string{"kz", "ge"}) {
 		t.Fatalf("unexpected countries: %#v", repo.lastFilter.CountryCodes)
+	}
+	if !reflect.DeepEqual(repo.lastFilter.UserIDs, []uuid.UUID{userID}) {
+		t.Fatalf("unexpected city guide user ids: %#v", repo.lastFilter.UserIDs)
 	}
 	if !reflect.DeepEqual(repo.lastFilter.LanguageCodes, []string{"en", "ru"}) {
 		t.Fatalf("unexpected languages: %#v", repo.lastFilter.LanguageCodes)
@@ -184,9 +190,51 @@ func TestListPublicGuidesAppliesSearchFilterSortAndReturnsTotal(t *testing.T) {
 	}
 }
 
+func TestListPublicGuidesReturnsEmptyWhenCityHasNoExcursionGuides(t *testing.T) {
+	t.Parallel()
+
+	repo := &publicGuideRepositoryStub{}
+	handler := NewHandler(app.NewGuideUseCase(
+		repo,
+		&publicUserClientStub{},
+		nil,
+		&publicGuideExcursionCoverageClientStub{
+			guideUserIDs: []uuid.UUID{},
+		},
+	))
+
+	req := httptest.NewRequest(
+		nethttp.MethodGet,
+		"/v1/guides/public?cityId=bangkok&cityName=Бангкок&cityCountryCode=TH",
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	handler.ListPublicGuides(rec, req)
+
+	if rec.Code != nethttp.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", nethttp.StatusOK, rec.Code, rec.Body.String())
+	}
+	if repo.listPublicCalls != 0 {
+		t.Fatalf("repository should not be queried when excursion city coverage is empty")
+	}
+
+	var payload struct {
+		Items []any `json:"items"`
+		Total int   `json:"total"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(payload.Items) != 0 || payload.Total != 0 {
+		t.Fatalf("unexpected payload: %+v", payload)
+	}
+}
+
 type publicGuideRepositoryStub struct {
 	result          port.PublicGuideListResult
 	lastFilter      port.PublicGuideListFilter
+	listPublicCalls int
 	languages       map[uuid.UUID][]*model.GuideLanguage
 	specializations map[uuid.UUID][]*model.GuideSpecialization
 }
@@ -276,8 +324,22 @@ func (s *publicGuideRepositoryStub) ListGuideSpecializationsByProfileIDs(_ conte
 }
 
 func (s *publicGuideRepositoryStub) ListPublicGuideProfiles(_ context.Context, filter port.PublicGuideListFilter) (port.PublicGuideListResult, error) {
+	s.listPublicCalls++
 	s.lastFilter = filter
 	return s.result, nil
+}
+
+type publicGuideExcursionCoverageClientStub struct {
+	lastInput    app.GuideExcursionCityFilter
+	guideUserIDs []uuid.UUID
+}
+
+func (s *publicGuideExcursionCoverageClientStub) ListGuideUserIDsByCity(
+	_ context.Context,
+	input app.GuideExcursionCityFilter,
+) ([]uuid.UUID, error) {
+	s.lastInput = input
+	return s.guideUserIDs, nil
 }
 
 func (s *publicGuideRepositoryStub) ListVerificationRequestsByStatuses(

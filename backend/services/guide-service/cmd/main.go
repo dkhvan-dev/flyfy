@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	excursionserviceadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/excursionservice"
 	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/filemanager"
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/grpc"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/adapter/http"
@@ -65,7 +66,8 @@ func main() {
 	defer fileClient.Close()
 
 	guideRepo := repository.NewPGGuideRepository(pool)
-	guideUseCase := app.NewGuideUseCase(guideRepo, userClient, fileClient)
+	excursionClient := excursionserviceadapter.New(cfg.Excursion.BaseURL, nil)
+	guideUseCase := app.NewGuideUseCase(guideRepo, userClient, fileClient, excursionClient)
 
 	httpHandler := httpadapter.NewHandler(guideUseCase)
 	httpMux := http.NewServeMux()

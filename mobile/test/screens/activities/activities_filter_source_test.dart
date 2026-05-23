@@ -49,6 +49,23 @@ void main() {
     expect(scaffoldSource, isNot(contains('_PrimaryPillButton(')));
   });
 
+  test('discover activities hides summary bar for empty filtered results',
+      () async {
+    final source = await File(
+      'lib/screens/activities/activities_screen.dart',
+    ).readAsString();
+    final summaryBarCall = source.indexOf('_FiltersSummaryBar(');
+    final summaryCondition = source.lastIndexOf('if (', summaryBarCall);
+
+    expect(summaryBarCall, isNonNegative);
+    expect(summaryCondition, isNonNegative);
+
+    final conditionSource = source.substring(summaryCondition, summaryBarCall);
+    expect(conditionSource, contains('filteredItems.isNotEmpty'));
+    expect(conditionSource, contains('_searchQuery.isNotEmpty'));
+    expect(conditionSource, contains('_filters.hasAnyValue'));
+  });
+
   test('discover activities price filter keeps only a free preset', () async {
     final source = await File(
       'lib/screens/activities/activities_screen.dart',

@@ -717,6 +717,9 @@ func parsePublicGuideListInput(r *http.Request) (app.ListPublicGuidesInput, erro
 
 	return app.ListPublicGuidesInput{
 		Query:               q.Get("q"),
+		CityID:              strings.TrimSpace(q.Get("cityId")),
+		CityName:            q.Get("cityName"),
+		CityCountryCode:     q.Get("cityCountryCode"),
 		CountryCodes:        splitQueryList(q["countries"]),
 		LanguageCodes:       splitQueryList(q["languages"]),
 		SpecializationCodes: splitQueryList(q["specializations"]),

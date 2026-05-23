@@ -1220,6 +1220,88 @@ func (r *PGExcursionRepository) ListExcursionLanguageCodesByGuideUserIDs(ctx con
 	return result, nil
 }
 
+func (r *PGExcursionRepository) ListGuideUserIDsByExcursionCity(
+	ctx context.Context,
+	filter port.GuideExcursionCityFilter,
+) ([]uuid.UUID, error) {
+	cityName := ""
+	if filter.CityName != nil {
+		cityName = strings.TrimSpace(*filter.CityName)
+	}
+	if cityName == "" {
+		return []uuid.UUID{}, nil
+	}
+
+	args := make([]any, 0, 4)
+	addArg := func(value any) string {
+		args = append(args, value)
+		return fmt.Sprintf("$%d", len(args))
+	}
+
+	statusRef := addArg(string(enum.ExcursionStatusPublished))
+	visibilityRef := addArg(string(enum.ExcursionVisibilityPublic))
+	cityRef := addArg("%" + cityName + "%")
+
+	excursionWhere := []string{
+		"e.deleted_at IS NULL",
+		fmt.Sprintf("e.status = %s", statusRef),
+		fmt.Sprintf("e.visibility = %s", visibilityRef),
+		fmt.Sprintf("e.city_name ILIKE %s", cityRef),
+	}
+	offerWhere := []string{
+		"o.deleted_at IS NULL",
+		fmt.Sprintf("o.status = %s", statusRef),
+		fmt.Sprintf("o.visibility = %s", visibilityRef),
+		fmt.Sprintf("p.city_name ILIKE %s", cityRef),
+	}
+
+	if filter.CountryCode != nil && strings.TrimSpace(*filter.CountryCode) != "" {
+		countryRef := addArg(strings.ToUpper(strings.TrimSpace(*filter.CountryCode)))
+		excursionWhere = append(excursionWhere, fmt.Sprintf("e.country_code = %s", countryRef))
+		offerWhere = append(offerWhere, fmt.Sprintf("p.country_code = %s", countryRef))
+	}
+
+	query := fmt.Sprintf(`
+		SELECT DISTINCT source.guide_user_id
+		FROM (
+			SELECT e.guide_user_id
+			FROM excursions e
+			WHERE %s
+
+			UNION ALL
+
+			SELECT o.guide_user_id
+			FROM excursion_offers o
+			JOIN excursion_products p ON p.id = o.product_id
+			WHERE %s
+		) source
+		WHERE source.guide_user_id IS NOT NULL
+		ORDER BY source.guide_user_id
+	`, strings.Join(excursionWhere, "\n\t\t\t\tAND "), strings.Join(offerWhere, "\n\t\t\t\tAND "))
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list guide user ids by excursion city: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]uuid.UUID, 0)
+	for rows.Next() {
+		var guideUserID uuid.UUID
+		if err = rows.Scan(&guideUserID); err != nil {
+			return nil, fmt.Errorf("scan guide user id by excursion city: %w", err)
+		}
+		if guideUserID == uuid.Nil {
+			continue
+		}
+		result = append(result, guideUserID)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func excursionOfferOrderBy(sort string, direction string) string {
 	dir := "DESC"
 	if strings.EqualFold(strings.TrimSpace(direction), "asc") {

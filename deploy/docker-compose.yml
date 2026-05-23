@@ -695,6 +695,7 @@ services:
 
       USER_SERVICE_GRPC_TARGET: dns:///user-service:9094
       FILE_MANAGER_GRPC_TARGET: dns:///file-manager-service:9093
+      EXCURSION_SERVICE_HTTP_URL: http://excursion-service:8093
     restart: unless-stopped
     networks:
       - flyfy-network

@@ -23,21 +23,37 @@ type GuideAggregate struct {
 }
 
 type GuideUseCase struct {
-	repo       port.GuideRepository
-	userClient UserServiceClient
-	fileClient FileManagerClient
+	repo            port.GuideRepository
+	userClient      UserServiceClient
+	fileClient      FileManagerClient
+	excursionClient GuideExcursionCoverageClient
 }
 
 func NewGuideUseCase(
 	repo port.GuideRepository,
 	userClient UserServiceClient,
 	fileClient FileManagerClient,
+	excursionClients ...GuideExcursionCoverageClient,
 ) *GuideUseCase {
-	return &GuideUseCase{
-		repo:       repo,
-		userClient: userClient,
-		fileClient: fileClient,
+	var excursionClient GuideExcursionCoverageClient
+	if len(excursionClients) > 0 {
+		excursionClient = excursionClients[0]
 	}
+	return &GuideUseCase{
+		repo:            repo,
+		userClient:      userClient,
+		fileClient:      fileClient,
+		excursionClient: excursionClient,
+	}
+}
+
+type GuideExcursionCityFilter struct {
+	CityName    string
+	CountryCode string
+}
+
+type GuideExcursionCoverageClient interface {
+	ListGuideUserIDsByCity(ctx context.Context, input GuideExcursionCityFilter) ([]uuid.UUID, error)
 }
 
 type InitGuideProfileInput struct {
@@ -631,6 +647,9 @@ func (u *GuideUseCase) AttachGuideDocument(
 
 type ListPublicGuidesInput struct {
 	Query               string
+	CityID              string
+	CityName            string
+	CityCountryCode     string
 	CountryCodes        []string
 	LanguageCodes       []string
 	SpecializationCodes []string
@@ -646,6 +665,25 @@ func (u *GuideUseCase) ListPublicGuideProfiles(
 	input ListPublicGuidesInput,
 ) (port.PublicGuideListResult, error) {
 	filter := normalizePublicGuideListFilter(input)
+	cityFilter := normalizeGuideExcursionCityFilter(input.CityName, input.CityCountryCode)
+	if cityFilter.CityName != "" {
+		if u.excursionClient == nil {
+			return port.PublicGuideListResult{}, fmt.Errorf("excursion coverage client is not configured")
+		}
+		guideUserIDs, err := u.excursionClient.ListGuideUserIDsByCity(ctx, cityFilter)
+		if err != nil {
+			return port.PublicGuideListResult{}, fmt.Errorf("list guide user ids by excursion city: %w", err)
+		}
+		guideUserIDs = uniqueGuideUserIDs(guideUserIDs)
+		if len(guideUserIDs) == 0 {
+			return port.PublicGuideListResult{
+				Items: []*model.GuideProfile{},
+				Total: 0,
+			}, nil
+		}
+		filter.UserIDs = guideUserIDs
+	}
+
 	if len(filter.CountryCodes) > 0 {
 		if u.userClient == nil {
 			return port.PublicGuideListResult{}, fmt.Errorf("user service client is not configured")
@@ -661,7 +699,13 @@ func (u *GuideUseCase) ListPublicGuideProfiles(
 				Total: 0,
 			}, nil
 		}
-		filter.UserIDs = userIDs
+		filter.UserIDs = intersectGuideUserIDs(filter.UserIDs, userIDs)
+		if len(filter.UserIDs) == 0 {
+			return port.PublicGuideListResult{
+				Items: []*model.GuideProfile{},
+				Total: 0,
+			}, nil
+		}
 	}
 
 	items, err := u.repo.ListPublicGuideProfiles(ctx, filter)
@@ -696,6 +740,47 @@ func normalizePublicGuideListFilter(input ListPublicGuidesInput) port.PublicGuid
 		Limit:               limit,
 		Offset:              offset,
 	}
+}
+
+func normalizeGuideExcursionCityFilter(cityName string, countryCode string) GuideExcursionCityFilter {
+	return GuideExcursionCityFilter{
+		CityName:    strings.TrimSpace(cityName),
+		CountryCode: strings.ToUpper(strings.TrimSpace(countryCode)),
+	}
+}
+
+func uniqueGuideUserIDs(ids []uuid.UUID) []uuid.UUID {
+	result := make([]uuid.UUID, 0, len(ids))
+	seen := make(map[uuid.UUID]struct{}, len(ids))
+	for _, id := range ids {
+		if id == uuid.Nil {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+	return result
+}
+
+func intersectGuideUserIDs(current []uuid.UUID, next []uuid.UUID) []uuid.UUID {
+	next = uniqueGuideUserIDs(next)
+	if len(current) == 0 {
+		return next
+	}
+	allowed := make(map[uuid.UUID]struct{}, len(next))
+	for _, id := range next {
+		allowed[id] = struct{}{}
+	}
+	result := make([]uuid.UUID, 0, len(current))
+	for _, id := range uniqueGuideUserIDs(current) {
+		if _, ok := allowed[id]; ok {
+			result = append(result, id)
+		}
+	}
+	return result
 }
 
 func normalizePublicGuideSort(sort string) port.PublicGuideSort {

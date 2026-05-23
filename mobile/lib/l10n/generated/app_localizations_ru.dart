@@ -1609,6 +1609,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeLocationApply => 'Применить локацию';
 
   @override
+  String get locationFilterCitySection => 'Город';
+
+  @override
+  String get locationFilterAllCities => 'Все города';
+
+  @override
+  String get locationFilterCitySearchHint => 'Поиск города';
+
+  @override
+  String get locationFilterCityNoResults => 'Город не найден';
+
+  @override
   String homeExploringLocation(Object location) {
     return '$location';
   }
@@ -1772,6 +1784,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get attractionsNoResults => 'Достопримечательности не найдены';
+
+  @override
+  String get attractionsNoResultsSubtitle =>
+      'Попробуйте выбрать другой город в фильтрах.';
 
   @override
   String get attractionsFiltersTitle => 'Фильтры';
@@ -2377,7 +2393,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get excursionsEmptySubtitle =>
-      'Здесь появятся маршруты проверенных гидов.';
+      'Здесь появятся маршруты проверенных гидов. Попробуйте выбрать другой город в фильтрах.';
 
   @override
   String get excursionsEmptySearchSubtitle =>
@@ -2472,14 +2488,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guidesEmptySubtitle =>
-      'Здесь появятся проверенные локальные эксперты.';
+      'Здесь появятся проверенные локальные эксперты. Попробуйте выбрать другой город в фильтрах.';
 
   @override
   String get guidesNoResultsTitle => 'Гиды не найдены';
 
   @override
   String get guidesNoResultsSubtitle =>
-      'Попробуйте другое имя, специализацию, язык или фильтр.';
+      'Попробуйте другой город, имя, специализацию, язык или фильтр.';
 
   @override
   String get guidesSpecialtyMountainGuide => 'Горный гид';
@@ -4384,7 +4400,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activitiesFilteredEmptySubtitle =>
-      'Попробуйте расширить категорию, диапазон дат или стоимость';
+      'Попробуйте расширить категорию, диапазон дат, стоимость или выбрать другой город';
 
   @override
   String activitiesResultsCount(num count) {

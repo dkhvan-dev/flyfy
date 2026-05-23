@@ -141,6 +141,10 @@ func (s *excursionRepoStub) ListExcursionLanguageCodesByGuideUserIDs(ctx context
 	return nil, nil
 }
 
+func (s *excursionRepoStub) ListGuideUserIDsByExcursionCity(ctx context.Context, filter port.GuideExcursionCityFilter) ([]uuid.UUID, error) {
+	return nil, nil
+}
+
 func (s *excursionRepoStub) HasActiveExcursionForGuideLandmark(ctx context.Context, guideUserID uuid.UUID, landmarkID uuid.UUID) (bool, error) {
 	return s.hasGuideLandmark, nil
 }

@@ -36,6 +36,48 @@ func TestListExcursionLanguageCodesByGuideUserIDsAggregatesExcursionsAndOffers(t
 	}
 }
 
+func TestListGuideUserIDsByExcursionCityUsesPublicPublishedExcursionsAndOffers(t *testing.T) {
+	source, err := os.ReadFile("pg_excursion_repository.go")
+	if err != nil {
+		t.Fatalf("read pg_excursion_repository.go: %v", err)
+	}
+
+	body := string(source)
+	start := strings.Index(body, "func (r *PGExcursionRepository) ListGuideUserIDsByExcursionCity")
+	if start < 0 {
+		t.Fatal("ListGuideUserIDsByExcursionCity not found")
+	}
+	end := strings.Index(body[start:], "func excursionOfferOrderBy")
+	if end < 0 {
+		t.Fatal("ListGuideUserIDsByExcursionCity end marker not found")
+	}
+	fn := body[start : start+end]
+
+	for _, want := range []string{
+		"FROM excursions e",
+		"FROM excursion_offers o",
+		"UNION ALL",
+		"e.deleted_at IS NULL",
+		"o.deleted_at IS NULL",
+		"e.status =",
+		"o.status =",
+		"e.visibility =",
+		"o.visibility =",
+		"e.city_name ILIKE",
+		"JOIN excursion_products p ON p.id = o.product_id",
+		"p.city_name ILIKE",
+		"e.country_code =",
+		"p.country_code =",
+	} {
+		if !strings.Contains(fn, want) {
+			t.Fatalf("city guide query missing %q", want)
+		}
+	}
+	if strings.Contains(fn, "o.city_name") || strings.Contains(fn, "o.country_code") {
+		t.Fatal("city guide query must use excursion_products location columns for offers")
+	}
+}
+
 func TestReviewQueriesExcludeSoftDeletedRowsAndGuideStatsUseBothReviewSources(t *testing.T) {
 	source, err := os.ReadFile("pg_excursion_repository.go")
 	if err != nil {

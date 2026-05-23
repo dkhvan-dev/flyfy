@@ -5,8 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/network/reference_api.dart';
-import '../../core/reference/country_filter_utils.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
@@ -17,7 +15,8 @@ import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
-import '../../providers/session_provider.dart';
+import '../../providers/home_location_provider.dart';
+import '../../shared/widgets/app_city_filter_section.dart';
 import 'attractions_filter_sheet.dart';
 
 enum _AttractionSortField { rating, duration, price }
@@ -70,20 +69,15 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   static const int _pageSize = 8;
 
   final AttractionApi _api = AttractionApi();
-  final ReferenceApi _referenceApi = ReferenceApi();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   List<AttractionVm> _attractions = [];
-  List<ReferenceCountry> _countries = const [];
-  Map<String, Set<String>> _countrySearchAliases = const {};
   bool _loading = true;
-  bool _isCountriesLoading = false;
-  bool _hasAppliedDefaultCountryFilter = false;
+  bool _hasAppliedDefaultCityFilter = false;
   String? _error;
   AttractionFilterResult _filters = AttractionFilterResult.empty;
   Timer? _searchDebounce;
-  Future<void>? _countriesLoadFuture;
   int _currentPage = 1;
   int _totalAttractions = 0;
   _AttractionSortField _sortField = _AttractionSortField.rating;
@@ -100,8 +94,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _applyDefaultCountryFilter();
-      unawaited(_loadCountries());
+      unawaited(_initializeDefaultCityFilter());
       _loadAttractions();
     });
     _searchController.addListener(_onSearchChanged);
@@ -123,98 +116,31 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     );
   }
 
-  String? _defaultCountryCode() {
-    return normalizeReferenceCountryCode(
-      context.read<SessionProvider>().profile?.countryCode,
-    );
+  Future<void> _initializeDefaultCityFilter() async {
+    final provider = context.read<HomeLocationProvider>();
+    if (!provider.isLoaded && !provider.isLoading) {
+      await provider.load();
+    }
+    if (!mounted) return;
+    _applyDefaultCityFilter(provider);
   }
 
-  void _applyDefaultCountryFilter() {
-    if (!mounted || _hasAppliedDefaultCountryFilter) return;
-    _hasAppliedDefaultCountryFilter = true;
+  void _applyDefaultCityFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultCityFilter || _filters.city != null) return;
+    _hasAppliedDefaultCityFilter = true;
 
-    final defaultCountryCode = _defaultCountryCode();
-    if (defaultCountryCode == null || _filters.countryCode != null) return;
+    final location = provider.selectedLocation;
+    final city = AppCityFilterValue.fromParts(
+      cityId: location?.cityId,
+      cityName: location?.cityName,
+      countryCode: location?.countryCode,
+    );
+    if (city == null) return;
 
     setState(() {
-      _filters = AttractionFilterResult(
-        countryCode: defaultCountryCode,
-        category: _filters.category,
-        minRating: _filters.minRating,
-        durationMin: _filters.durationMin,
-        durationMax: _filters.durationMax,
-        durationUnit: _filters.durationUnit,
-        priceMin: _filters.priceMin,
-        priceMax: _filters.priceMax,
-      );
+      _filters = _filters.copyWith(city: city);
+      _currentPage = 1;
     });
-  }
-
-  Future<void> _loadCountries() {
-    if (_countries.isNotEmpty) return Future.value();
-    final inFlight = _countriesLoadFuture;
-    if (inFlight != null) return inFlight;
-
-    final future = _loadCountriesInner();
-    _countriesLoadFuture = future;
-    return future.whenComplete(() => _countriesLoadFuture = null);
-  }
-
-  Future<void> _loadCountriesInner() async {
-    if (!mounted) return;
-
-    setState(() => _isCountriesLoading = true);
-    final lang = Localizations.localeOf(context).languageCode;
-    final defaultCountryCode = _defaultCountryCode();
-
-    try {
-      final countries = withDefaultReferenceCountry(
-        await _referenceApi.listCountries(lang: lang),
-        defaultCountryCode,
-      );
-      final countrySearchAliases = await _loadCountrySearchAliases(
-        countries,
-        lang,
-      );
-      if (!mounted) return;
-      setState(() {
-        _countries = countries;
-        _countrySearchAliases = countrySearchAliases;
-        _isCountriesLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      final countries = withDefaultReferenceCountry(
-        const [],
-        defaultCountryCode,
-      );
-      setState(() {
-        _countries = countries;
-        _countrySearchAliases = countrySearchAliasMap(countries);
-        _isCountriesLoading = false;
-      });
-    }
-  }
-
-  Future<Map<String, Set<String>>> _loadCountrySearchAliases(
-    List<ReferenceCountry> countries,
-    String currentLang,
-  ) async {
-    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
-    final localizedLists = await Future.wait(
-      languages.map((lang) async {
-        try {
-          return await _referenceApi.listCountries(lang: lang);
-        } catch (_) {
-          return const <ReferenceCountry>[];
-        }
-      }),
-    );
-
-    return countrySearchAliasMap([
-      ...countries,
-      for (final localizedCountries in localizedLists) ...localizedCountries,
-    ]);
   }
 
   Future<void> _loadAttractions({int page = 1}) async {
@@ -231,6 +157,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
       final result = await _api.getAttractions(
         search: search.isEmpty ? null : search,
         countryCode: _filters.countryCode,
+        cityId: _filters.cityId,
         category: _filters.category,
         minRating: _filters.minRating,
         priceMin: _filters.priceMin,
@@ -261,8 +188,6 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
 
   Future<void> _openFilters() async {
     FocusScope.of(context).unfocus();
-    await _loadCountries();
-    if (!mounted) return;
 
     final result = await showModalBottomSheet<AttractionFilterResult>(
       context: context,
@@ -274,9 +199,6 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
         initial: _filters,
         api: _api,
         searchQuery: _searchController.text,
-        countries: _countries,
-        countrySearchAliases: _countrySearchAliases,
-        isCountriesLoading: _isCountriesLoading,
       ),
     );
     if (result == null || !mounted) return;
@@ -460,9 +382,32 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: a.scale(40)),
                 child: Center(
-                  child: Text(
-                    l10n.attractionsNoResults,
-                    style: const TextStyle(color: AppColors.textSecondary),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: a.scale(24)),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.attractionsNoResults,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: a.scale(8)),
+                        Text(
+                          l10n.attractionsNoResultsSubtitle,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.textCaption,
+                            fontSize: 13,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

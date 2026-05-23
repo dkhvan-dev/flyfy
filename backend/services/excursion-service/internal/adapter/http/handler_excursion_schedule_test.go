@@ -293,6 +293,10 @@ func (s *excursionScheduleHTTPRepoStub) ListExcursionLanguageCodesByGuideUserIDs
 	return nil, nil
 }
 
+func (s *excursionScheduleHTTPRepoStub) ListGuideUserIDsByExcursionCity(context.Context, port.GuideExcursionCityFilter) ([]uuid.UUID, error) {
+	return nil, nil
+}
+
 func (s *excursionScheduleHTTPRepoStub) HasActiveExcursionForGuideLandmark(context.Context, uuid.UUID, uuid.UUID) (bool, error) {
 	return false, nil
 }

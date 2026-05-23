@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/file_api.dart';
-import '../../core/network/reference_api.dart';
 import '../../core/ui/app_bottom_navigation_bars.dart';
 import '../../core/ui/app_colors.dart';
 import '../../core/ui/app_inline_sort_row.dart';
@@ -21,7 +20,8 @@ import '../../features/guides/guide_localization.dart';
 import '../../features/guides/guide_search.dart';
 import '../../features/guides/models/public_guide_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
-import '../../providers/session_provider.dart';
+import '../../providers/home_location_provider.dart';
+import '../../shared/widgets/app_city_filter_section.dart';
 
 enum _GuideSortMode { rating, experience }
 
@@ -68,27 +68,6 @@ extension _GuideSortDirectionX on _GuideSortDirection {
   }
 }
 
-String? _normalizeCountryCode(String? code) {
-  final normalized = code?.trim().toUpperCase() ?? '';
-  return normalized.isEmpty ? null : normalized;
-}
-
-List<ReferenceCountry> _withDefaultCountry(
-  List<ReferenceCountry> countries,
-  String? defaultCountryCode,
-) {
-  if (defaultCountryCode == null) return countries;
-  final hasDefault = countries.any(
-    (country) => country.code.trim().toUpperCase() == defaultCountryCode,
-  );
-  if (hasDefault) return countries;
-
-  return [
-    ReferenceCountry(code: defaultCountryCode, name: defaultCountryCode),
-    ...countries,
-  ];
-}
-
 class GuidesScreen extends StatefulWidget {
   const GuidesScreen({super.key});
 
@@ -100,20 +79,16 @@ class _GuidesScreenState extends State<GuidesScreen> {
   static const _pageSize = 8;
 
   final GuideDiscoveryApi _api = GuideDiscoveryApi();
-  final ReferenceApi _referenceApi = ReferenceApi();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   List<PublicGuideVm> _guides = const [];
-  List<ReferenceCountry> _countries = const [];
-  Map<String, Set<String>> _countrySearchAliases = const {};
   int _totalGuides = 0;
   bool _loading = true;
-  bool _isCountriesLoading = false;
+  bool _hasAppliedDefaultCityFilter = false;
   String? _error;
   String _searchQuery = '';
   Timer? _searchDebounce;
-  Future<void>? _countriesLoadFuture;
   _GuideFilters _filters = const _GuideFilters();
   _GuideSortMode _sortMode = _GuideSortMode.rating;
   _GuideSortDirection _sortDirection = _GuideSortDirection.desc;
@@ -139,106 +114,35 @@ class _GuidesScreenState extends State<GuidesScreen> {
   Future<void> _initializeGuides() async {
     if (!mounted) return;
 
-    final defaultCountryCode = _defaultCountryCode();
-    if (defaultCountryCode != null && _filters.countryCodes.isEmpty) {
-      setState(() {
-        _filters = _filters.copyWith(countryCodes: {defaultCountryCode});
-      });
+    final locationProvider = context.read<HomeLocationProvider>();
+    if (locationProvider.selectedLocation == null &&
+        !locationProvider.isLoading) {
+      await locationProvider.load();
     }
-
-    unawaited(_loadCountries());
+    if (!mounted) return;
+    _applyDefaultCityFilter(locationProvider);
     await _loadGuides();
   }
 
-  String? _defaultCountryCode() {
-    return _normalizeCountryCode(
-        context.read<SessionProvider>().profile?.countryCode);
-  }
-
-  Future<void> _loadCountries() {
-    if (_countries.isNotEmpty) return Future.value();
-    final inFlight = _countriesLoadFuture;
-    if (inFlight != null) return inFlight;
-
-    final future = _loadCountriesInner();
-    _countriesLoadFuture = future;
-    return future.whenComplete(() => _countriesLoadFuture = null);
-  }
-
-  Future<void> _loadCountriesInner() async {
-    if (!mounted) return;
-
-    setState(() => _isCountriesLoading = true);
-    final lang = Localizations.localeOf(context).languageCode;
-    final defaultCountryCode = _defaultCountryCode();
-
-    try {
-      final countries = _withDefaultCountry(
-        await _referenceApi.listCountries(lang: lang),
-        defaultCountryCode,
-      );
-      final countrySearchAliases = await _loadCountrySearchAliases(
-        countries,
-        lang,
-      );
-      if (!mounted) return;
-      setState(() {
-        _countries = countries;
-        _countrySearchAliases = countrySearchAliases;
-        _isCountriesLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      final countries = _withDefaultCountry(const [], defaultCountryCode);
-      setState(() {
-        _countries = countries;
-        _countrySearchAliases = _countrySearchAliasMap(countries);
-        _isCountriesLoading = false;
-      });
+  void _applyDefaultCityFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultCityFilter || _filters.city != null) {
+      _hasAppliedDefaultCityFilter = true;
+      return;
     }
-  }
 
-  Future<Map<String, Set<String>>> _loadCountrySearchAliases(
-    List<ReferenceCountry> countries,
-    String currentLang,
-  ) async {
-    final languages = {'en', 'ru', 'kk'}..remove(currentLang);
-    final localizedLists = await Future.wait(
-      languages.map((lang) async {
-        try {
-          return await _referenceApi.listCountries(lang: lang);
-        } catch (_) {
-          return const <ReferenceCountry>[];
-        }
-      }),
+    _hasAppliedDefaultCityFilter = true;
+    final location = provider.selectedLocation;
+    final city = AppCityFilterValue.fromParts(
+      cityId: location?.cityId,
+      cityName: location?.cityName,
+      countryCode: location?.countryCode,
     );
+    if (city == null || !mounted) return;
 
-    return _countrySearchAliasMap([
-      ...countries,
-      for (final localizedCountries in localizedLists) ...localizedCountries,
-    ]);
-  }
-
-  Map<String, Set<String>> _countrySearchAliasMap(
-    List<ReferenceCountry> countries,
-  ) {
-    final aliases = <String, Set<String>>{};
-    for (final country in countries) {
-      final code = _normalizeCountryCode(country.code);
-      if (code == null) continue;
-
-      final countryAliases = aliases.putIfAbsent(code, () => <String>{});
-      countryAliases
-        ..add(code)
-        ..add(country.code.trim())
-        ..add(country.name.trim());
-
-      final phoneCode = country.phoneCode?.trim();
-      if (phoneCode != null && phoneCode.isNotEmpty) {
-        countryAliases.add(phoneCode);
-      }
-    }
-    return aliases;
+    setState(() {
+      _filters = _filters.copyWith(city: city);
+      _currentPage = 1;
+    });
   }
 
   void _onSearchChanged() {
@@ -272,7 +176,9 @@ class _GuidesScreenState extends State<GuidesScreen> {
         sort: _sortQuery,
         minRating: _filters.minRating,
         minExperienceYears: _filters.minExperienceYears,
-        countryCodes: _filters.countryCodes,
+        cityId: _filters.city?.cityId,
+        cityName: _filters.city?.cityName,
+        cityCountryCode: _filters.city?.countryCode,
         languageCodes: _filters.languageCodes,
         specializationCodes: _filters.specializations,
       );
@@ -323,7 +229,6 @@ class _GuidesScreenState extends State<GuidesScreen> {
 
   Future<void> _showFilters() async {
     FocusScope.of(context).unfocus();
-    await _loadCountries();
     if (!mounted) return;
 
     final l10n = AppLocalizations.of(context)!;
@@ -334,9 +239,6 @@ class _GuidesScreenState extends State<GuidesScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _GuidesFiltersSheet(
         initialFilters: _filters,
-        countries: _countries,
-        countrySearchAliases: _countrySearchAliases,
-        isCountriesLoading: _isCountriesLoading,
         fallbackResultCount: _totalGuides,
         resultCountLoader: (filters) async {
           final result = await _api.listPublicGuides(
@@ -346,7 +248,9 @@ class _GuidesScreenState extends State<GuidesScreen> {
             sort: _sortQuery,
             minRating: filters.minRating,
             minExperienceYears: filters.minExperienceYears,
-            countryCodes: filters.countryCodes,
+            cityId: filters.city?.cityId,
+            cityName: filters.city?.cityName,
+            cityCountryCode: filters.city?.countryCode,
             languageCodes: filters.languageCodes,
             specializationCodes: filters.specializations,
           );
@@ -980,21 +884,21 @@ class _GuidesEmptyState extends StatelessWidget {
 
 class _GuideFilters {
   const _GuideFilters({
-    this.countryCodes = const <String>{},
+    this.city,
     this.specializations = const <String>{},
     this.languageCodes = const <String>{},
     this.minRating,
     this.minExperienceYears,
   });
 
-  final Set<String> countryCodes;
+  final AppCityFilterValue? city;
   final Set<String> specializations;
   final Set<String> languageCodes;
   final double? minRating;
   final int? minExperienceYears;
 
   _GuideFilters copyWith({
-    Set<String>? countryCodes,
+    Object? city = _unset,
     Set<String>? specializations,
     Set<String>? languageCodes,
     double? minRating,
@@ -1003,7 +907,7 @@ class _GuideFilters {
     bool clearMinExperienceYears = false,
   }) {
     return _GuideFilters(
-      countryCodes: countryCodes ?? this.countryCodes,
+      city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
       specializations: specializations ?? this.specializations,
       languageCodes: languageCodes ?? this.languageCodes,
       minRating: clearMinRating ? null : minRating ?? this.minRating,
@@ -1013,8 +917,10 @@ class _GuideFilters {
     );
   }
 
+  static const Object _unset = Object();
+
   int get activeCount =>
-      countryCodes.length +
+      (city == null ? 0 : 1) +
       specializations.length +
       languageCodes.length +
       (minRating == null ? 0 : 1) +
@@ -1024,17 +930,11 @@ class _GuideFilters {
 class _GuidesFiltersSheet extends StatefulWidget {
   const _GuidesFiltersSheet({
     required this.initialFilters,
-    required this.countries,
-    required this.countrySearchAliases,
-    required this.isCountriesLoading,
     required this.fallbackResultCount,
     required this.resultCountLoader,
   });
 
   final _GuideFilters initialFilters;
-  final List<ReferenceCountry> countries;
-  final Map<String, Set<String>> countrySearchAliases;
-  final bool isCountriesLoading;
   final int fallbackResultCount;
   final Future<int> Function(_GuideFilters filters) resultCountLoader;
 
@@ -1047,21 +947,17 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
   static const _experienceYears = [1, 3, 5];
 
   late _GuideFilters _filters;
-  late final TextEditingController _countrySearchController;
   late final TextEditingController _languageSearchController;
   Timer? _resultCountDebounce;
   int? _resultCount;
   bool _isLoadingResultCount = false;
   int _resultCountRequestId = 0;
-  String _countrySearchQuery = '';
   String _languageSearchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _filters = widget.initialFilters;
-    _countrySearchController = TextEditingController()
-      ..addListener(_handleCountrySearchChanged);
     _languageSearchController = TextEditingController()
       ..addListener(_handleLanguageSearchChanged);
     _resultCount = widget.fallbackResultCount;
@@ -1071,20 +967,10 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
   @override
   void dispose() {
     _resultCountDebounce?.cancel();
-    _countrySearchController
-      ..removeListener(_handleCountrySearchChanged)
-      ..dispose();
     _languageSearchController
       ..removeListener(_handleLanguageSearchChanged)
       ..dispose();
     super.dispose();
-  }
-
-  void _handleCountrySearchChanged() {
-    final nextQuery = _countrySearchController.text.trim();
-    if (nextQuery == _countrySearchQuery) return;
-
-    setState(() => _countrySearchQuery = nextQuery);
   }
 
   void _handleLanguageSearchChanged() {
@@ -1095,16 +981,8 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
   }
 
   void _clear() {
-    _countrySearchController.clear();
     _languageSearchController.clear();
     _setFilters(const _GuideFilters());
-  }
-
-  void _selectCountry(String code) {
-    final normalized = _normalizeCountryCode(code);
-    if (normalized == null) return;
-    _countrySearchController.clear();
-    _setFilters(_filters.copyWith(countryCodes: {normalized}));
   }
 
   void _toggleSpecialization(String code) {
@@ -1145,6 +1023,10 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
     );
   }
 
+  void _setCity(AppCityFilterValue? city) {
+    _setFilters(_filters.copyWith(city: city));
+  }
+
   void _setFilters(_GuideFilters filters) {
     setState(() => _filters = filters);
     _scheduleResultCountLoad();
@@ -1172,49 +1054,6 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
       if (!mounted || requestId != _resultCountRequestId) return;
       setState(() => _isLoadingResultCount = false);
     }
-  }
-
-  String _countryLabel(ReferenceCountry country) {
-    final name = country.name.trim();
-    if (name.isNotEmpty) return name;
-    return country.code.trim().toUpperCase();
-  }
-
-  ReferenceCountry? _selectedCountry() {
-    final countryCode =
-        _filters.countryCodes.isEmpty ? null : _filters.countryCodes.first;
-    if (countryCode == null) return null;
-
-    for (final country in widget.countries) {
-      if (_normalizeCountryCode(country.code) == countryCode) {
-        return country;
-      }
-    }
-    return null;
-  }
-
-  List<ReferenceCountry> _visibleCountries() {
-    final query = _countrySearchQuery.trim();
-    if (query.isEmpty) return const [];
-
-    return widget.countries
-        .where((country) => guideSearchMatches(
-              query,
-              [
-                country.code,
-                country.name,
-                if (country.phoneCode != null) country.phoneCode!,
-                ..._countrySearchAliasesFor(country),
-              ],
-            ))
-        .take(24)
-        .toList(growable: false);
-  }
-
-  Set<String> _countrySearchAliasesFor(ReferenceCountry country) {
-    final countryCode = _normalizeCountryCode(country.code);
-    if (countryCode == null) return const <String>{};
-    return widget.countrySearchAliases[countryCode] ?? const <String>{};
   }
 
   String? _selectedLanguage(AppLocalizations l10n) {
@@ -1253,10 +1092,6 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
     final l10n = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final resultCount = _resultCount ?? widget.fallbackResultCount;
-    final selectedCountry = _selectedCountry();
-    final selectedCountryCode =
-        _filters.countryCodes.isEmpty ? null : _filters.countryCodes.first;
-    final visibleCountries = _visibleCountries();
     final selectedLanguage = _selectedLanguage(l10n);
     final visibleLanguages = _visibleLanguages(l10n);
 
@@ -1290,219 +1125,13 @@ class _GuidesFiltersSheetState extends State<_GuidesFiltersSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _GuideFilterSection(
-                        title: l10n.profileCountry,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2C2118),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.08),
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.public_rounded,
-                                      color: AppColors.accent,
-                                      size: 21,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        selectedCountry == null
-                                            ? selectedCountryCode ??
-                                                l10n.guidesFilterCountryAll
-                                            : _countryLabel(selectedCountry),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: AppColors.textPrimary,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ),
-                                    if (selectedCountryCode != null)
-                                      IconButton(
-                                        tooltip: l10n.guidesFiltersClear,
-                                        visualDensity: VisualDensity.compact,
-                                        onPressed: () => _setFilters(
-                                          _filters.copyWith(
-                                            countryCodes: const <String>{},
-                                          ),
-                                        ),
-                                        icon: const Icon(
-                                          Icons.close_rounded,
-                                          color: Color(0xFFBDAA98),
-                                          size: 20,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _countrySearchController,
-                              enabled: widget.countries.isNotEmpty,
-                              cursorColor: AppColors.accent,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: l10n.guidesFilterCountrySearchHint,
-                                hintStyle: const TextStyle(
-                                  color: Color(0xFF9D8877),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                prefixIcon: const Icon(
-                                  Icons.search_rounded,
-                                  color: AppColors.accent,
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFF171009),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide.none,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.06),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.accent,
-                                    width: 1.2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (widget.isCountriesLoading &&
-                                widget.countries.isEmpty) ...[
-                              const SizedBox(height: 12),
-                              const Align(
-                                alignment: Alignment.centerLeft,
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                    color: AppColors.accent,
-                                  ),
-                                ),
-                              ),
-                            ] else if (_countrySearchQuery.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              if (visibleCountries.isEmpty)
-                                Text(
-                                  l10n.guidesFilterCountryNoResults,
-                                  style: const TextStyle(
-                                    color: Color(0xFFBDAA98),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                )
-                              else
-                                ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxHeight: 224,
-                                  ),
-                                  child: ListView.separated(
-                                    shrinkWrap: true,
-                                    physics: const BouncingScrollPhysics(),
-                                    itemCount: visibleCountries.length,
-                                    separatorBuilder: (_, _) =>
-                                        const SizedBox(height: 8),
-                                    itemBuilder: (context, index) {
-                                      final country = visibleCountries[index];
-                                      final code =
-                                          _normalizeCountryCode(country.code) ??
-                                              country.code.trim().toUpperCase();
-                                      final selected =
-                                          selectedCountryCode == code;
-
-                                      return InkWell(
-                                        onTap: () =>
-                                            _selectCountry(country.code),
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            color: selected
-                                                ? AppColors.accent.withValues(
-                                                    alpha: 0.18,
-                                                  )
-                                                : const Color(0xFF2C2118),
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                            border: Border.all(
-                                              color: selected
-                                                  ? AppColors.accent
-                                                  : Colors.white.withValues(
-                                                      alpha: 0.07,
-                                                    ),
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 13,
-                                              vertical: 11,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    _countryLabel(country),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      color:
-                                                          AppColors.textPrimary,
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Text(
-                                                  code,
-                                                  style: const TextStyle(
-                                                    color: Color(0xFFBDAA98),
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w800,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                            ],
-                          ],
-                        ),
+                      AppCityFilterSection(
+                        title: l10n.locationFilterCitySection,
+                        allCitiesLabel: l10n.locationFilterAllCities,
+                        searchHint: l10n.locationFilterCitySearchHint,
+                        noResultsText: l10n.locationFilterCityNoResults,
+                        selectedCity: _filters.city,
+                        onChanged: _setCity,
                       ),
                       const SizedBox(height: 30),
                       _GuideFilterSection(
