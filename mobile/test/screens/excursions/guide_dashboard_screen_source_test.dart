@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('guide dashboard screen uses adaptive tabs without draft tab', () async {
+  test('guide dashboard screen uses adaptive tabs with a private draft tab',
+      () async {
     final source = await File(
       'lib/screens/excursions/guide_dashboard_screen.dart',
     ).readAsString();
@@ -15,14 +16,20 @@ void main() {
     expect(source, contains('GuideDashboardSection.offers'));
     expect(source, contains('GuideDashboardSection.bookings'));
     expect(source, contains('GuideOfferDashboardTab.active'));
+    expect(source, contains('GuideOfferDashboardTab.draft'));
     expect(source, contains('GuideOfferDashboardTab.archive'));
     expect(source, contains('GuideOfferDashboardTab.rejected'));
     expect(source, contains('GuideOfferDashboardTab.review'));
     expect(source, contains('GuideBookingDashboardTab.active'));
     expect(source, contains('GuideBookingDashboardTab.cancelled'));
     expect(source, contains('GuideBookingDashboardTab.completed'));
-    expect(source, isNot(contains('GuideDashboardTab.draft')));
-    expect(source, isNot(contains('Draft')));
+    expect(source, contains('_draftOffers'));
+    expect(source, contains('_isDraftOffer'));
+    expect(source, contains('guideDashboardDraftTab'));
+    expect(source, contains('guideDashboardSubmitOffer'));
+    expect(source, contains('guideDashboardStatusDraft'));
+    expect(source, contains('_dashboardOfferAfterMutation'));
+    expect(source, contains('_offerTabForStatus'));
     expect(source, contains('TextEditingController _searchController'));
     expect(source, contains('class _GuideDashboardSearchField'));
     expect(source, contains('AppColors.accent'));
@@ -36,6 +43,8 @@ void main() {
     expect(source, isNot(contains('symbol: booking.currency')));
     expect(source, contains('guideDashboardArchiveTab'));
     expect(source, contains('guideDashboardArchiveOffer'));
+    expect(source, contains('statusLabel: l10n.guideDashboardStatusRejected'));
+    expect(source, contains('onSecondaryActionTap: () =>'));
     expect(
       source,
       contains('imageUrl: resolveOwnedExcursionCoverUrl(excursion)'),

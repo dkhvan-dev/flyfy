@@ -158,8 +158,9 @@ const excursionSelectColumns = `
 	title, summary, description, translations, product_translations, category_slug,
 	status, visibility,
 	duration_minutes, max_group_size,
-	country_code, city_name, meeting_point, latitude, longitude, map_url,
+	country_code, city_name, departure_city_id, meeting_point, latitude, longitude, map_url,
 	price_amount, currency,
+	publishing_decision, guide_trust_score, publish_risk_score, moderation_reason_codes, submitted_for_review_at,
 	published_at, deleted_at, revision, created_at, updated_at
 `
 
@@ -171,7 +172,7 @@ const excursionProductCardSelectColumns = `
 	title, summary, description, translations, category_slug,
 	status, visibility,
 	duration_minutes,
-	country_code, city_name, latitude, longitude, map_url, cover_file_id,
+	country_code, city_name, departure_city_id, latitude, longitude, map_url, cover_file_id,
 	min_price_amount, currency, offers_count, published_offers_count, next_available_at,
 	created_at, updated_at
 `
@@ -247,6 +248,53 @@ func appendSmartSearchCondition(parts *[]string, args *[]any, argPos int, rawQue
 		}
 	}
 	return argPos
+}
+
+func appendReferenceCityCondition(
+	parts *[]string,
+	args *[]any,
+	argPos int,
+	departureCityColumn string,
+	cityNameColumn string,
+	departureCityID *string,
+	cityName *string,
+) int {
+	normalizedCityID := strings.ToLower(strings.TrimSpace(optionalStringValue(departureCityID)))
+	normalizedCityName := strings.TrimSpace(optionalStringValue(cityName))
+	hasCityID := normalizedCityID != ""
+	hasCityName := normalizedCityName != ""
+	if !hasCityID && !hasCityName {
+		return argPos
+	}
+
+	if hasCityID {
+		cityIDRef := fmt.Sprintf("$%d", argPos)
+		conditions := []string{
+			fmt.Sprintf("%s = %s", departureCityColumn, cityIDRef),
+			fmt.Sprintf("%s = %s", referenceCitySlugExpression(cityNameColumn), cityIDRef),
+		}
+		*args = append(*args, normalizedCityID)
+		argPos++
+		if hasCityName {
+			cityNameRef := fmt.Sprintf("$%d", argPos)
+			conditions = append(conditions, fmt.Sprintf("%s ILIKE %s", cityNameColumn, cityNameRef))
+			*args = append(*args, "%"+normalizedCityName+"%")
+			argPos++
+		}
+		*parts = append(*parts, " AND ("+strings.Join(conditions, " OR ")+")")
+		return argPos
+	}
+
+	*parts = append(*parts, fmt.Sprintf(" AND %s ILIKE $%d", cityNameColumn, argPos))
+	*args = append(*args, "%"+normalizedCityName+"%")
+	return argPos + 1
+}
+
+func referenceCitySlugExpression(column string) string {
+	return fmt.Sprintf(
+		"NULLIF(trim(both '-' from regexp_replace(lower(trim(COALESCE(%s, ''))), '[^[:alnum:]]+', '-', 'g')), '')",
+		column,
+	)
 }
 
 func smartSearchNeedleGroups(rawQuery string) [][]string {
@@ -812,11 +860,7 @@ func (r *PGExcursionRepository) ListExcursions(ctx context.Context, filter port.
 		args = append(args, strings.ToUpper(strings.TrimSpace(*filter.CountryCode)))
 		argPos++
 	}
-	if filter.CityName != nil && strings.TrimSpace(*filter.CityName) != "" {
-		parts = append(parts, fmt.Sprintf(" AND city_name ILIKE $%d", argPos))
-		args = append(args, "%"+strings.TrimSpace(*filter.CityName)+"%")
-		argPos++
-	}
+	argPos = appendReferenceCityCondition(&parts, &args, argPos, "departure_city_id", "city_name", filter.DepartureCityID, filter.CityName)
 	if filter.LanguageCode != nil && strings.TrimSpace(*filter.LanguageCode) != "" {
 		parts = append(parts, fmt.Sprintf(`
 			AND EXISTS (
@@ -975,11 +1019,7 @@ func (r *PGExcursionRepository) ListExcursionProductCards(ctx context.Context, f
 		args = append(args, strings.ToUpper(strings.TrimSpace(*filter.CountryCode)))
 		argPos++
 	}
-	if filter.CityName != nil && strings.TrimSpace(*filter.CityName) != "" {
-		parts = append(parts, fmt.Sprintf(" AND city_name ILIKE $%d", argPos))
-		args = append(args, "%"+strings.TrimSpace(*filter.CityName)+"%")
-		argPos++
-	}
+	argPos = appendReferenceCityCondition(&parts, &args, argPos, "departure_city_id", "city_name", filter.DepartureCityID, filter.CityName)
 	if filter.LanguageCode != nil && strings.TrimSpace(*filter.LanguageCode) != "" {
 		parts = append(parts, fmt.Sprintf(`
 			AND EXISTS (
@@ -2384,8 +2424,9 @@ func insertExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion
 			title, summary, description, category_slug,
 			status, visibility,
 			duration_minutes, max_group_size,
-			country_code, city_name, meeting_point, latitude, longitude, map_url,
+			country_code, city_name, departure_city_id, meeting_point, latitude, longitude, map_url,
 			price_amount, currency,
+			publishing_decision, guide_trust_score, publish_risk_score, moderation_reason_codes, submitted_for_review_at,
 			published_at, deleted_at, revision, created_at, updated_at,
 			translations, product_translations
 		) VALUES (
@@ -2394,10 +2435,11 @@ func insertExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion
 			$6, $7, $8, $9,
 			$10, $11,
 			$12, $13,
-			$14, $15, $16, $17, $18, $19,
-			$20, $21,
-			$22, $23, $24, $25, $26,
-			$27::jsonb, $28::jsonb
+			$14, $15, $16, $17, $18, $19, $20,
+			$21, $22,
+			$23, $24, $25, $26, $27,
+			$28, $29, $30, $31, $32,
+			$33::jsonb, $34::jsonb
 		)
 	`
 	_, err := exec.Exec(ctx, query, excursionArgs(item)...)
@@ -2827,18 +2869,24 @@ func updateExcursion(ctx context.Context, exec dbExecutor, item *model.Excursion
 			max_group_size = $13,
 			country_code = $14,
 			city_name = $15,
-			meeting_point = $16,
-			latitude = $17,
-			longitude = $18,
-			map_url = $19,
-			price_amount = $20,
-			currency = $21,
-			published_at = $22,
-			deleted_at = $23,
-			revision = $24,
-			updated_at = $25,
-			translations = $26::jsonb,
-			product_translations = $27::jsonb
+			departure_city_id = $16,
+			meeting_point = $17,
+			latitude = $18,
+			longitude = $19,
+			map_url = $20,
+			price_amount = $21,
+			currency = $22,
+			publishing_decision = $23,
+			guide_trust_score = $24,
+			publish_risk_score = $25,
+			moderation_reason_codes = $26,
+			submitted_for_review_at = $27,
+			published_at = $28,
+			deleted_at = $29,
+			revision = $30,
+			updated_at = $31,
+			translations = $32::jsonb,
+			product_translations = $33::jsonb
 		WHERE id = $1
 	`
 	tag, err := exec.Exec(ctx, query, updateExcursionArgs(item)...)
@@ -2871,12 +2919,18 @@ func excursionArgs(item *model.Excursion) []any {
 		item.MaxGroupSize,
 		item.CountryCode,
 		item.CityName,
+		item.DepartureCityID,
 		item.MeetingPoint,
 		item.Latitude,
 		item.Longitude,
 		item.MapURL,
 		item.PriceAmount,
 		item.Currency,
+		string(item.PublishingDecision),
+		item.GuideTrustScore,
+		item.PublishRiskScore,
+		stringSliceOrEmpty(item.ModerationReasonCodes),
+		item.SubmittedForReviewAt,
 		item.PublishedAt,
 		item.DeletedAt,
 		item.Revision,
@@ -2904,12 +2958,18 @@ func updateExcursionArgs(item *model.Excursion) []any {
 		item.MaxGroupSize,
 		item.CountryCode,
 		item.CityName,
+		item.DepartureCityID,
 		item.MeetingPoint,
 		item.Latitude,
 		item.Longitude,
 		item.MapURL,
 		item.PriceAmount,
 		item.Currency,
+		string(item.PublishingDecision),
+		item.GuideTrustScore,
+		item.PublishRiskScore,
+		stringSliceOrEmpty(item.ModerationReasonCodes),
+		item.SubmittedForReviewAt,
 		item.PublishedAt,
 		item.DeletedAt,
 		item.Revision,
@@ -2917,6 +2977,13 @@ func updateExcursionArgs(item *model.Excursion) []any {
 		excursionTranslationsJSON(item.Translations),
 		excursionTranslationsJSON(item.ProductTranslations),
 	}
+}
+
+func stringSliceOrEmpty(values []string) []string {
+	if values == nil {
+		return []string{}
+	}
+	return values
 }
 
 func replaceExcursionRelations(ctx context.Context, tx pgx.Tx, excursionID uuid.UUID, relations port.ExcursionRelations) error {
@@ -3067,7 +3134,7 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 			title, summary, description, category_slug,
 			status, visibility,
 			duration_minutes,
-			country_code, city_name, latitude, longitude, map_url, cover_file_id,
+			country_code, city_name, departure_city_id, latitude, longitude, map_url, cover_file_id,
 			created_at, updated_at, translations,
 			route_kind, route_fingerprint, attraction_ids, attraction_names,
 			stop_count, transport_mode, route_theme, duration_bucket
@@ -3077,10 +3144,10 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 			$5, $6, $7, $8,
 			$9, $10,
 			$11,
-			$12, $13, $14, $15, $16, $17,
-			$18, $19, $20::jsonb,
-			$21, $22, $23, $24,
-			$25, $26, $27, $28
+			$12, $13, $14, $15, $16, $17, $18,
+			$19, $20, $21::jsonb,
+			$22, $23, $24, $25,
+			$26, $27, $28, $29
 		)
 		ON CONFLICT (canonical_key) DO UPDATE
 		SET
@@ -3102,6 +3169,7 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 			duration_minutes = CASE WHEN excursion_products.published_offers_count = 0 THEN EXCLUDED.duration_minutes ELSE excursion_products.duration_minutes END,
 			country_code = COALESCE(excursion_products.country_code, EXCLUDED.country_code),
 			city_name = COALESCE(excursion_products.city_name, EXCLUDED.city_name),
+			departure_city_id = COALESCE(excursion_products.departure_city_id, EXCLUDED.departure_city_id),
 			latitude = COALESCE(excursion_products.latitude, EXCLUDED.latitude),
 			longitude = COALESCE(excursion_products.longitude, EXCLUDED.longitude),
 			map_url = COALESCE(excursion_products.map_url, EXCLUDED.map_url),
@@ -3135,6 +3203,7 @@ func upsertExcursionProduct(ctx context.Context, exec dbExecutor, item *model.Ex
 		item.DurationMinutes,
 		item.CountryCode,
 		item.CityName,
+		item.DepartureCityID,
 		item.Latitude,
 		item.Longitude,
 		item.MapURL,
@@ -3766,6 +3835,7 @@ func scanExcursion(row excursionScanner) (*model.Excursion, error) {
 		visibilityRaw          string
 		translationsRaw        []byte
 		productTranslationsRaw []byte
+		publishingDecisionRaw  string
 	)
 	err := row.Scan(
 		&item.ID,
@@ -3785,12 +3855,18 @@ func scanExcursion(row excursionScanner) (*model.Excursion, error) {
 		&item.MaxGroupSize,
 		&item.CountryCode,
 		&item.CityName,
+		&item.DepartureCityID,
 		&item.MeetingPoint,
 		&item.Latitude,
 		&item.Longitude,
 		&item.MapURL,
 		&item.PriceAmount,
 		&item.Currency,
+		&publishingDecisionRaw,
+		&item.GuideTrustScore,
+		&item.PublishRiskScore,
+		&item.ModerationReasonCodes,
+		&item.SubmittedForReviewAt,
 		&item.PublishedAt,
 		&item.DeletedAt,
 		&item.Revision,
@@ -3802,6 +3878,7 @@ func scanExcursion(row excursionScanner) (*model.Excursion, error) {
 	}
 	item.Status = enum.ExcursionStatus(statusRaw)
 	item.Visibility = enum.ExcursionVisibility(visibilityRaw)
+	item.PublishingDecision = model.ExcursionPublishingDecision(publishingDecisionRaw)
 	item.Translations = scanExcursionTranslations(translationsRaw)
 	item.ProductTranslations = scanExcursionTranslations(productTranslationsRaw)
 	return &item, nil
@@ -3838,6 +3915,7 @@ func scanExcursionProductCard(row excursionScanner) (*model.ExcursionProductCard
 		&item.DurationMinutes,
 		&item.CountryCode,
 		&item.CityName,
+		&item.DepartureCityID,
 		&item.Latitude,
 		&item.Longitude,
 		&item.MapURL,

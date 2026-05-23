@@ -20,6 +20,7 @@ import '../../features/excursions/models/excursion_vm.dart';
 import '../../features/excursions/excursion_localization.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
+import '../../providers/home_location_provider.dart';
 import '../../shared/widgets/app_currency_picker_field.dart';
 import 'excursion_select_location_screen.dart';
 
@@ -55,6 +56,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   var _isSubmitting = false;
   var _isLoadingInitialExcursion = false;
   var _didApplyInitialExcursion = false;
+  var _didApplyHomeLocation = false;
+  String? _editingExcursionStatus;
 
   final _landmarkNameCtrl = TextEditingController();
   final _cityNameCtrl = TextEditingController();
@@ -70,6 +73,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   var _selectedCurrencyCode = 'KZT';
   var _creationMode = _ExcursionCreationMode.singleAttraction;
   String? _selectedCountryCode;
+  String? _departureCityId;
   String? _selectedLandmarkId;
   double? _selectedLatitude;
   double? _selectedLongitude;
@@ -121,6 +125,19 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     final initialExcursion = widget.initialExcursion;
     if (initialExcursion != null) {
       _populateFromExcursion(initialExcursion);
+    } else if (!_isEditMode && !_didApplyHomeLocation) {
+      _didApplyHomeLocation = true;
+      final location = context.read<HomeLocationProvider>().effectiveLocation;
+      _selectedCountryCode ??= (location.countryCode ?? '').trim().isEmpty
+          ? null
+          : location.countryCode!.trim().toUpperCase();
+      _departureCityId = (location.cityId ?? '').trim().isEmpty
+          ? null
+          : location.cityId!.trim();
+      if (_cityNameCtrl.text.trim().isEmpty &&
+          (location.cityName ?? '').trim().isNotEmpty) {
+        _cityNameCtrl.text = location.cityName!.trim();
+      }
     }
   }
 
@@ -138,6 +155,12 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   bool get _isEditMode => (widget.excursionId ?? '').trim().isNotEmpty;
+
+  bool get _canSubmitEditedExcursionForReview {
+    if (!_isEditMode) return false;
+    final status = (_editingExcursionStatus ?? '').trim().toUpperCase();
+    return status == 'DRAFT' || status == 'REJECTED';
+  }
 
   bool get _hasFieldValidationErrors =>
       _countryErrorText != null ||
@@ -211,6 +234,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   void _populateFromExcursion(ExcursionVm excursion) {
+    _editingExcursionStatus = excursion.status.trim().toUpperCase();
     _creationMode = excursion.routeKind.trim().toUpperCase() == 'COMBINED_ROUTE'
         ? _ExcursionCreationMode.combinedRoute
         : _ExcursionCreationMode.singleAttraction;
@@ -220,6 +244,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     _selectedCountryCode = (excursion.countryCode ?? '').trim().isEmpty
         ? null
         : excursion.countryCode!.trim().toUpperCase();
+    _departureCityId = (excursion.departureCityId ?? '').trim().isEmpty
+        ? null
+        : excursion.departureCityId!.trim();
     _selectedLatitude = excursion.latitude;
     _selectedLongitude = excursion.longitude;
     _selectedCategorySlug = (excursion.categorySlug ?? '').trim().isEmpty
@@ -315,7 +342,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       return;
     }
     if (_currentStep == _totalSteps - 1) {
-      _submit();
+      _submit(submitForReview: !_isEditMode);
       return;
     }
     _goToStep(_currentStep + 1);
@@ -477,7 +504,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     return _validateStoryAndPriceStep(l10n);
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit({bool submitForReview = true}) async {
     final l10n = AppLocalizations.of(context)!;
     _clearFieldValidationErrors();
     final validationError = _validateAllStepsBeforeSubmit(l10n);
@@ -489,23 +516,32 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     setState(() => _isSubmitting = true);
     final provider = context.read<ExcursionProvider>();
     final request = _buildRequest();
-    final saved = _isEditMode
-        ? await provider.updateExcursionOffer(
-            widget.excursionId!.trim(),
-            request,
-          )
-        : await provider.createAndPublishExcursion(request);
+    ExcursionVm? saved;
+    if (_isEditMode) {
+      final excursionId = widget.excursionId!.trim();
+      saved = await provider.updateExcursionOffer(excursionId, request);
+      if (saved != null && submitForReview) {
+        saved = await provider.submitExcursionForPublishing(excursionId);
+      }
+    } else {
+      saved = submitForReview
+          ? await provider.createAndSubmitExcursion(request)
+          : await provider.createDraftExcursion(request);
+    }
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
 
     if (saved != null) {
+      _editingExcursionStatus = saved.status.trim().toUpperCase();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _isEditMode
-                ? l10n.createExcursionUpdateSuccess
-                : l10n.createExcursionSuccess,
+            submitForReview
+                ? l10n.createExcursionSuccess
+                : _isEditMode
+                    ? l10n.createExcursionUpdateSuccess
+                    : l10n.createExcursionDraftSaved,
           ),
         ),
       );
@@ -543,6 +579,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       meetingPoint: _meetingPointCtrl.text.trim(),
       countryCode: _selectedCountryCode,
       cityName: _cityNameCtrl.text.trim(),
+      departureCityId: _departureCityId,
       latitude: _selectedLatitude,
       longitude: _selectedLongitude,
       mapUrl: _mapUrlCtrl.text.trim(),
@@ -1094,10 +1131,12 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       '/excursions/create/location',
       extra: ExcursionLocationPickerArgs(
         countryCode: _selectedCountryCode!,
+        accessCityId: _departureCityId,
         initialSelection: ExcursionLocationSelection(
           id: _selectedLandmarkId ?? '',
           name: _landmarkNameCtrl.text.trim(),
           countryCode: _selectedCountryCode!,
+          cityId: _departureCityId,
           cityName: _cityNameCtrl.text.trim(),
           latitude: _selectedLatitude,
           longitude: _selectedLongitude,
@@ -1114,6 +1153,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _selectedLandmarkId = result.id.trim().isEmpty ? null : result.id.trim();
       _landmarkNameCtrl.text = result.name;
       _selectedCountryCode = result.countryCode.trim().toUpperCase();
+      _departureCityId ??=
+          result.cityId?.trim().isEmpty == false ? result.cityId!.trim() : null;
       if ((result.cityName ?? '').trim().isNotEmpty) {
         _cityNameCtrl.text = result.cityName!.trim();
       }
@@ -1304,8 +1345,25 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
                                 ? l10n.createExcursionSaveChanges
                                 : l10n.createExcursionSubmit)
                             : l10n.createStepNext,
+                        secondaryLabel: _currentStep == _totalSteps - 1
+                            ? _isEditMode
+                                ? _canSubmitEditedExcursionForReview
+                                    ? l10n.createExcursionSubmit
+                                    : null
+                                : l10n.createExcursionSaveDraft
+                            : null,
+                        secondaryIcon: _isEditMode
+                            ? Icons.send_rounded
+                            : Icons.save_outlined,
                         isSubmitting: _isSubmitting || _isCoverUploading,
                         onPressed: _nextStep,
+                        onSecondaryPressed: _currentStep == _totalSteps - 1
+                            ? _isEditMode
+                                ? _canSubmitEditedExcursionForReview
+                                    ? () => _submit(submitForReview: true)
+                                    : null
+                                : () => _submit(submitForReview: false)
+                            : null,
                       ),
                     ],
                   ),
@@ -4270,46 +4328,75 @@ class _ExcursionBottomActionBar extends StatelessWidget {
     required this.label,
     required this.isSubmitting,
     required this.onPressed,
+    this.secondaryLabel,
+    this.secondaryIcon = Icons.save_outlined,
+    this.onSecondaryPressed,
   });
 
   final String label;
+  final String? secondaryLabel;
+  final IconData secondaryIcon;
   final bool isSubmitting;
   final VoidCallback onPressed;
+  final VoidCallback? onSecondaryPressed;
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final secondaryLabel = this.secondaryLabel;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 10, 20, 14 + bottomInset),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: isSubmitting ? null : onPressed,
-          icon: isSubmitting
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.arrow_forward_rounded),
-          label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.55),
-            padding: const EdgeInsets.symmetric(vertical: 17, horizontal: 20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: isSubmitting ? null : onPressed,
+              icon: isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.arrow_forward_rounded),
+              label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor:
+                    AppColors.accent.withValues(alpha: 0.55),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 17, horizontal: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ),
-        ),
+          if (secondaryLabel != null && onSecondaryPressed != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: isSubmitting ? null : onSecondaryPressed,
+                icon: Icon(secondaryIcon),
+                label: Text(
+                  secondaryLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

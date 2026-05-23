@@ -27,6 +27,7 @@ class ExcursionVm {
     this.tags = const [],
     this.countryCode,
     this.cityName,
+    this.departureCityId,
     this.meetingPoint = '',
     this.latitude,
     this.longitude,
@@ -37,6 +38,11 @@ class ExcursionVm {
     this.includedItemTranslations = const {},
     this.itinerary = const [],
     this.translations = const {},
+    this.publishingDecision = '',
+    this.guideTrustScore = 0,
+    this.publishRiskScore = 0,
+    this.moderationReasonCodes = const [],
+    this.submittedForReviewAt,
     this.publishedOffersCount = 0,
     this.offers = const [],
     this.createdAt,
@@ -69,6 +75,7 @@ class ExcursionVm {
   final String currency;
   final String? countryCode;
   final String? cityName;
+  final String? departureCityId;
   final String meetingPoint;
   final double? latitude;
   final double? longitude;
@@ -79,11 +86,20 @@ class ExcursionVm {
   final Map<String, List<String>> includedItemTranslations;
   final List<ExcursionItineraryItemVm> itinerary;
   final Map<String, ExcursionLocalizedCopyVm> translations;
+  final String publishingDecision;
+  final int guideTrustScore;
+  final int publishRiskScore;
+  final List<String> moderationReasonCodes;
+  final DateTime? submittedForReviewAt;
   final int publishedOffersCount;
   final List<ExcursionOfferVm> offers;
   final DateTime? createdAt;
 
   ExcursionOfferVm? get primaryOffer => offers.isNotEmpty ? offers.first : null;
+
+  bool get isDraft => status.trim().toUpperCase() == 'DRAFT';
+
+  bool get isPendingReview => status.trim().toUpperCase() == 'PENDING_REVIEW';
 
   ExcursionVm withPrimaryOffer(ExcursionOfferVm offer) {
     return ExcursionVm(
@@ -117,6 +133,7 @@ class ExcursionVm {
       currency: offer.currency,
       countryCode: countryCode,
       cityName: cityName,
+      departureCityId: departureCityId,
       meetingPoint: offer.meetingPoint.trim().isNotEmpty
           ? offer.meetingPoint
           : meetingPoint,
@@ -130,6 +147,11 @@ class ExcursionVm {
       includedItemTranslations: offer.includedItemTranslations,
       itinerary: offer.itinerary,
       translations: translations,
+      publishingDecision: publishingDecision,
+      guideTrustScore: guideTrustScore,
+      publishRiskScore: publishRiskScore,
+      moderationReasonCodes: moderationReasonCodes,
+      submittedForReviewAt: submittedForReviewAt,
       publishedOffersCount: publishedOffersCount,
       offers: offers,
       createdAt: createdAt,
@@ -184,6 +206,7 @@ class ExcursionVm {
           (json['currency'] as String?) ?? primaryOffer?.currency ?? 'KZT',
       countryCode: json['countryCode'] as String?,
       cityName: json['cityName'] as String?,
+      departureCityId: json['departureCityId'] as String?,
       meetingPoint:
           (json['meetingPoint'] as String?) ?? primaryOffer?.meetingPoint ?? '',
       latitude:
@@ -199,6 +222,13 @@ class ExcursionVm {
       ),
       itinerary: _itinerary(json['itinerary']),
       translations: _translations(json),
+      publishingDecision: (json['publishingDecision'] as String?) ?? '',
+      guideTrustScore: (json['guideTrustScore'] as num?)?.toInt() ?? 0,
+      publishRiskScore: (json['publishRiskScore'] as num?)?.toInt() ?? 0,
+      moderationReasonCodes: _stringList(json['moderationReasonCodes']),
+      submittedForReviewAt: DateTime.tryParse(
+        (json['submittedForReviewAt'] as String?) ?? '',
+      )?.toUtc(),
       publishedOffersCount: (json['publishedOffersCount'] as num?)?.toInt() ??
           parsedOffers.length,
       offers: parsedOffers,

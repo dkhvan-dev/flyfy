@@ -2856,13 +2856,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get createExcursionEditTitle => 'Редактировать предложение';
 
   @override
-  String get createExcursionSubmit => 'Опубликовать';
+  String get createExcursionSubmit => 'Отправить на проверку';
+
+  @override
+  String get createExcursionSaveDraft => 'Сохранить черновик';
 
   @override
   String get createExcursionSaveChanges => 'Сохранить';
 
   @override
-  String get createExcursionSuccess => 'Экскурсия опубликована';
+  String get createExcursionSuccess => 'Экскурсия отправлена на проверку';
+
+  @override
+  String get createExcursionDraftSaved => 'Черновик сохранен';
 
   @override
   String get createExcursionUpdateSuccess => 'Предложение обновлено';
@@ -4100,6 +4106,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guideDashboardActiveTab => 'Активные';
 
   @override
+  String get guideDashboardDraftTab => 'Черновики';
+
+  @override
   String get guideDashboardArchiveTab => 'Архив';
 
   @override
@@ -4134,6 +4143,13 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get guideDashboardCompletedEmptyHint =>
       'Завершенные экскурсии переместятся сюда после даты проведения.';
+
+  @override
+  String get guideDashboardDraftEmpty => 'Черновиков пока нет';
+
+  @override
+  String get guideDashboardDraftEmptyHint =>
+      'Сохраненные черновики остаются приватными, пока вы не отправите их на проверку.';
 
   @override
   String get guideDashboardReviewEmpty => 'На проверке ничего нет';
@@ -4180,12 +4196,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get guideDashboardPublishOffer => 'Опубликовать';
 
   @override
+  String get guideDashboardSubmitOffer => 'Отправить на проверку';
+
+  @override
   String get guideDashboardArchiveFailed =>
       'Не удалось перенести предложение в архив';
 
   @override
   String get guideDashboardPublishFailed =>
       'Не удалось опубликовать предложение';
+
+  @override
+  String get guideDashboardSubmitFailed =>
+      'Не удалось отправить предложение на проверку';
 
   @override
   String get guideDashboardViewBooking => 'Открыть бронь';
@@ -4280,6 +4303,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get guideDashboardStatusActive => 'Активно';
+
+  @override
+  String get guideDashboardStatusDraft => 'Черновик';
 
   @override
   String get guideDashboardStatusArchived => 'Архив';

@@ -5269,8 +5269,14 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionSubmit.
   ///
   /// In en, this message translates to:
-  /// **'Publish'**
+  /// **'Submit for review'**
   String get createExcursionSubmit;
+
+  /// No description provided for @createExcursionSaveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save draft'**
+  String get createExcursionSaveDraft;
 
   /// No description provided for @createExcursionSaveChanges.
   ///
@@ -5281,8 +5287,14 @@ abstract class AppLocalizations {
   /// No description provided for @createExcursionSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Excursion published successfully'**
+  /// **'Excursion sent for review'**
   String get createExcursionSuccess;
+
+  /// No description provided for @createExcursionDraftSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved'**
+  String get createExcursionDraftSaved;
 
   /// No description provided for @createExcursionUpdateSuccess.
   ///
@@ -7504,6 +7516,12 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get guideDashboardActiveTab;
 
+  /// No description provided for @guideDashboardDraftTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get guideDashboardDraftTab;
+
   /// No description provided for @guideDashboardArchiveTab.
   ///
   /// In en, this message translates to:
@@ -7569,6 +7587,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finished excursions move here after their scheduled date.'**
   String get guideDashboardCompletedEmptyHint;
+
+  /// No description provided for @guideDashboardDraftEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No draft offers'**
+  String get guideDashboardDraftEmpty;
+
+  /// No description provided for @guideDashboardDraftEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved drafts stay private until you send them for review.'**
+  String get guideDashboardDraftEmptyHint;
 
   /// No description provided for @guideDashboardReviewEmpty.
   ///
@@ -7648,6 +7678,12 @@ abstract class AppLocalizations {
   /// **'Publish'**
   String get guideDashboardPublishOffer;
 
+  /// No description provided for @guideDashboardSubmitOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit for review'**
+  String get guideDashboardSubmitOffer;
+
   /// No description provided for @guideDashboardArchiveFailed.
   ///
   /// In en, this message translates to:
@@ -7659,6 +7695,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to publish offer'**
   String get guideDashboardPublishFailed;
+
+  /// No description provided for @guideDashboardSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit offer for review'**
+  String get guideDashboardSubmitFailed;
 
   /// No description provided for @guideDashboardViewBooking.
   ///
@@ -7825,6 +7867,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Active'**
   String get guideDashboardStatusActive;
+
+  /// No description provided for @guideDashboardStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get guideDashboardStatusDraft;
 
   /// No description provided for @guideDashboardStatusArchived.
   ///

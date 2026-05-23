@@ -22,7 +22,7 @@ import '../../providers/excursion_provider.dart';
 
 enum GuideDashboardSection { offers, bookings }
 
-enum GuideOfferDashboardTab { active, archive, rejected, review }
+enum GuideOfferDashboardTab { active, draft, review, archive, rejected }
 
 enum GuideBookingDashboardTab { active, cancelled, completed }
 
@@ -262,21 +262,55 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     if (excursionId.isEmpty) return;
 
     final l10n = AppLocalizations.of(context)!;
-    final published = await context
-        .read<ExcursionProvider>()
-        .publishExcursionOffer(excursionId);
+    final provider = context.read<ExcursionProvider>();
+    final published = await provider.publishExcursionOffer(excursionId);
     if (!mounted) return;
     if (published) {
+      final updatedOffer = _dashboardOfferAfterMutation(
+        provider.myGuideExcursions,
+        excursion,
+      );
       setState(() {
         _activeSection = GuideDashboardSection.offers;
-        _activeOfferTab = GuideOfferDashboardTab.active;
-        _offerPages[GuideOfferDashboardTab.active] = 1;
+        _activeOfferTab = _offerTabForStatus(
+          updatedOffer,
+          fallback: GuideOfferDashboardTab.active,
+        );
+        _offerPages[_activeOfferTab] = 1;
       });
       return;
     }
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardPublishFailed)));
+  }
+
+  Future<void> _submitOfferForReview(ExcursionVm excursion) async {
+    final excursionId = _editableExcursionId(excursion);
+    if (excursionId.isEmpty) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<ExcursionProvider>();
+    final submitted = await provider.publishExcursionOffer(excursionId);
+    if (!mounted) return;
+    if (submitted) {
+      final updatedOffer = _dashboardOfferAfterMutation(
+        provider.myGuideExcursions,
+        excursion,
+      );
+      setState(() {
+        _activeSection = GuideDashboardSection.offers;
+        _activeOfferTab = _offerTabForStatus(
+          updatedOffer,
+          fallback: GuideOfferDashboardTab.review,
+        );
+        _offerPages[_activeOfferTab] = 1;
+      });
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.guideDashboardSubmitFailed)));
   }
 
   @override
@@ -315,6 +349,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                 _searchQuery,
               );
               final activeOffers = _activeOffers(filteredExcursions);
+              final draftOffers = _draftOffers(filteredExcursions);
               final archivedOffers = _archivedOffers(filteredExcursions);
               final reviewOffers = _reviewOffers(filteredExcursions);
               final rejectedOffers = _rejectedOffers(filteredExcursions);
@@ -326,6 +361,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
               final cancelledBookings = _cancelledBookings(filteredBookings);
               final activeItemsCount = _activeItemCount(
                 activeOffers: activeOffers,
+                draftOffers: draftOffers,
                 archivedOffers: archivedOffers,
                 reviewOffers: reviewOffers,
                 rejectedOffers: rejectedOffers,
@@ -415,6 +451,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                           activeBookingTab: _activeBookingTab,
                           offerCounts: {
                             GuideOfferDashboardTab.active: activeOffers.length,
+                            GuideOfferDashboardTab.draft: draftOffers.length,
                             GuideOfferDashboardTab.archive:
                                 archivedOffers.length,
                             GuideOfferDashboardTab.rejected:
@@ -484,6 +521,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
                             now: now,
                             pageIndexes: page.items,
                             activeOffers: activeOffers,
+                            draftOffers: draftOffers,
                             archivedOffers: archivedOffers,
                             reviewOffers: reviewOffers,
                             rejectedOffers: rejectedOffers,
@@ -515,6 +553,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
 
   int _activeItemCount({
     required List<ExcursionVm> activeOffers,
+    required List<ExcursionVm> draftOffers,
     required List<ExcursionVm> archivedOffers,
     required List<ExcursionVm> reviewOffers,
     required List<ExcursionVm> rejectedOffers,
@@ -525,6 +564,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     return switch (_activeSection) {
       GuideDashboardSection.offers => switch (_activeOfferTab) {
           GuideOfferDashboardTab.active => activeOffers.length,
+          GuideOfferDashboardTab.draft => draftOffers.length,
           GuideOfferDashboardTab.archive => archivedOffers.length,
           GuideOfferDashboardTab.rejected => rejectedOffers.length,
           GuideOfferDashboardTab.review => reviewOffers.length,
@@ -542,6 +582,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     required DateTime now,
     required List<int> pageIndexes,
     required List<ExcursionVm> activeOffers,
+    required List<ExcursionVm> draftOffers,
     required List<ExcursionVm> archivedOffers,
     required List<ExcursionVm> reviewOffers,
     required List<ExcursionVm> rejectedOffers,
@@ -557,6 +598,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
             l10n: l10n,
             index: index,
             activeOffers: activeOffers,
+            draftOffers: draftOffers,
             archivedOffers: archivedOffers,
             reviewOffers: reviewOffers,
             rejectedOffers: rejectedOffers,
@@ -584,6 +626,7 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
     required AppLocalizations l10n,
     required int index,
     required List<ExcursionVm> activeOffers,
+    required List<ExcursionVm> draftOffers,
     required List<ExcursionVm> archivedOffers,
     required List<ExcursionVm> reviewOffers,
     required List<ExcursionVm> rejectedOffers,
@@ -599,6 +642,17 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           secondaryActionLabel: l10n.guideDashboardArchiveOffer,
           onSecondaryActionTap: () => _archiveOffer(activeOffers[index]),
           onTap: () => _openOfferEditor(activeOffers[index]),
+        ),
+      GuideOfferDashboardTab.draft => _GuideOfferCard(
+          excursion: draftOffers[index],
+          bookingCount:
+              _bookingCountForOffer(draftOffers[index], guideBookings),
+          statusLabel: l10n.guideDashboardStatusDraft,
+          actionLabel: l10n.guideDashboardEditOffer,
+          secondaryActionLabel: l10n.guideDashboardSubmitOffer,
+          onSecondaryActionTap: () => _submitOfferForReview(draftOffers[index]),
+          muted: true,
+          onTap: () => _openOfferEditor(draftOffers[index]),
         ),
       GuideOfferDashboardTab.archive => _GuideOfferCard(
           excursion: archivedOffers[index],
@@ -621,6 +675,9 @@ class _GuideDashboardScreenState extends State<GuideDashboardScreen> {
           ),
           statusLabel: l10n.guideDashboardStatusRejected,
           actionLabel: l10n.guideDashboardViewDetails,
+          secondaryActionLabel: l10n.guideDashboardSubmitOffer,
+          onSecondaryActionTap: () =>
+              _submitOfferForReview(rejectedOffers[index]),
           muted: true,
           onTap: () => _openOfferEditor(rejectedOffers[index]),
         ),
@@ -703,15 +760,14 @@ List<ExcursionVm> _archivedOffers(List<ExcursionVm> items) {
   return result;
 }
 
+List<ExcursionVm> _draftOffers(List<ExcursionVm> items) {
+  final result = items.where(_isDraftOffer).toList(growable: false);
+  result.sort((a, b) => b.createdAtOrEpoch.compareTo(a.createdAtOrEpoch));
+  return result;
+}
+
 List<ExcursionVm> _reviewOffers(List<ExcursionVm> items) {
-  final result = items.where((item) {
-    final status = item.status.trim().toUpperCase();
-    return status.isNotEmpty &&
-        !_isPublishedPublicOffer(item) &&
-        !_isArchivedOffer(item) &&
-        !_isRejectedOffer(item) &&
-        !_isCancelledOffer(item);
-  }).toList(growable: false);
+  final result = items.where(_isReviewOffer).toList(growable: false);
   result.sort((a, b) => b.createdAtOrEpoch.compareTo(a.createdAtOrEpoch));
   return result;
 }
@@ -875,6 +931,25 @@ bool _isArchivedOffer(ExcursionVm excursion) {
   return excursion.status.trim().toUpperCase() == 'ARCHIVED';
 }
 
+bool _isDraftOffer(ExcursionVm excursion) {
+  return excursion.status.trim().toUpperCase() == 'DRAFT';
+}
+
+bool _isReviewOffer(ExcursionVm excursion) {
+  final status = excursion.status.trim().toUpperCase();
+  if (status.isEmpty) return false;
+  if (_isPublishedPublicOffer(excursion) ||
+      _isDraftOffer(excursion) ||
+      _isArchivedOffer(excursion) ||
+      _isRejectedOffer(excursion) ||
+      _isCancelledOffer(excursion)) {
+    return false;
+  }
+  return status.contains('REVIEW') ||
+      status.contains('MODERAT') ||
+      status == 'PENDING';
+}
+
 bool _isRejectedOffer(ExcursionVm excursion) {
   final status = excursion.status.trim().toUpperCase();
   return status.contains('REJECT') || status.contains('DECLIN');
@@ -884,6 +959,32 @@ String _editableExcursionId(ExcursionVm excursion) {
   final legacyId = excursion.primaryOffer?.legacyExcursionId?.trim() ?? '';
   if (legacyId.isNotEmpty) return legacyId;
   return excursion.id.trim();
+}
+
+ExcursionVm _dashboardOfferAfterMutation(
+  List<ExcursionVm> items,
+  ExcursionVm fallback,
+) {
+  final fallbackId = _editableExcursionId(fallback);
+  if (fallbackId.isEmpty) return fallback;
+  for (final item in items) {
+    if (_editableExcursionId(item) == fallbackId) {
+      return item;
+    }
+  }
+  return fallback;
+}
+
+GuideOfferDashboardTab _offerTabForStatus(
+  ExcursionVm excursion, {
+  required GuideOfferDashboardTab fallback,
+}) {
+  if (_isPublishedPublicOffer(excursion)) return GuideOfferDashboardTab.active;
+  if (_isDraftOffer(excursion)) return GuideOfferDashboardTab.draft;
+  if (_isArchivedOffer(excursion)) return GuideOfferDashboardTab.archive;
+  if (_isRejectedOffer(excursion)) return GuideOfferDashboardTab.rejected;
+  if (_isReviewOffer(excursion)) return GuideOfferDashboardTab.review;
+  return fallback;
 }
 
 bool _isCancelledOffer(ExcursionVm excursion) {
@@ -964,6 +1065,7 @@ IconData _emptyIconFor({
   return switch (section) {
     GuideDashboardSection.offers => switch (offerTab) {
         GuideOfferDashboardTab.active => Icons.explore_outlined,
+        GuideOfferDashboardTab.draft => Icons.edit_note_rounded,
         GuideOfferDashboardTab.archive => Icons.inventory_2_outlined,
         GuideOfferDashboardTab.rejected => Icons.block_rounded,
         GuideOfferDashboardTab.review => Icons.manage_search_rounded,
@@ -985,6 +1087,7 @@ String _emptyTitleFor(
   return switch (section) {
     GuideDashboardSection.offers => switch (offerTab) {
         GuideOfferDashboardTab.active => l10n.guideDashboardOffersEmpty,
+        GuideOfferDashboardTab.draft => l10n.guideDashboardDraftEmpty,
         GuideOfferDashboardTab.archive => l10n.guideDashboardArchiveEmpty,
         GuideOfferDashboardTab.rejected => l10n.guideDashboardRejectedEmpty,
         GuideOfferDashboardTab.review => l10n.guideDashboardReviewEmpty,
@@ -1006,6 +1109,7 @@ String _emptyMessageFor(
   return switch (section) {
     GuideDashboardSection.offers => switch (offerTab) {
         GuideOfferDashboardTab.active => l10n.guideDashboardOffersEmptyHint,
+        GuideOfferDashboardTab.draft => l10n.guideDashboardDraftEmptyHint,
         GuideOfferDashboardTab.archive => l10n.guideDashboardArchiveEmptyHint,
         GuideOfferDashboardTab.rejected => l10n.guideDashboardRejectedEmptyHint,
         GuideOfferDashboardTab.review => l10n.guideDashboardReviewEmptyHint,
@@ -1408,9 +1512,10 @@ class _GuideDashboardSubTabs extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final offerTabs = [
       (GuideOfferDashboardTab.active, l10n.guideDashboardActiveTab),
+      (GuideOfferDashboardTab.draft, l10n.guideDashboardDraftTab),
+      (GuideOfferDashboardTab.review, l10n.guideDashboardReviewTab),
       (GuideOfferDashboardTab.archive, l10n.guideDashboardArchiveTab),
       (GuideOfferDashboardTab.rejected, l10n.guideDashboardRejectedTab),
-      (GuideOfferDashboardTab.review, l10n.guideDashboardReviewTab),
     ];
     final bookingTabs = [
       (GuideBookingDashboardTab.active, l10n.guideDashboardActiveTab),

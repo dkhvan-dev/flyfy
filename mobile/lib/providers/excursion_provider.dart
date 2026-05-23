@@ -30,6 +30,13 @@ class ExcursionProvider extends ChangeNotifier {
 
   static const _marketplaceRefreshAttempts = 3;
   static const _marketplaceRefreshRetryDelay = Duration(milliseconds: 150);
+  static const _guideDashboardOfferStatuses = <String>[
+    'PUBLISHED',
+    'DRAFT',
+    'PENDING_REVIEW',
+    'REJECTED',
+    'ARCHIVED',
+  ];
 
   final ExcursionApi _excursionApi;
   final GuideApi _guideApi;
@@ -131,6 +138,7 @@ class ExcursionProvider extends ChangeNotifier {
     String? landmarkId,
     String? categorySlug,
     String? cityName,
+    String? departureCityId,
   }) async {
     if (_listState == ExcursionListState.loading || _isRefreshing) {
       return;
@@ -151,6 +159,7 @@ class ExcursionProvider extends ChangeNotifier {
         landmarkId: landmarkId,
         categorySlug: categorySlug,
         cityName: cityName,
+        departureCityId: departureCityId,
       );
       _listState = ExcursionListState.success;
     } on DioException catch (e) {
@@ -174,12 +183,14 @@ class ExcursionProvider extends ChangeNotifier {
     String? landmarkId,
     String? categorySlug,
     String? cityName,
+    String? departureCityId,
   }) {
     return loadExcursions(
       query: query,
       landmarkId: landmarkId,
       categorySlug: categorySlug,
       cityName: cityName,
+      departureCityId: departureCityId,
     );
   }
 
@@ -256,7 +267,10 @@ class ExcursionProvider extends ChangeNotifier {
 
     try {
       final results = await Future.wait<Object?>([
-        _excursionApi.getMyExcursions(limit: 100),
+        _excursionApi.getMyExcursions(
+          limit: 100,
+          statuses: _guideDashboardOfferStatuses,
+        ),
         _excursionApi.getMyGuideExcursionBookings(limit: 100),
         _guideApi.getMyGuideProfileOrNull(),
       ]);
@@ -482,7 +496,7 @@ class ExcursionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<ExcursionVm?> createAndPublishExcursion(
+  Future<ExcursionVm?> createDraftExcursion(
     CreateExcursionRequest request,
   ) async {
     _actionState = ExcursionActionState.loading;
@@ -491,12 +505,7 @@ class ExcursionProvider extends ChangeNotifier {
 
     try {
       final created = await _excursionApi.createExcursion(request);
-      final published = await _excursionApi.publishExcursion(created.id);
-      final refreshedProduct = await _refreshProductAfterMutation(
-        published,
-        preferredLandmarkId: request.landmarkId,
-      );
-      _lastCreatedExcursion = refreshedProduct ?? published;
+      _lastCreatedExcursion = created;
       _actionState = ExcursionActionState.success;
       return _lastCreatedExcursion;
     } on DioException catch (e) {
@@ -510,6 +519,55 @@ class ExcursionProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  Future<ExcursionVm?> submitExcursionForPublishing(String excursionId) async {
+    final trimmedExcursionId = excursionId.trim();
+    if (trimmedExcursionId.isEmpty) {
+      _actionErrorMessage = 'Invalid excursion id';
+      return null;
+    }
+
+    _actionState = ExcursionActionState.loading;
+    _actionErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final submitted = await _excursionApi.publishExcursion(
+        trimmedExcursionId,
+      );
+      final refreshedProduct = await _refreshProductAfterMutation(
+        submitted,
+        preferredLandmarkId: submitted.landmarkId,
+      );
+      _lastCreatedExcursion = refreshedProduct ?? submitted;
+      _actionState = ExcursionActionState.success;
+      return _lastCreatedExcursion;
+    } on DioException catch (e) {
+      _actionErrorMessage = DioErrorMapper.toMessage(e);
+      _actionState = ExcursionActionState.error;
+      return null;
+    } catch (_) {
+      _actionErrorMessage = 'Failed to submit excursion';
+      _actionState = ExcursionActionState.error;
+      return null;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<ExcursionVm?> createAndSubmitExcursion(
+    CreateExcursionRequest request,
+  ) async {
+    final created = await createDraftExcursion(request);
+    if (created == null) return null;
+    return submitExcursionForPublishing(created.id);
+  }
+
+  Future<ExcursionVm?> createAndPublishExcursion(
+    CreateExcursionRequest request,
+  ) {
+    return createAndSubmitExcursion(request);
   }
 
   Future<ExcursionVm?> loadMyExcursionForEdit(String excursionId) async {

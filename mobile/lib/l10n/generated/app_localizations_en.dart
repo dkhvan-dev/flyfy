@@ -2844,13 +2844,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createExcursionEditTitle => 'Edit Offer';
 
   @override
-  String get createExcursionSubmit => 'Publish';
+  String get createExcursionSubmit => 'Submit for review';
+
+  @override
+  String get createExcursionSaveDraft => 'Save draft';
 
   @override
   String get createExcursionSaveChanges => 'Save';
 
   @override
-  String get createExcursionSuccess => 'Excursion published successfully';
+  String get createExcursionSuccess => 'Excursion sent for review';
+
+  @override
+  String get createExcursionDraftSaved => 'Draft saved';
 
   @override
   String get createExcursionUpdateSuccess => 'Offer updated successfully';
@@ -4081,6 +4087,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideDashboardActiveTab => 'Active';
 
   @override
+  String get guideDashboardDraftTab => 'Drafts';
+
+  @override
   String get guideDashboardArchiveTab => 'Archive';
 
   @override
@@ -4115,6 +4124,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guideDashboardCompletedEmptyHint =>
       'Finished excursions move here after their scheduled date.';
+
+  @override
+  String get guideDashboardDraftEmpty => 'No draft offers';
+
+  @override
+  String get guideDashboardDraftEmptyHint =>
+      'Saved drafts stay private until you send them for review.';
 
   @override
   String get guideDashboardReviewEmpty => 'Nothing is under review';
@@ -4161,10 +4177,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideDashboardPublishOffer => 'Publish';
 
   @override
+  String get guideDashboardSubmitOffer => 'Submit for review';
+
+  @override
   String get guideDashboardArchiveFailed => 'Failed to move offer to archive';
 
   @override
   String get guideDashboardPublishFailed => 'Failed to publish offer';
+
+  @override
+  String get guideDashboardSubmitFailed => 'Failed to submit offer for review';
 
   @override
   String get guideDashboardViewBooking => 'View booking';
@@ -4260,6 +4282,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideDashboardStatusActive => 'Active';
+
+  @override
+  String get guideDashboardStatusDraft => 'Draft';
 
   @override
   String get guideDashboardStatusArchived => 'Archived';

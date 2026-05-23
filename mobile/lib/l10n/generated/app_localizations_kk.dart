@@ -2866,13 +2866,19 @@ class AppLocalizationsKk extends AppLocalizations {
   String get createExcursionEditTitle => 'Ұсынысты өзгерту';
 
   @override
-  String get createExcursionSubmit => 'Жариялау';
+  String get createExcursionSubmit => 'Тексеруге жіберу';
+
+  @override
+  String get createExcursionSaveDraft => 'Черновикті сақтау';
 
   @override
   String get createExcursionSaveChanges => 'Сақтау';
 
   @override
-  String get createExcursionSuccess => 'Экскурсия жарияланды';
+  String get createExcursionSuccess => 'Экскурсия тексеруге жіберілді';
+
+  @override
+  String get createExcursionDraftSaved => 'Черновик сақталды';
 
   @override
   String get createExcursionUpdateSuccess => 'Ұсыныс жаңартылды';
@@ -4112,6 +4118,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guideDashboardActiveTab => 'Белсенді';
 
   @override
+  String get guideDashboardDraftTab => 'Черновиктер';
+
+  @override
   String get guideDashboardArchiveTab => 'Архив';
 
   @override
@@ -4146,6 +4155,13 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get guideDashboardCompletedEmptyHint =>
       'Аяқталған экскурсиялар жоспарланған күнінен кейін осында көшеді.';
+
+  @override
+  String get guideDashboardDraftEmpty => 'Черновик ұсыныстар жоқ';
+
+  @override
+  String get guideDashboardDraftEmptyHint =>
+      'Сақталған черновиктер тексеруге жіберілгенге дейін жеке болып қалады.';
 
   @override
   String get guideDashboardReviewEmpty => 'Тексеруде ештеңе жоқ';
@@ -4192,11 +4208,18 @@ class AppLocalizationsKk extends AppLocalizations {
   String get guideDashboardPublishOffer => 'Жариялау';
 
   @override
+  String get guideDashboardSubmitOffer => 'Тексеруге жіберу';
+
+  @override
   String get guideDashboardArchiveFailed =>
       'Ұсынысты архивке жіберу мүмкін болмады';
 
   @override
   String get guideDashboardPublishFailed => 'Ұсынысты жариялау мүмкін болмады';
+
+  @override
+  String get guideDashboardSubmitFailed =>
+      'Ұсынысты тексеруге жіберу мүмкін болмады';
 
   @override
   String get guideDashboardViewBooking => 'Бронды ашу';
@@ -4293,6 +4316,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get guideDashboardStatusActive => 'Белсенді';
+
+  @override
+  String get guideDashboardStatusDraft => 'Черновик';
 
   @override
   String get guideDashboardStatusArchived => 'Архив';

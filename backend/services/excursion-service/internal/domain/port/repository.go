@@ -25,6 +25,7 @@ type ExcursionFilter struct {
 	CategorySlug    *string
 	CountryCode     *string
 	CityName        *string
+	DepartureCityID *string
 	LanguageCode    *string
 	SearchQuery     *string
 	PriceMin        *float64
@@ -52,6 +53,7 @@ type ExcursionProductFilter struct {
 	RouteKind       *string
 	CountryCode     *string
 	CityName        *string
+	DepartureCityID *string
 	LanguageCode    *string
 	SearchQuery     *string
 	PriceMin        *float64

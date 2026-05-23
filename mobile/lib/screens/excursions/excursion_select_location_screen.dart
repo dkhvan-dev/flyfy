@@ -9,12 +9,14 @@ import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../attractions/attractions_filter_sheet.dart';
 
 class ExcursionLocationSelection {
   const ExcursionLocationSelection({
     required this.id,
     required this.name,
     required this.countryCode,
+    this.cityId,
     this.cityName,
     this.latitude,
     this.longitude,
@@ -28,6 +30,7 @@ class ExcursionLocationSelection {
   final String id;
   final String name;
   final String countryCode;
+  final String? cityId;
   final String? cityName;
   final double? latitude;
   final double? longitude;
@@ -70,6 +73,7 @@ class ExcursionLocationSelection {
       id: attraction.id,
       name: attraction.title,
       countryCode: attraction.countryCode,
+      cityId: attraction.cityId,
       latitude: attraction.latitude,
       longitude: attraction.longitude,
       mapUrl: mapUrl.isEmpty ? null : mapUrl,
@@ -97,10 +101,12 @@ class ExcursionLocationPickerArgs {
   const ExcursionLocationPickerArgs({
     required this.countryCode,
     this.initialSelection,
+    this.accessCityId,
   });
 
   final String countryCode;
   final ExcursionLocationSelection? initialSelection;
+  final String? accessCityId;
 }
 
 class ExcursionSelectLocationScreen extends StatefulWidget {
@@ -108,11 +114,13 @@ class ExcursionSelectLocationScreen extends StatefulWidget {
     super.key,
     required this.countryCode,
     this.initialSelection,
+    this.accessCityId,
     this.api,
   });
 
   final String countryCode;
   final ExcursionLocationSelection? initialSelection;
+  final String? accessCityId;
   final AttractionApi? api;
 
   @override
@@ -139,6 +147,7 @@ class _ExcursionSelectLocationScreenState
   var _isLoading = true;
   var _isRefreshing = false;
   String? _error;
+  AttractionFilterResult _filters = AttractionFilterResult.empty;
   List<AttractionVm> _items = const [];
   ExcursionLocationSelection? _selectedLocation;
 
@@ -193,7 +202,18 @@ class _ExcursionSelectLocationScreenState
       final search = _attractionSearchCtrl.text.trim();
       final result = await _api.getAttractions(
         search: search.isEmpty ? null : search,
-        countryCode: _selectedCountryCode,
+        countryCode: _filters.countryCode ?? _selectedCountryCode,
+        cityId: _filters.cityId,
+        accessCityId: (widget.accessCityId ?? '').trim().isEmpty
+            ? null
+            : widget.accessCityId!.trim(),
+        category: _filters.category,
+        minRating: _filters.minRating,
+        priceMin: _filters.priceMin,
+        priceMax: _filters.priceMax,
+        durationMin: _filters.durationMin,
+        durationMax: _filters.durationMax,
+        durationUnit: _filters.durationUnit,
         sort: 'rating_desc',
         locale: locale,
         limit: _pageSize,
@@ -219,6 +239,28 @@ class _ExcursionSelectLocationScreenState
 
   Future<void> _refresh() =>
       _loadAttractions(page: _currentPage, refresh: true);
+
+  Future<void> _openFilters() async {
+    FocusScope.of(context).unfocus();
+
+    final result = await showModalBottomSheet<AttractionFilterResult>(
+      context: context,
+      isDismissible: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AttractionsFilterSheet(
+        initial: _filters,
+        api: _api,
+        searchQuery: _attractionSearchCtrl.text,
+        fallbackCountryCode: _selectedCountryCode,
+        accessCityId: widget.accessCityId,
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() => _filters = result);
+    await _loadAttractions(page: 1);
+  }
 
   Future<void> _changePage(int page) async {
     if (page == _currentPage || _isLoading || page < 1 || page > _totalPages) {
@@ -336,7 +378,7 @@ class _ExcursionSelectLocationScreenState
                                 hintText: l10n
                                     .excursionSelectLocationAttractionSearchHint,
                                 trailing: IconButton(
-                                  onPressed: () => _loadAttractions(page: 1),
+                                  onPressed: _openFilters,
                                   tooltip: l10n.attractionsFiltersTitle,
                                   icon: const Icon(Icons.tune_rounded),
                                   color: AppColors.accent,

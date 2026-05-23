@@ -125,11 +125,15 @@ class AttractionsFilterSheet extends StatefulWidget {
     required this.initial,
     this.api,
     this.searchQuery,
+    this.fallbackCountryCode,
+    this.accessCityId,
   });
 
   final AttractionFilterResult initial;
   final AttractionApi? api;
   final String? searchQuery;
+  final String? fallbackCountryCode;
+  final String? accessCityId;
 
   @override
   State<AttractionsFilterSheet> createState() => _AttractionsFilterSheetState();
@@ -223,8 +227,9 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
         search: widget.searchQuery?.trim().isNotEmpty == true
             ? widget.searchQuery!.trim()
             : null,
-        countryCode: staged.countryCode,
+        countryCode: staged.countryCode ?? _normalizedFallbackCountryCode(),
         cityId: staged.cityId,
+        accessCityId: _normalizedAccessCityId(),
         category: staged.category,
         minRating: staged.minRating,
         durationMin: staged.durationMin,
@@ -244,6 +249,16 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
       if (!mounted) return;
       setState(() => _previewLoading = false);
     }
+  }
+
+  String? _normalizedFallbackCountryCode() {
+    final value = widget.fallbackCountryCode?.trim().toUpperCase() ?? '';
+    return value.isEmpty ? null : value;
+  }
+
+  String? _normalizedAccessCityId() {
+    final value = widget.accessCityId?.trim() ?? '';
+    return value.isEmpty ? null : value;
   }
 
   AttractionFilterResult _stageResult() {

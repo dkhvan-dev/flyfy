@@ -70,6 +70,9 @@ const (
 
 	defaultExcursionAttendanceQRSigningSecret = "dev-excursion-attendance-qr-secret"
 
+	excursionAutoPublishTrustThreshold = 70
+	excursionAutoPublishRiskThreshold  = 30
+
 	AttendanceSyncStatusSynced        = "SYNCED"
 	AttendanceSyncStatusAlreadySynced = "ALREADY_SYNCED"
 	AttendanceSyncStatusRejected      = "REJECTED"
@@ -165,6 +168,7 @@ type CreateExcursionInput struct {
 	LanguageCodes       []string
 	CountryCode         *string
 	CityName            *string
+	DepartureCityID     *string
 	MeetingPoint        string
 	Latitude            *float64
 	Longitude           *float64
@@ -190,6 +194,7 @@ type UpdateExcursionInput struct {
 	LanguageCodes       []string
 	CountryCode         *string
 	CityName            *string
+	DepartureCityID     *string
 	MeetingPoint        string
 	Latitude            *float64
 	Longitude           *float64
@@ -406,6 +411,7 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		MaxGroupSize:         input.MaxGroupSize,
 		CountryCode:          input.CountryCode,
 		CityName:             input.CityName,
+		DepartureCityID:      input.DepartureCityID,
 		MeetingPoint:         input.MeetingPoint,
 		Latitude:             input.Latitude,
 		Longitude:            input.Longitude,
@@ -509,6 +515,7 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 		MaxGroupSize:        input.MaxGroupSize,
 		CountryCode:         input.CountryCode,
 		CityName:            input.CityName,
+		DepartureCityID:     input.DepartureCityID,
 		MeetingPoint:        input.MeetingPoint,
 		Latitude:            input.Latitude,
 		Longitude:           input.Longitude,
@@ -566,16 +573,101 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 		permission.DisplayName,
 		permission.GuideSearchText,
 	)
-	if err = item.Publish(model.PublishExcursionParams{
+	publishParams := model.PublishExcursionParams{
 		LanguageCodes: relations.LanguageCodes,
 		Itinerary:     relations.Itinerary,
-	}); err != nil {
+	}
+	evaluation := evaluateExcursionPublishing(item, permission)
+	if evaluation.Decision == model.ExcursionPublishingDecisionNeedsReview {
+		if err = item.SubmitForReview(model.SubmitExcursionForReviewParams{
+			Publish:    publishParams,
+			Evaluation: evaluation,
+		}); err != nil {
+			return nil, err
+		}
+		if err = u.repo.UpdateExcursionAggregate(ctx, item, relations); err != nil {
+			return nil, fmt.Errorf("submit excursion for review: %w", err)
+		}
+		u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeSubmittedForReview, actorUserID, map[string]any{
+			"submittedForReviewAt": item.SubmittedForReviewAt,
+			"guideTrustScore":      item.GuideTrustScore,
+			"publishRiskScore":     item.PublishRiskScore,
+			"reasonCodes":          item.ModerationReasonCodes,
+		})
+		return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+	}
+	if err = item.ApplyPublishingEvaluation(evaluation); err != nil {
+		return nil, err
+	}
+	if err = item.Publish(publishParams); err != nil {
 		return nil, err
 	}
 	if err = u.repo.UpdateExcursionAggregate(ctx, item, relations); err != nil {
 		return nil, fmt.Errorf("publish excursion: %w", err)
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypePublished, actorUserID, map[string]any{"publishedAt": item.PublishedAt})
+
+	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+}
+
+func (u *ExcursionUseCase) ApproveExcursionModeration(ctx context.Context, excursionID uuid.UUID, moderatorUserID uuid.UUID) (*ExcursionAggregate, error) {
+	if excursionID == uuid.Nil {
+		return nil, ErrInvalidExcursionID
+	}
+	if moderatorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	item, err := u.repo.GetExcursionByID(ctx, excursionID)
+	if err != nil {
+		return nil, fmt.Errorf("get excursion by id: %w", err)
+	}
+	if item == nil {
+		return nil, ErrExcursionNotFound
+	}
+	relations, err := u.repo.LoadExcursionRelations(ctx, excursionID)
+	if err != nil {
+		return nil, fmt.Errorf("load excursion relations: %w", err)
+	}
+	publishParams := model.PublishExcursionParams{
+		LanguageCodes: relations.LanguageCodes,
+		Itinerary:     relations.Itinerary,
+	}
+	if err = item.ApproveReview(publishParams); err != nil {
+		return nil, err
+	}
+	if err = u.repo.UpdateExcursionAggregate(ctx, item, relations); err != nil {
+		return nil, fmt.Errorf("approve excursion moderation: %w", err)
+	}
+	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeModerationApproved, moderatorUserID, map[string]any{"publishedAt": item.PublishedAt})
+
+	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+}
+
+func (u *ExcursionUseCase) RejectExcursionModeration(ctx context.Context, excursionID uuid.UUID, moderatorUserID uuid.UUID, reasonCodes []string) (*ExcursionAggregate, error) {
+	if excursionID == uuid.Nil {
+		return nil, ErrInvalidExcursionID
+	}
+	if moderatorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+	item, err := u.repo.GetExcursionByID(ctx, excursionID)
+	if err != nil {
+		return nil, fmt.Errorf("get excursion by id: %w", err)
+	}
+	if item == nil {
+		return nil, ErrExcursionNotFound
+	}
+	relations, err := u.repo.LoadExcursionRelations(ctx, excursionID)
+	if err != nil {
+		return nil, fmt.Errorf("load excursion relations: %w", err)
+	}
+	if err = item.RejectReview(reasonCodes); err != nil {
+		return nil, err
+	}
+	if err = u.repo.UpdateExcursionAggregate(ctx, item, relations); err != nil {
+		return nil, fmt.Errorf("reject excursion moderation: %w", err)
+	}
+	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeModerationRejected, moderatorUserID, map[string]any{"reasonCodes": item.ModerationReasonCodes})
 
 	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
 }
@@ -2506,6 +2598,82 @@ func (u *ExcursionUseCase) verifyGuide(ctx context.Context, actorUserID uuid.UUI
 		return port.GuideExcursionPermission{}, ErrGuideNotAllowed
 	}
 	return permission, nil
+}
+
+func evaluateExcursionPublishing(item *model.Excursion, permission port.GuideExcursionPermission) model.ExcursionPublishingEvaluation {
+	trustScore, trustReasons := calculateGuideTrustScore(permission)
+	riskScore, riskReasons := calculateExcursionPublishRiskScore(item)
+	reasons := append(trustReasons, riskReasons...)
+	decision := model.ExcursionPublishingDecisionNeedsReview
+	if trustScore >= excursionAutoPublishTrustThreshold && riskScore <= excursionAutoPublishRiskThreshold && len(reasons) == 0 {
+		decision = model.ExcursionPublishingDecisionAutoPublish
+	}
+	return model.ExcursionPublishingEvaluation{
+		Decision:         decision,
+		GuideTrustScore:  trustScore,
+		PublishRiskScore: riskScore,
+		ReasonCodes:      reasons,
+	}
+}
+
+func calculateGuideTrustScore(permission port.GuideExcursionPermission) (int, []string) {
+	score := 0
+	reasons := make([]string, 0, 2)
+	if permission.Allowed {
+		score += 25
+	}
+	switch {
+	case permission.ReviewsCount >= 10:
+		score += 25
+	case permission.ReviewsCount >= 3:
+		score += 15
+	case permission.ReviewsCount > 0:
+		score += 5
+	default:
+		reasons = append(reasons, "guide_new")
+	}
+	switch {
+	case permission.RatingAvg >= 4.7:
+		score += 20
+	case permission.RatingAvg >= 4.3:
+		score += 12
+	case permission.RatingAvg > 0:
+		score += 5
+	}
+	switch {
+	case permission.ExperienceYears >= 2:
+		score += 15
+	case permission.ExperienceYears >= 1:
+		score += 8
+	}
+	if score > 100 {
+		score = 100
+	}
+	return score, reasons
+}
+
+func calculateExcursionPublishRiskScore(item *model.Excursion) (int, []string) {
+	if item == nil {
+		return 100, []string{"excursion_missing"}
+	}
+	score := 0
+	reasons := make([]string, 0, 3)
+	if item.LandmarkID == nil {
+		score += 35
+		reasons = append(reasons, "custom_route")
+	}
+	if item.DepartureCityID == nil {
+		score += 20
+		reasons = append(reasons, "departure_city_missing")
+	}
+	if item.DurationMinutes > 24*60 {
+		score += 15
+		reasons = append(reasons, "multi_day_duration")
+	}
+	if score > 100 {
+		score = 100
+	}
+	return score, reasons
 }
 
 func (u *ExcursionUseCase) validateCoverFile(ctx context.Context, fileID *uuid.UUID) error {

@@ -16,6 +16,8 @@ type Attraction struct {
 	Description       string
 	CountryCode       string
 	CityID            string
+	AccessCities      []AttractionCityLink
+	DepartureCities   []AttractionCityLink
 	Latitude          *float64
 	Longitude         *float64
 	LocationSourceURL string
@@ -36,6 +38,15 @@ type Attraction struct {
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	DeletedAt         *time.Time
+}
+
+type AttractionCityLink struct {
+	AttractionID uuid.UUID
+	Kind         string
+	CountryCode  string
+	CityID       string
+	Position     int
+	CreatedAt    time.Time
 }
 
 func (a *Attraction) IsPublished() bool {
@@ -85,21 +96,23 @@ type AttractionTranslation struct {
 }
 
 type AttractionListFilter struct {
-	Search         string
-	Locale         string
-	Category       string
-	CountryCode    string
-	CityID         string
-	PriceMin       *float64
-	PriceMax       *float64
-	DurationMin    *int
-	DurationMax    *int
-	DurationUnit   *enum.DurationUnit
-	SpotsMin       *int
-	MinRating      *float64
-	AuthorUserID   *uuid.UUID
-	IncludeDeleted bool
-	Sort           string
-	Limit          int
-	Offset         int
+	Search          string
+	Locale          string
+	Category        string
+	CountryCode     string
+	CityID          string
+	AccessCityID    string
+	DepartureCityID string
+	PriceMin        *float64
+	PriceMax        *float64
+	DurationMin     *int
+	DurationMax     *int
+	DurationUnit    *enum.DurationUnit
+	SpotsMin        *int
+	MinRating       *float64
+	AuthorUserID    *uuid.UUID
+	IncludeDeleted  bool
+	Sort            string
+	Limit           int
+	Offset          int
 }

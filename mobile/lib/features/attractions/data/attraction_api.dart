@@ -14,6 +14,7 @@ class AttractionApi {
     String? category,
     String? countryCode,
     String? cityId,
+    String? accessCityId,
     double? priceMin,
     double? priceMax,
     int? durationMin,
@@ -41,6 +42,9 @@ class AttractionApi {
     }
     if (cityId != null && cityId.isNotEmpty) {
       params['cityId'] = cityId;
+    }
+    if (accessCityId != null && accessCityId.isNotEmpty) {
+      params['accessCityId'] = accessCityId;
     }
     if (priceMin != null) params['priceMin'] = priceMin;
     if (priceMax != null) params['priceMax'] = priceMax;

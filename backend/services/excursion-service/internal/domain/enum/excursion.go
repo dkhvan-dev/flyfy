@@ -3,14 +3,20 @@ package enum
 type ExcursionStatus string
 
 const (
-	ExcursionStatusDraft     ExcursionStatus = "DRAFT"
-	ExcursionStatusPublished ExcursionStatus = "PUBLISHED"
-	ExcursionStatusArchived  ExcursionStatus = "ARCHIVED"
+	ExcursionStatusDraft         ExcursionStatus = "DRAFT"
+	ExcursionStatusPendingReview ExcursionStatus = "PENDING_REVIEW"
+	ExcursionStatusPublished     ExcursionStatus = "PUBLISHED"
+	ExcursionStatusArchived      ExcursionStatus = "ARCHIVED"
+	ExcursionStatusRejected      ExcursionStatus = "REJECTED"
 )
 
 func (s ExcursionStatus) IsValid() bool {
 	switch s {
-	case ExcursionStatusDraft, ExcursionStatusPublished, ExcursionStatusArchived:
+	case ExcursionStatusDraft,
+		ExcursionStatusPendingReview,
+		ExcursionStatusPublished,
+		ExcursionStatusArchived,
+		ExcursionStatusRejected:
 		return true
 	default:
 		return false
@@ -37,17 +43,23 @@ func (v ExcursionVisibility) IsValid() bool {
 type ExcursionEventType string
 
 const (
-	ExcursionEventTypeCreated   ExcursionEventType = "CREATED"
-	ExcursionEventTypeUpdated   ExcursionEventType = "UPDATED"
-	ExcursionEventTypePublished ExcursionEventType = "PUBLISHED"
-	ExcursionEventTypeArchived  ExcursionEventType = "ARCHIVED"
-	ExcursionEventTypeDeleted   ExcursionEventType = "DELETED"
+	ExcursionEventTypeCreated            ExcursionEventType = "CREATED"
+	ExcursionEventTypeUpdated            ExcursionEventType = "UPDATED"
+	ExcursionEventTypeSubmittedForReview ExcursionEventType = "SUBMITTED_FOR_REVIEW"
+	ExcursionEventTypeModerationApproved ExcursionEventType = "MODERATION_APPROVED"
+	ExcursionEventTypeModerationRejected ExcursionEventType = "MODERATION_REJECTED"
+	ExcursionEventTypePublished          ExcursionEventType = "PUBLISHED"
+	ExcursionEventTypeArchived           ExcursionEventType = "ARCHIVED"
+	ExcursionEventTypeDeleted            ExcursionEventType = "DELETED"
 )
 
 func (e ExcursionEventType) IsValid() bool {
 	switch e {
 	case ExcursionEventTypeCreated,
 		ExcursionEventTypeUpdated,
+		ExcursionEventTypeSubmittedForReview,
+		ExcursionEventTypeModerationApproved,
+		ExcursionEventTypeModerationRejected,
 		ExcursionEventTypePublished,
 		ExcursionEventTypeArchived,
 		ExcursionEventTypeDeleted:

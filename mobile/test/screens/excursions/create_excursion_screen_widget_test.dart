@@ -7,13 +7,17 @@ import 'package:superapp/features/excursions/models/create_excursion_request.dar
 import 'package:superapp/features/excursions/models/excursion_vm.dart';
 import 'package:superapp/l10n/generated/app_localizations.dart';
 import 'package:superapp/providers/excursion_provider.dart';
+import 'package:superapp/providers/home_location_provider.dart';
 import 'package:superapp/screens/excursions/create_excursion_screen.dart';
 
 void main() {
   testWidgets('renders the create excursion landmark step', (tester) async {
     await tester.pumpWidget(
-      ChangeNotifierProvider(
-        create: (_) => ExcursionProvider(),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ExcursionProvider()),
+          ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+        ],
         child: const MaterialApp(
           localizationsDelegates: [
             AppLocalizations.delegate,
@@ -41,9 +45,15 @@ void main() {
     'opens edit mode with initial excursion after localizations are ready',
     (tester) async {
       await tester.pumpWidget(
-        ChangeNotifierProvider(
-          create: (_) => ExcursionProvider(
-              excursionApi: _FakeExcursionApi(_editableExcursion)),
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(
+              create: (_) => ExcursionProvider(
+                excursionApi: _FakeExcursionApi(_editableExcursion),
+              ),
+            ),
+            ChangeNotifierProvider(create: (_) => HomeLocationProvider()),
+          ],
           child: const MaterialApp(
             localizationsDelegates: [
               AppLocalizations.delegate,

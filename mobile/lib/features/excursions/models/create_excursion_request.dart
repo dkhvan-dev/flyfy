@@ -13,6 +13,7 @@ class CreateExcursionRequest {
     this.visibility = 'PUBLIC',
     this.countryCode,
     this.cityName,
+    this.departureCityId,
     this.latitude,
     this.longitude,
     this.mapUrl,
@@ -34,6 +35,7 @@ class CreateExcursionRequest {
   final String meetingPoint;
   final String? countryCode;
   final String? cityName;
+  final String? departureCityId;
   final double? latitude;
   final double? longitude;
   final String? mapUrl;
@@ -72,6 +74,8 @@ class CreateExcursionRequest {
       'meetingPoint': meetingPoint.trim(),
       if (_isPresent(countryCode)) 'countryCode': countryCode!.trim(),
       if (_isPresent(cityName)) 'cityName': cityName!.trim(),
+      if (_isPresent(departureCityId))
+        'departureCityId': departureCityId!.trim(),
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (_isPresent(mapUrl)) 'mapUrl': mapUrl!.trim(),

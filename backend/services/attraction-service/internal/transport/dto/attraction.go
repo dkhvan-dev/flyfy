@@ -7,6 +7,8 @@ type CreateAttractionRequest struct {
 	Translations      map[string]AttractionTranslationRequest `json:"translations"`
 	CountryCode       string                                  `json:"countryCode"`
 	CityID            string                                  `json:"cityId"`
+	AccessCities      []AttractionCityLinkRequest             `json:"accessCities,omitempty"`
+	DepartureCities   []AttractionCityLinkRequest             `json:"departureCities,omitempty"`
 	Latitude          *float64                                `json:"latitude"`
 	Longitude         *float64                                `json:"longitude"`
 	LocationSourceURL string                                  `json:"locationSourceUrl"`
@@ -29,6 +31,8 @@ type UpdateAttractionRequest struct {
 	Translations      map[string]AttractionTranslationRequest `json:"translations"`
 	CountryCode       string                                  `json:"countryCode"`
 	CityID            string                                  `json:"cityId"`
+	AccessCities      []AttractionCityLinkRequest             `json:"accessCities,omitempty"`
+	DepartureCities   []AttractionCityLinkRequest             `json:"departureCities,omitempty"`
 	Latitude          *float64                                `json:"latitude"`
 	Longitude         *float64                                `json:"longitude"`
 	LocationSourceURL string                                  `json:"locationSourceUrl"`
@@ -46,6 +50,11 @@ type UpdateAttractionRequest struct {
 type AttractionTranslationRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
+}
+
+type AttractionCityLinkRequest struct {
+	CountryCode string `json:"countryCode,omitempty"`
+	CityID      string `json:"cityId"`
 }
 
 type AttractionVisitInfoRequest struct {
@@ -101,6 +110,8 @@ type AttractionResponse struct {
 	Description       string                                   `json:"description"`
 	CountryCode       string                                   `json:"countryCode"`
 	CityID            string                                   `json:"cityId"`
+	AccessCities      []AttractionCityLinkResponse             `json:"accessCities,omitempty"`
+	DepartureCities   []AttractionCityLinkResponse             `json:"departureCities,omitempty"`
 	Latitude          *float64                                 `json:"latitude,omitempty"`
 	Longitude         *float64                                 `json:"longitude,omitempty"`
 	LocationSourceURL string                                   `json:"locationSourceUrl,omitempty"`
@@ -122,6 +133,11 @@ type AttractionResponse struct {
 	CreatedAt         string                                   `json:"createdAt"`
 	UpdatedAt         string                                   `json:"updatedAt"`
 	DeletedAt         *string                                  `json:"deletedAt,omitempty"`
+}
+
+type AttractionCityLinkResponse struct {
+	CountryCode string `json:"countryCode"`
+	CityID      string `json:"cityId"`
 }
 
 type AttractionTranslationResponse struct {

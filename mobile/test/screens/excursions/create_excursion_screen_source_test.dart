@@ -244,6 +244,25 @@ void main() {
   );
 
   test(
+    'edit excursion can resubmit draft or rejected offers after changes',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/create_excursion_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('String? _editingExcursionStatus'));
+      expect(source, contains('bool get _canSubmitEditedExcursionForReview'));
+      expect(source, contains("status == 'DRAFT' || status == 'REJECTED'"));
+      expect(
+        source,
+        contains('await provider.submitExcursionForPublishing(excursionId)'),
+      );
+      expect(source, contains('_submit(submitForReview: !_isEditMode)'));
+      expect(source, contains('l10n.createExcursionSubmit'));
+    },
+  );
+
+  test(
     'create excursion uses dictionary language picker capped at five languages',
     () async {
       final source = await File(

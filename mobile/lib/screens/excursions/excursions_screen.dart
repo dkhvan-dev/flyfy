@@ -400,9 +400,10 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_initializeDefaultCityFilter());
-      context.read<ExcursionProvider>().loadExcursions();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _initializeDefaultCityFilter();
+      if (!mounted) return;
+      unawaited(_loadExcursionsForCurrentFilters());
     });
   }
 
@@ -462,7 +463,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
-      context.read<ExcursionProvider>().refreshExcursions(query: _searchQuery);
+      unawaited(_loadExcursionsForCurrentFilters());
     });
   }
 
@@ -475,9 +476,16 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
   }
 
   Future<void> _handleRefresh() {
-    return context
-        .read<ExcursionProvider>()
-        .refreshExcursions(query: _searchQuery);
+    return _loadExcursionsForCurrentFilters();
+  }
+
+  Future<void> _loadExcursionsForCurrentFilters() {
+    final city = _filters.city;
+    return context.read<ExcursionProvider>().refreshExcursions(
+          query: _searchQuery,
+          cityName: city?.cityName,
+          departureCityId: city?.cityId,
+        );
   }
 
   void _scheduleResolveLocalizedLandmarks(List<ExcursionVm> excursions) {
@@ -595,6 +603,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
 
     if (selectedFilters == null || !mounted) return;
     setState(() => _filters = selectedFilters);
+    unawaited(_loadExcursionsForCurrentFilters());
   }
 
   @override
@@ -1120,6 +1129,7 @@ class _ExcursionsFilters {
     final selectedCity = city;
     if (selectedCity != null) {
       if (!selectedCity.matches(
+        cityId: excursion.departureCityId,
         cityName: excursion.cityName,
         countryCode: excursion.countryCode,
       )) {

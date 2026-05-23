@@ -35,6 +35,7 @@ type CreateExcursionRequest struct {
 	LanguageCodes            []string                          `json:"languageCodes"`
 	CountryCode              *string                           `json:"countryCode,omitempty"`
 	CityName                 *string                           `json:"cityName,omitempty"`
+	DepartureCityID          *string                           `json:"departureCityId,omitempty"`
 	MeetingPoint             string                            `json:"meetingPoint"`
 	Latitude                 *float64                          `json:"latitude,omitempty"`
 	Longitude                *float64                          `json:"longitude,omitempty"`
@@ -86,6 +87,7 @@ type ExcursionResponse struct {
 	LanguageCodes            []string                          `json:"languageCodes"`
 	CountryCode              *string                           `json:"countryCode,omitempty"`
 	CityName                 *string                           `json:"cityName,omitempty"`
+	DepartureCityID          *string                           `json:"departureCityId,omitempty"`
 	MeetingPoint             string                            `json:"meetingPoint"`
 	Latitude                 *float64                          `json:"latitude,omitempty"`
 	Longitude                *float64                          `json:"longitude,omitempty"`
@@ -97,6 +99,11 @@ type ExcursionResponse struct {
 	IncludedItems            []string                          `json:"includedItems,omitempty"`
 	IncludedItemTranslations map[string][]string               `json:"includedItemTranslations,omitempty"`
 	Itinerary                []ExcursionItineraryItemResponse  `json:"itinerary,omitempty"`
+	PublishingDecision       string                            `json:"publishingDecision,omitempty"`
+	GuideTrustScore          int                               `json:"guideTrustScore"`
+	PublishRiskScore         int                               `json:"publishRiskScore"`
+	ModerationReasonCodes    []string                          `json:"moderationReasonCodes,omitempty"`
+	SubmittedForReviewAt     *string                           `json:"submittedForReviewAt,omitempty"`
 	PublishedAt              *string                           `json:"publishedAt,omitempty"`
 	DeletedAt                *string                           `json:"deletedAt,omitempty"`
 	Revision                 int                               `json:"revision"`
@@ -131,6 +138,7 @@ type ExcursionProductCardResponse struct {
 	DurationMinutes      int                               `json:"durationMinutes"`
 	CountryCode          *string                           `json:"countryCode,omitempty"`
 	CityName             *string                           `json:"cityName,omitempty"`
+	DepartureCityID      *string                           `json:"departureCityId,omitempty"`
 	Latitude             *float64                          `json:"latitude,omitempty"`
 	Longitude            *float64                          `json:"longitude,omitempty"`
 	MapURL               *string                           `json:"mapUrl,omitempty"`

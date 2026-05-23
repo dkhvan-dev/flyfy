@@ -175,6 +175,41 @@ func TestReleaseExcursionScheduleSlotSeatsReturnsUnavailableWhenNoRows(t *testin
 	}
 }
 
+func TestAppendReferenceCityConditionMatchesReferenceIDAndLegacyCityName(t *testing.T) {
+	parts := []string{"WHERE status = 'PUBLISHED'"}
+	args := make([]any, 0, 2)
+	cityID := " almaty "
+	cityName := " Алматы "
+
+	nextArg := appendReferenceCityCondition(
+		&parts,
+		&args,
+		1,
+		"departure_city_id",
+		"city_name",
+		&cityID,
+		&cityName,
+	)
+
+	query := strings.Join(parts, "")
+	for _, want := range []string{
+		"departure_city_id = $1",
+		"regexp_replace(lower(trim(COALESCE(city_name, '')))",
+		"city_name ILIKE $2",
+		" OR ",
+	} {
+		if !strings.Contains(query, want) {
+			t.Fatalf("reference city query missing %q in %s", want, query)
+		}
+	}
+	if nextArg != 3 {
+		t.Fatalf("next arg = %d, want 3", nextArg)
+	}
+	if len(args) != 2 || args[0] != "almaty" || args[1] != "%Алматы%" {
+		t.Fatalf("args = %#v, want normalized city id and city name", args)
+	}
+}
+
 func TestExcursionMarketplaceCanonicalKeyPrefersLandmarkID(t *testing.T) {
 	landmarkID := uuid.New()
 	routeStopA := uuid.New()
@@ -261,27 +296,27 @@ func TestSyncExcursionMarketplacePassesCombinedRouteMetadataToProduct(t *testing
 	}
 
 	productArgs := exec.queryRowArgs[0]
-	if got := fmt.Sprint(productArgs[20]); got != "COMBINED_ROUTE" {
+	if got := fmt.Sprint(productArgs[21]); got != "COMBINED_ROUTE" {
 		t.Fatalf("route_kind arg = %q, want COMBINED_ROUTE", got)
 	}
-	if got := fmt.Sprint(productArgs[21]); !strings.HasPrefix(got, "route:kz:almaty:culture:2-4h:walking:") {
+	if got := fmt.Sprint(productArgs[22]); !strings.HasPrefix(got, "route:kz:almaty:culture:2-4h:walking:") {
 		t.Fatalf("route_fingerprint arg = %q, want route fingerprint", got)
 	}
-	attractionIDs, ok := productArgs[22].([]uuid.UUID)
+	attractionIDs, ok := productArgs[23].([]uuid.UUID)
 	if !ok {
-		t.Fatalf("attraction_ids arg type = %T, want []uuid.UUID", productArgs[22])
+		t.Fatalf("attraction_ids arg type = %T, want []uuid.UUID", productArgs[23])
 	}
 	if len(attractionIDs) != 2 || attractionIDs[0] != a || attractionIDs[1] != b {
 		t.Fatalf("attraction_ids arg = %#v, want sorted [%s %s]", attractionIDs, a, b)
 	}
-	attractionNames, ok := productArgs[23].([]string)
+	attractionNames, ok := productArgs[24].([]string)
 	if !ok {
-		t.Fatalf("attraction_names arg type = %T, want []string", productArgs[23])
+		t.Fatalf("attraction_names arg type = %T, want []string", productArgs[24])
 	}
 	if strings.Join(attractionNames, ",") != "Kok-Tobe,Cathedral" {
 		t.Fatalf("attraction_names arg = %#v, want sorted attraction names", attractionNames)
 	}
-	if got := fmt.Sprint(productArgs[24]); got != "2" {
+	if got := fmt.Sprint(productArgs[25]); got != "2" {
 		t.Fatalf("stop_count arg = %q, want 2", got)
 	}
 }
@@ -555,8 +590,8 @@ func TestSyncExcursionMarketplaceUsesProductCoverForSharedCardAndOfferCoverForGu
 	}
 
 	productArgs := exec.queryRowArgs[0]
-	if got, ok := productArgs[16].(*uuid.UUID); !ok || got == nil || *got != productCoverFileID {
-		t.Fatalf("product cover arg = %#v, want product cover %s", productArgs[16], productCoverFileID)
+	if got, ok := productArgs[17].(*uuid.UUID); !ok || got == nil || *got != productCoverFileID {
+		t.Fatalf("product cover arg = %#v, want product cover %s", productArgs[17], productCoverFileID)
 	}
 
 	offerArgs := exec.queryRowArgs[1]
@@ -615,7 +650,7 @@ func TestSyncExcursionMarketplacePersistsPreparedTranslations(t *testing.T) {
 		t.Fatalf("QueryRow calls = %d, want 2", len(exec.queryRowArgs))
 	}
 
-	productTranslations := decodeTranslationsArg(t, exec.queryRowArgs[0][19])
+	productTranslations := decodeTranslationsArg(t, exec.queryRowArgs[0][20])
 	if got := productTranslations["kk"].Title; got != "Шарын шатқалы" {
 		t.Fatalf("product kk title = %q", got)
 	}

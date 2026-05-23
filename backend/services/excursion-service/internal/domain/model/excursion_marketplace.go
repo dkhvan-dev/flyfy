@@ -43,6 +43,7 @@ type ExcursionProductCard struct {
 	DurationMinutes int
 	CountryCode     *string
 	CityName        *string
+	DepartureCityID *string
 	Latitude        *float64
 	Longitude       *float64
 	MapURL          *string

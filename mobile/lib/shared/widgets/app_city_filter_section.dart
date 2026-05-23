@@ -41,12 +41,22 @@ class AppCityFilterValue {
 
     final selectedCity = _normalizeCity(this.cityName);
     final candidateCity = _normalizeCity(cityName);
+    final selectedCountry = _normalizeCountry(this.countryCode);
+    final candidateCountry = _normalizeCountry(countryCode);
+    final countryMatches = selectedCountry == null ||
+        candidateCountry == null ||
+        selectedCountry == candidateCountry;
+
+    final selectedCitySlug = _normalizeCitySlug(selectedCity);
+    final candidateCitySlug = _normalizeCitySlug(candidateCity);
+    if (countryMatches && selectedId != null && candidateCitySlug != null) {
+      return selectedId.toLowerCase() == candidateCitySlug;
+    }
+    if (countryMatches && candidateId != null && selectedCitySlug != null) {
+      return candidateId.toLowerCase() == selectedCitySlug;
+    }
+
     if (selectedCity != null && candidateCity != null) {
-      final selectedCountry = _normalizeCountry(this.countryCode);
-      final candidateCountry = _normalizeCountry(countryCode);
-      final countryMatches = selectedCountry == null ||
-          candidateCountry == null ||
-          selectedCountry == candidateCountry;
       return countryMatches && selectedCity == candidateCity;
     }
 
@@ -464,4 +474,26 @@ String? _normalizeCity(String? value) {
       ?.toLowerCase()
       .replaceAll('ё', 'е')
       .replaceAll(RegExp(r'\s+'), ' ');
+}
+
+String? _normalizeCitySlug(String? value) {
+  final normalized = _normalizeCity(value);
+  if (normalized == null) return null;
+  final buffer = StringBuffer();
+  var lastWasSeparator = false;
+  for (final rune in normalized.runes) {
+    final isLowerLatin = rune >= 0x61 && rune <= 0x7A;
+    final isDigit = rune >= 0x30 && rune <= 0x39;
+    if (isLowerLatin || isDigit) {
+      buffer.writeCharCode(rune);
+      lastWasSeparator = false;
+      continue;
+    }
+    if (!lastWasSeparator && buffer.isNotEmpty) {
+      buffer.write('-');
+      lastWasSeparator = true;
+    }
+  }
+  final slug = buffer.toString().replaceAll(RegExp(r'-+$'), '');
+  return slug.isEmpty ? null : slug;
 }

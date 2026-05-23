@@ -864,6 +864,179 @@ func TestListMyExcursionsKeepsProductCoverFallback(t *testing.T) {
 	}
 }
 
+func TestPublishExcursionSendsNewGuideToPendingReview(t *testing.T) {
+	guideProfileID := uuid.New()
+	guideUserID := uuid.New()
+	excursion := mustNewAppTestExcursion(t, guideProfileID, guideUserID)
+	departureCityID := "almaty"
+	excursion.DepartureCityID = &departureCityID
+	repo := &excursionRepoStub{
+		gotExcursion:    excursion,
+		loadedRelations: validAppTestExcursionRelations(excursion.ID),
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID:  guideProfileID,
+			GuideUserID:     guideUserID,
+			Allowed:         true,
+			RatingAvg:       0,
+			ReviewsCount:    0,
+			ExperienceYears: 0,
+		},
+	}, nil)
+
+	aggregate, err := uc.PublishExcursion(context.Background(), excursion.ID, guideUserID)
+
+	if err != nil {
+		t.Fatalf("PublishExcursion() error = %v", err)
+	}
+	if aggregate.Excursion.Status != enum.ExcursionStatusPendingReview {
+		t.Fatalf("status = %q, want %q", aggregate.Excursion.Status, enum.ExcursionStatusPendingReview)
+	}
+	if repo.savedExcursion == nil {
+		t.Fatal("excursion was not persisted")
+	}
+	if repo.savedExcursion.PublishedAt != nil {
+		t.Fatalf("PublishedAt = %v, want nil while pending review", repo.savedExcursion.PublishedAt)
+	}
+	if repo.savedExcursion.SubmittedForReviewAt == nil {
+		t.Fatal("SubmittedForReviewAt is nil")
+	}
+	if repo.savedExcursion.PublishingDecision != model.ExcursionPublishingDecisionNeedsReview {
+		t.Fatalf("decision = %q, want %q", repo.savedExcursion.PublishingDecision, model.ExcursionPublishingDecisionNeedsReview)
+	}
+	if repo.savedExcursion.GuideTrustScore >= 70 {
+		t.Fatalf("guide trust score = %d, want below auto-publish threshold", repo.savedExcursion.GuideTrustScore)
+	}
+	if !containsString(repo.savedExcursion.ModerationReasonCodes, "guide_new") {
+		t.Fatalf("reason codes = %#v, want guide_new", repo.savedExcursion.ModerationReasonCodes)
+	}
+}
+
+func TestPublishExcursionAutoPublishesTrustedLowRiskGuide(t *testing.T) {
+	guideProfileID := uuid.New()
+	guideUserID := uuid.New()
+	excursion := mustNewAppTestExcursion(t, guideProfileID, guideUserID)
+	departureCityID := "almaty"
+	excursion.DepartureCityID = &departureCityID
+	repo := &excursionRepoStub{
+		gotExcursion:    excursion,
+		loadedRelations: validAppTestExcursionRelations(excursion.ID),
+	}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{
+		result: port.GuideExcursionPermission{
+			GuideProfileID:  guideProfileID,
+			GuideUserID:     guideUserID,
+			Allowed:         true,
+			RatingAvg:       4.8,
+			ReviewsCount:    12,
+			ExperienceYears: 2,
+		},
+	}, nil)
+
+	aggregate, err := uc.PublishExcursion(context.Background(), excursion.ID, guideUserID)
+
+	if err != nil {
+		t.Fatalf("PublishExcursion() error = %v", err)
+	}
+	if aggregate.Excursion.Status != enum.ExcursionStatusPublished {
+		t.Fatalf("status = %q, want %q", aggregate.Excursion.Status, enum.ExcursionStatusPublished)
+	}
+	if repo.savedExcursion.PublishedAt == nil {
+		t.Fatal("PublishedAt is nil")
+	}
+	if repo.savedExcursion.SubmittedForReviewAt != nil {
+		t.Fatalf("SubmittedForReviewAt = %v, want nil for auto-publish", repo.savedExcursion.SubmittedForReviewAt)
+	}
+	if repo.savedExcursion.PublishingDecision != model.ExcursionPublishingDecisionAutoPublish {
+		t.Fatalf("decision = %q, want %q", repo.savedExcursion.PublishingDecision, model.ExcursionPublishingDecisionAutoPublish)
+	}
+	if repo.savedExcursion.GuideTrustScore < 70 {
+		t.Fatalf("guide trust score = %d, want auto-publish threshold", repo.savedExcursion.GuideTrustScore)
+	}
+	if repo.savedExcursion.PublishRiskScore > 30 {
+		t.Fatalf("publish risk score = %d, want low risk", repo.savedExcursion.PublishRiskScore)
+	}
+}
+
+func TestApproveExcursionModerationPublishesPendingReview(t *testing.T) {
+	excursion := mustNewAppTestExcursion(t, uuid.New(), uuid.New())
+	relations := validAppTestExcursionRelations(excursion.ID)
+	if err := excursion.SubmitForReview(model.SubmitExcursionForReviewParams{
+		Publish: model.PublishExcursionParams{
+			LanguageCodes: relations.LanguageCodes,
+			Itinerary:     relations.Itinerary,
+		},
+		Evaluation: model.ExcursionPublishingEvaluation{
+			Decision:         model.ExcursionPublishingDecisionNeedsReview,
+			GuideTrustScore:  35,
+			PublishRiskScore: 45,
+			ReasonCodes:      []string{"guide_new"},
+		},
+	}); err != nil {
+		t.Fatalf("SubmitForReview() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotExcursion:    excursion,
+		loadedRelations: relations,
+	}
+	uc := NewExcursionUseCase(repo, nil, nil)
+
+	aggregate, err := uc.ApproveExcursionModeration(context.Background(), excursion.ID, uuid.New())
+
+	if err != nil {
+		t.Fatalf("ApproveExcursionModeration() error = %v", err)
+	}
+	if aggregate.Excursion.Status != enum.ExcursionStatusPublished {
+		t.Fatalf("status = %q, want %q", aggregate.Excursion.Status, enum.ExcursionStatusPublished)
+	}
+	if repo.savedExcursion == nil || repo.savedExcursion.PublishedAt == nil {
+		t.Fatal("approved excursion was not persisted with PublishedAt")
+	}
+}
+
+func TestRejectExcursionModerationMarksPendingReviewRejected(t *testing.T) {
+	excursion := mustNewAppTestExcursion(t, uuid.New(), uuid.New())
+	relations := validAppTestExcursionRelations(excursion.ID)
+	if err := excursion.SubmitForReview(model.SubmitExcursionForReviewParams{
+		Publish: model.PublishExcursionParams{
+			LanguageCodes: relations.LanguageCodes,
+			Itinerary:     relations.Itinerary,
+		},
+		Evaluation: model.ExcursionPublishingEvaluation{
+			Decision:         model.ExcursionPublishingDecisionNeedsReview,
+			GuideTrustScore:  35,
+			PublishRiskScore: 45,
+			ReasonCodes:      []string{"guide_new"},
+		},
+	}); err != nil {
+		t.Fatalf("SubmitForReview() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		gotExcursion:    excursion,
+		loadedRelations: relations,
+	}
+	uc := NewExcursionUseCase(repo, nil, nil)
+
+	aggregate, err := uc.RejectExcursionModeration(context.Background(), excursion.ID, uuid.New(), []string{"missing_license"})
+
+	if err != nil {
+		t.Fatalf("RejectExcursionModeration() error = %v", err)
+	}
+	if aggregate.Excursion.Status != enum.ExcursionStatusRejected {
+		t.Fatalf("status = %q, want %q", aggregate.Excursion.Status, enum.ExcursionStatusRejected)
+	}
+	if repo.savedExcursion == nil {
+		t.Fatal("rejected excursion was not persisted")
+	}
+	if repo.savedExcursion.PublishedAt != nil {
+		t.Fatalf("PublishedAt = %v, want nil", repo.savedExcursion.PublishedAt)
+	}
+	if !containsString(repo.savedExcursion.ModerationReasonCodes, "missing_license") {
+		t.Fatalf("reason codes = %#v, want missing_license", repo.savedExcursion.ModerationReasonCodes)
+	}
+}
+
 func TestCreateExcursionRejectsDuplicateGuideLandmark(t *testing.T) {
 	repo := &excursionRepoStub{hasGuideLandmark: true}
 	guideUserID := uuid.New()
@@ -3475,6 +3648,59 @@ func TestCreateExcursionBookingRejectsOwnOffer(t *testing.T) {
 	if repo.createdBooking != nil {
 		t.Fatal("guide booked their own offer")
 	}
+}
+
+func mustNewAppTestExcursion(t *testing.T, guideProfileID uuid.UUID, guideUserID uuid.UUID) *model.Excursion {
+	t.Helper()
+	excursion, err := model.NewExcursion(model.NewExcursionParams{
+		GuideProfileID:  guideProfileID,
+		GuideUserID:     guideUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Medeu"),
+		Title:           "Medeu tour",
+		Summary:         "Private mountain route",
+		Description:     "A detailed mountain excursion through Medeu.",
+		CategorySlug:    "nature",
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 180,
+		MaxGroupSize:    6,
+		CountryCode:     &testExcursionCountryCode,
+		CityName:        &testExcursionCityName,
+		MeetingPoint:    "Medeu entrance",
+		Latitude:        &testExcursionLatitude,
+		Longitude:       &testExcursionLongitude,
+		PriceAmount:     120,
+		Currency:        "KZT",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursion() error = %v", err)
+	}
+	return excursion
+}
+
+func validAppTestExcursionRelations(excursionID uuid.UUID) port.ExcursionRelations {
+	return port.ExcursionRelations{
+		LanguageCodes: []string{"en"},
+		Itinerary: []*model.ExcursionItineraryItem{
+			{
+				ID:                 uuid.New(),
+				ExcursionID:        excursionID,
+				SortOrder:          0,
+				StartOffsetMinutes: 0,
+				Title:              "Hotel departure",
+				Description:        "Meet your guide and start the route.",
+			},
+		},
+	}
+}
+
+func containsString(items []string, want string) bool {
+	for _, item := range items {
+		if item == want {
+			return true
+		}
+	}
+	return false
 }
 
 func stringPtr(v string) *string {

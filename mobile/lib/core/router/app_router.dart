@@ -356,6 +356,7 @@ class AppRouter {
               child: ExcursionSelectLocationScreen(
                 countryCode: countryCode,
                 initialSelection: initialSelection,
+                accessCityId: args?.accessCityId,
               ),
             );
           },

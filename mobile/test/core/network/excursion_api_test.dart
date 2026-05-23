@@ -36,7 +36,8 @@ void main() {
     expect(excursions.single.publishedOffersCount, 2);
   });
 
-  test('getExcursions can narrow public products by landmark id', () async {
+  test('getExcursions can narrow public products by landmark and city',
+      () async {
     final adapter = _ExcursionJsonAdapter({
       '/excursion-products': {
         'items': [_productJson()],
@@ -51,7 +52,12 @@ void main() {
       ),
     );
 
-    await api.getExcursions(limit: 1, landmarkId: ' landmark-1 ');
+    await api.getExcursions(
+      limit: 1,
+      landmarkId: ' landmark-1 ',
+      cityName: ' Алматы ',
+      departureCityId: ' almaty ',
+    );
 
     expect(adapter.requests.single.path, '/excursion-products');
     expect(adapter.requests.single.extra['requiresAuth'], isFalse);
@@ -59,6 +65,8 @@ void main() {
       'limit': 1,
       'offset': 0,
       'landmarkId': 'landmark-1',
+      'cityName': 'Алматы',
+      'departureCityId': 'almaty',
     });
   });
 
@@ -268,6 +276,31 @@ void main() {
     expect(adapter.requests.single.path, '/me/excursions/excursion-1/archive');
     expect(adapter.lastOptions?.method, 'POST');
     expect(archived.status, 'ARCHIVED');
+  });
+
+  test('publishExcursion submits guide offer for publishing review', () async {
+    final adapter = _ExcursionJsonAdapter({
+      '/me/excursions/excursion-1/submit-for-publish': {
+        ..._legacyExcursionJson(),
+        'status': 'PENDING_REVIEW',
+      },
+    });
+    final api = ExcursionApi(
+      apiClient: ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'http://backend.test/api/v1'))
+          ..httpClientAdapter = adapter,
+        secureStorage: _FakeSecureStorage(),
+      ),
+    );
+
+    final submitted = await api.publishExcursion('excursion-1');
+
+    expect(
+      adapter.requests.single.path,
+      '/me/excursions/excursion-1/submit-for-publish',
+    );
+    expect(adapter.lastOptions?.method, 'POST');
+    expect(submitted.status, 'PENDING_REVIEW');
   });
 
   test(

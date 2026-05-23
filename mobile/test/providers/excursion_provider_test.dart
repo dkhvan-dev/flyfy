@@ -123,6 +123,7 @@ void main() {
       expect(provider.myGuideExcursions, const [_publishedProductDetails]);
       expect(provider.myGuideExcursionBookings, [_upcomingGuideBooking]);
       expect(api.getMyExcursionsCallCount, 1);
+      expect(api.getMyExcursionsStatuses.single, contains('DRAFT'));
       expect(api.getMyGuideExcursionBookingsCallCount, 1);
     },
   );
@@ -462,6 +463,7 @@ class _FakeExcursionApi extends ExcursionApi {
   final List<ExcursionBookingVm> guideBookings;
   int getExcursionsCallCount = 0;
   int getMyExcursionsCallCount = 0;
+  final List<List<String>> getMyExcursionsStatuses = [];
   int getMyGuideExcursionBookingsCallCount = 0;
   final List<String> getExcursionByIdCalls = [];
 
@@ -473,6 +475,7 @@ class _FakeExcursionApi extends ExcursionApi {
     String? landmarkId,
     String? categorySlug,
     String? cityName,
+    String? departureCityId,
   }) async {
     final index = getExcursionsCallCount;
     getExcursionsCallCount++;
@@ -513,6 +516,7 @@ class _FakeExcursionApi extends ExcursionApi {
     List<String> statuses = const [],
   }) async {
     getMyExcursionsCallCount++;
+    getMyExcursionsStatuses.add(List<String>.unmodifiable(statuses));
     return ExcursionsPage(items: myExcursions, hasMore: false);
   }
 

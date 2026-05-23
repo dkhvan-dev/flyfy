@@ -19,6 +19,7 @@ class ExcursionApi {
     String? landmarkId,
     String? categorySlug,
     String? cityName,
+    String? departureCityId,
   }) async {
     final response = await _apiClient.dio.get(
       '/excursion-products',
@@ -31,6 +32,8 @@ class ExcursionApi {
         if ((categorySlug ?? '').trim().isNotEmpty)
           'categorySlug': categorySlug!.trim(),
         if ((cityName ?? '').trim().isNotEmpty) 'cityName': cityName!.trim(),
+        if ((departureCityId ?? '').trim().isNotEmpty)
+          'departureCityId': departureCityId!.trim(),
       },
       options: Options(extra: const {'requiresAuth': false}),
     );
@@ -174,8 +177,13 @@ class ExcursionApi {
   }
 
   Future<ExcursionVm> publishExcursion(String excursionId) async {
+    return submitExcursionForPublishing(excursionId);
+  }
+
+  Future<ExcursionVm> submitExcursionForPublishing(String excursionId) async {
+    final encodedExcursionId = Uri.encodeComponent(excursionId);
     final response = await _apiClient.dio.post(
-      '/me/excursions/$excursionId/publish',
+      '/me/excursions/$encodedExcursionId/submit-for-publish',
     );
 
     return ExcursionVm.fromJson(response.data as Map<String, dynamic>);

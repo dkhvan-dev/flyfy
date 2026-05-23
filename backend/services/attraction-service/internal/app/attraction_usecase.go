@@ -65,6 +65,8 @@ type CreateAttractionInput struct {
 	Translations      map[string]AttractionTranslationInput
 	CountryCode       string
 	CityID            string
+	AccessCities      []AttractionCityLinkInput
+	DepartureCities   []AttractionCityLinkInput
 	Latitude          *float64
 	Longitude         *float64
 	LocationSourceURL string
@@ -87,6 +89,8 @@ type UpdateAttractionInput struct {
 	Translations      map[string]AttractionTranslationInput
 	CountryCode       string
 	CityID            string
+	AccessCities      []AttractionCityLinkInput
+	DepartureCities   []AttractionCityLinkInput
 	Latitude          *float64
 	Longitude         *float64
 	LocationSourceURL string
@@ -102,28 +106,35 @@ type UpdateAttractionInput struct {
 }
 
 type ListAttractionsInput struct {
-	Search         string
-	Locale         string
-	Category       string
-	CountryCode    string
-	CityID         string
-	PriceMin       *float64
-	PriceMax       *float64
-	DurationMin    *int
-	DurationMax    *int
-	DurationUnit   *string
-	SpotsMin       *int
-	MinRating      *float64
-	AuthorID       *uuid.UUID
-	Sort           string
-	Limit          int
-	Offset         int
-	IncludeDeleted bool
+	Search          string
+	Locale          string
+	Category        string
+	CountryCode     string
+	CityID          string
+	AccessCityID    string
+	DepartureCityID string
+	PriceMin        *float64
+	PriceMax        *float64
+	DurationMin     *int
+	DurationMax     *int
+	DurationUnit    *string
+	SpotsMin        *int
+	MinRating       *float64
+	AuthorID        *uuid.UUID
+	Sort            string
+	Limit           int
+	Offset          int
+	IncludeDeleted  bool
 }
 
 type AttractionTranslationInput struct {
 	Title       string
 	Description string
+}
+
+type AttractionCityLinkInput struct {
+	CountryCode string
+	CityID      string
 }
 
 type AttractionVisitInfoInput struct {
@@ -209,6 +220,14 @@ func (u *AttractionUseCase) CreateAttraction(ctx context.Context, subject string
 	if err != nil {
 		return nil, err
 	}
+	accessCities, err := normalizeAttractionCityLinks(countryCode, cityID, input.AccessCities, "ACCESS")
+	if err != nil {
+		return nil, err
+	}
+	departureCities, err := normalizeAttractionCityLinks(countryCode, cityID, input.DepartureCities, "DEPARTURE")
+	if err != nil {
+		return nil, err
+	}
 
 	if err = validatePrice(input.PriceAmount, input.PriceCurrency); err != nil {
 		return nil, err
@@ -232,6 +251,8 @@ func (u *AttractionUseCase) CreateAttraction(ctx context.Context, subject string
 	}
 
 	now := time.Now().UTC()
+	setAttractionCityLinkTimestamps(accessCities, now)
+	setAttractionCityLinkTimestamps(departureCities, now)
 	attraction := &model.Attraction{
 		ID:                uuid.New(),
 		AuthorUserID:      authorUserID,
@@ -241,6 +262,8 @@ func (u *AttractionUseCase) CreateAttraction(ctx context.Context, subject string
 		Description:       desc,
 		CountryCode:       countryCode,
 		CityID:            cityID,
+		AccessCities:      accessCities,
+		DepartureCities:   departureCities,
 		Latitude:          input.Latitude,
 		Longitude:         input.Longitude,
 		LocationSourceURL: locationSourceURL,
@@ -318,6 +341,14 @@ func (u *AttractionUseCase) UpdateAttraction(ctx context.Context, subject string
 	if err != nil {
 		return nil, err
 	}
+	accessCities, err := normalizeAttractionCityLinks(countryCode, cityID, input.AccessCities, "ACCESS")
+	if err != nil {
+		return nil, err
+	}
+	departureCities, err := normalizeAttractionCityLinks(countryCode, cityID, input.DepartureCities, "DEPARTURE")
+	if err != nil {
+		return nil, err
+	}
 
 	if err = validatePrice(input.PriceAmount, input.PriceCurrency); err != nil {
 		return nil, err
@@ -344,6 +375,8 @@ func (u *AttractionUseCase) UpdateAttraction(ctx context.Context, subject string
 	attraction.Translations = translations
 	attraction.CountryCode = countryCode
 	attraction.CityID = cityID
+	attraction.AccessCities = accessCities
+	attraction.DepartureCities = departureCities
 	attraction.Latitude = latitude
 	attraction.Longitude = longitude
 	attraction.LocationSourceURL = locationSourceURL
@@ -360,6 +393,8 @@ func (u *AttractionUseCase) UpdateAttraction(ctx context.Context, subject string
 	}
 	attraction.VisitInfo = visitInfo
 	attraction.UpdatedAt = time.Now().UTC()
+	setAttractionCityLinkTimestamps(attraction.AccessCities, attraction.UpdatedAt)
+	setAttractionCityLinkTimestamps(attraction.DepartureCities, attraction.UpdatedAt)
 
 	if input.DurationUnit != nil {
 		du := enum.DurationUnit(strings.ToUpper(*input.DurationUnit))
@@ -454,6 +489,14 @@ func (u *AttractionUseCase) ListAttractions(ctx context.Context, input ListAttra
 	if err != nil {
 		return nil, 0, err
 	}
+	accessCityID, err := normalizeOptionalCityID(input.AccessCityID)
+	if err != nil {
+		return nil, 0, err
+	}
+	departureCityID, err := normalizeOptionalCityID(input.DepartureCityID)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	var durationUnit *enum.DurationUnit
 	if input.DurationUnit != nil {
@@ -462,23 +505,25 @@ func (u *AttractionUseCase) ListAttractions(ctx context.Context, input ListAttra
 	}
 
 	filter := model.AttractionListFilter{
-		Search:         input.Search,
-		Locale:         NormalizeAttractionLocale(input.Locale),
-		Category:       strings.ToUpper(strings.TrimSpace(input.Category)),
-		CountryCode:    countryCode,
-		CityID:         cityID,
-		PriceMin:       input.PriceMin,
-		PriceMax:       input.PriceMax,
-		DurationMin:    input.DurationMin,
-		DurationMax:    input.DurationMax,
-		DurationUnit:   durationUnit,
-		SpotsMin:       input.SpotsMin,
-		MinRating:      input.MinRating,
-		AuthorUserID:   input.AuthorID,
-		IncludeDeleted: input.IncludeDeleted,
-		Sort:           input.Sort,
-		Limit:          input.Limit,
-		Offset:         input.Offset,
+		Search:          input.Search,
+		Locale:          NormalizeAttractionLocale(input.Locale),
+		Category:        strings.ToUpper(strings.TrimSpace(input.Category)),
+		CountryCode:     countryCode,
+		CityID:          cityID,
+		AccessCityID:    accessCityID,
+		DepartureCityID: departureCityID,
+		PriceMin:        input.PriceMin,
+		PriceMax:        input.PriceMax,
+		DurationMin:     input.DurationMin,
+		DurationMax:     input.DurationMax,
+		DurationUnit:    durationUnit,
+		SpotsMin:        input.SpotsMin,
+		MinRating:       input.MinRating,
+		AuthorUserID:    input.AuthorID,
+		IncludeDeleted:  input.IncludeDeleted,
+		Sort:            input.Sort,
+		Limit:           input.Limit,
+		Offset:          input.Offset,
 	}
 
 	attractions, total, err := u.repo.ListAttractions(ctx, filter)
@@ -987,6 +1032,61 @@ func normalizeCityID(raw string) (string, error) {
 		return "", ErrInvalidCityID
 	}
 	return cityID, nil
+}
+
+func normalizeOptionalCityID(raw string) (string, error) {
+	if strings.TrimSpace(raw) == "" {
+		return "", nil
+	}
+	return normalizeCityID(raw)
+}
+
+func normalizeAttractionCityLinks(
+	defaultCountryCode string,
+	defaultCityID string,
+	inputs []AttractionCityLinkInput,
+	kind string,
+) ([]model.AttractionCityLink, error) {
+	if len(inputs) == 0 && defaultCityID != "" {
+		inputs = []AttractionCityLinkInput{{CountryCode: defaultCountryCode, CityID: defaultCityID}}
+	}
+	seen := make(map[string]struct{}, len(inputs))
+	result := make([]model.AttractionCityLink, 0, len(inputs))
+	for _, input := range inputs {
+		countryCode := input.CountryCode
+		if strings.TrimSpace(countryCode) == "" {
+			countryCode = defaultCountryCode
+		}
+		normalizedCountryCode, err := normalizeCountryCode(countryCode)
+		if err != nil {
+			return nil, err
+		}
+		cityID, err := normalizeCityID(input.CityID)
+		if err != nil {
+			return nil, err
+		}
+		if cityID == "" {
+			continue
+		}
+		key := normalizedCountryCode + ":" + cityID
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		result = append(result, model.AttractionCityLink{
+			Kind:        kind,
+			CountryCode: normalizedCountryCode,
+			CityID:      cityID,
+			Position:    len(result),
+		})
+	}
+	return result, nil
+}
+
+func setAttractionCityLinkTimestamps(items []model.AttractionCityLink, createdAt time.Time) {
+	for i := range items {
+		items[i].CreatedAt = createdAt
+	}
 }
 
 func trimDescription(description string) string {

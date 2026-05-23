@@ -69,6 +69,8 @@ func (h *Handler) CreateAttraction(w http.ResponseWriter, r *http.Request) {
 		Translations:      toAppTranslationInputs(req.Translations),
 		CountryCode:       req.CountryCode,
 		CityID:            req.CityID,
+		AccessCities:      toAppCityLinkInputs(req.AccessCities),
+		DepartureCities:   toAppCityLinkInputs(req.DepartureCities),
 		Latitude:          req.Latitude,
 		Longitude:         req.Longitude,
 		LocationSourceURL: req.LocationSourceURL,
@@ -127,6 +129,8 @@ func (h *Handler) UpdateAttraction(w http.ResponseWriter, r *http.Request) {
 		Translations:      toAppTranslationInputs(req.Translations),
 		CountryCode:       req.CountryCode,
 		CityID:            req.CityID,
+		AccessCities:      toAppCityLinkInputs(req.AccessCities),
+		DepartureCities:   toAppCityLinkInputs(req.DepartureCities),
 		Latitude:          req.Latitude,
 		Longitude:         req.Longitude,
 		LocationSourceURL: req.LocationSourceURL,
@@ -212,23 +216,25 @@ func (h *Handler) ListAttractions(w http.ResponseWriter, r *http.Request) {
 	includeDeleted := query.Get("includeDeleted") == "true"
 
 	views, total, err := h.useCase.ListAttractions(r.Context(), app.ListAttractionsInput{
-		Search:         query.Get("search"),
-		Locale:         localeFromRequest(r),
-		Category:       query.Get("category"),
-		CountryCode:    query.Get("countryCode"),
-		CityID:         query.Get("cityId"),
-		PriceMin:       priceMin,
-		PriceMax:       priceMax,
-		DurationMin:    durationMin,
-		DurationMax:    durationMax,
-		DurationUnit:   durationUnit,
-		SpotsMin:       spotsMin,
-		MinRating:      minRating,
-		AuthorID:       authorID,
-		Sort:           query.Get("sort"),
-		Limit:          limit,
-		Offset:         offset,
-		IncludeDeleted: includeDeleted,
+		Search:          query.Get("search"),
+		Locale:          localeFromRequest(r),
+		Category:        query.Get("category"),
+		CountryCode:     query.Get("countryCode"),
+		CityID:          query.Get("cityId"),
+		AccessCityID:    query.Get("accessCityId"),
+		DepartureCityID: query.Get("departureCityId"),
+		PriceMin:        priceMin,
+		PriceMax:        priceMax,
+		DurationMin:     durationMin,
+		DurationMax:     durationMax,
+		DurationUnit:    durationUnit,
+		SpotsMin:        spotsMin,
+		MinRating:       minRating,
+		AuthorID:        authorID,
+		Sort:            query.Get("sort"),
+		Limit:           limit,
+		Offset:          offset,
+		IncludeDeleted:  includeDeleted,
 	})
 	if err != nil {
 		h.writeUseCaseError(w, err, "failed to list attractions")
@@ -531,6 +537,8 @@ func toAttractionResponse(v *app.AttractionView) *dto.AttractionResponse {
 		Description:       a.Description,
 		CountryCode:       a.CountryCode,
 		CityID:            a.CityID,
+		AccessCities:      toCityLinkResponses(a.AccessCities),
+		DepartureCities:   toCityLinkResponses(a.DepartureCities),
 		Latitude:          a.Latitude,
 		Longitude:         a.Longitude,
 		LocationSourceURL: a.LocationSourceURL,
@@ -687,6 +695,20 @@ func toAppTranslationInputs(input map[string]dto.AttractionTranslationRequest) m
 	return result
 }
 
+func toAppCityLinkInputs(input []dto.AttractionCityLinkRequest) []app.AttractionCityLinkInput {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]app.AttractionCityLinkInput, 0, len(input))
+	for _, item := range input {
+		result = append(result, app.AttractionCityLinkInput{
+			CountryCode: item.CountryCode,
+			CityID:      item.CityID,
+		})
+	}
+	return result
+}
+
 func toAppVisitInfoInput(input *dto.AttractionVisitInfoRequest) *app.AttractionVisitInfoInput {
 	if input == nil {
 		return nil
@@ -702,6 +724,20 @@ func toAppVisitInfoInput(input *dto.AttractionVisitInfoRequest) *app.AttractionV
 		NearbyIDs:       input.NearbyIDs,
 		LocalizedTips:   input.LocalizedTips,
 	}
+}
+
+func toCityLinkResponses(input []model.AttractionCityLink) []dto.AttractionCityLinkResponse {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]dto.AttractionCityLinkResponse, 0, len(input))
+	for _, item := range input {
+		result = append(result, dto.AttractionCityLinkResponse{
+			CountryCode: item.CountryCode,
+			CityID:      item.CityID,
+		})
+	}
+	return result
 }
 
 func toTranslationResponses(input map[string]model.AttractionTranslation) map[string]dto.AttractionTranslationResponse {

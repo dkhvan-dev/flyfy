@@ -155,6 +155,9 @@ func (r *PGAttractionRepository) CreateAttraction(ctx context.Context, attractio
 	if err = upsertAttractionTranslations(ctx, tx, attraction); err != nil {
 		return err
 	}
+	if err = replaceAttractionCityLinks(ctx, tx, attraction.ID, attraction.AccessCities, attraction.DepartureCities); err != nil {
+		return err
+	}
 
 	if len(attraction.Media) > 0 {
 		if err = insertAttractionMedia(ctx, tx, attraction.ID, attraction.Media); err != nil {
@@ -240,6 +243,9 @@ func (r *PGAttractionRepository) UpdateAttraction(ctx context.Context, attractio
 	if err = upsertAttractionTranslations(ctx, tx, attraction); err != nil {
 		return err
 	}
+	if err = replaceAttractionCityLinks(ctx, tx, attraction.ID, attraction.AccessCities, attraction.DepartureCities); err != nil {
+		return err
+	}
 
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit attraction update tx: %w", err)
@@ -320,6 +326,10 @@ func (r *PGAttractionRepository) GetAttractionByID(ctx context.Context, id uuid.
 	}
 	item.Translations = translations
 
+	if err = r.loadAttractionCityLinks(ctx, item); err != nil {
+		return nil, err
+	}
+
 	return item, nil
 }
 
@@ -342,6 +352,20 @@ func (r *PGAttractionRepository) ListAttractions(ctx context.Context, filter mod
 	if filter.CityID != "" {
 		args = append(args, filter.CityID)
 		clauses = append(clauses, fmt.Sprintf("a.city_id = $%d", len(args)))
+	}
+	if filter.AccessCityID != "" {
+		args = append(args, filter.AccessCityID)
+		clauses = append(clauses, fmt.Sprintf(`EXISTS (
+			SELECT 1 FROM attraction_city_links acl
+			WHERE acl.attraction_id = a.id AND acl.kind = 'ACCESS' AND acl.city_id = $%d
+		)`, len(args)))
+	}
+	if filter.DepartureCityID != "" {
+		args = append(args, filter.DepartureCityID)
+		clauses = append(clauses, fmt.Sprintf(`EXISTS (
+			SELECT 1 FROM attraction_city_links dcl
+			WHERE dcl.attraction_id = a.id AND dcl.kind = 'DEPARTURE' AND dcl.city_id = $%d
+		)`, len(args)))
 	}
 	if filter.PriceMin != nil {
 		args = append(args, *filter.PriceMin)
@@ -493,6 +517,9 @@ func (r *PGAttractionRepository) ListAttractions(ctx context.Context, filter mod
 			return nil, 0, tErr
 		}
 		item.Translations = translations
+		if linkErr := r.loadAttractionCityLinks(ctx, item); linkErr != nil {
+			return nil, 0, linkErr
+		}
 	}
 
 	return items, total, nil
@@ -690,6 +717,105 @@ func upsertAttractionTranslations(ctx context.Context, tx pgx.Tx, attraction *mo
 		}
 	}
 	return nil
+}
+
+func replaceAttractionCityLinks(
+	ctx context.Context,
+	tx pgx.Tx,
+	attractionID uuid.UUID,
+	accessCities []model.AttractionCityLink,
+	departureCities []model.AttractionCityLink,
+) error {
+	if _, err := tx.Exec(ctx, `DELETE FROM attraction_city_links WHERE attraction_id = $1`, attractionID); err != nil {
+		return fmt.Errorf("delete attraction city links: %w", err)
+	}
+	if err := insertAttractionCityLinks(ctx, tx, attractionID, "ACCESS", accessCities); err != nil {
+		return err
+	}
+	return insertAttractionCityLinks(ctx, tx, attractionID, "DEPARTURE", departureCities)
+}
+
+func insertAttractionCityLinks(
+	ctx context.Context,
+	tx pgx.Tx,
+	attractionID uuid.UUID,
+	kind string,
+	items []model.AttractionCityLink,
+) error {
+	const query = `
+		INSERT INTO attraction_city_links (
+			id, attraction_id, kind, country_code, city_id, position, created_at
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7
+		)
+		ON CONFLICT (attraction_id, kind, city_id) DO UPDATE
+		SET country_code = EXCLUDED.country_code,
+			position = EXCLUDED.position
+	`
+	for index, item := range items {
+		createdAt := item.CreatedAt
+		if createdAt.IsZero() {
+			createdAt = time.Now().UTC()
+		}
+		position := item.Position
+		if position < 0 {
+			position = index
+		}
+		if _, err := tx.Exec(
+			ctx,
+			query,
+			uuid.New(),
+			attractionID,
+			kind,
+			strings.ToUpper(strings.TrimSpace(item.CountryCode)),
+			strings.ToLower(strings.TrimSpace(item.CityID)),
+			position,
+			createdAt,
+		); err != nil {
+			return fmt.Errorf("insert attraction city link: %w", err)
+		}
+	}
+	return nil
+}
+
+func (r *PGAttractionRepository) loadAttractionCityLinks(ctx context.Context, attraction *model.Attraction) error {
+	if attraction == nil {
+		return nil
+	}
+	const query = `
+		SELECT attraction_id, kind, country_code, city_id, position, created_at
+		FROM attraction_city_links
+		WHERE attraction_id = $1
+		ORDER BY kind, position, city_id
+	`
+	rows, err := r.pool.Query(ctx, query, attraction.ID)
+	if err != nil {
+		return fmt.Errorf("query attraction city links: %w", err)
+	}
+	defer rows.Close()
+
+	attraction.AccessCities = nil
+	attraction.DepartureCities = nil
+	for rows.Next() {
+		var item model.AttractionCityLink
+		if err = rows.Scan(
+			&item.AttractionID,
+			&item.Kind,
+			&item.CountryCode,
+			&item.CityID,
+			&item.Position,
+			&item.CreatedAt,
+		); err != nil {
+			return fmt.Errorf("scan attraction city link: %w", err)
+		}
+		switch item.Kind {
+		case "ACCESS":
+			attraction.AccessCities = append(attraction.AccessCities, item)
+		case "DEPARTURE":
+			attraction.DepartureCities = append(attraction.DepartureCities, item)
+		}
+	}
+	return rows.Err()
 }
 
 func insertAttractionMedia(ctx context.Context, tx pgx.Tx, attractionID uuid.UUID, media []model.AttractionMedia) error {

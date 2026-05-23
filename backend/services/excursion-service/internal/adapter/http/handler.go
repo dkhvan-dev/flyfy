@@ -53,6 +53,10 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /v1/me/excursions/{id}", h.DeleteExcursion)
 	mux.HandleFunc("POST /v1/me/excursions/{id}/archive", h.ArchiveExcursion)
 	mux.HandleFunc("POST /v1/me/excursions/{id}/publish", h.PublishExcursion)
+	mux.HandleFunc("POST /v1/me/excursions/{id}/submit-for-publish", h.PublishExcursion)
+	mux.HandleFunc("POST /v1/me/excursions/{id}/submit-for-review", h.PublishExcursion)
+	mux.HandleFunc("POST /v1/admin/excursions/{id}/moderation/approve", h.ApproveExcursionModeration)
+	mux.HandleFunc("POST /v1/admin/excursions/{id}/moderation/reject", h.RejectExcursionModeration)
 	mux.HandleFunc("GET /v1/me/excursion-schedule", h.ListGuideSchedule)
 	mux.HandleFunc("POST /v1/me/excursion-schedule/slots", h.CreateGuideScheduleSlot)
 	mux.HandleFunc("PATCH /v1/me/excursion-schedule/slots/{id}", h.UpdateGuideScheduleSlot)
@@ -139,6 +143,55 @@ func (h *Handler) PublishExcursion(w http.ResponseWriter, r *http.Request) {
 	aggregate, err := h.useCase.PublishExcursion(r.Context(), excursionID, actorUserID)
 	if err != nil {
 		h.writeUseCaseError(w, r, err, "failed to publish excursion")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+}
+
+func (h *Handler) ApproveExcursionModeration(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	if !requireModeratorRole(w, r) {
+		return
+	}
+	excursionID, ok := parsePathUUID(w, r, "id", "invalid excursion id")
+	if !ok {
+		return
+	}
+	aggregate, err := h.useCase.ApproveExcursionModeration(r.Context(), excursionID, actorUserID)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to approve excursion moderation")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+}
+
+func (h *Handler) RejectExcursionModeration(w http.ResponseWriter, r *http.Request) {
+	actorUserID, ok := parseActorUserID(w, r)
+	if !ok {
+		return
+	}
+	if !requireModeratorRole(w, r) {
+		return
+	}
+	excursionID, ok := parsePathUUID(w, r, "id", "invalid excursion id")
+	if !ok {
+		return
+	}
+	var req struct {
+		ReasonCodes []string `json:"reasonCodes"`
+	}
+	if r.Body != nil && r.Body != http.NoBody {
+		if err := decodeBody(r, &req); err != nil && !errors.Is(err, io.EOF) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+	aggregate, err := h.useCase.RejectExcursionModeration(r.Context(), excursionID, actorUserID, req.ReasonCodes)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to reject excursion moderation")
 		return
 	}
 	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
@@ -1047,6 +1100,7 @@ func parseExcursionProductFilter(r *http.Request, limit int) port.ExcursionProdu
 		LandmarkID:      optionalUUID(query.Get("landmarkId")),
 		CountryCode:     optionalString(query.Get("countryCode")),
 		CityName:        optionalString(query.Get("cityName")),
+		DepartureCityID: optionalReferenceCityID(query.Get("departureCityId")),
 		LanguageCode:    optionalString(query.Get("languageCode")),
 		SearchQuery:     optionalString(query.Get("q")),
 		PriceMin:        optionalFloat(query.Get("priceMin")),
@@ -1096,6 +1150,7 @@ func parseExcursionFilter(w http.ResponseWriter, r *http.Request, limit int) (po
 	filter.CategorySlug = optionalString(query.Get("categorySlug"))
 	filter.CountryCode = optionalString(query.Get("countryCode"))
 	filter.CityName = optionalString(query.Get("cityName"))
+	filter.DepartureCityID = optionalReferenceCityID(query.Get("departureCityId"))
 	filter.LanguageCode = optionalString(query.Get("languageCode"))
 	filter.SearchQuery = optionalString(query.Get("q"))
 	filter.PriceMin = optionalFloat(query.Get("priceMin"))
@@ -1119,6 +1174,10 @@ func toCreateInput(actorUserID uuid.UUID, req dto.CreateExcursionRequest) (app.C
 	if err != nil {
 		return app.CreateExcursionInput{}, fmt.Errorf("invalid productCoverFileId")
 	}
+	departureCityID, err := parseOptionalReferenceCityID(req.DepartureCityID)
+	if err != nil {
+		return app.CreateExcursionInput{}, fmt.Errorf("invalid departureCityId")
+	}
 	itinerary, err := toAppItinerary(req.Itinerary)
 	if err != nil {
 		return app.CreateExcursionInput{}, err
@@ -1135,6 +1194,7 @@ func toCreateInput(actorUserID uuid.UUID, req dto.CreateExcursionRequest) (app.C
 		LanguageCodes:       req.LanguageCodes,
 		CountryCode:         req.CountryCode,
 		CityName:            req.CityName,
+		DepartureCityID:     departureCityID,
 		MeetingPoint:        req.MeetingPoint,
 		Latitude:            req.Latitude,
 		Longitude:           req.Longitude,
@@ -1166,6 +1226,7 @@ func toUpdateInput(actorUserID uuid.UUID, excursionID uuid.UUID, req dto.UpdateE
 		LanguageCodes:       createInput.LanguageCodes,
 		CountryCode:         createInput.CountryCode,
 		CityName:            createInput.CityName,
+		DepartureCityID:     createInput.DepartureCityID,
 		MeetingPoint:        createInput.MeetingPoint,
 		Latitude:            createInput.Latitude,
 		Longitude:           createInput.Longitude,
@@ -1426,6 +1487,7 @@ func toExcursionProductCardResponse(aggregate *app.ExcursionProductCardAggregate
 		DurationMinutes:      item.DurationMinutes,
 		CountryCode:          item.CountryCode,
 		CityName:             item.CityName,
+		DepartureCityID:      formatOptionalString(item.DepartureCityID),
 		Latitude:             item.Latitude,
 		Longitude:            item.Longitude,
 		MapURL:               item.MapURL,
@@ -1557,6 +1619,7 @@ func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionRespons
 		LanguageCodes:            aggregate.LanguageCodes,
 		CountryCode:              item.CountryCode,
 		CityName:                 item.CityName,
+		DepartureCityID:          formatOptionalString(item.DepartureCityID),
 		MeetingPoint:             item.MeetingPoint,
 		Latitude:                 item.Latitude,
 		Longitude:                item.Longitude,
@@ -1568,6 +1631,11 @@ func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionRespons
 		IncludedItems:            includedItemTexts(aggregate.IncludedItems),
 		IncludedItemTranslations: includedItemTranslations(aggregate.IncludedItems),
 		Itinerary:                toItineraryResponse(aggregate.Itinerary),
+		PublishingDecision:       string(item.PublishingDecision),
+		GuideTrustScore:          item.GuideTrustScore,
+		PublishRiskScore:         item.PublishRiskScore,
+		ModerationReasonCodes:    item.ModerationReasonCodes,
+		SubmittedForReviewAt:     formatOptionalTime(item.SubmittedForReviewAt),
 		PublishedAt:              formatOptionalTime(item.PublishedAt),
 		DeletedAt:                formatOptionalTime(item.DeletedAt),
 		Revision:                 item.Revision,
@@ -1887,8 +1955,10 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, model.ErrInvalidExcursionMeeting),
 		errors.Is(err, model.ErrInvalidExcursionPrice),
 		errors.Is(err, model.ErrInvalidExcursionCurrency),
+		errors.Is(err, model.ErrInvalidExcursionPublishingDecision),
 		errors.Is(err, model.ErrExcursionLanguageRequired),
 		errors.Is(err, model.ErrExcursionItineraryRequired),
+		errors.Is(err, model.ErrExcursionNotPendingReview),
 		errors.Is(err, model.ErrInvalidExcursionItineraryID),
 		errors.Is(err, model.ErrInvalidExcursionItineraryOffset),
 		errors.Is(err, model.ErrInvalidExcursionItineraryTitle),
@@ -1962,6 +2032,17 @@ func parseActorUserID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) 
 	return parsed, true
 }
 
+func requireModeratorRole(w http.ResponseWriter, r *http.Request) bool {
+	for _, role := range RolesFromContext(r.Context()) {
+		switch strings.ToLower(strings.TrimSpace(role)) {
+		case "admin", "super_admin", "moderator", "content_moderator":
+			return true
+		}
+	}
+	writeError(w, http.StatusForbidden, "moderator role required")
+	return false
+}
+
 func parsePathUUID(w http.ResponseWriter, r *http.Request, key string, message string) (uuid.UUID, bool) {
 	parsed, err := uuid.Parse(strings.TrimSpace(r.PathValue(key)))
 	if err != nil {
@@ -1994,6 +2075,31 @@ func parseOptionalUUIDString(v *string) (*uuid.UUID, error) {
 	return &parsed, nil
 }
 
+func parseOptionalReferenceCityID(v *string) (*string, error) {
+	if v == nil || strings.TrimSpace(*v) == "" {
+		return nil, nil
+	}
+	normalized := strings.ToLower(strings.TrimSpace(*v))
+	if len(normalized) > 64 {
+		return nil, fmt.Errorf("city id too long")
+	}
+	for i, r := range normalized {
+		isLowerAlpha := r >= 'a' && r <= 'z'
+		isDigit := r >= '0' && r <= '9'
+		isHyphen := r == '-'
+		if i == 0 {
+			if !isLowerAlpha && !isDigit {
+				return nil, fmt.Errorf("city id must start with latin letter or digit")
+			}
+			continue
+		}
+		if !isLowerAlpha && !isDigit && !isHyphen {
+			return nil, fmt.Errorf("city id contains invalid character")
+		}
+	}
+	return &normalized, nil
+}
+
 func parseOptionalRouteStopUUID(value *string) (*uuid.UUID, error) {
 	if value == nil || strings.TrimSpace(*value) == "" {
 		return nil, nil
@@ -2014,6 +2120,14 @@ func optionalString(v string) *string {
 	}
 	trimmed := strings.TrimSpace(v)
 	return &trimmed
+}
+
+func optionalReferenceCityID(v string) *string {
+	parsed, err := parseOptionalReferenceCityID(&v)
+	if err != nil {
+		return nil
+	}
+	return parsed
 }
 
 func optionalFloat(v string) *float64 {

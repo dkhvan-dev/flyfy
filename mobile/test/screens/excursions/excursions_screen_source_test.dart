@@ -86,6 +86,8 @@ void main() {
     expect(source, contains('AppCityFilterSection'));
     expect(source, contains('locationFilterCitySection'));
     expect(source, contains('filters.city'));
+    expect(source, contains('departureCityId: city?.cityId'));
+    expect(source, contains('cityId: excursion.departureCityId'));
     expect(source, contains('excursion.cityName'));
     expect(source, contains('countryCode: excursion.countryCode'));
     expect(source, isNot(contains('profile?.countryCode')));

@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"sort"
 	"strings"
 	"time"
 
@@ -26,9 +27,11 @@ var (
 	ErrInvalidExcursionLocation            = errors.New("invalid excursion location")
 	ErrInvalidExcursionPrice               = errors.New("invalid excursion price")
 	ErrInvalidExcursionCurrency            = errors.New("invalid excursion currency")
+	ErrInvalidExcursionPublishingDecision  = errors.New("invalid excursion publishing decision")
 	ErrExcursionLanguageRequired           = errors.New("excursion language is required")
 	ErrExcursionItineraryRequired          = errors.New("excursion itinerary is required")
 	ErrExcursionAlreadyArchived            = errors.New("excursion already archived")
+	ErrExcursionNotPendingReview           = errors.New("excursion is not pending review")
 	ErrExcursionGuideLandmarkAlreadyExists = errors.New("excursion already exists for this guide and attraction")
 )
 
@@ -45,6 +48,22 @@ const (
 	maxExcursionGroupSize         = 100
 	maxExcursionPrice             = 1000000
 )
+
+type ExcursionPublishingDecision string
+
+const (
+	ExcursionPublishingDecisionAutoPublish ExcursionPublishingDecision = "AUTO_PUBLISH"
+	ExcursionPublishingDecisionNeedsReview ExcursionPublishingDecision = "NEEDS_REVIEW"
+)
+
+func (d ExcursionPublishingDecision) IsValid() bool {
+	switch d {
+	case "", ExcursionPublishingDecisionAutoPublish, ExcursionPublishingDecisionNeedsReview:
+		return true
+	default:
+		return false
+	}
+}
 
 type ExcursionLocalizedCopy struct {
 	Title       string `json:"title,omitempty"`
@@ -80,21 +99,27 @@ type Excursion struct {
 	DurationMinutes int
 	MaxGroupSize    int
 
-	CountryCode  *string
-	CityName     *string
-	MeetingPoint string
-	Latitude     *float64
-	Longitude    *float64
-	MapURL       *string
+	CountryCode     *string
+	CityName        *string
+	DepartureCityID *string
+	MeetingPoint    string
+	Latitude        *float64
+	Longitude       *float64
+	MapURL          *string
 
 	PriceAmount float64
 	Currency    string
 
-	PublishedAt *time.Time
-	DeletedAt   *time.Time
-	Revision    int
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	PublishingDecision    ExcursionPublishingDecision
+	GuideTrustScore       int
+	PublishRiskScore      int
+	ModerationReasonCodes []string
+	SubmittedForReviewAt  *time.Time
+	PublishedAt           *time.Time
+	DeletedAt             *time.Time
+	Revision              int
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
 }
 
 type NewExcursionParams struct {
@@ -118,12 +143,13 @@ type NewExcursionParams struct {
 	DurationMinutes int
 	MaxGroupSize    int
 
-	CountryCode  *string
-	CityName     *string
-	MeetingPoint string
-	Latitude     *float64
-	Longitude    *float64
-	MapURL       *string
+	CountryCode     *string
+	CityName        *string
+	DepartureCityID *string
+	MeetingPoint    string
+	Latitude        *float64
+	Longitude       *float64
+	MapURL          *string
 
 	PriceAmount float64
 	Currency    string
@@ -137,37 +163,39 @@ func NewExcursion(params NewExcursionParams) (*Excursion, error) {
 	}
 
 	item := &Excursion{
-		ID:                   uuid.New(),
-		GuideProfileID:       params.GuideProfileID,
-		GuideUserID:          params.GuideUserID,
-		GuideRatingAvg:       normalizeGuideRatingAvg(params.GuideRatingAvg),
-		GuideReviewsCount:    normalizeNonNegativeInt(params.GuideReviewsCount),
-		GuideExperienceYears: normalizeNonNegativeInt(params.GuideExperienceYears),
-		GuideDisplayName:     normalizeGuideSnapshotText(params.GuideDisplayName),
-		GuideSearchText:      normalizeGuideSnapshotText(params.GuideSearchText),
-		LandmarkID:           params.LandmarkID,
-		LandmarkName:         NormalizeOptionalString(params.LandmarkName),
-		Title:                strings.TrimSpace(params.Title),
-		Summary:              strings.TrimSpace(params.Summary),
-		Description:          strings.TrimSpace(params.Description),
-		Translations:         NormalizeExcursionTranslations(params.Translations),
-		CategorySlug:         NormalizeSlug(params.CategorySlug),
-		ProductTranslations:  NormalizeExcursionTranslations(params.ProductTranslations),
-		Status:               enum.ExcursionStatusDraft,
-		Visibility:           visibility,
-		DurationMinutes:      params.DurationMinutes,
-		MaxGroupSize:         params.MaxGroupSize,
-		CountryCode:          NormalizeOptionalString(params.CountryCode),
-		CityName:             NormalizeOptionalString(params.CityName),
-		MeetingPoint:         strings.TrimSpace(params.MeetingPoint),
-		Latitude:             params.Latitude,
-		Longitude:            params.Longitude,
-		MapURL:               NormalizeOptionalString(params.MapURL),
-		PriceAmount:          params.PriceAmount,
-		Currency:             strings.ToUpper(strings.TrimSpace(params.Currency)),
-		Revision:             1,
-		CreatedAt:            now,
-		UpdatedAt:            now,
+		ID:                    uuid.New(),
+		GuideProfileID:        params.GuideProfileID,
+		GuideUserID:           params.GuideUserID,
+		GuideRatingAvg:        normalizeGuideRatingAvg(params.GuideRatingAvg),
+		GuideReviewsCount:     normalizeNonNegativeInt(params.GuideReviewsCount),
+		GuideExperienceYears:  normalizeNonNegativeInt(params.GuideExperienceYears),
+		GuideDisplayName:      normalizeGuideSnapshotText(params.GuideDisplayName),
+		GuideSearchText:       normalizeGuideSnapshotText(params.GuideSearchText),
+		LandmarkID:            params.LandmarkID,
+		LandmarkName:          NormalizeOptionalString(params.LandmarkName),
+		Title:                 strings.TrimSpace(params.Title),
+		Summary:               strings.TrimSpace(params.Summary),
+		Description:           strings.TrimSpace(params.Description),
+		Translations:          NormalizeExcursionTranslations(params.Translations),
+		CategorySlug:          NormalizeSlug(params.CategorySlug),
+		ProductTranslations:   NormalizeExcursionTranslations(params.ProductTranslations),
+		Status:                enum.ExcursionStatusDraft,
+		Visibility:            visibility,
+		DurationMinutes:       params.DurationMinutes,
+		MaxGroupSize:          params.MaxGroupSize,
+		CountryCode:           NormalizeOptionalString(params.CountryCode),
+		CityName:              NormalizeOptionalString(params.CityName),
+		DepartureCityID:       NormalizeReferenceCityIDPtr(params.DepartureCityID),
+		MeetingPoint:          strings.TrimSpace(params.MeetingPoint),
+		Latitude:              params.Latitude,
+		Longitude:             params.Longitude,
+		MapURL:                NormalizeOptionalString(params.MapURL),
+		PriceAmount:           params.PriceAmount,
+		Currency:              strings.ToUpper(strings.TrimSpace(params.Currency)),
+		ModerationReasonCodes: []string{},
+		Revision:              1,
+		CreatedAt:             now,
+		UpdatedAt:             now,
 	}
 
 	if err := item.Validate(); err != nil {
@@ -191,12 +219,13 @@ type UpdateExcursionParams struct {
 	DurationMinutes int
 	MaxGroupSize    int
 
-	CountryCode  *string
-	CityName     *string
-	MeetingPoint string
-	Latitude     *float64
-	Longitude    *float64
-	MapURL       *string
+	CountryCode     *string
+	CityName        *string
+	DepartureCityID *string
+	MeetingPoint    string
+	Latitude        *float64
+	Longitude       *float64
+	MapURL          *string
 
 	PriceAmount float64
 	Currency    string
@@ -224,6 +253,7 @@ func (t *Excursion) ApplyUpdate(params UpdateExcursionParams) error {
 	t.MaxGroupSize = params.MaxGroupSize
 	t.CountryCode = NormalizeOptionalString(params.CountryCode)
 	t.CityName = NormalizeOptionalString(params.CityName)
+	t.DepartureCityID = NormalizeReferenceCityIDPtr(params.DepartureCityID)
 	t.MeetingPoint = strings.TrimSpace(params.MeetingPoint)
 	t.Latitude = params.Latitude
 	t.Longitude = params.Longitude
@@ -286,6 +316,9 @@ func (t *Excursion) Validate() error {
 	if !t.Visibility.IsValid() {
 		return ErrInvalidExcursionVisibility
 	}
+	if !t.PublishingDecision.IsValid() {
+		return ErrInvalidExcursionPublishingDecision
+	}
 	if t.DurationMinutes < minExcursionDurationMinutes || t.DurationMinutes > maxExcursionDurationMinutes {
 		return ErrInvalidExcursionDuration
 	}
@@ -334,6 +367,18 @@ type PublishExcursionParams struct {
 	Itinerary     []*ExcursionItineraryItem
 }
 
+type ExcursionPublishingEvaluation struct {
+	Decision         ExcursionPublishingDecision
+	GuideTrustScore  int
+	PublishRiskScore int
+	ReasonCodes      []string
+}
+
+type SubmitExcursionForReviewParams struct {
+	Publish    PublishExcursionParams
+	Evaluation ExcursionPublishingEvaluation
+}
+
 func (t *Excursion) ValidatePublishable(params PublishExcursionParams) error {
 	if err := t.Validate(); err != nil {
 		return err
@@ -374,11 +419,100 @@ func (t *Excursion) Publish(params PublishExcursionParams) error {
 
 	now := time.Now().UTC()
 	t.Status = enum.ExcursionStatusPublished
+	t.PublishingDecision = ExcursionPublishingDecisionAutoPublish
+	t.SubmittedForReviewAt = nil
 	t.PublishedAt = &now
 	t.DeletedAt = nil
 	t.Revision++
 	t.UpdatedAt = now
 	return nil
+}
+
+func (t *Excursion) SubmitForReview(params SubmitExcursionForReviewParams) error {
+	if t.DeletedAt != nil {
+		return ErrExcursionAlreadyArchived
+	}
+	if t.Status == enum.ExcursionStatusPendingReview && t.SubmittedForReviewAt != nil {
+		return nil
+	}
+	if err := t.ValidatePublishable(params.Publish); err != nil {
+		return err
+	}
+
+	now := time.Now().UTC()
+	t.applyPublishingEvaluation(params.Evaluation)
+	if t.PublishingDecision == "" {
+		t.PublishingDecision = ExcursionPublishingDecisionNeedsReview
+	}
+	t.Status = enum.ExcursionStatusPendingReview
+	t.PublishedAt = nil
+	t.SubmittedForReviewAt = &now
+	t.Revision++
+	t.UpdatedAt = now
+	return nil
+}
+
+func (t *Excursion) ApproveReview(params PublishExcursionParams) error {
+	if t.DeletedAt != nil {
+		return ErrExcursionAlreadyArchived
+	}
+	if t.Status == enum.ExcursionStatusPublished && t.PublishedAt != nil {
+		return nil
+	}
+	if t.Status != enum.ExcursionStatusPendingReview {
+		return ErrExcursionNotPendingReview
+	}
+	if err := t.ValidatePublishable(params); err != nil {
+		return err
+	}
+
+	now := time.Now().UTC()
+	if t.PublishingDecision == "" {
+		t.PublishingDecision = ExcursionPublishingDecisionNeedsReview
+	}
+	t.Status = enum.ExcursionStatusPublished
+	t.PublishedAt = &now
+	t.SubmittedForReviewAt = nil
+	t.DeletedAt = nil
+	t.Revision++
+	t.UpdatedAt = now
+	return nil
+}
+
+func (t *Excursion) RejectReview(reasonCodes []string) error {
+	if t.DeletedAt != nil {
+		return ErrExcursionAlreadyArchived
+	}
+	if t.Status == enum.ExcursionStatusRejected {
+		return nil
+	}
+	if t.Status != enum.ExcursionStatusPendingReview {
+		return ErrExcursionNotPendingReview
+	}
+
+	now := time.Now().UTC()
+	t.Status = enum.ExcursionStatusRejected
+	t.PublishingDecision = ExcursionPublishingDecisionNeedsReview
+	t.ModerationReasonCodes = normalizeModerationReasonCodes(reasonCodes)
+	if len(t.ModerationReasonCodes) == 0 {
+		t.ModerationReasonCodes = []string{"moderator_rejected"}
+	}
+	t.PublishedAt = nil
+	t.Revision++
+	t.UpdatedAt = now
+	return t.Validate()
+}
+
+func (t *Excursion) ApplyPublishingEvaluation(evaluation ExcursionPublishingEvaluation) error {
+	t.applyPublishingEvaluation(evaluation)
+	return t.Validate()
+}
+
+func (t *Excursion) applyPublishingEvaluation(evaluation ExcursionPublishingEvaluation) {
+	t.PublishingDecision = normalizePublishingDecision(evaluation.Decision)
+	t.GuideTrustScore = clampScore(evaluation.GuideTrustScore)
+	t.PublishRiskScore = clampScore(evaluation.PublishRiskScore)
+	t.ModerationReasonCodes = normalizeModerationReasonCodes(evaluation.ReasonCodes)
 }
 
 func (t *Excursion) MoveToArchive() error {
@@ -501,6 +635,81 @@ func normalizeLanguageCodes(values []string) []string {
 		}
 		seen[code] = struct{}{}
 		result = append(result, code)
+	}
+	return result
+}
+
+func NormalizeReferenceCityIDPtr(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	normalized := strings.ToLower(strings.TrimSpace(*value))
+	if normalized == "" {
+		return nil
+	}
+	if len(normalized) > 64 || !isReferenceCityID(normalized) {
+		return nil
+	}
+	return &normalized
+}
+
+func isReferenceCityID(value string) bool {
+	for i, r := range value {
+		isLowerAlpha := r >= 'a' && r <= 'z'
+		isDigit := r >= '0' && r <= '9'
+		isHyphen := r == '-'
+		if i == 0 {
+			if !isLowerAlpha && !isDigit {
+				return false
+			}
+			continue
+		}
+		if !isLowerAlpha && !isDigit && !isHyphen {
+			return false
+		}
+	}
+	return true
+}
+
+func normalizePublishingDecision(value ExcursionPublishingDecision) ExcursionPublishingDecision {
+	normalized := ExcursionPublishingDecision(strings.ToUpper(strings.TrimSpace(string(value))))
+	if normalized.IsValid() {
+		return normalized
+	}
+	return ""
+}
+
+func clampScore(value int) int {
+	if value < 0 {
+		return 0
+	}
+	if value > 100 {
+		return 100
+	}
+	return value
+}
+
+func normalizeModerationReasonCodes(values []string) []string {
+	if len(values) == 0 {
+		return []string{}
+	}
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		code := strings.ToLower(strings.TrimSpace(value))
+		code = strings.ReplaceAll(code, " ", "_")
+		if code == "" {
+			continue
+		}
+		if _, ok := seen[code]; ok {
+			continue
+		}
+		seen[code] = struct{}{}
+		result = append(result, code)
+	}
+	sort.Strings(result)
+	if len(result) == 0 {
+		return []string{}
 	}
 	return result
 }

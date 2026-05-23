@@ -81,6 +81,17 @@ func TestNewExcursionRejectsCoordinatesOutOfRange(t *testing.T) {
 	}
 }
 
+func TestNewExcursionInitializesModerationReasonCodes(t *testing.T) {
+	excursion := newValidExcursion(t)
+
+	if excursion.ModerationReasonCodes == nil {
+		t.Fatal("ModerationReasonCodes is nil, want empty slice")
+	}
+	if len(excursion.ModerationReasonCodes) != 0 {
+		t.Fatalf("ModerationReasonCodes = %#v, want empty slice", excursion.ModerationReasonCodes)
+	}
+}
+
 func TestExcursionPublishRequiresBookableDetails(t *testing.T) {
 	lat := 43.238949
 	lng := 76.889709
@@ -205,6 +216,151 @@ func TestExcursionPublishRejectsArchivedExcursion(t *testing.T) {
 	}
 	if excursion.DeletedAt == nil {
 		t.Fatal("DeletedAt is nil")
+	}
+}
+
+func TestExcursionSubmitForReviewKeepsDraftPrivateUntilModerated(t *testing.T) {
+	excursion := newValidExcursion(t)
+
+	err := excursion.SubmitForReview(SubmitExcursionForReviewParams{
+		Publish: validPublishParams(excursion.ID),
+		Evaluation: ExcursionPublishingEvaluation{
+			Decision:         ExcursionPublishingDecisionNeedsReview,
+			GuideTrustScore:  35,
+			PublishRiskScore: 45,
+			ReasonCodes:      []string{"guide_new", "departure_city_missing"},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("SubmitForReview() error = %v", err)
+	}
+	if excursion.Status != enum.ExcursionStatusPendingReview {
+		t.Fatalf("status = %q, want %q", excursion.Status, enum.ExcursionStatusPendingReview)
+	}
+	if excursion.PublishedAt != nil {
+		t.Fatalf("PublishedAt = %v, want nil before moderation", excursion.PublishedAt)
+	}
+	if excursion.SubmittedForReviewAt == nil {
+		t.Fatal("SubmittedForReviewAt is nil")
+	}
+	if excursion.PublishingDecision != ExcursionPublishingDecisionNeedsReview {
+		t.Fatalf("decision = %q, want %q", excursion.PublishingDecision, ExcursionPublishingDecisionNeedsReview)
+	}
+	if excursion.GuideTrustScore != 35 || excursion.PublishRiskScore != 45 {
+		t.Fatalf("scores = trust:%d risk:%d, want trust:35 risk:45", excursion.GuideTrustScore, excursion.PublishRiskScore)
+	}
+	if len(excursion.ModerationReasonCodes) != 2 || excursion.ModerationReasonCodes[0] != "departure_city_missing" {
+		t.Fatalf("reason codes = %#v, want normalized sorted reason codes", excursion.ModerationReasonCodes)
+	}
+}
+
+func TestExcursionSubmitForReviewIsIdempotent(t *testing.T) {
+	excursion := newValidExcursion(t)
+	err := excursion.SubmitForReview(SubmitExcursionForReviewParams{
+		Publish: validPublishParams(excursion.ID),
+		Evaluation: ExcursionPublishingEvaluation{
+			Decision:         ExcursionPublishingDecisionNeedsReview,
+			GuideTrustScore:  35,
+			PublishRiskScore: 45,
+			ReasonCodes:      []string{"guide_new"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SubmitForReview() error = %v", err)
+	}
+	submittedAt := *excursion.SubmittedForReviewAt
+	revision := excursion.Revision
+
+	err = excursion.SubmitForReview(SubmitExcursionForReviewParams{
+		Publish: validPublishParams(excursion.ID),
+		Evaluation: ExcursionPublishingEvaluation{
+			Decision:         ExcursionPublishingDecisionNeedsReview,
+			GuideTrustScore:  10,
+			PublishRiskScore: 90,
+			ReasonCodes:      []string{"should_not_replace"},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("second SubmitForReview() error = %v", err)
+	}
+	if excursion.SubmittedForReviewAt == nil || !excursion.SubmittedForReviewAt.Equal(submittedAt) {
+		t.Fatalf("SubmittedForReviewAt = %v, want %v", excursion.SubmittedForReviewAt, submittedAt)
+	}
+	if excursion.Revision != revision {
+		t.Fatalf("revision = %d, want %d", excursion.Revision, revision)
+	}
+	if len(excursion.ModerationReasonCodes) != 1 || excursion.ModerationReasonCodes[0] != "guide_new" {
+		t.Fatalf("reason codes = %#v, want original review reasons", excursion.ModerationReasonCodes)
+	}
+}
+
+func TestExcursionApproveReviewPublishesPendingReview(t *testing.T) {
+	excursion := newValidExcursion(t)
+	err := excursion.SubmitForReview(SubmitExcursionForReviewParams{
+		Publish: validPublishParams(excursion.ID),
+		Evaluation: ExcursionPublishingEvaluation{
+			Decision:         ExcursionPublishingDecisionNeedsReview,
+			GuideTrustScore:  35,
+			PublishRiskScore: 45,
+			ReasonCodes:      []string{"guide_new"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SubmitForReview() error = %v", err)
+	}
+
+	err = excursion.ApproveReview(validPublishParams(excursion.ID))
+
+	if err != nil {
+		t.Fatalf("ApproveReview() error = %v", err)
+	}
+	if excursion.Status != enum.ExcursionStatusPublished {
+		t.Fatalf("status = %q, want %q", excursion.Status, enum.ExcursionStatusPublished)
+	}
+	if excursion.PublishedAt == nil {
+		t.Fatal("PublishedAt is nil")
+	}
+	if excursion.SubmittedForReviewAt != nil {
+		t.Fatalf("SubmittedForReviewAt = %v, want nil", excursion.SubmittedForReviewAt)
+	}
+	if excursion.PublishingDecision != ExcursionPublishingDecisionNeedsReview {
+		t.Fatalf("decision = %q, want %q", excursion.PublishingDecision, ExcursionPublishingDecisionNeedsReview)
+	}
+}
+
+func TestExcursionRejectReviewKeepsOfferPrivateAndEditable(t *testing.T) {
+	excursion := newValidExcursion(t)
+	err := excursion.SubmitForReview(SubmitExcursionForReviewParams{
+		Publish: validPublishParams(excursion.ID),
+		Evaluation: ExcursionPublishingEvaluation{
+			Decision:         ExcursionPublishingDecisionNeedsReview,
+			GuideTrustScore:  35,
+			PublishRiskScore: 45,
+			ReasonCodes:      []string{"guide_new"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SubmitForReview() error = %v", err)
+	}
+
+	err = excursion.RejectReview([]string{"missing_license", "guide_new"})
+
+	if err != nil {
+		t.Fatalf("RejectReview() error = %v", err)
+	}
+	if excursion.Status != enum.ExcursionStatusRejected {
+		t.Fatalf("status = %q, want %q", excursion.Status, enum.ExcursionStatusRejected)
+	}
+	if excursion.PublishedAt != nil {
+		t.Fatalf("PublishedAt = %v, want nil", excursion.PublishedAt)
+	}
+	if excursion.IsPubliclyReadable() {
+		t.Fatal("rejected excursion must not be publicly readable")
+	}
+	if len(excursion.ModerationReasonCodes) != 2 || excursion.ModerationReasonCodes[0] != "guide_new" {
+		t.Fatalf("reason codes = %#v, want normalized sorted reason codes", excursion.ModerationReasonCodes)
 	}
 }
 
