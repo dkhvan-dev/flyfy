@@ -23,6 +23,8 @@ import '../../features/excursions/models/create_excursion_review_request.dart';
 import '../../features/excursions/models/excursion_booking_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/excursion_provider.dart';
+import '../../providers/home_location_provider.dart';
+import '../../shared/widgets/app_city_filter_section.dart';
 
 class MyExcursionsScreen extends StatefulWidget {
   const MyExcursionsScreen({super.key});
@@ -49,12 +51,14 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
   String _searchQuery = '';
   int _bookedPage = 1;
   int _visitedPage = 1;
+  bool _hasAppliedDefaultCityFilter = false;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_initializeDefaultCityFilter());
       context.read<ExcursionProvider>().loadMyExcursionBookings();
     });
   }
@@ -83,7 +87,31 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
   int get _activePage =>
       _activeTab == MyExcursionsTab.booked ? _bookedPage : _visitedPage;
 
-  int get _activeFilterCount => _filters.activeCount;
+  int get _activeFilterCount => _filters.activeCountFor(_activeTab);
+
+  Future<void> _initializeDefaultCityFilter() async {
+    final provider = context.read<HomeLocationProvider>();
+    if (!provider.isLoaded && !provider.isLoading) {
+      await provider.load();
+    }
+    if (!mounted) return;
+    _applyDefaultCityFilter(provider);
+  }
+
+  void _applyDefaultCityFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultCityFilter || _filters.city != null) return;
+    _hasAppliedDefaultCityFilter = true;
+
+    final location = provider.selectedLocation;
+    final city = AppCityFilterValue.fromParts(
+      cityId: location?.cityId,
+      cityName: location?.cityName,
+      countryCode: location?.countryCode,
+    );
+    if (city == null) return;
+
+    setState(() => _filters = _filters.copyWith(city: city));
+  }
 
   void _handleSearchChanged() {
     final nextQuery = _searchController.text.trim();
@@ -206,11 +234,12 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
       builder: (context) {
         return _MyExcursionsFilterSheet(
           l10n: l10n,
+          tab: _activeTab,
           initialFilters: _filters,
           previewCountBuilder: (filters) {
             final now = DateTime.now().toUtc();
             return filterMyExcursionBookings(
-              sourceItems,
+              _filterBookingsByCity(sourceItems, filters.city),
               now: now,
               tab: _activeTab,
               query: _searchQuery,
@@ -229,6 +258,29 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
       _filters = result;
       _resetActivePage();
     });
+  }
+
+  List<ExcursionBookingVm> _filterBookingsByCity(
+    List<ExcursionBookingVm> items,
+    AppCityFilterValue? city,
+  ) {
+    if (city == null) return items;
+    return items
+        .where(
+          (booking) => city.matches(
+            cityName: booking.cityName,
+            countryCode: booking.countryCode,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  String _myExcursionsEmptyMessage(AppLocalizations l10n) {
+    final base = _activeTab == MyExcursionsTab.booked
+        ? l10n.myExcursionsBookedEmptyHint
+        : l10n.myExcursionsVisitedEmptyHint;
+    if (_filters.city == null) return base;
+    return '$base\n\n${l10n.cityFilterEmptyHint}';
   }
 
   Future<void> _openReviewSheet(ExcursionBookingVm booking) async {
@@ -387,8 +439,12 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
                 provider.myExcursionBookings,
               );
               final now = DateTime.now().toUtc();
-              final filtered = filterMyExcursionBookings(
+              final cityFilteredBookings = _filterBookingsByCity(
                 provider.myExcursionBookings,
+                _filters.city,
+              );
+              final filtered = filterMyExcursionBookings(
+                cityFilteredBookings,
                 now: now,
                 tab: _activeTab,
                 query: _searchQuery,
@@ -503,9 +559,7 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
                             title: _activeTab == MyExcursionsTab.booked
                                 ? l10n.myExcursionsBookedEmpty
                                 : l10n.myExcursionsVisitedEmpty,
-                            message: _activeTab == MyExcursionsTab.booked
-                                ? l10n.myExcursionsBookedEmptyHint
-                                : l10n.myExcursionsVisitedEmptyHint,
+                            message: _myExcursionsEmptyMessage(l10n),
                           ),
                         ] else ...[
                           for (var i = 0; i < page.items.length; i++) ...[
@@ -559,22 +613,53 @@ class _MyExcursionsScreenState extends State<MyExcursionsScreen> {
 
 class _MyExcursionsFilters {
   const _MyExcursionsFilters({
+    this.city,
     this.statuses = const <String>{},
     this.reviewed,
     this.startDate,
     this.endDate,
   });
 
+  final AppCityFilterValue? city;
   final Set<String> statuses;
   final bool? reviewed;
   final DateTime? startDate;
   final DateTime? endDate;
 
   int get activeCount =>
+      (city == null ? 0 : 1) +
       statuses.length +
       (reviewed == null ? 0 : 1) +
       (startDate == null ? 0 : 1) +
       (endDate == null ? 0 : 1);
+
+  int activeCountFor(MyExcursionsTab tab) =>
+      (city == null ? 0 : 1) +
+      (tab == MyExcursionsTab.booked ? statuses.length : 0) +
+      (reviewed == null ? 0 : 1) +
+      (startDate == null ? 0 : 1) +
+      (endDate == null ? 0 : 1);
+
+  _MyExcursionsFilters copyWith({
+    Object? city = _unset,
+    Set<String>? statuses,
+    bool? reviewed,
+    bool clearReviewed = false,
+    DateTime? startDate,
+    bool clearStartDate = false,
+    DateTime? endDate,
+    bool clearEndDate = false,
+  }) {
+    return _MyExcursionsFilters(
+      city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
+      statuses: statuses ?? this.statuses,
+      reviewed: clearReviewed ? null : reviewed ?? this.reviewed,
+      startDate: clearStartDate ? null : startDate ?? this.startDate,
+      endDate: clearEndDate ? null : endDate ?? this.endDate,
+    );
+  }
+
+  static const Object _unset = Object();
 }
 
 class _MyExcursionsTabSwitcher extends StatelessWidget {
@@ -1791,11 +1876,13 @@ class _MyExcursionSkeletonCard extends StatelessWidget {
 class _MyExcursionsFilterSheet extends StatefulWidget {
   const _MyExcursionsFilterSheet({
     required this.l10n,
+    required this.tab,
     required this.initialFilters,
     required this.previewCountBuilder,
   });
 
   final AppLocalizations l10n;
+  final MyExcursionsTab tab;
   final _MyExcursionsFilters initialFilters;
   final int Function(_MyExcursionsFilters filters) previewCountBuilder;
 
@@ -1805,6 +1892,7 @@ class _MyExcursionsFilterSheet extends StatefulWidget {
 }
 
 class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
+  late AppCityFilterValue? _city = widget.initialFilters.city;
   late Set<String> _statuses = {...widget.initialFilters.statuses};
   late bool? _reviewed = widget.initialFilters.reviewed;
   late final TextEditingController _startDateController;
@@ -1843,7 +1931,9 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
   }
 
   _MyExcursionsFilters _draftFilters() => _MyExcursionsFilters(
-        statuses: _statuses,
+        city: _city,
+        statuses:
+            widget.tab == MyExcursionsTab.booked ? _statuses : const <String>{},
         reviewed: _reviewed,
         startDate: _startDate,
         endDate: _endDate,
@@ -1960,6 +2050,7 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
 
   void _clear() {
     setState(() {
+      _city = null;
       _statuses = {};
       _reviewed = null;
       _startDateController.clear();
@@ -1983,6 +2074,7 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
     );
     final maxHeight = math.min(baseMaxHeight, availableSheetHeight);
     final previewCount = widget.previewCountBuilder(_draftFilters());
+    final showStatusFilter = widget.tab == MyExcursionsTab.booked;
 
     return AppDismissibleModalSheet(
       child: AnimatedPadding(
@@ -2011,26 +2103,39 @@ class _MyExcursionsFilterSheetState extends State<_MyExcursionsFilterSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _FilterSectionTitle(
-                        widget.l10n.myExcursionsFilterStatus,
-                      ),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _ChoicePill(
-                            label: widget.l10n.myExcursionsStatusRequested,
-                            selected: _statuses.contains('REQUESTED'),
-                            onTap: () => _toggleStatus('REQUESTED'),
-                          ),
-                          _ChoicePill(
-                            label: widget.l10n.activityStatusCancelled,
-                            selected: _statuses.contains('CANCELLED'),
-                            onTap: () => _toggleStatus('CANCELLED'),
-                          ),
-                        ],
+                      AppCityFilterSection(
+                        title: widget.l10n.locationFilterCitySection,
+                        allCitiesLabel: widget.l10n.locationFilterAllCities,
+                        searchHint: widget.l10n.locationFilterCitySearchHint,
+                        noResultsText: widget.l10n.locationFilterCityNoResults,
+                        selectedCity: _city,
+                        onChanged: (city) {
+                          setState(() => _city = city);
+                        },
                       ),
                       const SizedBox(height: 20),
+                      if (showStatusFilter) ...[
+                        _FilterSectionTitle(
+                          widget.l10n.myExcursionsFilterStatus,
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _ChoicePill(
+                              label: widget.l10n.myExcursionsStatusRequested,
+                              selected: _statuses.contains('REQUESTED'),
+                              onTap: () => _toggleStatus('REQUESTED'),
+                            ),
+                            _ChoicePill(
+                              label: widget.l10n.activityStatusCancelled,
+                              selected: _statuses.contains('CANCELLED'),
+                              onTap: () => _toggleStatus('CANCELLED'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                       _FilterSectionTitle(widget.l10n.myExcursionsFilterReview),
                       Wrap(
                         spacing: 8,

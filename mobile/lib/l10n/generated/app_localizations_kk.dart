@@ -1633,6 +1633,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get locationFilterCityNoResults => 'Қала табылмады';
 
   @override
+  String get cityFilterEmptyHint => 'Сүзгілерден басқа қаланы таңдаңыз.';
+
+  @override
   String homeExploringLocation(Object location) {
     return '$location';
   }

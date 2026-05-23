@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -19,7 +21,9 @@ import '../../features/profile/profile_completion_gate.dart';
 import '../../features/profile/profile_guard_result.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/activity_provider.dart';
+import '../../providers/home_location_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../shared/widgets/app_city_filter_section.dart';
 import '../../shared/widgets/app_localized_location_text.dart';
 
 enum _MyActivitiesTab { hosted, attended }
@@ -59,12 +63,14 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
   String _searchQuery = '';
   int _hostedPage = 1;
   int _attendedPage = 1;
+  bool _hasAppliedDefaultCityFilter = false;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_initializeDefaultCityFilter());
       final provider = context.read<ActivityProvider>();
       provider.loadActivityCategories();
       provider.loadMyActivities();
@@ -167,6 +173,30 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     return provider.refreshJoinedActivities();
   }
 
+  Future<void> _initializeDefaultCityFilter() async {
+    final provider = context.read<HomeLocationProvider>();
+    if (!provider.isLoaded && !provider.isLoading) {
+      await provider.load();
+    }
+    if (!mounted) return;
+    _applyDefaultCityFilter(provider);
+  }
+
+  void _applyDefaultCityFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultCityFilter || _filters.city != null) return;
+    _hasAppliedDefaultCityFilter = true;
+
+    final location = provider.selectedLocation;
+    final city = AppCityFilterValue.fromParts(
+      cityId: location?.cityId,
+      cityName: location?.cityName,
+      countryCode: location?.countryCode,
+    );
+    if (city == null) return;
+
+    setState(() => _filters = _filters.copyWith(city: city));
+  }
+
   ActivitiesState _activeState(ActivityProvider provider) {
     return _activeTab == _MyActivitiesTab.hosted
         ? provider.myState
@@ -258,6 +288,10 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     final normalizedQuery = _searchQuery.trim().toLowerCase();
 
     return items.where((item) {
+      if (!_matchesCityFilter(item, activeFilters)) {
+        return false;
+      }
+
       if (activeFilters.statuses.isNotEmpty &&
           !activeFilters.statuses.any(
             (status) => _matchesStatus(item, status),
@@ -306,6 +340,27 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
       return true;
     }).toList();
+  }
+
+  bool _matchesCityFilter(
+    ActivityListItemVm item,
+    _MyActivitiesFilters filters,
+  ) {
+    final selectedCity = filters.city;
+    if (selectedCity == null) return true;
+    return selectedCity.matches(
+      cityId: item.cityId,
+      cityName: item.cityName,
+      countryCode: item.countryCode,
+    );
+  }
+
+  String _myActivitiesEmptyMessage(AppLocalizations l10n) {
+    final base = _activeTab == _MyActivitiesTab.hosted
+        ? l10n.myActivitiesEmptyHint
+        : l10n.myActivitiesAttendedEmptyHint;
+    if (_filtersForTab(_activeTab).city == null) return base;
+    return '$base\n\n${l10n.cityFilterEmptyHint}';
   }
 
   bool _matchesStatus(ActivityListItemVm item, String filterKey) {
@@ -392,6 +447,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     if (result == null || !mounted) return;
     setState(() {
       _filters = _MyActivitiesFilters(
+        city: result.city,
         statuses: <String>{
           ..._filters.statuses.where(
             (status) => !availableStatuses.contains(status),
@@ -532,9 +588,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
                             title: _activeTab == _MyActivitiesTab.hosted
                                 ? l10n.myActivitiesEmpty
                                 : l10n.myActivitiesAttendedEmpty,
-                            message: _activeTab == _MyActivitiesTab.hosted
-                                ? l10n.myActivitiesEmptyHint
-                                : l10n.myActivitiesAttendedEmptyHint,
+                            message: _myActivitiesEmptyMessage(l10n),
                           ),
                         ] else ...[
                           for (var i = 0;
@@ -607,25 +661,49 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
 class _MyActivitiesFilters {
   const _MyActivitiesFilters({
+    this.city,
     this.statuses = const <String>{},
     this.startDate,
     this.endDate,
   });
 
+  final AppCityFilterValue? city;
   final Set<String> statuses;
   final DateTime? startDate;
   final DateTime? endDate;
 
   int get activeCount =>
-      statuses.length + (startDate == null ? 0 : 1) + (endDate == null ? 0 : 1);
+      (city == null ? 0 : 1) +
+      statuses.length +
+      (startDate == null ? 0 : 1) +
+      (endDate == null ? 0 : 1);
+
+  _MyActivitiesFilters copyWith({
+    Object? city = _unset,
+    Set<String>? statuses,
+    DateTime? startDate,
+    bool clearStartDate = false,
+    DateTime? endDate,
+    bool clearEndDate = false,
+  }) {
+    return _MyActivitiesFilters(
+      city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
+      statuses: statuses ?? this.statuses,
+      startDate: clearStartDate ? null : startDate ?? this.startDate,
+      endDate: clearEndDate ? null : endDate ?? this.endDate,
+    );
+  }
 
   _MyActivitiesFilters onlyAllowedStatuses(Set<String> allowedStatuses) {
     return _MyActivitiesFilters(
+      city: city,
       statuses: statuses.where(allowedStatuses.contains).toSet(),
       startDate: startDate,
       endDate: endDate,
     );
   }
+
+  static const Object _unset = Object();
 }
 
 class _FilterStatusOption {
@@ -1787,6 +1865,7 @@ class _MyActivitiesFilterSheet extends StatefulWidget {
 }
 
 class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
+  late AppCityFilterValue? _city;
   late Set<String> _selectedStatuses;
   late final ScrollController _sheetScrollController;
   late final TextEditingController _startDateController;
@@ -1801,6 +1880,7 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
   @override
   void initState() {
     super.initState();
+    _city = widget.initialFilters.city;
     _selectedStatuses = Set<String>.from(widget.initialFilters.statuses);
     _sheetScrollController = ScrollController();
     _startDate = widget.initialFilters.startDate;
@@ -1938,6 +2018,7 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
 
     Navigator.of(context).pop(
       _MyActivitiesFilters(
+        city: _city,
         statuses: Set<String>.from(_selectedStatuses),
         startDate: _startDate,
         endDate: _endDate,
@@ -1947,6 +2028,7 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
 
   void _clearDraftFilters() {
     setState(() {
+      _city = null;
       _selectedStatuses.clear();
       _startDateController.clear();
       _endDateController.clear();
@@ -1959,6 +2041,7 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
 
   _MyActivitiesFilters _draftFilters() {
     return _MyActivitiesFilters(
+      city: _city,
       statuses: Set<String>.from(_selectedStatuses),
       startDate: _startDate,
       endDate: _endDate,
@@ -2026,6 +2109,20 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            AppCityFilterSection(
+                              title: widget.l10n.locationFilterCitySection,
+                              allCitiesLabel:
+                                  widget.l10n.locationFilterAllCities,
+                              searchHint:
+                                  widget.l10n.locationFilterCitySearchHint,
+                              noResultsText:
+                                  widget.l10n.locationFilterCityNoResults,
+                              selectedCity: _city,
+                              onChanged: (city) {
+                                setState(() => _city = city);
+                              },
+                            ),
+                            const SizedBox(height: 18),
                             _FilterSheetSectionTitle(
                               icon: Icons.calendar_month_outlined,
                               label: widget.l10n.myActivitiesFilterDateRange,

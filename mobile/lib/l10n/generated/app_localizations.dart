@@ -3034,6 +3034,12 @@ abstract class AppLocalizations {
   /// **'City not found'**
   String get locationFilterCityNoResults;
 
+  /// No description provided for @cityFilterEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try choosing another city in filters.'**
+  String get cityFilterEmptyHint;
+
   /// No description provided for @homeExploringLocation.
   ///
   /// In en, this message translates to:

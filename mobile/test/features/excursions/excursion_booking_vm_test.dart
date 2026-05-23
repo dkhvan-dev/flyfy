@@ -90,10 +90,28 @@ void main() {
       final now = DateTime.utc(2026, 5, 17);
       final sorted = sortMyExcursionBookings(
         [
-          _booking('rated-newer', DateTime.utc(2026, 5, 10), reviewed: true),
-          _booking('unrated-older', DateTime.utc(2026, 5, 1)),
-          _booking('unrated-newer', DateTime.utc(2026, 5, 12)),
-          _booking('rated-older', DateTime.utc(2026, 4, 25), reviewed: true),
+          _booking(
+            'rated-newer',
+            DateTime.utc(2026, 5, 10),
+            checkedInAt: DateTime.utc(2026, 5, 10, 8),
+            reviewed: true,
+          ),
+          _booking(
+            'unrated-older',
+            DateTime.utc(2026, 5, 1),
+            checkedInAt: DateTime.utc(2026, 5, 1, 8),
+          ),
+          _booking(
+            'unrated-newer',
+            DateTime.utc(2026, 5, 12),
+            checkedInAt: DateTime.utc(2026, 5, 12, 8),
+          ),
+          _booking(
+            'rated-older',
+            DateTime.utc(2026, 4, 25),
+            checkedInAt: DateTime.utc(2026, 4, 25, 8),
+            reviewed: true,
+          ),
         ],
         now: now,
         tab: MyExcursionsTab.visited,
@@ -107,6 +125,44 @@ void main() {
         'rated-newer',
         'rated-older',
       ]);
+    },
+  );
+
+  test(
+    'visited filter includes only checked-in past bookings and ignores statuses',
+    () {
+      final now = DateTime.utc(2026, 5, 17);
+      final visited = _booking(
+        'visited',
+        DateTime.utc(2026, 5, 10),
+        checkedInAt: DateTime.utc(2026, 5, 10, 8),
+      );
+      final bookedPast = _booking('booked-past', DateTime.utc(2026, 5, 10));
+      final futureCheckedIn = _booking(
+        'future-checked-in',
+        DateTime.utc(2026, 5, 18),
+        checkedInAt: DateTime.utc(2026, 5, 18, 7),
+      );
+      final cancelledCheckedIn = _booking(
+        'cancelled-checked-in',
+        DateTime.utc(2026, 5, 10),
+        checkedInAt: DateTime.utc(2026, 5, 10, 8),
+        status: 'CANCELLED',
+      );
+
+      final filtered = filterMyExcursionBookings(
+        [
+          visited,
+          bookedPast,
+          futureCheckedIn,
+          cancelledCheckedIn,
+        ],
+        now: now,
+        tab: MyExcursionsTab.visited,
+        statuses: const {'CANCELLED'},
+      );
+
+      expect(filtered.map((item) => item.id), ['visited']);
     },
   );
 
@@ -167,6 +223,7 @@ void main() {
     final booking = _booking(
       'rated-visited',
       DateTime.utc(2026, 5, 10),
+      checkedInAt: DateTime.utc(2026, 5, 10, 8),
       reviewed: true,
     );
 
@@ -202,6 +259,8 @@ ExcursionBookingVm _booking(
   bool reviewed = false,
   bool guideReviewed = false,
   String? scheduleSlotId,
+  DateTime? checkedInAt,
+  String status = 'REQUESTED',
 }) {
   return ExcursionBookingVm(
     id: id,
@@ -220,7 +279,8 @@ ExcursionBookingVm _booking(
     totalSeats: 1,
     totalPriceAmount: 100,
     currency: 'KZT',
-    status: 'REQUESTED',
+    status: status,
+    checkedInAt: checkedInAt,
     review: reviewed
         ? ExcursionReviewVm(
             id: 'review-$id',

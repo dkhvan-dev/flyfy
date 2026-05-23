@@ -100,7 +100,9 @@ class ExcursionBookingVm {
   }
 
   bool isVisited(DateTime now) {
-    return !isCancelled && !scheduledFor.isAfter(now);
+    return !isCancelled &&
+        isCheckedIn &&
+        !scheduledFor.toUtc().isAfter(now.toUtc());
   }
 
   bool isBooked(DateTime now) {
@@ -473,6 +475,9 @@ List<ExcursionBookingVm> filterMyExcursionBookings(
   DateTime? endDate,
 }) {
   final normalizedQuery = query.trim().toLowerCase();
+  final normalizedStatuses = tab == MyExcursionsTab.booked
+      ? statuses.map((status) => status.trim().toUpperCase()).toSet()
+      : const <String>{};
   return items.where((item) {
     final isUpcoming = item.scheduledFor.toUtc().isAfter(now.toUtc());
     if (tab == MyExcursionsTab.booked && !isUpcoming) {
@@ -481,8 +486,8 @@ List<ExcursionBookingVm> filterMyExcursionBookings(
     if (tab == MyExcursionsTab.visited && !item.isVisited(now)) {
       return false;
     }
-    if (statuses.isNotEmpty &&
-        !statuses.contains(item.status.trim().toUpperCase())) {
+    if (normalizedStatuses.isNotEmpty &&
+        !normalizedStatuses.contains(item.status.trim().toUpperCase())) {
       return false;
     }
     if (reviewed != null && item.isReviewed != reviewed) {

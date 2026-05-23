@@ -1621,6 +1621,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationFilterCityNoResults => 'City not found';
 
   @override
+  String get cityFilterEmptyHint => 'Try choosing another city in filters.';
+
+  @override
   String homeExploringLocation(Object location) {
     return '$location';
   }

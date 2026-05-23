@@ -540,6 +540,7 @@
   "locationFilterAllCities": "Барлық қалалар",
   "locationFilterCitySearchHint": "Қаланы іздеу",
   "locationFilterCityNoResults": "Қала табылмады",
+  "cityFilterEmptyHint": "Сүзгілерден басқа қаланы таңдаңыз.",
   "homeExploringLocation": "{location}",
   "@homeExploringLocation": {
     "placeholders": {

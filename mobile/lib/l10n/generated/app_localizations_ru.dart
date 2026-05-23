@@ -1621,6 +1621,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get locationFilterCityNoResults => 'Город не найден';
 
   @override
+  String get cityFilterEmptyHint =>
+      'Попробуйте выбрать другой город в фильтрах.';
+
+  @override
   String homeExploringLocation(Object location) {
     return '$location';
   }

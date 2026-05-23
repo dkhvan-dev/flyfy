@@ -540,6 +540,7 @@
   "locationFilterAllCities": "Все города",
   "locationFilterCitySearchHint": "Поиск города",
   "locationFilterCityNoResults": "Город не найден",
+  "cityFilterEmptyHint": "Попробуйте выбрать другой город в фильтрах.",
   "homeExploringLocation": "{location}",
   "@homeExploringLocation": {
     "placeholders": {

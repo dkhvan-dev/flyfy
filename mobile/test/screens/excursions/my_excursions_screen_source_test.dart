@@ -4,6 +4,25 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
+    'my excursions empty state suggests changing city filter when city is active',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+      final enSource = await File('lib/l10n/app_en.arb').readAsString();
+      final ruSource = await File('lib/l10n/app_ru.arb').readAsString();
+      final kkSource = await File('lib/l10n/app_kk.arb').readAsString();
+
+      expect(source, contains('_myExcursionsEmptyMessage'));
+      expect(source, contains('l10n.cityFilterEmptyHint'));
+      expect(source, contains('_filters.city'));
+      expect(enSource, contains('"cityFilterEmptyHint"'));
+      expect(ruSource, contains('"cityFilterEmptyHint"'));
+      expect(kkSource, contains('"cityFilterEmptyHint"'));
+    },
+  );
+
+  test(
     'my excursions screen uses shared list chrome and paginated tabs',
     () async {
       final source = await File(
@@ -189,6 +208,92 @@ void main() {
       expect(source, isNot(contains('activitiesShowResults(previewCount)')));
       expect(source, isNot(contains('showDatePicker(')));
       expect(source, isNot(contains('class _DateButton')));
+    },
+  );
+
+  test(
+    'my excursions filter starts with current-location city filter',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+
+      expect(
+        source,
+        contains("import '../../providers/home_location_provider.dart';"),
+      );
+      expect(
+        source,
+        contains("import '../../shared/widgets/app_city_filter_section.dart';"),
+      );
+      expect(source, contains('HomeLocationProvider'));
+      expect(source, contains('selectedLocation'));
+      expect(source, contains('_initializeDefaultCityFilter'));
+      expect(source, contains('_applyDefaultCityFilter'));
+      expect(source, contains('final AppCityFilterValue? city'));
+      expect(source, contains('AppCityFilterSection'));
+      expect(source, contains('locationFilterCitySection'));
+      expect(source, contains('filters.city'));
+      expect(source, contains('booking.cityName'));
+      expect(source, contains('countryCode: booking.countryCode'));
+      expect(source, isNot(contains('profile?.countryCode')));
+    },
+  );
+
+  test(
+    'my excursions city filter is compact and searchable through shared selector',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+
+      expect(source, contains('AppCityFilterSection'));
+      expect(source, contains('locationFilterCitySearchHint'));
+      expect(source, contains('locationFilterCityNoResults'));
+      expect(source, isNot(contains('_countrySearchController')));
+      expect(source, isNot(contains('_selectedCountry()')));
+      expect(source, isNot(contains('_visibleCountries')));
+
+      final citySectionStart = source.indexOf('AppCityFilterSection(');
+      final statusSectionStart = source.indexOf(
+        'widget.l10n.myExcursionsFilterStatus',
+      );
+      expect(citySectionStart, isNonNegative);
+      expect(statusSectionStart, greaterThan(citySectionStart));
+
+      final citySection = source.substring(
+        citySectionStart,
+        statusSectionStart,
+      );
+      expect(citySection, contains('AppCityFilterSection'));
+      expect(citySection, isNot(contains('Wrap(')));
+    },
+  );
+
+  test(
+    'visited my excursions filter sheet hides booking status filters',
+    () async {
+      final source = await File(
+        'lib/screens/excursions/my_excursions_screen.dart',
+      ).readAsString();
+      final sheetStart = source.indexOf('class _MyExcursionsFilterSheet');
+      final sectionTitleStart = source.indexOf('class _FilterSectionTitle');
+
+      expect(sheetStart, isNonNegative);
+      expect(sectionTitleStart, greaterThan(sheetStart));
+
+      final sheetSource = source.substring(sheetStart, sectionTitleStart);
+
+      expect(source, contains('tab: _activeTab'));
+      expect(sheetSource, contains('final MyExcursionsTab tab;'));
+      expect(
+        sheetSource,
+        contains('widget.tab == MyExcursionsTab.booked'),
+      );
+      expect(
+        sheetSource,
+        contains('widget.tab == MyExcursionsTab.booked ? _statuses'),
+      );
     },
   );
 

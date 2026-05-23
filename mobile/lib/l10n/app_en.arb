@@ -540,6 +540,7 @@
   "locationFilterAllCities": "All cities",
   "locationFilterCitySearchHint": "Search city",
   "locationFilterCityNoResults": "City not found",
+  "cityFilterEmptyHint": "Try choosing another city in filters.",
   "homeExploringLocation": "{location}",
   "@homeExploringLocation": {
     "placeholders": {
