@@ -154,6 +154,7 @@ type ExcursionRepository interface {
 	ListExcursionLanguageCodesByGuideUserIDs(ctx context.Context, guideUserIDs []uuid.UUID) (map[uuid.UUID][]string, error)
 	ListGuideUserIDsByExcursionCity(ctx context.Context, filter GuideExcursionCityFilter) ([]uuid.UUID, error)
 	HasActiveExcursionForGuideLandmark(ctx context.Context, guideUserID uuid.UUID, landmarkID uuid.UUID) (bool, error)
+	ArchiveGuideExcursionOffers(ctx context.Context, guideUserID uuid.UUID) error
 	GetExcursionOfferByID(ctx context.Context, offerID uuid.UUID) (*model.ExcursionOffer, error)
 	GetExcursionOfferByLegacyExcursionID(ctx context.Context, legacyExcursionID uuid.UUID) (*model.ExcursionOffer, error)
 	LoadExcursionOfferRelations(ctx context.Context, offerID uuid.UUID) (ExcursionOfferRelations, error)

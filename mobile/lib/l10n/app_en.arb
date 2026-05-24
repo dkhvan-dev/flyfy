@@ -51,6 +51,7 @@
   "profileTitle": "Profile",
   "drawerStatusVerifiedGuide": "Verified guide",
   "drawerStatusGuide": "Guide",
+  "drawerStatusGuideRevoked": "Guide status revoked",
   "drawerStatusTraveler": "Traveler",
   "drawerStatusCompleteProfile": "Complete profile",
   "profileNotAvailable": "Profile is not available",
@@ -194,6 +195,15 @@
   "profileEmptyBioPlaceholder": "There is no public description yet. Once the profile is filled in, a short bio will appear here.",
   "profileBecomeGuideTitle": "Become a guide",
   "profileBecomeGuideSubtitle": "Soon you will be able to apply and unlock a professional guide profile here.",
+  "guideVerificationRevokedTitle": "Guide status revoked",
+  "guideVerificationRevokedSubtitle": "Your guide status was revoked by moderation. Guide tools and public offers are unavailable.",
+  "guideVerificationRevokedSubtitleWithReason": "Your guide status was revoked by moderation. Reason: {reason}",
+  "@guideVerificationRevokedSubtitleWithReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "guideVerificationRevokedButton": "Status revoked",
   "profileActivitiesStat": "Activities",
   "profileHostedCompletedStat": "Completed as host",
   "profileJoinedCompletedStat": "Completed as participant",

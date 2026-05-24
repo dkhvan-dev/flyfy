@@ -50,6 +50,8 @@ type ModerationRepository interface {
 	CancelStaleExcursionCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
 	UpsertActivityCase(ctx context.Context, item model.ActivityModerationItem) (*model.ModerationCase, error)
 	CancelStaleActivityCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
+	UpsertGuideApplicationCase(ctx context.Context, item model.GuideApplicationModerationItem) (*model.ModerationCase, error)
+	CancelStaleGuideApplicationCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
 	ListCases(ctx context.Context, filter model.ModerationQueueFilter) ([]*model.ModerationCase, error)
 	GetCase(ctx context.Context, id uuid.UUID) (*model.ModerationCase, error)
 	ListDecisions(ctx context.Context, caseID uuid.UUID) ([]*model.ModerationDecision, error)
@@ -85,6 +87,34 @@ type ActivityClient interface {
 
 type ActivityDecisionInput struct {
 	ActivityID     uuid.UUID
+	ActorStaffID   uuid.UUID
+	ReasonCodes    []string
+	PublicComment  string
+	IdempotencyKey string
+	RequestID      string
+}
+
+type GuideApplicationClient interface {
+	ListPendingApplications(ctx context.Context, limit int, offset int) ([]model.GuideApplicationModerationItem, error)
+	ListActiveGuides(ctx context.Context, limit int, offset int) ([]model.GuideApplicationModerationItem, error)
+	GetApplication(ctx context.Context, id uuid.UUID) (*model.GuideApplicationModerationItem, error)
+	Approve(ctx context.Context, input GuideApplicationDecisionInput) (*model.GuideApplicationModerationItem, []byte, error)
+	Reject(ctx context.Context, input GuideApplicationDecisionInput) (*model.GuideApplicationModerationItem, []byte, error)
+	Revoke(ctx context.Context, input GuideApplicationDecisionInput) (*model.GuideApplicationModerationItem, []byte, error)
+	RevokeProfile(ctx context.Context, input GuideProfileDecisionInput) (*model.GuideApplicationModerationItem, []byte, error)
+}
+
+type GuideApplicationDecisionInput struct {
+	GuideApplicationID uuid.UUID
+	ActorStaffID       uuid.UUID
+	ReasonCodes        []string
+	PublicComment      string
+	IdempotencyKey     string
+	RequestID          string
+}
+
+type GuideProfileDecisionInput struct {
+	GuideProfileID uuid.UUID
 	ActorStaffID   uuid.UUID
 	ReasonCodes    []string
 	PublicComment  string

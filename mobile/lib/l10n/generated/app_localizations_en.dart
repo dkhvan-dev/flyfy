@@ -136,6 +136,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get drawerStatusGuide => 'Guide';
 
   @override
+  String get drawerStatusGuideRevoked => 'Guide status revoked';
+
+  @override
   String get drawerStatusTraveler => 'Traveler';
 
   @override
@@ -578,6 +581,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileBecomeGuideSubtitle =>
       'Soon you will be able to apply and unlock a professional guide profile here.';
+
+  @override
+  String get guideVerificationRevokedTitle => 'Guide status revoked';
+
+  @override
+  String get guideVerificationRevokedSubtitle =>
+      'Your guide status was revoked by moderation. Guide tools and public offers are unavailable.';
+
+  @override
+  String guideVerificationRevokedSubtitleWithReason(Object reason) {
+    return 'Your guide status was revoked by moderation. Reason: $reason';
+  }
+
+  @override
+  String get guideVerificationRevokedButton => 'Status revoked';
 
   @override
   String get profileActivitiesStat => 'Activities';

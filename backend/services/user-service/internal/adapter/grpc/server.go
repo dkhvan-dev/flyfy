@@ -187,6 +187,25 @@ func (s *Server) GrantUserRole(
 	}, nil
 }
 
+func (s *Server) RevokeUserRole(
+	ctx context.Context,
+	req *userv1.RevokeUserRoleRequest,
+) (*userv1.RevokeUserRoleResponse, error) {
+	userID, err := uuid.Parse(strings.TrimSpace(req.GetUserId()))
+	if err != nil {
+		return nil, mapError(app.ErrInvalidUserID)
+	}
+
+	role := enum.SystemRole(strings.TrimSpace(req.GetRole()))
+	if err = s.useCase.RevokeRole(ctx, userID, role); err != nil {
+		return nil, mapError(err)
+	}
+
+	return &userv1.RevokeUserRoleResponse{
+		Success: true,
+	}, nil
+}
+
 func (s *Server) ListPublicProfiles(
 	ctx context.Context,
 	req *userv1.ListPublicProfilesRequest,

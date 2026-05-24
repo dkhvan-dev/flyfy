@@ -66,7 +66,7 @@ func main() {
 	defer fileClient.Close()
 
 	guideRepo := repository.NewPGGuideRepository(pool)
-	excursionClient := excursionserviceadapter.New(cfg.Excursion.BaseURL, nil)
+	excursionClient := excursionserviceadapter.New(cfg.Excursion.BaseURL, cfg.Security.InternalServiceToken, nil)
 	guideUseCase := app.NewGuideUseCase(guideRepo, userClient, fileClient, excursionClient)
 
 	httpHandler := httpadapter.NewHandler(guideUseCase)

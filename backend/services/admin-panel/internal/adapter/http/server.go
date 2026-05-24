@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -64,6 +65,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/moderation/activities/sync", s.SyncActivityQueue)
 	mux.HandleFunc("POST /admin/moderation/activities/{caseID}/approve", s.ApproveActivity)
 	mux.HandleFunc("POST /admin/moderation/activities/{caseID}/reject", s.RejectActivity)
+	mux.HandleFunc("GET /admin/moderation/guides", s.GuideApplicationQueue)
+	mux.HandleFunc("GET /admin/moderation/guides/current", s.ActiveGuideList)
+	mux.HandleFunc("GET /admin/moderation/guides/history", s.GuideApplicationHistory)
+	mux.HandleFunc("GET /admin/moderation/guides/{caseID}/documents/{documentID}", s.GuideApplicationDocument)
+	mux.HandleFunc("GET /admin/moderation/guides/{caseID}", s.GuideApplicationCase)
+	mux.HandleFunc("POST /admin/moderation/guides/sync", s.SyncGuideApplicationQueue)
+	mux.HandleFunc("POST /admin/moderation/guides/current/{guideProfileID}/revoke", s.RevokeActiveGuide)
+	mux.HandleFunc("POST /admin/moderation/guides/{caseID}/approve", s.ApproveGuideApplication)
+	mux.HandleFunc("POST /admin/moderation/guides/{caseID}/reject", s.RejectGuideApplication)
+	mux.HandleFunc("POST /admin/moderation/guides/{caseID}/revoke", s.RevokeGuideApplication)
 	mux.HandleFunc("GET /admin/staff", s.StaffList)
 	mux.HandleFunc("POST /admin/staff", s.CreateStaff)
 	mux.HandleFunc("GET /admin/staff/{staffID}/edit", s.EditStaffPage)
@@ -299,6 +310,142 @@ func (s *Server) RejectActivity(w http.ResponseWriter, r *http.Request) {
 	s.decideActivity(w, r, enum.ModerationDecisionReject)
 }
 
+func (s *Server) SyncGuideApplicationQueue(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	if err := s.moderation.SyncGuideApplicationQueue(r.Context(), staff); err != nil {
+		_, viewFilter := parseExcursionQueueFilter(r)
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.guideApplicationQueue", "guides", NewGuideApplicationQueueViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	redirectURL := "/admin/moderation/guides"
+	if r.URL.RawQuery != "" {
+		redirectURL += "?" + r.URL.RawQuery
+	}
+	http.Redirect(w, r, redirectWithFlash(redirectURL, "moderation.queueSynced"), http.StatusSeeOther)
+}
+
+func (s *Server) GuideApplicationQueue(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	_ = s.moderation.SyncGuideApplicationQueue(r.Context(), staff)
+	targetType := model.ModerationTargetGuideApplication
+	filter, viewFilter := parseExcursionQueueFilter(r)
+	filter.TargetType = &targetType
+	filter.Limit = 100
+	cases, err := s.moderation.ListQueue(r.Context(), staff, filter)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.guideApplicationQueue", "guides", NewGuideApplicationQueueViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/queue", "moderation.guideApplicationQueue", "guides", NewGuideApplicationQueueViewData(cases, viewFilter), "")
+}
+
+func (s *Server) GuideApplicationHistory(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	targetType := model.ModerationTargetGuideApplication
+	filter, viewFilter := parseExcursionHistoryFilter(r)
+	filter.TargetType = &targetType
+	filter.Limit = 100
+	cases, err := s.moderation.ListQueue(r.Context(), staff, filter)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.guideApplicationHistory", "guides", NewGuideApplicationHistoryViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/queue", "moderation.guideApplicationHistory", "guides", NewGuideApplicationHistoryViewData(cases, viewFilter), "")
+}
+
+func (s *Server) ActiveGuideList(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	items, err := s.moderation.ListActiveGuides(r.Context(), staff, 100, 0)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "guides/index", "guides.currentTitle", "guides", NewGuideListViewData(nil), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "guides/index", "guides.currentTitle", "guides", NewGuideListViewData(items), "")
+}
+
+func (s *Server) GuideApplicationCase(w http.ResponseWriter, r *http.Request) {
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	detail, err := s.moderation.GetCaseDetail(r.Context(), staff, caseID)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "guides", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetGuideApplication {
+		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "guides", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "guides", CaseDetailViewData{Detail: detail}, "")
+}
+
+func (s *Server) GuideApplicationDocument(w http.ResponseWriter, r *http.Request) {
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	documentID, ok := parsePathUUID(w, r, "documentID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	detail, err := s.moderation.GetCaseDetail(r.Context(), staff, caseID)
+	if err != nil {
+		http.Error(w, publicError(localeFromContext(r.Context()), err), errorStatus(err))
+		return
+	}
+	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetGuideApplication || detail.GuideApplication == nil {
+		http.Error(w, publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound), http.StatusNotFound)
+		return
+	}
+	document, found := findGuideApplicationDocument(detail.GuideApplication.Documents, documentID)
+	if !found || strings.TrimSpace(document.DownloadURL) == "" {
+		http.Error(w, translate(localeFromContext(r.Context()), "error.documentNotFound"), http.StatusNotFound)
+		return
+	}
+	if err = proxyGuideApplicationDocument(w, r, document); err != nil {
+		http.Error(w, translate(localeFromContext(r.Context()), "error.documentUnavailable"), http.StatusBadGateway)
+		return
+	}
+}
+
+func (s *Server) ApproveGuideApplication(w http.ResponseWriter, r *http.Request) {
+	s.decideGuideApplication(w, r, enum.ModerationDecisionApprove)
+}
+
+func (s *Server) RejectGuideApplication(w http.ResponseWriter, r *http.Request) {
+	s.decideGuideApplication(w, r, enum.ModerationDecisionReject)
+}
+
+func (s *Server) RevokeGuideApplication(w http.ResponseWriter, r *http.Request) {
+	s.decideGuideApplication(w, r, enum.ModerationDecisionRevoke)
+}
+
+func (s *Server) RevokeActiveGuide(w http.ResponseWriter, r *http.Request) {
+	guideProfileID, ok := parsePathUUID(w, r, "guideProfileID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	_, err := s.moderation.RevokeActiveGuide(r.Context(), app.RevokeActiveGuideInput{
+		Actor:           staff,
+		GuideProfileID:  guideProfileID,
+		ReasonCodes:     splitCSV(r.Form.Get("reason_codes")),
+		PublicComment:   r.Form.Get("public_comment"),
+		InternalComment: r.Form.Get("internal_comment"),
+		IdempotencyKey:  r.Form.Get("idempotency_key"),
+		RequestMetadata: requestMetadata(r),
+	})
+	if err != nil {
+		items, _ := s.moderation.ListActiveGuides(r.Context(), staff, 100, 0)
+		s.renderPage(w, errorStatus(err), r, "guides/index", "guides.currentTitle", "guides", NewGuideListViewData(items), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash("/admin/moderation/guides/current", "moderation.decisionSaved"), http.StatusSeeOther)
+}
+
 func (s *Server) decideExcursion(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
 	caseID, ok := parsePathUUID(w, r, "caseID")
 	if !ok {
@@ -351,6 +498,33 @@ func (s *Server) decideActivity(w http.ResponseWriter, r *http.Request, decision
 		return
 	}
 	http.Redirect(w, r, redirectWithFlash("/admin/moderation/activities/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
+}
+
+func (s *Server) decideGuideApplication(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	_, err := s.moderation.DecideGuideApplication(r.Context(), app.ModerationDecisionInput{
+		Actor:           staff,
+		CaseID:          caseID,
+		Decision:        decision,
+		ReasonCodes:     splitCSV(r.Form.Get("reason_codes")),
+		PublicComment:   r.Form.Get("public_comment"),
+		InternalComment: r.Form.Get("internal_comment"),
+		IdempotencyKey:  r.Form.Get("idempotency_key"),
+		RequestMetadata: requestMetadata(r),
+	})
+	if err != nil {
+		viewData := CaseDetailViewData{}
+		if detail, detailErr := s.moderation.GetCaseDetail(r.Context(), staff, caseID); detailErr == nil {
+			viewData.Detail = detail
+		}
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "guides", viewData, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash("/admin/moderation/guides/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
 func (s *Server) StaffList(w http.ResponseWriter, r *http.Request) {
@@ -630,4 +804,50 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func findGuideApplicationDocument(documents []model.GuideApplicationDocument, documentID uuid.UUID) (model.GuideApplicationDocument, bool) {
+	for _, document := range documents {
+		if document.ID == documentID {
+			return document, true
+		}
+	}
+	return model.GuideApplicationDocument{}, false
+}
+
+func proxyGuideApplicationDocument(w http.ResponseWriter, r *http.Request, document model.GuideApplicationDocument) error {
+	const maxDocumentSize = int64(25 << 20)
+	downloadURL := safeExternalURL(document.DownloadURL)
+	if downloadURL == "" {
+		return errors.New("invalid document download url")
+	}
+	client := &http.Client{Timeout: 20 * time.Second}
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return errors.New("document storage returned non-success status")
+	}
+	if resp.ContentLength > maxDocumentSize {
+		return errors.New("document is too large")
+	}
+	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("Content-Disposition", `inline; filename="guide-document"`)
+	if resp.ContentLength > 0 {
+		w.Header().Set("Content-Length", resp.Header.Get("Content-Length"))
+	}
+	w.WriteHeader(http.StatusOK)
+	_, err = io.Copy(w, io.LimitReader(resp.Body, maxDocumentSize))
+	return err
 }

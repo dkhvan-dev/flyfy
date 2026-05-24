@@ -137,6 +137,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get drawerStatusGuide => 'Гид';
 
   @override
+  String get drawerStatusGuideRevoked => 'Статус гида отозван';
+
+  @override
   String get drawerStatusTraveler => 'Путешественник';
 
   @override
@@ -581,6 +584,21 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get profileBecomeGuideSubtitle =>
       'Скоро здесь можно будет подать заявку и открыть доступ к профессиональному профилю гида.';
+
+  @override
+  String get guideVerificationRevokedTitle => 'Статус гида отозван';
+
+  @override
+  String get guideVerificationRevokedSubtitle =>
+      'Модерация отозвала ваш статус гида. Функции гида и публичные предложения недоступны.';
+
+  @override
+  String guideVerificationRevokedSubtitleWithReason(Object reason) {
+    return 'Модерация отозвала ваш статус гида. Причина: $reason';
+  }
+
+  @override
+  String get guideVerificationRevokedButton => 'Статус отозван';
 
   @override
   String get profileActivitiesStat => 'Активности';

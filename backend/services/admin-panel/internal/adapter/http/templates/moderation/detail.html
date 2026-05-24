@@ -2,13 +2,16 @@
 {{template "pageStart" .}}
 {{$detail := .Data.Detail}}
 {{if $detail}}
+{{$caseBasePath := "/admin/moderation/excursions"}}
+{{if $detail.Activity}}{{$caseBasePath = "/admin/moderation/activities"}}{{end}}
+{{if $detail.GuideApplication}}{{$caseBasePath = "/admin/moderation/guides"}}{{end}}
 <section class="section">
   <div class="section-head">
     <div>
       <p class="eyebrow">{{t .Locale "moderation.case"}} <code>{{shortID $detail.Case.ID}}</code></p>
-      <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else if $detail.Activity}}{{$detail.Activity.Title}}{{else}}{{t .Locale "moderation.caseTitle"}}{{end}}</h1>
+      <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else if $detail.Activity}}{{$detail.Activity.Title}}{{else if $detail.GuideApplication}}{{guideApplicationPrimary $detail.GuideApplication}}{{else}}{{t .Locale "moderation.caseTitle"}}{{end}}</h1>
     </div>
-    <a class="button" href="{{if $detail.Activity}}/admin/moderation/activities{{else}}/admin/moderation/excursions{{end}}">{{t .Locale "action.backToQueue"}}</a>
+    <a class="button" href="{{$caseBasePath}}">{{t .Locale "action.backToQueue"}}</a>
   </div>
 
   <div class="split">
@@ -126,14 +129,131 @@
           </li>
         </ol>
       {{end}}
+      {{with $detail.GuideApplication}}
+        <dl class="facts">
+          <div><dt>{{t $.Locale "label.status"}}</dt><dd>{{statusText $.Locale .Status}}</dd></div>
+          <div><dt>{{t $.Locale "label.guideStatus"}}</dt><dd>{{statusText $.Locale .GuideStatus}}</dd></div>
+          {{if .StatusReason}}
+            <div><dt>{{t $.Locale "label.statusReason"}}</dt><dd class="preline">{{.StatusReason}}</dd></div>
+          {{end}}
+          {{if .StatusChangedAt}}
+            <div><dt>{{t $.Locale "label.statusChangedAt"}}</dt><dd>{{formatTime .StatusChangedAt}}</dd></div>
+          {{end}}
+          <div>
+            <dt>{{t $.Locale "label.applicant"}}</dt>
+            <dd>
+              {{guideApplicationPrimary .}}
+              {{if guideApplicationFullName .}}<span class="muted block">{{guideApplicationFullName .}}</span>{{end}}
+            </dd>
+          </div>
+          <div><dt>{{t $.Locale "label.guideType"}}</dt><dd>{{guideApplicationType $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.city"}}</dt><dd>{{guideApplicationLocation $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.experience"}}</dt><dd>{{guideApplicationExperience $.Locale .}}</dd></div>
+          <div>
+            <dt>{{t $.Locale "label.services"}}</dt>
+            <dd>
+              {{$services := guideApplicationServices $.Locale .}}
+              {{if $services}}{{join $services ", "}}{{else}}-{{end}}
+            </dd>
+          </div>
+          <div><dt>{{t $.Locale "label.rating"}}</dt><dd>{{guideApplicationRating $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.submitted"}}</dt><dd>{{formatTime .SubmittedAt}}</dd></div>
+        </dl>
+        {{if .ModerationReasonCodes}}
+          <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.summary"}}</h2>
+        <p class="preline">{{if .Headline}}{{.Headline}}{{else}}-{{end}}</p>
+        <h2>{{t $.Locale "section.description"}}</h2>
+        <p class="preline">{{if .About}}{{.About}}{{else}}-{{end}}</p>
+        {{if .Comment}}
+          <h2>{{t $.Locale "section.applicationComment"}}</h2>
+          <p class="preline">{{.Comment}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.languages"}}</h2>
+        {{$languages := guideApplicationLanguages $.Locale .}}
+        {{if $languages}}
+          <div class="chip-list">
+            {{range $languages}}<span class="chip">{{.}}</span>{{end}}
+          </div>
+        {{else}}
+          <p class="empty">{{t $.Locale "empty.noLanguages"}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.specializations"}}</h2>
+        {{$specializations := guideApplicationSpecializations $.Locale .}}
+        {{if $specializations}}
+          <div class="chip-list">
+            {{range $specializations}}<span class="chip">{{.}}</span>{{end}}
+          </div>
+        {{else}}
+          <p class="empty">{{t $.Locale "empty.noSpecializations"}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.documents"}}</h2>
+        {{if .Documents}}
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{{t $.Locale "table.document"}}</th>
+                  <th>{{t $.Locale "table.created"}}</th>
+                  <th>{{t $.Locale "table.actions"}}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{range .Documents}}
+                  <tr>
+                    <td>{{guideApplicationDocumentType $.Locale .DocumentType}}</td>
+                    <td>{{formatTime .CreatedAt}}</td>
+                    <td>
+                      {{with guideApplicationDocumentURL $detail.Case.ID .}}
+                        <a class="button" href="{{.}}" target="_blank" rel="noopener noreferrer">{{t $.Locale "action.openDocument"}}</a>
+                      {{else}}
+                        <span class="muted">{{t $.Locale "empty.noDocumentLink"}}</span>
+                      {{end}}
+                    </td>
+                  </tr>
+                {{end}}
+              </tbody>
+            </table>
+          </div>
+        {{else}}
+          <p class="empty">{{t $.Locale "empty.noDocuments"}}</p>
+        {{end}}
+      {{end}}
     </article>
 
     <aside class="card">
       <h2>{{t .Locale "section.decision"}}</h2>
       {{if activityDecisionLocked $detail.Activity}}
         <p class="empty">{{t .Locale "moderation.activityDecisionLocked"}}</p>
+      {{else if guideApplicationCanRevoke $detail.GuideApplication}}
+        <p class="empty">{{t .Locale "moderation.guideApplicationRevokeHint"}}</p>
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/revoke" class="form compact danger-zone" data-confirm-form="revoke">
+          {{csrfField $.CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t $.Locale "field.reasonCodes"}}</span>
+            <select name="reason_codes" required>
+              <option value="">{{t $.Locale "placeholder.selectReasonCode"}}</option>
+              {{range moderationReasonOptions $.Locale}}
+                <option value="{{.Code}}">{{.Label}}</option>
+              {{end}}
+            </select>
+          </label>
+          <label>
+            <span>{{t $.Locale "field.publicComment"}}</span>
+            <textarea name="public_comment" rows="3" required placeholder="{{t $.Locale "placeholder.guideRevocationPublicComment"}}"></textarea>
+          </label>
+          <label>
+            <span>{{t $.Locale "field.internalComment"}}</span>
+            <textarea name="internal_comment" rows="3" required></textarea>
+          </label>
+          <button class="danger" type="submit">{{t $.Locale "action.revokeGuideStatus"}}</button>
+        </form>
+      {{else if guideApplicationDecisionLocked $detail.GuideApplication}}
+        <p class="empty">{{t .Locale "moderation.guideApplicationDecisionLocked"}}</p>
       {{else}}
-        <form method="post" action="{{if $detail.Activity}}/admin/moderation/activities{{else}}/admin/moderation/excursions{{end}}/{{$detail.Case.ID}}/approve" class="form compact" data-confirm-form="approve">
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/approve" class="form compact" data-confirm-form="approve">
           {{csrfField $.CSRFToken}}
           <input type="hidden" name="idempotency_key" value="{{newID}}">
           <label>
@@ -142,12 +262,17 @@
           </label>
           <button class="primary" type="submit">{{t $.Locale "action.approve"}}</button>
         </form>
-        <form method="post" action="{{if $detail.Activity}}/admin/moderation/activities{{else}}/admin/moderation/excursions{{end}}/{{$detail.Case.ID}}/reject" class="form compact danger-zone" data-confirm-form="reject">
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/reject" class="form compact danger-zone" data-confirm-form="reject">
           {{csrfField $.CSRFToken}}
           <input type="hidden" name="idempotency_key" value="{{newID}}">
           <label>
             <span>{{t $.Locale "field.reasonCodes"}}</span>
-            <input name="reason_codes" placeholder="{{t $.Locale "placeholder.reasonCodes"}}">
+            <select name="reason_codes" required>
+              <option value="">{{t $.Locale "placeholder.selectReasonCode"}}</option>
+              {{range moderationReasonOptions $.Locale}}
+                <option value="{{.Code}}">{{.Label}}</option>
+              {{end}}
+            </select>
           </label>
           <label>
             <span>{{t $.Locale "field.publicComment"}}</span>

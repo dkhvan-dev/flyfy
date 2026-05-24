@@ -380,6 +380,271 @@ func TestRendererRendersActivityModerationReadableContext(t *testing.T) {
 	}
 }
 
+func TestRendererRendersGuideApplicationQueueReadableContext(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Now().UTC()
+	caseID := uuid.New()
+	applicationID := uuid.New()
+	application := model.GuideApplicationModerationItem{
+		ID:                        applicationID,
+		GuideDisplayName:          "Aruzhan Nomad",
+		FirstName:                 "Aruzhan",
+		LastName:                  "Khan",
+		Type:                      "LOCAL_EXPERT",
+		Status:                    "SUBMITTED",
+		GuideStatus:               "PENDING_REVIEW",
+		Headline:                  "Горный гид по Алматы",
+		ExperienceYears:           6,
+		BaseCityID:                "almaty",
+		BaseCityName:              "Almaty, Kazakhstan",
+		IsExcursionGuideAvailable: true,
+		Languages: []model.GuideApplicationLanguage{
+			{LanguageCode: "ru", ProficiencyLevel: "NATIVE"},
+			{LanguageCode: "en", ProficiencyLevel: "ADVANCED"},
+		},
+		Specializations: []string{"mountain-routes", "city-walks"},
+		Documents: []model.GuideApplicationDocument{
+			{FileID: uuid.New(), DocumentType: "IDENTITY_DOCUMENT"},
+		},
+		Revision:    7,
+		SubmittedAt: &now,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	snapshot, err := json.Marshal(application)
+	if err != nil {
+		t.Fatalf("json.Marshal application returned error: %v", err)
+	}
+	pageData := PageData{
+		Title:     "Guide applications",
+		Locale:    localeRU,
+		Path:      "/admin/moderation/guides",
+		CSRFToken: "csrf-token",
+		Data: NewGuideApplicationQueueViewData([]*model.ModerationCase{
+			{
+				ID:             caseID,
+				TargetType:     model.ModerationTargetGuideApplication,
+				TargetID:       applicationID,
+				SourceService:  "guide-service",
+				SourceRevision: 7,
+				Status:         enum.ModerationCaseStatusOpen,
+				Priority:       50,
+				Snapshot:       snapshot,
+				OpenedAt:       now,
+				CreatedAt:      now,
+				UpdatedAt:      now,
+			},
+		}),
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "moderation/queue", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Aruzhan Nomad",
+		"Khan Aruzhan",
+		"Горный гид по Алматы",
+		"Алматы, Казахстан",
+		"Локальный эксперт",
+		"/admin/moderation/guides/" + caseID.String(),
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("guide application queue did not render %q: %s", expected, body)
+		}
+	}
+	for _, unexpected := range []string{
+		applicationID.String(),
+		"LOCAL_EXPERT",
+		"PENDING_REVIEW",
+		"mountain-routes",
+	} {
+		if strings.Contains(body, unexpected) {
+			t.Fatalf("guide application queue rendered technical value %q: %s", unexpected, body)
+		}
+	}
+}
+
+func TestRendererRendersGuideApplicationModerationReadableContext(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Now().UTC()
+	caseID := uuid.New()
+	applicationID := uuid.New()
+	documentID := uuid.New()
+	documentFileID := uuid.New()
+	documentDownloadURL := "http://file-manager-minio:9000/flyfy-files/guide_verification_doc/2026/04/13/fbc1a575-b630-47b2-b071-f8ec43694947.jpg?X-Amz-Signature=test"
+	pageData := PageData{
+		Title:     "Guide application detail",
+		Locale:    localeRU,
+		Path:      "/admin/moderation/guides/" + caseID.String(),
+		CSRFToken: "csrf-token",
+		Data: CaseDetailViewData{
+			Detail: &app.ModerationCaseDetail{
+				Case: &model.ModerationCase{
+					ID:             caseID,
+					TargetType:     model.ModerationTargetGuideApplication,
+					TargetID:       applicationID,
+					SourceRevision: 7,
+					Status:         enum.ModerationCaseStatusOpen,
+					Priority:       50,
+					OpenedAt:       now,
+					CreatedAt:      now,
+					UpdatedAt:      now,
+				},
+				GuideApplication: &model.GuideApplicationModerationItem{
+					ID:                        applicationID,
+					GuideDisplayName:          "Aruzhan Nomad",
+					FirstName:                 "Aruzhan",
+					LastName:                  "Khan",
+					Type:                      "LOCAL_EXPERT",
+					Status:                    "SUBMITTED",
+					GuideStatus:               "PENDING_REVIEW",
+					Headline:                  "Горный гид по Алматы",
+					About:                     "Провожу безопасные маршруты по горам и городу.",
+					ExperienceYears:           6,
+					BaseCityID:                "almaty",
+					BaseCityName:              "Almaty, Kazakhstan",
+					IsPrivateGuideAvailable:   true,
+					IsExcursionGuideAvailable: true,
+					IsActivityHostAvailable:   false,
+					RatingAvg:                 4.8,
+					ReviewsCount:              24,
+					Comment:                   "Хочу проводить авторские маршруты.",
+					SubmittedAt:               &now,
+					Languages: []model.GuideApplicationLanguage{
+						{LanguageCode: "ru", ProficiencyLevel: "NATIVE"},
+						{LanguageCode: "en", ProficiencyLevel: "ADVANCED"},
+					},
+					Specializations: []string{"mountain-routes", "city-walks"},
+					Documents: []model.GuideApplicationDocument{
+						{
+							ID:           documentID,
+							FileID:       documentFileID,
+							DocumentType: "IDENTITY_DOCUMENT",
+							DownloadURL:  documentDownloadURL,
+							CreatedAt:    now,
+						},
+					},
+					Revision:  7,
+					CreatedAt: now,
+					UpdatedAt: now,
+				},
+			},
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "moderation/detail", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Aruzhan Nomad",
+		"Khan Aruzhan",
+		"Локальный эксперт",
+		"Ожидает проверки",
+		"Алматы, Казахстан",
+		"6 лет опыта",
+		"Русский - родной",
+		"Английский - продвинутый",
+		"Горные маршруты",
+		"Прогулки и город",
+		"Удостоверение личности",
+		`href="/admin/moderation/guides/` + caseID.String() + `/documents/` + documentID.String() + `"`,
+		`/admin/moderation/guides/` + caseID.String() + `/approve`,
+		`/admin/moderation/guides/` + caseID.String() + `/reject`,
+		`name="internal_comment" rows="3" required`,
+		`name="public_comment" rows="3" required`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("guide application detail did not render %q: %s", expected, body)
+		}
+	}
+	for _, unexpected := range []string{
+		applicationID.String(),
+		documentFileID.String(),
+		documentDownloadURL,
+		"file-manager-minio:9000",
+		"LOCAL_EXPERT",
+		"mountain-routes",
+		"IDENTITY_DOCUMENT",
+	} {
+		if strings.Contains(body, unexpected) {
+			t.Fatalf("guide application detail rendered technical value %q: %s", unexpected, body)
+		}
+	}
+}
+
+func TestRendererRendersGuideApplicationRatingWithoutReviews(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Now().UTC()
+	caseID := uuid.New()
+	applicationID := uuid.New()
+	pageData := PageData{
+		Title:     "Guide application",
+		Locale:    localeRU,
+		Path:      "/admin/moderation/guides/" + caseID.String(),
+		CSRFToken: "csrf-token",
+		Data: CaseDetailViewData{
+			Detail: &app.ModerationCaseDetail{
+				Case: &model.ModerationCase{
+					ID:             caseID,
+					TargetType:     model.ModerationTargetGuideApplication,
+					TargetID:       applicationID,
+					SourceRevision: 1,
+					Status:         enum.ModerationCaseStatusOpen,
+					Priority:       50,
+					OpenedAt:       now,
+					CreatedAt:      now,
+					UpdatedAt:      now,
+				},
+				GuideApplication: &model.GuideApplicationModerationItem{
+					ID:               applicationID,
+					GuideDisplayName: "Aruzhan Nomad",
+					Status:           "SUBMITTED",
+					GuideStatus:      "PENDING_REVIEW",
+					Type:             "LOCAL_EXPERT",
+					RatingAvg:        5.0,
+					ReviewsCount:     0,
+					CreatedAt:        now,
+					UpdatedAt:        now,
+				},
+			},
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "moderation/detail", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	if !strings.Contains(body, "Нет отзывов") {
+		t.Fatalf("guide application detail did not render empty rating state: %s", body)
+	}
+	if strings.Contains(body, "5.0 · 0") {
+		t.Fatalf("guide application detail rendered misleading zero-review rating: %s", body)
+	}
+}
+
 func TestRendererHidesDecisionFormsForRejectedActivity(t *testing.T) {
 	t.Parallel()
 
@@ -453,6 +718,76 @@ func TestRendererHidesDecisionFormsForRejectedActivity(t *testing.T) {
 		if strings.Contains(body, unexpected) {
 			t.Fatalf("rejected activity detail rendered action control %q: %s", unexpected, body)
 		}
+	}
+}
+
+func TestRendererRendersActiveGuideListAndDropdownReasonCodes(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Now().UTC()
+	guideProfileID := uuid.New()
+	pageData := PageData{
+		Title:     "Current guides",
+		Locale:    localeRU,
+		Path:      "/admin/moderation/guides/current",
+		CSRFToken: "csrf-token",
+		Data: GuideListViewData{
+			Items: []model.GuideApplicationModerationItem{
+				{
+					GuideProfileID:            guideProfileID,
+					GuideUserID:               uuid.New(),
+					GuideDisplayName:          "@nomad_aru",
+					FirstName:                 "Аружан",
+					LastName:                  "Тулегенова",
+					CountryCode:               "KZ",
+					Type:                      "INDEPENDENT",
+					GuideStatus:               "ACTIVE",
+					Status:                    "APPROVED",
+					Headline:                  "Горные маршруты Алматы",
+					ExperienceYears:           8,
+					BaseCityID:                "almaty",
+					IsExcursionGuideAvailable: true,
+					RatingAvg:                 4.9,
+					ReviewsCount:              15,
+					CreatedAt:                 now,
+					UpdatedAt:                 now,
+				},
+			},
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "guides/index", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Текущие гиды",
+		"@nomad_aru",
+		"Тулегенова Аружан",
+		"Горные маршруты Алматы",
+		`<button class="danger" type="button" data-modal-open="guide-revoke-dialog-` + guideProfileID.String() + `">Отозвать статус гида</button>`,
+		`<dialog class="confirm-dialog revoke-dialog" id="guide-revoke-dialog-` + guideProfileID.String() + `"`,
+		`/admin/moderation/guides/current/` + guideProfileID.String() + `/revoke`,
+		`<select name="reason_codes" required>`,
+		`value="unsafe_behavior"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("active guide list missing %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, `name="reason_codes" placeholder`) {
+		t.Fatalf("active guide list rendered manual reason code input: %s", body)
+	}
+	dialogIndex := strings.Index(body, `<dialog class="confirm-dialog revoke-dialog" id="guide-revoke-dialog-`+guideProfileID.String()+`"`)
+	formIndex := strings.Index(body, `<form method="post" action="/admin/moderation/guides/current/`+guideProfileID.String()+`/revoke"`)
+	if dialogIndex == -1 || formIndex == -1 || formIndex < dialogIndex {
+		t.Fatalf("active guide revoke form must be rendered inside the modal dialog: %s", body)
 	}
 }
 

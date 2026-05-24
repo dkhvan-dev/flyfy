@@ -191,6 +191,11 @@ code {
   gap: 16px;
 }
 
+.section-head.compact {
+  align-items: start;
+  margin-bottom: 14px;
+}
+
 .section-actions {
   display: flex;
   flex-wrap: wrap;
@@ -248,6 +253,24 @@ h3 {
 
 .grid.three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.meta-grid dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.meta-grid dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
 }
 
 .metric {
@@ -595,6 +618,10 @@ tr:last-child td {
   border-radius: 8px;
   color: var(--text);
   padding: 0;
+}
+
+.confirm-dialog.revoke-dialog {
+  width: min(560px, calc(100% - 32px));
 }
 
 .confirm-dialog::backdrop {

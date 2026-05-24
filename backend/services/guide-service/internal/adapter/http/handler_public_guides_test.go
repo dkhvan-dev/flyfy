@@ -231,6 +231,91 @@ func TestListPublicGuidesReturnsEmptyWhenCityHasNoExcursionGuides(t *testing.T) 
 	}
 }
 
+func TestListActiveGuidesForAdminReturnsReadableGuideItems(t *testing.T) {
+	t.Parallel()
+
+	profileID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	userID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	now := time.Date(2026, 5, 25, 9, 30, 0, 0, time.UTC)
+	headline := "Almaty mountain guide"
+	displayName := "Aruzhan Guide"
+	firstName := "Aruzhan"
+	lastName := "Tulegenova"
+	repo := &publicGuideRepositoryStub{
+		result: port.PublicGuideListResult{
+			Items: []*model.GuideProfile{
+				{
+					ID:                        profileID,
+					UserID:                    userID,
+					Type:                      enum.GuideTypeIndependent,
+					Status:                    enum.GuideStatusActive,
+					Headline:                  &headline,
+					ExperienceYears:           8,
+					IsExcursionGuideAvailable: true,
+					RatingAvg:                 4.85,
+					ReviewsCount:              42,
+					CreatedAt:                 now,
+					UpdatedAt:                 now,
+				},
+			},
+			Total: 1,
+		},
+	}
+	handler := NewHandler(app.NewGuideUseCase(
+		repo,
+		&publicUserClientStub{
+			profiles: map[uuid.UUID]app.PublicUserProfile{
+				userID: {
+					UserID:      userID,
+					FirstName:   &firstName,
+					LastName:    &lastName,
+					DisplayName: &displayName,
+					Locale:      "ru",
+					Timezone:    "Asia/Almaty",
+				},
+			},
+		},
+		nil,
+	))
+
+	req := httptest.NewRequest(nethttp.MethodGet, "/v1/admin/guides/profiles?limit=50&offset=0", nil)
+	req = req.WithContext(withUserRoles(req.Context(), []string{"GUIDE_MODERATOR"}))
+	rec := httptest.NewRecorder()
+
+	handler.ListActiveGuidesForAdmin(rec, req)
+
+	if rec.Code != nethttp.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", nethttp.StatusOK, rec.Code, rec.Body.String())
+	}
+	var payload struct {
+		Items []struct {
+			GuideProfileID   string `json:"guideProfileId"`
+			GuideUserID      string `json:"guideUserId"`
+			GuideDisplayName string `json:"guideDisplayName"`
+			FirstName        string `json:"firstName"`
+			LastName         string `json:"lastName"`
+			GuideStatus      string `json:"guideStatus"`
+			Headline         string `json:"headline"`
+		} `json:"items"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(payload.Items) != 1 {
+		t.Fatalf("items = %d, want 1", len(payload.Items))
+	}
+	item := payload.Items[0]
+	if item.GuideProfileID != profileID.String() || item.GuideUserID != userID.String() {
+		t.Fatalf("unexpected ids: %#v", item)
+	}
+	if item.GuideDisplayName != displayName || item.FirstName != firstName || item.LastName != lastName {
+		t.Fatalf("expected readable guide identity, got %#v", item)
+	}
+	if item.GuideStatus != string(enum.GuideStatusActive) || item.Headline != headline {
+		t.Fatalf("unexpected guide status/headline: %#v", item)
+	}
+}
+
 type publicGuideRepositoryStub struct {
 	result          port.PublicGuideListResult
 	lastFilter      port.PublicGuideListFilter
@@ -342,6 +427,10 @@ func (s *publicGuideExcursionCoverageClientStub) ListGuideUserIDsByCity(
 	return s.guideUserIDs, nil
 }
 
+func (s *publicGuideExcursionCoverageClientStub) ArchiveGuideExcursionOffers(context.Context, uuid.UUID) error {
+	return nil
+}
+
 func (s *publicGuideRepositoryStub) ListVerificationRequestsByStatuses(
 	context.Context,
 	[]enum.VerificationRequestStatus,
@@ -379,5 +468,9 @@ func (s *publicUserClientStub) ListPublicUserIDsByCountryCodes(context.Context, 
 }
 
 func (s *publicUserClientStub) GrantGuideRole(context.Context, uuid.UUID, *uuid.UUID) error {
+	return nil
+}
+
+func (s *publicUserClientStub) RevokeGuideRole(context.Context, uuid.UUID) error {
 	return nil
 }

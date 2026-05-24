@@ -305,6 +305,7 @@ type friendshipTestRepository struct {
 	bySubject   map[string]uuid.UUID
 	friendships map[string]*model.UserFriendship
 	follows     map[string]struct{}
+	roles       map[uuid.UUID]map[enum.SystemRole]struct{}
 }
 
 func newFriendshipTestRepository(userIDs ...uuid.UUID) *friendshipTestRepository {
@@ -313,6 +314,7 @@ func newFriendshipTestRepository(userIDs ...uuid.UUID) *friendshipTestRepository
 		bySubject:   make(map[string]uuid.UUID, len(userIDs)),
 		friendships: make(map[string]*model.UserFriendship),
 		follows:     make(map[string]struct{}),
+		roles:       make(map[uuid.UUID]map[enum.SystemRole]struct{}, len(userIDs)),
 	}
 	for index, userID := range userIDs {
 		subject := userID.String()
@@ -487,8 +489,23 @@ func (r *friendshipTestRepository) GrantRole(context.Context, *model.UserSystemR
 	return nil
 }
 
-func (r *friendshipTestRepository) HasRole(context.Context, uuid.UUID, enum.SystemRole) (bool, error) {
-	return false, nil
+func (r *friendshipTestRepository) RevokeRole(_ context.Context, userID uuid.UUID, role enum.SystemRole) error {
+	if r.roles != nil {
+		delete(r.roles[userID], role)
+	}
+	return nil
+}
+
+func (r *friendshipTestRepository) HasRole(_ context.Context, userID uuid.UUID, role enum.SystemRole) (bool, error) {
+	return r.hasRoleValue(userID, role), nil
+}
+
+func (r *friendshipTestRepository) hasRoleValue(userID uuid.UUID, role enum.SystemRole) bool {
+	if r.roles == nil {
+		return false
+	}
+	_, ok := r.roles[userID][role]
+	return ok
 }
 
 func (r *friendshipTestRepository) ListPublicProfiles(context.Context, int, int) ([]*model.UserProfile, error) {

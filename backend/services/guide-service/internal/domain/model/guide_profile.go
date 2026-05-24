@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,13 +11,14 @@ import (
 )
 
 var (
-	ErrInvalidGuideProfileID     = errors.New("invalid guide profile id")
-	ErrInvalidGuideProfileUserID = errors.New("invalid guide profile user id")
-	ErrInvalidGuideType          = errors.New("invalid guide type")
-	ErrInvalidGuideStatus        = errors.New("invalid guide status")
-	ErrInvalidExperienceYears    = errors.New("invalid experience years")
-	ErrInvalidReviewsCount       = errors.New("invalid reviews count")
-	ErrInvalidRatingAverage      = errors.New("invalid rating average")
+	ErrInvalidGuideProfileID         = errors.New("invalid guide profile id")
+	ErrInvalidGuideProfileUserID     = errors.New("invalid guide profile user id")
+	ErrInvalidGuideType              = errors.New("invalid guide type")
+	ErrInvalidGuideStatus            = errors.New("invalid guide status")
+	ErrInvalidExperienceYears        = errors.New("invalid experience years")
+	ErrInvalidReviewsCount           = errors.New("invalid reviews count")
+	ErrInvalidRatingAverage          = errors.New("invalid rating average")
+	ErrGuideRevocationReasonRequired = errors.New("guide revocation reason is required")
 )
 
 type GuideProfile struct {
@@ -33,6 +35,9 @@ type GuideProfile struct {
 	IsExcursionGuideAvailable bool
 	RatingAvg                 float64
 	ReviewsCount              int
+	StatusReason              *string
+	StatusChangedAt           *time.Time
+	StatusChangedBy           *uuid.UUID
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
 }
@@ -143,6 +148,9 @@ func (g *GuideProfile) Activate() error {
 		return ErrInvalidGuideProfileID
 	}
 	g.Status = enum.GuideStatusActive
+	g.StatusReason = nil
+	g.StatusChangedAt = nil
+	g.StatusChangedBy = nil
 	g.UpdatedAt = time.Now().UTC()
 	return g.Validate()
 }
@@ -153,5 +161,28 @@ func (g *GuideProfile) Reject() error {
 	}
 	g.Status = enum.GuideStatusRejected
 	g.UpdatedAt = time.Now().UTC()
+	return g.Validate()
+}
+
+func (g *GuideProfile) Revoke(reason string, revokedBy *uuid.UUID) error {
+	if g.ID == uuid.Nil {
+		return ErrInvalidGuideProfileID
+	}
+	reason = strings.Join(strings.Fields(strings.TrimSpace(reason)), " ")
+	if reason == "" {
+		return ErrGuideRevocationReasonRequired
+	}
+	now := time.Now().UTC()
+	g.Status = enum.GuideStatusRevoked
+	g.StatusReason = &reason
+	g.StatusChangedAt = &now
+	g.StatusChangedBy = nil
+	if revokedBy != nil && *revokedBy != uuid.Nil {
+		g.StatusChangedBy = revokedBy
+	}
+	g.IsPrivateGuideAvailable = false
+	g.IsActivityHostAvailable = false
+	g.IsExcursionGuideAvailable = false
+	g.UpdatedAt = now
 	return g.Validate()
 }

@@ -658,6 +658,28 @@ func (u *UserUseCase) GrantRole(
 	return nil
 }
 
+func (u *UserUseCase) RevokeRole(
+	ctx context.Context,
+	userID uuid.UUID,
+	role enum.SystemRole,
+) error {
+	if userID == uuid.Nil {
+		return ErrInvalidUserID
+	}
+	if !role.IsValid() {
+		return model.ErrInvalidSystemRole
+	}
+	if role == enum.SystemRoleUser {
+		return model.ErrInvalidSystemRole
+	}
+
+	if err := u.repo.RevokeRole(ctx, userID, role); err != nil {
+		return fmt.Errorf("revoke role: %w", err)
+	}
+
+	return nil
+}
+
 func (u *UserUseCase) UpdateSettings(
 	ctx context.Context,
 	userID uuid.UUID,

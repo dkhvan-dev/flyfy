@@ -69,6 +69,7 @@ type SubmitGuideApplicationRequest struct {
 type GuideAggregateResponse struct {
 	Profile             GuideProfileResponse              `json:"profile"`
 	VerificationRequest *GuideVerificationRequestResponse `json:"verificationRequest,omitempty"`
+	UserProfile         *PublicUserCard                   `json:"userProfile,omitempty"`
 	Documents           []GuideDocumentResponse           `json:"documents"`
 	Languages           []GuideLanguageResponse           `json:"languages"`
 	Specializations     []GuideSpecializationResponse     `json:"specializations"`
@@ -88,6 +89,9 @@ type GuideProfileResponse struct {
 	IsExcursionGuideAvailable bool    `json:"isExcursionGuideAvailable"`
 	RatingAvg                 float64 `json:"ratingAvg"`
 	ReviewsCount              int     `json:"reviewsCount"`
+	StatusReason              *string `json:"statusReason,omitempty"`
+	StatusChangedAt           *string `json:"statusChangedAt,omitempty"`
+	StatusChangedBy           *string `json:"statusChangedBy,omitempty"`
 	CreatedAt                 string  `json:"createdAt"`
 	UpdatedAt                 string  `json:"updatedAt"`
 }
@@ -139,6 +143,64 @@ type VerificationQueueItemResponse struct {
 	Comment        *string `json:"comment,omitempty"`
 	SubmittedAt    *string `json:"submittedAt,omitempty"`
 	CreatedAt      string  `json:"createdAt"`
+}
+
+type AdminGuideApplicationListResponse struct {
+	Items []AdminGuideApplicationResponse `json:"items"`
+}
+
+type AdminGuideApplicationResponse struct {
+	ID                        string                       `json:"id"`
+	GuideProfileID            string                       `json:"guideProfileId"`
+	GuideUserID               string                       `json:"guideUserId"`
+	GuideDisplayName          string                       `json:"guideDisplayName"`
+	FirstName                 string                       `json:"firstName,omitempty"`
+	LastName                  string                       `json:"lastName,omitempty"`
+	CountryCode               string                       `json:"countryCode,omitempty"`
+	Locale                    string                       `json:"locale,omitempty"`
+	Timezone                  string                       `json:"timezone,omitempty"`
+	Type                      string                       `json:"type"`
+	GuideStatus               string                       `json:"guideStatus"`
+	Status                    string                       `json:"status"`
+	Headline                  string                       `json:"headline,omitempty"`
+	About                     string                       `json:"about,omitempty"`
+	ExperienceYears           int                          `json:"experienceYears"`
+	BaseCityID                string                       `json:"baseCityId,omitempty"`
+	BaseCityName              string                       `json:"baseCityName,omitempty"`
+	IsPrivateGuideAvailable   bool                         `json:"isPrivateGuideAvailable"`
+	IsActivityHostAvailable   bool                         `json:"isActivityHostAvailable"`
+	IsExcursionGuideAvailable bool                         `json:"isExcursionGuideAvailable"`
+	RatingAvg                 float64                      `json:"ratingAvg"`
+	ReviewsCount              int                          `json:"reviewsCount"`
+	StatusReason              string                       `json:"statusReason,omitempty"`
+	StatusChangedAt           *string                      `json:"statusChangedAt,omitempty"`
+	StatusChangedBy           *string                      `json:"statusChangedBy,omitempty"`
+	Comment                   string                       `json:"comment,omitempty"`
+	ReviewComment             string                       `json:"reviewComment,omitempty"`
+	SubmittedAt               *string                      `json:"submittedAt,omitempty"`
+	ReviewedAt                *string                      `json:"reviewedAt,omitempty"`
+	ReviewedBy                *string                      `json:"reviewedBy,omitempty"`
+	Documents                 []AdminGuideDocumentResponse `json:"documents"`
+	Languages                 []AdminGuideLanguageResponse `json:"languages"`
+	Specializations           []string                     `json:"specializations"`
+	RiskScore                 int                          `json:"riskScore"`
+	ModerationReasonCodes     []string                     `json:"moderationReasonCodes"`
+	Revision                  int                          `json:"revision"`
+	CreatedAt                 string                       `json:"createdAt"`
+	UpdatedAt                 string                       `json:"updatedAt"`
+}
+
+type AdminGuideDocumentResponse struct {
+	ID           string `json:"id"`
+	FileID       string `json:"fileId"`
+	DocumentType string `json:"documentType"`
+	DownloadURL  string `json:"downloadUrl,omitempty"`
+	CreatedAt    string `json:"createdAt"`
+}
+
+type AdminGuideLanguageResponse struct {
+	LanguageCode     string `json:"languageCode"`
+	ProficiencyLevel string `json:"proficiencyLevel"`
 }
 
 type PublicGuideCardResponse struct {

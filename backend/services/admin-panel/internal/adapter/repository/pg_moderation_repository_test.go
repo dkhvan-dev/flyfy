@@ -34,6 +34,8 @@ func TestBuildListCasesQueryAppliesExcursionFiltersAndSort(t *testing.T) {
 		"GuideNickname",
 		"DepartureCityID",
 		"CityName",
+		"BaseCityID",
+		"BaseCityName",
 		"ModerationReasonCodes",
 		"PublishRiskScore",
 		"ORDER BY CASE WHEN jsonb_typeof(snapshot->'PublishRiskScore') = 'number'",
@@ -44,7 +46,7 @@ func TestBuildListCasesQueryAppliesExcursionFiltersAndSort(t *testing.T) {
 		}
 	}
 
-	if len(args) != 8 {
+	if len(args) != 10 {
 		t.Fatalf("unexpected args length: got %d, args=%#v", len(args), args)
 	}
 	if args[2] != `%medeu\_\%%` {
@@ -53,10 +55,13 @@ func TestBuildListCasesQueryAppliesExcursionFiltersAndSort(t *testing.T) {
 	if args[3] != "almaty" || args[4] != "%almaty%" {
 		t.Fatalf("city args were not normalized: %#v %#v", args[3], args[4])
 	}
-	if args[5] != "new_guide" {
-		t.Fatalf("signal arg was not preserved: %#v", args[5])
+	if args[5] != "almaty" || args[6] != "%almaty%" {
+		t.Fatalf("guide city args were not normalized: %#v %#v", args[5], args[6])
 	}
-	if args[6] != 50 || args[7] != 10 {
+	if args[7] != "new_guide" {
+		t.Fatalf("signal arg was not preserved: %#v", args[7])
+	}
+	if args[8] != 50 || args[9] != 10 {
 		t.Fatalf("limit/offset args were not last: %#v", args)
 	}
 }

@@ -770,6 +770,19 @@ func (r *PGUserRepository) GrantRole(ctx context.Context, role *model.UserSystem
 	return nil
 }
 
+func (r *PGUserRepository) RevokeRole(ctx context.Context, userID uuid.UUID, role enum.SystemRole) error {
+	const query = `
+		DELETE FROM user_system_roles
+		WHERE user_id = $1 AND role = $2
+	`
+
+	if _, err := r.pool.Exec(ctx, query, userID, string(role)); err != nil {
+		return fmt.Errorf("delete role: %w", err)
+	}
+
+	return nil
+}
+
 func (r *PGUserRepository) HasRole(ctx context.Context, userID uuid.UUID, role enum.SystemRole) (bool, error) {
 	const query = `
 		SELECT EXISTS(

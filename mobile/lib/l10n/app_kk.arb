@@ -51,6 +51,7 @@
   "profileTitle": "Профиль",
   "drawerStatusVerifiedGuide": "Расталған гид",
   "drawerStatusGuide": "Гид",
+  "drawerStatusGuideRevoked": "Гид мәртебесі қайтарылды",
   "drawerStatusTraveler": "Саяхатшы",
   "drawerStatusCompleteProfile": "Профильді толтырыңыз",
   "profileNotAvailable": "Профиль қолжетімсіз",
@@ -194,6 +195,15 @@
   "profileEmptyBioPlaceholder": "Қазір мұнда сипаттама жоқ. Профиль толтырылған кезде қысқаша ақпарат осы жерде көрсетіледі.",
   "profileBecomeGuideTitle": "Гид болыңыз",
   "profileBecomeGuideSubtitle": "Жақында осы жерден өтінім беріп, кәсіби гид профилін аша аласыз.",
+  "guideVerificationRevokedTitle": "Гид мәртебесі қайтарылды",
+  "guideVerificationRevokedSubtitle": "Модерация сіздің гид мәртебеңізді қайтарды. Гид функциялары мен жария ұсыныстар қолжетімсіз.",
+  "guideVerificationRevokedSubtitleWithReason": "Модерация сіздің гид мәртебеңізді қайтарды. Себебі: {reason}",
+  "@guideVerificationRevokedSubtitleWithReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "guideVerificationRevokedButton": "Мәртебе қайтарылды",
   "profileActivitiesStat": "Белсенділіктер",
   "profileHostedCompletedStat": "Автор ретінде аяқталды",
   "profileJoinedCompletedStat": "Қатысушы ретінде аяқталды",

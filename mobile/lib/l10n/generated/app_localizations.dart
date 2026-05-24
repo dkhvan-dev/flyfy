@@ -340,6 +340,12 @@ abstract class AppLocalizations {
   /// **'Guide'**
   String get drawerStatusGuide;
 
+  /// No description provided for @drawerStatusGuideRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide status revoked'**
+  String get drawerStatusGuideRevoked;
+
   /// No description provided for @drawerStatusTraveler.
   ///
   /// In en, this message translates to:
@@ -1131,6 +1137,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Soon you will be able to apply and unlock a professional guide profile here.'**
   String get profileBecomeGuideSubtitle;
+
+  /// No description provided for @guideVerificationRevokedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide status revoked'**
+  String get guideVerificationRevokedTitle;
+
+  /// No description provided for @guideVerificationRevokedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your guide status was revoked by moderation. Guide tools and public offers are unavailable.'**
+  String get guideVerificationRevokedSubtitle;
+
+  /// No description provided for @guideVerificationRevokedSubtitleWithReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Your guide status was revoked by moderation. Reason: {reason}'**
+  String guideVerificationRevokedSubtitleWithReason(Object reason);
+
+  /// No description provided for @guideVerificationRevokedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Status revoked'**
+  String get guideVerificationRevokedButton;
 
   /// No description provided for @profileActivitiesStat.
   ///

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/guide-service/internal/domain/model"
@@ -54,6 +55,7 @@ type GuideExcursionCityFilter struct {
 
 type GuideExcursionCoverageClient interface {
 	ListGuideUserIDsByCity(ctx context.Context, input GuideExcursionCityFilter) ([]uuid.UUID, error)
+	ArchiveGuideExcursionOffers(ctx context.Context, guideUserID uuid.UUID) error
 }
 
 type InitGuideProfileInput struct {
@@ -168,6 +170,58 @@ func (u *GuideUseCase) GetGuideAggregateByUserID(ctx context.Context, userID uui
 	}
 
 	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+}
+
+func (u *GuideUseCase) GetVerificationRequestAggregateByID(
+	ctx context.Context,
+	verificationRequestID uuid.UUID,
+) (*GuideAggregate, error) {
+	if verificationRequestID == uuid.Nil {
+		return nil, ErrVerificationRequestNotFound
+	}
+	req, err := u.repo.GetVerificationRequestByID(ctx, verificationRequestID)
+	if err != nil {
+		return nil, fmt.Errorf("get verification request by id: %w", err)
+	}
+	if req == nil {
+		return nil, ErrVerificationRequestNotFound
+	}
+	return u.GetGuideAggregateByProfileID(ctx, req.GuideProfileID)
+}
+
+func (u *GuideUseCase) ListPendingVerificationApplicationAggregates(
+	ctx context.Context,
+	limit int,
+	offset int,
+) ([]*GuideAggregate, error) {
+	requests, err := u.ListPendingVerificationRequests(ctx, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*GuideAggregate, 0, len(requests))
+	for _, request := range requests {
+		if request == nil {
+			continue
+		}
+		aggregate, aggregateErr := u.GetGuideAggregateByProfileID(ctx, request.GuideProfileID)
+		if aggregateErr != nil {
+			return nil, aggregateErr
+		}
+		if aggregate.VerificationRequest != nil && aggregate.VerificationRequest.ID == request.ID {
+			result = append(result, aggregate)
+		}
+	}
+	return result, nil
+}
+
+func (u *GuideUseCase) CreateGuideDocumentDownloadURL(ctx context.Context, fileID uuid.UUID) (string, error) {
+	if fileID == uuid.Nil {
+		return "", ErrGuideDocumentFileNotFound
+	}
+	if u.fileClient == nil {
+		return "", fmt.Errorf("file manager client is not configured")
+	}
+	return u.fileClient.CreateGuideDocumentDownloadURL(ctx, fileID)
 }
 
 func (u *GuideUseCase) attachPublicUserProfile(ctx context.Context, aggregate *GuideAggregate) {
@@ -838,6 +892,9 @@ func (u *GuideUseCase) ApproveVerificationRequest(
 	if req == nil {
 		return nil, ErrVerificationRequestNotFound
 	}
+	if !isVerificationRequestReviewable(req.Status) {
+		return nil, ErrVerificationRequestNotReviewable
+	}
 
 	profile, err := u.repo.GetGuideProfileByID(ctx, req.GuideProfileID)
 	if err != nil {
@@ -885,6 +942,12 @@ func (u *GuideUseCase) RejectVerificationRequest(
 	if req == nil {
 		return nil, ErrVerificationRequestNotFound
 	}
+	if !isVerificationRequestReviewable(req.Status) {
+		return nil, ErrVerificationRequestNotReviewable
+	}
+	if input.ReviewComment == nil || strings.TrimSpace(*input.ReviewComment) == "" {
+		return nil, ErrReviewCommentRequired
+	}
 
 	profile, err := u.repo.GetGuideProfileByID(ctx, req.GuideProfileID)
 	if err != nil {
@@ -910,6 +973,106 @@ func (u *GuideUseCase) RejectVerificationRequest(
 	}
 
 	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+}
+
+type RevokeGuideStatusInput struct {
+	VerificationRequestID uuid.UUID
+	ReviewerID            *uuid.UUID
+	PublicReason          string
+}
+
+type RevokeGuideProfileStatusInput struct {
+	GuideProfileID uuid.UUID
+	ReviewerID     *uuid.UUID
+	PublicReason   string
+}
+
+func (u *GuideUseCase) RevokeGuideStatus(
+	ctx context.Context,
+	input RevokeGuideStatusInput,
+) (*GuideAggregate, error) {
+	if input.VerificationRequestID == uuid.Nil {
+		return nil, ErrVerificationRequestNotFound
+	}
+	if strings.TrimSpace(input.PublicReason) == "" {
+		return nil, ErrReviewCommentRequired
+	}
+
+	req, err := u.repo.GetVerificationRequestByID(ctx, input.VerificationRequestID)
+	if err != nil {
+		return nil, fmt.Errorf("get verification request by id: %w", err)
+	}
+	if req == nil {
+		return nil, ErrVerificationRequestNotFound
+	}
+
+	profile, err := u.repo.GetGuideProfileByID(ctx, req.GuideProfileID)
+	if err != nil {
+		return nil, fmt.Errorf("get guide profile by id: %w", err)
+	}
+	if profile == nil {
+		return nil, ErrGuideProfileNotFound
+	}
+	return u.revokeGuideProfile(ctx, profile, input.ReviewerID, input.PublicReason)
+}
+
+func (u *GuideUseCase) RevokeGuideProfileStatus(
+	ctx context.Context,
+	input RevokeGuideProfileStatusInput,
+) (*GuideAggregate, error) {
+	if input.GuideProfileID == uuid.Nil {
+		return nil, ErrGuideProfileNotFound
+	}
+	if strings.TrimSpace(input.PublicReason) == "" {
+		return nil, ErrReviewCommentRequired
+	}
+	profile, err := u.repo.GetGuideProfileByID(ctx, input.GuideProfileID)
+	if err != nil {
+		return nil, fmt.Errorf("get guide profile by id: %w", err)
+	}
+	if profile == nil {
+		return nil, ErrGuideProfileNotFound
+	}
+	return u.revokeGuideProfile(ctx, profile, input.ReviewerID, input.PublicReason)
+}
+
+func (u *GuideUseCase) revokeGuideProfile(
+	ctx context.Context,
+	profile *model.GuideProfile,
+	reviewerID *uuid.UUID,
+	publicReason string,
+) (*GuideAggregate, error) {
+	if profile == nil {
+		return nil, ErrGuideProfileNotFound
+	}
+	if profile.Status != enum.GuideStatusActive {
+		return nil, ErrGuideProfileNotActive
+	}
+	if err := profile.Revoke(publicReason, reviewerID); err != nil {
+		return nil, fmt.Errorf("revoke guide profile: %w", err)
+	}
+	if u.excursionClient != nil {
+		if err := u.excursionClient.ArchiveGuideExcursionOffers(ctx, profile.UserID); err != nil {
+			return nil, fmt.Errorf("archive guide excursion offers: %w", err)
+		}
+	}
+	if err := u.repo.UpdateGuideProfile(ctx, profile); err != nil {
+		return nil, fmt.Errorf("update guide profile: %w", err)
+	}
+	if u.userClient != nil {
+		if err := u.userClient.RevokeGuideRole(ctx, profile.UserID); err != nil {
+			log.Ctx(ctx).Warn().
+				Err(err).
+				Stringer("guide_user_id", profile.UserID).
+				Msg("failed to revoke guide role after guide status revocation")
+		}
+	}
+	return u.GetGuideAggregateByProfileID(ctx, profile.ID)
+}
+
+func isVerificationRequestReviewable(status enum.VerificationRequestStatus) bool {
+	return status == enum.VerificationRequestStatusSubmitted ||
+		status == enum.VerificationRequestStatusUnderReview
 }
 
 func (u *GuideUseCase) SuspendGuideProfile(

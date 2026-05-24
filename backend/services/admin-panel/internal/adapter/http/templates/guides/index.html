@@ -1,0 +1,108 @@
+{{define "guides/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "moderation.eyebrow"}}</p>
+      <h1>{{t .Locale "guides.currentTitle"}}</h1>
+      <p class="muted">{{t .Locale "guides.currentSubtitle"}}</p>
+    </div>
+    <div class="section-actions">
+      <a class="button" href="{{.Data.QueueURL}}">{{t .Locale "action.openGuideApplications"}}</a>
+      <a class="button" href="{{.Data.HistoryURL}}">{{t .Locale "action.openHistory"}}</a>
+    </div>
+  </div>
+
+  {{if .Data.Items}}
+    <div class="grid">
+      {{range .Data.Items}}
+        <article class="card">
+          <div class="section-head compact">
+            <div>
+              <span class="{{statusClass .GuideStatus}}">{{statusText $.Locale .GuideStatus}}</span>
+              <h2>{{guideApplicationPrimary .}}</h2>
+              {{with guideApplicationFullName .}}<p class="muted">{{.}}</p>{{end}}
+            </div>
+          </div>
+
+          <dl class="meta-grid">
+            <div>
+              <dt>{{t $.Locale "label.guideType"}}</dt>
+              <dd>{{guideApplicationType $.Locale .}}</dd>
+            </div>
+            <div>
+              <dt>{{t $.Locale "field.city"}}</dt>
+              <dd>{{guideApplicationLocation $.Locale .}}</dd>
+            </div>
+            <div>
+              <dt>{{t $.Locale "label.experience"}}</dt>
+              <dd>{{guideApplicationExperience $.Locale .}}</dd>
+            </div>
+            <div>
+              <dt>{{t $.Locale "label.rating"}}</dt>
+              <dd>{{guideApplicationRating $.Locale .}}</dd>
+            </div>
+          </dl>
+
+          {{if .Headline}}
+            <p>{{.Headline}}</p>
+          {{end}}
+
+          {{with guideApplicationServices $.Locale .}}
+            <div class="chip-list">
+              {{range .}}<span class="badge">{{.}}</span>{{end}}
+            </div>
+          {{end}}
+
+          <div class="danger-zone">
+            <button class="danger" type="button" data-modal-open="guide-revoke-dialog-{{.GuideProfileID}}">{{t $.Locale "action.revokeGuideStatus"}}</button>
+          </div>
+        </article>
+        <dialog class="confirm-dialog revoke-dialog" id="guide-revoke-dialog-{{.GuideProfileID}}" aria-labelledby="guide-revoke-title-{{.GuideProfileID}}" data-close-on-backdrop>
+          <form method="post" action="/admin/moderation/guides/current/{{.GuideProfileID}}/revoke" class="confirm-panel form compact">
+            {{csrfField $.CSRFToken}}
+            <input type="hidden" name="idempotency_key" value="{{newID}}">
+            <h2 id="guide-revoke-title-{{.GuideProfileID}}">{{t $.Locale "action.revokeGuideStatus"}}</h2>
+            <p class="muted">{{t $.Locale "moderation.guideApplicationRevokeHint"}}</p>
+            <label>
+              <span>{{t $.Locale "field.reasonCodes"}}</span>
+              <select name="reason_codes" required>
+                <option value="">{{t $.Locale "placeholder.selectReasonCode"}}</option>
+                {{range moderationReasonOptions $.Locale}}
+                  <option value="{{.Code}}">{{.Label}}</option>
+                {{end}}
+              </select>
+            </label>
+            <label>
+              <span>{{t $.Locale "field.publicComment"}}</span>
+              <textarea name="public_comment" rows="3" required placeholder="{{t $.Locale "placeholder.guideRevocationPublicComment"}}"></textarea>
+            </label>
+            <label>
+              <span>{{t $.Locale "field.internalComment"}}</span>
+              <textarea name="internal_comment" rows="3" required></textarea>
+            </label>
+            <div class="filter-actions">
+              <button class="danger" type="submit">{{t $.Locale "action.revokeGuideStatus"}}</button>
+              <button type="button" data-modal-close>{{t $.Locale "action.cancel"}}</button>
+            </div>
+          </form>
+        </dialog>
+      {{end}}
+    </div>
+  {{else}}
+    <div class="empty card">{{t .Locale "empty.noActiveGuides"}}</div>
+  {{end}}
+</section>
+
+<dialog class="confirm-dialog" id="decision-confirmation-dialog" aria-labelledby="decision-confirmation-title">
+  <form method="dialog" class="confirm-panel">
+    <h2 id="decision-confirmation-title">{{t .Locale "modal.confirmDecisionTitle"}}</h2>
+    <p data-confirm-message>{{t .Locale "modal.confirmDecisionText"}}</p>
+    <div class="filter-actions">
+      <button type="button" class="primary" data-confirm-submit>{{t .Locale "action.confirm"}}</button>
+      <button type="button" data-confirm-cancel>{{t .Locale "action.cancel"}}</button>
+    </div>
+  </form>
+</dialog>
+{{template "pageEnd" .}}
+{{end}}

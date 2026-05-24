@@ -28,11 +28,15 @@ func (r *PGGuideRepository) CreateGuideProfile(ctx context.Context, profile *mod
 		INSERT INTO guide_profiles (
 			id, user_id, type, status, headline, about, experience_years,
 			base_city_id, is_private_guide_available, is_activity_host_available,
-			is_excursion_guide_available, rating_avg, reviews_count, created_at, updated_at
+			is_excursion_guide_available, rating_avg, reviews_count,
+			status_reason, status_changed_at, status_changed_by,
+			created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7,
 			$8, $9, $10,
-			$11, $12, $13, $14, $15
+			$11, $12, $13,
+			$14, $15, $16,
+			$17, $18
 		)
 	`
 
@@ -52,6 +56,9 @@ func (r *PGGuideRepository) CreateGuideProfile(ctx context.Context, profile *mod
 		profile.IsExcursionGuideAvailable,
 		profile.RatingAvg,
 		profile.ReviewsCount,
+		profile.StatusReason,
+		profile.StatusChangedAt,
+		profile.StatusChangedBy,
 		profile.CreatedAt,
 		profile.UpdatedAt,
 	)
@@ -71,7 +78,9 @@ func (r *PGGuideRepository) GetGuideProfileByID(ctx context.Context, id uuid.UUI
 		SELECT
 			id, user_id, type, status, headline, about, experience_years,
 			base_city_id, is_private_guide_available, is_activity_host_available,
-			is_excursion_guide_available, rating_avg, reviews_count, created_at, updated_at
+			is_excursion_guide_available, rating_avg, reviews_count,
+			status_reason, status_changed_at, status_changed_by,
+			created_at, updated_at
 		FROM guide_profiles
 		WHERE id = $1
 		LIMIT 1
@@ -99,6 +108,9 @@ func (r *PGGuideRepository) GetGuideProfileByID(ctx context.Context, id uuid.UUI
 		&item.IsExcursionGuideAvailable,
 		&item.RatingAvg,
 		&item.ReviewsCount,
+		&item.StatusReason,
+		&item.StatusChangedAt,
+		&item.StatusChangedBy,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	)
@@ -120,7 +132,9 @@ func (r *PGGuideRepository) GetGuideProfileByUserID(ctx context.Context, userID 
 		SELECT
 			id, user_id, type, status, headline, about, experience_years,
 			base_city_id, is_private_guide_available, is_activity_host_available,
-			is_excursion_guide_available, rating_avg, reviews_count, created_at, updated_at
+			is_excursion_guide_available, rating_avg, reviews_count,
+			status_reason, status_changed_at, status_changed_by,
+			created_at, updated_at
 		FROM guide_profiles
 		WHERE user_id = $1
 		LIMIT 1
@@ -148,6 +162,9 @@ func (r *PGGuideRepository) GetGuideProfileByUserID(ctx context.Context, userID 
 		&item.IsExcursionGuideAvailable,
 		&item.RatingAvg,
 		&item.ReviewsCount,
+		&item.StatusReason,
+		&item.StatusChangedAt,
+		&item.StatusChangedBy,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	)
@@ -179,7 +196,10 @@ func (r *PGGuideRepository) UpdateGuideProfile(ctx context.Context, profile *mod
 			is_excursion_guide_available = $10,
 			rating_avg = $11,
 			reviews_count = $12,
-			updated_at = $13
+			status_reason = $13,
+			status_changed_at = $14,
+			status_changed_by = $15,
+			updated_at = $16
 		WHERE id = $1
 	`
 
@@ -198,6 +218,9 @@ func (r *PGGuideRepository) UpdateGuideProfile(ctx context.Context, profile *mod
 		profile.IsExcursionGuideAvailable,
 		profile.RatingAvg,
 		profile.ReviewsCount,
+		profile.StatusReason,
+		profile.StatusChangedAt,
+		profile.StatusChangedBy,
 		profile.UpdatedAt,
 	)
 	if err != nil {
@@ -773,7 +796,9 @@ func (r *PGGuideRepository) ListPublicGuideProfiles(
 		SELECT
 			gp.id, gp.user_id, gp.type, gp.status, gp.headline, gp.about, gp.experience_years,
 			gp.base_city_id, gp.is_private_guide_available, gp.is_activity_host_available,
-			gp.is_excursion_guide_available, gp.rating_avg, gp.reviews_count, gp.created_at, gp.updated_at
+			gp.is_excursion_guide_available, gp.rating_avg, gp.reviews_count,
+			gp.status_reason, gp.status_changed_at, gp.status_changed_by,
+			gp.created_at, gp.updated_at
 		FROM guide_profiles gp
 		WHERE %s
 		ORDER BY %s
@@ -808,6 +833,9 @@ func (r *PGGuideRepository) ListPublicGuideProfiles(
 			&item.IsExcursionGuideAvailable,
 			&item.RatingAvg,
 			&item.ReviewsCount,
+			&item.StatusReason,
+			&item.StatusChangedAt,
+			&item.StatusChangedBy,
 			&item.CreatedAt,
 			&item.UpdatedAt,
 		); err != nil {

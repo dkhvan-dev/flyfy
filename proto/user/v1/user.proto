@@ -11,6 +11,7 @@ service UserService {
   rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserProfileResponse);
   rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UpdateUserSettingsResponse);
   rpc GrantUserRole(GrantUserRoleRequest) returns (GrantUserRoleResponse);
+  rpc RevokeUserRole(RevokeUserRoleRequest) returns (RevokeUserRoleResponse);
   rpc ListPublicProfiles(ListPublicProfilesRequest) returns (ListPublicProfilesResponse);
   rpc GetPublicProfilesByUserIds(GetPublicProfilesByUserIdsRequest) returns (GetPublicProfilesByUserIdsResponse);
   rpc ListPublicUserIdsByCountryCodes(ListPublicUserIdsByCountryCodesRequest) returns (ListPublicUserIdsByCountryCodesResponse);
@@ -150,6 +151,15 @@ message GrantUserRoleRequest {
 }
 
 message GrantUserRoleResponse {
+  bool success = 1;
+}
+
+message RevokeUserRoleRequest {
+  string user_id = 1;
+  string role = 2;
+}
+
+message RevokeUserRoleResponse {
   bool success = 1;
 }
 

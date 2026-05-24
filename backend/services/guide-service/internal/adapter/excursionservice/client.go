@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -17,17 +18,19 @@ import (
 const defaultListGuideIDsByCityTimeout = 3 * time.Second
 
 type Client struct {
-	baseURL    string
-	httpClient *http.Client
+	baseURL       string
+	internalToken string
+	httpClient    *http.Client
 }
 
-func New(baseURL string, httpClient *http.Client) *Client {
+func New(baseURL string, internalToken string, httpClient *http.Client) *Client {
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: defaultListGuideIDsByCityTimeout}
 	}
 	return &Client{
-		baseURL:    strings.TrimRight(strings.TrimSpace(baseURL), "/"),
-		httpClient: httpClient,
+		baseURL:       strings.TrimRight(strings.TrimSpace(baseURL), "/"),
+		internalToken: strings.TrimSpace(internalToken),
+		httpClient:    httpClient,
 	}
 }
 
@@ -89,4 +92,37 @@ func (c *Client) ListGuideUserIDsByCity(
 		result = append(result, id)
 	}
 	return result, nil
+}
+
+func (c *Client) ArchiveGuideExcursionOffers(ctx context.Context, guideUserID uuid.UUID) error {
+	if guideUserID == uuid.Nil {
+		return nil
+	}
+	if c == nil || c.baseURL == "" {
+		return fmt.Errorf("excursion-service base url is not configured")
+	}
+
+	endpoint := c.baseURL + "/v1/admin/excursion-guides/" + guideUserID.String() + "/archive-offers"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("create archive guide offers request: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+	if c.internalToken != "" {
+		req.Header.Set("X-Internal-Service-Token", c.internalToken)
+		req.Header.Set("X-Auth-Subject", "guide-service")
+		req.Header.Set("X-User-Roles", "ADMIN,GUIDE_MODERATOR,MODERATION_LEAD,SUPER_ADMIN")
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("request archive guide offers: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("excursion-service archive guide offers returned status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+	return nil
 }

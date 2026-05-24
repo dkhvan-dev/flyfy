@@ -1,4 +1,47 @@
 (function () {
+  const locale = (document.documentElement.lang || "en").toLowerCase().startsWith("ru") ? "ru" : "en";
+
+  document.querySelectorAll("[data-modal-open]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetID = button.getAttribute("data-modal-open");
+      if (!targetID) {
+        return;
+      }
+      const target = document.getElementById(targetID);
+      if (!target) {
+        return;
+      }
+      if (typeof target.showModal === "function") {
+        target.showModal();
+      } else {
+        target.setAttribute("open", "");
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-modal-close]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const dialog = button.closest("dialog");
+      if (!dialog) {
+        return;
+      }
+      if (typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
+      }
+    });
+  });
+
+  document.querySelectorAll("dialog[data-close-on-backdrop]").forEach((dialog) => {
+    dialog.addEventListener("click", (event) => {
+      if (event.target !== dialog) {
+        return;
+      }
+      dialog.close();
+    });
+  });
+
   const dialog = document.getElementById("decision-confirmation-dialog");
   if (!dialog) {
     return;
@@ -18,9 +61,11 @@
       en: "This will reject the excursion and hide it from publication. Continue?",
       ru: "Экскурсия будет отклонена и скрыта от публикации. Продолжить?",
     },
+    revoke: {
+      en: "This will revoke guide status, disable guide tools, and hide public offers. Continue?",
+      ru: "Статус гида будет отозван, функции гида отключены, публичные предложения скрыты. Продолжить?",
+    },
   };
-
-  const locale = (document.documentElement.lang || "en").toLowerCase().startsWith("ru") ? "ru" : "en";
 
   document.querySelectorAll("[data-confirm-form]").forEach((form) => {
     form.addEventListener("submit", (event) => {

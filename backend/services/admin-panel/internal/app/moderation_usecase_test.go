@@ -47,7 +47,7 @@ func TestDecideExcursionSupersedesPreviousAppliedDecision(t *testing.T) {
 			Status:   "PUBLISHED",
 		},
 	}
-	uc := NewModerationUseCase(repo, excursion, &moderationActivityClientStub{}, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, excursion, &moderationActivityClientStub{}, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
 
 	_, err := uc.DecideExcursion(context.Background(), ModerationDecisionInput{
 		Actor:           actor,
@@ -98,7 +98,7 @@ func TestSyncActivityQueueUpsertsActiveFlaggedActivityCases(t *testing.T) {
 			},
 		},
 	}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
 
 	if err := uc.SyncActivityQueue(context.Background(), actor); err != nil {
 		t.Fatalf("SyncActivityQueue() error = %v", err)
@@ -111,6 +111,50 @@ func TestSyncActivityQueueUpsertsActiveFlaggedActivityCases(t *testing.T) {
 	}
 	if len(repo.cancelledActivityIDs) != 1 || repo.cancelledActivityIDs[0] != activityID {
 		t.Fatalf("cancelled stale active ids = %#v, want [%s]", repo.cancelledActivityIDs, activityID)
+	}
+}
+
+func TestSyncGuideApplicationQueueUpsertsPendingApplicationCases(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "guide-moderator@flyfy.local",
+		DisplayName: "Guide Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+		},
+	}
+	applicationID := uuid.New()
+	repo := &moderationRepoStub{}
+	guide := &moderationGuideClientStub{
+		items: []model.GuideApplicationModerationItem{
+			{
+				ID:               applicationID,
+				GuideDisplayName: "Aruzhan Nomad",
+				FirstName:        "Aruzhan",
+				LastName:         "Khan",
+				Status:           "SUBMITTED",
+				GuideStatus:      "PENDING_REVIEW",
+				Revision:         5,
+				SubmittedAt:      timePtr(time.Now().UTC()),
+			},
+		},
+	}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+
+	if err := uc.SyncGuideApplicationQueue(context.Background(), actor); err != nil {
+		t.Fatalf("SyncGuideApplicationQueue() error = %v", err)
+	}
+	if len(repo.upsertedGuideApplications) != 1 {
+		t.Fatalf("upserted guide applications = %d, want 1", len(repo.upsertedGuideApplications))
+	}
+	if repo.upsertedGuideApplications[0].ID != applicationID {
+		t.Fatalf("upserted guide application id = %s, want %s", repo.upsertedGuideApplications[0].ID, applicationID)
+	}
+	if len(repo.cancelledGuideApplicationIDs) != 1 || repo.cancelledGuideApplicationIDs[0] != applicationID {
+		t.Fatalf("cancelled stale guide application ids = %#v, want [%s]", repo.cancelledGuideApplicationIDs, applicationID)
 	}
 }
 
@@ -148,7 +192,7 @@ func TestDecideActivityApproveKeepsCaseAuditedAndApplied(t *testing.T) {
 			ModerationStatus: "APPROVED",
 		},
 	}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
 
 	_, err := uc.DecideActivity(context.Background(), ModerationDecisionInput{
 		Actor:           actor,
@@ -218,7 +262,7 @@ func TestDecideActivityRejectRequiresPublicAndInternalComments(t *testing.T) {
 					ModerationStatus: "FLAGGED",
 				},
 			}
-			uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationAuditRepoStub{})
+			uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
 
 			_, err := uc.DecideActivity(context.Background(), ModerationDecisionInput{
 				Actor:           actor,
@@ -277,7 +321,7 @@ func TestDecideActivityRejectSendsPublicCommentToActivityService(t *testing.T) {
 			ModerationStatus: "REJECTED",
 		},
 	}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
 
 	_, err := uc.DecideActivity(context.Background(), ModerationDecisionInput{
 		Actor:           actor,
@@ -297,15 +341,333 @@ func TestDecideActivityRejectSendsPublicCommentToActivityService(t *testing.T) {
 	}
 }
 
+func TestDecideGuideApplicationRejectRequiresPublicAndInternalComments(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "guide-moderator@flyfy.local",
+		DisplayName: "Guide Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionGuideModerate,
+		},
+	}
+	caseID := uuid.New()
+	applicationID := uuid.New()
+
+	for _, tc := range []struct {
+		name            string
+		publicComment   string
+		internalComment string
+	}{
+		{name: "missing public comment", internalComment: "Insufficient document quality."},
+		{name: "missing internal comment", publicComment: "Пожалуйста, загрузите читаемое удостоверение личности."},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := &moderationRepoStub{
+				item: &model.ModerationCase{
+					ID:             caseID,
+					TargetType:     model.ModerationTargetGuideApplication,
+					TargetID:       applicationID,
+					SourceRevision: 5,
+					Status:         enum.ModerationCaseStatusOpen,
+					CreatedAt:      time.Now().UTC(),
+					UpdatedAt:      time.Now().UTC(),
+				},
+			}
+			guide := &moderationGuideClientStub{
+				item: &model.GuideApplicationModerationItem{
+					ID:          applicationID,
+					Revision:    5,
+					Status:      "SUBMITTED",
+					GuideStatus: "PENDING_REVIEW",
+				},
+			}
+			uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+
+			_, err := uc.DecideGuideApplication(context.Background(), ModerationDecisionInput{
+				Actor:           actor,
+				CaseID:          caseID,
+				Decision:        enum.ModerationDecisionReject,
+				ReasonCodes:     []string{"documents_unreadable"},
+				PublicComment:   tc.publicComment,
+				InternalComment: tc.internalComment,
+				IdempotencyKey:  "guide-reject",
+			})
+
+			if !errors.Is(err, ErrInvalidInput) {
+				t.Fatalf("DecideGuideApplication() error = %v, want %v", err, ErrInvalidInput)
+			}
+			if repo.createdDecision != nil {
+				t.Fatal("DecideGuideApplication() created decision without mandatory comments")
+			}
+			if guide.lastRejectInput.GuideApplicationID != uuid.Nil {
+				t.Fatal("DecideGuideApplication() called guide service without mandatory comments")
+			}
+		})
+	}
+}
+
+func TestDecideGuideApplicationRejectSendsPublicCommentToGuideService(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "guide-moderator@flyfy.local",
+		DisplayName: "Guide Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionGuideModerate,
+		},
+	}
+	caseID := uuid.New()
+	applicationID := uuid.New()
+	repo := &moderationRepoStub{
+		item: &model.ModerationCase{
+			ID:             caseID,
+			TargetType:     model.ModerationTargetGuideApplication,
+			TargetID:       applicationID,
+			SourceRevision: 5,
+			Status:         enum.ModerationCaseStatusOpen,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		},
+	}
+	guide := &moderationGuideClientStub{
+		item: &model.GuideApplicationModerationItem{
+			ID:          applicationID,
+			Revision:    5,
+			Status:      "REJECTED",
+			GuideStatus: "REJECTED",
+		},
+	}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+
+	_, err := uc.DecideGuideApplication(context.Background(), ModerationDecisionInput{
+		Actor:           actor,
+		CaseID:          caseID,
+		Decision:        enum.ModerationDecisionReject,
+		ReasonCodes:     []string{"documents_unreadable"},
+		PublicComment:   "Пожалуйста, загрузите читаемое удостоверение личности.",
+		InternalComment: "Identity document is unreadable.",
+		IdempotencyKey:  "guide-reject",
+	})
+
+	if err != nil {
+		t.Fatalf("DecideGuideApplication() error = %v", err)
+	}
+	if guide.lastRejectInput.PublicComment != "Пожалуйста, загрузите читаемое удостоверение личности." {
+		t.Fatalf("public comment sent to guide service = %q", guide.lastRejectInput.PublicComment)
+	}
+}
+
+func TestDecideGuideApplicationRevokeSendsPublicCommentAndMarksCaseRevoked(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "guide-moderator@flyfy.local",
+		DisplayName: "Guide Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionGuideModerate,
+		},
+	}
+	caseID := uuid.New()
+	applicationID := uuid.New()
+	repo := &moderationRepoStub{
+		item: &model.ModerationCase{
+			ID:             caseID,
+			TargetType:     model.ModerationTargetGuideApplication,
+			TargetID:       applicationID,
+			SourceRevision: 6,
+			Status:         enum.ModerationCaseStatusApproved,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		},
+	}
+	guide := &moderationGuideClientStub{
+		item: &model.GuideApplicationModerationItem{
+			ID:          applicationID,
+			Revision:    6,
+			Status:      "APPROVED",
+			GuideStatus: "REVOKED",
+		},
+	}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+
+	_, err := uc.DecideGuideApplication(context.Background(), ModerationDecisionInput{
+		Actor:           actor,
+		CaseID:          caseID,
+		Decision:        enum.ModerationDecisionRevoke,
+		ReasonCodes:     []string{"unsafe_behavior"},
+		PublicComment:   "Статус гида отозван из-за нарушений правил безопасности.",
+		InternalComment: "Safety policy violation confirmed by moderation lead.",
+		IdempotencyKey:  "guide-revoke",
+	})
+
+	if err != nil {
+		t.Fatalf("DecideGuideApplication() error = %v", err)
+	}
+	if guide.lastRevokeInput.PublicComment != "Статус гида отозван из-за нарушений правил безопасности." {
+		t.Fatalf("public comment sent to guide service = %q", guide.lastRevokeInput.PublicComment)
+	}
+	if repo.item.Status != enum.ModerationCaseStatusRevoked {
+		t.Fatalf("case status = %s, want %s", repo.item.Status, enum.ModerationCaseStatusRevoked)
+	}
+}
+
+func TestDecideGuideApplicationRevokeRejectedCaseIsDenied(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "guide-moderator@flyfy.local",
+		DisplayName: "Guide Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionGuideModerate,
+		},
+	}
+	caseID := uuid.New()
+	applicationID := uuid.New()
+	repo := &moderationRepoStub{
+		item: &model.ModerationCase{
+			ID:             caseID,
+			TargetType:     model.ModerationTargetGuideApplication,
+			TargetID:       applicationID,
+			SourceRevision: 6,
+			Status:         enum.ModerationCaseStatusRejected,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		},
+	}
+	guide := &moderationGuideClientStub{}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+
+	_, err := uc.DecideGuideApplication(context.Background(), ModerationDecisionInput{
+		Actor:           actor,
+		CaseID:          caseID,
+		Decision:        enum.ModerationDecisionRevoke,
+		ReasonCodes:     []string{"unsafe_behavior"},
+		PublicComment:   "Статус гида отозван из-за нарушений правил безопасности.",
+		InternalComment: "Trying to revoke from rejected decision.",
+		IdempotencyKey:  "guide-revoke-rejected",
+	})
+
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("DecideGuideApplication() error = %v, want %v", err, ErrInvalidInput)
+	}
+	if guide.lastRevokeInput.GuideApplicationID != uuid.Nil {
+		t.Fatal("DecideGuideApplication() must not call guide service for rejected cases")
+	}
+}
+
+func TestListActiveGuidesUsesGuideClient(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "guide-moderator@flyfy.local",
+		DisplayName: "Guide Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionGuideModerate,
+		},
+	}
+	guideProfileID := uuid.New()
+	guide := &moderationGuideClientStub{
+		activeGuides: []model.GuideApplicationModerationItem{
+			{
+				GuideProfileID: guideProfileID,
+				GuideStatus:    "ACTIVE",
+				GuideUserID:    uuid.New(),
+			},
+		},
+	}
+	uc := NewModerationUseCase(&moderationRepoStub{}, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+
+	items, err := uc.ListActiveGuides(context.Background(), actor, 100, 0)
+
+	if err != nil {
+		t.Fatalf("ListActiveGuides() error = %v", err)
+	}
+	if len(items) != 1 || items[0].GuideProfileID != guideProfileID {
+		t.Fatalf("ListActiveGuides() items = %#v, want profile %s", items, guideProfileID)
+	}
+	if guide.lastListActiveLimit != 100 || guide.lastListActiveOffset != 0 {
+		t.Fatalf("guide list args = %d/%d, want 100/0", guide.lastListActiveLimit, guide.lastListActiveOffset)
+	}
+}
+
+func TestRevokeActiveGuideUsesGuideProfileIDAndAudit(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "guide-moderator@flyfy.local",
+		DisplayName: "Guide Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionGuideModerate,
+		},
+	}
+	guideProfileID := uuid.New()
+	audit := &moderationAuditRepoStub{}
+	guide := &moderationGuideClientStub{
+		item: &model.GuideApplicationModerationItem{
+			GuideProfileID: guideProfileID,
+			GuideStatus:    "REVOKED",
+		},
+	}
+	uc := NewModerationUseCase(&moderationRepoStub{}, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, audit)
+
+	item, err := uc.RevokeActiveGuide(context.Background(), RevokeActiveGuideInput{
+		Actor:           actor,
+		GuideProfileID:  guideProfileID,
+		ReasonCodes:     []string{"unsafe_behavior"},
+		PublicComment:   "Статус гида отозван из-за нарушений правил безопасности.",
+		InternalComment: "Safety policy violation confirmed.",
+		IdempotencyKey:  "active-guide-revoke",
+	})
+
+	if err != nil {
+		t.Fatalf("RevokeActiveGuide() error = %v", err)
+	}
+	if item == nil || item.GuideProfileID != guideProfileID {
+		t.Fatalf("RevokeActiveGuide() item = %#v, want profile %s", item, guideProfileID)
+	}
+	if guide.lastRevokeProfileInput.GuideProfileID != guideProfileID {
+		t.Fatalf("guide profile id sent to guide service = %s, want %s", guide.lastRevokeProfileInput.GuideProfileID, guideProfileID)
+	}
+	if guide.lastRevokeProfileInput.PublicComment == "" {
+		t.Fatal("public comment must be sent to guide service")
+	}
+	if audit.lastAction != "guide.status.revoked" {
+		t.Fatalf("audit action = %q, want guide.status.revoked", audit.lastAction)
+	}
+}
+
 type moderationRepoStub struct {
-	item                       *model.ModerationCase
-	decisions                  []*model.ModerationDecision
-	createdDecision            *model.ModerationDecision
-	supersededCaseID           uuid.UUID
-	supersededRevision         int
-	supersededExceptDecisionID uuid.UUID
-	upsertedActivities         []model.ActivityModerationItem
-	cancelledActivityIDs       []uuid.UUID
+	item                         *model.ModerationCase
+	decisions                    []*model.ModerationDecision
+	createdDecision              *model.ModerationDecision
+	supersededCaseID             uuid.UUID
+	supersededRevision           int
+	supersededExceptDecisionID   uuid.UUID
+	upsertedActivities           []model.ActivityModerationItem
+	cancelledActivityIDs         []uuid.UUID
+	upsertedGuideApplications    []model.GuideApplicationModerationItem
+	cancelledGuideApplicationIDs []uuid.UUID
 }
 
 func (r *moderationRepoStub) UpsertExcursionCase(context.Context, model.ExcursionModerationItem) (*model.ModerationCase, error) {
@@ -323,6 +685,16 @@ func (r *moderationRepoStub) UpsertActivityCase(_ context.Context, item model.Ac
 
 func (r *moderationRepoStub) CancelStaleActivityCases(_ context.Context, activeTargetIDs []uuid.UUID, _ time.Time) error {
 	r.cancelledActivityIDs = append([]uuid.UUID(nil), activeTargetIDs...)
+	return nil
+}
+
+func (r *moderationRepoStub) UpsertGuideApplicationCase(_ context.Context, item model.GuideApplicationModerationItem) (*model.ModerationCase, error) {
+	r.upsertedGuideApplications = append(r.upsertedGuideApplications, item)
+	return nil, nil
+}
+
+func (r *moderationRepoStub) CancelStaleGuideApplicationCases(_ context.Context, activeTargetIDs []uuid.UUID, _ time.Time) error {
+	r.cancelledGuideApplicationIDs = append([]uuid.UUID(nil), activeTargetIDs...)
 	return nil
 }
 
@@ -417,12 +789,71 @@ func (c *moderationActivityClientStub) Reject(_ context.Context, input port.Acti
 	return c.item, raw, nil
 }
 
-type moderationAuditRepoStub struct{}
+type moderationGuideClientStub struct {
+	item                   *model.GuideApplicationModerationItem
+	items                  []model.GuideApplicationModerationItem
+	activeGuides           []model.GuideApplicationModerationItem
+	lastApproveInput       port.GuideApplicationDecisionInput
+	lastRejectInput        port.GuideApplicationDecisionInput
+	lastRevokeInput        port.GuideApplicationDecisionInput
+	lastRevokeProfileInput port.GuideProfileDecisionInput
+	lastListActiveLimit    int
+	lastListActiveOffset   int
+}
 
-func (r *moderationAuditRepoStub) Append(context.Context, *model.AuditEvent) error {
+func (c *moderationGuideClientStub) ListPendingApplications(context.Context, int, int) ([]model.GuideApplicationModerationItem, error) {
+	return c.items, nil
+}
+
+func (c *moderationGuideClientStub) ListActiveGuides(_ context.Context, limit int, offset int) ([]model.GuideApplicationModerationItem, error) {
+	c.lastListActiveLimit = limit
+	c.lastListActiveOffset = offset
+	return c.activeGuides, nil
+}
+
+func (c *moderationGuideClientStub) GetApplication(context.Context, uuid.UUID) (*model.GuideApplicationModerationItem, error) {
+	return c.item, nil
+}
+
+func (c *moderationGuideClientStub) Approve(_ context.Context, input port.GuideApplicationDecisionInput) (*model.GuideApplicationModerationItem, []byte, error) {
+	c.lastApproveInput = input
+	raw, _ := json.Marshal(c.item)
+	return c.item, raw, nil
+}
+
+func (c *moderationGuideClientStub) Reject(_ context.Context, input port.GuideApplicationDecisionInput) (*model.GuideApplicationModerationItem, []byte, error) {
+	c.lastRejectInput = input
+	raw, _ := json.Marshal(c.item)
+	return c.item, raw, nil
+}
+
+func (c *moderationGuideClientStub) Revoke(_ context.Context, input port.GuideApplicationDecisionInput) (*model.GuideApplicationModerationItem, []byte, error) {
+	c.lastRevokeInput = input
+	raw, _ := json.Marshal(c.item)
+	return c.item, raw, nil
+}
+
+func (c *moderationGuideClientStub) RevokeProfile(_ context.Context, input port.GuideProfileDecisionInput) (*model.GuideApplicationModerationItem, []byte, error) {
+	c.lastRevokeProfileInput = input
+	raw, _ := json.Marshal(c.item)
+	return c.item, raw, nil
+}
+
+type moderationAuditRepoStub struct {
+	lastAction string
+}
+
+func (r *moderationAuditRepoStub) Append(_ context.Context, event *model.AuditEvent) error {
+	if event != nil {
+		r.lastAction = event.Action
+	}
 	return nil
 }
 
 func (r *moderationAuditRepoStub) List(context.Context, model.AuditFilter) ([]*model.AuditEvent, error) {
 	return nil, nil
+}
+
+func timePtr(value time.Time) *time.Time {
+	return &value
 }

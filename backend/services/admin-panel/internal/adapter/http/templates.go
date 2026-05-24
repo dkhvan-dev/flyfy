@@ -113,6 +113,40 @@ func NewRenderer() (*Renderer, error) {
 			return activityCategoryText(fmt.Sprint(locale), item)
 		},
 		"activityModerationTriggeredAt": activityModerationTriggeredAt,
+		"guideApplicationPrimary": func(item *model.GuideApplicationModerationItem) string {
+			return guideApplicationPrimaryText(item)
+		},
+		"guideApplicationFullName": func(item *model.GuideApplicationModerationItem) string {
+			return guideApplicationFullNameText(item)
+		},
+		"guideApplicationType": func(locale any, item *model.GuideApplicationModerationItem) string {
+			return guideApplicationTypeText(fmt.Sprint(locale), item)
+		},
+		"guideApplicationLocation": func(locale any, item *model.GuideApplicationModerationItem) string {
+			return guideApplicationLocationText(fmt.Sprint(locale), item)
+		},
+		"guideApplicationExperience": func(locale any, item *model.GuideApplicationModerationItem) string {
+			return guideApplicationExperienceText(fmt.Sprint(locale), item)
+		},
+		"guideApplicationRating": func(locale any, item *model.GuideApplicationModerationItem) string {
+			return guideApplicationRatingText(fmt.Sprint(locale), item)
+		},
+		"guideApplicationLanguages": func(locale any, item *model.GuideApplicationModerationItem) []string {
+			return guideApplicationLanguageList(fmt.Sprint(locale), item)
+		},
+		"guideApplicationSpecializations": func(locale any, item *model.GuideApplicationModerationItem) []string {
+			return guideApplicationSpecializationList(fmt.Sprint(locale), item)
+		},
+		"guideApplicationDocumentType": func(locale any, documentType string) string {
+			return guideApplicationDocumentTypeText(fmt.Sprint(locale), documentType)
+		},
+		"guideApplicationDocumentURL":    guideApplicationDocumentURL,
+		"guideApplicationServices":       guideApplicationServiceList,
+		"guideApplicationDecisionLocked": guideApplicationDecisionLocked,
+		"guideApplicationCanRevoke":      guideApplicationCanRevoke,
+		"moderationReasonOptions": func(locale any) []moderationReasonOption {
+			return moderationReasonCodeOptions(fmt.Sprint(locale))
+		},
 		"itineraryTitle": func(locale any, item model.ExcursionItineraryItem) string {
 			return itineraryTitleText(fmt.Sprint(locale), item)
 		},
@@ -132,13 +166,13 @@ func NewRenderer() (*Renderer, error) {
 		},
 		"statusClass": func(status any) string {
 			switch strings.ToUpper(strings.TrimSpace(fmt.Sprint(status))) {
-			case "OPEN", "PENDING_REVIEW", "FLAGGED":
+			case "OPEN", "PENDING_REVIEW", "SUBMITTED", "FLAGGED":
 				return "badge badge-warn"
-			case "IN_REVIEW", "ESCALATED":
+			case "IN_REVIEW", "UNDER_REVIEW", "ESCALATED", "DRAFT":
 				return "badge badge-info"
 			case "APPROVED", "PUBLISHED", "ACTIVE", "ENROLLMENT_OPEN":
 				return "badge badge-success"
-			case "REJECTED", "DISABLED", "LOCKED":
+			case "REJECTED", "REVOKED", "DISABLED", "LOCKED":
 				return "badge badge-danger"
 			case "SUPERSEDED":
 				return "badge"

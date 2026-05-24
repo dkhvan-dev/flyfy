@@ -139,6 +139,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get drawerStatusGuide => 'Гид';
 
   @override
+  String get drawerStatusGuideRevoked => 'Гид мәртебесі қайтарылды';
+
+  @override
   String get drawerStatusTraveler => 'Саяхатшы';
 
   @override
@@ -582,6 +585,21 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get profileBecomeGuideSubtitle =>
       'Жақында осы жерден өтінім беріп, кәсіби гид профилін аша аласыз.';
+
+  @override
+  String get guideVerificationRevokedTitle => 'Гид мәртебесі қайтарылды';
+
+  @override
+  String get guideVerificationRevokedSubtitle =>
+      'Модерация сіздің гид мәртебеңізді қайтарды. Гид функциялары мен жария ұсыныстар қолжетімсіз.';
+
+  @override
+  String guideVerificationRevokedSubtitleWithReason(Object reason) {
+    return 'Модерация сіздің гид мәртебеңізді қайтарды. Себебі: $reason';
+  }
+
+  @override
+  String get guideVerificationRevokedButton => 'Мәртебе қайтарылды';
 
   @override
   String get profileActivitiesStat => 'Белсенділіктер';

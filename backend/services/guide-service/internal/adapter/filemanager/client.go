@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	defaultGetFileTimeout  = 2 * time.Second
-	defaultBindFileTimeout = 3 * time.Second
+	defaultGetFileTimeout     = 2 * time.Second
+	defaultBindFileTimeout    = 3 * time.Second
+	defaultDownloadURLTimeout = 3 * time.Second
 )
 
 type Client struct {
@@ -94,6 +95,30 @@ func (c *Client) ValidateGuideDocumentFile(ctx context.Context, fileID uuid.UUID
 	}
 
 	return nil
+}
+
+func (c *Client) CreateGuideDocumentDownloadURL(ctx context.Context, fileID uuid.UUID) (string, error) {
+	callCtx, cancel := context.WithTimeout(ctx, defaultDownloadURLTimeout)
+	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
+
+	resp, err := c.service.CreateDownloadUrl(callCtx, &filev1.CreateDownloadUrlRequest{
+		FileId: fileID.String(),
+	})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return "", app.ErrGuideDocumentFileNotFound
+			case codes.InvalidArgument:
+				return "", app.ErrGuideDocumentFileNotAllowed
+			default:
+				return "", err
+			}
+		}
+		return "", err
+	}
+	return strings.TrimSpace(resp.GetUrl()), nil
 }
 
 func (c *Client) BindGuideDocumentToVerificationRequest(

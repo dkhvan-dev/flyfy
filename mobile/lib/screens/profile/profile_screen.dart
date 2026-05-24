@@ -1336,24 +1336,31 @@ class _BecomeGuideCard extends StatelessWidget {
     final isPending = guide?.isPendingReview == true;
     final isRejected = guide?.isRejected == true;
     final isDraft = guide?.isDraft == true;
+    final isRevoked = guide?.isRevoked == true;
 
     final title = isPending
         ? l10n.guideVerificationPendingTitle
-        : isRejected
-            ? l10n.guideVerificationRejectedTitle
-            : l10n.profileBecomeGuideTitle;
+        : isRevoked
+            ? l10n.guideVerificationRevokedTitle
+            : isRejected
+                ? l10n.guideVerificationRejectedTitle
+                : l10n.profileBecomeGuideTitle;
     final subtitle = isPending
         ? l10n.guideVerificationPendingSubtitle
-        : isRejected
-            ? l10n.guideVerificationRejectedSubtitle
-            : isDraft
-                ? l10n.guideVerificationDraftSubtitle
-                : l10n.profileBecomeGuideSubtitle;
+        : isRevoked
+            ? _revokedGuideSubtitle(l10n, guide)
+            : isRejected
+                ? l10n.guideVerificationRejectedSubtitle
+                : isDraft
+                    ? l10n.guideVerificationDraftSubtitle
+                    : l10n.profileBecomeGuideSubtitle;
     final buttonLabel = isPending
         ? l10n.guideVerificationViewApplicationButton
-        : isRejected || isDraft
-            ? l10n.guideVerificationContinueButton
-            : l10n.becomeGuideButton;
+        : isRevoked
+            ? l10n.guideVerificationRevokedButton
+            : isRejected || isDraft
+                ? l10n.guideVerificationContinueButton
+                : l10n.becomeGuideButton;
 
     return Container(
       padding: EdgeInsets.all(profileScaled(context, 18, min: 16, max: 20)),
@@ -1377,7 +1384,9 @@ class _BecomeGuideCard extends StatelessWidget {
                 child: Icon(
                   isPending
                       ? Icons.hourglass_bottom_rounded
-                      : Icons.explore_outlined,
+                      : isRevoked
+                          ? Icons.block_rounded
+                          : Icons.explore_outlined,
                   color: AppColors.accent,
                 ),
               ),
@@ -1412,7 +1421,7 @@ class _BecomeGuideCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: onTap,
+              onPressed: isRevoked ? null : onTap,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: Colors.white,
@@ -1423,6 +1432,17 @@ class _BecomeGuideCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _revokedGuideSubtitle(
+    AppLocalizations l10n,
+    GuideProfileVm? guide,
+  ) {
+    final reason = guide?.statusReason?.trim() ?? '';
+    if (reason.isEmpty) {
+      return l10n.guideVerificationRevokedSubtitle;
+    }
+    return l10n.guideVerificationRevokedSubtitleWithReason(reason);
   }
 }
 

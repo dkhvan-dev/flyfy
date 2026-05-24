@@ -14,6 +14,8 @@ class GuideProfileVm {
     required this.reviewsCount,
     required this.languages,
     required this.specializations,
+    this.statusReason,
+    this.statusChangedAt,
   });
 
   final String id;
@@ -30,6 +32,8 @@ class GuideProfileVm {
   final int reviewsCount;
   final List<String> languages;
   final List<String> specializations;
+  final String? statusReason;
+  final DateTime? statusChangedAt;
 
   factory GuideProfileVm.fromJson(Map<String, dynamic> json) {
     final profile = json['profile'] as Map<String, dynamic>? ?? const {};
@@ -56,6 +60,10 @@ class GuideProfileVm {
       ratingAvg: double.tryParse(profile['ratingAvg']?.toString() ?? '') ?? 0,
       reviewsCount:
           int.tryParse(profile['reviewsCount']?.toString() ?? '') ?? 0,
+      statusReason: _trimmedStringOrNull(profile['statusReason']),
+      statusChangedAt: DateTime.tryParse(
+        profile['statusChangedAt']?.toString() ?? '',
+      ),
       languages: languages
           .map((item) => (item as Map<String, dynamic>)['languageCode'])
           .whereType<Object?>()
@@ -79,10 +87,18 @@ class GuideProfileVm {
 
   bool get isRejected => status.trim().toUpperCase() == 'REJECTED';
 
+  bool get isRevoked => status.trim().toUpperCase() == 'REVOKED';
+
   bool get isDraft => status.trim().toUpperCase() == 'DRAFT';
 
   List<String> get serviceBadges {
     final values = <String>[...specializations, ...languages];
     return values.toSet().toList(growable: false);
   }
+}
+
+String? _trimmedStringOrNull(dynamic value) {
+  final trimmed = value?.toString().trim() ?? '';
+  if (trimmed.isEmpty) return null;
+  return trimmed;
 }

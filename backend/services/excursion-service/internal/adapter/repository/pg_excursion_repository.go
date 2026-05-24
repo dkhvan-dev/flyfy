@@ -834,6 +834,79 @@ func (r *PGExcursionRepository) HasActiveExcursionForGuideLandmark(ctx context.C
 	return exists, nil
 }
 
+func (r *PGExcursionRepository) ArchiveGuideExcursionOffers(ctx context.Context, guideUserID uuid.UUID) error {
+	if guideUserID == uuid.Nil {
+		return nil
+	}
+
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin archive guide excursion offers transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	rows, err := tx.Query(ctx, `
+		SELECT DISTINCT product_id
+		FROM excursion_offers
+		WHERE guide_user_id = $1
+		  AND deleted_at IS NULL
+		  AND status <> 'ARCHIVED'
+	`, guideUserID)
+	if err != nil {
+		return fmt.Errorf("select guide offer product ids: %w", err)
+	}
+	productIDs := make([]uuid.UUID, 0)
+	for rows.Next() {
+		var productID uuid.UUID
+		if err = rows.Scan(&productID); err != nil {
+			rows.Close()
+			return fmt.Errorf("scan guide offer product id: %w", err)
+		}
+		productIDs = append(productIDs, productID)
+	}
+	if err = rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("iterate guide offer product ids: %w", err)
+	}
+	rows.Close()
+
+	if _, err = tx.Exec(ctx, `
+		UPDATE excursions
+		SET status = 'ARCHIVED',
+			visibility = 'UNLISTED',
+			revision = revision + 1,
+			updated_at = NOW()
+		WHERE guide_user_id = $1
+		  AND status <> 'ARCHIVED'
+	`, guideUserID); err != nil {
+		return fmt.Errorf("archive guide legacy excursions: %w", err)
+	}
+
+	if _, err = tx.Exec(ctx, `
+		UPDATE excursion_offers
+		SET status = 'ARCHIVED',
+			visibility = 'UNLISTED',
+			revision = revision + 1,
+			updated_at = NOW()
+		WHERE guide_user_id = $1
+		  AND deleted_at IS NULL
+		  AND status <> 'ARCHIVED'
+	`, guideUserID); err != nil {
+		return fmt.Errorf("archive guide marketplace offers: %w", err)
+	}
+
+	for _, productID := range productIDs {
+		if err = refreshExcursionProductStats(ctx, tx, productID); err != nil {
+			return err
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit archive guide excursion offers transaction: %w", err)
+	}
+	return nil
+}
+
 func (r *PGExcursionRepository) ListExcursions(ctx context.Context, filter port.ExcursionFilter) ([]*model.Excursion, error) {
 	base := `
 		SELECT ` + excursionSelectColumns + `

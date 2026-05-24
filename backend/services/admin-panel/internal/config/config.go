@@ -17,6 +17,7 @@ type Config struct {
 	Security  SecurityConfig
 	Excursion ExcursionServiceConfig
 	Activity  ActivityServiceConfig
+	Guide     GuideServiceConfig
 	Bootstrap BootstrapConfig
 }
 
@@ -108,6 +109,11 @@ type ExcursionServiceConfig struct {
 type ActivityServiceConfig struct {
 	BaseURL string        `env:"ACTIVITY_SERVICE_URL, default=http://activity-service:8086"`
 	Timeout time.Duration `env:"ACTIVITY_SERVICE_TIMEOUT, default=5s"`
+}
+
+type GuideServiceConfig struct {
+	BaseURL string        `env:"GUIDE_SERVICE_URL, default=http://guide-service:8085"`
+	Timeout time.Duration `env:"GUIDE_SERVICE_TIMEOUT, default=5s"`
 }
 
 type BootstrapConfig struct {

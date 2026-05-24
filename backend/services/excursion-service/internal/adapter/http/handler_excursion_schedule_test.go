@@ -301,6 +301,10 @@ func (s *excursionScheduleHTTPRepoStub) HasActiveExcursionForGuideLandmark(conte
 	return false, nil
 }
 
+func (s *excursionScheduleHTTPRepoStub) ArchiveGuideExcursionOffers(context.Context, uuid.UUID) error {
+	return nil
+}
+
 func (s *excursionScheduleHTTPRepoStub) GetExcursionOfferByID(context.Context, uuid.UUID) (*model.ExcursionOffer, error) {
 	return s.offer, nil
 }

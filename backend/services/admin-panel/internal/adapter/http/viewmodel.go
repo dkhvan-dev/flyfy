@@ -34,6 +34,7 @@ type QueueViewData struct {
 	ResetURL             string
 	OpenQueueURL         string
 	HistoryURL           string
+	CurrentGuidesURL     string
 	SyncAction           string
 	DetailBaseURL        string
 	TitleKey             string
@@ -56,18 +57,25 @@ type QueueFilterViewData struct {
 }
 
 type ModerationQueueItemView struct {
-	Case           *model.ModerationCase
-	Excursion      *model.ExcursionModerationItem
-	Activity       *model.ActivityModerationItem
-	TargetTitle    string
-	TargetSubtitle string
-	GuideName      string
-	GuideFullName  string
-	DetailURL      string
+	Case             *model.ModerationCase
+	Excursion        *model.ExcursionModerationItem
+	Activity         *model.ActivityModerationItem
+	GuideApplication *model.GuideApplicationModerationItem
+	TargetTitle      string
+	TargetSubtitle   string
+	GuideName        string
+	GuideFullName    string
+	DetailURL        string
 }
 
 type CaseDetailViewData struct {
 	Detail *app.ModerationCaseDetail
+}
+
+type GuideListViewData struct {
+	Items      []model.GuideApplicationModerationItem
+	QueueURL   string
+	HistoryURL string
 }
 
 type StaffListViewData struct {
@@ -133,6 +141,14 @@ func NewAuditViewData(locale string, events []*model.AuditEvent) AuditViewData {
 		items = append(items, newAuditEventView(locale, event))
 	}
 	return AuditViewData{Events: events, Items: items}
+}
+
+func NewGuideListViewData(items []model.GuideApplicationModerationItem) GuideListViewData {
+	return GuideListViewData{
+		Items:      items,
+		QueueURL:   "/admin/moderation/guides",
+		HistoryURL: "/admin/moderation/guides/history",
+	}
 }
 
 func newAuditEventView(locale string, event *model.AuditEvent) AuditEventView {
@@ -208,6 +224,8 @@ func auditEntityTitle(locale string, event *model.AuditEvent, before auditStaffS
 		return translate(locale, "audit.entity.staffSession")
 	case "moderation_case":
 		return translate(locale, "audit.entity.moderationCase")
+	case "guide_profile":
+		return translate(locale, "audit.entity.guideProfile")
 	default:
 		return translate(locale, "audit.entity.unknown")
 	}
@@ -339,6 +357,7 @@ func assignableStaffRoles(actor *model.StaffUser) []enum.StaffRole {
 		enum.StaffRoleModerationLead,
 		enum.StaffRoleExcursionModerator,
 		enum.StaffRoleActivityModerator,
+		enum.StaffRoleGuideModerator,
 		enum.StaffRoleChatModerator,
 		enum.StaffRoleReadOnlyAuditor,
 		enum.StaffRoleSupportViewer,
@@ -366,6 +385,10 @@ func NewActivityQueueViewData(cases []*model.ModerationCase, filters ...QueueFil
 	return newQueueViewData(cases, model.ModerationTargetActivity, filters...)
 }
 
+func NewGuideApplicationQueueViewData(cases []*model.ModerationCase, filters ...QueueFilterViewData) QueueViewData {
+	return newQueueViewData(cases, model.ModerationTargetGuideApplication, filters...)
+}
+
 func newQueueViewData(cases []*model.ModerationCase, targetType model.ModerationTargetType, filters ...QueueFilterViewData) QueueViewData {
 	items := make([]ModerationQueueItemView, 0, len(cases))
 	for _, item := range cases {
@@ -374,19 +397,24 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		}
 		excursion := excursionFromSnapshot(item)
 		activity := activityFromSnapshot(item)
+		guideApplication := guideApplicationFromSnapshot(item)
 		view := ModerationQueueItemView{
-			Case:      item,
-			Excursion: excursion,
-			Activity:  activity,
+			Case:             item,
+			Excursion:        excursion,
+			Activity:         activity,
+			GuideApplication: guideApplication,
 		}
-		view.TargetTitle = queueTargetTitle(item, excursion, activity)
-		view.TargetSubtitle = queueTargetSubtitle(excursion, activity)
+		view.TargetTitle = queueTargetTitle(item, excursion, activity, guideApplication)
+		view.TargetSubtitle = queueTargetSubtitle(excursion, activity, guideApplication)
 		if excursion != nil {
 			view.GuideName = excursionGuidePrimaryText(excursion)
 			view.GuideFullName = excursionGuideFullNameText(excursion)
 		} else if activity != nil {
 			view.GuideName = activityHostPrimaryText(activity)
 			view.GuideFullName = activityHostSecondaryText(activity)
+		} else if guideApplication != nil {
+			view.GuideName = guideApplicationPrimaryText(guideApplication)
+			view.GuideFullName = guideApplicationFullNameText(guideApplication)
 		}
 		if view.GuideName == "" {
 			view.GuideName = "-"
@@ -398,7 +426,7 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 	if len(filters) > 0 {
 		viewFilters = filters[0]
 	}
-	return QueueViewData{
+	data := QueueViewData{
 		Items:                items,
 		Filters:              viewFilters,
 		FilterAction:         queueBaseURL(targetType),
@@ -415,6 +443,10 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		HostHeaderKey:        queueHostHeaderKey(targetType),
 		SearchPlaceholderKey: queueSearchPlaceholderKey(targetType),
 	}
+	if targetType == model.ModerationTargetGuideApplication {
+		data.CurrentGuidesURL = "/admin/moderation/guides/current"
+	}
+	return data
 }
 
 func NewQueueHistoryViewData(cases []*model.ModerationCase, filters QueueFilterViewData) QueueViewData {
@@ -427,6 +459,14 @@ func NewQueueHistoryViewData(cases []*model.ModerationCase, filters QueueFilterV
 
 func NewActivityHistoryViewData(cases []*model.ModerationCase, filters QueueFilterViewData) QueueViewData {
 	data := NewActivityQueueViewData(cases, filters)
+	data.IsHistory = true
+	data.FilterAction = data.HistoryURL
+	data.ResetURL = data.HistoryURL
+	return data
+}
+
+func NewGuideApplicationHistoryViewData(cases []*model.ModerationCase, filters QueueFilterViewData) QueueViewData {
+	data := NewGuideApplicationQueueViewData(cases, filters)
 	data.IsHistory = true
 	data.FilterAction = data.HistoryURL
 	data.ResetURL = data.HistoryURL
@@ -461,7 +501,21 @@ func activityFromSnapshot(item *model.ModerationCase) *model.ActivityModerationI
 	return &activity
 }
 
-func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem) string {
+func guideApplicationFromSnapshot(item *model.ModerationCase) *model.GuideApplicationModerationItem {
+	if item == nil || item.TargetType != model.ModerationTargetGuideApplication || len(item.Snapshot) == 0 {
+		return nil
+	}
+	var application model.GuideApplicationModerationItem
+	if err := json.Unmarshal(item.Snapshot, &application); err != nil {
+		return nil
+	}
+	if application.ID.String() == "00000000-0000-0000-0000-000000000000" {
+		application.ID = item.TargetID
+	}
+	return &application
+}
+
+func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem) string {
 	if excursion != nil {
 		if title := strings.TrimSpace(excursion.Title); title != "" {
 			return title
@@ -475,16 +529,27 @@ func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionMode
 			return title
 		}
 	}
+	if guideApplication != nil {
+		if title := strings.TrimSpace(guideApplication.Headline); title != "" {
+			return title
+		}
+		if title := guideApplicationTypeText(defaultLocale, guideApplication); title != "" {
+			return title
+		}
+	}
 	if item == nil {
 		return "-"
 	}
 	return string(item.TargetType) + " " + shortString(item.TargetID.String())
 }
 
-func queueTargetSubtitle(excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem) string {
+func queueTargetSubtitle(excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem) string {
 	if excursion == nil {
 		if activity == nil {
-			return ""
+			if guideApplication == nil {
+				return ""
+			}
+			return guideApplicationTypeText(defaultLocale, guideApplication)
 		}
 		return activityLocationText(defaultLocale, activity)
 	}
@@ -509,6 +574,9 @@ func queueBaseURL(targetType model.ModerationTargetType) string {
 	if targetType == model.ModerationTargetActivity {
 		return "/admin/moderation/activities"
 	}
+	if targetType == model.ModerationTargetGuideApplication {
+		return "/admin/moderation/guides"
+	}
 	return "/admin/moderation/excursions"
 }
 
@@ -520,12 +588,18 @@ func queueTitleKey(targetType model.ModerationTargetType) string {
 	if targetType == model.ModerationTargetActivity {
 		return "moderation.activityQueue"
 	}
+	if targetType == model.ModerationTargetGuideApplication {
+		return "moderation.guideApplicationQueue"
+	}
 	return "moderation.excursionQueue"
 }
 
 func queueHistoryTitleKey(targetType model.ModerationTargetType) string {
 	if targetType == model.ModerationTargetActivity {
 		return "moderation.activityHistory"
+	}
+	if targetType == model.ModerationTargetGuideApplication {
+		return "moderation.guideApplicationHistory"
 	}
 	return "moderation.excursionHistory"
 }
@@ -534,12 +608,18 @@ func queueEmptyQueueKey(targetType model.ModerationTargetType) string {
 	if targetType == model.ModerationTargetActivity {
 		return "moderation.noActivityCases"
 	}
+	if targetType == model.ModerationTargetGuideApplication {
+		return "moderation.noGuideApplicationCases"
+	}
 	return "moderation.noExcursionCases"
 }
 
 func queueEmptyHistoryKey(targetType model.ModerationTargetType) string {
 	if targetType == model.ModerationTargetActivity {
 		return "moderation.noActivityHistory"
+	}
+	if targetType == model.ModerationTargetGuideApplication {
+		return "moderation.noGuideApplicationHistory"
 	}
 	return "moderation.noExcursionHistory"
 }
@@ -548,6 +628,9 @@ func queueTargetHeaderKey(targetType model.ModerationTargetType) string {
 	if targetType == model.ModerationTargetActivity {
 		return "table.activity"
 	}
+	if targetType == model.ModerationTargetGuideApplication {
+		return "table.application"
+	}
 	return "table.excursion"
 }
 
@@ -555,12 +638,18 @@ func queueHostHeaderKey(targetType model.ModerationTargetType) string {
 	if targetType == model.ModerationTargetActivity {
 		return "table.host"
 	}
+	if targetType == model.ModerationTargetGuideApplication {
+		return "table.applicant"
+	}
 	return "table.guide"
 }
 
 func queueSearchPlaceholderKey(targetType model.ModerationTargetType) string {
 	if targetType == model.ModerationTargetActivity {
 		return "placeholder.searchActivities"
+	}
+	if targetType == model.ModerationTargetGuideApplication {
+		return "placeholder.searchGuideApplications"
 	}
 	return "placeholder.searchExcursions"
 }

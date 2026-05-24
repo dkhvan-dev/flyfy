@@ -51,6 +51,7 @@
   "profileTitle": "Профиль",
   "drawerStatusVerifiedGuide": "Подтвержденный гид",
   "drawerStatusGuide": "Гид",
+  "drawerStatusGuideRevoked": "Статус гида отозван",
   "drawerStatusTraveler": "Путешественник",
   "drawerStatusCompleteProfile": "Заполните профиль",
   "profileNotAvailable": "Профиль недоступен",
@@ -194,6 +195,15 @@
   "profileEmptyBioPlaceholder": "Пока здесь нет описания. Когда профиль будет заполнен, здесь появится краткая информация о пользователе.",
   "profileBecomeGuideTitle": "Станьте гидом",
   "profileBecomeGuideSubtitle": "Скоро здесь можно будет подать заявку и открыть доступ к профессиональному профилю гида.",
+  "guideVerificationRevokedTitle": "Статус гида отозван",
+  "guideVerificationRevokedSubtitle": "Модерация отозвала ваш статус гида. Функции гида и публичные предложения недоступны.",
+  "guideVerificationRevokedSubtitleWithReason": "Модерация отозвала ваш статус гида. Причина: {reason}",
+  "@guideVerificationRevokedSubtitleWithReason": {
+    "placeholders": {
+      "reason": {}
+    }
+  },
+  "guideVerificationRevokedButton": "Статус отозван",
   "profileActivitiesStat": "Активности",
   "profileHostedCompletedStat": "Завершено как автор",
   "profileJoinedCompletedStat": "Завершено как участник",

@@ -44,6 +44,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/excursions/{id}/cover", h.GetExcursionCover)
 	mux.HandleFunc("GET /v1/admin/excursions/moderation/pending", h.ListPendingReviewExcursions)
 	mux.HandleFunc("GET /v1/admin/excursions/{id}", h.GetModerationExcursion)
+	mux.HandleFunc("POST /v1/admin/excursion-guides/{guideUserId}/archive-offers", h.ArchiveGuideExcursionOffers)
 	mux.HandleFunc("GET /v1/guides/excursion-languages", h.ListGuideExcursionLanguages)
 	mux.HandleFunc("GET /v1/guides/by-excursion-city", h.ListGuideUserIDsByExcursionCity)
 	mux.HandleFunc("GET /v1/excursion-guides/{guideUserId}/schedule", h.ListPublicGuideSchedule)
@@ -308,6 +309,21 @@ func (h *Handler) GetModerationExcursion(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
+}
+
+func (h *Handler) ArchiveGuideExcursionOffers(w http.ResponseWriter, r *http.Request) {
+	if !requireModeratorRole(w, r) {
+		return
+	}
+	guideUserID, ok := parsePathUUID(w, r, "guideUserId", "invalid guide user id")
+	if !ok {
+		return
+	}
+	if err := h.useCase.ArchiveGuideExcursionOffers(r.Context(), guideUserID); err != nil {
+		h.writeUseCaseError(w, r, err, "failed to archive guide excursion offers")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"success": true})
 }
 
 func (h *Handler) ListExcursionProducts(w http.ResponseWriter, r *http.Request) {
@@ -2076,7 +2092,13 @@ func parseActorUserID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) 
 func requireModeratorRole(w http.ResponseWriter, r *http.Request) bool {
 	for _, role := range RolesFromContext(r.Context()) {
 		switch strings.ToLower(strings.TrimSpace(role)) {
-		case "admin", "super_admin", "moderator", "content_moderator":
+		case "admin",
+			"super_admin",
+			"moderator",
+			"content_moderator",
+			"excursion_moderator",
+			"guide_moderator",
+			"moderation_lead":
 			return true
 		}
 	}

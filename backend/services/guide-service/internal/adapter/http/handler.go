@@ -38,7 +38,9 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/guides/", h.GetGuideByID)
 	mux.HandleFunc("POST /v1/admin/guides/verification-requests/", h.handleAdminVerificationActions)
 	mux.HandleFunc("POST /v1/admin/guides/", h.handleAdminGuideActions)
+	mux.HandleFunc("GET /v1/admin/guides/profiles", h.ListActiveGuidesForAdmin)
 	mux.HandleFunc("GET /v1/admin/guides/verification-requests", h.ListPendingVerificationRequests)
+	mux.HandleFunc("GET /v1/admin/guides/verification-requests/{requestID}", h.GetVerificationRequestForAdmin)
 	mux.HandleFunc("POST /internal/v1/guides/ratings/snapshots", h.ApplyGuideRatingSnapshots)
 }
 
@@ -535,6 +537,9 @@ func toGuideAggregateResponse(aggregate *app.GuideAggregate) dto.GuideAggregateR
 		item := toVerificationRequestResponse(aggregate.VerificationRequest)
 		resp.VerificationRequest = &item
 	}
+	if aggregate.UserProfile != nil {
+		resp.UserProfile = toPublicUserCard(aggregate.UserProfile)
+	}
 
 	for _, item := range aggregate.Documents {
 		resp.Documents = append(resp.Documents, toGuideDocumentResponse(item))
@@ -563,26 +568,30 @@ func toPublicGuideCardResponse(item *app.PublicGuideCard) dto.PublicGuideCardRes
 		card.Specializations = append(card.Specializations, toGuideSpecializationResponse(spec))
 	}
 
-	if item.UserProfile != nil {
-		var avatarFileID *string
-		if item.UserProfile.AvatarFileID != nil {
-			v := item.UserProfile.AvatarFileID.String()
-			avatarFileID = &v
-		}
-
-		card.UserProfile = &dto.PublicUserCard{
-			UserID:       item.UserProfile.UserID.String(),
-			FirstName:    item.UserProfile.FirstName,
-			LastName:     item.UserProfile.LastName,
-			DisplayName:  item.UserProfile.DisplayName,
-			AvatarFileID: avatarFileID,
-			CountryCode:  item.UserProfile.CountryCode,
-			Locale:       item.UserProfile.Locale,
-			Timezone:     item.UserProfile.Timezone,
-		}
-	}
+	card.UserProfile = toPublicUserCard(item.UserProfile)
 
 	return card
+}
+
+func toPublicUserCard(profile *app.PublicUserProfile) *dto.PublicUserCard {
+	if profile == nil {
+		return nil
+	}
+	var avatarFileID *string
+	if profile.AvatarFileID != nil {
+		v := profile.AvatarFileID.String()
+		avatarFileID = &v
+	}
+	return &dto.PublicUserCard{
+		UserID:       profile.UserID.String(),
+		FirstName:    profile.FirstName,
+		LastName:     profile.LastName,
+		DisplayName:  profile.DisplayName,
+		AvatarFileID: avatarFileID,
+		CountryCode:  profile.CountryCode,
+		Locale:       profile.Locale,
+		Timezone:     profile.Timezone,
+	}
 }
 
 func toGuideProfileResponse(profile *model.GuideProfile) dto.GuideProfileResponse {
@@ -590,6 +599,16 @@ func toGuideProfileResponse(profile *model.GuideProfile) dto.GuideProfileRespons
 	if profile.BaseCityID != nil {
 		v := profile.BaseCityID.String()
 		baseCityID = &v
+	}
+	var statusChangedAt *string
+	if profile.StatusChangedAt != nil {
+		v := profile.StatusChangedAt.UTC().Format(time.RFC3339)
+		statusChangedAt = &v
+	}
+	var statusChangedBy *string
+	if profile.StatusChangedBy != nil {
+		v := profile.StatusChangedBy.String()
+		statusChangedBy = &v
 	}
 
 	return dto.GuideProfileResponse{
@@ -606,6 +625,9 @@ func toGuideProfileResponse(profile *model.GuideProfile) dto.GuideProfileRespons
 		IsExcursionGuideAvailable: profile.IsExcursionGuideAvailable,
 		RatingAvg:                 profile.RatingAvg,
 		ReviewsCount:              profile.ReviewsCount,
+		StatusReason:              profile.StatusReason,
+		StatusChangedAt:           statusChangedAt,
+		StatusChangedBy:           statusChangedBy,
 		CreatedAt:                 profile.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:                 profile.UpdatedAt.UTC().Format(time.RFC3339),
 	}
@@ -671,6 +693,279 @@ func toGuideSpecializationResponse(item *model.GuideSpecialization) dto.GuideSpe
 		SpecializationCode: item.SpecializationCode,
 		CreatedAt:          item.CreatedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+func (h *Handler) toAdminGuideApplicationResponse(ctx context.Context, aggregate *app.GuideAggregate) dto.AdminGuideApplicationResponse {
+	if aggregate == nil || aggregate.Profile == nil || aggregate.VerificationRequest == nil {
+		return dto.AdminGuideApplicationResponse{}
+	}
+	profile := aggregate.Profile
+	request := aggregate.VerificationRequest
+	userProfile := aggregate.UserProfile
+
+	var firstName string
+	var lastName string
+	var displayName string
+	var countryCode string
+	var locale string
+	var timezone string
+	if userProfile != nil {
+		firstName = optionalString(userProfile.FirstName)
+		lastName = optionalString(userProfile.LastName)
+		displayName = optionalString(userProfile.DisplayName)
+		countryCode = optionalString(userProfile.CountryCode)
+		locale = userProfile.Locale
+		timezone = userProfile.Timezone
+	}
+	if displayName == "" {
+		displayName = strings.TrimSpace(strings.Join([]string{firstName, lastName}, " "))
+	}
+
+	var baseCityID string
+	if profile.BaseCityID != nil {
+		baseCityID = profile.BaseCityID.String()
+	}
+
+	documents := make([]dto.AdminGuideDocumentResponse, 0, len(aggregate.Documents))
+	for _, item := range aggregate.Documents {
+		if item == nil {
+			continue
+		}
+		downloadURL, err := h.useCase.CreateGuideDocumentDownloadURL(ctx, item.FileID)
+		if err != nil {
+			downloadURL = ""
+		}
+		documents = append(documents, dto.AdminGuideDocumentResponse{
+			ID:           item.ID.String(),
+			FileID:       item.FileID.String(),
+			DocumentType: item.DocumentType,
+			DownloadURL:  downloadURL,
+			CreatedAt:    item.CreatedAt.UTC().Format(time.RFC3339),
+		})
+	}
+
+	languages := make([]dto.AdminGuideLanguageResponse, 0, len(aggregate.Languages))
+	for _, item := range aggregate.Languages {
+		if item == nil {
+			continue
+		}
+		languages = append(languages, dto.AdminGuideLanguageResponse{
+			LanguageCode:     item.LanguageCode,
+			ProficiencyLevel: item.ProficiencyLevel,
+		})
+	}
+
+	specializations := make([]string, 0, len(aggregate.Specializations))
+	for _, item := range aggregate.Specializations {
+		if item == nil {
+			continue
+		}
+		specializations = append(specializations, item.SpecializationCode)
+	}
+
+	return dto.AdminGuideApplicationResponse{
+		ID:                        request.ID.String(),
+		GuideProfileID:            profile.ID.String(),
+		GuideUserID:               profile.UserID.String(),
+		GuideDisplayName:          displayName,
+		FirstName:                 firstName,
+		LastName:                  lastName,
+		CountryCode:               countryCode,
+		Locale:                    locale,
+		Timezone:                  timezone,
+		Type:                      string(profile.Type),
+		GuideStatus:               string(profile.Status),
+		Status:                    string(request.Status),
+		Headline:                  optionalString(profile.Headline),
+		About:                     optionalString(profile.About),
+		ExperienceYears:           profile.ExperienceYears,
+		BaseCityID:                baseCityID,
+		IsPrivateGuideAvailable:   profile.IsPrivateGuideAvailable,
+		IsActivityHostAvailable:   profile.IsActivityHostAvailable,
+		IsExcursionGuideAvailable: profile.IsExcursionGuideAvailable,
+		RatingAvg:                 profile.RatingAvg,
+		ReviewsCount:              profile.ReviewsCount,
+		StatusReason:              optionalString(profile.StatusReason),
+		StatusChangedAt:           optionalTime(profile.StatusChangedAt),
+		StatusChangedBy:           optionalUUID(profile.StatusChangedBy),
+		Comment:                   optionalString(request.Comment),
+		ReviewComment:             optionalString(request.ReviewComment),
+		SubmittedAt:               optionalTime(request.SubmittedAt),
+		ReviewedAt:                optionalTime(request.ReviewedAt),
+		ReviewedBy:                optionalUUID(request.ReviewedBy),
+		Documents:                 documents,
+		Languages:                 languages,
+		Specializations:           specializations,
+		RiskScore:                 guideApplicationRiskScore(aggregate),
+		ModerationReasonCodes:     guideApplicationReasonCodes(aggregate),
+		Revision:                  int(request.UpdatedAt.Unix()),
+		CreatedAt:                 request.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:                 request.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func (h *Handler) toAdminActiveGuideResponse(card *app.PublicGuideCard) dto.AdminGuideApplicationResponse {
+	if card == nil || card.GuideProfile == nil {
+		return dto.AdminGuideApplicationResponse{}
+	}
+	profile := card.GuideProfile
+	userProfile := card.UserProfile
+
+	var firstName string
+	var lastName string
+	var displayName string
+	var countryCode string
+	var locale string
+	var timezone string
+	if userProfile != nil {
+		firstName = optionalString(userProfile.FirstName)
+		lastName = optionalString(userProfile.LastName)
+		displayName = optionalString(userProfile.DisplayName)
+		countryCode = optionalString(userProfile.CountryCode)
+		locale = userProfile.Locale
+		timezone = userProfile.Timezone
+	}
+	if displayName == "" {
+		displayName = strings.TrimSpace(strings.Join([]string{firstName, lastName}, " "))
+	}
+
+	var baseCityID string
+	if profile.BaseCityID != nil {
+		baseCityID = profile.BaseCityID.String()
+	}
+	languages := make([]dto.AdminGuideLanguageResponse, 0, len(card.Languages))
+	for _, item := range card.Languages {
+		if item == nil {
+			continue
+		}
+		languages = append(languages, dto.AdminGuideLanguageResponse{
+			LanguageCode:     item.LanguageCode,
+			ProficiencyLevel: item.ProficiencyLevel,
+		})
+	}
+	specializations := make([]string, 0, len(card.Specializations))
+	for _, item := range card.Specializations {
+		if item == nil {
+			continue
+		}
+		specializations = append(specializations, item.SpecializationCode)
+	}
+
+	return dto.AdminGuideApplicationResponse{
+		ID:                        profile.ID.String(),
+		GuideProfileID:            profile.ID.String(),
+		GuideUserID:               profile.UserID.String(),
+		GuideDisplayName:          displayName,
+		FirstName:                 firstName,
+		LastName:                  lastName,
+		CountryCode:               countryCode,
+		Locale:                    locale,
+		Timezone:                  timezone,
+		Type:                      string(profile.Type),
+		GuideStatus:               string(profile.Status),
+		Status:                    "APPROVED",
+		Headline:                  optionalString(profile.Headline),
+		About:                     optionalString(profile.About),
+		ExperienceYears:           profile.ExperienceYears,
+		BaseCityID:                baseCityID,
+		IsPrivateGuideAvailable:   profile.IsPrivateGuideAvailable,
+		IsActivityHostAvailable:   profile.IsActivityHostAvailable,
+		IsExcursionGuideAvailable: profile.IsExcursionGuideAvailable,
+		RatingAvg:                 profile.RatingAvg,
+		ReviewsCount:              profile.ReviewsCount,
+		StatusReason:              optionalString(profile.StatusReason),
+		StatusChangedAt:           optionalTime(profile.StatusChangedAt),
+		StatusChangedBy:           optionalUUID(profile.StatusChangedBy),
+		Languages:                 languages,
+		Specializations:           specializations,
+		Revision:                  int(profile.UpdatedAt.Unix()),
+		CreatedAt:                 profile.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:                 profile.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func optionalString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
+}
+
+func optionalTime(value *time.Time) *string {
+	if value == nil || value.IsZero() {
+		return nil
+	}
+	out := value.UTC().Format(time.RFC3339)
+	return &out
+}
+
+func optionalUUID(value *uuid.UUID) *string {
+	if value == nil || *value == uuid.Nil {
+		return nil
+	}
+	out := value.String()
+	return &out
+}
+
+func guideApplicationRiskScore(aggregate *app.GuideAggregate) int {
+	if aggregate == nil || aggregate.Profile == nil {
+		return 0
+	}
+	score := 0
+	if aggregate.Profile.ExperienceYears <= 0 {
+		score += 10
+	}
+	if aggregate.Profile.ReviewsCount == 0 {
+		score += 10
+	}
+	if len(aggregate.Documents) < 2 {
+		score += 30
+	}
+	if len(aggregate.Languages) == 0 {
+		score += 10
+	}
+	if len(aggregate.Specializations) == 0 {
+		score += 10
+	}
+	if score > 100 {
+		return 100
+	}
+	return score
+}
+
+func guideApplicationReasonCodes(aggregate *app.GuideAggregate) []string {
+	if aggregate == nil || aggregate.Profile == nil {
+		return nil
+	}
+	codes := make([]string, 0, 4)
+	if aggregate.Profile.ReviewsCount == 0 {
+		codes = append(codes, "new_guide")
+	}
+	if len(aggregate.Documents) < 2 {
+		codes = append(codes, "documents_incomplete")
+	}
+	if len(aggregate.Languages) == 0 {
+		codes = append(codes, "languages_missing")
+	}
+	if len(aggregate.Specializations) == 0 {
+		codes = append(codes, "specializations_missing")
+	}
+	return codes
+}
+
+func parseLimitOffset(r *http.Request, defaultLimit int) (int, int) {
+	limit := defaultLimit
+	if parsed, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("limit"))); err == nil && parsed > 0 {
+		limit = parsed
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	offset := 0
+	if parsed, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("offset"))); err == nil && parsed > 0 {
+		offset = parsed
+	}
+	return limit, offset
 }
 
 func parseOptionalUUID(v *string) (*uuid.UUID, error) {
@@ -780,8 +1075,8 @@ func (rw *responseWriter) WriteHeader(statusCode int) {
 }
 
 func (h *Handler) handleAdminVerificationActions(w http.ResponseWriter, r *http.Request) {
-	if !hasRole(r.Context(), "ADMIN") && !hasRole(r.Context(), "MODERATOR") {
-		writeError(w, http.StatusForbidden, "admin or moderator role is required")
+	if !canReviewGuideApplications(r.Context()) {
+		writeError(w, http.StatusForbidden, "guide moderation role is required")
 		return
 	}
 
@@ -806,16 +1101,40 @@ func (h *Handler) handleAdminVerificationActions(w http.ResponseWriter, r *http.
 	case r.Method == http.MethodPost && parts[1] == "reject":
 		h.RejectVerificationRequest(w, r, requestID)
 		return
+	case r.Method == http.MethodPost && parts[1] == "revoke":
+		h.RevokeGuideStatus(w, r, requestID)
+		return
 	default:
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
 }
 
+func canReviewGuideApplications(ctx context.Context) bool {
+	return hasRole(ctx, "SUPER_ADMIN") ||
+		hasRole(ctx, "ADMIN") ||
+		hasRole(ctx, "MODERATOR") ||
+		hasRole(ctx, "MODERATION_LEAD") ||
+		hasRole(ctx, "GUIDE_MODERATOR")
+}
+
 func (h *Handler) handleAdminGuideActions(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/v1/admin/guides/")
 	path = strings.Trim(path, "/")
 	parts := strings.Split(path, "/")
+	if len(parts) == 3 && parts[0] == "profiles" && parts[2] == "revoke" {
+		profileID, err := uuid.Parse(parts[1])
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid guide profile id")
+			return
+		}
+		if !canReviewGuideApplications(r.Context()) {
+			writeError(w, http.StatusForbidden, "guide moderation role is required")
+			return
+		}
+		h.RevokeGuideProfileStatus(w, r, profileID)
+		return
+	}
 	if len(parts) != 2 {
 		writeError(w, http.StatusNotFound, "not found")
 		return
@@ -869,13 +1188,15 @@ func (h *Handler) ApproveVerificationRequest(w http.ResponseWriter, r *http.Requ
 		case errors.Is(err, app.ErrVerificationRequestNotFound),
 			errors.Is(err, app.ErrGuideProfileNotFound):
 			writeError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, app.ErrVerificationRequestNotReviewable):
+			writeError(w, http.StatusConflict, err.Error())
 		default:
 			writeError(w, http.StatusInternalServerError, "failed to approve verification request")
 		}
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toGuideAggregateResponse(aggregate))
+	writeJSON(w, http.StatusOK, h.toAdminGuideApplicationResponse(r.Context(), aggregate))
 }
 
 func (h *Handler) RejectVerificationRequest(w http.ResponseWriter, r *http.Request, requestID uuid.UUID) {
@@ -897,13 +1218,120 @@ func (h *Handler) RejectVerificationRequest(w http.ResponseWriter, r *http.Reque
 		case errors.Is(err, app.ErrVerificationRequestNotFound),
 			errors.Is(err, app.ErrGuideProfileNotFound):
 			writeError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, app.ErrVerificationRequestNotReviewable):
+			writeError(w, http.StatusConflict, err.Error())
+		case errors.Is(err, app.ErrReviewCommentRequired):
+			writeError(w, http.StatusBadRequest, err.Error())
 		default:
 			writeError(w, http.StatusInternalServerError, "failed to reject verification request")
 		}
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toGuideAggregateResponse(aggregate))
+	writeJSON(w, http.StatusOK, h.toAdminGuideApplicationResponse(r.Context(), aggregate))
+}
+
+func (h *Handler) RevokeGuideStatus(w http.ResponseWriter, r *http.Request, requestID uuid.UUID) {
+	var req dto.ReviewVerificationRequestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err.Error() != "EOF" {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	reviewerID := reviewerIDFromContext(r.Context())
+	publicReason := ""
+	if req.ReviewComment != nil {
+		publicReason = *req.ReviewComment
+	}
+
+	aggregate, err := h.useCase.RevokeGuideStatus(r.Context(), app.RevokeGuideStatusInput{
+		VerificationRequestID: requestID,
+		ReviewerID:            reviewerID,
+		PublicReason:          publicReason,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrVerificationRequestNotFound),
+			errors.Is(err, app.ErrGuideProfileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, app.ErrGuideProfileNotActive):
+			writeError(w, http.StatusConflict, err.Error())
+		case errors.Is(err, app.ErrReviewCommentRequired),
+			errors.Is(err, model.ErrGuideRevocationReasonRequired):
+			writeError(w, http.StatusBadRequest, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to revoke guide status")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, h.toAdminGuideApplicationResponse(r.Context(), aggregate))
+}
+
+func (h *Handler) RevokeGuideProfileStatus(w http.ResponseWriter, r *http.Request, profileID uuid.UUID) {
+	var req dto.ReviewVerificationRequestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err.Error() != "EOF" {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	reviewerID := reviewerIDFromContext(r.Context())
+	publicReason := ""
+	if req.ReviewComment != nil {
+		publicReason = *req.ReviewComment
+	}
+
+	aggregate, err := h.useCase.RevokeGuideProfileStatus(r.Context(), app.RevokeGuideProfileStatusInput{
+		GuideProfileID: profileID,
+		ReviewerID:     reviewerID,
+		PublicReason:   publicReason,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrGuideProfileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, app.ErrGuideProfileNotActive):
+			writeError(w, http.StatusConflict, err.Error())
+		case errors.Is(err, app.ErrReviewCommentRequired),
+			errors.Is(err, model.ErrGuideRevocationReasonRequired):
+			writeError(w, http.StatusBadRequest, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to revoke guide status")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, h.toAdminGuideApplicationResponse(r.Context(), aggregate))
+}
+
+func (h *Handler) ListActiveGuidesForAdmin(w http.ResponseWriter, r *http.Request) {
+	if !canReviewGuideApplications(r.Context()) {
+		writeError(w, http.StatusForbidden, "guide moderation role is required")
+		return
+	}
+
+	limit, offset := parseLimitOffset(r, 100)
+	result, err := h.useCase.ListPublicGuideCards(r.Context(), app.ListPublicGuidesInput{
+		Sort:   "newest_desc",
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list active guides")
+		return
+	}
+
+	items := make([]dto.AdminGuideApplicationResponse, 0, len(result.Items))
+	for _, item := range result.Items {
+		items = append(items, h.toAdminActiveGuideResponse(item))
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"items":  items,
+		"total":  result.Total,
+		"limit":  result.Limit,
+		"offset": result.Offset,
+	})
 }
 
 func (h *Handler) SuspendGuideProfile(w http.ResponseWriter, r *http.Request, profileID uuid.UUID) {
@@ -954,36 +1382,48 @@ func reviewerIDFromContext(ctx context.Context) *uuid.UUID {
 }
 
 func (h *Handler) ListPendingVerificationRequests(w http.ResponseWriter, r *http.Request) {
-	if !hasRole(r.Context(), "ADMIN") && !hasRole(r.Context(), "MODERATOR") {
-		writeError(w, http.StatusForbidden, "admin or moderator role is required")
+	if !canReviewGuideApplications(r.Context()) {
+		writeError(w, http.StatusForbidden, "guide moderation role is required")
 		return
 	}
 
-	items, err := h.useCase.ListPendingVerificationRequests(r.Context(), 20, 0)
+	limit, offset := parseLimitOffset(r, 100)
+	items, err := h.useCase.ListPendingVerificationApplicationAggregates(r.Context(), limit, offset)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list pending verification requests")
 		return
 	}
 
-	resp := make([]dto.VerificationQueueItemResponse, 0, len(items))
+	resp := dto.AdminGuideApplicationListResponse{
+		Items: make([]dto.AdminGuideApplicationResponse, 0, len(items)),
+	}
 	for _, item := range items {
-		var submittedAt *string
-		if item.SubmittedAt != nil {
-			v := item.SubmittedAt.UTC().Format(time.RFC3339)
-			submittedAt = &v
-		}
-
-		resp = append(resp, dto.VerificationQueueItemResponse{
-			ID:             item.ID.String(),
-			GuideProfileID: item.GuideProfileID.String(),
-			Status:         string(item.Status),
-			Comment:        item.Comment,
-			SubmittedAt:    submittedAt,
-			CreatedAt:      item.CreatedAt.UTC().Format(time.RFC3339),
-		})
+		resp.Items = append(resp.Items, h.toAdminGuideApplicationResponse(r.Context(), item))
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{
-		"items": resp,
-	})
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) GetVerificationRequestForAdmin(w http.ResponseWriter, r *http.Request) {
+	if !canReviewGuideApplications(r.Context()) {
+		writeError(w, http.StatusForbidden, "guide moderation role is required")
+		return
+	}
+	requestID, err := uuid.Parse(strings.TrimSpace(r.PathValue("requestID")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid verification request id")
+		return
+	}
+	aggregate, err := h.useCase.GetVerificationRequestAggregateByID(r.Context(), requestID)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrVerificationRequestNotFound),
+			errors.Is(err, app.ErrGuideProfileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to get verification request")
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, h.toAdminGuideApplicationResponse(r.Context(), aggregate))
 }

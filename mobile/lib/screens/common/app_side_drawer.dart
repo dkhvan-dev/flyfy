@@ -47,10 +47,15 @@ String resolveDrawerIdentityStatus({
   required bool isLoggedIn,
   required bool showGuideBadge,
   required UserProfileVm? profile,
+  bool isGuideStatusRevoked = false,
+  bool suppressGuideFallback = false,
 }) {
   if (!isLoggedIn) return l10n.loginButton;
   if (showGuideBadge) return l10n.drawerStatusVerifiedGuide;
-  if (profile?.isGuide == true) return l10n.drawerStatusGuide;
+  if (isGuideStatusRevoked) return l10n.drawerStatusGuideRevoked;
+  if (!suppressGuideFallback && profile?.isGuide == true) {
+    return l10n.drawerStatusGuide;
+  }
   if (profile?.isProfileCompleted == true) return l10n.drawerStatusTraveler;
 
   return l10n.drawerStatusCompleteProfile;
@@ -278,6 +283,8 @@ class AppSideDrawer extends StatelessWidget {
     required this.l10n,
     required this.isLoggedIn,
     required this.showGuideBadge,
+    this.isGuideStatusRevoked = false,
+    this.suppressGuideFallback = false,
     required this.profile,
     required this.location,
     required this.languageLabel,
@@ -296,6 +303,8 @@ class AppSideDrawer extends StatelessWidget {
   final AppLocalizations l10n;
   final bool isLoggedIn;
   final bool showGuideBadge;
+  final bool isGuideStatusRevoked;
+  final bool suppressGuideFallback;
   final UserProfileVm? profile;
   final String location;
   final String languageLabel;
@@ -320,6 +329,8 @@ class AppSideDrawer extends StatelessWidget {
       isLoggedIn: isLoggedIn,
       showGuideBadge: showGuideBadge,
       profile: profile,
+      isGuideStatusRevoked: isGuideStatusRevoked,
+      suppressGuideFallback: suppressGuideFallback,
     );
     final avatarText = profile?.initials ?? 'F';
     final avatarUrl = resolvePublicFileContentUrl(

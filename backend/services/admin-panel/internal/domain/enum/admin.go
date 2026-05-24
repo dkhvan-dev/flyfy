@@ -29,6 +29,7 @@ const (
 	StaffRoleModerationLead     StaffRole = "MODERATION_LEAD"
 	StaffRoleExcursionModerator StaffRole = "EXCURSION_MODERATOR"
 	StaffRoleActivityModerator  StaffRole = "ACTIVITY_MODERATOR"
+	StaffRoleGuideModerator     StaffRole = "GUIDE_MODERATOR"
 	StaffRoleChatModerator      StaffRole = "CHAT_MODERATOR"
 	StaffRoleSupportViewer      StaffRole = "SUPPORT_VIEWER"
 	StaffRoleReadOnlyAuditor    StaffRole = "READ_ONLY_AUDITOR"
@@ -41,6 +42,7 @@ func (r StaffRole) IsValid() bool {
 		StaffRoleModerationLead,
 		StaffRoleExcursionModerator,
 		StaffRoleActivityModerator,
+		StaffRoleGuideModerator,
 		StaffRoleChatModerator,
 		StaffRoleSupportViewer,
 		StaffRoleReadOnlyAuditor:
@@ -60,6 +62,7 @@ const (
 	PermissionModerationAssign  Permission = "moderation.assign"
 	PermissionExcursionModerate Permission = "excursion.moderate"
 	PermissionActivityModerate  Permission = "activity.moderate"
+	PermissionGuideModerate     Permission = "guide.moderate"
 	PermissionChatModerate      Permission = "chat.moderate"
 )
 
@@ -70,6 +73,7 @@ const (
 	ModerationCaseStatusInReview         ModerationCaseStatus = "IN_REVIEW"
 	ModerationCaseStatusApproved         ModerationCaseStatus = "APPROVED"
 	ModerationCaseStatusRejected         ModerationCaseStatus = "REJECTED"
+	ModerationCaseStatusRevoked          ModerationCaseStatus = "REVOKED"
 	ModerationCaseStatusChangesRequested ModerationCaseStatus = "CHANGES_REQUESTED"
 	ModerationCaseStatusEscalated        ModerationCaseStatus = "ESCALATED"
 	ModerationCaseStatusCancelled        ModerationCaseStatus = "CANCELLED"
@@ -80,6 +84,7 @@ type ModerationDecisionType string
 const (
 	ModerationDecisionApprove        ModerationDecisionType = "APPROVE"
 	ModerationDecisionReject         ModerationDecisionType = "REJECT"
+	ModerationDecisionRevoke         ModerationDecisionType = "REVOKE"
 	ModerationDecisionRequestChanges ModerationDecisionType = "REQUEST_CHANGES"
 	ModerationDecisionEscalate       ModerationDecisionType = "ESCALATE"
 )

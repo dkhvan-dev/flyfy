@@ -24,11 +24,12 @@ const (
 	SystemRoleAdmin     SystemRole = "ADMIN"
 	SystemRoleModerator SystemRole = "MODERATOR"
 	SystemRoleSupport   SystemRole = "SUPPORT"
+	SystemRoleGuide     SystemRole = "GUIDE"
 )
 
 func (r SystemRole) IsValid() bool {
 	switch r {
-	case SystemRoleUser, SystemRoleAdmin, SystemRoleModerator, SystemRoleSupport:
+	case SystemRoleUser, SystemRoleAdmin, SystemRoleModerator, SystemRoleSupport, SystemRoleGuide:
 		return true
 	default:
 		return false

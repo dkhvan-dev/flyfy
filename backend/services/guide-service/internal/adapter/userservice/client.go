@@ -297,6 +297,32 @@ func (c *Client) GrantGuideRole(ctx context.Context, userID uuid.UUID, grantedBy
 	return nil
 }
 
+func (c *Client) RevokeGuideRole(ctx context.Context, userID uuid.UUID) error {
+	callCtx, cancel := context.WithTimeout(ctx, defaultGetUserTimeout)
+	defer cancel()
+	callCtx = WithInternalMetadata(callCtx, c.internalToken, c.serviceName, "", "")
+
+	_, err := c.service.RevokeUserRole(callCtx, &userv1.RevokeUserRoleRequest{
+		UserId: userID.String(),
+		Role:   "GUIDE",
+	})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return app.ErrUserNotFound
+			case codes.InvalidArgument:
+				return app.ErrInvalidGuideUserID
+			default:
+				return err
+			}
+		}
+		return err
+	}
+
+	return nil
+}
+
 func optionalString(value string) *string {
 	value = strings.TrimSpace(value)
 	if value == "" {

@@ -25,11 +25,17 @@ const (
 	GuideStatusActive        GuideStatus = "ACTIVE"
 	GuideStatusSuspended     GuideStatus = "SUSPENDED"
 	GuideStatusRejected      GuideStatus = "REJECTED"
+	GuideStatusRevoked       GuideStatus = "REVOKED"
 )
 
 func (s GuideStatus) IsValid() bool {
 	switch s {
-	case GuideStatusDraft, GuideStatusPendingReview, GuideStatusActive, GuideStatusSuspended, GuideStatusRejected:
+	case GuideStatusDraft,
+		GuideStatusPendingReview,
+		GuideStatusActive,
+		GuideStatusSuspended,
+		GuideStatusRejected,
+		GuideStatusRevoked:
 		return true
 	default:
 		return false

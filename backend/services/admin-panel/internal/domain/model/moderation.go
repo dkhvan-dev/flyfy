@@ -12,10 +12,11 @@ import (
 type ModerationTargetType string
 
 const (
-	ModerationTargetExcursion   ModerationTargetType = "EXCURSION"
-	ModerationTargetActivity    ModerationTargetType = "ACTIVITY"
-	ModerationTargetChatMessage ModerationTargetType = "CHAT_MESSAGE"
-	ModerationTargetStory       ModerationTargetType = "STORY"
+	ModerationTargetExcursion        ModerationTargetType = "EXCURSION"
+	ModerationTargetActivity         ModerationTargetType = "ACTIVITY"
+	ModerationTargetGuideApplication ModerationTargetType = "GUIDE_APPLICATION"
+	ModerationTargetChatMessage      ModerationTargetType = "CHAT_MESSAGE"
+	ModerationTargetStory            ModerationTargetType = "STORY"
 )
 
 type ModerationCase struct {
@@ -208,4 +209,63 @@ type ActivityModerationItem struct {
 	Revision  int
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+type GuideApplicationDocument struct {
+	ID           uuid.UUID
+	FileID       uuid.UUID
+	DocumentType string
+	DownloadURL  string
+	CreatedAt    time.Time
+}
+
+type GuideApplicationLanguage struct {
+	LanguageCode     string
+	ProficiencyLevel string
+}
+
+type GuideApplicationModerationItem struct {
+	ID             uuid.UUID
+	GuideProfileID uuid.UUID
+	GuideUserID    uuid.UUID
+
+	GuideDisplayName string
+	FirstName        string
+	LastName         string
+	CountryCode      string
+	Locale           string
+	Timezone         string
+
+	Type                      string
+	GuideStatus               string
+	Status                    string
+	Headline                  string
+	About                     string
+	ExperienceYears           int
+	BaseCityID                string
+	BaseCityName              string
+	IsPrivateGuideAvailable   bool
+	IsActivityHostAvailable   bool
+	IsExcursionGuideAvailable bool
+	RatingAvg                 float64
+	ReviewsCount              int
+	StatusReason              string
+	StatusChangedAt           *time.Time
+	StatusChangedBy           *uuid.UUID
+
+	Comment       string
+	ReviewComment string
+	SubmittedAt   *time.Time
+	ReviewedAt    *time.Time
+	ReviewedBy    *uuid.UUID
+
+	Documents       []GuideApplicationDocument
+	Languages       []GuideApplicationLanguage
+	Specializations []string
+
+	RiskScore             int
+	ModerationReasonCodes []string
+	Revision              int
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
 }

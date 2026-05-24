@@ -261,6 +261,10 @@ func (s *excursionOffersRepoStub) HasActiveExcursionForGuideLandmark(context.Con
 	return false, nil
 }
 
+func (s *excursionOffersRepoStub) ArchiveGuideExcursionOffers(context.Context, uuid.UUID) error {
+	return nil
+}
+
 func (s *excursionOffersRepoStub) GetExcursionOfferByID(context.Context, uuid.UUID) (*model.ExcursionOffer, error) {
 	return nil, nil
 }

@@ -8,6 +8,7 @@ import (
 
 type FileManagerClient interface {
 	ValidateGuideDocumentFile(ctx context.Context, fileID uuid.UUID) error
+	CreateGuideDocumentDownloadURL(ctx context.Context, fileID uuid.UUID) (string, error)
 	BindGuideDocumentToVerificationRequest(
 		ctx context.Context,
 		fileID uuid.UUID,

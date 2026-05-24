@@ -7,6 +7,9 @@
       <h1>{{if .Data.IsHistory}}{{t .Locale .Data.HistoryTitleKey}}{{else}}{{t .Locale .Data.TitleKey}}{{end}}</h1>
     </div>
     <div class="section-actions">
+      {{if .Data.CurrentGuidesURL}}
+        <a class="button" href="{{.Data.CurrentGuidesURL}}">{{t .Locale "action.openCurrentGuides"}}</a>
+      {{end}}
       {{if .Data.IsHistory}}
         <a class="button" href="{{.Data.OpenQueueURL}}">{{t .Locale "action.openQueue"}}</a>
       {{else}}
@@ -31,6 +34,7 @@
           <option value="escalated" {{if eq .Data.Filters.Status "escalated"}}selected{{end}}>{{statusText .Locale "ESCALATED"}}</option>
           <option value="approved" {{if eq .Data.Filters.Status "approved"}}selected{{end}}>{{statusText .Locale "APPROVED"}}</option>
           <option value="rejected" {{if eq .Data.Filters.Status "rejected"}}selected{{end}}>{{statusText .Locale "REJECTED"}}</option>
+          <option value="revoked" {{if eq .Data.Filters.Status "revoked"}}selected{{end}}>{{statusText .Locale "REVOKED"}}</option>
           <option value="changes_requested" {{if eq .Data.Filters.Status "changes_requested"}}selected{{end}}>{{statusText .Locale "CHANGES_REQUESTED"}}</option>
           <option value="cancelled" {{if eq .Data.Filters.Status "cancelled"}}selected{{end}}>{{statusText .Locale "CANCELLED"}}</option>
         </select>
@@ -99,6 +103,7 @@
               {{if .Excursion}}{{$title = excursionTitle $.Locale .Excursion .TargetTitle}}{{end}}
               {{$subtitle := .TargetSubtitle}}
               {{if .Excursion}}{{$subtitle = excursionAttractions $.Locale .Excursion}}{{end}}
+              {{if .GuideApplication}}{{$subtitle = guideApplicationType $.Locale .GuideApplication}}{{end}}
               <strong>{{$title}}</strong>
               {{if $subtitle}}{{if ne $subtitle $title}}<span class="muted block">{{$subtitle}}</span>{{end}}{{else if .TargetSubtitle}}<span class="muted block">{{.TargetSubtitle}}</span>{{end}}
             </td>
@@ -106,7 +111,7 @@
               <strong>{{.GuideName}}</strong>
               {{if .GuideFullName}}<span class="muted block">{{.GuideFullName}}</span>{{end}}
             </td>
-            <td>{{if .Excursion}}{{excursionLocation $.Locale .Excursion}}{{else}}{{activityLocation $.Locale .Activity}}{{end}}</td>
+            <td>{{if .Excursion}}{{excursionLocation $.Locale .Excursion}}{{else if .Activity}}{{activityLocation $.Locale .Activity}}{{else}}{{guideApplicationLocation $.Locale .GuideApplication}}{{end}}</td>
             <td>{{formatTime .Case.OpenedAt}}</td>
             <td class="right"><a class="button" href="{{.DetailURL}}">{{t $.Locale "action.review"}}</a></td>
           </tr>

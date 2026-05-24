@@ -18,6 +18,7 @@ type ModerationUseCase struct {
 	repo      port.ModerationRepository
 	excursion port.ExcursionClient
 	activity  port.ActivityClient
+	guide     port.GuideApplicationClient
 	audit     port.AuditRepository
 }
 
@@ -39,20 +40,32 @@ type ModerationDecisionInput struct {
 	RequestMetadata RequestMetadata
 }
 
+type RevokeActiveGuideInput struct {
+	Actor           *model.StaffUser
+	GuideProfileID  uuid.UUID
+	ReasonCodes     []string
+	PublicComment   string
+	InternalComment string
+	IdempotencyKey  string
+	RequestMetadata RequestMetadata
+}
+
 type ModerationCaseDetail struct {
-	Case      *model.ModerationCase
-	Excursion *model.ExcursionModerationItem
-	Activity  *model.ActivityModerationItem
-	Decisions []*model.ModerationDecision
+	Case             *model.ModerationCase
+	Excursion        *model.ExcursionModerationItem
+	Activity         *model.ActivityModerationItem
+	GuideApplication *model.GuideApplicationModerationItem
+	Decisions        []*model.ModerationDecision
 }
 
 func NewModerationUseCase(
 	repo port.ModerationRepository,
 	excursion port.ExcursionClient,
 	activity port.ActivityClient,
+	guide port.GuideApplicationClient,
 	audit port.AuditRepository,
 ) *ModerationUseCase {
-	return &ModerationUseCase{repo: repo, excursion: excursion, activity: activity, audit: audit}
+	return &ModerationUseCase{repo: repo, excursion: excursion, activity: activity, guide: guide, audit: audit}
 }
 
 func (u *ModerationUseCase) SyncExcursionQueue(ctx context.Context, actor *model.StaffUser) error {
@@ -89,6 +102,31 @@ func (u *ModerationUseCase) SyncActivityQueue(ctx context.Context, actor *model.
 		activeIDs = append(activeIDs, item.ID)
 	}
 	return u.repo.CancelStaleActivityCases(ctx, activeIDs, time.Now().UTC())
+}
+
+func (u *ModerationUseCase) SyncGuideApplicationQueue(ctx context.Context, actor *model.StaffUser) error {
+	if actor == nil || !actor.HasPermission(enum.PermissionModerationRead) {
+		return ErrPermissionDenied
+	}
+	items, err := u.guide.ListPendingApplications(ctx, 100, 0)
+	if err != nil {
+		return err
+	}
+	activeIDs := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if _, err = u.repo.UpsertGuideApplicationCase(ctx, item); err != nil {
+			return err
+		}
+		activeIDs = append(activeIDs, item.ID)
+	}
+	return u.repo.CancelStaleGuideApplicationCases(ctx, activeIDs, time.Now().UTC())
+}
+
+func (u *ModerationUseCase) ListActiveGuides(ctx context.Context, actor *model.StaffUser, limit int, offset int) ([]model.GuideApplicationModerationItem, error) {
+	if actor == nil || !actor.HasPermission(enum.PermissionGuideModerate) {
+		return nil, ErrPermissionDenied
+	}
+	return u.guide.ListActiveGuides(ctx, clampLimit(limit), normalizeOffset(offset))
 }
 
 func (u *ModerationUseCase) ListQueue(ctx context.Context, actor *model.StaffUser, filter model.ModerationQueueFilter) ([]*model.ModerationCase, error) {
@@ -151,6 +189,7 @@ func (u *ModerationUseCase) GetCaseDetail(ctx context.Context, actor *model.Staf
 	}
 	var excursion *model.ExcursionModerationItem
 	var activity *model.ActivityModerationItem
+	var guideApplication *model.GuideApplicationModerationItem
 	if item.TargetType == model.ModerationTargetExcursion {
 		excursion, err = u.excursion.GetExcursion(ctx, item.TargetID)
 		if err != nil {
@@ -161,12 +200,18 @@ func (u *ModerationUseCase) GetCaseDetail(ctx context.Context, actor *model.Staf
 		if err != nil {
 			return nil, err
 		}
+	} else if item.TargetType == model.ModerationTargetGuideApplication {
+		guideApplication, err = u.guide.GetApplication(ctx, item.TargetID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &ModerationCaseDetail{
-		Case:      item,
-		Excursion: excursion,
-		Activity:  activity,
-		Decisions: decisions,
+		Case:             item,
+		Excursion:        excursion,
+		Activity:         activity,
+		GuideApplication: guideApplication,
+		Decisions:        decisions,
 	}, nil
 }
 
@@ -342,8 +387,136 @@ func (u *ModerationUseCase) DecideActivity(ctx context.Context, input Moderation
 	return detail, nil
 }
 
+func (u *ModerationUseCase) DecideGuideApplication(ctx context.Context, input ModerationDecisionInput) (*ModerationCaseDetail, error) {
+	if input.Actor == nil || !input.Actor.HasPermission(enum.PermissionGuideModerate) {
+		return nil, ErrPermissionDenied
+	}
+	caseItem, err := u.repo.GetCase(ctx, input.CaseID)
+	if err != nil {
+		return nil, err
+	}
+	if caseItem == nil || caseItem.TargetType != model.ModerationTargetGuideApplication {
+		return nil, ErrModerationCaseNotFound
+	}
+	if input.Decision == enum.ModerationDecisionRevoke && caseItem.Status != enum.ModerationCaseStatusApproved {
+		return nil, ErrInvalidInput
+	}
+	reasonCodes := normalizeReasonCodes(input.ReasonCodes)
+	publicComment := strings.TrimSpace(input.PublicComment)
+	internalComment := strings.TrimSpace(input.InternalComment)
+	if internalComment == "" || (requiresPublicModerationComment(input.Decision) && publicComment == "") {
+		return nil, ErrInvalidInput
+	}
+	idempotencyKey := strings.TrimSpace(input.IdempotencyKey)
+	if idempotencyKey == "" {
+		idempotencyKey = uuid.NewString()
+	}
+	now := time.Now().UTC()
+	decision := &model.ModerationDecision{
+		ID:              uuid.New(),
+		CaseID:          caseItem.ID,
+		DecisionType:    input.Decision,
+		SourceRevision:  caseItem.SourceRevision,
+		ReasonCodes:     reasonCodes,
+		PublicComment:   publicComment,
+		InternalComment: internalComment,
+		IdempotencyKey:  idempotencyKey,
+		DecidedBy:       input.Actor.ID,
+		ApplyStatus:     enum.ModerationApplyPending,
+		CreatedAt:       now,
+	}
+	if err = u.repo.CreateDecision(ctx, decision); err != nil {
+		if errors.Is(err, ErrDuplicateDecision) {
+			return u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
+		}
+		return nil, err
+	}
+	clientInput := port.GuideApplicationDecisionInput{
+		GuideApplicationID: caseItem.TargetID,
+		ActorStaffID:       input.Actor.ID,
+		ReasonCodes:        decision.ReasonCodes,
+		PublicComment:      decision.PublicComment,
+		IdempotencyKey:     idempotencyKey,
+		RequestID:          input.RequestMetadata.RequestID,
+	}
+	var updated *model.GuideApplicationModerationItem
+	var raw []byte
+	switch input.Decision {
+	case enum.ModerationDecisionApprove:
+		updated, raw, err = u.guide.Approve(ctx, clientInput)
+	case enum.ModerationDecisionReject, enum.ModerationDecisionRequestChanges:
+		updated, raw, err = u.guide.Reject(ctx, clientInput)
+	case enum.ModerationDecisionRevoke:
+		updated, raw, err = u.guide.Revoke(ctx, clientInput)
+	default:
+		return nil, ErrInvalidInput
+	}
+	if err != nil {
+		_ = u.repo.MarkDecisionFailed(ctx, decision.ID, errorResponseJSON(err), now)
+		u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.apply_failed", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType, "error": err.Error()})
+		return nil, err
+	}
+	if err = u.repo.MarkDecisionApplied(ctx, decision.ID, raw, now); err != nil {
+		return nil, err
+	}
+	if err = u.repo.SupersedeAppliedDecisions(ctx, caseItem.ID, caseItem.SourceRevision, decision.ID, now); err != nil {
+		return nil, err
+	}
+	status := enum.ModerationCaseStatusApproved
+	if input.Decision == enum.ModerationDecisionRevoke {
+		status = enum.ModerationCaseStatusRevoked
+	} else if input.Decision != enum.ModerationDecisionApprove {
+		status = enum.ModerationCaseStatusRejected
+	}
+	if err = u.repo.UpdateCaseStatus(ctx, caseItem.ID, status, &now, now); err != nil {
+		return nil, err
+	}
+	u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.applied", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType})
+	detail, err := u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
+	if err != nil {
+		return nil, err
+	}
+	detail.GuideApplication = updated
+	return detail, nil
+}
+
+func (u *ModerationUseCase) RevokeActiveGuide(ctx context.Context, input RevokeActiveGuideInput) (*model.GuideApplicationModerationItem, error) {
+	if input.Actor == nil || !input.Actor.HasPermission(enum.PermissionGuideModerate) {
+		return nil, ErrPermissionDenied
+	}
+	if input.GuideProfileID == uuid.Nil {
+		return nil, ErrInvalidInput
+	}
+	reasonCodes := normalizeReasonCodes(input.ReasonCodes)
+	publicComment := strings.TrimSpace(input.PublicComment)
+	internalComment := strings.TrimSpace(input.InternalComment)
+	if len(reasonCodes) == 0 || publicComment == "" || internalComment == "" {
+		return nil, ErrInvalidInput
+	}
+	idempotencyKey := strings.TrimSpace(input.IdempotencyKey)
+	if idempotencyKey == "" {
+		idempotencyKey = uuid.NewString()
+	}
+	clientInput := port.GuideProfileDecisionInput{
+		GuideProfileID: input.GuideProfileID,
+		ActorStaffID:   input.Actor.ID,
+		ReasonCodes:    reasonCodes,
+		PublicComment:  publicComment,
+		IdempotencyKey: idempotencyKey,
+		RequestID:      input.RequestMetadata.RequestID,
+	}
+	item, _, err := u.guide.RevokeProfile(ctx, clientInput)
+	if err != nil {
+		u.appendGuideProfileAudit(ctx, input.Actor.ID, "guide.status.revoke_failed", input.GuideProfileID, input.RequestMetadata, map[string]any{"reasonCodes": reasonCodes, "error": err.Error()})
+		return nil, err
+	}
+	u.appendGuideProfileAudit(ctx, input.Actor.ID, "guide.status.revoked", input.GuideProfileID, input.RequestMetadata, map[string]any{"reasonCodes": reasonCodes, "internalComment": internalComment})
+	return item, nil
+}
+
 func requiresPublicModerationComment(decision enum.ModerationDecisionType) bool {
 	return decision == enum.ModerationDecisionReject ||
+		decision == enum.ModerationDecisionRevoke ||
 		decision == enum.ModerationDecisionRequestChanges
 }
 
@@ -396,6 +569,35 @@ func (u *ModerationUseCase) appendModerationAudit(
 		Action:        action,
 		EntityType:    "moderation_case",
 		EntityID:      &caseID,
+		RequestID:     strings.TrimSpace(meta.RequestID),
+		IPAddressHash: HashPassiveIdentifier(meta.IPAddress),
+		UserAgentHash: HashPassiveIdentifier(meta.UserAgent),
+		Metadata:      metadataJSON,
+		CreatedAt:     time.Now().UTC(),
+	})
+}
+
+func (u *ModerationUseCase) appendGuideProfileAudit(
+	ctx context.Context,
+	actorID uuid.UUID,
+	action string,
+	guideProfileID uuid.UUID,
+	meta RequestMetadata,
+	metadata map[string]any,
+) {
+	if u.audit == nil {
+		return
+	}
+	var metadataJSON []byte
+	if metadata != nil {
+		metadataJSON, _ = json.Marshal(metadata)
+	}
+	_ = u.audit.Append(ctx, &model.AuditEvent{
+		ID:            uuid.New(),
+		ActorStaffID:  &actorID,
+		Action:        action,
+		EntityType:    "guide_profile",
+		EntityID:      &guideProfileID,
 		RequestID:     strings.TrimSpace(meta.RequestID),
 		IPAddressHash: HashPassiveIdentifier(meta.IPAddress),
 		UserAgentHash: HashPassiveIdentifier(meta.UserAgent),

@@ -25,6 +25,7 @@ const (
 	UserService_UpdateUserProfile_FullMethodName               = "/user.v1.UserService/UpdateUserProfile"
 	UserService_UpdateUserSettings_FullMethodName              = "/user.v1.UserService/UpdateUserSettings"
 	UserService_GrantUserRole_FullMethodName                   = "/user.v1.UserService/GrantUserRole"
+	UserService_RevokeUserRole_FullMethodName                  = "/user.v1.UserService/RevokeUserRole"
 	UserService_ListPublicProfiles_FullMethodName              = "/user.v1.UserService/ListPublicProfiles"
 	UserService_GetPublicProfilesByUserIds_FullMethodName      = "/user.v1.UserService/GetPublicProfilesByUserIds"
 	UserService_ListPublicUserIdsByCountryCodes_FullMethodName = "/user.v1.UserService/ListPublicUserIdsByCountryCodes"
@@ -42,6 +43,7 @@ type UserServiceClient interface {
 	UpdateUserProfile(ctx context.Context, in *UpdateUserProfileRequest, opts ...grpc.CallOption) (*UpdateUserProfileResponse, error)
 	UpdateUserSettings(ctx context.Context, in *UpdateUserSettingsRequest, opts ...grpc.CallOption) (*UpdateUserSettingsResponse, error)
 	GrantUserRole(ctx context.Context, in *GrantUserRoleRequest, opts ...grpc.CallOption) (*GrantUserRoleResponse, error)
+	RevokeUserRole(ctx context.Context, in *RevokeUserRoleRequest, opts ...grpc.CallOption) (*RevokeUserRoleResponse, error)
 	ListPublicProfiles(ctx context.Context, in *ListPublicProfilesRequest, opts ...grpc.CallOption) (*ListPublicProfilesResponse, error)
 	GetPublicProfilesByUserIds(ctx context.Context, in *GetPublicProfilesByUserIdsRequest, opts ...grpc.CallOption) (*GetPublicProfilesByUserIdsResponse, error)
 	ListPublicUserIdsByCountryCodes(ctx context.Context, in *ListPublicUserIdsByCountryCodesRequest, opts ...grpc.CallOption) (*ListPublicUserIdsByCountryCodesResponse, error)
@@ -117,6 +119,16 @@ func (c *userServiceClient) GrantUserRole(ctx context.Context, in *GrantUserRole
 	return out, nil
 }
 
+func (c *userServiceClient) RevokeUserRole(ctx context.Context, in *RevokeUserRoleRequest, opts ...grpc.CallOption) (*RevokeUserRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeUserRoleResponse)
+	err := c.cc.Invoke(ctx, UserService_RevokeUserRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) ListPublicProfiles(ctx context.Context, in *ListPublicProfilesRequest, opts ...grpc.CallOption) (*ListPublicProfilesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPublicProfilesResponse)
@@ -177,6 +189,7 @@ type UserServiceServer interface {
 	UpdateUserProfile(context.Context, *UpdateUserProfileRequest) (*UpdateUserProfileResponse, error)
 	UpdateUserSettings(context.Context, *UpdateUserSettingsRequest) (*UpdateUserSettingsResponse, error)
 	GrantUserRole(context.Context, *GrantUserRoleRequest) (*GrantUserRoleResponse, error)
+	RevokeUserRole(context.Context, *RevokeUserRoleRequest) (*RevokeUserRoleResponse, error)
 	ListPublicProfiles(context.Context, *ListPublicProfilesRequest) (*ListPublicProfilesResponse, error)
 	GetPublicProfilesByUserIds(context.Context, *GetPublicProfilesByUserIdsRequest) (*GetPublicProfilesByUserIdsResponse, error)
 	ListPublicUserIdsByCountryCodes(context.Context, *ListPublicUserIdsByCountryCodesRequest) (*ListPublicUserIdsByCountryCodesResponse, error)
@@ -209,6 +222,9 @@ func (UnimplementedUserServiceServer) UpdateUserSettings(context.Context, *Updat
 }
 func (UnimplementedUserServiceServer) GrantUserRole(context.Context, *GrantUserRoleRequest) (*GrantUserRoleResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GrantUserRole not implemented")
+}
+func (UnimplementedUserServiceServer) RevokeUserRole(context.Context, *RevokeUserRoleRequest) (*RevokeUserRoleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeUserRole not implemented")
 }
 func (UnimplementedUserServiceServer) ListPublicProfiles(context.Context, *ListPublicProfilesRequest) (*ListPublicProfilesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPublicProfiles not implemented")
@@ -354,6 +370,24 @@ func _UserService_GrantUserRole_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_RevokeUserRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeUserRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RevokeUserRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RevokeUserRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RevokeUserRole(ctx, req.(*RevokeUserRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_ListPublicProfiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPublicProfilesRequest)
 	if err := dec(in); err != nil {
@@ -474,6 +508,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GrantUserRole",
 			Handler:    _UserService_GrantUserRole_Handler,
+		},
+		{
+			MethodName: "RevokeUserRole",
+			Handler:    _UserService_RevokeUserRole_Handler,
 		},
 		{
 			MethodName: "ListPublicProfiles",

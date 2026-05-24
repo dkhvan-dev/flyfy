@@ -697,6 +697,16 @@ func (u *ExcursionUseCase) ArchiveExcursion(ctx context.Context, excursionID uui
 	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
 }
 
+func (u *ExcursionUseCase) ArchiveGuideExcursionOffers(ctx context.Context, guideUserID uuid.UUID) error {
+	if guideUserID == uuid.Nil {
+		return ErrGuideNotAllowed
+	}
+	if err := u.repo.ArchiveGuideExcursionOffers(ctx, guideUserID); err != nil {
+		return fmt.Errorf("archive guide excursion offers: %w", err)
+	}
+	return nil
+}
+
 func (u *ExcursionUseCase) DeleteExcursion(ctx context.Context, excursionID uuid.UUID, actorUserID uuid.UUID) error {
 	item, relations, err := u.getOwnedExcursionWithRelations(ctx, excursionID, actorUserID)
 	if err != nil {

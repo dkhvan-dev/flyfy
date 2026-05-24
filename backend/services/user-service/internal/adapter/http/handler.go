@@ -935,6 +935,10 @@ func (h *Handler) handleAdminActions(w http.ResponseWriter, r *http.Request) {
 		h.GrantRole(w, r, userID)
 		return
 	}
+	if r.Method == http.MethodDelete {
+		h.RevokeRole(w, r, userID)
+		return
+	}
 
 	writeError(w, http.StatusNotFound, "not found")
 }
@@ -964,6 +968,28 @@ func (h *Handler) GrantRole(w http.ResponseWriter, r *http.Request, userID uuid.
 			writeError(w, http.StatusConflict, err.Error())
 		default:
 			writeError(w, http.StatusInternalServerError, "failed to grant role")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) RevokeRole(w http.ResponseWriter, r *http.Request, userID uuid.UUID) {
+	var req dto.GrantRoleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	role := enum.SystemRole(strings.TrimSpace(req.Role))
+	if err := h.useCase.RevokeRole(r.Context(), userID, role); err != nil {
+		switch {
+		case errors.Is(err, app.ErrInvalidUserID),
+			errors.Is(err, model.ErrInvalidSystemRole):
+			writeError(w, http.StatusBadRequest, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to revoke role")
 		}
 		return
 	}

@@ -45,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _requestedJoinedActivitiesForUserId;
   String? _requestedTopAttractionsLocale;
   String? _guideBadgeUserId;
+  bool _isGuideBadgeLoading = false;
+  int _guideBadgeRequestVersion = 0;
   List<AttractionVm> _topAttractions = const [];
   List<StoryVm> _topStories = const [];
   bool _topAttractionsLoading = true;
@@ -53,6 +55,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _topStoriesLoadFailed = false;
   bool _topStoriesRequestStarted = false;
   bool _showGuideBadge = false;
+  bool _isGuideStatusRevoked = false;
+  bool _suppressGuideFallback = false;
 
   static const _promoYachtImageUrl =
       'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=900&q=80';
@@ -613,36 +617,58 @@ class _HomeScreenState extends State<HomeScreen> {
     await localeProvider.setLocale(selectedCode);
   }
 
-  void _ensureGuideBadgeState(String? currentUserId) {
+  void _ensureGuideBadgeState(String? currentUserId, {bool force = false}) {
     final normalizedUserId = (currentUserId ?? '').trim();
     if (normalizedUserId.isEmpty) {
       _guideBadgeUserId = null;
+      _isGuideBadgeLoading = false;
+      _guideBadgeRequestVersion++;
       _showGuideBadge = false;
+      _isGuideStatusRevoked = false;
+      _suppressGuideFallback = false;
       return;
     }
 
-    if (_guideBadgeUserId == normalizedUserId) {
+    final isNewUser = _guideBadgeUserId != normalizedUserId;
+    if (!force && !isNewUser) {
       return;
     }
+    if (_isGuideBadgeLoading && !isNewUser) return;
 
     _guideBadgeUserId = normalizedUserId;
-    _showGuideBadge = false;
+    _isGuideBadgeLoading = true;
+    final requestVersion = ++_guideBadgeRequestVersion;
+    if (isNewUser) {
+      _showGuideBadge = false;
+      _isGuideStatusRevoked = false;
+      _suppressGuideFallback = false;
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         final guide = await _guideApi.getMyGuideProfileOrNull();
-        if (!mounted || _guideBadgeUserId != normalizedUserId) {
+        if (!mounted ||
+            _guideBadgeUserId != normalizedUserId ||
+            _guideBadgeRequestVersion != requestVersion) {
           return;
         }
         setState(() {
+          _isGuideBadgeLoading = false;
           _showGuideBadge = guide?.isVerified == true;
+          _isGuideStatusRevoked = guide?.isRevoked == true;
+          _suppressGuideFallback = guide != null && !guide.isVerified;
         });
       } catch (_) {
-        if (!mounted || _guideBadgeUserId != normalizedUserId) {
+        if (!mounted ||
+            _guideBadgeUserId != normalizedUserId ||
+            _guideBadgeRequestVersion != requestVersion) {
           return;
         }
         setState(() {
+          _isGuideBadgeLoading = false;
           _showGuideBadge = false;
+          _isGuideStatusRevoked = false;
+          _suppressGuideFallback = false;
         });
       }
     });
@@ -757,10 +783,16 @@ class _HomeScreenState extends State<HomeScreen> {
       drawerEnableOpenDragGesture: true,
       drawerEdgeDragWidth: 28,
       drawerScrimColor: Colors.black.withValues(alpha: 0.42),
+      onDrawerChanged: (isOpened) {
+        if (!isOpened) return;
+        _ensureGuideBadgeState(currentUserId, force: true);
+      },
       drawer: AppSideDrawer(
         l10n: l10n,
         isLoggedIn: isLoggedIn,
         showGuideBadge: _showGuideBadge,
+        isGuideStatusRevoked: _isGuideStatusRevoked,
+        suppressGuideFallback: _suppressGuideFallback,
         profile: profile,
         location: location,
         languageLabel: _resolveLanguageLabel(

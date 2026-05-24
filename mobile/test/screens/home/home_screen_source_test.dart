@@ -152,6 +152,32 @@ void main() {
     expect(createActivitySource, isNot(contains('homeLocationProvider')));
   });
 
+  test('drawer opening refreshes verified guide badge state', () async {
+    final source =
+        await File('lib/screens/home/home_screen.dart').readAsString();
+
+    final ensureStart = source.indexOf('void _ensureGuideBadgeState(');
+    final buildStart = source.indexOf('@override\n  Widget build');
+    final scaffoldStart = source.indexOf('return Scaffold(', buildStart);
+    final scaffoldEnd = source.indexOf('drawer: AppSideDrawer(', scaffoldStart);
+
+    expect(ensureStart, isNonNegative);
+    expect(buildStart, greaterThan(ensureStart));
+    expect(scaffoldStart, greaterThan(buildStart));
+    expect(scaffoldEnd, greaterThan(scaffoldStart));
+
+    final ensureSource = source.substring(ensureStart, buildStart);
+    final scaffoldSource = source.substring(scaffoldStart, scaffoldEnd);
+
+    expect(ensureSource, contains('{bool force = false}'));
+    expect(ensureSource,
+        contains('final isNewUser = _guideBadgeUserId != normalizedUserId'));
+    expect(ensureSource, contains('if (!force && !isNewUser)'));
+    expect(scaffoldSource, contains('onDrawerChanged:'));
+    expect(scaffoldSource,
+        contains('_ensureGuideBadgeState(currentUserId, force: true)'));
+  });
+
   test('promo carousel is passive and sizes cards from content metrics',
       () async {
     final source =

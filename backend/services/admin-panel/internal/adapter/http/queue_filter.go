@@ -26,6 +26,7 @@ var allModerationCaseStatuses = []enum.ModerationCaseStatus{
 	enum.ModerationCaseStatusEscalated,
 	enum.ModerationCaseStatusApproved,
 	enum.ModerationCaseStatusRejected,
+	enum.ModerationCaseStatusRevoked,
 	enum.ModerationCaseStatusChangesRequested,
 	enum.ModerationCaseStatusCancelled,
 }
@@ -82,6 +83,8 @@ func normalizeExcursionQueueStatus(value string) string {
 		return "approved"
 	case "rejected":
 		return "rejected"
+	case "revoked":
+		return "revoked"
 	case "changes_requested":
 		return "changes_requested"
 	case "cancelled":
@@ -105,6 +108,8 @@ func statusesForExcursionQueueStatus(status string) []enum.ModerationCaseStatus 
 		return []enum.ModerationCaseStatus{enum.ModerationCaseStatusApproved}
 	case "rejected":
 		return []enum.ModerationCaseStatus{enum.ModerationCaseStatusRejected}
+	case "revoked":
+		return []enum.ModerationCaseStatus{enum.ModerationCaseStatusRevoked}
 	case "changes_requested":
 		return []enum.ModerationCaseStatus{enum.ModerationCaseStatusChangesRequested}
 	case "cancelled":

@@ -50,6 +50,7 @@ type UserRepository interface {
 	DeleteFriendship(ctx context.Context, userAID uuid.UUID, userBID uuid.UUID) error
 
 	GrantRole(ctx context.Context, role *model.UserSystemRole) error
+	RevokeRole(ctx context.Context, userID uuid.UUID, role enum.SystemRole) error
 	HasRole(ctx context.Context, userID uuid.UUID, role enum.SystemRole) (bool, error)
 
 	ListPublicProfiles(ctx context.Context, limit int, offset int) ([]*model.UserProfile, error)

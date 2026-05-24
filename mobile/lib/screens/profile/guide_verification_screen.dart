@@ -95,15 +95,14 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
         }
       });
     _birthDate = profile?.birthDate;
-    _birthDateController =
-        TextEditingController(
-          text: _birthDate == null ? '' : _formatBirthDate(_birthDate!),
-        )..addListener(() {
-          _birthDate = _tryParseBirthDate(_birthDateController.text);
-          if (_birthDateError != null && mounted) {
-            setState(() => _birthDateError = null);
-          }
-        });
+    _birthDateController = TextEditingController(
+      text: _birthDate == null ? '' : _formatBirthDate(_birthDate!),
+    )..addListener(() {
+        _birthDate = _tryParseBirthDate(_birthDateController.text);
+        if (_birthDateError != null && mounted) {
+          setState(() => _birthDateError = null);
+        }
+      });
     _countryCode = _normalizeCountryCode(profile?.countryCode) ?? 'KZ';
     _loadExistingApplication();
   }
@@ -156,12 +155,12 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
           _application = application;
           _identityDocumentType =
               identityDoc?.documentType.trim().isNotEmpty == true
-              ? identityDoc!.documentType
-              : _identityDocumentType;
+                  ? identityDoc!.documentType
+                  : _identityDocumentType;
           _professionalDocumentType =
               professionalDoc?.documentType.trim().isNotEmpty == true
-              ? professionalDoc!.documentType
-              : _professionalDocumentType;
+                  ? professionalDoc!.documentType
+                  : _professionalDocumentType;
           _identityDocument = _identityDocument.copyWith(
             fileId: identityDoc?.fileId,
             name: identityDoc == null
@@ -222,8 +221,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
 
     final file = result.files.single;
     final fileName = file.name.trim();
-    final fileBytes =
-        file.bytes ??
+    final fileBytes = file.bytes ??
         (file.path != null ? await File(file.path!).readAsBytes() : null);
     if (!mounted) return;
     final extension = _fileExtension(fileName);
@@ -382,30 +380,26 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                 Flexible(
                   child: ListView(
                     shrinkWrap: true,
-                    children: _countryOptions
-                        .map((item) {
-                          final isSelected = item.code == _countryCode;
-                          return ListTile(
-                            onTap: () =>
-                                Navigator.of(sheetContext).pop(item.code),
-                            title: Text(
-                              item.labelFor(localeCode),
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontWeight: isSelected
-                                    ? FontWeight.w800
-                                    : FontWeight.w600,
-                              ),
-                            ),
-                            trailing: isSelected
-                                ? const Icon(
-                                    Icons.check_circle,
-                                    color: AppColors.accent,
-                                  )
-                                : null,
-                          );
-                        })
-                        .toList(growable: false),
+                    children: _countryOptions.map((item) {
+                      final isSelected = item.code == _countryCode;
+                      return ListTile(
+                        onTap: () => Navigator.of(sheetContext).pop(item.code),
+                        title: Text(
+                          item.labelFor(localeCode),
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight:
+                                isSelected ? FontWeight.w800 : FontWeight.w600,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: AppColors.accent,
+                              )
+                            : null,
+                      );
+                    }).toList(growable: false),
                   ),
                 ),
               ],
@@ -507,18 +501,18 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
   void _scrollToFirstError() {
     final keys = switch (_step) {
       _GuideVerificationStep.identity => [
-        if (_fullNameError != null) _fullNameKey,
-        if (_birthDateError != null) _birthDateKey,
-        if (_countryError != null) _countryKey,
-      ],
+          if (_fullNameError != null) _fullNameKey,
+          if (_birthDateError != null) _birthDateKey,
+          if (_countryError != null) _countryKey,
+        ],
       _GuideVerificationStep.identityDocument => [
-        if (_identityDocumentError != null) _identityDocumentKey,
-        if (_identityConfirmError != null) _identityConfirmKey,
-      ],
+          if (_identityDocumentError != null) _identityDocumentKey,
+          if (_identityConfirmError != null) _identityConfirmKey,
+        ],
       _GuideVerificationStep.professional => [
-        if (_professionalDocumentError != null) _professionalDocumentKey,
-        if (_professionalConfirmError != null) _professionalConfirmKey,
-      ],
+          if (_professionalDocumentError != null) _professionalDocumentKey,
+          if (_professionalConfirmError != null) _professionalConfirmKey,
+        ],
       _GuideVerificationStep.review => [if (_termsError != null) _termsKey],
     };
 
@@ -663,6 +657,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
     final application = _application;
     final isPending = application?.verificationRequest?.isPending == true;
     final isVerified = application?.profile.isVerified == true;
+    final isRevoked = application?.profile.isRevoked == true;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -672,8 +667,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
             child: isPending
                 ? _StatusScreen(
                     title: l10n.guideVerificationPendingTitle,
-                    subtitle:
-                        application?.verificationRequest?.reviewComment
+                    subtitle: application?.verificationRequest?.reviewComment
                                 ?.trim()
                                 .isNotEmpty ==
                             true
@@ -681,13 +675,26 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                         : l10n.guideVerificationPendingSubtitle,
                     buttonLabel: l10n.guideVerificationBackToProfile,
                   )
-                : isVerified
-                ? _StatusScreen(
-                    title: l10n.guideVerificationActiveTitle,
-                    subtitle: l10n.guideVerificationActiveSubtitle,
-                    buttonLabel: l10n.guideVerificationBackToProfile,
-                  )
-                : _buildWizard(context),
+                : isRevoked
+                    ? _StatusScreen(
+                        title: l10n.guideVerificationRevokedTitle,
+                        subtitle: application?.profile.statusReason
+                                    ?.trim()
+                                    .isNotEmpty ==
+                                true
+                            ? l10n.guideVerificationRevokedSubtitleWithReason(
+                                application!.profile.statusReason!.trim(),
+                              )
+                            : l10n.guideVerificationRevokedSubtitle,
+                        buttonLabel: l10n.guideVerificationBackToProfile,
+                      )
+                    : isVerified
+                        ? _StatusScreen(
+                            title: l10n.guideVerificationActiveTitle,
+                            subtitle: l10n.guideVerificationActiveSubtitle,
+                            buttonLabel: l10n.guideVerificationBackToProfile,
+                          )
+                        : _buildWizard(context),
           ),
         ),
       ),
@@ -765,8 +772,8 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
                 _GuideVerificationStep.identityDocument =>
                   _buildIdentityDocumentStep(context),
                 _GuideVerificationStep.professional => _buildProfessionalStep(
-                  context,
-                ),
+                    context,
+                  ),
                 _GuideVerificationStep.review => _buildReviewStep(context),
               },
             ],
@@ -913,7 +920,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
           icon: Icons.photo_camera_outlined,
           title: _identityDocument.hasFile
               ? (_identityDocument.name ??
-                    l10n.guideVerificationTapToCapturePassport)
+                  l10n.guideVerificationTapToCapturePassport)
               : l10n.guideVerificationTapToCapturePassport,
           subtitle: l10n.guideVerificationFileFormatsShort,
           buttonLabel: l10n.guideVerificationChooseFile,
@@ -977,7 +984,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
           icon: Icons.cloud_upload_outlined,
           title: _professionalDocument.hasFile
               ? (_professionalDocument.name ??
-                    l10n.guideVerificationUploadLicenseTitle)
+                  l10n.guideVerificationUploadLicenseTitle)
               : l10n.guideVerificationUploadLicenseTitle,
           subtitle: l10n.guideVerificationUploadLicenseSubtitle,
           buttonLabel: l10n.guideVerificationChooseFile,
@@ -1009,7 +1016,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
             icon: Icons.medical_services_outlined,
             title: _firstAidDocument.hasFile
                 ? (_firstAidDocument.name ??
-                      l10n.guideVerificationUploadFirstAidTitle)
+                    l10n.guideVerificationUploadFirstAidTitle)
                 : l10n.guideVerificationUploadFirstAidTitle,
             subtitle: l10n.guideVerificationUploadFirstAidSubtitle,
             buttonLabel: l10n.guideVerificationChooseFile,
@@ -1037,7 +1044,7 @@ class _GuideVerificationScreenState extends State<GuideVerificationScreen> {
             icon: Icons.translate_outlined,
             title: _languageCertificateDocument.hasFile
                 ? (_languageCertificateDocument.name ??
-                      l10n.guideVerificationUploadLanguageTitle)
+                    l10n.guideVerificationUploadLanguageTitle)
                 : l10n.guideVerificationUploadLanguageTitle,
             subtitle: l10n.guideVerificationUploadLanguageSubtitle,
             buttonLabel: l10n.guideVerificationChooseFile,
@@ -1514,9 +1521,8 @@ class _HeroBanner extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: compact
-                    ? MainAxisAlignment.end
-                    : MainAxisAlignment.start,
+                mainAxisAlignment:
+                    compact ? MainAxisAlignment.end : MainAxisAlignment.start,
                 children: [
                   Text(
                     title,
@@ -2561,7 +2567,8 @@ class _ReviewDocumentCard extends StatelessWidget {
                     Text(
                       AppLocalizations.of(
                         context,
-                      )!.guideVerificationVerifiedUpload,
+                      )!
+                          .guideVerificationVerifiedUpload,
                       style: TextStyle(
                         color: profileTextMuted,
                         fontSize: profileScaled(context, 12, min: 11, max: 12),

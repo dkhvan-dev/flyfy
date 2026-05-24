@@ -136,6 +136,61 @@ func (r *PGModerationRepository) CancelStaleActivityCases(ctx context.Context, a
 	return nil
 }
 
+func (r *PGModerationRepository) UpsertGuideApplicationCase(ctx context.Context, item model.GuideApplicationModerationItem) (*model.ModerationCase, error) {
+	now := time.Now().UTC()
+	snapshot, err := json.Marshal(item)
+	if err != nil {
+		return nil, err
+	}
+	caseID := uuid.New()
+	row := r.pool.QueryRow(ctx, `
+		INSERT INTO moderation_cases (
+			id, target_type, target_id, source_service, source_revision, status,
+			priority, snapshot, metadata, opened_at, created_at, updated_at
+		)
+		VALUES ($1, 'GUIDE_APPLICATION', $2, 'guide-service', $3, 'OPEN',
+		        $4, $5, '{}'::jsonb, $6, $6, $6)
+		ON CONFLICT (target_type, target_id, source_revision)
+		    WHERE status IN ('OPEN', 'IN_REVIEW', 'ESCALATED')
+		DO UPDATE SET
+		    snapshot = EXCLUDED.snapshot,
+		    priority = GREATEST(moderation_cases.priority, EXCLUDED.priority),
+		    updated_at = EXCLUDED.updated_at
+		RETURNING id, target_type, target_id, source_service, source_revision, status,
+		          priority, reason, snapshot, metadata, assigned_admin_id, opened_by,
+		          opened_at, due_at, resolved_at, lock_version, created_at, updated_at
+	`, caseID, item.ID, item.Revision, guideApplicationModerationPriority(item), string(snapshot), now)
+	return scanModerationCase(row)
+}
+
+func (r *PGModerationRepository) CancelStaleGuideApplicationCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error {
+	ids := make([]uuid.UUID, 0, len(activeTargetIDs))
+	seen := make(map[uuid.UUID]struct{}, len(activeTargetIDs))
+	for _, id := range activeTargetIDs {
+		if id == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	_, err := r.pool.Exec(ctx, `
+		UPDATE moderation_cases
+		SET status = 'CANCELLED',
+		    resolved_at = $1,
+		    updated_at = $1
+		WHERE target_type = 'GUIDE_APPLICATION'
+		  AND status IN ('OPEN', 'IN_REVIEW', 'ESCALATED')
+		  AND NOT (target_id = ANY($2::uuid[]))
+	`, now, ids)
+	if err != nil {
+		return fmt.Errorf("cancel stale guide application cases: %w", err)
+	}
+	return nil
+}
+
 func (r *PGModerationRepository) ListCases(ctx context.Context, filter model.ModerationQueueFilter) ([]*model.ModerationCase, error) {
 	query, args := buildListCasesQuery(filter)
 	rows, err := r.pool.Query(ctx, query, args...)
@@ -186,7 +241,9 @@ func buildListCasesQuery(filter model.ModerationQueueFilter) (string, []any) {
 	if city := strings.TrimSpace(strings.ToLower(filter.City)); city != "" {
 		parts = append(parts, " AND ("+
 			"LOWER(COALESCE(snapshot->>'DepartureCityID', '')) = "+addArg(city)+
-			" OR LOWER(COALESCE(snapshot->>'CityName', '')) LIKE "+addArg("%"+escapeLike(city)+"%")+" ESCAPE '\\')")
+			" OR LOWER(COALESCE(snapshot->>'CityName', '')) LIKE "+addArg("%"+escapeLike(city)+"%")+" ESCAPE '\\'"+
+			" OR LOWER(COALESCE(snapshot->>'BaseCityID', '')) = "+addArg(city)+
+			" OR LOWER(COALESCE(snapshot->>'BaseCityName', '')) LIKE "+addArg("%"+escapeLike(city)+"%")+" ESCAPE '\\')")
 	}
 	if signal := strings.TrimSpace(filter.Signal); signal != "" {
 		parts = append(parts, " AND COALESCE(snapshot->'ModerationReasonCodes', '[]'::jsonb) ? "+addArg(signal))
@@ -219,6 +276,7 @@ func moderationRiskScoreSQL() string {
 	return "CASE " +
 		"WHEN jsonb_typeof(snapshot->'PublishRiskScore') = 'number' THEN (snapshot->>'PublishRiskScore')::int " +
 		"WHEN jsonb_typeof(snapshot->'ModerationRiskScore') = 'number' THEN (snapshot->>'ModerationRiskScore')::int " +
+		"WHEN jsonb_typeof(snapshot->'RiskScore') = 'number' THEN (snapshot->>'RiskScore')::int " +
 		"ELSE 0 END"
 }
 
@@ -238,7 +296,15 @@ func moderationSearchSQL() string {
 		"COALESCE(snapshot->>'GuideLastName', '') || ' ' || " +
 		"COALESCE(snapshot->>'HostDisplayName', '') || ' ' || " +
 		"COALESCE(snapshot->>'CategorySlug', '') || ' ' || " +
-		"COALESCE(snapshot->>'AddressText', ''))"
+		"COALESCE(snapshot->>'AddressText', '') || ' ' || " +
+		"COALESCE(snapshot->>'GuideDisplayName', '') || ' ' || " +
+		"COALESCE(snapshot->>'FirstName', '') || ' ' || " +
+		"COALESCE(snapshot->>'LastName', '') || ' ' || " +
+		"COALESCE(snapshot->>'Headline', '') || ' ' || " +
+		"COALESCE(snapshot->>'About', '') || ' ' || " +
+		"COALESCE(snapshot->>'Languages', '') || ' ' || " +
+		"COALESCE(snapshot->>'Specializations', '') || ' ' || " +
+		"COALESCE(snapshot->>'Documents', ''))"
 }
 
 func moderationQueueOrderBy(sort model.ModerationQueueSort) string {
@@ -250,7 +316,7 @@ func moderationQueueOrderBy(sort model.ModerationQueueSort) string {
 	case model.ModerationQueueSortRiskDesc:
 		return moderationRiskScoreSQL() + " DESC, priority DESC, opened_at ASC"
 	case model.ModerationQueueSortSubmittedDesc:
-		return "COALESCE(NULLIF(snapshot->>'SubmittedForReviewAt', '')::timestamptz, NULLIF(snapshot->>'ModerationTriggeredAt', '')::timestamptz) DESC NULLS LAST, opened_at DESC"
+		return "COALESCE(NULLIF(snapshot->>'SubmittedForReviewAt', '')::timestamptz, NULLIF(snapshot->>'ModerationTriggeredAt', '')::timestamptz, NULLIF(snapshot->>'SubmittedAt', '')::timestamptz) DESC NULLS LAST, opened_at DESC"
 	case model.ModerationQueueSortPriorityDesc:
 		fallthrough
 	default:
@@ -395,6 +461,19 @@ func activityModerationPriority(item model.ActivityModerationItem) int {
 		return 0
 	}
 	return item.ModerationRiskScore
+}
+
+func guideApplicationModerationPriority(item model.GuideApplicationModerationItem) int {
+	if item.RiskScore > 100 {
+		return 100
+	}
+	if item.RiskScore > 0 {
+		return item.RiskScore
+	}
+	if len(item.Documents) == 0 {
+		return 80
+	}
+	return 50
 }
 
 func scanModerationCase(row staffScanner) (*model.ModerationCase, error) {
