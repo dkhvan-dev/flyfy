@@ -1,0 +1,26 @@
+{{define "dashboard/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "dashboard.eyebrow"}}</p>
+      <h1>{{t .Locale "dashboard.title"}}</h1>
+    </div>
+  </div>
+  <div class="grid three">
+    <a class="metric card" href="/admin/moderation/excursions">
+      <span>{{t .Locale "dashboard.excursionModeration"}}</span>
+      <strong>{{t .Locale "dashboard.queue"}}</strong>
+    </a>
+    <a class="metric card" href="/admin/staff">
+      <span>{{t .Locale "dashboard.accessControl"}}</span>
+      <strong>{{t .Locale "dashboard.staff"}}</strong>
+    </a>
+    <a class="metric card" href="/admin/audit">
+      <span>{{t .Locale "dashboard.compliance"}}</span>
+      <strong>{{t .Locale "dashboard.auditLog"}}</strong>
+    </a>
+  </div>
+</section>
+{{template "pageEnd" .}}
+{{end}}

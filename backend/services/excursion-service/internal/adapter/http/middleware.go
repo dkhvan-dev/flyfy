@@ -10,6 +10,8 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/config"
 )
 
+const headerInternalServiceToken = "X-Internal-Service-Token"
+
 func Chain(cfg *config.Config, next http.Handler) http.Handler {
 	return requestIDMiddleware(cfg,
 		authContextMiddleware(cfg,
@@ -37,6 +39,10 @@ func requestIDMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		if hasTrustedAuthHeaders(cfg, r) && !hasValidInternalServiceToken(cfg, r) {
+			writeError(w, http.StatusUnauthorized, "invalid trusted auth headers")
+			return
+		}
 		if userID := strings.TrimSpace(r.Header.Get(cfg.Security.TrustedGatewayHeaderUserID)); userID != "" {
 			ctx = withUserID(ctx, userID)
 		}
@@ -55,6 +61,20 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func hasTrustedAuthHeaders(cfg *config.Config, r *http.Request) bool {
+	return strings.TrimSpace(r.Header.Get(cfg.Security.TrustedGatewayHeaderUserID)) != "" ||
+		strings.TrimSpace(r.Header.Get(cfg.Security.TrustedGatewayHeaderSub)) != "" ||
+		strings.TrimSpace(r.Header.Get(cfg.Security.TrustedGatewayHeaderRoles)) != ""
+}
+
+func hasValidInternalServiceToken(cfg *config.Config, r *http.Request) bool {
+	expected := strings.TrimSpace(cfg.Security.InternalServiceToken)
+	if expected == "" {
+		return false
+	}
+	return strings.TrimSpace(r.Header.Get(headerInternalServiceToken)) == expected
 }
 
 func auditLoggingMiddleware(next http.Handler) http.Handler {

@@ -19,6 +19,7 @@ import (
 	grpcadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/grpc"
 	guideadapter "github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/adapter/guide"
 	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/config"
+	"github.com/dkhvan-dev/flyfy/backend/services/excursion-service/internal/domain/port"
 )
 
 func main() {
@@ -113,21 +114,33 @@ func backfill(
 			}
 
 			displayName := strings.TrimSpace(permission.DisplayName)
+			nickname := strings.TrimSpace(permission.Nickname)
+			firstName := strings.TrimSpace(permission.FirstName)
+			lastName := strings.TrimSpace(permission.LastName)
 			searchText := strings.TrimSpace(permission.GuideSearchText)
 			if searchText == "" {
-				searchText = strings.TrimSpace(displayName + " " + guideUserID.String())
+				searchText = strings.TrimSpace(strings.Join([]string{
+					displayName,
+					nickname,
+					firstName,
+					lastName,
+					guideUserID.String(),
+				}, " "))
 			}
 
 			if dryRun {
 				log.Info().
 					Stringer("guideUserID", guideUserID).
 					Str("displayName", displayName).
+					Str("nickname", nickname).
+					Str("firstName", firstName).
+					Str("lastName", lastName).
 					Str("searchText", searchText).
 					Msg("would update guide search snapshot")
 				continue
 			}
 
-			rowsUpdated, err := updateGuideSnapshot(ctx, pool, guideUserID, displayName, searchText)
+			rowsUpdated, err := updateGuideSnapshot(ctx, pool, guideUserID, permission, searchText)
 			if err != nil {
 				failed++
 				log.Warn().Err(err).Stringer("guideUserID", guideUserID).Msg("update guide snapshot")
@@ -145,11 +158,25 @@ func loadGuideUserIDs(
 	limit int,
 ) ([]uuid.UUID, error) {
 	const query = `
-		SELECT DISTINCT guide_user_id
-		FROM excursion_offers
-		WHERE deleted_at IS NULL
-		  AND guide_user_id > $1
-		  AND (guide_display_name = '' OR guide_search_text = '')
+		SELECT guide_user_id
+		FROM (
+			SELECT DISTINCT guide_user_id
+			FROM excursion_offers
+			WHERE deleted_at IS NULL
+			  AND (guide_display_name = '' OR guide_search_text = '')
+			UNION
+			SELECT DISTINCT guide_user_id
+			FROM excursions
+			WHERE deleted_at IS NULL
+			  AND (
+				guide_display_name = ''
+				OR guide_nickname = ''
+				OR guide_first_name = ''
+				OR guide_last_name = ''
+				OR guide_search_text = ''
+			  )
+		) AS candidates
+		WHERE guide_user_id > $1
 		ORDER BY guide_user_id ASC
 		LIMIT $2
 	`
@@ -174,10 +201,14 @@ func updateGuideSnapshot(
 	ctx context.Context,
 	pool *pgxpool.Pool,
 	guideUserID uuid.UUID,
-	displayName string,
+	permission port.GuideExcursionPermission,
 	searchText string,
 ) (int64, error) {
-	const query = `
+	displayName := strings.TrimSpace(permission.DisplayName)
+	nickname := strings.TrimSpace(permission.Nickname)
+	firstName := strings.TrimSpace(permission.FirstName)
+	lastName := strings.TrimSpace(permission.LastName)
+	const offerQuery = `
 		UPDATE excursion_offers
 		SET guide_display_name = $2,
 		    guide_search_text = $3
@@ -185,11 +216,50 @@ func updateGuideSnapshot(
 		  AND deleted_at IS NULL
 		  AND (guide_display_name IS DISTINCT FROM $2 OR guide_search_text IS DISTINCT FROM $3)
 	`
-	tag, err := pool.Exec(ctx, query, guideUserID, displayName, searchText)
+	offerTag, err := pool.Exec(ctx, offerQuery, guideUserID, displayName, searchText)
 	if err != nil {
 		return 0, err
 	}
-	return tag.RowsAffected(), nil
+	const excursionQuery = `
+		UPDATE excursions
+		SET guide_rating_avg = $2,
+		    guide_reviews_count = $3,
+		    guide_experience_years = $4,
+		    guide_display_name = $5,
+		    guide_nickname = $6,
+		    guide_first_name = $7,
+		    guide_last_name = $8,
+		    guide_search_text = $9
+		WHERE guide_user_id = $1
+		  AND deleted_at IS NULL
+		  AND (
+			guide_rating_avg IS DISTINCT FROM $2
+			OR guide_reviews_count IS DISTINCT FROM $3
+			OR guide_experience_years IS DISTINCT FROM $4
+			OR guide_display_name IS DISTINCT FROM $5
+			OR guide_nickname IS DISTINCT FROM $6
+			OR guide_first_name IS DISTINCT FROM $7
+			OR guide_last_name IS DISTINCT FROM $8
+			OR guide_search_text IS DISTINCT FROM $9
+		  )
+	`
+	excursionTag, err := pool.Exec(
+		ctx,
+		excursionQuery,
+		guideUserID,
+		permission.RatingAvg,
+		permission.ReviewsCount,
+		permission.ExperienceYears,
+		displayName,
+		nickname,
+		firstName,
+		lastName,
+		searchText,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return offerTag.RowsAffected() + excursionTag.RowsAffected(), nil
 }
 
 func configureLogger(cfg *config.Config) {

@@ -1,0 +1,65 @@
+{{define "staff/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "staff.eyebrow"}}</p>
+      <h1>{{t .Locale "staff.title"}}</h1>
+    </div>
+  </div>
+
+  {{if .Data.TemporaryPassword}}
+    <div class="alert success" role="status">
+      {{t .Locale "staff.tempPassword"}}: <code>{{.Data.TemporaryPassword}}</code>
+    </div>
+  {{end}}
+
+  <form method="post" action="/admin/staff" class="form card">
+    {{csrfField .CSRFToken}}
+    <h2>{{t .Locale "staff.createUser"}}</h2>
+    <label>
+      <span>{{t .Locale "field.email"}}</span>
+      <input name="email" type="email" autocomplete="off" required>
+    </label>
+    <label>
+      <span>{{t .Locale "field.displayName"}}</span>
+      <input name="display_name" autocomplete="off" required>
+    </label>
+    <fieldset class="checks">
+      <legend>{{t .Locale "staff.roles"}}</legend>
+      {{range .Data.AssignableRoles}}
+        <label><input type="checkbox" name="roles" value="{{.}}" {{if eq . "EXCURSION_MODERATOR"}}checked{{end}}> {{roleText $.Locale .}}</label>
+      {{end}}
+    </fieldset>
+    <button class="primary" type="submit">{{t .Locale "action.createUser"}}</button>
+  </form>
+
+  <div class="section-head">
+    <h2>{{t .Locale "staff.list"}}</h2>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>{{t .Locale "table.user"}}</th><th>{{t .Locale "table.status"}}</th><th>{{t .Locale "table.roles"}}</th><th>{{t .Locale "table.lastLogin"}}</th><th>{{t .Locale "table.actions"}}</th></tr>
+      </thead>
+      <tbody>
+        {{range .Data.Staff}}
+          <tr>
+            <td>
+              <strong>{{.DisplayName}}</strong>
+              <span class="muted block">{{.Email}}</span>
+            </td>
+            <td><span class="{{statusClass .Status}}">{{statusText $.Locale .Status}}</span></td>
+            <td>{{range .Roles}}<span class="chip">{{roleText $.Locale .}}</span>{{end}}</td>
+            <td>{{formatTime .LastLoginAt}}</td>
+            <td><a class="button" href="/admin/staff/{{.ID}}/edit">{{t $.Locale "action.edit"}}</a></td>
+          </tr>
+        {{else}}
+          <tr><td colspan="5">{{t $.Locale "staff.noUsers"}}</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{template "pageEnd" .}}
+{{end}}

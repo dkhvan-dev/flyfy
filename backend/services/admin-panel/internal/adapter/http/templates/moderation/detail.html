@@ -1,0 +1,161 @@
+{{define "moderation/detail"}}
+{{template "pageStart" .}}
+{{$detail := .Data.Detail}}
+{{if $detail}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "moderation.case"}} <code>{{shortID $detail.Case.ID}}</code></p>
+      <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else}}{{t .Locale "moderation.excursion"}}{{end}}</h1>
+    </div>
+    <a class="button" href="/admin/moderation/excursions">{{t .Locale "action.backToQueue"}}</a>
+  </div>
+
+  <div class="split">
+    <article class="card detail">
+      <div class="meta-row">
+        <span class="{{statusClass $detail.Case.Status}}">{{statusText .Locale $detail.Case.Status}}</span>
+        <span>{{t .Locale "label.priority"}} {{$detail.Case.Priority}}</span>
+        <span>{{t .Locale "label.revision"}} {{$detail.Case.SourceRevision}}</span>
+      </div>
+      {{with $detail.Excursion}}
+        <dl class="facts">
+          <div><dt>{{t $.Locale "label.status"}}</dt><dd>{{statusText $.Locale .Status}}</dd></div>
+          <div><dt>{{t $.Locale "label.visibility"}}</dt><dd>{{statusText $.Locale .Visibility}}</dd></div>
+          <div>
+            <dt>{{t $.Locale "label.guide"}}</dt>
+            <dd>
+              {{excursionGuidePrimary .}}
+              {{if excursionGuideFullName .}}<span class="muted block">{{excursionGuideFullName .}}</span>{{end}}
+              <span class="muted block">{{t $.Locale "label.trust"}} {{.GuideTrustScore}}</span>
+            </dd>
+          </div>
+          <div><dt>{{t $.Locale "label.riskScore"}}</dt><dd>{{.PublishRiskScore}}</dd></div>
+          <div><dt>{{t $.Locale "label.landmark"}}</dt><dd>{{if excursionAttractions $.Locale .}}{{excursionAttractions $.Locale .}}{{else}}-{{end}}</dd></div>
+          <div><dt>{{t $.Locale "label.city"}}</dt><dd>{{excursionLocation $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.duration"}}</dt><dd>{{excursionDuration $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.groupSize"}}</dt><dd>{{excursionMaxGroup $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.languages"}}</dt><dd>{{excursionLanguages $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.meetingPoint"}}</dt><dd>{{excursionMeetingPoint $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.price"}}</dt><dd>{{printf "%.2f" .PriceAmount}} {{.Currency}}</dd></div>
+          <div><dt>{{t $.Locale "label.submitted"}}</dt><dd>{{formatTime .SubmittedForReviewAt}}</dd></div>
+        </dl>
+        {{if .ModerationReasonCodes}}
+          <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.summary"}}</h2>
+        <p>{{excursionSummary $.Locale .}}</p>
+        <h2>{{t $.Locale "section.description"}}</h2>
+        <p class="preline">{{excursionDescription $.Locale .}}</p>
+        <h2>{{t $.Locale "section.routeSchedule"}}</h2>
+        {{if .Itinerary}}
+          <ol class="timeline">
+            {{range .Itinerary}}
+              <li class="timeline-step">
+                <div class="timeline-marker">{{itineraryStart .StartOffsetMinutes}}</div>
+                <div class="timeline-body">
+                  <h3>{{itineraryTitle $.Locale .}}</h3>
+                  <div class="meta-row compact">
+                    {{with itineraryDuration $.Locale .DurationMinutes}}<span>{{.}}</span>{{end}}
+                    {{with itineraryTravel $.Locale .TravelFromPreviousMinutes}}<span>{{.}}</span>{{end}}
+                    {{with itineraryAttraction .}}<span>{{.}}</span>{{end}}
+                  </div>
+                  {{with itineraryDescription $.Locale .}}<p class="preline">{{.}}</p>{{end}}
+                </div>
+              </li>
+            {{end}}
+          </ol>
+        {{else}}
+          <p class="empty">{{t $.Locale "empty.noItinerary"}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.includedItems"}}</h2>
+        {{$included := excursionIncludedItems $.Locale .}}
+        {{if $included}}
+          <div class="chip-list">
+            {{range $included}}<span class="chip">{{.}}</span>{{end}}
+          </div>
+        {{else}}
+          <p class="empty">{{t $.Locale "empty.noIncludedItems"}}</p>
+        {{end}}
+      {{end}}
+    </article>
+
+    <aside class="card">
+      <h2>{{t .Locale "section.decision"}}</h2>
+      <form method="post" action="/admin/moderation/excursions/{{$detail.Case.ID}}/approve" class="form compact" data-confirm-form="approve">
+        {{csrfField $.CSRFToken}}
+        <input type="hidden" name="idempotency_key" value="{{newID}}">
+        <label>
+          <span>{{t $.Locale "field.internalComment"}}</span>
+          <textarea name="internal_comment" rows="3"></textarea>
+        </label>
+        <button class="primary" type="submit">{{t $.Locale "action.approve"}}</button>
+      </form>
+      <form method="post" action="/admin/moderation/excursions/{{$detail.Case.ID}}/reject" class="form compact danger-zone" data-confirm-form="reject">
+        {{csrfField $.CSRFToken}}
+        <input type="hidden" name="idempotency_key" value="{{newID}}">
+        <label>
+          <span>{{t $.Locale "field.reasonCodes"}}</span>
+          <input name="reason_codes" placeholder="{{t $.Locale "placeholder.reasonCodes"}}">
+        </label>
+        <label>
+          <span>{{t $.Locale "field.publicComment"}}</span>
+          <textarea name="public_comment" rows="3" required></textarea>
+        </label>
+        <label>
+          <span>{{t $.Locale "field.internalComment"}}</span>
+          <textarea name="internal_comment" rows="3"></textarea>
+        </label>
+        <button class="danger" type="submit">{{t $.Locale "action.reject"}}</button>
+      </form>
+    </aside>
+  </div>
+
+  <section class="section flush">
+    <h2>{{t .Locale "section.decisionHistory"}}</h2>
+    {{if $detail.Decisions}}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>{{t .Locale "table.decision"}}</th><th>{{t .Locale "table.apply"}}</th><th>{{t .Locale "table.comment"}}</th><th>{{t .Locale "table.by"}}</th><th>{{t .Locale "table.created"}}</th></tr></thead>
+          <tbody>
+            {{range $detail.Decisions}}
+              <tr>
+                <td>
+                  {{statusText $.Locale .DecisionType}}
+                  {{if .ReasonCodes}}<span class="muted block">{{join .ReasonCodes ", "}}</span>{{end}}
+                </td>
+                <td><span class="{{statusClass .ApplyStatus}}">{{statusText $.Locale .ApplyStatus}}</span></td>
+                <td>
+                  {{if .PublicComment}}<span class="block">{{.PublicComment}}</span>{{end}}
+                  {{if .InternalComment}}<span class="muted block">{{.InternalComment}}</span>{{end}}
+                  {{if and (not .PublicComment) (not .InternalComment)}}-{{end}}
+                </td>
+                <td>{{if .DecidedByName}}{{.DecidedByName}}{{else}}<code>{{shortID .DecidedBy}}</code>{{end}}</td>
+                <td>{{formatTime .CreatedAt}}</td>
+              </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    {{else}}
+      <div class="empty card">{{t .Locale "empty.noDecisions"}}</div>
+    {{end}}
+  </section>
+</section>
+{{else}}
+<section class="section">
+  <a class="button" href="/admin/moderation/excursions">{{t .Locale "action.backToQueue"}}</a>
+</section>
+{{end}}
+<dialog class="confirm-dialog" id="decision-confirmation-dialog" aria-labelledby="decision-confirmation-title">
+  <form method="dialog" class="confirm-panel">
+    <h2 id="decision-confirmation-title">{{t .Locale "modal.confirmDecisionTitle"}}</h2>
+    <p data-confirm-message>{{t .Locale "modal.confirmDecisionText"}}</p>
+    <div class="filter-actions">
+      <button type="button" class="primary" data-confirm-submit>{{t .Locale "action.confirm"}}</button>
+      <button type="button" data-confirm-cancel>{{t .Locale "action.cancel"}}</button>
+    </div>
+  </form>
+</dialog>
+{{template "pageEnd" .}}
+{{end}}

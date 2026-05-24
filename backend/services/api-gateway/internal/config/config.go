@@ -46,10 +46,11 @@ type LogConfig struct {
 }
 
 type SecurityConfig struct {
-	RequestIDHeader    string `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
-	TrustedHeaderUser  string `env:"TRUSTED_HEADER_USER_ID, default=X-User-Id"`
-	TrustedHeaderRoles string `env:"TRUSTED_HEADER_ROLES, default=X-User-Roles"`
-	TrustedHeaderSub   string `env:"TRUSTED_HEADER_SUB, default=X-Auth-Subject"`
+	InternalServiceToken string `env:"INTERNAL_SERVICE_TOKEN"`
+	RequestIDHeader      string `env:"REQUEST_ID_HEADER, default=X-Request-Id"`
+	TrustedHeaderUser    string `env:"TRUSTED_HEADER_USER_ID, default=X-User-Id"`
+	TrustedHeaderRoles   string `env:"TRUSTED_HEADER_ROLES, default=X-User-Roles"`
+	TrustedHeaderSub     string `env:"TRUSTED_HEADER_SUB, default=X-Auth-Subject"`
 }
 
 type RoutesConfig struct {
@@ -69,6 +70,7 @@ type DownstreamsConfig struct {
 	AttractionService  string `env:"ATTRACTION_SERVICE_HTTP_URL, default=http://attraction-service:8090"`
 	PaymentService     string `env:"PAYMENT_SERVICE_HTTP_URL, default=http://payment-service:8091"`
 	StickerService     string `env:"STICKER_SERVICE_HTTP_URL, default=http://sticker-service:8092"`
+	AdminPanelService  string `env:"ADMIN_PANEL_SERVICE_HTTP_URL, default=http://admin-panel:8095"`
 }
 
 type RedisConfig struct {

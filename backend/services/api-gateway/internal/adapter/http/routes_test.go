@@ -2,6 +2,31 @@ package http
 
 import "testing"
 
+func TestAdminPanelRouteProxiesToAdminPanelService(t *testing.T) {
+	policy := matchRoutePolicy("/admin/dashboard", "/api/v1")
+
+	if policy == nil {
+		t.Fatal("expected admin panel route policy")
+	}
+	if policy.Upstream != "admin-panel" {
+		t.Fatalf("upstream = %q, want admin-panel", policy.Upstream)
+	}
+	if policy.AuthMode != RouteAuthPublic {
+		t.Fatalf("auth mode = %q, want public", policy.AuthMode)
+	}
+	if policy.RewritePrefix != "/admin" {
+		t.Fatalf("rewrite prefix = %q, want /admin", policy.RewritePrefix)
+	}
+}
+
+func TestAdminPanelRouteRequiresPathBoundary(t *testing.T) {
+	policy := matchRoutePolicy("/administrator", "/api/v1")
+
+	if policy != nil && policy.Upstream == "admin-panel" {
+		t.Fatalf("path matched admin panel route unexpectedly: %+v", policy)
+	}
+}
+
 func TestStickerCatalogRouteProxiesToStickerService(t *testing.T) {
 	policy := matchRoutePolicy("/api/v1/stickers/catalog", "/api/v1")
 

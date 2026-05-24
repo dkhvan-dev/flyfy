@@ -42,6 +42,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/excursions", h.ListExcursions)
 	mux.HandleFunc("GET /v1/excursions/{id}", h.GetExcursion)
 	mux.HandleFunc("GET /v1/excursions/{id}/cover", h.GetExcursionCover)
+	mux.HandleFunc("GET /v1/admin/excursions/moderation/pending", h.ListPendingReviewExcursions)
+	mux.HandleFunc("GET /v1/admin/excursions/{id}", h.GetModerationExcursion)
 	mux.HandleFunc("GET /v1/guides/excursion-languages", h.ListGuideExcursionLanguages)
 	mux.HandleFunc("GET /v1/guides/by-excursion-city", h.ListGuideUserIDsByExcursionCity)
 	mux.HandleFunc("GET /v1/excursion-guides/{guideUserId}/schedule", h.ListPublicGuideSchedule)
@@ -272,6 +274,39 @@ func (h *Handler) ListExcursions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toExcursionListResponse(aggregates, requestedLimit))
+}
+
+func (h *Handler) ListPendingReviewExcursions(w http.ResponseWriter, r *http.Request) {
+	if !requireModeratorRole(w, r) {
+		return
+	}
+	requestedLimit := clampLimit(parseIntOrDefault(r.URL.Query().Get("limit"), 20))
+	aggregates, err := h.useCase.ListPendingReviewExcursions(
+		r.Context(),
+		requestedLimit+1,
+		parseIntOrDefault(r.URL.Query().Get("offset"), 0),
+	)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to list pending review excursions")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionListResponse(aggregates, requestedLimit))
+}
+
+func (h *Handler) GetModerationExcursion(w http.ResponseWriter, r *http.Request) {
+	if !requireModeratorRole(w, r) {
+		return
+	}
+	excursionID, ok := parsePathUUID(w, r, "id", "invalid excursion id")
+	if !ok {
+		return
+	}
+	aggregate, err := h.useCase.GetModerationExcursion(r.Context(), excursionID)
+	if err != nil {
+		h.writeUseCaseError(w, r, err, "failed to get moderation excursion")
+		return
+	}
+	writeJSON(w, http.StatusOK, toExcursionResponse(aggregate))
 }
 
 func (h *Handler) ListExcursionProducts(w http.ResponseWriter, r *http.Request) {
@@ -1604,12 +1639,17 @@ func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionRespons
 		ID:                       item.ID.String(),
 		GuideProfileID:           item.GuideProfileID.String(),
 		GuideUserID:              item.GuideUserID.String(),
+		GuideDisplayName:         strings.TrimSpace(item.GuideDisplayName),
+		GuideNickname:            strings.TrimSpace(item.GuideNickname),
+		GuideFirstName:           strings.TrimSpace(item.GuideFirstName),
+		GuideLastName:            strings.TrimSpace(item.GuideLastName),
 		LandmarkID:               formatOptionalUUID(item.LandmarkID),
 		LandmarkName:             item.LandmarkName,
 		Title:                    item.Title,
 		Summary:                  item.Summary,
 		Description:              item.Description,
 		Translations:             toDTOTranslations(item.Translations),
+		ProductTranslations:      toDTOTranslations(item.ProductTranslations),
 		CategorySlug:             item.CategorySlug,
 		Tags:                     aggregate.Tags,
 		Status:                   string(item.Status),

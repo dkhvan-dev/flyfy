@@ -41,6 +41,14 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 
 	return []RoutePolicy{
 		{
+			Name:               "admin-panel",
+			Prefix:             "/admin",
+			AuthMode:           RouteAuthPublic,
+			Upstream:           "admin-panel",
+			RateLimitPerMinute: &adminLimit,
+			RewritePrefix:      "/admin",
+		},
+		{
 			Name:               "auth",
 			Prefix:             apiPrefix + "/auth/",
 			AuthMode:           RouteAuthPublic,
@@ -339,10 +347,21 @@ func routePolicies(apiPrefix string) []RoutePolicy {
 
 func matchRoutePolicy(path string, apiPrefix string) *RoutePolicy {
 	for _, policy := range routePolicies(apiPrefix) {
-		if strings.HasPrefix(path, policy.Prefix) {
+		if pathMatchesPolicyPrefix(path, policy.Prefix) {
 			p := policy
 			return &p
 		}
 	}
 	return nil
+}
+
+func pathMatchesPolicyPrefix(path string, prefix string) bool {
+	path = strings.SplitN(path, "?", 2)[0]
+	if path == prefix {
+		return true
+	}
+	if strings.HasSuffix(prefix, "/") {
+		return strings.HasPrefix(path, prefix)
+	}
+	return strings.HasPrefix(path, prefix+"/")
 }

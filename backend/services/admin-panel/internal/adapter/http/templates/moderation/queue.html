@@ -1,0 +1,120 @@
+{{define "moderation/queue"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "moderation.eyebrow"}}</p>
+      <h1>{{if .Data.IsHistory}}{{t .Locale "moderation.excursionHistory"}}{{else}}{{t .Locale "moderation.excursionQueue"}}{{end}}</h1>
+    </div>
+    <div class="section-actions">
+      {{if .Data.IsHistory}}
+        <a class="button" href="/admin/moderation/excursions">{{t .Locale "action.openQueue"}}</a>
+      {{else}}
+        <a class="button" href="/admin/moderation/excursions/history">{{t .Locale "action.openHistory"}}</a>
+        <form method="post" action="/admin/moderation/excursions/sync{{urlQuerySuffix .Data.Filters.Query}}">
+          {{csrfField .CSRFToken}}
+          <button type="submit">{{t .Locale "action.refreshQueue"}}</button>
+        </form>
+      {{end}}
+    </div>
+  </div>
+
+  <form class="filter-bar" method="get" action="{{.Data.FilterAction}}">
+    <div class="filter-grid">
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status">
+          <option value="active" {{if eq .Data.Filters.Status "active"}}selected{{end}}>{{t .Locale "filter.status.active"}}</option>
+          <option value="all" {{if eq .Data.Filters.Status "all"}}selected{{end}}>{{t .Locale "filter.status.all"}}</option>
+          <option value="open" {{if eq .Data.Filters.Status "open"}}selected{{end}}>{{statusText .Locale "OPEN"}}</option>
+          <option value="in_review" {{if eq .Data.Filters.Status "in_review"}}selected{{end}}>{{statusText .Locale "IN_REVIEW"}}</option>
+          <option value="escalated" {{if eq .Data.Filters.Status "escalated"}}selected{{end}}>{{statusText .Locale "ESCALATED"}}</option>
+          <option value="approved" {{if eq .Data.Filters.Status "approved"}}selected{{end}}>{{statusText .Locale "APPROVED"}}</option>
+          <option value="rejected" {{if eq .Data.Filters.Status "rejected"}}selected{{end}}>{{statusText .Locale "REJECTED"}}</option>
+          <option value="changes_requested" {{if eq .Data.Filters.Status "changes_requested"}}selected{{end}}>{{statusText .Locale "CHANGES_REQUESTED"}}</option>
+          <option value="cancelled" {{if eq .Data.Filters.Status "cancelled"}}selected{{end}}>{{statusText .Locale "CANCELLED"}}</option>
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.city"}}</span>
+        <input type="search" name="city" value="{{.Data.Filters.City}}" placeholder="{{t .Locale "placeholder.city"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.search"}}</span>
+        <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale "placeholder.searchExcursions"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.signal"}}</span>
+        <input type="search" name="signal" value="{{.Data.Filters.Signal}}" placeholder="{{t .Locale "placeholder.signal"}}">
+      </label>
+      <label>
+        <span>{{t .Locale "field.risk"}}</span>
+        <select name="risk">
+          <option value="" {{if eq .Data.Filters.Risk ""}}selected{{end}}>{{t .Locale "filter.risk.all"}}</option>
+          <option value="flagged" {{if eq .Data.Filters.Risk "flagged"}}selected{{end}}>{{t .Locale "filter.risk.flagged"}}</option>
+          <option value="high" {{if eq .Data.Filters.Risk "high"}}selected{{end}}>{{t .Locale "filter.risk.high"}}</option>
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.sort"}}</span>
+        <select name="sort">
+          <option value="" {{if eq .Data.Filters.Sort ""}}selected{{end}}>{{t .Locale "sort.default"}}</option>
+          <option value="priority_desc" {{if eq .Data.Filters.Sort "priority_desc"}}selected{{end}}>{{t .Locale "sort.priorityDesc"}}</option>
+          <option value="risk_desc" {{if eq .Data.Filters.Sort "risk_desc"}}selected{{end}}>{{t .Locale "sort.riskDesc"}}</option>
+          <option value="submitted_desc" {{if eq .Data.Filters.Sort "submitted_desc"}}selected{{end}}>{{t .Locale "sort.submittedDesc"}}</option>
+          <option value="opened_desc" {{if eq .Data.Filters.Sort "opened_desc"}}selected{{end}}>{{t .Locale "sort.openedDesc"}}</option>
+          <option value="opened_asc" {{if eq .Data.Filters.Sort "opened_asc"}}selected{{end}}>{{t .Locale "sort.openedAsc"}}</option>
+        </select>
+      </label>
+    </div>
+    <div class="filter-actions">
+      <button class="primary" type="submit">{{t .Locale "action.applyFilters"}}</button>
+      <a class="button" href="{{.Data.ResetURL}}">{{t .Locale "action.resetFilters"}}</a>
+    </div>
+  </form>
+
+  {{if .Data.Items}}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{t .Locale "table.case"}}</th>
+            <th>{{t .Locale "table.status"}}</th>
+            <th>{{t .Locale "table.priority"}}</th>
+            <th>{{t .Locale "table.excursion"}}</th>
+            <th>{{t .Locale "table.guide"}}</th>
+            <th>{{t .Locale "table.city"}}</th>
+            <th>{{t .Locale "table.opened"}}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Data.Items}}
+          <tr>
+            <td><code>{{shortID .Case.ID}}</code></td>
+            <td><span class="{{statusClass .Case.Status}}">{{statusText $.Locale .Case.Status}}</span></td>
+            <td>{{.Case.Priority}}</td>
+            <td>
+              {{$title := excursionTitle $.Locale .Excursion .TargetTitle}}
+              {{$subtitle := excursionAttractions $.Locale .Excursion}}
+              <strong>{{$title}}</strong>
+              {{if $subtitle}}{{if ne $subtitle $title}}<span class="muted block">{{$subtitle}}</span>{{end}}{{else if .TargetSubtitle}}<span class="muted block">{{.TargetSubtitle}}</span>{{end}}
+            </td>
+            <td>
+              <strong>{{.GuideName}}</strong>
+              {{if .GuideFullName}}<span class="muted block">{{.GuideFullName}}</span>{{end}}
+            </td>
+            <td>{{excursionLocation $.Locale .Excursion}}</td>
+            <td>{{formatTime .Case.OpenedAt}}</td>
+            <td class="right"><a class="button" href="/admin/moderation/excursions/{{.Case.ID}}">{{t $.Locale "action.review"}}</a></td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="empty card">{{if .Data.IsHistory}}{{t .Locale "moderation.noExcursionHistory"}}{{else}}{{t .Locale "moderation.noExcursionCases"}}{{end}}</div>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

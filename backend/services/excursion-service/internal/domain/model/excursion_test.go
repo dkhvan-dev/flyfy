@@ -364,6 +364,61 @@ func TestExcursionRejectReviewKeepsOfferPrivateAndEditable(t *testing.T) {
 	}
 }
 
+func TestExcursionApproveReviewCanCorrectRejectedDecision(t *testing.T) {
+	excursion := newValidExcursion(t)
+	err := excursion.SubmitForReview(SubmitExcursionForReviewParams{
+		Publish:    validPublishParams(excursion.ID),
+		Evaluation: ExcursionPublishingEvaluation{Decision: ExcursionPublishingDecisionNeedsReview},
+	})
+	if err != nil {
+		t.Fatalf("SubmitForReview() error = %v", err)
+	}
+	if err = excursion.RejectReview([]string{"missing_license"}); err != nil {
+		t.Fatalf("RejectReview() error = %v", err)
+	}
+
+	err = excursion.ApproveReview(validPublishParams(excursion.ID))
+
+	if err != nil {
+		t.Fatalf("ApproveReview() error = %v", err)
+	}
+	if excursion.Status != enum.ExcursionStatusPublished {
+		t.Fatalf("status = %q, want %q", excursion.Status, enum.ExcursionStatusPublished)
+	}
+	if excursion.PublishedAt == nil {
+		t.Fatal("PublishedAt is nil")
+	}
+}
+
+func TestExcursionRejectReviewCanCorrectApprovedDecision(t *testing.T) {
+	excursion := newValidExcursion(t)
+	err := excursion.SubmitForReview(SubmitExcursionForReviewParams{
+		Publish:    validPublishParams(excursion.ID),
+		Evaluation: ExcursionPublishingEvaluation{Decision: ExcursionPublishingDecisionNeedsReview},
+	})
+	if err != nil {
+		t.Fatalf("SubmitForReview() error = %v", err)
+	}
+	if err = excursion.ApproveReview(validPublishParams(excursion.ID)); err != nil {
+		t.Fatalf("ApproveReview() error = %v", err)
+	}
+
+	err = excursion.RejectReview([]string{"policy_violation"})
+
+	if err != nil {
+		t.Fatalf("RejectReview() error = %v", err)
+	}
+	if excursion.Status != enum.ExcursionStatusRejected {
+		t.Fatalf("status = %q, want %q", excursion.Status, enum.ExcursionStatusRejected)
+	}
+	if excursion.PublishedAt != nil {
+		t.Fatalf("PublishedAt = %v, want nil", excursion.PublishedAt)
+	}
+	if excursion.IsPubliclyReadable() {
+		t.Fatal("rejected excursion must not be publicly readable")
+	}
+}
+
 func TestExcursionMoveToArchiveKeepsOfferRestorable(t *testing.T) {
 	excursion := newValidExcursion(t)
 

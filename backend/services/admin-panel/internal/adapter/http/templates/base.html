@@ -1,0 +1,49 @@
+{{define "head"}}
+<html lang="{{.Locale}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} · {{t .Locale "app.title"}}</title>
+  <link rel="stylesheet" href="/admin/static/css/admin.css">
+  <script defer src="/admin/static/js/admin.js"></script>
+</head>
+{{end}}
+
+{{define "topbar"}}
+<header class="topbar">
+  <a class="brand" href="/admin">{{t .Locale "app.title"}}</a>
+  {{if .Staff}}
+    <nav class="nav" aria-label="{{t .Locale "nav.primary"}}">
+      <a class="{{if eq .ActiveNav "dashboard"}}active{{end}}" href="/admin">{{t .Locale "nav.dashboard"}}</a>
+      <a class="{{if eq .ActiveNav "moderation"}}active{{end}}" href="/admin/moderation/excursions">{{t .Locale "nav.excursions"}}</a>
+      <a class="{{if eq .ActiveNav "staff"}}active{{end}}" href="/admin/staff">{{t .Locale "nav.staff"}}</a>
+      <a class="{{if eq .ActiveNav "audit"}}active{{end}}" href="/admin/audit">{{t .Locale "nav.audit"}}</a>
+    </nav>
+    <div class="locale-switch" aria-label="{{t .Locale "nav.language"}}">
+      <a class="{{if eq .Locale "ru"}}active{{end}}" href="{{localeURL .Path "ru"}}">{{t .Locale "lang.ru"}}</a>
+      <a class="{{if eq .Locale "en"}}active{{end}}" href="{{localeURL .Path "en"}}">{{t .Locale "lang.en"}}</a>
+    </div>
+    <form class="logout" method="post" action="/admin/logout">
+      {{csrfField .CSRFToken}}
+      <span>{{.Staff.DisplayName}}</span>
+      <button type="submit">{{t .Locale "action.signOut"}}</button>
+    </form>
+  {{end}}
+</header>
+{{end}}
+
+{{define "pageStart"}}
+<!doctype html>
+{{template "head" .}}
+<body>
+{{template "topbar" .}}
+<main class="page">
+  {{if .Error}}<div class="alert error" role="alert">{{.Error}}</div>{{end}}
+  {{if .Flash}}<div class="alert success" role="status">{{.Flash}}</div>{{end}}
+{{end}}
+
+{{define "pageEnd"}}
+</main>
+</body>
+</html>
+{{end}}

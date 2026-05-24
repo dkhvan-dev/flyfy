@@ -276,6 +276,50 @@ services:
       - flyfy-network
 
   # ============================================
+  # Admin Panel PostgreSQL
+  # ============================================
+  admin-postgres:
+    image: postgres:17-alpine
+    container_name: admin-postgres
+    environment:
+      POSTGRES_DB: admin_panel_db
+      POSTGRES_USER: admin_panel
+      POSTGRES_PASSWORD: admin_panel_secret_dev
+    ports:
+      - "5445:5432"
+    volumes:
+      - admin_postgres_data:/var/lib/postgresql/data
+      - ../backend/services/admin-panel/migrations:/migrations/admin-panel:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_panel -d admin_panel_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  admin-postgres-migrator:
+    image: postgres:17-alpine
+    container_name: admin-postgres-migrator
+    environment:
+      PGHOST: admin-postgres
+      PGPORT: 5432
+      POSTGRES_DB: admin_panel_db
+      POSTGRES_USER: admin_panel
+      POSTGRES_PASSWORD: admin_panel_secret_dev
+    volumes:
+      - ./init-scripts/013_admin_panel_migrate.sh:/usr/local/bin/013_admin_panel_migrate.sh:ro
+      - ../backend/services/admin-panel/migrations:/migrations/admin-panel:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/013_admin_panel_migrate.sh"]
+    depends_on:
+      admin-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Stories PostgreSQL
   # ============================================
   stories-postgres:
@@ -837,6 +881,44 @@ services:
       - flyfy-network
 
   # ============================================
+  # Admin Panel
+  # ============================================
+  admin-panel:
+    build:
+      context: ..
+      dockerfile: ./backend/services/admin-panel/Dockerfile
+    container_name: admin-panel
+    depends_on:
+      admin-postgres:
+        condition: service_healthy
+      admin-postgres-migrator:
+        condition: service_completed_successfully
+      excursion-service:
+        condition: service_started
+    ports:
+      - "8095:8095"
+    environment:
+      APP_NAME: admin-panel
+      APP_ENV: development
+      HTTP_PORT: 8095
+      DB_HOST: admin-postgres
+      DB_PORT: 5432
+      DB_NAME: admin_panel_db
+      DB_USER: admin_panel
+      DB_PASSWORD: admin_panel_secret_dev
+      DB_SSLMODE: disable
+      LOG_LEVEL: debug
+      COOKIE_SECURE: "false"
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
+      EXCURSION_SERVICE_URL: http://excursion-service:8093
+      BOOTSTRAP_SUPERADMIN_EMAIL: admin@flyfy.local
+      BOOTSTRAP_SUPERADMIN_DISPLAY_NAME: FlyFy Super Admin
+      BOOTSTRAP_SUPERADMIN_PASSWORD: AdminPanelDevPass123!
+    restart: unless-stopped
+    networks:
+      - flyfy-network
+
+  # ============================================
   # Stories Service
   # ============================================
   stories-service:
@@ -1327,6 +1409,8 @@ services:
         condition: service_started
       excursion-service:
         condition: service_started
+      admin-panel:
+        condition: service_started
       stories-service:
         condition: service_started
       chat-service:
@@ -1357,6 +1441,7 @@ services:
       TRUSTED_HEADER_USER_ID: X-User-Id
       TRUSTED_HEADER_ROLES: X-User-Roles
       TRUSTED_HEADER_SUB: X-Auth-Subject
+      INTERNAL_SERVICE_TOKEN: super-secret-internal-token
 
       API_PREFIX: /api/v1
 
@@ -1372,6 +1457,7 @@ services:
       REFERENCE_SERVICE_HTTP_URL: http://reference-service:8089
       ATTRACTION_SERVICE_HTTP_URL: http://attraction-service:8090
       PAYMENT_SERVICE_HTTP_URL: http://payment-service:8091
+      ADMIN_PANEL_SERVICE_HTTP_URL: http://admin-panel:8095
 
       REDIS_ADDR: redis:6379
       REDIS_CACHE_DB: 3
@@ -1409,6 +1495,7 @@ volumes:
   guide_postgres_data:
   activity_postgres_data:
   excursion_postgres_data:
+  admin_postgres_data:
   stories_postgres_data:
   chat_postgres_data:
   nats_data:

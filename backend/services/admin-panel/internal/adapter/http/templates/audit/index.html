@@ -1,0 +1,41 @@
+{{define "audit/index"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "audit.eyebrow"}}</p>
+      <h1>{{t .Locale "audit.title"}}</h1>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>{{t .Locale "table.time"}}</th><th>{{t .Locale "table.action"}}</th><th>{{t .Locale "table.actor"}}</th><th>{{t .Locale "table.entity"}}</th><th>{{t .Locale "table.details"}}</th></tr>
+      </thead>
+      <tbody>
+        {{range .Data.Items}}
+          <tr>
+            <td>{{formatTime .Event.CreatedAt}}</td>
+            <td><strong>{{.ActionText}}</strong></td>
+            <td>
+              <strong>{{.ActorTitle}}</strong>
+              {{if .ActorSubtitle}}<span class="muted block">{{.ActorSubtitle}}</span>{{end}}
+            </td>
+            <td>
+              <strong>{{.EntityTitle}}</strong>
+              {{if .EntitySubtitle}}<span class="muted block">{{.EntitySubtitle}}</span>{{end}}
+            </td>
+            <td>
+              {{range .Details}}<span class="block">{{.}}</span>{{end}}
+            </td>
+          </tr>
+        {{else}}
+          <tr><td colspan="5">{{t $.Locale "audit.noEvents"}}</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{template "pageEnd" .}}
+{{end}}

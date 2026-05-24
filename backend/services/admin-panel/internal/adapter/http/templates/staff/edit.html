@@ -1,0 +1,67 @@
+{{define "staff/edit"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "staff.eyebrow"}}</p>
+      <h1>{{t .Locale "staff.editUser"}}</h1>
+      {{if .Data.Staff}}
+        <p class="muted">{{.Data.Staff.Email}}</p>
+      {{end}}
+    </div>
+    <div class="section-actions">
+      <a class="button" href="/admin/staff">{{t .Locale "action.backToStaff"}}</a>
+    </div>
+  </div>
+
+  {{if .Data.TemporaryPassword}}
+    <div class="alert success" role="status">
+      {{t .Locale "staff.tempPassword"}}: <code>{{.Data.TemporaryPassword}}</code>
+    </div>
+  {{end}}
+
+  {{if .Data.Staff}}
+    <form method="post" action="/admin/staff/{{.Data.Staff.ID}}" class="form card">
+      {{csrfField .CSRFToken}}
+      <h2>{{t .Locale "section.profile"}}</h2>
+      <label>
+        <span>{{t .Locale "field.displayName"}}</span>
+        <input name="display_name" autocomplete="off" value="{{.Data.Staff.DisplayName}}" required>
+      </label>
+      <fieldset class="checks">
+        <legend>{{t .Locale "staff.roles"}}</legend>
+        {{range .Data.AssignableRoles}}
+          <label><input type="checkbox" name="roles" value="{{.}}" {{if hasStaffRole $.Data.Staff .}}checked{{end}}> {{roleText $.Locale .}}</label>
+        {{end}}
+      </fieldset>
+      <button class="primary" type="submit">{{t .Locale "action.saveChanges"}}</button>
+    </form>
+
+    <form method="post" action="/admin/staff/{{.Data.Staff.ID}}/status" class="form card">
+      {{csrfField .CSRFToken}}
+      <h2>{{t .Locale "section.status"}}</h2>
+      <label>
+        <span>{{t .Locale "field.status"}}</span>
+        <select name="status" required>
+          {{range .Data.Statuses}}
+            <option value="{{.}}" {{if eq . $.Data.Staff.Status}}selected{{end}}>{{statusText $.Locale .}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Locale "field.reason"}}</span>
+        <textarea name="reason" rows="3" required placeholder="{{t .Locale "placeholder.statusReason"}}"></textarea>
+      </label>
+      <button class="primary" type="submit">{{t .Locale "action.updateStatus"}}</button>
+    </form>
+
+    <form method="post" action="/admin/staff/{{.Data.Staff.ID}}/password/regenerate" class="form card danger-zone">
+      {{csrfField .CSRFToken}}
+      <h2>{{t .Locale "section.password"}}</h2>
+      <p class="muted">{{t .Locale "staff.regeneratePasswordHelp"}}</p>
+      <button class="danger" type="submit">{{t .Locale "action.regeneratePassword"}}</button>
+    </form>
+  {{end}}
+</section>
+{{template "pageEnd" .}}
+{{end}}

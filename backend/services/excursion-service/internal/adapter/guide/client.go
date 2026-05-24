@@ -68,12 +68,14 @@ func (c *Client) VerifyExcursionGuide(ctx context.Context, userID uuid.UUID) (po
 	userProfile := resp.GetAggregate().GetUserProfile()
 	firstName := strings.TrimSpace(userProfile.GetFirstName())
 	lastName := strings.TrimSpace(userProfile.GetLastName())
+	nickname := normalizeGuideNamePart(userProfile.GetDisplayName())
 	displayName := guideDisplayName(
-		userProfile.GetDisplayName(),
+		nickname,
 		firstName,
 		lastName,
 	)
 	searchText := guideSearchText(
+		nickname,
 		displayName,
 		firstName,
 		lastName,
@@ -98,16 +100,23 @@ func (c *Client) VerifyExcursionGuide(ctx context.Context, userID uuid.UUID) (po
 		ReviewsCount:    int(profile.GetReviewsCount()),
 		ExperienceYears: int(profile.GetExperienceYears()),
 		DisplayName:     displayName,
+		Nickname:        nickname,
+		FirstName:       firstName,
+		LastName:        lastName,
 		GuideSearchText: searchText,
 	}, nil
 }
 
 func guideDisplayName(displayName string, firstName string, lastName string) string {
-	displayName = strings.Join(strings.Fields(strings.TrimSpace(displayName)), " ")
+	displayName = normalizeGuideNamePart(displayName)
 	if displayName != "" {
 		return displayName
 	}
 	return fullName(firstName, lastName)
+}
+
+func normalizeGuideNamePart(value string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(value)), " ")
 }
 
 func guideSearchText(values ...string) string {

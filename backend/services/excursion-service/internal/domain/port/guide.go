@@ -14,6 +14,9 @@ type GuideExcursionPermission struct {
 	ReviewsCount    int
 	ExperienceYears int
 	DisplayName     string
+	Nickname        string
+	FirstName       string
+	LastName        string
 	GuideSearchText string
 }
 

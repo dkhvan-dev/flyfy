@@ -42,6 +42,7 @@ func main() {
 			"file-manager-service": httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.FileManagerService+"/health", 2*time.Second),
 			"payment-service":      httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.PaymentService+"/health", 2*time.Second),
 			"sticker-service":      httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.StickerService+"/health", 2*time.Second),
+			"admin-panel":          httpadapter.NewHTTPReadinessChecker(cfg.Downstreams.AdminPanelService+"/health", 2*time.Second),
 		},
 		2*time.Second,
 	)

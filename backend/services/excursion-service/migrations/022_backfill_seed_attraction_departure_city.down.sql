@@ -1,0 +1,2 @@
+-- Data backfill is intentionally irreversible. Keeping inferred departure
+-- city IDs is safer than clearing operational moderation/filtering data.

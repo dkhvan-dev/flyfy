@@ -16,12 +16,20 @@ import (
 func TestExcursionResponseUsesProductCoverWhenOfferCoverIsMissing(t *testing.T) {
 	productCoverFileID := uuid.New()
 	excursion := &model.Excursion{
-		ID:              uuid.New(),
-		GuideProfileID:  uuid.New(),
-		GuideUserID:     uuid.New(),
-		Title:           "Medeu tour",
-		Summary:         "Private mountain route",
-		Description:     "A detailed mountain excursion through Medeu.",
+		ID:               uuid.New(),
+		GuideProfileID:   uuid.New(),
+		GuideUserID:      uuid.New(),
+		GuideDisplayName: "Aruzhan T.",
+		GuideNickname:    "@nomad_aru",
+		GuideFirstName:   "Aruzhan",
+		GuideLastName:    "Khan",
+		Title:            "Medeu tour",
+		Summary:          "Private mountain route",
+		Description:      "A detailed mountain excursion through Medeu.",
+		ProductTranslations: model.ExcursionTranslations{
+			"ru": {Title: "Высокогорный каток Медеу"},
+			"en": {Title: "Medeu Alpine Skating Rink"},
+		},
 		CategorySlug:    "nature",
 		Status:          enum.ExcursionStatusDraft,
 		Visibility:      enum.ExcursionVisibilityPublic,
@@ -45,6 +53,18 @@ func TestExcursionResponseUsesProductCoverWhenOfferCoverIsMissing(t *testing.T) 
 	}
 	if response.CoverImageURL != nil {
 		t.Fatalf("cover image url = %v, want nil when only product cover is available", *response.CoverImageURL)
+	}
+	if response.GuideDisplayName != "Aruzhan T." {
+		t.Fatalf("guide display name = %q, want snapshot display name", response.GuideDisplayName)
+	}
+	if response.GuideNickname != "@nomad_aru" {
+		t.Fatalf("guide nickname = %q, want snapshot nickname", response.GuideNickname)
+	}
+	if response.GuideLastName != "Khan" || response.GuideFirstName != "Aruzhan" {
+		t.Fatalf("guide full name = %q %q, want Khan Aruzhan", response.GuideLastName, response.GuideFirstName)
+	}
+	if response.ProductTranslations["ru"].Title != "Высокогорный каток Медеу" {
+		t.Fatalf("localized product title = %q, want Russian title", response.ProductTranslations["ru"].Title)
 	}
 }
 

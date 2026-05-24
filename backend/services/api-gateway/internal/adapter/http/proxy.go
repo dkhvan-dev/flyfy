@@ -28,69 +28,76 @@ type ProxyHandler struct {
 	attractionProxy  *httputil.ReverseProxy
 	paymentProxy     *httputil.ReverseProxy
 	stickerProxy     *httputil.ReverseProxy
+	adminPanelProxy  *httputil.ReverseProxy
 	userIDResolver   userIDResolver
 }
 
 func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHandler, error) {
-	authProxy, err := newSingleHostProxy("auth", cfg.Downstreams.AuthService)
+	authProxy, err := newSingleHostProxy("auth", cfg.Downstreams.AuthService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	userProxy, err := newSingleHostProxy("user", cfg.Downstreams.UserService)
+	userProxy, err := newSingleHostProxy("user", cfg.Downstreams.UserService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	guideProxy, err := newSingleHostProxy("guide", cfg.Downstreams.GuideService)
+	guideProxy, err := newSingleHostProxy("guide", cfg.Downstreams.GuideService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	fileManagerProxy, err := newSingleHostProxy("file-manager", cfg.Downstreams.FileManagerService)
+	fileManagerProxy, err := newSingleHostProxy("file-manager", cfg.Downstreams.FileManagerService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	activityProxy, err := newSingleHostProxy("activity", cfg.Downstreams.ActivityService)
+	activityProxy, err := newSingleHostProxy("activity", cfg.Downstreams.ActivityService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	excursionProxy, err := newSingleHostProxy("excursion", cfg.Downstreams.ExcursionService)
+	excursionProxy, err := newSingleHostProxy("excursion", cfg.Downstreams.ExcursionService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	storiesProxy, err := newSingleHostProxy("stories", cfg.Downstreams.StoriesService)
+	storiesProxy, err := newSingleHostProxy("stories", cfg.Downstreams.StoriesService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	chatProxy, err := newSingleHostProxy("chat", cfg.Downstreams.ChatService)
+	chatProxy, err := newSingleHostProxy("chat", cfg.Downstreams.ChatService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	referenceProxy, err := newSingleHostProxy("reference", cfg.Downstreams.ReferenceService)
+	referenceProxy, err := newSingleHostProxy("reference", cfg.Downstreams.ReferenceService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	attractionProxy, err := newSingleHostProxy("attraction", cfg.Downstreams.AttractionService)
+	attractionProxy, err := newSingleHostProxy("attraction", cfg.Downstreams.AttractionService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	paymentProxy, err := newSingleHostProxy("payment", cfg.Downstreams.PaymentService)
+	paymentProxy, err := newSingleHostProxy("payment", cfg.Downstreams.PaymentService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
 
-	stickerProxy, err := newSingleHostProxy("sticker", cfg.Downstreams.StickerService)
+	stickerProxy, err := newSingleHostProxy("sticker", cfg.Downstreams.StickerService, cfg.Security.InternalServiceToken)
 	if err != nil {
 		return nil, err
 	}
+
+	adminPanelProxy, err := newSingleHostProxy("admin-panel", cfg.Downstreams.AdminPanelService, cfg.Security.InternalServiceToken)
+	if err != nil {
+		return nil, err
+	}
+
 	userIDResolver, err := newUserServiceUserIDResolver(cfg)
 	if err != nil {
 		return nil, err
@@ -111,6 +118,7 @@ func NewProxyHandler(cfg *config.Config, readiness *ReadinessHandler) (*ProxyHan
 		attractionProxy:  attractionProxy,
 		paymentProxy:     paymentProxy,
 		stickerProxy:     stickerProxy,
+		adminPanelProxy:  adminPanelProxy,
 		userIDResolver:   userIDResolver,
 	}, nil
 }
@@ -202,6 +210,8 @@ func (h *ProxyHandler) resolveProxy(upstream string) *httputil.ReverseProxy {
 		return h.paymentProxy
 	case "sticker":
 		return h.stickerProxy
+	case "admin-panel":
+		return h.adminPanelProxy
 	default:
 		return nil
 	}
@@ -292,13 +302,21 @@ func (h *ProxyHandler) rewritePath(r *http.Request, policy *RoutePolicy) {
 	r.RequestURI = ""
 }
 
-func newSingleHostProxy(upstreamName string, rawTarget string) (*httputil.ReverseProxy, error) {
+func newSingleHostProxy(upstreamName string, rawTarget string, internalServiceToken string) (*httputil.ReverseProxy, error) {
 	target, err := url.Parse(strings.TrimSpace(rawTarget))
 	if err != nil {
 		return nil, err
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	originalDirector := proxy.Director
+	proxy.Director = func(r *http.Request) {
+		originalDirector(r)
+		r.Header.Del("X-Internal-Service-Token")
+		if token := strings.TrimSpace(internalServiceToken); token != "" {
+			r.Header.Set("X-Internal-Service-Token", token)
+		}
+	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Error().
 			Err(err).

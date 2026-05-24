@@ -1,0 +1,590 @@
+package http
+
+import (
+	"encoding/json"
+	"html"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/app"
+	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
+	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
+)
+
+func TestRendererRendersCoreTemplates(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	staff := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "moderator@flyfy.local",
+		DisplayName: "Moderator",
+		Status:      enum.StaffStatusActive,
+	}
+	caseID := uuid.New()
+	excursionID := uuid.New()
+	now := time.Now().UTC()
+	baseData := PageData{
+		Title:     "Test",
+		Locale:    localeEN,
+		Path:      "/admin",
+		Staff:     staff,
+		CSRFToken: "csrf-token",
+	}
+
+	queueCase := &model.ModerationCase{
+		ID:             caseID,
+		TargetType:     model.ModerationTargetExcursion,
+		TargetID:       excursionID,
+		SourceService:  "excursion-service",
+		SourceRevision: 1,
+		Status:         enum.ModerationCaseStatusOpen,
+		Priority:       42,
+		OpenedAt:       now,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+	queueSnapshot, err := json.Marshal(model.ExcursionModerationItem{
+		ID:               excursionID,
+		Title:            "Kok-Tobe + Cathedral",
+		AttractionNames:  []string{"Kok-Tobe", "Cathedral"},
+		GuideDisplayName: "Moderator Guide",
+		GuideNickname:    "@nomad_aru",
+		GuideFirstName:   "Aruzhan",
+		GuideLastName:    "Khan",
+		CountryCode:      "KZ",
+		DepartureCityID:  "almaty",
+	})
+	if err != nil {
+		t.Fatalf("json.Marshal snapshot returned error: %v", err)
+	}
+	queueCase.Snapshot = queueSnapshot
+	templates := map[string]any{
+		"auth/login":           LoginViewData{Email: "moderator@flyfy.local"},
+		"auth/change_password": nil,
+		"dashboard/index":      nil,
+		"moderation/queue": NewQueueViewData([]*model.ModerationCase{queueCase}, QueueFilterViewData{
+			Status: excursionQueueStatusActive,
+			City:   "Almaty",
+			Search: "Kok",
+			Signal: "new_guide",
+			Risk:   string(model.ModerationRiskFilterHigh),
+			Sort:   string(model.ModerationQueueSortRiskDesc),
+			Query:  "status=active&city=Almaty&q=Kok&signal=new_guide&risk=high&sort=risk_desc",
+		}),
+		"staff/index": StaffListViewData{Staff: []*model.StaffUser{staff}},
+		"audit/index": AuditViewData{Events: []*model.AuditEvent{}},
+	}
+
+	for name, data := range templates {
+		t.Run(name, func(t *testing.T) {
+			pageData := baseData
+			pageData.Data = data
+			recorder := httptest.NewRecorder()
+			renderer.Render(recorder, http.StatusOK, name, pageData)
+			if recorder.Code != http.StatusOK {
+				t.Fatalf("unexpected status: %d", recorder.Code)
+			}
+			if !strings.Contains(recorder.Body.String(), "FlyFy") {
+				t.Fatalf("rendered template %s does not contain shell content", name)
+			}
+			if name == "moderation/queue" {
+				body := html.UnescapeString(recorder.Body.String())
+				if !strings.Contains(body, "Kok-Tobe + Cathedral") ||
+					!strings.Contains(body, "@nomad_aru") ||
+					!strings.Contains(body, "Khan Aruzhan") ||
+					!strings.Contains(body, "Almaty, Kazakhstan") {
+					t.Fatalf("moderation queue did not render useful excursion context: %s", body)
+				}
+				if strings.Contains(body, excursionID.String()) {
+					t.Fatal("moderation queue rendered raw target id")
+				}
+				for _, expected := range []string{
+					`name="status"`,
+					`name="city"`,
+					`name="q"`,
+					`name="signal"`,
+					`name="risk"`,
+					`name="sort"`,
+					`/admin/moderation/excursions/sync?status=active&amp;city=Almaty&amp;q=Kok&amp;signal=new_guide&amp;risk=high&amp;sort=risk_desc`,
+					`/admin/moderation/excursions`,
+				} {
+					if !strings.Contains(recorder.Body.String(), expected) {
+						t.Fatalf("moderation queue did not render filter control %q: %s", expected, recorder.Body.String())
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestRendererRendersModerationDetail(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Now().UTC()
+	caseID := uuid.New()
+	excursionID := uuid.New()
+	pageData := PageData{
+		Title:     "Detail",
+		Locale:    localeRU,
+		Path:      "/admin/moderation/excursions/" + caseID.String(),
+		CSRFToken: "csrf-token",
+		Data: CaseDetailViewData{
+			Detail: &app.ModerationCaseDetail{
+				Case: &model.ModerationCase{
+					ID:             caseID,
+					TargetType:     model.ModerationTargetExcursion,
+					TargetID:       excursionID,
+					SourceRevision: 7,
+					Status:         enum.ModerationCaseStatusOpen,
+					Priority:       80,
+					OpenedAt:       now,
+				},
+				Excursion: &model.ExcursionModerationItem{
+					ID:                    excursionID,
+					Title:                 "Big Almaty Lake",
+					Summary:               "Compare guide offers for this route.",
+					Description:           "Choose a guide, language, price, meeting point, and schedule before booking this route.",
+					Status:                "PENDING_REVIEW",
+					Visibility:            "PUBLIC",
+					GuideUserID:           uuid.New(),
+					GuideDisplayName:      "Guide",
+					GuideTrustScore:       65,
+					PublishRiskScore:      35,
+					ModerationReasonCodes: []string{"new_guide"},
+					LandmarkName:          "Big Almaty Lake",
+					AttractionNames:       []string{"Big Almaty Lake", "Medeu"},
+					DurationMinutes:       150,
+					MaxGroupSize:          8,
+					LanguageCodes:         []string{"ru", "en"},
+					MeetingPoint:          "Главный вход Медеу",
+					MeetingPointByLocale: map[string]string{
+						"ru": "Локализованная точка встречи",
+					},
+					IncludedItems: []string{"transfer", "tickets"},
+					IncludedItemsByLocale: map[string][]string{
+						"ru": {"Трансфер", "Входные билеты"},
+					},
+					Itinerary: []model.ExcursionItineraryItem{
+						{
+							SortOrder:          0,
+							StartOffsetMinutes: 0,
+							DurationMinutes:    intPtr(15),
+							Title:              "Meet at Medeu",
+							Description:        "Group check-in.",
+							Translations: map[string]model.ExcursionItineraryLocalizedCopy{
+								"ru": {
+									Title:       "Встреча у главного входа",
+									Description: "Проверка группы и короткий инструктаж.",
+								},
+							},
+						},
+						{
+							SortOrder:          1,
+							StartOffsetMinutes: 30,
+							DurationMinutes:    intPtr(60),
+							AttractionName:     "Big Almaty Lake",
+							Title:              "Walk to the viewpoint",
+							Description:        "Scenic walk.",
+							Translations: map[string]model.ExcursionItineraryLocalizedCopy{
+								"ru": {
+									Title:       "Подъем к смотровой точке",
+									Description: "Остановка для фото и рассказа о маршруте.",
+								},
+							},
+						},
+					},
+					CountryCode:     "KZ",
+					DepartureCityID: "almaty",
+					PriceAmount:     12000,
+					Currency:        "KZT",
+					Revision:        7,
+					CreatedAt:       now,
+					UpdatedAt:       now,
+				},
+				Decisions: []*model.ModerationDecision{
+					{
+						ID:              uuid.New(),
+						CaseID:          caseID,
+						DecisionType:    enum.ModerationDecisionReject,
+						SourceRevision:  7,
+						ReasonCodes:     []string{"missing_license"},
+						PublicComment:   "Нужно добавить лицензию гида.",
+						InternalComment: "Проверить документы перед повторной публикацией.",
+						DecidedBy:       uuid.New(),
+						DecidedByName:   "Иван Петров",
+						ApplyStatus:     enum.ModerationApplyApplied,
+						CreatedAt:       now,
+					},
+				},
+			},
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "moderation/detail", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	if !strings.Contains(recorder.Body.String(), "Big Almaty Lake") {
+		t.Fatal("moderation detail did not render excursion content")
+	}
+	if !strings.Contains(recorder.Body.String(), "Кейс модерации") {
+		t.Fatal("moderation detail did not render Russian labels")
+	}
+	if strings.Contains(recorder.Body.String(), ">KZ<") {
+		t.Fatal("moderation detail rendered raw country code")
+	}
+	if !strings.Contains(recorder.Body.String(), "Алматы, Казахстан") {
+		t.Fatal("moderation detail did not render localized city and country")
+	}
+	if !strings.Contains(recorder.Body.String(), "Big Almaty Lake, Medeu") {
+		t.Fatal("moderation detail did not render route attraction names")
+	}
+	if strings.Contains(recorder.Body.String(), genericRouteSummary) {
+		t.Fatal("moderation detail rendered generic route summary")
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		`data-confirm-form="approve"`,
+		`data-confirm-form="reject"`,
+		`id="decision-confirmation-dialog"`,
+		"Подтвердить действие",
+		"missing_license",
+		"Нужно добавить лицензию гида.",
+		"Проверить документы перед повторной публикацией.",
+		"Иван Петров",
+		"Маршрут и расписание",
+		"2 ч 30 мин",
+		"До 8 гостей",
+		"Русский, Английский",
+		"Локализованная точка встречи",
+		"Встреча у главного входа",
+		"Проверка группы и короткий инструктаж.",
+		"00:30",
+		"Подъем к смотровой точке",
+		"Трансфер",
+		"Входные билеты",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("moderation detail did not render %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, `Кем принято</th><th>Создано</th></tr></thead>`) && strings.Contains(body, `<td><code>`) {
+		t.Fatal("moderation detail rendered decision actor as uuid instead of employee name")
+	}
+}
+
+func TestRendererLocalizesExcursionLandmarkName(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Now().UTC()
+	caseID := uuid.New()
+	excursionID := uuid.New()
+	pageData := PageData{
+		Title:     "Detail",
+		Locale:    localeRU,
+		Path:      "/admin/moderation/excursions/" + caseID.String(),
+		CSRFToken: "csrf-token",
+		Data: CaseDetailViewData{
+			Detail: &app.ModerationCaseDetail{
+				Case: &model.ModerationCase{
+					ID:             caseID,
+					TargetType:     model.ModerationTargetExcursion,
+					TargetID:       excursionID,
+					SourceRevision: 2,
+					Status:         enum.ModerationCaseStatusOpen,
+					OpenedAt:       now,
+				},
+				Excursion: &model.ExcursionModerationItem{
+					ID:           excursionID,
+					Title:        "Medeu Alpine Skating Rink",
+					Summary:      "Compare guide offers for Medeu Alpine Skating Rink.",
+					Description:  "Choose a guide, language, price, meeting point, and included options before booking.",
+					Status:       "PENDING_REVIEW",
+					Visibility:   "PUBLIC",
+					LandmarkName: "Medeu Alpine Skating Rink",
+					ProductTranslations: map[string]model.ExcursionLocalizedCopy{
+						"ru": {
+							Title:       "Высокогорный каток Медеу",
+							Description: "Высокогорный спортивный комплекс над Алматы с большим искусственным ледовым полем.",
+						},
+						"en": {Title: "Medeu Alpine Skating Rink"},
+					},
+					AttractionNamesByLocale: map[string][]string{
+						"ru": {"Служебная точка маршрута"},
+					},
+					CountryCode:          "KZ",
+					DepartureCityID:      "almaty",
+					Currency:             "KZT",
+					SubmittedForReviewAt: &now,
+					CreatedAt:            now,
+					UpdatedAt:            now,
+				},
+			},
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "moderation/detail", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	if !strings.Contains(body, "Высокогорный каток Медеу") {
+		t.Fatalf("moderation detail did not render localized landmark name: %s", body)
+	}
+	if strings.Contains(body, "<dd>Medeu Alpine Skating Rink</dd>") {
+		t.Fatal("moderation detail rendered English landmark field in Russian locale")
+	}
+	if strings.Contains(body, "Сравните предложения гидов") || strings.Contains(body, "Compare guide offers") {
+		t.Fatal("moderation detail rendered marketplace comparison copy for a single moderation case")
+	}
+	if !strings.Contains(body, "Заявка гида на публикацию экскурсии: Высокогорный каток Медеу.") {
+		t.Fatal("moderation detail did not render moderation summary with localized landmark")
+	}
+	if !strings.Contains(body, "Высокогорный спортивный комплекс над Алматы") {
+		t.Fatal("moderation detail did not render localized product description")
+	}
+}
+
+func TestRendererRendersStaffManagementTemplates(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	staffID := uuid.New()
+	staff := &model.StaffUser{
+		ID:          staffID,
+		Email:       "moderator@flyfy.local",
+		DisplayName: "Moderator",
+		Status:      enum.StaffStatusActive,
+		Roles:       []enum.StaffRole{enum.StaffRoleExcursionModerator},
+	}
+	pageData := PageData{
+		Title:     "Staff",
+		Locale:    localeEN,
+		Path:      "/admin/staff",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data: StaffListViewData{
+			Staff:           []*model.StaffUser{staff},
+			AssignableRoles: []enum.StaffRole{enum.StaffRoleAdmin, enum.StaffRoleExcursionModerator},
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "staff/index", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, "/admin/staff/"+staffID.String()+"/edit") {
+		t.Fatalf("staff list did not render edit link: %s", body)
+	}
+	if strings.Contains(body, `class="split"`) {
+		t.Fatal("staff list still renders create form and list side by side")
+	}
+	if !strings.Contains(body, "Staff list") {
+		t.Fatal("staff list section title is missing")
+	}
+
+	pageData.Path = "/admin/staff/" + staffID.String() + "/edit"
+	pageData.Data = StaffEditViewData{
+		Staff:           staff,
+		AssignableRoles: []enum.StaffRole{enum.StaffRoleAdmin, enum.StaffRoleExcursionModerator},
+		Statuses:        []enum.StaffStatus{enum.StaffStatusActive, enum.StaffStatusDisabled},
+	}
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "staff/edit", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body = recorder.Body.String()
+	for _, expected := range []string{
+		`action="/admin/staff/` + staffID.String() + `"`,
+		`action="/admin/staff/` + staffID.String() + `/status"`,
+		`action="/admin/staff/` + staffID.String() + `/password/regenerate"`,
+		`name="reason"`,
+		`required`,
+		`value="EXCURSION_MODERATOR" checked`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("staff edit template did not render %q: %s", expected, body)
+		}
+	}
+}
+
+func TestRendererRendersReadableAuditEvents(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	staffID := uuid.New()
+	pageData := PageData{
+		Title:     "Audit",
+		Locale:    localeRU,
+		Path:      "/admin/audit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data: NewAuditViewData(localeRU, []*model.AuditEvent{
+			{
+				ActorStaffID:     &staffID,
+				ActorDisplayName: "Данияр Хван",
+				ActorEmail:       "dkhvan.developer@gmail.com",
+				Action:           "staff.updated",
+				EntityType:       "staff_user",
+				EntityID:         &staffID,
+				RequestID:        "request-1234567890",
+				BeforeJSON:       []byte(`{"email":"dkhvan.developer@gmail.com","displayName":"Old Name","status":"ACTIVE","roles":["SUPER_ADMIN"]}`),
+				AfterJSON:        []byte(`{"email":"dkhvan.developer@gmail.com","displayName":"Данияр Хван","status":"ACTIVE","roles":["SUPER_ADMIN"]}`),
+				CreatedAt:        time.Now().UTC(),
+			},
+		}),
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "audit/index", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Профиль сотрудника обновлен",
+		"Данияр Хван",
+		"dkhvan.developer@gmail.com",
+		"Old Name -> Данияр Хван",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("audit template did not render readable value %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, "Запрос request") || strings.Contains(body, "request-1234567890") {
+		t.Fatalf("audit template rendered request id in visible details: %s", body)
+	}
+	if strings.Contains(body, ">staff.updated<") {
+		t.Fatalf("audit template rendered raw action: %s", body)
+	}
+	if strings.Contains(body, "<code>"+shortTemplateID(staffID)+"</code>") {
+		t.Fatalf("audit template rendered raw actor uuid as primary content: %s", body)
+	}
+}
+
+func adminTemplateActor() *model.StaffUser {
+	return &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "admin@flyfy.local",
+		DisplayName: "Admin",
+		Status:      enum.StaffStatusActive,
+		Roles:       []enum.StaffRole{enum.StaffRoleAdmin},
+		Permissions: []enum.Permission{enum.PermissionStaffManage},
+	}
+}
+
+func intPtr(value int) *int {
+	return &value
+}
+
+func TestFlashMessageFromRequestUsesWhitelistedLocalizedKeys(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(http.MethodGet, "/admin/staff?flash=staff.updated", nil)
+	if got := flashMessageFromRequest(localeRU, request); got != "Изменения сохранены." {
+		t.Fatalf("flashMessageFromRequest() = %q", got)
+	}
+
+	request = httptest.NewRequest(http.MethodGet, "/admin/staff?flash=<script>alert(1)</script>", nil)
+	if got := flashMessageFromRequest(localeRU, request); got != "" {
+		t.Fatalf("flashMessageFromRequest() for unknown key = %q, want empty", got)
+	}
+}
+
+func TestRedirectWithFlashPreservesExistingQuery(t *testing.T) {
+	t.Parallel()
+
+	got := redirectWithFlash("/admin/moderation/excursions?status=active&city=Almaty", "moderation.queueSynced")
+	if got != "/admin/moderation/excursions?city=Almaty&flash=moderation.queueSynced&status=active" {
+		t.Fatalf("redirectWithFlash() = %q", got)
+	}
+}
+
+func TestLocaleResolution(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(http.MethodGet, "/admin?lang=ru", nil)
+	request.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	if got := resolveLocale(request); got != localeRU {
+		t.Fatalf("resolveLocale() = %q, want %q", got, localeRU)
+	}
+
+	request = httptest.NewRequest(http.MethodGet, "/admin", nil)
+	request.AddCookie(&http.Cookie{Name: localeCookieName, Value: "ru"})
+	if got := resolveLocale(request); got != localeRU {
+		t.Fatalf("resolveLocale() with cookie = %q, want %q", got, localeRU)
+	}
+
+	request = httptest.NewRequest(http.MethodGet, "/admin", nil)
+	request.Header.Set("Accept-Language", "ru-KZ,ru;q=0.9,en;q=0.4")
+	if got := resolveLocale(request); got != localeRU {
+		t.Fatalf("resolveLocale() with Accept-Language = %q, want %q", got, localeRU)
+	}
+}
+
+func TestAdminCSSWrapsModerationRouteText(t *testing.T) {
+	t.Parallel()
+
+	raw, err := embeddedFiles.ReadFile("static/css/admin.css")
+	if err != nil {
+		t.Fatalf("read embedded admin css: %v", err)
+	}
+	css := string(raw)
+	for _, expected := range []string{
+		".timeline-body",
+		"min-width: 0;",
+		"overflow-wrap: anywhere;",
+	} {
+		if !strings.Contains(css, expected) {
+			t.Fatalf("admin css does not contain %q: %s", expected, css)
+		}
+	}
+}
+
+func TestExcursionMeetingPointTextUsesLocalizedValue(t *testing.T) {
+	t.Parallel()
+
+	withTranslation := &model.ExcursionModerationItem{
+		MeetingPoint: "Medeu entrance",
+		MeetingPointByLocale: map[string]string{
+			"ru": "Главный вход Медеу",
+		},
+	}
+	if got := excursionMeetingPointText(localeRU, withTranslation); got != "Главный вход Медеу" {
+		t.Fatalf("excursionMeetingPointText() = %q, want localized meeting point", got)
+	}
+
+	seedValue := &model.ExcursionModerationItem{MeetingPoint: "Medeu entrance"}
+	if got := excursionMeetingPointText(localeRU, seedValue); got != "Вход Медеу" {
+		t.Fatalf("excursionMeetingPointText() = %q, want readable Russian fallback", got)
+	}
+}

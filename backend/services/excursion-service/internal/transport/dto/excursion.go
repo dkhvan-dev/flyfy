@@ -72,12 +72,17 @@ type ExcursionResponse struct {
 	ID                       string                            `json:"id"`
 	GuideProfileID           string                            `json:"guideProfileId"`
 	GuideUserID              string                            `json:"guideUserId"`
+	GuideDisplayName         string                            `json:"guideDisplayName,omitempty"`
+	GuideNickname            string                            `json:"guideNickname,omitempty"`
+	GuideFirstName           string                            `json:"guideFirstName,omitempty"`
+	GuideLastName            string                            `json:"guideLastName,omitempty"`
 	LandmarkID               *string                           `json:"landmarkId,omitempty"`
 	LandmarkName             *string                           `json:"landmarkName,omitempty"`
 	Title                    string                            `json:"title"`
 	Summary                  string                            `json:"summary"`
 	Description              string                            `json:"description"`
 	Translations             map[string]ExcursionLocalizedCopy `json:"translations,omitempty"`
+	ProductTranslations      map[string]ExcursionLocalizedCopy `json:"productTranslations,omitempty"`
 	CategorySlug             string                            `json:"categorySlug"`
 	Tags                     []string                          `json:"tags,omitempty"`
 	Status                   string                            `json:"status"`

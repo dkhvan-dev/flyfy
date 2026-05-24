@@ -83,6 +83,7 @@ type excursionRepoStub struct {
 	listReviewItems                 []*model.ExcursionReview
 	listScheduleFilter              port.ExcursionScheduleFilter
 	listScheduleSlots               []*model.ExcursionScheduleSlot
+	listExcursionsFilter            port.ExcursionFilter
 	listExcursions                  []*model.Excursion
 	loadedRelations                 port.ExcursionRelations
 	hasGuideLandmark                bool
@@ -114,6 +115,7 @@ func (s *excursionRepoStub) GetExcursionByID(ctx context.Context, excursionID uu
 }
 
 func (s *excursionRepoStub) ListExcursions(ctx context.Context, filter port.ExcursionFilter) ([]*model.Excursion, error) {
+	s.listExcursionsFilter = filter
 	return s.listExcursions, nil
 }
 
@@ -573,6 +575,12 @@ func TestCreateExcursionAcceptsCombinedRouteWithoutLandmark(t *testing.T) {
 	}
 	if aggregate.Excursion.LandmarkID != nil {
 		t.Fatalf("LandmarkID = %v, want nil for combined route", aggregate.Excursion.LandmarkID)
+	}
+	if aggregate.Excursion.Summary != "Compare guide offers for Kok-Tobe + Cathedral." {
+		t.Fatalf("Summary = %q, want route-aware copy", aggregate.Excursion.Summary)
+	}
+	if aggregate.Excursion.Description != "Choose a guide, language, price, meeting point, schedule, and included options before booking a route through Kok-Tobe, Cathedral." {
+		t.Fatalf("Description = %q, want route-aware copy", aggregate.Excursion.Description)
 	}
 	if len(repo.createdRelations.Itinerary) != 2 {
 		t.Fatalf("itinerary length = %d, want 2", len(repo.createdRelations.Itinerary))
@@ -1325,6 +1333,9 @@ func TestCreateExcursionPersistsGuideSearchSnapshot(t *testing.T) {
 			GuideUserID:     actorUserID,
 			Allowed:         true,
 			DisplayName:     "Aruzhan T.",
+			Nickname:        "@aru_t",
+			FirstName:       "Aruzhan",
+			LastName:        "Khan",
 			GuideSearchText: "Aruzhan T. @aru_t local canyon expert",
 		},
 	}, nil)
@@ -1359,9 +1370,92 @@ func TestCreateExcursionPersistsGuideSearchSnapshot(t *testing.T) {
 	if aggregate.Excursion.GuideSearchText != "Aruzhan T. @aru_t local canyon expert" {
 		t.Fatalf("guide search text = %q, want snapshot search text", aggregate.Excursion.GuideSearchText)
 	}
+	if aggregate.Excursion.GuideNickname != "@aru_t" {
+		t.Fatalf("guide nickname = %q, want snapshot nickname", aggregate.Excursion.GuideNickname)
+	}
+	if aggregate.Excursion.GuideLastName != "Khan" || aggregate.Excursion.GuideFirstName != "Aruzhan" {
+		t.Fatalf("guide full name = %q %q, want Khan Aruzhan", aggregate.Excursion.GuideLastName, aggregate.Excursion.GuideFirstName)
+	}
 	if repo.createdExcursion.GuideDisplayName != aggregate.Excursion.GuideDisplayName ||
+		repo.createdExcursion.GuideNickname != aggregate.Excursion.GuideNickname ||
+		repo.createdExcursion.GuideFirstName != aggregate.Excursion.GuideFirstName ||
+		repo.createdExcursion.GuideLastName != aggregate.Excursion.GuideLastName ||
 		repo.createdExcursion.GuideSearchText != aggregate.Excursion.GuideSearchText {
 		t.Fatal("guide search snapshot was not persisted with the excursion aggregate")
+	}
+}
+
+func TestListPendingReviewExcursionsUsesPendingStatus(t *testing.T) {
+	excursion := &model.Excursion{
+		ID:              uuid.New(),
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     uuid.New(),
+		Title:           "Medeu tour",
+		Summary:         "Private mountain route",
+		Description:     "A detailed mountain excursion through Medeu.",
+		CategorySlug:    "nature",
+		Status:          enum.ExcursionStatusPendingReview,
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 180,
+		MaxGroupSize:    6,
+		MeetingPoint:    "Medeu entrance",
+		PriceAmount:     120,
+		Currency:        "KZT",
+		Revision:        1,
+		CreatedAt:       time.Now().UTC(),
+		UpdatedAt:       time.Now().UTC(),
+	}
+	repo := &excursionRepoStub{listExcursions: []*model.Excursion{excursion}}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	aggregates, err := uc.ListPendingReviewExcursions(context.Background(), 25, 3)
+	if err != nil {
+		t.Fatalf("ListPendingReviewExcursions() error = %v", err)
+	}
+	if len(aggregates) != 1 || aggregates[0].Excursion.ID != excursion.ID {
+		t.Fatalf("aggregates = %#v, want pending excursion", aggregates)
+	}
+	filter := repo.listExcursionsFilter
+	if len(filter.Statuses) != 1 || filter.Statuses[0] != string(enum.ExcursionStatusPendingReview) {
+		t.Fatalf("statuses = %#v, want PENDING_REVIEW", filter.Statuses)
+	}
+	if filter.Limit != 25 || filter.Offset != 3 {
+		t.Fatalf("pagination = limit %d offset %d, want 25/3", filter.Limit, filter.Offset)
+	}
+	if filter.Visibility != nil {
+		t.Fatalf("visibility = %v, want nil for moderation queue", *filter.Visibility)
+	}
+}
+
+func TestGetModerationExcursionAllowsPendingReview(t *testing.T) {
+	excursion := &model.Excursion{
+		ID:              uuid.New(),
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     uuid.New(),
+		Title:           "Medeu tour",
+		Summary:         "Private mountain route",
+		Description:     "A detailed mountain excursion through Medeu.",
+		CategorySlug:    "nature",
+		Status:          enum.ExcursionStatusPendingReview,
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 180,
+		MaxGroupSize:    6,
+		MeetingPoint:    "Medeu entrance",
+		PriceAmount:     120,
+		Currency:        "KZT",
+		Revision:        1,
+		CreatedAt:       time.Now().UTC(),
+		UpdatedAt:       time.Now().UTC(),
+	}
+	repo := &excursionRepoStub{gotExcursion: excursion}
+	uc := NewExcursionUseCase(repo, guideVerifierStub{}, nil)
+
+	aggregate, err := uc.GetModerationExcursion(context.Background(), excursion.ID)
+	if err != nil {
+		t.Fatalf("GetModerationExcursion() error = %v", err)
+	}
+	if aggregate.Excursion.ID != excursion.ID {
+		t.Fatalf("excursion id = %s, want %s", aggregate.Excursion.ID, excursion.ID)
 	}
 }
 
@@ -1690,6 +1784,12 @@ func TestUpdateExcursionAppliesCombinedRouteInput(t *testing.T) {
 	}
 	if repo.savedExcursion.Title != "Kok-Tobe + Cathedral" {
 		t.Fatalf("Title = %q, want combined route copy", repo.savedExcursion.Title)
+	}
+	if repo.savedExcursion.Summary != "Compare guide offers for Kok-Tobe + Cathedral." {
+		t.Fatalf("Summary = %q, want route-aware copy", repo.savedExcursion.Summary)
+	}
+	if repo.savedExcursion.Description != "Choose a guide, language, price, meeting point, schedule, and included options before booking a route through Kok-Tobe, Cathedral." {
+		t.Fatalf("Description = %q, want route-aware copy", repo.savedExcursion.Description)
 	}
 	if len(repo.savedRelations.Itinerary) != 2 {
 		t.Fatalf("itinerary length = %d, want 2", len(repo.savedRelations.Itinerary))

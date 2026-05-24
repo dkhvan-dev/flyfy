@@ -397,6 +397,9 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 		GuideReviewsCount:    permission.ReviewsCount,
 		GuideExperienceYears: permission.ExperienceYears,
 		GuideDisplayName:     permission.DisplayName,
+		GuideNickname:        permission.Nickname,
+		GuideFirstName:       permission.FirstName,
+		GuideLastName:        permission.LastName,
 		GuideSearchText:      permission.GuideSearchText,
 		LandmarkID:           landmarkID,
 		LandmarkName:         landmarkName,
@@ -476,6 +479,9 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 		permission.ReviewsCount,
 		permission.ExperienceYears,
 		permission.DisplayName,
+		permission.Nickname,
+		permission.FirstName,
+		permission.LastName,
 		permission.GuideSearchText,
 	)
 	if err = u.validateCoverFiles(ctx, input.CoverFileID, input.ProductCoverFileID); err != nil {
@@ -571,6 +577,9 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 		permission.ReviewsCount,
 		permission.ExperienceYears,
 		permission.DisplayName,
+		permission.Nickname,
+		permission.FirstName,
+		permission.LastName,
 		permission.GuideSearchText,
 	)
 	publishParams := model.PublishExcursionParams{
@@ -717,6 +726,20 @@ func (u *ExcursionUseCase) GetPublicExcursion(ctx context.Context, excursionID u
 	return u.loadAggregate(ctx, item)
 }
 
+func (u *ExcursionUseCase) GetModerationExcursion(ctx context.Context, excursionID uuid.UUID) (*ExcursionAggregate, error) {
+	if excursionID == uuid.Nil {
+		return nil, ErrInvalidExcursionID
+	}
+	item, err := u.repo.GetExcursionByID(ctx, excursionID)
+	if err != nil {
+		return nil, fmt.Errorf("get moderation excursion by id: %w", err)
+	}
+	if item == nil || item.DeletedAt != nil {
+		return nil, ErrExcursionNotFound
+	}
+	return u.loadAggregate(ctx, item)
+}
+
 func (u *ExcursionUseCase) GetMyExcursion(ctx context.Context, excursionID uuid.UUID, actorUserID uuid.UUID) (*ExcursionAggregate, error) {
 	item, relations, err := u.getOwnedExcursionWithRelations(ctx, excursionID, actorUserID)
 	if err != nil {
@@ -736,6 +759,27 @@ func (u *ExcursionUseCase) ListExcursions(ctx context.Context, filter port.Excur
 	items, err := u.repo.ListExcursions(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("list excursions: %w", err)
+	}
+	return u.loadAggregates(ctx, items)
+}
+
+func (u *ExcursionUseCase) ListPendingReviewExcursions(ctx context.Context, limit int, offset int) ([]*ExcursionAggregate, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	items, err := u.repo.ListExcursions(ctx, port.ExcursionFilter{
+		Statuses: []string{string(enum.ExcursionStatusPendingReview)},
+		Limit:    limit,
+		Offset:   offset,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list pending review excursions: %w", err)
 	}
 	return u.loadAggregates(ctx, items)
 }
@@ -3122,20 +3166,29 @@ func attractionBasedExcursionCopy(landmarkName *string) model.ExcursionLocalized
 
 func combinedRouteMarketingCopy(input CreateExcursionInput) excursionMarketingCopy {
 	names := make([]string, 0, len(input.Itinerary))
+	seen := make(map[string]struct{}, len(input.Itinerary))
 	for _, item := range input.Itinerary {
 		if item.AttractionName == nil {
 			continue
 		}
 		name := strings.TrimSpace(*item.AttractionName)
-		if name != "" {
-			names = append(names, name)
+		key := strings.ToLower(name)
+		if key == "" {
+			continue
 		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		names = append(names, name)
 	}
 	if len(names) >= 2 {
+		routeName := strings.Join(names, " + ")
+		routeStops := strings.Join(names, ", ")
 		return excursionMarketingCopy{
-			Title:       strings.Join(names, " + "),
-			Summary:     "Compare guide offers for this route.",
-			Description: "Choose a guide, language, price, meeting point, and schedule before booking this route.",
+			Title:       routeName,
+			Summary:     "Compare guide offers for " + routeName + ".",
+			Description: "Choose a guide, language, price, meeting point, schedule, and included options before booking a route through " + routeStops + ".",
 		}
 	}
 	return excursionMarketingCopy{

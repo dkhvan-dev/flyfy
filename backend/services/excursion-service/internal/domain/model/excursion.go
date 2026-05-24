@@ -81,6 +81,9 @@ type Excursion struct {
 	GuideReviewsCount    int
 	GuideExperienceYears int
 	GuideDisplayName     string
+	GuideNickname        string
+	GuideFirstName       string
+	GuideLastName        string
 	GuideSearchText      string
 
 	LandmarkID   *uuid.UUID
@@ -129,6 +132,9 @@ type NewExcursionParams struct {
 	GuideReviewsCount    int
 	GuideExperienceYears int
 	GuideDisplayName     string
+	GuideNickname        string
+	GuideFirstName       string
+	GuideLastName        string
 	GuideSearchText      string
 	LandmarkID           *uuid.UUID
 	LandmarkName         *string
@@ -170,6 +176,9 @@ func NewExcursion(params NewExcursionParams) (*Excursion, error) {
 		GuideReviewsCount:     normalizeNonNegativeInt(params.GuideReviewsCount),
 		GuideExperienceYears:  normalizeNonNegativeInt(params.GuideExperienceYears),
 		GuideDisplayName:      normalizeGuideSnapshotText(params.GuideDisplayName),
+		GuideNickname:         normalizeGuideSnapshotText(params.GuideNickname),
+		GuideFirstName:        normalizeGuideSnapshotText(params.GuideFirstName),
+		GuideLastName:         normalizeGuideSnapshotText(params.GuideLastName),
 		GuideSearchText:       normalizeGuideSnapshotText(params.GuideSearchText),
 		LandmarkID:            params.LandmarkID,
 		LandmarkName:          NormalizeOptionalString(params.LandmarkName),
@@ -271,12 +280,18 @@ func (t *Excursion) ApplyGuideSnapshot(
 	reviewsCount int,
 	experienceYears int,
 	displayName string,
+	nickname string,
+	firstName string,
+	lastName string,
 	searchText string,
 ) {
 	t.GuideRatingAvg = normalizeGuideRatingAvg(ratingAvg)
 	t.GuideReviewsCount = normalizeNonNegativeInt(reviewsCount)
 	t.GuideExperienceYears = normalizeNonNegativeInt(experienceYears)
 	t.GuideDisplayName = normalizeGuideSnapshotText(displayName)
+	t.GuideNickname = normalizeGuideSnapshotText(nickname)
+	t.GuideFirstName = normalizeGuideSnapshotText(firstName)
+	t.GuideLastName = normalizeGuideSnapshotText(lastName)
 	t.GuideSearchText = normalizeGuideSnapshotText(searchText)
 }
 
@@ -459,7 +474,7 @@ func (t *Excursion) ApproveReview(params PublishExcursionParams) error {
 	if t.Status == enum.ExcursionStatusPublished && t.PublishedAt != nil {
 		return nil
 	}
-	if t.Status != enum.ExcursionStatusPendingReview {
+	if t.Status != enum.ExcursionStatusPendingReview && t.Status != enum.ExcursionStatusRejected {
 		return ErrExcursionNotPendingReview
 	}
 	if err := t.ValidatePublishable(params); err != nil {
@@ -486,7 +501,7 @@ func (t *Excursion) RejectReview(reasonCodes []string) error {
 	if t.Status == enum.ExcursionStatusRejected {
 		return nil
 	}
-	if t.Status != enum.ExcursionStatusPendingReview {
+	if t.Status != enum.ExcursionStatusPendingReview && t.Status != enum.ExcursionStatusPublished {
 		return ErrExcursionNotPendingReview
 	}
 

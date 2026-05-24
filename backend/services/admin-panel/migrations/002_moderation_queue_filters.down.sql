@@ -1,0 +1,4 @@
+DROP INDEX IF EXISTS idx_moderation_cases_excursion_search_trgm;
+DROP INDEX IF EXISTS idx_moderation_cases_excursion_risk;
+DROP INDEX IF EXISTS idx_moderation_cases_excursion_reasons;
+DROP INDEX IF EXISTS idx_moderation_cases_excursion_city;

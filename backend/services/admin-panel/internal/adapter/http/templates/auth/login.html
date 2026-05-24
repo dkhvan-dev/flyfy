@@ -1,0 +1,29 @@
+{{define "auth/login"}}
+<!doctype html>
+{{template "head" .}}
+<body class="auth-page">
+  <div class="auth-locale locale-switch" aria-label="{{t .Locale "nav.language"}}">
+    <a class="{{if eq .Locale "ru"}}active{{end}}" href="{{localeURL .Path "ru"}}">{{t .Locale "lang.ru"}}</a>
+    <a class="{{if eq .Locale "en"}}active{{end}}" href="{{localeURL .Path "en"}}">{{t .Locale "lang.en"}}</a>
+  </div>
+  <main class="auth-shell">
+    <section class="auth-panel" aria-labelledby="login-title">
+      <p class="eyebrow">{{t .Locale "login.staffOnly"}}</p>
+      <h1 id="login-title">{{t .Locale "app.title"}}</h1>
+      {{if .Error}}<div class="alert error" role="alert">{{.Error}}</div>{{end}}
+      <form method="post" action="/admin/login" class="form">
+        <label>
+          <span>{{t .Locale "field.email"}}</span>
+          <input name="email" type="email" autocomplete="username" value="{{.Data.Email}}" required autofocus>
+        </label>
+        <label>
+          <span>{{t .Locale "field.password"}}</span>
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="primary" type="submit">{{t .Locale "action.signIn"}}</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}
