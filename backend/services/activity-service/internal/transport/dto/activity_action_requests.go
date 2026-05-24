@@ -16,6 +16,11 @@ type CompleteActivityRequest struct {
 	Reason string `json:"reason,omitempty"`
 }
 
+type RejectActivityModerationRequest struct {
+	ReasonCodes   []string `json:"reasonCodes,omitempty"`
+	PublicComment string   `json:"publicComment"`
+}
+
 type ExtendActivityRequest struct {
 	Minutes int `json:"minutes"`
 }

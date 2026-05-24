@@ -107,6 +107,7 @@ func main() {
 		repo,
 		fileManagerClient,
 		actorResolver,
+		cfg.Security.InternalServiceToken,
 	)
 
 	httpMux := http.NewServeMux()

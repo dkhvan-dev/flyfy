@@ -74,7 +74,10 @@ func (c *Client) Approve(ctx context.Context, input port.ExcursionDecisionInput)
 
 func (c *Client) Reject(ctx context.Context, input port.ExcursionDecisionInput) (*model.ExcursionModerationItem, []byte, error) {
 	headers := c.decisionHeaders(input)
-	body := map[string]any{"reasonCodes": input.ReasonCodes}
+	body := map[string]any{
+		"reasonCodes":   input.ReasonCodes,
+		"publicComment": input.PublicComment,
+	}
 	var resp excursionResponse
 	raw, err := c.doJSONRaw(ctx, http.MethodPost, "/v1/admin/excursions/"+input.ExcursionID.String()+"/moderation/reject", headers, body, &resp)
 	if err != nil {

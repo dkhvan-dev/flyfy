@@ -27,11 +27,22 @@ type LoginViewData struct {
 }
 
 type QueueViewData struct {
-	Items        []ModerationQueueItemView
-	Filters      QueueFilterViewData
-	IsHistory    bool
-	FilterAction string
-	ResetURL     string
+	Items                []ModerationQueueItemView
+	Filters              QueueFilterViewData
+	IsHistory            bool
+	FilterAction         string
+	ResetURL             string
+	OpenQueueURL         string
+	HistoryURL           string
+	SyncAction           string
+	DetailBaseURL        string
+	TitleKey             string
+	HistoryTitleKey      string
+	EmptyQueueKey        string
+	EmptyHistoryKey      string
+	TargetHeaderKey      string
+	HostHeaderKey        string
+	SearchPlaceholderKey string
 }
 
 type QueueFilterViewData struct {
@@ -47,10 +58,12 @@ type QueueFilterViewData struct {
 type ModerationQueueItemView struct {
 	Case           *model.ModerationCase
 	Excursion      *model.ExcursionModerationItem
+	Activity       *model.ActivityModerationItem
 	TargetTitle    string
 	TargetSubtitle string
 	GuideName      string
 	GuideFullName  string
+	DetailURL      string
 }
 
 type CaseDetailViewData struct {
@@ -346,25 +359,39 @@ func editableStaffStatuses() []enum.StaffStatus {
 }
 
 func NewQueueViewData(cases []*model.ModerationCase, filters ...QueueFilterViewData) QueueViewData {
+	return newQueueViewData(cases, model.ModerationTargetExcursion, filters...)
+}
+
+func NewActivityQueueViewData(cases []*model.ModerationCase, filters ...QueueFilterViewData) QueueViewData {
+	return newQueueViewData(cases, model.ModerationTargetActivity, filters...)
+}
+
+func newQueueViewData(cases []*model.ModerationCase, targetType model.ModerationTargetType, filters ...QueueFilterViewData) QueueViewData {
 	items := make([]ModerationQueueItemView, 0, len(cases))
 	for _, item := range cases {
 		if item == nil {
 			continue
 		}
 		excursion := excursionFromSnapshot(item)
+		activity := activityFromSnapshot(item)
 		view := ModerationQueueItemView{
 			Case:      item,
 			Excursion: excursion,
+			Activity:  activity,
 		}
-		view.TargetTitle = queueTargetTitle(item, excursion)
-		view.TargetSubtitle = queueTargetSubtitle(excursion)
+		view.TargetTitle = queueTargetTitle(item, excursion, activity)
+		view.TargetSubtitle = queueTargetSubtitle(excursion, activity)
 		if excursion != nil {
 			view.GuideName = excursionGuidePrimaryText(excursion)
 			view.GuideFullName = excursionGuideFullNameText(excursion)
+		} else if activity != nil {
+			view.GuideName = activityHostPrimaryText(activity)
+			view.GuideFullName = activityHostSecondaryText(activity)
 		}
 		if view.GuideName == "" {
 			view.GuideName = "-"
 		}
+		view.DetailURL = queueDetailBaseURL(targetType) + "/" + item.ID.String()
 		items = append(items, view)
 	}
 	viewFilters := QueueFilterViewData{Status: excursionQueueStatusActive}
@@ -372,18 +399,37 @@ func NewQueueViewData(cases []*model.ModerationCase, filters ...QueueFilterViewD
 		viewFilters = filters[0]
 	}
 	return QueueViewData{
-		Items:        items,
-		Filters:      viewFilters,
-		FilterAction: "/admin/moderation/excursions",
-		ResetURL:     "/admin/moderation/excursions",
+		Items:                items,
+		Filters:              viewFilters,
+		FilterAction:         queueBaseURL(targetType),
+		ResetURL:             queueBaseURL(targetType),
+		OpenQueueURL:         queueBaseURL(targetType),
+		HistoryURL:           queueBaseURL(targetType) + "/history",
+		SyncAction:           queueBaseURL(targetType) + "/sync",
+		DetailBaseURL:        queueBaseURL(targetType),
+		TitleKey:             queueTitleKey(targetType),
+		HistoryTitleKey:      queueHistoryTitleKey(targetType),
+		EmptyQueueKey:        queueEmptyQueueKey(targetType),
+		EmptyHistoryKey:      queueEmptyHistoryKey(targetType),
+		TargetHeaderKey:      queueTargetHeaderKey(targetType),
+		HostHeaderKey:        queueHostHeaderKey(targetType),
+		SearchPlaceholderKey: queueSearchPlaceholderKey(targetType),
 	}
 }
 
 func NewQueueHistoryViewData(cases []*model.ModerationCase, filters QueueFilterViewData) QueueViewData {
 	data := NewQueueViewData(cases, filters)
 	data.IsHistory = true
-	data.FilterAction = "/admin/moderation/excursions/history"
-	data.ResetURL = "/admin/moderation/excursions/history"
+	data.FilterAction = data.HistoryURL
+	data.ResetURL = data.HistoryURL
+	return data
+}
+
+func NewActivityHistoryViewData(cases []*model.ModerationCase, filters QueueFilterViewData) QueueViewData {
+	data := NewActivityQueueViewData(cases, filters)
+	data.IsHistory = true
+	data.FilterAction = data.HistoryURL
+	data.ResetURL = data.HistoryURL
 	return data
 }
 
@@ -401,7 +447,21 @@ func excursionFromSnapshot(item *model.ModerationCase) *model.ExcursionModeratio
 	return &excursion
 }
 
-func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionModerationItem) string {
+func activityFromSnapshot(item *model.ModerationCase) *model.ActivityModerationItem {
+	if item == nil || item.TargetType != model.ModerationTargetActivity || len(item.Snapshot) == 0 {
+		return nil
+	}
+	var activity model.ActivityModerationItem
+	if err := json.Unmarshal(item.Snapshot, &activity); err != nil {
+		return nil
+	}
+	if activity.ID.String() == "00000000-0000-0000-0000-000000000000" {
+		activity.ID = item.TargetID
+	}
+	return &activity
+}
+
+func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem) string {
 	if excursion != nil {
 		if title := strings.TrimSpace(excursion.Title); title != "" {
 			return title
@@ -410,17 +470,99 @@ func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionMode
 			return landmarks
 		}
 	}
+	if activity != nil {
+		if title := strings.TrimSpace(activity.Title); title != "" {
+			return title
+		}
+	}
 	if item == nil {
 		return "-"
 	}
 	return string(item.TargetType) + " " + shortString(item.TargetID.String())
 }
 
-func queueTargetSubtitle(excursion *model.ExcursionModerationItem) string {
+func queueTargetSubtitle(excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem) string {
 	if excursion == nil {
-		return ""
+		if activity == nil {
+			return ""
+		}
+		return activityLocationText(defaultLocale, activity)
 	}
 	return excursionAttractionsText(defaultLocale, excursion)
+}
+
+func activityHostPrimaryText(item *model.ActivityModerationItem) string {
+	if item == nil {
+		return "-"
+	}
+	if name := strings.TrimSpace(item.HostDisplayName); name != "" {
+		return name
+	}
+	return "-"
+}
+
+func activityHostSecondaryText(item *model.ActivityModerationItem) string {
+	return ""
+}
+
+func queueBaseURL(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetActivity {
+		return "/admin/moderation/activities"
+	}
+	return "/admin/moderation/excursions"
+}
+
+func queueDetailBaseURL(targetType model.ModerationTargetType) string {
+	return queueBaseURL(targetType)
+}
+
+func queueTitleKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetActivity {
+		return "moderation.activityQueue"
+	}
+	return "moderation.excursionQueue"
+}
+
+func queueHistoryTitleKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetActivity {
+		return "moderation.activityHistory"
+	}
+	return "moderation.excursionHistory"
+}
+
+func queueEmptyQueueKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetActivity {
+		return "moderation.noActivityCases"
+	}
+	return "moderation.noExcursionCases"
+}
+
+func queueEmptyHistoryKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetActivity {
+		return "moderation.noActivityHistory"
+	}
+	return "moderation.noExcursionHistory"
+}
+
+func queueTargetHeaderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetActivity {
+		return "table.activity"
+	}
+	return "table.excursion"
+}
+
+func queueHostHeaderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetActivity {
+		return "table.host"
+	}
+	return "table.guide"
+}
+
+func queueSearchPlaceholderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetActivity {
+		return "placeholder.searchActivities"
+	}
+	return "placeholder.searchExcursions"
 }
 
 func shortString(value string) string {

@@ -10,18 +10,19 @@ import (
 )
 
 type ActivityFilter struct {
-	HostUserID      *uuid.UUID
-	Statuses        []string
-	Visibility      *string
-	CategorySlug    *string
-	SubcategorySlug *string
-	CountryCode     *string
-	CityID          *string
-	CityName        *string
-	LanguageCode    *string
-	SearchQuery     *string
-	Limit           int
-	Offset          int
+	HostUserID         *uuid.UUID
+	Statuses           []string
+	ModerationStatuses []string
+	Visibility         *string
+	CategorySlug       *string
+	SubcategorySlug    *string
+	CountryCode        *string
+	CityID             *string
+	CityName           *string
+	LanguageCode       *string
+	SearchQuery        *string
+	Limit              int
+	Offset             int
 }
 
 type PublicProfileActivityFilter struct {

@@ -1097,6 +1097,7 @@ type RejectActivityModerationRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	ActivityId      string                 `protobuf:"bytes,1,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
 	ModeratorUserId string                 `protobuf:"bytes,2,opt,name=moderator_user_id,json=moderatorUserId,proto3" json:"moderator_user_id,omitempty"`
+	PublicComment   string                 `protobuf:"bytes,3,opt,name=public_comment,json=publicComment,proto3" json:"public_comment,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1141,6 +1142,13 @@ func (x *RejectActivityModerationRequest) GetActivityId() string {
 func (x *RejectActivityModerationRequest) GetModeratorUserId() string {
 	if x != nil {
 		return x.ModeratorUserId
+	}
+	return ""
+}
+
+func (x *RejectActivityModerationRequest) GetPublicComment() string {
+	if x != nil {
+		return x.PublicComment
 	}
 	return ""
 }
@@ -1305,11 +1313,12 @@ const file_activity_v1_activity_proto_rawDesc = "" +
 	"activityId\x12*\n" +
 	"\x11moderator_user_id\x18\x02 \x01(\tR\x0fmoderatorUserId\"V\n" +
 	"!ApproveActivityModerationResponse\x121\n" +
-	"\bactivity\x18\x01 \x01(\v2\x15.activity.v1.ActivityR\bactivity\"n\n" +
+	"\bactivity\x18\x01 \x01(\v2\x15.activity.v1.ActivityR\bactivity\"\x95\x01\n" +
 	"\x1fRejectActivityModerationRequest\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12*\n" +
-	"\x11moderator_user_id\x18\x02 \x01(\tR\x0fmoderatorUserId\"U\n" +
+	"\x11moderator_user_id\x18\x02 \x01(\tR\x0fmoderatorUserId\x12%\n" +
+	"\x0epublic_comment\x18\x03 \x01(\tR\rpublicComment\"U\n" +
 	" RejectActivityModerationResponse\x121\n" +
 	"\bactivity\x18\x01 \x01(\v2\x15.activity.v1.ActivityR\bactivity2\xec\x04\n" +
 	"\x0fActivityService\x12\\\n" +

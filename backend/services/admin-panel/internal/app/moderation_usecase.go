@@ -17,6 +17,7 @@ import (
 type ModerationUseCase struct {
 	repo      port.ModerationRepository
 	excursion port.ExcursionClient
+	activity  port.ActivityClient
 	audit     port.AuditRepository
 }
 
@@ -41,15 +42,17 @@ type ModerationDecisionInput struct {
 type ModerationCaseDetail struct {
 	Case      *model.ModerationCase
 	Excursion *model.ExcursionModerationItem
+	Activity  *model.ActivityModerationItem
 	Decisions []*model.ModerationDecision
 }
 
 func NewModerationUseCase(
 	repo port.ModerationRepository,
 	excursion port.ExcursionClient,
+	activity port.ActivityClient,
 	audit port.AuditRepository,
 ) *ModerationUseCase {
-	return &ModerationUseCase{repo: repo, excursion: excursion, audit: audit}
+	return &ModerationUseCase{repo: repo, excursion: excursion, activity: activity, audit: audit}
 }
 
 func (u *ModerationUseCase) SyncExcursionQueue(ctx context.Context, actor *model.StaffUser) error {
@@ -68,6 +71,24 @@ func (u *ModerationUseCase) SyncExcursionQueue(ctx context.Context, actor *model
 		activeIDs = append(activeIDs, item.ID)
 	}
 	return u.repo.CancelStaleExcursionCases(ctx, activeIDs, time.Now().UTC())
+}
+
+func (u *ModerationUseCase) SyncActivityQueue(ctx context.Context, actor *model.StaffUser) error {
+	if actor == nil || !actor.HasPermission(enum.PermissionModerationRead) {
+		return ErrPermissionDenied
+	}
+	items, err := u.activity.ListFlagged(ctx, 100, 0)
+	if err != nil {
+		return err
+	}
+	activeIDs := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if _, err = u.repo.UpsertActivityCase(ctx, item); err != nil {
+			return err
+		}
+		activeIDs = append(activeIDs, item.ID)
+	}
+	return u.repo.CancelStaleActivityCases(ctx, activeIDs, time.Now().UTC())
 }
 
 func (u *ModerationUseCase) ListQueue(ctx context.Context, actor *model.StaffUser, filter model.ModerationQueueFilter) ([]*model.ModerationCase, error) {
@@ -129,8 +150,14 @@ func (u *ModerationUseCase) GetCaseDetail(ctx context.Context, actor *model.Staf
 		return nil, err
 	}
 	var excursion *model.ExcursionModerationItem
+	var activity *model.ActivityModerationItem
 	if item.TargetType == model.ModerationTargetExcursion {
 		excursion, err = u.excursion.GetExcursion(ctx, item.TargetID)
+		if err != nil {
+			return nil, err
+		}
+	} else if item.TargetType == model.ModerationTargetActivity {
+		activity, err = u.activity.GetActivity(ctx, item.TargetID)
 		if err != nil {
 			return nil, err
 		}
@@ -138,6 +165,7 @@ func (u *ModerationUseCase) GetCaseDetail(ctx context.Context, actor *model.Staf
 	return &ModerationCaseDetail{
 		Case:      item,
 		Excursion: excursion,
+		Activity:  activity,
 		Decisions: decisions,
 	}, nil
 }
@@ -154,9 +182,9 @@ func (u *ModerationUseCase) DecideExcursion(ctx context.Context, input Moderatio
 		return nil, ErrModerationCaseNotFound
 	}
 	reasonCodes := normalizeReasonCodes(input.ReasonCodes)
-	if input.Decision == enum.ModerationDecisionReject &&
-		strings.TrimSpace(input.PublicComment) == "" &&
-		len(reasonCodes) == 0 {
+	publicComment := strings.TrimSpace(input.PublicComment)
+	internalComment := strings.TrimSpace(input.InternalComment)
+	if internalComment == "" || (requiresPublicModerationComment(input.Decision) && publicComment == "") {
 		return nil, ErrInvalidInput
 	}
 	idempotencyKey := strings.TrimSpace(input.IdempotencyKey)
@@ -170,8 +198,8 @@ func (u *ModerationUseCase) DecideExcursion(ctx context.Context, input Moderatio
 		DecisionType:    input.Decision,
 		SourceRevision:  caseItem.SourceRevision,
 		ReasonCodes:     reasonCodes,
-		PublicComment:   strings.TrimSpace(input.PublicComment),
-		InternalComment: strings.TrimSpace(input.InternalComment),
+		PublicComment:   publicComment,
+		InternalComment: internalComment,
 		IdempotencyKey:  idempotencyKey,
 		DecidedBy:       input.Actor.ID,
 		ApplyStatus:     enum.ModerationApplyPending,
@@ -187,6 +215,7 @@ func (u *ModerationUseCase) DecideExcursion(ctx context.Context, input Moderatio
 		ExcursionID:    caseItem.TargetID,
 		ActorStaffID:   input.Actor.ID,
 		ReasonCodes:    decision.ReasonCodes,
+		PublicComment:  decision.PublicComment,
 		IdempotencyKey: idempotencyKey,
 		RequestID:      input.RequestMetadata.RequestID,
 	}
@@ -225,6 +254,97 @@ func (u *ModerationUseCase) DecideExcursion(ctx context.Context, input Moderatio
 	}
 	detail.Excursion = updated
 	return detail, nil
+}
+
+func (u *ModerationUseCase) DecideActivity(ctx context.Context, input ModerationDecisionInput) (*ModerationCaseDetail, error) {
+	if input.Actor == nil || !input.Actor.HasPermission(enum.PermissionActivityModerate) {
+		return nil, ErrPermissionDenied
+	}
+	caseItem, err := u.repo.GetCase(ctx, input.CaseID)
+	if err != nil {
+		return nil, err
+	}
+	if caseItem == nil || caseItem.TargetType != model.ModerationTargetActivity {
+		return nil, ErrModerationCaseNotFound
+	}
+	reasonCodes := normalizeReasonCodes(input.ReasonCodes)
+	publicComment := strings.TrimSpace(input.PublicComment)
+	internalComment := strings.TrimSpace(input.InternalComment)
+	if internalComment == "" || (requiresPublicModerationComment(input.Decision) && publicComment == "") {
+		return nil, ErrInvalidInput
+	}
+	idempotencyKey := strings.TrimSpace(input.IdempotencyKey)
+	if idempotencyKey == "" {
+		idempotencyKey = uuid.NewString()
+	}
+	now := time.Now().UTC()
+	decision := &model.ModerationDecision{
+		ID:              uuid.New(),
+		CaseID:          caseItem.ID,
+		DecisionType:    input.Decision,
+		SourceRevision:  caseItem.SourceRevision,
+		ReasonCodes:     reasonCodes,
+		PublicComment:   publicComment,
+		InternalComment: internalComment,
+		IdempotencyKey:  idempotencyKey,
+		DecidedBy:       input.Actor.ID,
+		ApplyStatus:     enum.ModerationApplyPending,
+		CreatedAt:       now,
+	}
+	if err = u.repo.CreateDecision(ctx, decision); err != nil {
+		if errors.Is(err, ErrDuplicateDecision) {
+			return u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
+		}
+		return nil, err
+	}
+	clientInput := port.ActivityDecisionInput{
+		ActivityID:     caseItem.TargetID,
+		ActorStaffID:   input.Actor.ID,
+		ReasonCodes:    decision.ReasonCodes,
+		PublicComment:  decision.PublicComment,
+		IdempotencyKey: idempotencyKey,
+		RequestID:      input.RequestMetadata.RequestID,
+	}
+	var updated *model.ActivityModerationItem
+	var raw []byte
+	switch input.Decision {
+	case enum.ModerationDecisionApprove:
+		updated, raw, err = u.activity.Approve(ctx, clientInput)
+	case enum.ModerationDecisionReject, enum.ModerationDecisionRequestChanges:
+		updated, raw, err = u.activity.Reject(ctx, clientInput)
+	default:
+		return nil, ErrInvalidInput
+	}
+	if err != nil {
+		_ = u.repo.MarkDecisionFailed(ctx, decision.ID, errorResponseJSON(err), now)
+		u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.apply_failed", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType, "error": err.Error()})
+		return nil, err
+	}
+	if err = u.repo.MarkDecisionApplied(ctx, decision.ID, raw, now); err != nil {
+		return nil, err
+	}
+	if err = u.repo.SupersedeAppliedDecisions(ctx, caseItem.ID, caseItem.SourceRevision, decision.ID, now); err != nil {
+		return nil, err
+	}
+	status := enum.ModerationCaseStatusApproved
+	if input.Decision != enum.ModerationDecisionApprove {
+		status = enum.ModerationCaseStatusRejected
+	}
+	if err = u.repo.UpdateCaseStatus(ctx, caseItem.ID, status, &now, now); err != nil {
+		return nil, err
+	}
+	u.appendModerationAudit(ctx, input.Actor.ID, "moderation.decision.applied", caseItem.ID, input.RequestMetadata, map[string]any{"decision": input.Decision, "targetId": caseItem.TargetID, "targetType": caseItem.TargetType})
+	detail, err := u.GetCaseDetail(ctx, input.Actor, caseItem.ID)
+	if err != nil {
+		return nil, err
+	}
+	detail.Activity = updated
+	return detail, nil
+}
+
+func requiresPublicModerationComment(decision enum.ModerationDecisionType) bool {
+	return decision == enum.ModerationDecisionReject ||
+		decision == enum.ModerationDecisionRequestChanges
 }
 
 func errorResponseJSON(err error) []byte {

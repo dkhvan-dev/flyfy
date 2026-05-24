@@ -195,7 +195,7 @@ func (s *Server) RejectActivityModeration(
 		return nil, mapError(app.ErrInvalidActorUserID)
 	}
 
-	item, err := s.moderationUC.RejectActivity(ctx, activityID, moderatorUserID)
+	item, err := s.moderationUC.RejectActivity(ctx, activityID, moderatorUserID, req.GetPublicComment())
 	if err != nil {
 		return nil, mapError(err)
 	}

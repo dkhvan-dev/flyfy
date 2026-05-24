@@ -28,6 +28,7 @@ type Handler struct {
 	repo          port.ActivityRepository
 	fileManager   port.ActivityMediaFileManager
 	actorResolver ActorResolver
+	internalToken string
 }
 
 func NewHandler(
@@ -37,6 +38,7 @@ func NewHandler(
 	repo port.ActivityRepository,
 	fileManager port.ActivityMediaFileManager,
 	actorResolver ActorResolver,
+	internalToken string,
 ) *Handler {
 	return &Handler{
 		activityUC:    activityUC,
@@ -45,6 +47,7 @@ func NewHandler(
 		repo:          repo,
 		fileManager:   fileManager,
 		actorResolver: actorResolver,
+		internalToken: strings.TrimSpace(internalToken),
 	}
 }
 
@@ -59,6 +62,10 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/me/activities/joined", h.ListMyJoinedActivities)
 	mux.HandleFunc("GET /v1/me/activities/hosted", h.ListMyHostedActivities)
 	mux.HandleFunc("POST /v1/me/attendance/sync", h.SyncAttendanceProofs)
+
+	mux.HandleFunc("GET /v1/admin/activities/moderation/flagged", h.ListAdminFlaggedActivities)
+	mux.HandleFunc("GET /v1/admin/activities/", h.handleAdminActivityRoutes)
+	mux.HandleFunc("POST /v1/admin/activities/", h.handleAdminActivityRoutes)
 
 	mux.HandleFunc("GET /v1/activities/", h.handleActivityRoutes)
 	mux.HandleFunc("PATCH /v1/activities/", h.handleActivityRoutes)
@@ -758,7 +765,15 @@ func (h *Handler) RejectModeration(w http.ResponseWriter, r *http.Request, activ
 		return
 	}
 
-	item, err := h.activityUC.RejectModeration(r.Context(), activityID, actorUserID)
+	var req dto.RejectActivityModerationRequest
+	if r.Body != nil && r.Body != http.NoBody {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+	}
+
+	item, err := h.activityUC.RejectModeration(r.Context(), activityID, actorUserID, req.PublicComment)
 	if err != nil {
 		h.writeAppError(w, err, "failed to reject moderation")
 		return

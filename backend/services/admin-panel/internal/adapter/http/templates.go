@@ -91,6 +91,28 @@ func NewRenderer() (*Renderer, error) {
 		"excursionIncludedItems": func(locale any, item *model.ExcursionModerationItem) []string {
 			return excursionIncludedItems(fmt.Sprint(locale), item)
 		},
+		"activityLocation": func(locale any, item *model.ActivityModerationItem) string {
+			return activityLocationText(fmt.Sprint(locale), item)
+		},
+		"activitySchedule": func(locale any, item *model.ActivityModerationItem) string {
+			return activityScheduleText(fmt.Sprint(locale), item)
+		},
+		"activityDuration": func(locale any, item *model.ActivityModerationItem) string {
+			return activityDurationText(fmt.Sprint(locale), item)
+		},
+		"activityCapacity": func(locale any, item *model.ActivityModerationItem) string {
+			return activityCapacityText(fmt.Sprint(locale), item)
+		},
+		"activityPrice": func(locale any, item *model.ActivityModerationItem) string {
+			return activityPriceText(fmt.Sprint(locale), item)
+		},
+		"activityMeeting":        activityMeetingText,
+		"activityMapURL":         activityMapURL,
+		"activityDecisionLocked": activityDecisionLocked,
+		"activityCategory": func(locale any, item *model.ActivityModerationItem) string {
+			return activityCategoryText(fmt.Sprint(locale), item)
+		},
+		"activityModerationTriggeredAt": activityModerationTriggeredAt,
 		"itineraryTitle": func(locale any, item model.ExcursionItineraryItem) string {
 			return itineraryTitleText(fmt.Sprint(locale), item)
 		},
@@ -110,11 +132,11 @@ func NewRenderer() (*Renderer, error) {
 		},
 		"statusClass": func(status any) string {
 			switch strings.ToUpper(strings.TrimSpace(fmt.Sprint(status))) {
-			case "OPEN", "PENDING_REVIEW":
+			case "OPEN", "PENDING_REVIEW", "FLAGGED":
 				return "badge badge-warn"
 			case "IN_REVIEW", "ESCALATED":
 				return "badge badge-info"
-			case "APPROVED", "PUBLISHED", "ACTIVE":
+			case "APPROVED", "PUBLISHED", "ACTIVE", "ENROLLMENT_OPEN":
 				return "badge badge-success"
 			case "REJECTED", "DISABLED", "LOCKED":
 				return "badge badge-danger"

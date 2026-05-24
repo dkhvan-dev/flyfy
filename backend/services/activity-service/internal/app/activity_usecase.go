@@ -100,6 +100,26 @@ func (u *ActivityUseCase) ListActivityCategories() []model.ActivityCategory {
 	return model.ListActivityCategories()
 }
 
+func (u *ActivityUseCase) ListFlaggedForModeration(ctx context.Context, limit int, offset int) ([]*model.Activity, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return u.repo.ListActivities(ctx, port.ActivityFilter{
+		ModerationStatuses: []string{
+			string(enum.ActivityModerationStatusFlagged),
+			string(enum.ActivityModerationStatusInReview),
+		},
+		Limit:  limit,
+		Offset: offset,
+	})
+}
+
 type CreateActivityInput struct {
 	HostUserID      uuid.UUID
 	Title           string
@@ -302,6 +322,10 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		return nil, err
 	}
 
+	if assessment := u.assessCreateModeration(ctx, input); assessment.RiskScore > 0 || len(assessment.ReasonCodes) > 0 {
+		item.FlagForModeration(assessment.RiskScore, assessment.ReasonCodes, time.Now().UTC())
+	}
+
 	if err = u.repo.CreateActivity(ctx, item); err != nil {
 		return nil, fmt.Errorf("create activity: %w", err)
 	}
@@ -321,10 +345,12 @@ func (u *ActivityUseCase) CreateActivity(ctx context.Context, input CreateActivi
 		EventType:   enum.ActivityEventTypeCreated,
 		ActorUserID: &input.HostUserID,
 		PayloadJSON: mustJSON(map[string]any{
-			"status":           string(item.Status),
-			"moderationStatus": string(item.ModerationStatus),
-			"format":           string(item.Format),
-			"priceType":        string(item.PriceType),
+			"status":            string(item.Status),
+			"moderationStatus":  string(item.ModerationStatus),
+			"moderationRisk":    item.ModerationRiskScore,
+			"moderationReasons": item.ModerationReasonCodes,
+			"format":            string(item.Format),
+			"priceType":         string(item.PriceType),
 		}),
 	})
 	if eventErr == nil {
@@ -1553,6 +1579,17 @@ func (u *ActivityUseCase) UpdateActivity(ctx context.Context, input UpdateActivi
 		return nil, err
 	}
 
+	if assessment := u.assessActivityModeration(ctx, activityModerationSubject{
+		HostUserID:  item.HostUserID,
+		Title:       item.Title,
+		Description: item.Description,
+		PriceType:   item.PriceType,
+		PriceAmount: item.PriceAmount,
+		Currency:    item.Currency,
+	}); assessment.RiskScore > 0 || len(assessment.ReasonCodes) > 0 {
+		item.FlagForModeration(assessment.RiskScore, assessment.ReasonCodes, time.Now().UTC())
+	}
+
 	item.Revision++
 	item.UpdatedAt = time.Now().UTC()
 
@@ -1701,30 +1738,58 @@ func (u *ActivityUseCase) ApproveModeration(
 	activityID uuid.UUID,
 	moderatorUserID uuid.UUID,
 ) (*model.Activity, error) {
+	if moderatorUserID == uuid.Nil {
+		return nil, ErrInvalidActorUserID
+	}
+
 	item, err := u.GetActivityByID(ctx, activityID)
 	if err != nil {
 		return nil, err
 	}
-	if moderatorUserID == uuid.Nil {
-		return nil, ErrInvalidActorUserID
-	}
 	if item.ModerationStatus == enum.ActivityModerationStatusApproved {
 		return item, nil
 	}
-	return nil, ErrModerationStateInvalid
+	if item.Status.IsTerminal() {
+		return nil, ErrModerationStateInvalid
+	}
+	if err = item.ApproveModeration(time.Now().UTC()); err != nil {
+		return nil, err
+	}
+	if err = u.repo.UpdateActivity(ctx, item); err != nil {
+		return nil, fmt.Errorf("update activity moderation approval: %w", err)
+	}
+	event, eventErr := model.NewActivityEvent(model.NewActivityEventParams{
+		ActivityID:  item.ID,
+		EventType:   enum.ActivityEventTypeModerationApproved,
+		ActorUserID: &moderatorUserID,
+		PayloadJSON: mustJSON(map[string]any{
+			"status":           string(item.Status),
+			"moderationStatus": string(item.ModerationStatus),
+		}),
+	})
+	if eventErr == nil {
+		_ = u.repo.CreateActivityEvent(ctx, event)
+	}
+	return item, nil
 }
 
 func (u *ActivityUseCase) RejectModeration(
 	ctx context.Context,
 	activityID uuid.UUID,
 	moderatorUserID uuid.UUID,
+	publicComment string,
 ) (*model.Activity, error) {
 	if moderatorUserID == uuid.Nil {
 		return nil, ErrInvalidActorUserID
 	}
+	publicComment = strings.TrimSpace(publicComment)
+	if publicComment == "" {
+		return nil, ErrActivityCancellationReasonRequired
+	}
 
 	var updated *model.Activity
 	paymentTasks := make([]participantPaymentTask, 0)
+	now := time.Now().UTC()
 
 	err := u.repo.WithTx(ctx, func(txRepo port.ActivityTxRepository) error {
 		item, err := txRepo.GetActivityByIDForUpdate(ctx, activityID)
@@ -1735,6 +1800,16 @@ func (u *ActivityUseCase) RejectModeration(
 			return ErrActivityNotFound
 		}
 		if item.ModerationStatus == enum.ActivityModerationStatusRejected {
+			if item.Status == enum.ActivityStatusCancelled {
+				if item.CancellationReason == nil || strings.TrimSpace(*item.CancellationReason) != publicComment {
+					item.CancellationReason = model.NormalizeOptionalString(&publicComment)
+					item.UpdatedAt = now
+					item.Revision++
+					if err = txRepo.UpdateActivity(ctx, item); err != nil {
+						return fmt.Errorf("update rejected activity cancellation reason: %w", err)
+					}
+				}
+			}
 			updated = item
 			return nil
 		}
@@ -1742,7 +1817,7 @@ func (u *ActivityUseCase) RejectModeration(
 			return ErrActivityNotCancellable
 		}
 
-		if err = item.RejectModeration(time.Now().UTC()); err != nil {
+		if err = item.RejectModeration(now); err != nil {
 			return err
 		}
 
@@ -1757,13 +1832,14 @@ func (u *ActivityUseCase) RejectModeration(
 			item,
 			&moderatorUserID,
 			enum.ActivityCancellationSourceAdmin,
-			CancellationReasonModerationRejected,
+			publicComment,
 			"moderation_rejected",
-			time.Now().UTC(),
+			now,
 			participants,
 			&paymentTasks,
 			map[string]any{
 				"moderationStatus": string(item.ModerationStatus),
+				"publicComment":    publicComment,
 			},
 		); err != nil {
 			return err
@@ -1783,6 +1859,7 @@ func (u *ActivityUseCase) RejectModeration(
 		PayloadJSON: mustJSON(map[string]any{
 			"status":           string(updated.Status),
 			"moderationStatus": string(updated.ModerationStatus),
+			"publicComment":    publicComment,
 		}),
 	})
 	if eventErr == nil {

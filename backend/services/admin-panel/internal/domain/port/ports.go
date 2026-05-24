@@ -48,6 +48,8 @@ type AuditRepository interface {
 type ModerationRepository interface {
 	UpsertExcursionCase(ctx context.Context, item model.ExcursionModerationItem) (*model.ModerationCase, error)
 	CancelStaleExcursionCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
+	UpsertActivityCase(ctx context.Context, item model.ActivityModerationItem) (*model.ModerationCase, error)
+	CancelStaleActivityCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
 	ListCases(ctx context.Context, filter model.ModerationQueueFilter) ([]*model.ModerationCase, error)
 	GetCase(ctx context.Context, id uuid.UUID) (*model.ModerationCase, error)
 	ListDecisions(ctx context.Context, caseID uuid.UUID) ([]*model.ModerationDecision, error)
@@ -69,6 +71,23 @@ type ExcursionDecisionInput struct {
 	ExcursionID    uuid.UUID
 	ActorStaffID   uuid.UUID
 	ReasonCodes    []string
+	PublicComment  string
+	IdempotencyKey string
+	RequestID      string
+}
+
+type ActivityClient interface {
+	ListFlagged(ctx context.Context, limit int, offset int) ([]model.ActivityModerationItem, error)
+	GetActivity(ctx context.Context, id uuid.UUID) (*model.ActivityModerationItem, error)
+	Approve(ctx context.Context, input ActivityDecisionInput) (*model.ActivityModerationItem, []byte, error)
+	Reject(ctx context.Context, input ActivityDecisionInput) (*model.ActivityModerationItem, []byte, error)
+}
+
+type ActivityDecisionInput struct {
+	ActivityID     uuid.UUID
+	ActorStaffID   uuid.UUID
+	ReasonCodes    []string
+	PublicComment  string
 	IdempotencyKey string
 	RequestID      string
 }

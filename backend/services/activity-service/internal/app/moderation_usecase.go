@@ -30,6 +30,7 @@ func (u *ModerationUseCase) RejectActivity(
 	ctx context.Context,
 	activityID uuid.UUID,
 	moderatorUserID uuid.UUID,
+	publicComment string,
 ) (*model.Activity, error) {
-	return u.activityUseCase.RejectModeration(ctx, activityID, moderatorUserID)
+	return u.activityUseCase.RejectModeration(ctx, activityID, moderatorUserID, publicComment)
 }

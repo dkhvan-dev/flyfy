@@ -58,6 +58,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/moderation/excursions/sync", s.SyncExcursionQueue)
 	mux.HandleFunc("POST /admin/moderation/excursions/{caseID}/approve", s.ApproveExcursion)
 	mux.HandleFunc("POST /admin/moderation/excursions/{caseID}/reject", s.RejectExcursion)
+	mux.HandleFunc("GET /admin/moderation/activities", s.ActivityQueue)
+	mux.HandleFunc("GET /admin/moderation/activities/history", s.ActivityHistory)
+	mux.HandleFunc("GET /admin/moderation/activities/{caseID}", s.ActivityCase)
+	mux.HandleFunc("POST /admin/moderation/activities/sync", s.SyncActivityQueue)
+	mux.HandleFunc("POST /admin/moderation/activities/{caseID}/approve", s.ApproveActivity)
+	mux.HandleFunc("POST /admin/moderation/activities/{caseID}/reject", s.RejectActivity)
 	mux.HandleFunc("GET /admin/staff", s.StaffList)
 	mux.HandleFunc("POST /admin/staff", s.CreateStaff)
 	mux.HandleFunc("GET /admin/staff/{staffID}/edit", s.EditStaffPage)
@@ -209,6 +215,10 @@ func (s *Server) ExcursionCase(w http.ResponseWriter, r *http.Request) {
 		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "moderation", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), err))
 		return
 	}
+	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetExcursion {
+		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "moderation", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
+		return
+	}
 	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "moderation", CaseDetailViewData{Detail: detail}, "")
 }
 
@@ -218,6 +228,75 @@ func (s *Server) ApproveExcursion(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) RejectExcursion(w http.ResponseWriter, r *http.Request) {
 	s.decideExcursion(w, r, enum.ModerationDecisionReject)
+}
+
+func (s *Server) SyncActivityQueue(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	if err := s.moderation.SyncActivityQueue(r.Context(), staff); err != nil {
+		_, viewFilter := parseExcursionQueueFilter(r)
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.activityQueue", "activities", NewActivityQueueViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	redirectURL := "/admin/moderation/activities"
+	if r.URL.RawQuery != "" {
+		redirectURL += "?" + r.URL.RawQuery
+	}
+	http.Redirect(w, r, redirectWithFlash(redirectURL, "moderation.queueSynced"), http.StatusSeeOther)
+}
+
+func (s *Server) ActivityQueue(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	_ = s.moderation.SyncActivityQueue(r.Context(), staff)
+	targetType := model.ModerationTargetActivity
+	filter, viewFilter := parseExcursionQueueFilter(r)
+	filter.TargetType = &targetType
+	filter.Limit = 100
+	cases, err := s.moderation.ListQueue(r.Context(), staff, filter)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.activityQueue", "activities", NewActivityQueueViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/queue", "moderation.activityQueue", "activities", NewActivityQueueViewData(cases, viewFilter), "")
+}
+
+func (s *Server) ActivityHistory(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	targetType := model.ModerationTargetActivity
+	filter, viewFilter := parseExcursionHistoryFilter(r)
+	filter.TargetType = &targetType
+	filter.Limit = 100
+	cases, err := s.moderation.ListQueue(r.Context(), staff, filter)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.activityHistory", "activities", NewActivityHistoryViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/queue", "moderation.activityHistory", "activities", NewActivityHistoryViewData(cases, viewFilter), "")
+}
+
+func (s *Server) ActivityCase(w http.ResponseWriter, r *http.Request) {
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	detail, err := s.moderation.GetCaseDetail(r.Context(), staff, caseID)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "activities", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetActivity {
+		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "activities", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "activities", CaseDetailViewData{Detail: detail}, "")
+}
+
+func (s *Server) ApproveActivity(w http.ResponseWriter, r *http.Request) {
+	s.decideActivity(w, r, enum.ModerationDecisionApprove)
+}
+
+func (s *Server) RejectActivity(w http.ResponseWriter, r *http.Request) {
+	s.decideActivity(w, r, enum.ModerationDecisionReject)
 }
 
 func (s *Server) decideExcursion(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
@@ -245,6 +324,33 @@ func (s *Server) decideExcursion(w http.ResponseWriter, r *http.Request, decisio
 		return
 	}
 	http.Redirect(w, r, redirectWithFlash("/admin/moderation/excursions/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
+}
+
+func (s *Server) decideActivity(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	_, err := s.moderation.DecideActivity(r.Context(), app.ModerationDecisionInput{
+		Actor:           staff,
+		CaseID:          caseID,
+		Decision:        decision,
+		ReasonCodes:     splitCSV(r.Form.Get("reason_codes")),
+		PublicComment:   r.Form.Get("public_comment"),
+		InternalComment: r.Form.Get("internal_comment"),
+		IdempotencyKey:  r.Form.Get("idempotency_key"),
+		RequestMetadata: requestMetadata(r),
+	})
+	if err != nil {
+		viewData := CaseDetailViewData{}
+		if detail, detailErr := s.moderation.GetCaseDetail(r.Context(), staff, caseID); detailErr == nil {
+			viewData.Detail = detail
+		}
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "activities", viewData, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash("/admin/moderation/activities/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
 func (s *Server) StaffList(w http.ResponseWriter, r *http.Request) {

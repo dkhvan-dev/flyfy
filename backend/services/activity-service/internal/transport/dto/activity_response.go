@@ -62,3 +62,23 @@ type ActivityResponse struct {
 	CreatedAt string `json:"createdAt"`
 	UpdatedAt string `json:"updatedAt"`
 }
+
+type AdminActivityModerationResponse struct {
+	ActivityResponse
+
+	ModerationRiskScore   int      `json:"moderationRiskScore"`
+	ModerationReasonCodes []string `json:"moderationReasonCodes"`
+	ModerationTriggeredAt *string  `json:"moderationTriggeredAt,omitempty"`
+	ModerationReviewedAt  *string  `json:"moderationReviewedAt,omitempty"`
+	HostDisplayName       string   `json:"hostDisplayName,omitempty"`
+	CategoryName          string   `json:"categoryName,omitempty"`
+	CategoryNameRu        string   `json:"categoryNameRu,omitempty"`
+	CategoryNameKk        string   `json:"categoryNameKk,omitempty"`
+	SubcategoryName       string   `json:"subcategoryName,omitempty"`
+	SubcategoryNameRu     string   `json:"subcategoryNameRu,omitempty"`
+	SubcategoryNameKk     string   `json:"subcategoryNameKk,omitempty"`
+}
+
+type AdminActivityModerationListResponse struct {
+	Items []AdminActivityModerationResponse `json:"items"`
+}

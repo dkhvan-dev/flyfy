@@ -16,6 +16,7 @@ type Config struct {
 	Log       LogConfig
 	Security  SecurityConfig
 	Excursion ExcursionServiceConfig
+	Activity  ActivityServiceConfig
 	Bootstrap BootstrapConfig
 }
 
@@ -102,6 +103,11 @@ type SecurityConfig struct {
 type ExcursionServiceConfig struct {
 	BaseURL string        `env:"EXCURSION_SERVICE_URL, default=http://excursion-service:8093"`
 	Timeout time.Duration `env:"EXCURSION_SERVICE_TIMEOUT, default=5s"`
+}
+
+type ActivityServiceConfig struct {
+	BaseURL string        `env:"ACTIVITY_SERVICE_URL, default=http://activity-service:8086"`
+	Timeout time.Duration `env:"ACTIVITY_SERVICE_TIMEOUT, default=5s"`
 }
 
 type BootstrapConfig struct {

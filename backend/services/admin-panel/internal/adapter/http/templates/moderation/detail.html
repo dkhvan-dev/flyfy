@@ -6,9 +6,9 @@
   <div class="section-head">
     <div>
       <p class="eyebrow">{{t .Locale "moderation.case"}} <code>{{shortID $detail.Case.ID}}</code></p>
-      <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else}}{{t .Locale "moderation.excursion"}}{{end}}</h1>
+      <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else if $detail.Activity}}{{$detail.Activity.Title}}{{else}}{{t .Locale "moderation.caseTitle"}}{{end}}</h1>
     </div>
-    <a class="button" href="/admin/moderation/excursions">{{t .Locale "action.backToQueue"}}</a>
+    <a class="button" href="{{if $detail.Activity}}/admin/moderation/activities{{else}}/admin/moderation/excursions{{end}}">{{t .Locale "action.backToQueue"}}</a>
   </div>
 
   <div class="split">
@@ -78,36 +78,88 @@
           <p class="empty">{{t $.Locale "empty.noIncludedItems"}}</p>
         {{end}}
       {{end}}
+      {{with $detail.Activity}}
+        <dl class="facts">
+          <div><dt>{{t $.Locale "label.status"}}</dt><dd>{{statusText $.Locale .Status}}</dd></div>
+          <div><dt>{{t $.Locale "label.visibility"}}</dt><dd>{{statusText $.Locale .Visibility}}</dd></div>
+          <div>
+            <dt>{{t $.Locale "label.host"}}</dt>
+            <dd>
+              {{if .HostDisplayName}}{{.HostDisplayName}}{{else}}-{{end}}
+            </dd>
+          </div>
+          <div><dt>{{t $.Locale "label.riskScore"}}</dt><dd>{{.ModerationRiskScore}}</dd></div>
+          <div><dt>{{t $.Locale "label.category"}}</dt><dd>{{activityCategory $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.city"}}</dt><dd>{{activityLocation $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.schedule"}}</dt><dd>{{activitySchedule $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.duration"}}</dt><dd>{{activityDuration $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.groupSize"}}</dt><dd>{{activityCapacity $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.language"}}</dt><dd>{{.LanguageCode}}</dd></div>
+          <div>
+            <dt>{{t $.Locale "label.meetingPoint"}}</dt>
+            <dd>
+              {{activityMeeting .}}
+              {{with activityMapURL .}}<a class="muted block" href="{{.}}" target="_blank" rel="noopener noreferrer">{{t $.Locale "action.openMap"}}</a>{{end}}
+            </dd>
+          </div>
+          <div><dt>{{t $.Locale "label.price"}}</dt><dd>{{activityPrice $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.submitted"}}</dt><dd>{{formatTime (activityModerationTriggeredAt .)}}</dd></div>
+        </dl>
+        {{if .ModerationReasonCodes}}
+          <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.description"}}</h2>
+        <p class="preline">{{.Description}}</p>
+        <h2>{{t $.Locale "section.routeSchedule"}}</h2>
+        <ol class="timeline">
+          <li class="timeline-step">
+            <div class="timeline-marker">{{formatTime .StartAt}}</div>
+            <div class="timeline-body">
+              <h3>{{.Title}}</h3>
+              <div class="meta-row compact">
+                <span>{{activityDuration $.Locale .}}</span>
+                <span>{{activityLocation $.Locale .}}</span>
+                <span>{{activityCapacity $.Locale .}}</span>
+              </div>
+              <p class="preline">{{activityMeeting .}}</p>
+            </div>
+          </li>
+        </ol>
+      {{end}}
     </article>
 
     <aside class="card">
       <h2>{{t .Locale "section.decision"}}</h2>
-      <form method="post" action="/admin/moderation/excursions/{{$detail.Case.ID}}/approve" class="form compact" data-confirm-form="approve">
-        {{csrfField $.CSRFToken}}
-        <input type="hidden" name="idempotency_key" value="{{newID}}">
-        <label>
-          <span>{{t $.Locale "field.internalComment"}}</span>
-          <textarea name="internal_comment" rows="3"></textarea>
-        </label>
-        <button class="primary" type="submit">{{t $.Locale "action.approve"}}</button>
-      </form>
-      <form method="post" action="/admin/moderation/excursions/{{$detail.Case.ID}}/reject" class="form compact danger-zone" data-confirm-form="reject">
-        {{csrfField $.CSRFToken}}
-        <input type="hidden" name="idempotency_key" value="{{newID}}">
-        <label>
-          <span>{{t $.Locale "field.reasonCodes"}}</span>
-          <input name="reason_codes" placeholder="{{t $.Locale "placeholder.reasonCodes"}}">
-        </label>
-        <label>
-          <span>{{t $.Locale "field.publicComment"}}</span>
-          <textarea name="public_comment" rows="3" required></textarea>
-        </label>
-        <label>
-          <span>{{t $.Locale "field.internalComment"}}</span>
-          <textarea name="internal_comment" rows="3"></textarea>
-        </label>
-        <button class="danger" type="submit">{{t $.Locale "action.reject"}}</button>
-      </form>
+      {{if activityDecisionLocked $detail.Activity}}
+        <p class="empty">{{t .Locale "moderation.activityDecisionLocked"}}</p>
+      {{else}}
+        <form method="post" action="{{if $detail.Activity}}/admin/moderation/activities{{else}}/admin/moderation/excursions{{end}}/{{$detail.Case.ID}}/approve" class="form compact" data-confirm-form="approve">
+          {{csrfField $.CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t $.Locale "field.internalComment"}}</span>
+            <textarea name="internal_comment" rows="3" required></textarea>
+          </label>
+          <button class="primary" type="submit">{{t $.Locale "action.approve"}}</button>
+        </form>
+        <form method="post" action="{{if $detail.Activity}}/admin/moderation/activities{{else}}/admin/moderation/excursions{{end}}/{{$detail.Case.ID}}/reject" class="form compact danger-zone" data-confirm-form="reject">
+          {{csrfField $.CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t $.Locale "field.reasonCodes"}}</span>
+            <input name="reason_codes" placeholder="{{t $.Locale "placeholder.reasonCodes"}}">
+          </label>
+          <label>
+            <span>{{t $.Locale "field.publicComment"}}</span>
+            <textarea name="public_comment" rows="3" required></textarea>
+          </label>
+          <label>
+            <span>{{t $.Locale "field.internalComment"}}</span>
+            <textarea name="internal_comment" rows="3" required></textarea>
+          </label>
+          <button class="danger" type="submit">{{t $.Locale "action.reject"}}</button>
+        </form>
+      {{end}}
     </aside>
   </div>
 

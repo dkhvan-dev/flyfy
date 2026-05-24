@@ -603,10 +603,31 @@ func displayCityName(locale string, city string) string {
 	if name == "" {
 		return ""
 	}
-	if names, ok := cityNames[strings.ToLower(name)]; ok {
+	if names, ok := localizedCityNamesForValue(name); ok {
 		return localizedValue(locale, names)
 	}
 	return name
+}
+
+func localizedCityNamesForValue(value string) (map[string]string, bool) {
+	key := strings.ToLower(strings.TrimSpace(value))
+	if key == "" {
+		return nil, false
+	}
+	if beforeComma, _, ok := strings.Cut(key, ","); ok {
+		key = strings.TrimSpace(beforeComma)
+	}
+	if names, ok := cityNames[key]; ok {
+		return names, true
+	}
+	for _, names := range cityNames {
+		for _, name := range names {
+			if strings.ToLower(strings.TrimSpace(name)) == key {
+				return names, true
+			}
+		}
+	}
+	return nil, false
 }
 
 func humanizeCityID(value string) string {

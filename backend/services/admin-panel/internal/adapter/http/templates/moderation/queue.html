@@ -4,14 +4,14 @@
   <div class="section-head">
     <div>
       <p class="eyebrow">{{t .Locale "moderation.eyebrow"}}</p>
-      <h1>{{if .Data.IsHistory}}{{t .Locale "moderation.excursionHistory"}}{{else}}{{t .Locale "moderation.excursionQueue"}}{{end}}</h1>
+      <h1>{{if .Data.IsHistory}}{{t .Locale .Data.HistoryTitleKey}}{{else}}{{t .Locale .Data.TitleKey}}{{end}}</h1>
     </div>
     <div class="section-actions">
       {{if .Data.IsHistory}}
-        <a class="button" href="/admin/moderation/excursions">{{t .Locale "action.openQueue"}}</a>
+        <a class="button" href="{{.Data.OpenQueueURL}}">{{t .Locale "action.openQueue"}}</a>
       {{else}}
-        <a class="button" href="/admin/moderation/excursions/history">{{t .Locale "action.openHistory"}}</a>
-        <form method="post" action="/admin/moderation/excursions/sync{{urlQuerySuffix .Data.Filters.Query}}">
+        <a class="button" href="{{.Data.HistoryURL}}">{{t .Locale "action.openHistory"}}</a>
+        <form method="post" action="{{.Data.SyncAction}}{{urlQuerySuffix .Data.Filters.Query}}">
           {{csrfField .CSRFToken}}
           <button type="submit">{{t .Locale "action.refreshQueue"}}</button>
         </form>
@@ -41,7 +41,7 @@
       </label>
       <label>
         <span>{{t .Locale "field.search"}}</span>
-        <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale "placeholder.searchExcursions"}}">
+        <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale .Data.SearchPlaceholderKey}}">
       </label>
       <label>
         <span>{{t .Locale "field.signal"}}</span>
@@ -81,8 +81,8 @@
             <th>{{t .Locale "table.case"}}</th>
             <th>{{t .Locale "table.status"}}</th>
             <th>{{t .Locale "table.priority"}}</th>
-            <th>{{t .Locale "table.excursion"}}</th>
-            <th>{{t .Locale "table.guide"}}</th>
+            <th>{{t .Locale .Data.TargetHeaderKey}}</th>
+            <th>{{t .Locale .Data.HostHeaderKey}}</th>
             <th>{{t .Locale "table.city"}}</th>
             <th>{{t .Locale "table.opened"}}</th>
             <th></th>
@@ -95,8 +95,10 @@
             <td><span class="{{statusClass .Case.Status}}">{{statusText $.Locale .Case.Status}}</span></td>
             <td>{{.Case.Priority}}</td>
             <td>
-              {{$title := excursionTitle $.Locale .Excursion .TargetTitle}}
-              {{$subtitle := excursionAttractions $.Locale .Excursion}}
+              {{$title := .TargetTitle}}
+              {{if .Excursion}}{{$title = excursionTitle $.Locale .Excursion .TargetTitle}}{{end}}
+              {{$subtitle := .TargetSubtitle}}
+              {{if .Excursion}}{{$subtitle = excursionAttractions $.Locale .Excursion}}{{end}}
               <strong>{{$title}}</strong>
               {{if $subtitle}}{{if ne $subtitle $title}}<span class="muted block">{{$subtitle}}</span>{{end}}{{else if .TargetSubtitle}}<span class="muted block">{{.TargetSubtitle}}</span>{{end}}
             </td>
@@ -104,16 +106,16 @@
               <strong>{{.GuideName}}</strong>
               {{if .GuideFullName}}<span class="muted block">{{.GuideFullName}}</span>{{end}}
             </td>
-            <td>{{excursionLocation $.Locale .Excursion}}</td>
+            <td>{{if .Excursion}}{{excursionLocation $.Locale .Excursion}}{{else}}{{activityLocation $.Locale .Activity}}{{end}}</td>
             <td>{{formatTime .Case.OpenedAt}}</td>
-            <td class="right"><a class="button" href="/admin/moderation/excursions/{{.Case.ID}}">{{t $.Locale "action.review"}}</a></td>
+            <td class="right"><a class="button" href="{{.DetailURL}}">{{t $.Locale "action.review"}}</a></td>
           </tr>
           {{end}}
         </tbody>
       </table>
     </div>
   {{else}}
-    <div class="empty card">{{if .Data.IsHistory}}{{t .Locale "moderation.noExcursionHistory"}}{{else}}{{t .Locale "moderation.noExcursionCases"}}{{end}}</div>
+    <div class="empty card">{{if .Data.IsHistory}}{{t .Locale .Data.EmptyHistoryKey}}{{else}}{{t .Locale .Data.EmptyQueueKey}}{{end}}</div>
   {{end}}
 </section>
 {{template "pageEnd" .}}

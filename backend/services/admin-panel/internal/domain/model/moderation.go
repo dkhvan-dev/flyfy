@@ -151,3 +151,61 @@ type ExcursionModerationItem struct {
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
+
+type ActivityModerationItem struct {
+	ID               uuid.UUID
+	HostUserID       uuid.UUID
+	HostDisplayName  string
+	SourceActivityID *uuid.UUID
+
+	Title       string
+	Description string
+
+	Format           string
+	Status           string
+	Visibility       string
+	JoinMode         string
+	ModerationStatus string
+
+	ModerationRiskScore   int
+	ModerationReasonCodes []string
+	ModerationTriggeredAt *time.Time
+	ModerationReviewedAt  *time.Time
+
+	CategorySlug      string
+	SubcategorySlug   *string
+	CategoryName      string
+	CategoryNameRu    string
+	CategoryNameKk    string
+	SubcategoryName   string
+	SubcategoryNameRu string
+	SubcategoryNameKk string
+	LanguageCode      string
+	Timezone          string
+
+	StartAt              time.Time
+	EndAt                time.Time
+	RegistrationDeadline time.Time
+
+	CapacityType    string
+	MinParticipants *int
+	MaxParticipants *int
+
+	PriceType   string
+	PriceAmount *float64
+	Currency    *string
+
+	CountryCode   *string
+	CityID        *string
+	CityName      *string
+	AddressText   *string
+	Latitude      *float64
+	Longitude     *float64
+	MapURL        *string
+	MeetingURL    *string
+	CoverImageURL *string
+
+	Revision  int
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}

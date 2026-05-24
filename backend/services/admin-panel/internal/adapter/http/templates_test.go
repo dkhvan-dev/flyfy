@@ -261,6 +261,8 @@ func TestRendererRendersModerationDetail(t *testing.T) {
 	for _, expected := range []string{
 		`data-confirm-form="approve"`,
 		`data-confirm-form="reject"`,
+		`name="internal_comment" rows="3" required`,
+		`name="public_comment" rows="3" required`,
 		`id="decision-confirmation-dialog"`,
 		"Подтвердить действие",
 		"missing_license",
@@ -285,6 +287,183 @@ func TestRendererRendersModerationDetail(t *testing.T) {
 	}
 	if strings.Contains(body, `Кем принято</th><th>Создано</th></tr></thead>`) && strings.Contains(body, `<td><code>`) {
 		t.Fatal("moderation detail rendered decision actor as uuid instead of employee name")
+	}
+}
+
+func TestRendererRendersActivityModerationReadableContext(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Now().UTC()
+	caseID := uuid.New()
+	activityID := uuid.New()
+	hostID := uuid.MustParse("0980d6b0-00bc-4aed-ae88-4b753e10c113")
+	pageData := PageData{
+		Title:     "Activity detail",
+		Locale:    localeRU,
+		Path:      "/admin/moderation/activities/" + caseID.String(),
+		CSRFToken: "csrf-token",
+		Data: CaseDetailViewData{
+			Detail: &app.ModerationCaseDetail{
+				Case: &model.ModerationCase{
+					ID:             caseID,
+					TargetType:     model.ModerationTargetActivity,
+					TargetID:       activityID,
+					SourceRevision: 3,
+					Status:         enum.ModerationCaseStatusOpen,
+					Priority:       70,
+					OpenedAt:       now,
+				},
+				Activity: &model.ActivityModerationItem{
+					ID:                    activityID,
+					HostUserID:            hostID,
+					HostDisplayName:       "Aruzhan Nomad",
+					Title:                 "Evening city walk",
+					Description:           "Напишите мне в WhatsApp +77011234567 перед участием",
+					Status:                "ENROLLMENT_OPEN",
+					Visibility:            "PUBLIC",
+					ModerationStatus:      "FLAGGED",
+					ModerationRiskScore:   60,
+					ModerationReasonCodes: []string{"external_contact"},
+					CategorySlug:          "city-walks",
+					SubcategorySlug:       stringPtr("photo-walk"),
+					LanguageCode:          "ru",
+					Timezone:              "Asia/Almaty",
+					StartAt:               now.Add(2 * time.Hour),
+					EndAt:                 now.Add(4 * time.Hour),
+					CapacityType:          "UNLIMITED",
+					PriceType:             "FREE",
+					CountryCode:           stringPtr("KZ"),
+					CityID:                stringPtr("almaty"),
+					CityName:              stringPtr("Almaty, Kazakhstan"),
+					AddressText:           stringPtr("Dostyk Plaza"),
+					MapURL:                stringPtr("https://www.openstreetmap.org/?mlat=43.2435&mlon=76.9041#map=16/43.2435/76.9041"),
+					Revision:              3,
+					CreatedAt:             now,
+					UpdatedAt:             now,
+				},
+			},
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "moderation/detail", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Aruzhan Nomad",
+		"Прогулки и город / Фотопрогулка",
+		"Алматы, Казахстан",
+		"Dostyk Plaza",
+		"Открыть карту",
+		`href="https://www.openstreetmap.org/?mlat=43.2435&mlon=76.9041#map=16/43.2435/76.9041"`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("activity moderation detail did not render %q: %s", expected, body)
+		}
+	}
+	for _, unexpected := range []string{
+		"ID 0980d6b0",
+		"Пользователь 0980d6b0",
+		"city-walks",
+		"photo-walk",
+		"Almaty, Kazakhstan, Казахстан",
+	} {
+		if strings.Contains(body, unexpected) {
+			t.Fatalf("activity moderation detail rendered technical value %q: %s", unexpected, body)
+		}
+	}
+}
+
+func TestRendererHidesDecisionFormsForRejectedActivity(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	now := time.Now().UTC()
+	caseID := uuid.New()
+	activityID := uuid.New()
+	pageData := PageData{
+		Title:     "Activity detail",
+		Locale:    localeRU,
+		Path:      "/admin/moderation/activities/" + caseID.String(),
+		CSRFToken: "csrf-token",
+		Data: CaseDetailViewData{
+			Detail: &app.ModerationCaseDetail{
+				Case: &model.ModerationCase{
+					ID:             caseID,
+					TargetType:     model.ModerationTargetActivity,
+					TargetID:       activityID,
+					SourceRevision: 4,
+					Status:         enum.ModerationCaseStatusRejected,
+					Priority:       70,
+					OpenedAt:       now,
+					ResolvedAt:     &now,
+					CreatedAt:      now,
+					UpdatedAt:      now,
+				},
+				Activity: &model.ActivityModerationItem{
+					ID:               activityID,
+					HostDisplayName:  "Aruzhan Nomad",
+					Title:            "Evening city walk",
+					Description:      "External contact in description.",
+					Status:           "CANCELLED",
+					Visibility:       "PUBLIC",
+					ModerationStatus: "REJECTED",
+					CategorySlug:     "city-walks",
+					LanguageCode:     "ru",
+					Timezone:         "Asia/Almaty",
+					StartAt:          now.Add(2 * time.Hour),
+					EndAt:            now.Add(4 * time.Hour),
+					CapacityType:     "UNLIMITED",
+					PriceType:        "FREE",
+					CityName:         stringPtr("Almaty, Kazakhstan"),
+					Revision:         4,
+					CreatedAt:        now,
+					UpdatedAt:        now,
+				},
+			},
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "moderation/detail", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	if !strings.Contains(body, "Решение уже принято") {
+		t.Fatalf("rejected activity detail did not render locked decision copy: %s", body)
+	}
+	for _, unexpected := range []string{
+		`data-confirm-form="approve"`,
+		`data-confirm-form="reject"`,
+		`name="public_comment"`,
+		`name="internal_comment"`,
+		`/admin/moderation/activities/` + caseID.String() + `/approve`,
+		`/admin/moderation/activities/` + caseID.String() + `/reject`,
+	} {
+		if strings.Contains(body, unexpected) {
+			t.Fatalf("rejected activity detail rendered action control %q: %s", unexpected, body)
+		}
+	}
+}
+
+func TestActivityPresenterLocalizesCityNameValues(t *testing.T) {
+	t.Parallel()
+
+	if got := displayCityName(localeEN, "Алматы"); got != "Almaty" {
+		t.Fatalf("displayCityName(en, Алматы) = %q, want Almaty", got)
+	}
+	if got := displayCityName(localeRU, "Almaty"); got != "Алматы" {
+		t.Fatalf("displayCityName(ru, Almaty) = %q, want Алматы", got)
 	}
 }
 
@@ -503,6 +682,10 @@ func adminTemplateActor() *model.StaffUser {
 }
 
 func intPtr(value int) *int {
+	return &value
+}
+
+func stringPtr(value string) *string {
 	return &value
 }
 

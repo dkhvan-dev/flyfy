@@ -21,6 +21,7 @@ type activityRepoStub struct {
 	createParticipant                            func(ctx context.Context, item *model.ActivityParticipant) error
 	listParticipantsByActivityID                 func(ctx context.Context, activityID uuid.UUID, limit int, offset int) ([]*model.ActivityParticipant, error)
 	countActivityCompletionStatsByUserID         func(ctx context.Context, userID uuid.UUID) (port.ActivityCompletionStats, error)
+	countActivitiesCreatedSince                  func(ctx context.Context, hostUserID uuid.UUID, since time.Time) (int, error)
 	listActivitiesDueForRegistrationFinalization func(ctx context.Context, before time.Time, limit int) ([]*model.Activity, error)
 	withTx                                       func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error
 }
@@ -162,6 +163,9 @@ func (s *activityRepoStub) ListActiveBlockedURLPatterns(ctx context.Context) ([]
 }
 
 func (s *activityRepoStub) CountActivitiesCreatedSince(ctx context.Context, hostUserID uuid.UUID, since time.Time) (int, error) {
+	if s.countActivitiesCreatedSince != nil {
+		return s.countActivitiesCreatedSince(ctx, hostUserID, since)
+	}
 	return 0, nil
 }
 
@@ -547,8 +551,153 @@ func TestCreateActivityPublishesByDefault(t *testing.T) {
 	if createdItem.ModerationStatus != enum.ActivityModerationStatusApproved {
 		t.Fatalf("CreateActivity() moderation status = %s, want %s", createdItem.ModerationStatus, enum.ActivityModerationStatusApproved)
 	}
+	if createdItem.ModerationReasonCodes == nil {
+		t.Fatal("CreateActivity() moderation reason codes is nil, want empty slice")
+	}
 	if createdItem.PublishedAt == nil {
 		t.Fatal("CreateActivity() publishedAt is nil")
+	}
+}
+
+func TestCreateActivityFlagsSuspiciousContentWithoutHidingIt(t *testing.T) {
+	t.Parallel()
+
+	var createdItem *model.Activity
+	repo := &activityRepoStub{
+		createActivity: func(ctx context.Context, item *model.Activity) error {
+			createdItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	input := validCreateActivityInput()
+	input.Title = "VIP hiking trip"
+	input.Description = "Message me on WhatsApp +77011234567 before joining this premium activity."
+
+	item, err := uc.CreateActivity(context.Background(), input)
+	if err != nil {
+		t.Fatalf("CreateActivity() error = %v", err)
+	}
+	if item == nil || createdItem == nil {
+		t.Fatal("CreateActivity() did not persist activity")
+	}
+	if createdItem.Status != enum.ActivityStatusEnrollmentOpen {
+		t.Fatalf("CreateActivity() status = %s, want %s", createdItem.Status, enum.ActivityStatusEnrollmentOpen)
+	}
+	if createdItem.ModerationStatus != enum.ActivityModerationStatusFlagged {
+		t.Fatalf("CreateActivity() moderation status = %s, want %s", createdItem.ModerationStatus, enum.ActivityModerationStatusFlagged)
+	}
+	if createdItem.ModerationRiskScore <= 0 {
+		t.Fatalf("CreateActivity() moderation risk score = %d, want positive", createdItem.ModerationRiskScore)
+	}
+	if len(createdItem.ModerationReasonCodes) == 0 {
+		t.Fatal("CreateActivity() did not persist moderation reason codes")
+	}
+	if createdItem.ModerationTriggeredAt == nil {
+		t.Fatal("CreateActivity() moderationTriggeredAt is nil")
+	}
+	if createdItem.PublishedAt == nil {
+		t.Fatal("CreateActivity() publishedAt is nil")
+	}
+}
+
+func TestUpdateActivityFlagsSuspiciousContentWithoutHidingIt(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	actorUserID := uuid.New()
+	var updatedItem *model.Activity
+	repo := &activityRepoStub{
+		getActivityByID: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+			if requestedID != activityID {
+				t.Fatalf("GetActivityByID() requestedID = %s, want %s", requestedID, activityID)
+			}
+			return validActivity(t, activityID, actorUserID), nil
+		},
+		updateActivity: func(ctx context.Context, item *model.Activity) error {
+			updatedItem = item
+			return nil
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	description := "Напишите мне в WhatsApp +77011234567 перед участием"
+
+	item, err := uc.UpdateActivity(context.Background(), UpdateActivityInput{
+		ActorUserID: actorUserID,
+		ActivityID:  activityID,
+		Description: &description,
+	})
+	if err != nil {
+		t.Fatalf("UpdateActivity() error = %v", err)
+	}
+	if item == nil || updatedItem == nil {
+		t.Fatal("UpdateActivity() did not persist activity")
+	}
+	if updatedItem.Status != enum.ActivityStatusEnrollmentOpen {
+		t.Fatalf("UpdateActivity() status = %s, want %s", updatedItem.Status, enum.ActivityStatusEnrollmentOpen)
+	}
+	if updatedItem.ModerationStatus != enum.ActivityModerationStatusFlagged {
+		t.Fatalf("UpdateActivity() moderation status = %s, want %s", updatedItem.ModerationStatus, enum.ActivityModerationStatusFlagged)
+	}
+	if updatedItem.ModerationRiskScore <= 0 {
+		t.Fatalf("UpdateActivity() moderation risk score = %d, want positive", updatedItem.ModerationRiskScore)
+	}
+	if len(updatedItem.ModerationReasonCodes) == 0 {
+		t.Fatal("UpdateActivity() did not persist moderation reason codes")
+	}
+	if updatedItem.ModerationTriggeredAt == nil {
+		t.Fatal("UpdateActivity() moderationTriggeredAt is nil")
+	}
+	if updatedItem.PublishedAt == nil {
+		t.Fatal("UpdateActivity() publishedAt is nil")
+	}
+}
+
+func TestRejectModerationUsesPublicCommentAsCancellationReason(t *testing.T) {
+	t.Parallel()
+
+	activityID := uuid.New()
+	moderatorUserID := uuid.New()
+	hostUserID := uuid.New()
+	activity := validActivity(t, activityID, hostUserID)
+	activity.FlagForModeration(70, []string{"external_contact"}, time.Now().UTC())
+	publicComment := "Уберите контактный номер из описания активности."
+	var updatedItem *model.Activity
+	repo := &activityRepoStub{
+		withTx: func(ctx context.Context, fn func(repo port.ActivityTxRepository) error) error {
+			return fn(&activityTxRepoStub{
+				getActivityByIDForUpdate: func(ctx context.Context, requestedID uuid.UUID) (*model.Activity, error) {
+					if requestedID != activityID {
+						t.Fatalf("GetActivityByIDForUpdate() requestedID = %s, want %s", requestedID, activityID)
+					}
+					return activity, nil
+				},
+				listParticipantsByActivityIDForUpdate: func(context.Context, uuid.UUID) ([]*model.ActivityParticipant, error) {
+					return nil, nil
+				},
+				updateActivity: func(ctx context.Context, item *model.Activity) error {
+					updatedItem = item
+					return nil
+				},
+			})
+		},
+	}
+
+	uc := NewActivityUseCase(repo)
+	item, err := uc.RejectModeration(context.Background(), activityID, moderatorUserID, publicComment)
+	if err != nil {
+		t.Fatalf("RejectModeration() error = %v", err)
+	}
+	if item == nil || updatedItem == nil {
+		t.Fatal("RejectModeration() did not persist activity")
+	}
+	if updatedItem.Status != enum.ActivityStatusCancelled {
+		t.Fatalf("activity status = %s, want %s", updatedItem.Status, enum.ActivityStatusCancelled)
+	}
+	if updatedItem.CancellationReason == nil || *updatedItem.CancellationReason != publicComment {
+		t.Fatalf("cancellation reason = %v, want public comment", updatedItem.CancellationReason)
 	}
 }
 

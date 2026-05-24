@@ -63,6 +63,11 @@ type Activity struct {
 	JoinMode         enum.ActivityJoinMode
 	ModerationStatus enum.ActivityModerationStatus
 
+	ModerationRiskScore   int
+	ModerationReasonCodes []string
+	ModerationTriggeredAt *time.Time
+	ModerationReviewedAt  *time.Time
+
 	CategorySlug    string
 	SubcategorySlug *string
 	LanguageCode    string
@@ -165,11 +170,12 @@ func NewActivity(params NewActivityParams) (*Activity, error) {
 		Title:       strings.TrimSpace(params.Title),
 		Description: strings.TrimSpace(params.Description),
 
-		Format:           params.Format,
-		Status:           enum.ActivityStatusEnrollmentOpen,
-		Visibility:       params.Visibility,
-		JoinMode:         enum.ActivityJoinModeAutoApprove,
-		ModerationStatus: enum.ActivityModerationStatusApproved,
+		Format:                params.Format,
+		Status:                enum.ActivityStatusEnrollmentOpen,
+		Visibility:            params.Visibility,
+		JoinMode:              enum.ActivityJoinModeAutoApprove,
+		ModerationStatus:      enum.ActivityModerationStatusApproved,
+		ModerationReasonCodes: []string{},
 
 		CategorySlug:    strings.TrimSpace(params.CategorySlug),
 		SubcategorySlug: NormalizeOptionalString(params.SubcategorySlug),
@@ -496,7 +502,17 @@ func (a *Activity) ApproveModeration(now time.Time) error {
 	if a.ModerationStatus == enum.ActivityModerationStatusApproved {
 		return nil
 	}
-	return ErrActivityCannotBePublished
+
+	ts := now.UTC()
+	a.ModerationStatus = enum.ActivityModerationStatusApproved
+	a.ModerationRiskScore = 0
+	a.ModerationReasonCodes = []string{}
+	a.ModerationTriggeredAt = nil
+	a.ModerationReviewedAt = &ts
+	a.Revision++
+	a.UpdatedAt = ts
+
+	return nil
 }
 
 func (a *Activity) RejectModeration(now time.Time) error {
@@ -504,11 +520,51 @@ func (a *Activity) RejectModeration(now time.Time) error {
 		return nil
 	}
 
+	ts := now.UTC()
 	a.ModerationStatus = enum.ActivityModerationStatusRejected
+	a.ModerationReviewedAt = &ts
 	a.Revision++
-	a.UpdatedAt = now.UTC()
+	a.UpdatedAt = ts
 
 	return nil
+}
+
+func (a *Activity) FlagForModeration(riskScore int, reasonCodes []string, now time.Time) {
+	reasonCodes = NormalizeReasonCodes(reasonCodes)
+	if riskScore <= 0 && len(reasonCodes) == 0 {
+		return
+	}
+	if riskScore < 0 {
+		riskScore = 0
+	}
+	if riskScore > 100 {
+		riskScore = 100
+	}
+
+	ts := now.UTC()
+	a.ModerationStatus = enum.ActivityModerationStatusFlagged
+	a.ModerationRiskScore = riskScore
+	a.ModerationReasonCodes = reasonCodes
+	a.ModerationTriggeredAt = &ts
+	a.ModerationReviewedAt = nil
+	a.UpdatedAt = ts
+}
+
+func NormalizeReasonCodes(input []string) []string {
+	seen := make(map[string]struct{}, len(input))
+	out := make([]string, 0, len(input))
+	for _, value := range input {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	return out
 }
 
 func (a *Activity) LockPrice(now time.Time) {

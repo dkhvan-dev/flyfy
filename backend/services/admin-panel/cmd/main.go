@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	activityadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/activity"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/excursion"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/repository"
@@ -49,6 +50,11 @@ func main() {
 		cfg.Excursion.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
+	activityClient := activityadapter.NewClient(
+		cfg.Activity.BaseURL,
+		cfg.Activity.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
 
 	authUC := app.NewAuthUseCase(staffRepo, sessionRepo, loginAttemptRepo, auditRepo, app.AuthConfig{
 		IdleTimeout:      cfg.Security.SessionIdleTimeout,
@@ -57,7 +63,7 @@ func main() {
 		MaxLoginFailures: cfg.Security.LoginRateLimitMaxFailures,
 	})
 	staffUC := app.NewStaffUseCase(staffRepo, auditRepo, sessionRepo)
-	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, auditRepo)
+	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, activityClient, auditRepo)
 	auditUC := app.NewAuditUseCase(auditRepo)
 
 	if created, err := bootstrapSuperAdmin(ctx, cfg, staffUC); err != nil {

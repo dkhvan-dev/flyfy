@@ -911,6 +911,7 @@ services:
       COOKIE_SECURE: "false"
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       EXCURSION_SERVICE_URL: http://excursion-service:8093
+      ACTIVITY_SERVICE_URL: http://activity-service:8086
       BOOTSTRAP_SUPERADMIN_EMAIL: admin@flyfy.local
       BOOTSTRAP_SUPERADMIN_DISPLAY_NAME: FlyFy Super Admin
       BOOTSTRAP_SUPERADMIN_PASSWORD: AdminPanelDevPass123!

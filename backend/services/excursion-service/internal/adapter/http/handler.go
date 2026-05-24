@@ -183,7 +183,8 @@ func (h *Handler) RejectExcursionModeration(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	var req struct {
-		ReasonCodes []string `json:"reasonCodes"`
+		ReasonCodes   []string `json:"reasonCodes"`
+		PublicComment string   `json:"publicComment"`
 	}
 	if r.Body != nil && r.Body != http.NoBody {
 		if err := decodeBody(r, &req); err != nil && !errors.Is(err, io.EOF) {

@@ -146,6 +146,7 @@ message ApproveActivityModerationResponse {
 message RejectActivityModerationRequest {
   string activity_id = 1;
   string moderator_user_id = 2;
+  string public_comment = 3;
 }
 
 message RejectActivityModerationResponse {

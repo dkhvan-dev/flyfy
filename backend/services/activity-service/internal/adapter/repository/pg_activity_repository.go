@@ -33,6 +33,7 @@ const activitySelectColumns = `
 	id, host_user_id, source_activity_id,
 	title, description,
 	format, status, visibility, join_mode, moderation_status,
+	moderation_risk_score, moderation_reason_codes, moderation_triggered_at, moderation_reviewed_at,
 	category_slug, subcategory_slug, language_code, timezone,
 	start_at, end_at, registration_deadline,
 	capacity_type, min_participants, max_participants,
@@ -47,6 +48,7 @@ const qualifiedActivitySelectColumns = `
 	a.id, a.host_user_id, a.source_activity_id,
 	a.title, a.description,
 	a.format, a.status, a.visibility, a.join_mode, a.moderation_status,
+	a.moderation_risk_score, a.moderation_reason_codes, a.moderation_triggered_at, a.moderation_reviewed_at,
 	a.category_slug, a.subcategory_slug, a.language_code, a.timezone,
 	a.start_at, a.end_at, a.registration_deadline,
 	a.capacity_type, a.min_participants, a.max_participants,
@@ -86,6 +88,7 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			id, host_user_id, source_activity_id,
 			title, description,
 			format, status, visibility, join_mode, moderation_status,
+			moderation_risk_score, moderation_reason_codes, moderation_triggered_at, moderation_reviewed_at,
 			category_slug, subcategory_slug, language_code, timezone,
 			start_at, end_at, registration_deadline,
 			capacity_type, min_participants, max_participants,
@@ -99,13 +102,14 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 			$4, $5,
 			$6, $7, $8, $9, $10,
 			$11, $12, $13, $14,
-			$15, $16, $17,
-			$18, $19, $20,
-			$21, $22, $23, $24,
+			$15, $16, $17, $18,
+			$19, $20, $21,
+			$22, $23, $24,
 			$25, $26, $27, $28,
-			$29, $30, $31, $32, $33, $34, $35, $36, $37,
-			$38, $39, $40, $41, $42, $43, $44, $45,
-			$46, $47, $48
+			$29, $30, $31, $32,
+			$33, $34, $35, $36, $37, $38, $39, $40, $41,
+			$42, $43, $44, $45, $46, $47, $48, $49,
+			$50, $51, $52
 		)
 	`
 
@@ -115,6 +119,7 @@ func (r *PGActivityRepository) CreateActivity(ctx context.Context, item *model.A
 		item.ID, item.HostUserID, item.SourceActivityID,
 		item.Title, item.Description,
 		string(item.Format), string(item.Status), string(item.Visibility), string(item.JoinMode), string(item.ModerationStatus),
+		item.ModerationRiskScore, nonNilStringSlice(item.ModerationReasonCodes), item.ModerationTriggeredAt, item.ModerationReviewedAt,
 		item.CategorySlug, item.SubcategorySlug, item.LanguageCode, item.Timezone,
 		item.StartAt, item.EndAt, item.RegistrationDeadline,
 		string(item.CapacityType), item.MinParticipants, item.MaxParticipants,
@@ -144,43 +149,47 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 			visibility = $8,
 			join_mode = $9,
 			moderation_status = $10,
-			category_slug = $11,
-			subcategory_slug = $12,
-			language_code = $13,
-			timezone = $14,
-			start_at = $15,
-			end_at = $16,
-			registration_deadline = $17,
-			capacity_type = $18,
-			min_participants = $19,
-			max_participants = $20,
-			price_type = $21,
-			price_amount = $22,
-			currency = $23,
-			price_locked_at = $24,
-			requires_profile_completion = $25,
-			requires_attendance_confirmation = $26,
-			allows_participant_invites = $27,
-			confirmation_deadline = $28,
-			country_code = $29,
-			city_id = $30,
-			city_name = $31,
-			address_text = $32,
-			latitude = $33,
-			longitude = $34,
-			map_url = $35,
-			meeting_url = $36,
-			visibility_password_hash = $37,
-			cancellation_reason = $38,
-			cancellation_source = $39,
-			cancelled_by_user_id = $40,
-			cancelled_at = $41,
-			started_at = $42,
-			completed_at = $43,
-			completion_reason = $44,
-			published_at = $45,
-			revision = $46,
-			updated_at = $47
+			moderation_risk_score = $11,
+			moderation_reason_codes = $12,
+			moderation_triggered_at = $13,
+			moderation_reviewed_at = $14,
+			category_slug = $15,
+			subcategory_slug = $16,
+			language_code = $17,
+			timezone = $18,
+			start_at = $19,
+			end_at = $20,
+			registration_deadline = $21,
+			capacity_type = $22,
+			min_participants = $23,
+			max_participants = $24,
+			price_type = $25,
+			price_amount = $26,
+			currency = $27,
+			price_locked_at = $28,
+			requires_profile_completion = $29,
+			requires_attendance_confirmation = $30,
+			allows_participant_invites = $31,
+			confirmation_deadline = $32,
+			country_code = $33,
+			city_id = $34,
+			city_name = $35,
+			address_text = $36,
+			latitude = $37,
+			longitude = $38,
+			map_url = $39,
+			meeting_url = $40,
+			visibility_password_hash = $41,
+			cancellation_reason = $42,
+			cancellation_source = $43,
+			cancelled_by_user_id = $44,
+			cancelled_at = $45,
+			started_at = $46,
+			completed_at = $47,
+			completion_reason = $48,
+			published_at = $49,
+			revision = $50,
+			updated_at = $51
 		WHERE id = $1
 	`
 
@@ -197,6 +206,10 @@ func (r *PGActivityRepository) UpdateActivity(ctx context.Context, item *model.A
 		string(item.Visibility),
 		string(item.JoinMode),
 		string(item.ModerationStatus),
+		item.ModerationRiskScore,
+		nonNilStringSlice(item.ModerationReasonCodes),
+		item.ModerationTriggeredAt,
+		item.ModerationReviewedAt,
 		item.CategorySlug,
 		item.SubcategorySlug,
 		item.LanguageCode,
@@ -290,6 +303,12 @@ func (r *PGActivityRepository) ListActivities(ctx context.Context, filter port.A
 		argPos++
 	}
 
+	if len(filter.ModerationStatuses) > 0 {
+		parts = append(parts, fmt.Sprintf(" AND moderation_status = ANY($%d)", argPos))
+		args = append(args, filter.ModerationStatuses)
+		argPos++
+	}
+
 	if filter.Visibility != nil && strings.TrimSpace(*filter.Visibility) != "" {
 		parts = append(parts, fmt.Sprintf(" AND visibility = $%d", argPos))
 		args = append(args, strings.TrimSpace(*filter.Visibility))
@@ -339,7 +358,11 @@ func (r *PGActivityRepository) ListActivities(ctx context.Context, filter port.A
 		argPos++
 	}
 
-	parts = append(parts, " ORDER BY start_at ASC, created_at DESC")
+	if len(filter.ModerationStatuses) > 0 {
+		parts = append(parts, " ORDER BY moderation_risk_score DESC, moderation_triggered_at ASC NULLS LAST, created_at DESC")
+	} else {
+		parts = append(parts, " ORDER BY start_at ASC, created_at DESC")
+	}
 	parts = append(parts, fmt.Sprintf(" LIMIT $%d OFFSET $%d", argPos, argPos+1))
 	args = append(args, filter.Limit, filter.Offset)
 
@@ -1279,42 +1302,46 @@ func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model
 			visibility = $8,
 			join_mode = $9,
 			moderation_status = $10,
-			category_slug = $11,
-			language_code = $12,
-			timezone = $13,
-			start_at = $14,
-			end_at = $15,
-			registration_deadline = $16,
-			capacity_type = $17,
-			min_participants = $18,
-			max_participants = $19,
-			price_type = $20,
-			price_amount = $21,
-			currency = $22,
-			price_locked_at = $23,
-			requires_profile_completion = $24,
-			requires_attendance_confirmation = $25,
-			allows_participant_invites = $26,
-			confirmation_deadline = $27,
-			country_code = $28,
-			city_id = $29,
-			city_name = $30,
-			address_text = $31,
-			latitude = $32,
-			longitude = $33,
-			map_url = $34,
-			meeting_url = $35,
-			visibility_password_hash = $36,
-			cancellation_reason = $37,
-			cancellation_source = $38,
-			cancelled_by_user_id = $39,
-			cancelled_at = $40,
-			started_at = $41,
-			completed_at = $42,
-			completion_reason = $43,
-			published_at = $44,
-			revision = $45,
-			updated_at = $46
+			moderation_risk_score = $11,
+			moderation_reason_codes = $12,
+			moderation_triggered_at = $13,
+			moderation_reviewed_at = $14,
+			category_slug = $15,
+			language_code = $16,
+			timezone = $17,
+			start_at = $18,
+			end_at = $19,
+			registration_deadline = $20,
+			capacity_type = $21,
+			min_participants = $22,
+			max_participants = $23,
+			price_type = $24,
+			price_amount = $25,
+			currency = $26,
+			price_locked_at = $27,
+			requires_profile_completion = $28,
+			requires_attendance_confirmation = $29,
+			allows_participant_invites = $30,
+			confirmation_deadline = $31,
+			country_code = $32,
+			city_id = $33,
+			city_name = $34,
+			address_text = $35,
+			latitude = $36,
+			longitude = $37,
+			map_url = $38,
+			meeting_url = $39,
+			visibility_password_hash = $40,
+			cancellation_reason = $41,
+			cancellation_source = $42,
+			cancelled_by_user_id = $43,
+			cancelled_at = $44,
+			started_at = $45,
+			completed_at = $46,
+			completion_reason = $47,
+			published_at = $48,
+			revision = $49,
+			updated_at = $50
 		WHERE id = $1
 	`
 
@@ -1331,6 +1358,10 @@ func (r *PGActivityTxRepository) UpdateActivity(ctx context.Context, item *model
 		string(item.Visibility),
 		string(item.JoinMode),
 		string(item.ModerationStatus),
+		item.ModerationRiskScore,
+		nonNilStringSlice(item.ModerationReasonCodes),
+		item.ModerationTriggeredAt,
+		item.ModerationReviewedAt,
 		item.CategorySlug,
 		item.LanguageCode,
 		item.Timezone,
@@ -1810,6 +1841,11 @@ func scanActivity(row activityScanner) (*model.Activity, error) {
 		&joinModeRaw,
 		&moderationStatusRaw,
 
+		&item.ModerationRiskScore,
+		&item.ModerationReasonCodes,
+		&item.ModerationTriggeredAt,
+		&item.ModerationReviewedAt,
+
 		&item.CategorySlug,
 		&item.SubcategorySlug,
 		&item.LanguageCode,
@@ -2011,4 +2047,11 @@ func optionalActivityCancellationSourceString(source *enum.ActivityCancellationS
 	}
 	value := string(*source)
 	return &value
+}
+
+func nonNilStringSlice(values []string) []string {
+	if values == nil {
+		return []string{}
+	}
+	return values
 }
