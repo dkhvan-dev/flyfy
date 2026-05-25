@@ -1059,6 +1059,106 @@ func TestRendererRendersSouthKoreaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersJapanAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=JP&city=kyoto",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Храм Киёмидзу-дэра",
+				CountryCode:   "JP",
+				CityID:        "kyoto",
+				Category:      "TEMPLE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "JP",
+			CityID:      "kyoto",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="JP" selected`,
+		`Япония`,
+		`value="kyoto" data-country="JP" selected`,
+		`Киото`,
+		`Киото, Япония`,
+		`Храм`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Japan attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">JP<") || strings.Contains(listBody, ">kyoto<") {
+		t.Fatalf("Japan attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Храм Киёмидзу-дэра",
+		Description:   "Исторический храм на востоке Киото.",
+		CountryCode:   "JP",
+		CityID:        "kyoto",
+		Category:      "TEMPLE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "JP", CityID: "osaka"},
+			{CountryCode: "JP", CityID: "kyoto"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "JP", CityID: "osaka"},
+			{CountryCode: "JP", CityID: "kyoto"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="JP" selected>Япония</option>`,
+		`<option value="kyoto" data-country="JP" selected>Киото</option>`,
+		`<option value="osaka" data-country="JP" >Осака</option>`,
+		`type="checkbox" name="access_cities" value="JP:osaka" checked`,
+		`type="checkbox" name="departure_cities" value="JP:kyoto" checked`,
+		`Киото, Япония`,
+		`<option value="JPY" >Японская иена</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Japan attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

@@ -1670,6 +1670,123 @@ func TestSouthKoreaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testi
 	}
 }
 
+func TestJapanPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "032_seed_japan_priority_attractions.up.sql")
+	downSQL := readMigration(t, "032_seed_japan_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_japan_resolved_attractions AS",
+		"'JP'",
+		"japan-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Japan up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"tokyo",
+		"yokohama",
+		"kamakura",
+		"nikko",
+		"hakone",
+		"fujikawaguchiko",
+		"osaka",
+		"kyoto",
+		"nara",
+		"kobe",
+		"himeji",
+		"wakayama",
+		"nagoya",
+		"kanazawa",
+		"takayama",
+		"shirakawa-go",
+		"matsumoto",
+		"sapporo",
+		"otaru",
+		"hakodate",
+		"furano",
+		"asahikawa",
+		"sendai",
+		"aomori",
+		"fukuoka",
+		"hiroshima",
+		"hatsukaichi",
+		"nagasaki",
+		"kumamoto",
+		"beppu",
+		"kagoshima",
+		"naha",
+		"onna",
+		"ishigaki",
+		"takamatsu",
+		"matsuyama",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Japan up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Senso-ji Temple",
+		"Shibuya Scramble Crossing",
+		"Toyosu Market",
+		"Tokyo Disneyland",
+		"Yokohama Chinatown",
+		"Kotoku-in Great Buddha",
+		"Nikko Toshogu Shrine",
+		"Lake Kawaguchiko",
+		"Kiyomizu-dera Temple",
+		"Fushimi Inari Taisha",
+		"Universal Studios Japan",
+		"Dotonbori",
+		"Nara Park",
+		"Himeji Castle",
+		"Toyota Commemorative Museum",
+		"Kenrokuen Garden",
+		"Shirakawa-go Ogimachi Village",
+		"Matsumoto Castle",
+		"Sapporo Odori Park",
+		"Otaru Canal",
+		"Hakodate Morning Market",
+		"Aoiike Blue Pond",
+		"Sendai Castle Site",
+		"Hiroshima Peace Memorial Park",
+		"Itsukushima Shrine",
+		"Fukuoka Tower",
+		"Nagasaki Peace Park",
+		"Kumamoto Castle",
+		"Beppu Jigoku Meguri",
+		"Shuri Castle Park",
+		"Manza Beach",
+		"Shiroyama Observatory",
+		"Ritsurin Garden",
+		"Dogo Onsen Honkan",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Japan up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Japan up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['japan', city_id") {
+		t.Fatalf("Japan up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "japan-seed-v1") || !strings.Contains(downSQL, "country_code = 'JP'") {
+		t.Fatalf("Japan down migration must remove only tagged Japan seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

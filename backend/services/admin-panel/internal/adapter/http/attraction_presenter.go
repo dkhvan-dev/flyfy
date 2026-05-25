@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE", "AM", "CN", "KR"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE", "AM", "CN", "KR", "JP"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -295,6 +295,60 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "KR", CityID: "pyeongchang"},
 	{CountryCode: "KR", CityID: "goseong"},
 	{CountryCode: "KR", CityID: "cheorwon"},
+	{CountryCode: "JP", CityID: "tokyo"},
+	{CountryCode: "JP", CityID: "yokohama"},
+	{CountryCode: "JP", CityID: "kamakura"},
+	{CountryCode: "JP", CityID: "nikko"},
+	{CountryCode: "JP", CityID: "hakone"},
+	{CountryCode: "JP", CityID: "fujikawaguchiko"},
+	{CountryCode: "JP", CityID: "fujiyoshida"},
+	{CountryCode: "JP", CityID: "oshino"},
+	{CountryCode: "JP", CityID: "gotemba"},
+	{CountryCode: "JP", CityID: "osaka"},
+	{CountryCode: "JP", CityID: "kyoto"},
+	{CountryCode: "JP", CityID: "nara"},
+	{CountryCode: "JP", CityID: "kobe"},
+	{CountryCode: "JP", CityID: "himeji"},
+	{CountryCode: "JP", CityID: "wakayama"},
+	{CountryCode: "JP", CityID: "nagoya"},
+	{CountryCode: "JP", CityID: "nagakute"},
+	{CountryCode: "JP", CityID: "kanazawa"},
+	{CountryCode: "JP", CityID: "takayama"},
+	{CountryCode: "JP", CityID: "shirakawa-go"},
+	{CountryCode: "JP", CityID: "matsumoto"},
+	{CountryCode: "JP", CityID: "azumino"},
+	{CountryCode: "JP", CityID: "kamikochi"},
+	{CountryCode: "JP", CityID: "shizuoka"},
+	{CountryCode: "JP", CityID: "shimizu"},
+	{CountryCode: "JP", CityID: "sapporo"},
+	{CountryCode: "JP", CityID: "otaru"},
+	{CountryCode: "JP", CityID: "hakodate"},
+	{CountryCode: "JP", CityID: "furano"},
+	{CountryCode: "JP", CityID: "biei"},
+	{CountryCode: "JP", CityID: "asahikawa"},
+	{CountryCode: "JP", CityID: "sendai"},
+	{CountryCode: "JP", CityID: "matsushima"},
+	{CountryCode: "JP", CityID: "aomori"},
+	{CountryCode: "JP", CityID: "akita"},
+	{CountryCode: "JP", CityID: "kakunodate"},
+	{CountryCode: "JP", CityID: "yamagata"},
+	{CountryCode: "JP", CityID: "ginzan-onsen"},
+	{CountryCode: "JP", CityID: "zao-onsen"},
+	{CountryCode: "JP", CityID: "fukuoka"},
+	{CountryCode: "JP", CityID: "hiroshima"},
+	{CountryCode: "JP", CityID: "hatsukaichi"},
+	{CountryCode: "JP", CityID: "nagasaki"},
+	{CountryCode: "JP", CityID: "sasebo"},
+	{CountryCode: "JP", CityID: "kumamoto"},
+	{CountryCode: "JP", CityID: "beppu"},
+	{CountryCode: "JP", CityID: "kagoshima"},
+	{CountryCode: "JP", CityID: "naha"},
+	{CountryCode: "JP", CityID: "onna"},
+	{CountryCode: "JP", CityID: "motobu"},
+	{CountryCode: "JP", CityID: "chatan"},
+	{CountryCode: "JP", CityID: "ishigaki"},
+	{CountryCode: "JP", CityID: "takamatsu"},
+	{CountryCode: "JP", CityID: "matsuyama"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -302,7 +356,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -430,6 +484,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Южнокорейская вона"
 		}
 		return "South Korean won"
+	case "JPY":
+		if locale == localeRU {
+			return "Японская иена"
+		}
+		return "Japanese yen"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}

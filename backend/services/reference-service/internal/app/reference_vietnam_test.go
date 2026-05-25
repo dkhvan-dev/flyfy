@@ -583,3 +583,82 @@ func TestReferenceUseCaseIncludesSouthKoreaCountryCurrencyAndTouristCities(t *te
 		t.Fatalf("search gyeongju in South Korea = %#v, want gyeongju first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesJapanCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("JP")
+	if country == nil {
+		t.Fatal("expected Japan country reference")
+	}
+	if country.Name.Ru != "Япония" {
+		t.Fatalf("Japan Russian name = %q, want Япония", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("JP")
+	if currency == nil {
+		t.Fatal("expected Japanese yen currency by country")
+	}
+	if currency.Code != "JPY" {
+		t.Fatalf("Japan currency = %q, want JPY", currency.Code)
+	}
+
+	cities := uc.ListCities("JP")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"tokyo",
+		"yokohama",
+		"kamakura",
+		"nikko",
+		"hakone",
+		"fujikawaguchiko",
+		"osaka",
+		"kyoto",
+		"nara",
+		"kobe",
+		"himeji",
+		"wakayama",
+		"nagoya",
+		"kanazawa",
+		"takayama",
+		"shirakawa-go",
+		"matsumoto",
+		"sapporo",
+		"otaru",
+		"hakodate",
+		"furano",
+		"asahikawa",
+		"sendai",
+		"aomori",
+		"fukuoka",
+		"hiroshima",
+		"hatsukaichi",
+		"nagasaki",
+		"kumamoto",
+		"beppu",
+		"kagoshima",
+		"naha",
+		"onna",
+		"ishigaki",
+		"takamatsu",
+		"matsuyama",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Japan city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("fujikawaguchiko", "JP", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "fujikawaguchiko" {
+		t.Fatalf("search fujikawaguchiko in Japan = %#v, want fujikawaguchiko first", searchResults)
+	}
+}
