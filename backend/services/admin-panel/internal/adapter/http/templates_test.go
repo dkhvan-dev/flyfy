@@ -959,6 +959,106 @@ func TestRendererRendersChinaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersSouthKoreaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=KR&city=gyeongju",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Храм Пульгукса",
+				CountryCode:   "KR",
+				CityID:        "gyeongju",
+				Category:      "TEMPLE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "KR",
+			CityID:      "gyeongju",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="KR" selected`,
+		`Южная Корея`,
+		`value="gyeongju" data-country="KR" selected`,
+		`Кёнджу`,
+		`Кёнджу, Южная Корея`,
+		`Храм`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("South Korea attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">KR<") || strings.Contains(listBody, ">gyeongju<") {
+		t.Fatalf("South Korea attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Храм Пульгукса",
+		Description:   "Главный буддийский храм Кёнджу.",
+		CountryCode:   "KR",
+		CityID:        "gyeongju",
+		Category:      "TEMPLE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "KR", CityID: "busan"},
+			{CountryCode: "KR", CityID: "gyeongju"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "KR", CityID: "busan"},
+			{CountryCode: "KR", CityID: "gyeongju"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="KR" selected>Южная Корея</option>`,
+		`<option value="gyeongju" data-country="KR" selected>Кёнджу</option>`,
+		`<option value="busan" data-country="KR" >Пусан</option>`,
+		`type="checkbox" name="access_cities" value="KR:busan" checked`,
+		`type="checkbox" name="departure_cities" value="KR:gyeongju" checked`,
+		`Кёнджу, Южная Корея`,
+		`<option value="KRW" >Южнокорейская вона</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("South Korea attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

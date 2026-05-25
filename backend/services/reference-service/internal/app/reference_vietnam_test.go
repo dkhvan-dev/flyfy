@@ -522,3 +522,64 @@ func TestReferenceUseCaseIncludesChinaCountryCurrencyAndTouristCities(t *testing
 		t.Fatalf("search hainan in China = %#v, want hainan first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesSouthKoreaCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("KR")
+	if country == nil {
+		t.Fatal("expected South Korea country reference")
+	}
+	if country.Name.Ru != "Южная Корея" {
+		t.Fatalf("South Korea Russian name = %q, want Южная Корея", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("KR")
+	if currency == nil {
+		t.Fatal("expected South Korean won currency by country")
+	}
+	if currency.Code != "KRW" {
+		t.Fatalf("South Korea currency = %q, want KRW", currency.Code)
+	}
+
+	cities := uc.ListCities("KR")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"seoul",
+		"incheon",
+		"suwon",
+		"yongin",
+		"paju",
+		"gapyeong",
+		"busan",
+		"gyeongju",
+		"daegu",
+		"jeju",
+		"seogwipo",
+		"sokcho",
+		"gangneung",
+		"chuncheon",
+		"pyeongchang",
+		"goseong",
+		"cheorwon",
+		"yangyang",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("South Korea city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("gyeongju", "KR", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "gyeongju" {
+		t.Fatalf("search gyeongju in South Korea = %#v, want gyeongju first", searchResults)
+	}
+}

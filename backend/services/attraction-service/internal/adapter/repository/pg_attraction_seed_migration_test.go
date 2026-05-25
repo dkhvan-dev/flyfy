@@ -1584,6 +1584,92 @@ func TestChinaHainanExtendedAttractionsSeedMigrationCoversTouristBreadth(t *test
 	}
 }
 
+func TestSouthKoreaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "031_seed_south_korea_priority_attractions.up.sql")
+	downSQL := readMigration(t, "031_seed_south_korea_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_south_korea_resolved_attractions AS",
+		"'KR'",
+		"south-korea-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("South Korea up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"seoul",
+		"incheon",
+		"suwon",
+		"yongin",
+		"paju",
+		"busan",
+		"gyeongju",
+		"daegu",
+		"jeju",
+		"seogwipo",
+		"sokcho",
+		"yangyang",
+		"gangneung",
+		"chuncheon",
+		"pyeongchang",
+		"goseong",
+		"cheorwon",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("South Korea up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Gyeongbokgung Palace",
+		"Starfield COEX Mall",
+		"Gwangjang Market",
+		"Songdo Central Park",
+		"Suwon Hwaseong Fortress",
+		"Everland",
+		"Imjingak Peace Park",
+		"Haeundae Beach",
+		"Jagalchi Fish Market",
+		"Bulguksa Temple",
+		"Donggung Palace and Wolji Pond",
+		"Seomun Market",
+		"Hallasan National Park",
+		"Seongsan Ilchulbong Sunrise Peak",
+		"Dongmun Traditional Market",
+		"Seoraksan National Park",
+		"Sokcho Tourist and Fishery Market",
+		"Gyeongpo Beach",
+		"Nami Island",
+		"LEGOLAND Korea Resort",
+		"Alpensia Resort",
+		"DMZ Museum",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("South Korea up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("South Korea up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['south-korea', city_id") {
+		t.Fatalf("South Korea up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "south-korea-seed-v1") || !strings.Contains(downSQL, "country_code = 'KR'") {
+		t.Fatalf("South Korea down migration must remove only tagged South Korea seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

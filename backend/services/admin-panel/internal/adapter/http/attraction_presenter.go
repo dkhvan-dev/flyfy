@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE", "AM", "CN"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE", "AM", "CN", "KR"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -276,6 +276,25 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "CN", CityID: "kunming"},
 	{CountryCode: "CN", CityID: "luoyang"},
 	{CountryCode: "CN", CityID: "dengfeng"},
+	{CountryCode: "KR", CityID: "seoul"},
+	{CountryCode: "KR", CityID: "incheon"},
+	{CountryCode: "KR", CityID: "suwon"},
+	{CountryCode: "KR", CityID: "yongin"},
+	{CountryCode: "KR", CityID: "paju"},
+	{CountryCode: "KR", CityID: "gwacheon"},
+	{CountryCode: "KR", CityID: "gapyeong"},
+	{CountryCode: "KR", CityID: "busan"},
+	{CountryCode: "KR", CityID: "gyeongju"},
+	{CountryCode: "KR", CityID: "daegu"},
+	{CountryCode: "KR", CityID: "jeju"},
+	{CountryCode: "KR", CityID: "seogwipo"},
+	{CountryCode: "KR", CityID: "sokcho"},
+	{CountryCode: "KR", CityID: "yangyang"},
+	{CountryCode: "KR", CityID: "gangneung"},
+	{CountryCode: "KR", CityID: "chuncheon"},
+	{CountryCode: "KR", CityID: "pyeongchang"},
+	{CountryCode: "KR", CityID: "goseong"},
+	{CountryCode: "KR", CityID: "cheorwon"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -283,7 +302,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -406,6 +425,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Китайский юань"
 		}
 		return "Chinese yuan"
+	case "KRW":
+		if locale == localeRU {
+			return "Южнокорейская вона"
+		}
+		return "South Korean won"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}
