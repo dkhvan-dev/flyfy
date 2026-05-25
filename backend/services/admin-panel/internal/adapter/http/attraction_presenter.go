@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -180,13 +180,47 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "MV", CityID: "utheemu"},
 	{CountryCode: "MV", CityID: "isdhoo"},
 	{CountryCode: "MV", CityID: "lhaviyani-atoll"},
+	{CountryCode: "GE", CityID: "tbilisi"},
+	{CountryCode: "GE", CityID: "mtskheta"},
+	{CountryCode: "GE", CityID: "batumi"},
+	{CountryCode: "GE", CityID: "kobuleti"},
+	{CountryCode: "GE", CityID: "mtsvane-kontskhi"},
+	{CountryCode: "GE", CityID: "kvariati"},
+	{CountryCode: "GE", CityID: "sarpi"},
+	{CountryCode: "GE", CityID: "gonio"},
+	{CountryCode: "GE", CityID: "tsikhisdziri"},
+	{CountryCode: "GE", CityID: "chakvistavi"},
+	{CountryCode: "GE", CityID: "keda"},
+	{CountryCode: "GE", CityID: "mirveti"},
+	{CountryCode: "GE", CityID: "shekvetili"},
+	{CountryCode: "GE", CityID: "kutaisi"},
+	{CountryCode: "GE", CityID: "tskaltubo"},
+	{CountryCode: "GE", CityID: "martvili"},
+	{CountryCode: "GE", CityID: "khoni"},
+	{CountryCode: "GE", CityID: "terjola"},
+	{CountryCode: "GE", CityID: "vani"},
+	{CountryCode: "GE", CityID: "chiatura"},
+	{CountryCode: "GE", CityID: "baghdati"},
+	{CountryCode: "GE", CityID: "stepantsminda"},
+	{CountryCode: "GE", CityID: "gudauri"},
+	{CountryCode: "GE", CityID: "telavi"},
+	{CountryCode: "GE", CityID: "sighnaghi"},
+	{CountryCode: "GE", CityID: "kvareli"},
+	{CountryCode: "GE", CityID: "borjomi"},
+	{CountryCode: "GE", CityID: "bakuriani"},
+	{CountryCode: "GE", CityID: "gori"},
+	{CountryCode: "GE", CityID: "uplistsikhe"},
+	{CountryCode: "GE", CityID: "vardzia"},
+	{CountryCode: "GE", CityID: "aspindza"},
+	{CountryCode: "GE", CityID: "mestia"},
+	{CountryCode: "GE", CityID: "ushguli"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "ID", CityID: "bali"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -294,6 +328,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Мальдивская руфия"
 		}
 		return "Maldivian rufiyaa"
+	case "GEL":
+		if locale == localeRU {
+			return "Грузинский лари"
+		}
+		return "Georgian lari"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}

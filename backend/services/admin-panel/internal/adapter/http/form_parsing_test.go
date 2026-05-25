@@ -354,6 +354,41 @@ func TestAttractionReferenceOptionsIncludeMaldivesCitiesAndCurrency(t *testing.T
 	}
 }
 
+func TestAttractionReferenceOptionsIncludeGeorgiaCitiesAndCurrency(t *testing.T) {
+	t.Parallel()
+
+	countries := attractionCountryOptions("GE")
+	var foundGeorgia bool
+	for _, option := range countries {
+		if option.Value == "GE" && option.Selected {
+			foundGeorgia = true
+			break
+		}
+	}
+	if !foundGeorgia {
+		t.Fatalf("country options = %#v, want selected GE option", countries)
+	}
+
+	cities := attractionCityOptions("stepantsminda")
+	var foundKazbegi bool
+	for _, option := range cities {
+		if option.Value == "stepantsminda" && option.CountryCode == "GE" && option.Selected {
+			foundKazbegi = true
+			break
+		}
+	}
+	if !foundKazbegi {
+		t.Fatalf("city options = %#v, want selected GE Stepantsminda/Kazbegi option", cities)
+	}
+
+	if got := attractionCityText(localeRU, "GE", "stepantsminda"); got != "Степанцминда (Казбеги), Грузия" {
+		t.Fatalf("city text = %q, want localized Stepantsminda/Kazbegi city", got)
+	}
+	if got := attractionCurrencyText(localeRU, "GEL"); got != "Грузинский лари" {
+		t.Fatalf("currency text = %q, want localized Georgian lari", got)
+	}
+}
+
 func TestAttractionCategoryOptionsIncludeMarket(t *testing.T) {
 	t.Parallel()
 

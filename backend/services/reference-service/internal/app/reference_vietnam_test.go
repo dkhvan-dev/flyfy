@@ -323,3 +323,64 @@ func TestReferenceUseCaseIncludesMaldivesCountryCurrencyAndTouristIslands(t *tes
 		t.Fatalf("search maafushi in Maldives = %#v, want maafushi first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesGeorgiaCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("GE")
+	if country == nil {
+		t.Fatal("expected Georgia country reference")
+	}
+	if country.Name.Ru != "Грузия" {
+		t.Fatalf("Georgia Russian name = %q, want Грузия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("GE")
+	if currency == nil {
+		t.Fatal("expected Georgian lari currency by country")
+	}
+	if currency.Code != "GEL" {
+		t.Fatalf("Georgia currency = %q, want GEL", currency.Code)
+	}
+
+	cities := uc.ListCities("GE")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"tbilisi",
+		"mtskheta",
+		"batumi",
+		"kobuleti",
+		"kutaisi",
+		"tskaltubo",
+		"martvili",
+		"stepantsminda",
+		"gudauri",
+		"telavi",
+		"sighnaghi",
+		"borjomi",
+		"bakuriani",
+		"gori",
+		"uplistsikhe",
+		"vardzia",
+		"mestia",
+		"ushguli",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Georgia city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("kazbegi", "GE", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "stepantsminda" {
+		t.Fatalf("search kazbegi in Georgia = %#v, want stepantsminda first", searchResults)
+	}
+}

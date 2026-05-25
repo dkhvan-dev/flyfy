@@ -1259,6 +1259,90 @@ func TestMaldivesPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing
 	}
 }
 
+func TestGeorgiaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "027_seed_georgia_priority_attractions.up.sql")
+	downSQL := readMigration(t, "027_seed_georgia_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_georgia_resolved_attractions AS",
+		"'GE'",
+		"georgia-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Georgia up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"tbilisi",
+		"mtskheta",
+		"batumi",
+		"kobuleti",
+		"kutaisi",
+		"tskaltubo",
+		"martvili",
+		"stepantsminda",
+		"gudauri",
+		"telavi",
+		"sighnaghi",
+		"borjomi",
+		"bakuriani",
+		"gori",
+		"uplistsikhe",
+		"vardzia",
+		"mestia",
+		"ushguli",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Georgia up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Narikala Fortress",
+		"Dry Bridge Market",
+		"Tbilisi Mall",
+		"Svetitskhoveli Cathedral",
+		"Batumi Boulevard",
+		"Batumi Botanical Garden",
+		"Kobuleti Beach",
+		"Bagrati Cathedral",
+		"Prometheus Cave",
+		"Martvili Canyon",
+		"Gergeti Trinity Church",
+		"Gudauri Ski Resort",
+		"Telavi Bazaar",
+		"Sighnaghi Old Town",
+		"Borjomi Central Park",
+		"Uplistsikhe Cave Town",
+		"Vardzia Cave Monastery",
+		"Svaneti Museum of History and Ethnography",
+		"Ushguli Village",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Georgia up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Georgia up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['georgia', city_id") {
+		t.Fatalf("Georgia up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "georgia-seed-v1") || !strings.Contains(downSQL, "country_code = 'GE'") {
+		t.Fatalf("Georgia down migration must remove only tagged Georgia seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",
