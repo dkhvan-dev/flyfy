@@ -389,6 +389,41 @@ func TestAttractionReferenceOptionsIncludeGeorgiaCitiesAndCurrency(t *testing.T)
 	}
 }
 
+func TestAttractionReferenceOptionsIncludeArmeniaCitiesAndCurrency(t *testing.T) {
+	t.Parallel()
+
+	countries := attractionCountryOptions("AM")
+	var foundArmenia bool
+	for _, option := range countries {
+		if option.Value == "AM" && option.Selected {
+			foundArmenia = true
+			break
+		}
+	}
+	if !foundArmenia {
+		t.Fatalf("country options = %#v, want selected AM option", countries)
+	}
+
+	cities := attractionCityOptions("vagharshapat")
+	var foundEchmiadzin bool
+	for _, option := range cities {
+		if option.Value == "vagharshapat" && option.CountryCode == "AM" && option.Selected {
+			foundEchmiadzin = true
+			break
+		}
+	}
+	if !foundEchmiadzin {
+		t.Fatalf("city options = %#v, want selected AM Vagharshapat/Echmiadzin option", cities)
+	}
+
+	if got := attractionCityText(localeRU, "AM", "vagharshapat"); got != "Вагаршапат (Эчмиадзин), Армения" {
+		t.Fatalf("city text = %q, want localized Vagharshapat/Echmiadzin city", got)
+	}
+	if got := attractionCurrencyText(localeRU, "AMD"); got != "Армянский драм" {
+		t.Fatalf("currency text = %q, want localized Armenian dram", got)
+	}
+}
+
 func TestAttractionCategoryOptionsIncludeMarket(t *testing.T) {
 	t.Parallel()
 

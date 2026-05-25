@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE", "AM"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -214,13 +214,42 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "GE", CityID: "aspindza"},
 	{CountryCode: "GE", CityID: "mestia"},
 	{CountryCode: "GE", CityID: "ushguli"},
+	{CountryCode: "AM", CityID: "yerevan"},
+	{CountryCode: "AM", CityID: "vagharshapat"},
+	{CountryCode: "AM", CityID: "garni"},
+	{CountryCode: "AM", CityID: "geghard"},
+	{CountryCode: "AM", CityID: "byurakan"},
+	{CountryCode: "AM", CityID: "ashtarak"},
+	{CountryCode: "AM", CityID: "sevan"},
+	{CountryCode: "AM", CityID: "shorzha"},
+	{CountryCode: "AM", CityID: "gavar"},
+	{CountryCode: "AM", CityID: "noratus"},
+	{CountryCode: "AM", CityID: "artanish"},
+	{CountryCode: "AM", CityID: "dilijan"},
+	{CountryCode: "AM", CityID: "gosh"},
+	{CountryCode: "AM", CityID: "haghartsin"},
+	{CountryCode: "AM", CityID: "ijevan"},
+	{CountryCode: "AM", CityID: "yenokavan"},
+	{CountryCode: "AM", CityID: "tsaghkadzor"},
+	{CountryCode: "AM", CityID: "gyumri"},
+	{CountryCode: "AM", CityID: "vanadzor"},
+	{CountryCode: "AM", CityID: "alaverdi"},
+	{CountryCode: "AM", CityID: "odzun"},
+	{CountryCode: "AM", CityID: "stepanavan"},
+	{CountryCode: "AM", CityID: "areni"},
+	{CountryCode: "AM", CityID: "jermuk"},
+	{CountryCode: "AM", CityID: "goris"},
+	{CountryCode: "AM", CityID: "tatev"},
+	{CountryCode: "AM", CityID: "khndzoresk"},
+	{CountryCode: "AM", CityID: "kapan"},
+	{CountryCode: "AM", CityID: "meghri"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "ID", CityID: "bali"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -333,6 +362,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Грузинский лари"
 		}
 		return "Georgian lari"
+	case "AMD":
+		if locale == localeRU {
+			return "Армянский драм"
+		}
+		return "Armenian dram"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}

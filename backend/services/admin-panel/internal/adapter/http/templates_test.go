@@ -755,6 +755,105 @@ func TestRendererRendersGeorgiaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersArmeniaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=AM&city=vagharshapat",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Кафедральный собор Эчмиадзин",
+				CountryCode:   "AM",
+				CityID:        "vagharshapat",
+				Category:      "TEMPLE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "AM",
+			CityID:      "vagharshapat",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="AM" selected`,
+		`Армения`,
+		`value="vagharshapat" data-country="AM" selected`,
+		`Вагаршапат (Эчмиадзин)`,
+		`Вагаршапат (Эчмиадзин), Армения`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Armenia attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">AM<") || strings.Contains(listBody, ">vagharshapat<") {
+		t.Fatalf("Armenia attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Кафедральный собор Эчмиадзин",
+		Description:   "Духовный центр Армянской апостольской церкви.",
+		CountryCode:   "AM",
+		CityID:        "vagharshapat",
+		Category:      "TEMPLE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "AM", CityID: "yerevan"},
+			{CountryCode: "AM", CityID: "vagharshapat"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "AM", CityID: "yerevan"},
+			{CountryCode: "AM", CityID: "vagharshapat"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="AM" selected>Армения</option>`,
+		`<option value="vagharshapat" data-country="AM" selected>Вагаршапат (Эчмиадзин)</option>`,
+		`<option value="yerevan" data-country="AM" >Ереван</option>`,
+		`type="checkbox" name="access_cities" value="AM:yerevan" checked`,
+		`type="checkbox" name="departure_cities" value="AM:vagharshapat" checked`,
+		`Вагаршапат (Эчмиадзин), Армения`,
+		`<option value="AMD" >Армянский драм</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Armenia attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 
