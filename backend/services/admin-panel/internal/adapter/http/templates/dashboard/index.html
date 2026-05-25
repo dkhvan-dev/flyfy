@@ -39,7 +39,7 @@
                     <span>{{t $.Locale "table.priority"}} {{.Case.Priority}}</span>
                     {{if .GuideName}}<span>{{.GuideName}}</span>{{end}}
                     {{if $location}}<span>{{$location}}</span>{{end}}
-                    <span>{{formatTime .Case.OpenedAt}}</span>
+                    <span>{{formatTime .Case.OpenedAt (staffTimezone $.Staff)}}</span>
                   </div>
                 </div>
                 <a class="button" href="{{.DetailURL}}">{{t $.Locale "action.review"}}</a>

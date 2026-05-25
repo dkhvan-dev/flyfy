@@ -26,7 +26,7 @@ func (r *PGStaffRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.S
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, email, display_name, password_hash, status, failed_login_count,
 		       locked_until, last_login_at, password_changed_at, created_by_staff_id,
-		       created_at, updated_at, disabled_at
+		       created_at, updated_at, disabled_at, timezone
 		FROM staff_users
 		WHERE id = $1
 	`, id)
@@ -37,7 +37,7 @@ func (r *PGStaffRepository) GetByEmail(ctx context.Context, email string) (*mode
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, email, display_name, password_hash, status, failed_login_count,
 		       locked_until, last_login_at, password_changed_at, created_by_staff_id,
-		       created_at, updated_at, disabled_at
+		       created_at, updated_at, disabled_at, timezone
 		FROM staff_users
 		WHERE LOWER(email) = LOWER($1)
 	`, strings.TrimSpace(email))
@@ -48,7 +48,7 @@ func (r *PGStaffRepository) List(ctx context.Context, limit int, offset int) ([]
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, email, display_name, password_hash, status, failed_login_count,
 		       locked_until, last_login_at, password_changed_at, created_by_staff_id,
-		       created_at, updated_at, disabled_at
+		       created_at, updated_at, disabled_at, timezone
 		FROM staff_users
 		ORDER BY created_at DESC
 		LIMIT $1 OFFSET $2
@@ -82,10 +82,10 @@ func (r *PGStaffRepository) Create(ctx context.Context, staff *model.StaffUser, 
 	_, err = tx.Exec(ctx, `
 		INSERT INTO staff_users (
 			id, email, display_name, password_hash, status, failed_login_count,
-			created_by_staff_id, created_at, updated_at
+			created_by_staff_id, created_at, updated_at, timezone
 		)
-		VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $8)
-	`, staff.ID, staff.Email, staff.DisplayName, passwordHash, string(staff.Status), staff.CreatedByStaffID, staff.CreatedAt, staff.UpdatedAt)
+		VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $8, $9)
+	`, staff.ID, staff.Email, staff.DisplayName, passwordHash, string(staff.Status), staff.CreatedByStaffID, staff.CreatedAt, staff.UpdatedAt, staff.EffectiveTimezone())
 	if err != nil {
 		return err
 	}
@@ -146,6 +146,16 @@ func (r *PGStaffRepository) UpdateProfileAndRoles(ctx context.Context, id uuid.U
 		}
 	}
 	return tx.Commit(ctx)
+}
+
+func (r *PGStaffRepository) UpdateTimezone(ctx context.Context, id uuid.UUID, timezone string, now time.Time) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE staff_users
+		SET timezone = $2,
+		    updated_at = $3
+		WHERE id = $1
+	`, id, strings.TrimSpace(timezone), now)
+	return err
 }
 
 func (r *PGStaffRepository) UpdateLoginSuccess(ctx context.Context, id uuid.UUID, now time.Time) error {
@@ -270,6 +280,7 @@ func scanStaffUser(row staffScanner) (*model.StaffUser, error) {
 		&item.CreatedAt,
 		&item.UpdatedAt,
 		&item.DisabledAt,
+		&item.Timezone,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -278,5 +289,8 @@ func scanStaffUser(row staffScanner) (*model.StaffUser, error) {
 		return nil, err
 	}
 	item.Status = enum.StaffStatus(status)
+	if strings.TrimSpace(item.Timezone) == "" {
+		item.Timezone = model.DefaultStaffTimezone
+	}
 	return &item, nil
 }

@@ -137,6 +137,48 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 	}
 }
 
+func TestRendererTopbarHidesAuditWithoutPermissionAndLinksOwnProfile(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	staff := adminTemplateActor()
+	staff.Permissions = []enum.Permission{enum.PermissionDashboardRead}
+	pageData := PageData{
+		Title:     "Dashboard",
+		Locale:    localeEN,
+		Path:      "/admin",
+		Staff:     staff,
+		CSRFToken: "csrf-token",
+		Data:      NewDashboardViewData(nil, nil, nil, nil),
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "dashboard/index", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := recorder.Body.String()
+	if strings.Contains(body, `href="/admin/audit"`) {
+		t.Fatalf("audit nav link rendered without audit.read permission: %s", body)
+	}
+	if !strings.Contains(body, `href="/admin/me"`) {
+		t.Fatalf("own profile link is missing from topbar: %s", body)
+	}
+
+	staff.Permissions = append(staff.Permissions, enum.PermissionAuditRead)
+	recorder = httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "dashboard/index", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	if !strings.Contains(recorder.Body.String(), `href="/admin/audit"`) {
+		t.Fatalf("audit nav link missing for staff with audit.read permission: %s", recorder.Body.String())
+	}
+}
+
 func TestRendererRendersModerationDetail(t *testing.T) {
 	t.Parallel()
 
@@ -1012,6 +1054,83 @@ func TestRendererRendersReadableAuditEvents(t *testing.T) {
 	}
 	if strings.Contains(body, "<code>"+shortTemplateID(staffID)+"</code>") {
 		t.Fatalf("audit template rendered raw actor uuid as primary content: %s", body)
+	}
+}
+
+func TestRendererRendersStaffProfileWithOwnAuditHistory(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	staffID := uuid.New()
+	caseID := uuid.New()
+	baseTime := time.Date(2026, 5, 25, 12, 0, 0, 0, time.UTC)
+	staff := &model.StaffUser{
+		ID:          staffID,
+		Email:       "moderator@flyfy.local",
+		DisplayName: "Aruzhan Ops",
+		Status:      enum.StaffStatusActive,
+		Timezone:    "Asia/Tokyo",
+		Roles:       []enum.StaffRole{enum.StaffRoleActivityModerator},
+		Permissions: []enum.Permission{
+			enum.PermissionDashboardRead,
+			enum.PermissionModerationRead,
+		},
+		CreatedAt: baseTime,
+		UpdatedAt: baseTime,
+	}
+	pageData := PageData{
+		Title:     "My profile",
+		Locale:    localeEN,
+		Path:      "/admin/me",
+		Staff:     staff,
+		CSRFToken: "csrf-token",
+		Data: NewStaffProfileViewData(localeEN, staff, []*model.AuditEvent{
+			{
+				ActorStaffID:     &staffID,
+				ActorDisplayName: "Aruzhan Ops",
+				ActorEmail:       "moderator@flyfy.local",
+				Action:           "admin.login.succeeded",
+				EntityType:       "staff_session",
+				CreatedAt:        baseTime,
+			},
+			{
+				ActorStaffID:     &staffID,
+				ActorDisplayName: "Aruzhan Ops",
+				ActorEmail:       "moderator@flyfy.local",
+				Action:           "moderation.decision.applied",
+				EntityType:       "moderation_case",
+				EntityID:         &caseID,
+				Metadata:         []byte(`{"decision":"APPROVED","targetType":"ACTIVITY"}`),
+				CreatedAt:        baseTime,
+			},
+		}),
+	}
+
+	recorder := httptest.NewRecorder()
+	renderer.Render(recorder, http.StatusOK, "staff/profile", pageData)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d", recorder.Code)
+	}
+	body := html.UnescapeString(recorder.Body.String())
+	for _, expected := range []string{
+		"Aruzhan Ops",
+		"moderator@flyfy.local",
+		"Activity moderator",
+		"Sign-in succeeded",
+		"Moderation case: Activity",
+		"2026-05-25 21:00",
+		"name=\"timezone\"",
+		"value=\"Asia/Tokyo\" selected",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("staff profile did not render %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, "ID "+caseID.String()[:8]) {
+		t.Fatalf("staff profile rendered technical moderation case id: %s", body)
 	}
 }
 

@@ -1,0 +1,96 @@
+{{define "staff/profile"}}
+{{template "pageStart" .}}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{t .Locale "staff.profileEyebrow"}}</p>
+      <h1>{{t .Locale "staff.profileTitle"}}</h1>
+    </div>
+  </div>
+
+  {{if .Data.Staff}}
+    <article class="card detail">
+      <div>
+        <h2>{{.Data.Staff.DisplayName}}</h2>
+        <p class="muted">{{.Data.Staff.Email}}</p>
+      </div>
+      <dl class="meta-grid">
+        <div>
+          <dt>{{t .Locale "table.status"}}</dt>
+          <dd><span class="{{statusClass .Data.Staff.Status}}">{{statusText .Locale .Data.Staff.Status}}</span></dd>
+        </div>
+        <div>
+          <dt>{{t .Locale "table.lastLogin"}}</dt>
+          <dd>{{formatTime .Data.Staff.LastLoginAt (staffTimezone $.Staff)}}</dd>
+        </div>
+        <div>
+          <dt>{{t .Locale "table.created"}}</dt>
+          <dd>{{formatTime .Data.Staff.CreatedAt (staffTimezone $.Staff)}}</dd>
+        </div>
+        <div>
+          <dt>{{t .Locale "field.timezone"}}</dt>
+          <dd>{{.Data.Staff.EffectiveTimezone}}</dd>
+        </div>
+      </dl>
+      <div>
+        <h3>{{t .Locale "staff.roles"}}</h3>
+        <div class="chip-list">
+          {{range .Data.Staff.Roles}}<span class="chip">{{roleText $.Locale .}}</span>{{end}}
+        </div>
+      </div>
+      <div>
+        <h3>{{t .Locale "staff.permissions"}}</h3>
+        <div class="chip-list">
+          {{range .Data.Staff.Permissions}}<span class="chip">{{permissionText $.Locale .}}</span>{{end}}
+        </div>
+      </div>
+    </article>
+
+    <form method="post" action="/admin/me/timezone" class="form card">
+      {{csrfField .CSRFToken}}
+      <h2>{{t .Locale "section.timezone"}}</h2>
+      <label>
+        <span>{{t .Locale "field.timezone"}}</span>
+        <select name="timezone" required>
+          {{range .Data.TimezoneOptions}}
+            <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>
+          {{end}}
+        </select>
+      </label>
+      <p class="muted">{{t .Locale "staff.timezoneHelp"}} {{t .Locale "staff.currentLocalTime"}}: {{.Data.CurrentLocalTime}}</p>
+      <button class="primary" type="submit">{{t .Locale "action.updateTimezone"}}</button>
+    </form>
+  {{end}}
+</section>
+
+<section class="section flush">
+  <div class="section-head">
+    <h2>{{t .Locale "section.ownActions"}}</h2>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>{{t .Locale "table.time"}}</th><th>{{t .Locale "table.action"}}</th><th>{{t .Locale "table.entity"}}</th><th>{{t .Locale "table.details"}}</th></tr>
+      </thead>
+      <tbody>
+        {{range .Data.Items}}
+          <tr>
+            <td>{{formatTime .Event.CreatedAt (staffTimezone $.Staff)}}</td>
+            <td><strong>{{.ActionText}}</strong></td>
+            <td>
+              <strong>{{.EntityTitle}}</strong>
+              {{if .EntitySubtitle}}<span class="muted block">{{.EntitySubtitle}}</span>{{end}}
+            </td>
+            <td>
+              {{range .Details}}<span class="block">{{.}}</span>{{end}}
+            </td>
+          </tr>
+        {{else}}
+          <tr><td colspan="4">{{t $.Locale "audit.noEvents"}}</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{template "pageEnd" .}}
+{{end}}

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS staff_users (
     display_name TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'PASSWORD_RESET_REQUIRED',
+    timezone TEXT NOT NULL DEFAULT 'Asia/Almaty',
     failed_login_count INT NOT NULL DEFAULT 0,
     locked_until TIMESTAMPTZ NULL,
     last_login_at TIMESTAMPTZ NULL,
@@ -13,7 +14,9 @@ CREATE TABLE IF NOT EXISTS staff_users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     disabled_at TIMESTAMPTZ NULL,
     CONSTRAINT chk_staff_users_status
-        CHECK (status IN ('ACTIVE', 'PASSWORD_RESET_REQUIRED', 'LOCKED', 'DISABLED'))
+        CHECK (status IN ('ACTIVE', 'PASSWORD_RESET_REQUIRED', 'LOCKED', 'DISABLED')),
+    CONSTRAINT chk_staff_users_timezone_not_blank
+        CHECK (btrim(timezone) <> '')
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_staff_users_email_lower

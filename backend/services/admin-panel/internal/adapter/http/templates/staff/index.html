@@ -51,7 +51,7 @@
             </td>
             <td><span class="{{statusClass .Status}}">{{statusText $.Locale .Status}}</span></td>
             <td>{{range .Roles}}<span class="chip">{{roleText $.Locale .}}</span>{{end}}</td>
-            <td>{{formatTime .LastLoginAt}}</td>
+            <td>{{formatTime .LastLoginAt (staffTimezone $.Staff)}}</td>
             <td><a class="button" href="/admin/staff/{{.ID}}/edit">{{t $.Locale "action.edit"}}</a></td>
           </tr>
         {{else}}

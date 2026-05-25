@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	_ "time/tzdata"
 
 	activityadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/activity"
 	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/chat"

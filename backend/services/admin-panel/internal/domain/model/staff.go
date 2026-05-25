@@ -9,12 +9,15 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
 )
 
+const DefaultStaffTimezone = "Asia/Almaty"
+
 type StaffUser struct {
 	ID                uuid.UUID
 	Email             string
 	DisplayName       string
 	PasswordHash      string
 	Status            enum.StaffStatus
+	Timezone          string
 	FailedLoginCount  int
 	LockedUntil       *time.Time
 	LastLoginAt       *time.Time
@@ -29,6 +32,14 @@ type StaffUser struct {
 
 func (u StaffUser) NormalizedEmail() string {
 	return strings.ToLower(strings.TrimSpace(u.Email))
+}
+
+func (u StaffUser) EffectiveTimezone() string {
+	timezone := strings.TrimSpace(u.Timezone)
+	if timezone == "" {
+		return DefaultStaffTimezone
+	}
+	return timezone
 }
 
 func (u StaffUser) IsDisabled() bool {

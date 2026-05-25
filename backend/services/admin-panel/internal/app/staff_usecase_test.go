@@ -100,7 +100,52 @@ func TestSuperAdminCanUpdateOwnDisplayNameWithoutChangingRoles(t *testing.T) {
 	}
 }
 
-func TestSuperAdminCannotChangeOwnRoles(t *testing.T) {
+func TestSuperAdminCanAssignOwnAdditionalRoles(t *testing.T) {
+	t.Parallel()
+
+	actor := superAdminActor()
+	target := staffFixture(enum.StaffRoleSuperAdmin)
+	target.ID = actor.ID
+	target.Email = actor.Email
+	target.DisplayName = actor.DisplayName
+	repo := newStaffRepoStub(target)
+	uc := NewStaffUseCase(repo, &staffAuditRepoStub{}, &staffSessionRepoStub{})
+
+	err := uc.UpdateStaffProfile(context.Background(), actor, UpdateStaffProfileInput{
+		StaffID:     target.ID,
+		DisplayName: "Daniyar Khvan",
+		Roles: []enum.StaffRole{
+			enum.StaffRoleSuperAdmin,
+			enum.StaffRoleAdmin,
+			enum.StaffRoleModerationLead,
+			enum.StaffRoleExcursionModerator,
+			enum.StaffRoleActivityModerator,
+			enum.StaffRoleGuideModerator,
+			enum.StaffRoleChatModerator,
+			enum.StaffRoleReadOnlyAuditor,
+			enum.StaffRoleSupportViewer,
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("UpdateStaffProfile() error = %v", err)
+	}
+	if !sameRoles(repo.updatedRoles, []enum.StaffRole{
+		enum.StaffRoleSuperAdmin,
+		enum.StaffRoleAdmin,
+		enum.StaffRoleModerationLead,
+		enum.StaffRoleExcursionModerator,
+		enum.StaffRoleActivityModerator,
+		enum.StaffRoleGuideModerator,
+		enum.StaffRoleChatModerator,
+		enum.StaffRoleReadOnlyAuditor,
+		enum.StaffRoleSupportViewer,
+	}) {
+		t.Fatalf("updated roles = %v", repo.updatedRoles)
+	}
+}
+
+func TestSuperAdminCannotRemoveOwnSuperAdminRole(t *testing.T) {
 	t.Parallel()
 
 	actor := superAdminActor()
@@ -113,7 +158,7 @@ func TestSuperAdminCannotChangeOwnRoles(t *testing.T) {
 	err := uc.UpdateStaffProfile(context.Background(), actor, UpdateStaffProfileInput{
 		StaffID:     target.ID,
 		DisplayName: "Daniyar Khvan",
-		Roles:       []enum.StaffRole{enum.StaffRoleSuperAdmin, enum.StaffRoleAdmin},
+		Roles:       []enum.StaffRole{enum.StaffRoleAdmin},
 	})
 
 	if !errors.Is(err, ErrPermissionDenied) {
@@ -189,6 +234,61 @@ func TestRegenerateStaffPasswordRevokesTargetSessions(t *testing.T) {
 	}
 }
 
+func TestStaffCanUpdateOwnTimezone(t *testing.T) {
+	t.Parallel()
+
+	actor := adminActor()
+	target := staffFixture(enum.StaffRoleAdmin)
+	target.ID = actor.ID
+	target.Email = actor.Email
+	target.DisplayName = actor.DisplayName
+	target.Timezone = "UTC"
+	repo := newStaffRepoStub(target)
+	audit := &staffAuditRepoStub{}
+	uc := NewStaffUseCase(repo, audit, &staffSessionRepoStub{})
+
+	err := uc.UpdateOwnTimezone(context.Background(), actor, UpdateOwnTimezoneInput{
+		Timezone: "Asia/Tokyo",
+		Metadata: RequestMetadata{
+			RequestID: "req-timezone",
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("UpdateOwnTimezone() error = %v", err)
+	}
+	if repo.updatedTimezone != "Asia/Tokyo" {
+		t.Fatalf("updated timezone = %q, want Asia/Tokyo", repo.updatedTimezone)
+	}
+	if target.Timezone != "Asia/Tokyo" {
+		t.Fatalf("target timezone = %q, want Asia/Tokyo", target.Timezone)
+	}
+	if audit.lastAction != "staff.timezone.updated" {
+		t.Fatalf("audit action = %q, want staff.timezone.updated", audit.lastAction)
+	}
+}
+
+func TestStaffCannotUpdateOwnTimezoneToInvalidValue(t *testing.T) {
+	t.Parallel()
+
+	actor := adminActor()
+	target := staffFixture(enum.StaffRoleAdmin)
+	target.ID = actor.ID
+	repo := newStaffRepoStub(target)
+	uc := NewStaffUseCase(repo, &staffAuditRepoStub{}, &staffSessionRepoStub{})
+
+	err := uc.UpdateOwnTimezone(context.Background(), actor, UpdateOwnTimezoneInput{
+		Timezone: "Almaty",
+	})
+
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("UpdateOwnTimezone() error = %v, want ErrInvalidInput", err)
+	}
+	if repo.updatedTimezone != "" {
+		t.Fatalf("timezone was updated to %q", repo.updatedTimezone)
+	}
+}
+
 func adminActor() *model.StaffUser {
 	return &model.StaffUser{
 		ID:          uuid.New(),
@@ -217,6 +317,7 @@ func staffFixture(roles ...enum.StaffRole) *model.StaffUser {
 		Email:       "staff@flyfy.local",
 		DisplayName: "Staff",
 		Status:      enum.StaffStatusActive,
+		Timezone:    "Asia/Almaty",
 		Roles:       roles,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
@@ -227,6 +328,7 @@ type staffRepoStub struct {
 	target             *model.StaffUser
 	updatedDisplayName string
 	updatedRoles       []enum.StaffRole
+	updatedTimezone    string
 	passwordStatus     enum.StaffStatus
 }
 
@@ -261,6 +363,15 @@ func (r *staffRepoStub) UpdateProfileAndRoles(_ context.Context, id uuid.UUID, d
 	r.updatedRoles = append([]enum.StaffRole(nil), roles...)
 	r.target.DisplayName = displayName
 	r.target.Roles = append([]enum.StaffRole(nil), roles...)
+	return nil
+}
+
+func (r *staffRepoStub) UpdateTimezone(_ context.Context, id uuid.UUID, timezone string, _ time.Time) error {
+	if r.target == nil || r.target.ID != id {
+		return nil
+	}
+	r.updatedTimezone = timezone
+	r.target.Timezone = timezone
 	return nil
 }
 

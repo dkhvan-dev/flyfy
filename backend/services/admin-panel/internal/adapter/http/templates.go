@@ -51,6 +51,18 @@ func NewRenderer() (*Renderer, error) {
 		"hasStaffRole": func(staff *model.StaffUser, role enum.StaffRole) bool {
 			return staff != nil && staff.HasRole(role)
 		},
+		"hasPermission": func(staff *model.StaffUser, permission any) bool {
+			return staff != nil && staff.HasPermission(enum.Permission(fmt.Sprint(permission)))
+		},
+		"staffTimezone": func(staff *model.StaffUser) string {
+			if staff == nil {
+				return model.DefaultStaffTimezone
+			}
+			return staff.EffectiveTimezone()
+		},
+		"permissionText": func(locale any, permission enum.Permission) string {
+			return translatePermission(fmt.Sprint(locale), permission)
+		},
 		"excursionTitle": func(locale any, item *model.ExcursionModerationItem, fallback ...string) string {
 			value := ""
 			if len(fallback) > 0 {
@@ -226,21 +238,37 @@ func (r *Renderer) StaticHandler() http.Handler {
 	return http.FileServer(http.FS(r.static))
 }
 
-func formatTemplateTime(value any) string {
+func formatTemplateTime(value any, timezone ...string) string {
+	location := templateTimeLocation(timezone...)
 	switch typed := value.(type) {
 	case time.Time:
 		if typed.IsZero() {
 			return "-"
 		}
-		return typed.UTC().Format("2006-01-02 15:04")
+		return typed.In(location).Format("2006-01-02 15:04")
 	case *time.Time:
 		if typed == nil || typed.IsZero() {
 			return "-"
 		}
-		return typed.UTC().Format("2006-01-02 15:04")
+		return typed.In(location).Format("2006-01-02 15:04")
 	default:
 		return "-"
 	}
+}
+
+func templateTimeLocation(timezone ...string) *time.Location {
+	locationName := "UTC"
+	if len(timezone) > 0 {
+		locationName = strings.TrimSpace(timezone[0])
+		if locationName == "" {
+			locationName = model.DefaultStaffTimezone
+		}
+	}
+	location, err := time.LoadLocation(locationName)
+	if err != nil {
+		return time.UTC
+	}
+	return location
 }
 
 func shortTemplateID(value any) string {

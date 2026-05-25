@@ -53,6 +53,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/password/change", s.ChangePasswordPage)
 	mux.HandleFunc("POST /admin/password/change", s.ChangePassword)
 	mux.HandleFunc("GET /admin", s.Dashboard)
+	mux.HandleFunc("GET /admin/me", s.StaffProfile)
+	mux.HandleFunc("POST /admin/me/timezone", s.UpdateOwnTimezone)
 	mux.HandleFunc("GET /admin/moderation/excursions", s.ExcursionQueue)
 	mux.HandleFunc("GET /admin/moderation/excursions/history", s.ExcursionHistory)
 	mux.HandleFunc("GET /admin/moderation/excursions/{caseID}", s.ExcursionCase)
@@ -182,6 +184,29 @@ func (s *Server) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.renderPage(w, http.StatusOK, r, "dashboard/index", "dashboard.title", "dashboard", data, "")
+}
+
+func (s *Server) StaffProfile(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	events, err := s.audit.ListOwn(r.Context(), staff, model.AuditFilter{Limit: 50})
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "staff/profile", "staff.profileTitle", "profile", NewStaffProfileViewData(localeFromContext(r.Context()), staff, nil), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "staff/profile", "staff.profileTitle", "profile", NewStaffProfileViewData(localeFromContext(r.Context()), staff, events), "")
+}
+
+func (s *Server) UpdateOwnTimezone(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	if err := s.staff.UpdateOwnTimezone(r.Context(), staff, app.UpdateOwnTimezoneInput{
+		Timezone: r.Form.Get("timezone"),
+		Metadata: requestMetadata(r),
+	}); err != nil {
+		events, _ := s.audit.ListOwn(r.Context(), staff, model.AuditFilter{Limit: 50})
+		s.renderPage(w, errorStatus(err), r, "staff/profile", "staff.profileTitle", "profile", NewStaffProfileViewData(localeFromContext(r.Context()), staff, events), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash("/admin/me", "staff.timezoneUpdated"), http.StatusSeeOther)
 }
 
 func (s *Server) dashboardViewData(ctx context.Context, staff *model.StaffUser) (DashboardViewData, error) {

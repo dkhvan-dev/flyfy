@@ -42,7 +42,7 @@
           <div><dt>{{t $.Locale "label.languages"}}</dt><dd>{{excursionLanguages $.Locale .}}</dd></div>
           <div><dt>{{t $.Locale "label.meetingPoint"}}</dt><dd>{{excursionMeetingPoint $.Locale .}}</dd></div>
           <div><dt>{{t $.Locale "label.price"}}</dt><dd>{{printf "%.2f" .PriceAmount}} {{.Currency}}</dd></div>
-          <div><dt>{{t $.Locale "label.submitted"}}</dt><dd>{{formatTime .SubmittedForReviewAt}}</dd></div>
+          <div><dt>{{t $.Locale "label.submitted"}}</dt><dd>{{formatTime .SubmittedForReviewAt (staffTimezone $.Staff)}}</dd></div>
         </dl>
         {{if .ModerationReasonCodes}}
           <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
@@ -107,7 +107,7 @@
             </dd>
           </div>
           <div><dt>{{t $.Locale "label.price"}}</dt><dd>{{activityPrice $.Locale .}}</dd></div>
-          <div><dt>{{t $.Locale "label.submitted"}}</dt><dd>{{formatTime (activityModerationTriggeredAt .)}}</dd></div>
+          <div><dt>{{t $.Locale "label.submitted"}}</dt><dd>{{formatTime (activityModerationTriggeredAt .) (staffTimezone $.Staff)}}</dd></div>
         </dl>
         {{if .ModerationReasonCodes}}
           <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
@@ -117,7 +117,7 @@
         <h2>{{t $.Locale "section.routeSchedule"}}</h2>
         <ol class="timeline">
           <li class="timeline-step">
-            <div class="timeline-marker">{{formatTime .StartAt}}</div>
+            <div class="timeline-marker">{{formatTime .StartAt (staffTimezone $.Staff)}}</div>
             <div class="timeline-body">
               <h3>{{.Title}}</h3>
               <div class="meta-row compact">
@@ -137,9 +137,9 @@
           <div><dt>{{t $.Locale "label.sender"}}</dt><dd>{{chatMessageSender .}}</dd></div>
           <div><dt>{{t $.Locale "label.riskScore"}}</dt><dd>{{.ModerationRiskScore}}</dd></div>
           <div><dt>{{t $.Locale "label.messageType"}}</dt><dd>{{chatMessageType $.Locale .Type}}</dd></div>
-          <div><dt>{{t $.Locale "label.sentAt"}}</dt><dd>{{formatTime .SentAt}}</dd></div>
+          <div><dt>{{t $.Locale "label.sentAt"}}</dt><dd>{{formatTime .SentAt (staffTimezone $.Staff)}}</dd></div>
           <div><dt>{{t $.Locale "label.attachments"}}</dt><dd>{{len .FileIDs}}</dd></div>
-          <div><dt>{{t $.Locale "label.triggeredAt"}}</dt><dd>{{formatTime .ModerationTriggeredAt}}</dd></div>
+          <div><dt>{{t $.Locale "label.triggeredAt"}}</dt><dd>{{formatTime .ModerationTriggeredAt (staffTimezone $.Staff)}}</dd></div>
         </dl>
         {{if .ModerationReasonCodes}}
           <p class="reason">{{t $.Locale "label.signals"}}: {{chatMessageSignals $.Locale .}}</p>
@@ -160,7 +160,7 @@
         <ol class="timeline">
           {{range .ContextBefore}}
             <li class="timeline-step">
-              <div class="timeline-marker">{{formatTime .SentAt}}</div>
+              <div class="timeline-marker">{{formatTime .SentAt (staffTimezone $.Staff)}}</div>
               <div class="timeline-body">
                 <h3>{{chatContextSender .}}</h3>
                 <p class="preline">{{chatContextContent $.Locale .}}</p>
@@ -168,7 +168,7 @@
             </li>
           {{end}}
           <li class="timeline-step">
-            <div class="timeline-marker">{{formatTime .SentAt}}</div>
+            <div class="timeline-marker">{{formatTime .SentAt (staffTimezone $.Staff)}}</div>
             <div class="timeline-body highlighted">
               <h3>{{chatMessageSender .}}</h3>
               <p class="preline">{{chatMessagePreview $.Locale .}}</p>
@@ -176,7 +176,7 @@
           </li>
           {{range .ContextAfter}}
             <li class="timeline-step">
-              <div class="timeline-marker">{{formatTime .SentAt}}</div>
+              <div class="timeline-marker">{{formatTime .SentAt (staffTimezone $.Staff)}}</div>
               <div class="timeline-body">
                 <h3>{{chatContextSender .}}</h3>
                 <p class="preline">{{chatContextContent $.Locale .}}</p>
@@ -193,7 +193,7 @@
             <div><dt>{{t $.Locale "label.statusReason"}}</dt><dd class="preline">{{.StatusReason}}</dd></div>
           {{end}}
           {{if .StatusChangedAt}}
-            <div><dt>{{t $.Locale "label.statusChangedAt"}}</dt><dd>{{formatTime .StatusChangedAt}}</dd></div>
+            <div><dt>{{t $.Locale "label.statusChangedAt"}}</dt><dd>{{formatTime .StatusChangedAt (staffTimezone $.Staff)}}</dd></div>
           {{end}}
           <div>
             <dt>{{t $.Locale "label.applicant"}}</dt>
@@ -213,7 +213,7 @@
             </dd>
           </div>
           <div><dt>{{t $.Locale "label.rating"}}</dt><dd>{{guideApplicationRating $.Locale .}}</dd></div>
-          <div><dt>{{t $.Locale "label.submitted"}}</dt><dd>{{formatTime .SubmittedAt}}</dd></div>
+          <div><dt>{{t $.Locale "label.submitted"}}</dt><dd>{{formatTime .SubmittedAt (staffTimezone $.Staff)}}</dd></div>
         </dl>
         {{if .ModerationReasonCodes}}
           <p class="reason">{{t $.Locale "label.signals"}}: {{join .ModerationReasonCodes ", "}}</p>
@@ -259,7 +259,7 @@
                 {{range .Documents}}
                   <tr>
                     <td>{{guideApplicationDocumentType $.Locale .DocumentType}}</td>
-                    <td>{{formatTime .CreatedAt}}</td>
+                    <td>{{formatTime .CreatedAt (staffTimezone $.Staff)}}</td>
                     <td>
                       {{with guideApplicationDocumentURL $detail.Case.ID .}}
                         <a class="button" href="{{.}}" target="_blank" rel="noopener noreferrer">{{t $.Locale "action.openDocument"}}</a>
@@ -398,7 +398,7 @@
                   {{if and (not .PublicComment) (not .InternalComment)}}-{{end}}
                 </td>
                 <td>{{if .DecidedByName}}{{.DecidedByName}}{{else}}<code>{{shortID .DecidedBy}}</code>{{end}}</td>
-                <td>{{formatTime .CreatedAt}}</td>
+                <td>{{formatTime .CreatedAt (staffTimezone $.Staff)}}</td>
               </tr>
             {{end}}
           </tbody>

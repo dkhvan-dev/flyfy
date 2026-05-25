@@ -132,6 +132,19 @@ code {
   color: var(--muted);
 }
 
+.user-link {
+  border-radius: 8px;
+  color: var(--muted);
+  padding: 6px 8px;
+  text-decoration: none;
+}
+
+.user-link.active,
+.user-link:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
 .locale-switch {
   display: inline-flex;
   align-items: center;

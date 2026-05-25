@@ -20,6 +20,7 @@ type StaffRepository interface {
 	List(ctx context.Context, limit int, offset int) ([]*model.StaffUser, error)
 	Create(ctx context.Context, staff *model.StaffUser, passwordHash string, roles []enum.StaffRole) error
 	UpdateProfileAndRoles(ctx context.Context, id uuid.UUID, displayName string, roles []enum.StaffRole, assignedBy uuid.UUID, now time.Time) error
+	UpdateTimezone(ctx context.Context, id uuid.UUID, timezone string, now time.Time) error
 	UpdateLoginSuccess(ctx context.Context, id uuid.UUID, now time.Time) error
 	UpdateLoginFailure(ctx context.Context, id uuid.UUID, failedCount int, lockedUntil *time.Time) error
 	UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string, status enum.StaffStatus, now time.Time) error

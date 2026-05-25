@@ -12,6 +12,7 @@ var flashTranslationKeys = map[string]string{
 	"staff.created":             "flash.staffCreated",
 	"staff.passwordRegenerated": "flash.staffPasswordRegenerated",
 	"staff.statusChanged":       "flash.staffStatusChanged",
+	"staff.timezoneUpdated":     "flash.staffTimezoneUpdated",
 	"staff.updated":             "flash.staffUpdated",
 }
 

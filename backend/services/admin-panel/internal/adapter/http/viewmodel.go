@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
@@ -105,6 +106,19 @@ type StaffEditViewData struct {
 	TemporaryPassword string
 }
 
+type StaffProfileViewData struct {
+	Staff            *model.StaffUser
+	TimezoneOptions  []TimezoneOptionView
+	CurrentLocalTime string
+	Items            []AuditEventView
+}
+
+type TimezoneOptionView struct {
+	Value    string
+	Label    string
+	Selected bool
+}
+
 type AuditViewData struct {
 	Events []*model.AuditEvent
 	Items  []AuditEventView
@@ -143,6 +157,26 @@ func NewStaffEditViewData(actor *model.StaffUser, staff *model.StaffUser, tempor
 		AssignableRoles:   assignableStaffRoles(actor),
 		Statuses:          editableStaffStatuses(),
 		TemporaryPassword: value,
+	}
+}
+
+func NewStaffProfileViewData(locale string, staff *model.StaffUser, events []*model.AuditEvent) StaffProfileViewData {
+	items := make([]AuditEventView, 0, len(events))
+	for _, event := range events {
+		if event == nil {
+			continue
+		}
+		items = append(items, newAuditEventView(locale, event))
+	}
+	timezone := model.DefaultStaffTimezone
+	if staff != nil {
+		timezone = staff.EffectiveTimezone()
+	}
+	return StaffProfileViewData{
+		Staff:            staff,
+		TimezoneOptions:  staffTimezoneOptions(timezone),
+		CurrentLocalTime: formatTemplateTime(time.Now().UTC(), timezone),
+		Items:            items,
 	}
 }
 
@@ -243,6 +277,7 @@ type auditStaffSnapshot struct {
 	Email       string           `json:"email"`
 	DisplayName string           `json:"displayName"`
 	Status      enum.StaffStatus `json:"status"`
+	Timezone    string           `json:"timezone"`
 	Roles       []enum.StaffRole `json:"roles"`
 }
 
@@ -295,6 +330,9 @@ func auditEntityTitle(locale string, event *model.AuditEvent, before auditStaffS
 	case "staff_session":
 		return translate(locale, "audit.entity.staffSession")
 	case "moderation_case":
+		if target := auditModerationTargetText(locale, event); target != "" {
+			return fmt.Sprintf("%s: %s", translate(locale, "audit.entity.moderationCase"), target)
+		}
 		return translate(locale, "audit.entity.moderationCase")
 	case "guide_profile":
 		return translate(locale, "audit.entity.guideProfile")
@@ -307,10 +345,6 @@ func auditEntitySubtitle(event *model.AuditEvent, before auditStaffSnapshot, aft
 	switch event.EntityType {
 	case "staff_user":
 		return firstNonEmpty(after.Email, before.Email)
-	case "moderation_case":
-		if event.EntityID != nil {
-			return "ID " + shortTemplateID(event.EntityID)
-		}
 	}
 	return ""
 }
@@ -331,6 +365,10 @@ func auditDetails(locale string, event *model.AuditEvent, before auditStaffSnaps
 		}
 		if reason := auditMetadataValue(event.Metadata, "reason"); reason != "" {
 			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.reason"), reason))
+		}
+	case "staff.timezone.updated":
+		if strings.TrimSpace(before.Timezone) != strings.TrimSpace(after.Timezone) {
+			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.timezoneChanged"), emptyDash(before.Timezone), emptyDash(after.Timezone)))
 		}
 	case "staff.password.regenerated":
 		details = append(details, translate(locale, "audit.detail.passwordRegenerated"))
@@ -356,6 +394,24 @@ func auditDetails(locale string, event *model.AuditEvent, before auditStaffSnaps
 	return details
 }
 
+func auditModerationTargetText(locale string, event *model.AuditEvent) string {
+	targetType := model.ModerationTargetType(strings.ToUpper(strings.TrimSpace(auditMetadataValue(event.Metadata, "targetType"))))
+	switch targetType {
+	case model.ModerationTargetExcursion:
+		return translate(locale, "moderation.excursion")
+	case model.ModerationTargetActivity:
+		return translate(locale, "moderation.activity")
+	case model.ModerationTargetGuideApplication:
+		return translate(locale, "moderation.guideApplication")
+	case model.ModerationTargetChatMessage:
+		return translate(locale, "moderation.chatMessage")
+	case model.ModerationTargetStory:
+		return translate(locale, "moderation.story")
+	default:
+		return ""
+	}
+}
+
 func auditMetadataValue(raw []byte, key string) string {
 	if len(raw) == 0 {
 		return ""
@@ -369,6 +425,72 @@ func auditMetadataValue(raw []byte, key string) string {
 		return ""
 	}
 	return strings.TrimSpace(fmt.Sprint(value))
+}
+
+var staffTimezoneValues = []string{
+	"Asia/Almaty",
+	"Asia/Aqtau",
+	"Asia/Aqtobe",
+	"Asia/Atyrau",
+	"Asia/Oral",
+	"Asia/Qyzylorda",
+	"Asia/Bishkek",
+	"Asia/Tashkent",
+	"Asia/Dubai",
+	"Asia/Istanbul",
+	"Asia/Tokyo",
+	"Europe/Moscow",
+	"Europe/Berlin",
+	"Europe/London",
+	"America/New_York",
+	"America/Los_Angeles",
+	"UTC",
+}
+
+func staffTimezoneOptions(selected string) []TimezoneOptionView {
+	selected = strings.TrimSpace(selected)
+	if selected == "" {
+		selected = model.DefaultStaffTimezone
+	}
+	values := append([]string(nil), staffTimezoneValues...)
+	if !stringInSlice(values, selected) {
+		values = append([]string{selected}, values...)
+	}
+	options := make([]TimezoneOptionView, 0, len(values))
+	now := time.Now()
+	for _, value := range values {
+		options = append(options, TimezoneOptionView{
+			Value:    value,
+			Label:    timezoneOptionLabel(value, now),
+			Selected: value == selected,
+		})
+	}
+	return options
+}
+
+func timezoneOptionLabel(value string, now time.Time) string {
+	location, err := time.LoadLocation(value)
+	if err != nil {
+		return value
+	}
+	_, offsetSeconds := now.In(location).Zone()
+	sign := "+"
+	if offsetSeconds < 0 {
+		sign = "-"
+		offsetSeconds = -offsetSeconds
+	}
+	hours := offsetSeconds / 3600
+	minutes := (offsetSeconds % 3600) / 60
+	return fmt.Sprintf("%s (UTC%s%02d:%02d)", value, sign, hours, minutes)
+}
+
+func stringInSlice(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
+			return true
+		}
+	}
+	return false
 }
 
 func auditRoleList(locale string, roles []enum.StaffRole) string {

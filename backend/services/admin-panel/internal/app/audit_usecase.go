@@ -24,3 +24,13 @@ func (u *AuditUseCase) List(ctx context.Context, actor *model.StaffUser, filter 
 	filter.Offset = normalizeOffset(filter.Offset)
 	return u.audit.List(ctx, filter)
 }
+
+func (u *AuditUseCase) ListOwn(ctx context.Context, actor *model.StaffUser, filter model.AuditFilter) ([]*model.AuditEvent, error) {
+	if actor == nil {
+		return nil, ErrPermissionDenied
+	}
+	filter.ActorStaffID = &actor.ID
+	filter.Limit = clampLimit(filter.Limit)
+	filter.Offset = normalizeOffset(filter.Offset)
+	return u.audit.List(ctx, filter)
+}

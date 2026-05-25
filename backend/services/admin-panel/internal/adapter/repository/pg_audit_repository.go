@@ -37,9 +37,17 @@ func (r *PGAuditRepository) List(ctx context.Context, filter model.AuditFilter) 
 		SELECT a.id, a.actor_staff_id, COALESCE(s.display_name, ''), COALESCE(s.email, ''),
 		       a.action, a.entity_type, a.entity_id, a.request_id,
 		       a.ip_address_hash, a.user_agent_hash, a.before_json, a.after_json,
-		       a.metadata, a.created_at
+		       CASE
+		           WHEN a.entity_type = 'moderation_case'
+		                AND mc.target_type IS NOT NULL
+		                AND NOT (COALESCE(a.metadata, '{}'::jsonb) ? 'targetType')
+		               THEN COALESCE(a.metadata, '{}'::jsonb) || jsonb_build_object('targetType', mc.target_type)
+		           ELSE a.metadata
+		       END AS metadata,
+		       a.created_at
 		FROM audit_log a
 		LEFT JOIN staff_users s ON s.id = a.actor_staff_id
+		LEFT JOIN moderation_cases mc ON a.entity_type = 'moderation_case' AND mc.id = a.entity_id
 		WHERE 1=1
 	`}
 	args := []any{}

@@ -16,7 +16,7 @@
       <tbody>
         {{range .Data.Items}}
           <tr>
-            <td>{{formatTime .Event.CreatedAt}}</td>
+            <td>{{formatTime .Event.CreatedAt (staffTimezone $.Staff)}}</td>
             <td><strong>{{.ActionText}}</strong></td>
             <td>
               <strong>{{.ActorTitle}}</strong>

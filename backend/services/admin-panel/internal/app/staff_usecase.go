@@ -39,6 +39,11 @@ type UpdateStaffProfileInput struct {
 	Metadata    RequestMetadata
 }
 
+type UpdateOwnTimezoneInput struct {
+	Timezone string
+	Metadata RequestMetadata
+}
+
 type ChangeStaffStatusInput struct {
 	StaffID  uuid.UUID
 	Status   enum.StaffStatus
@@ -121,6 +126,7 @@ func (u *StaffUseCase) CreateStaff(ctx context.Context, actor *model.StaffUser, 
 		Email:            email,
 		DisplayName:      strings.TrimSpace(input.DisplayName),
 		Status:           enum.StaffStatusPasswordResetRequired,
+		Timezone:         model.DefaultStaffTimezone,
 		CreatedByStaffID: &createdBy,
 		CreatedAt:        now,
 		UpdatedAt:        now,
@@ -168,7 +174,7 @@ func (u *StaffUseCase) UpdateStaffProfile(ctx context.Context, actor *model.Staf
 		if !actor.HasRole(enum.StaffRoleSuperAdmin) {
 			return ErrPermissionDenied
 		}
-		if !sameStaffRoleSet(roles, target.Roles) {
+		if !hasRole(roles, enum.StaffRoleSuperAdmin) {
 			return ErrPermissionDenied
 		}
 	} else {
@@ -193,9 +199,42 @@ func (u *StaffUseCase) UpdateStaffProfile(ctx context.Context, actor *model.Staf
 		Email:       target.Email,
 		DisplayName: displayName,
 		Status:      target.Status,
+		Timezone:    target.EffectiveTimezone(),
 		Roles:       roles,
 	}
 	u.appendStaffAudit(ctx, actor, "staff.updated", target.ID, input.Metadata, before, after, nil, now)
+	return nil
+}
+
+func (u *StaffUseCase) UpdateOwnTimezone(ctx context.Context, actor *model.StaffUser, input UpdateOwnTimezoneInput) error {
+	if actor == nil {
+		return ErrPermissionDenied
+	}
+	timezone, err := normalizeStaffTimezone(input.Timezone)
+	if err != nil {
+		return err
+	}
+	target, err := u.staffWithRoles(ctx, actor.ID)
+	if err != nil {
+		return err
+	}
+	if target == nil {
+		return ErrStaffNotFound
+	}
+	before := staffAuditSnapshot(target)
+	now := time.Now().UTC()
+	if err = u.staff.UpdateTimezone(ctx, target.ID, timezone, now); err != nil {
+		return err
+	}
+	after := staffAuditPayload{
+		ID:          target.ID,
+		Email:       target.Email,
+		DisplayName: target.DisplayName,
+		Status:      target.Status,
+		Timezone:    timezone,
+		Roles:       target.Roles,
+	}
+	u.appendStaffAudit(ctx, actor, "staff.timezone.updated", target.ID, input.Metadata, before, after, nil, now)
 	return nil
 }
 
@@ -230,6 +269,7 @@ func (u *StaffUseCase) ChangeStaffStatus(ctx context.Context, actor *model.Staff
 		Email:       target.Email,
 		DisplayName: target.DisplayName,
 		Status:      input.Status,
+		Timezone:    target.EffectiveTimezone(),
 		Roles:       target.Roles,
 	}
 	u.appendStaffAudit(ctx, actor, "staff.status.changed", target.ID, input.Metadata, before, after, map[string]any{"reason": reason}, now)
@@ -271,6 +311,7 @@ func (u *StaffUseCase) RegenerateStaffPassword(ctx context.Context, actor *model
 		Email:       target.Email,
 		DisplayName: target.DisplayName,
 		Status:      enum.StaffStatusPasswordResetRequired,
+		Timezone:    target.EffectiveTimezone(),
 		Roles:       target.Roles,
 	}
 	u.appendStaffAudit(ctx, actor, "staff.password.regenerated", target.ID, input.Metadata, before, after, nil, now)
@@ -303,6 +344,7 @@ func (u *StaffUseCase) BootstrapSuperAdmin(ctx context.Context, input BootstrapS
 		Email:       email,
 		DisplayName: displayName,
 		Status:      enum.StaffStatusPasswordResetRequired,
+		Timezone:    model.DefaultStaffTimezone,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 		Roles:       []enum.StaffRole{enum.StaffRoleSuperAdmin},
@@ -393,6 +435,26 @@ func ensureAssignableRoles(actor *model.StaffUser, roles []enum.StaffRole) error
 	return nil
 }
 
+func hasRole(roles []enum.StaffRole, expected enum.StaffRole) bool {
+	for _, role := range roles {
+		if role == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeStaffTimezone(input string) (string, error) {
+	timezone := strings.TrimSpace(input)
+	if timezone == "" || timezone == "Local" {
+		return "", ErrInvalidInput
+	}
+	if _, err := time.LoadLocation(timezone); err != nil {
+		return "", ErrInvalidInput
+	}
+	return timezone, nil
+}
+
 func sameStaffRoleSet(left []enum.StaffRole, right []enum.StaffRole) bool {
 	if len(left) != len(right) {
 		return false
@@ -415,6 +477,7 @@ type staffAuditPayload struct {
 	Email       string           `json:"email"`
 	DisplayName string           `json:"displayName"`
 	Status      enum.StaffStatus `json:"status"`
+	Timezone    string           `json:"timezone"`
 	Roles       []enum.StaffRole `json:"roles"`
 }
 
@@ -427,6 +490,7 @@ func staffAuditSnapshot(staff *model.StaffUser) staffAuditPayload {
 		Email:       staff.Email,
 		DisplayName: staff.DisplayName,
 		Status:      staff.Status,
+		Timezone:    staff.EffectiveTimezone(),
 		Roles:       append([]enum.StaffRole(nil), staff.Roles...),
 	}
 }
