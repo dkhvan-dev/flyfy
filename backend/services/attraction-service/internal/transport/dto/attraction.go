@@ -70,9 +70,13 @@ type AttractionVisitInfoRequest struct {
 }
 
 type MediaItemRequest struct {
-	FileID    string `json:"fileId"`
-	MediaType string `json:"mediaType"`
-	Position  int    `json:"position"`
+	FileID      string `json:"fileId"`
+	ExternalURL string `json:"externalUrl,omitempty"`
+	SourceURL   string `json:"sourceUrl,omitempty"`
+	Credit      string `json:"credit,omitempty"`
+	License     string `json:"license,omitempty"`
+	MediaType   string `json:"mediaType"`
+	Position    int    `json:"position"`
 }
 
 type ReplaceMediaRequest struct {

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"encoding/json"
 	"html"
 	"net/http"
@@ -176,6 +177,324 @@ func TestRendererTopbarHidesAuditWithoutPermissionAndLinksOwnProfile(t *testing.
 	}
 	if !strings.Contains(recorder.Body.String(), `href="/admin/audit"`) {
 		t.Fatalf("audit nav link missing for staff with audit.read permission: %s", recorder.Body.String())
+	}
+}
+
+func TestRendererRendersAttractionEditFormWithOptionalValues(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	priceCurrency := "KZT"
+	durationUnit := "HOUR"
+	durationValue := 2
+	spots := 8
+	latitude := 43.243534
+	longitude := 76.904129
+	item := &model.AdminAttraction{
+		ID:                uuid.New(),
+		DefaultLocale:     localeRU,
+		Title:             "Большое Алматинское озеро",
+		Description:       "Горное озеро рядом с Алматы.",
+		CountryCode:       "KZ",
+		CityID:            "almaty",
+		Latitude:          &latitude,
+		Longitude:         &longitude,
+		LocationSourceURL: "https://www.openstreetmap.org/",
+		Category:          "NATURE",
+		PriceCurrency:     &priceCurrency,
+		DurationValue:     &durationValue,
+		DurationUnit:      &durationUnit,
+		Spots:             &spots,
+		Status:            "PUBLISHED",
+		Translations: map[string]model.AttractionTranslation{
+			localeRU: {
+				Title:       "Большое Алматинское озеро",
+				Description: "Горное озеро рядом с Алматы.",
+			},
+		},
+		Media: []model.AdminAttractionMedia{
+			{
+				FileID:    uuid.New(),
+				MediaType: "IMAGE",
+				Position:  0,
+			},
+		},
+	}
+	pageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + item.ID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(item, model.AttractionInput{}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "attractions/form", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	if !strings.Contains(body, "Большое Алматинское озеро") ||
+		!strings.Contains(body, "/admin/attraction-media/") {
+		t.Fatalf("attraction edit form did not render useful content: %s", body)
+	}
+	for _, expected := range []string{
+		`<select name="country_code" required>`,
+		`<select name="city_id" required>`,
+		`<select name="price_currency">`,
+		`name="location_source_url" value="https://www.openstreetmap.org/" placeholder="https://maps..." data-map-url-input`,
+		`name="latitude" value="43.243534" inputmode="decimal" data-latitude-input`,
+		`name="longitude" value="76.904129" inputmode="decimal" data-longitude-input`,
+		`type="checkbox" name="access_cities" value="KZ:almaty"`,
+		`type="checkbox" name="departure_cities" value="KZ:almaty"`,
+		`data-attraction-media-form`,
+		`data-confirm-form="mediaManage"`,
+		`name="media_action" value="manage" data-media-action-input`,
+		`data-media-card`,
+		`name="media_ids"`,
+		`data-media-move="up"`,
+		`data-media-move="down"`,
+		`data-media-delete`,
+		`data-media-delete-fields`,
+		`data-attraction-media-input`,
+		`data-attraction-media-preview hidden`,
+		`data-attraction-media-preview-list`,
+		`data-attraction-media-count`,
+		`data-attraction-media-manage-submit disabled`,
+		`data-attraction-media-append-submit disabled`,
+		`data-attraction-media-replace-submit disabled`,
+		`data-media-action="append"`,
+		`data-media-action="replace"`,
+		`id="decision-confirmation-dialog"`,
+		`Проверьте выбранные изображения и их порядок перед сохранением.`,
+		`data-required-locale="ru"`,
+		`Обязательное поле.`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("attraction edit form did not render expected control %q: %s", expected, body)
+		}
+	}
+}
+
+func TestRendererRendersAttractionCreateFormWithUploadPreview(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	pageData := PageData{
+		Title:     "Create attraction",
+		Locale:    localeEN,
+		Path:      "/admin/attractions/new",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(nil, model.AttractionInput{}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "attractions/form", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := rendered.String()
+	for _, expected := range []string{
+		`data-attraction-form data-attraction-media-form`,
+		`name="media_images" type="file"`,
+		`data-attraction-media-input`,
+		`data-attraction-media-preview hidden`,
+		`data-attraction-media-preview-list`,
+		`data-attraction-media-count`,
+		`Check selected images and their order before saving.`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("attraction create form did not render media preview control %q: %s", expected, body)
+		}
+	}
+}
+
+func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	pageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData(nil, 0, AttractionFilterViewData{
+			CountryCode: "KZ",
+			CityID:      "almaty",
+		}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "attractions/index", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		`name="country"`,
+		`data-country-filter`,
+		`value="KZ" selected`,
+		`Казахстан`,
+		`name="city"`,
+		`data-city-filter`,
+		`data-city-filter-group`,
+		`value="almaty" data-country="KZ" selected`,
+		`Алматы`,
+		`Все страны`,
+		`Все города`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("attraction list did not render dropdown filter %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, `placeholder="almaty"`) {
+		t.Fatalf("attraction list still renders free-form city input: %s", body)
+	}
+}
+
+func TestRendererHidesAttractionCityFilterUntilCountrySelected(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	pageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions",
+		Staff:  adminTemplateActor(),
+		Data:   NewAttractionListViewData(nil, 0, AttractionFilterViewData{}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "attractions/index", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	if !strings.Contains(body, `data-city-filter-group hidden`) {
+		t.Fatalf("city filter group should be hidden before country selection: %s", body)
+	}
+	if !strings.Contains(body, `data-city-filter disabled`) {
+		t.Fatalf("city filter select should be disabled before country selection: %s", body)
+	}
+}
+
+func TestAdminStylesKeepHiddenElementsInvisible(t *testing.T) {
+	t.Parallel()
+
+	content, err := embeddedFiles.ReadFile("static/css/admin.css")
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	css := string(content)
+	if !strings.Contains(css, `[hidden]`) || !strings.Contains(css, `display: none !important`) {
+		t.Fatalf("admin css must explicitly preserve hidden elements against display rules: %s", css)
+	}
+}
+
+func TestRendererRendersAttractionListLocalizedRows(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	itemID := uuid.New()
+	pageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeEN,
+				Title:         "Central Museum",
+				CountryCode:   "KZ",
+				CityID:        "oral",
+				Category:      "museum",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "attractions/index", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		"Орал, Казахстан",
+		"Музей",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("attraction list row did not render localized value %q: %s", expected, body)
+		}
+	}
+	if strings.Contains(body, "Основной язык:") ||
+		strings.Contains(body, "Источник:") ||
+		strings.Contains(body, "en · IMPORT") ||
+		strings.Contains(body, ">museum<") ||
+		strings.Contains(body, ">oral<") {
+		t.Fatalf("attraction list row still renders raw codes: %s", body)
+	}
+}
+
+func TestRendererRendersAttractionListPagination(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	pageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?page=2&q=lake",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:        uuid.New(),
+				Title:     "Lake",
+				CityID:    "almaty",
+				Category:  "NATURE",
+				Status:    "PUBLISHED",
+				UpdatedAt: time.Now().UTC(),
+			},
+		}, 60, AttractionFilterViewData{
+			Search: "lake",
+			Page:   2,
+			Query:  "q=lake",
+		}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "attractions/index", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		"Показано 26-50 из 60",
+		`href="/admin/attractions?page=1&q=lake"`,
+		`href="/admin/attractions?page=3&q=lake"`,
+		"Назад",
+		"Вперед",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("pagination did not render %q: %s", expected, body)
+		}
 	}
 }
 

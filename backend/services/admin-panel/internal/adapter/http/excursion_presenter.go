@@ -36,6 +36,7 @@ var cityNames = map[string]map[string]string{
 	"kokshetau":       {localeEN: "Kokshetau", localeRU: "Кокшетау"},
 	"kostanay":        {localeEN: "Kostanay", localeRU: "Костанай"},
 	"kyzylorda":       {localeEN: "Kyzylorda", localeRU: "Кызылорда"},
+	"oral":            {localeEN: "Oral", localeRU: "Орал"},
 	"pavlodar":        {localeEN: "Pavlodar", localeRU: "Павлодар"},
 	"petropavl":       {localeEN: "Petropavl", localeRU: "Петропавловск"},
 	"petropavlovsk":   {localeEN: "Petropavlovsk", localeRU: "Петропавловск"},
@@ -45,6 +46,7 @@ var cityNames = map[string]map[string]string{
 	"taraz":           {localeEN: "Taraz", localeRU: "Тараз"},
 	"turkestan":       {localeEN: "Turkestan", localeRU: "Туркестан"},
 	"turkistan":       {localeEN: "Turkistan", localeRU: "Туркестан"},
+	"uralsk":          {localeEN: "Oral", localeRU: "Орал"},
 	"ust-kamenogorsk": {localeEN: "Ust-Kamenogorsk", localeRU: "Усть-Каменогорск"},
 	"zhezkazgan":      {localeEN: "Zhezkazgan", localeRU: "Жезказган"},
 }

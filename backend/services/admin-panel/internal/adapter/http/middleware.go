@@ -12,6 +12,8 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/config"
 )
 
+const maxMultipartFormMemory = 64 << 20
+
 func requestIDMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 	headerName := strings.TrimSpace(cfg.Security.RequestIDHeader)
 	if headerName == "" {
@@ -108,7 +110,7 @@ func (s *Server) sessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		if isWriteMethod(r.Method) {
-			if err = r.ParseForm(); err != nil {
+			if err = parseRequestForm(r); err != nil {
 				http.Error(w, translate(localeFromContext(r.Context()), "error.invalidForm"), http.StatusBadRequest)
 				return
 			}
@@ -124,6 +126,18 @@ func (s *Server) sessionMiddleware(next http.Handler) http.Handler {
 		ctx = withCSRFToken(ctx, strings.TrimSpace(csrfCookie.Value))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func parseRequestForm(r *http.Request) error {
+	if isMultipartRequest(r) {
+		return r.ParseMultipartForm(maxMultipartFormMemory)
+	}
+	return r.ParseForm()
+}
+
+func isMultipartRequest(r *http.Request) bool {
+	contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+	return strings.HasPrefix(contentType, "multipart/")
 }
 
 func isPasswordResetAllowedPath(path string) bool {

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/enum"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/domain/model"
@@ -91,6 +93,68 @@ type GuideListViewData struct {
 	Items      []model.GuideApplicationModerationItem
 	QueueURL   string
 	HistoryURL string
+}
+
+type AttractionListViewData struct {
+	Items      []model.AdminAttraction
+	Filters    AttractionFilterViewData
+	Total      int
+	Pagination AttractionPaginationViewData
+	Countries  []AttractionOptionView
+	Cities     []AttractionOptionView
+}
+
+type AttractionFilterViewData struct {
+	Search      string
+	Category    string
+	Status      string
+	CountryCode string
+	CityID      string
+	Page        int
+	Query       string
+}
+
+type AttractionPaginationViewData struct {
+	Page          int
+	PageSize      int
+	Total         int
+	TotalPages    int
+	From          int
+	To            int
+	HasPrevious   bool
+	HasNext       bool
+	PreviousQuery string
+	NextQuery     string
+}
+
+type AttractionFormViewData struct {
+	Item                 *model.AdminAttraction
+	Input                model.AttractionInput
+	IsEdit               bool
+	SubmitURL            string
+	MediaURL             string
+	Categories           []AttractionOptionView
+	Statuses             []AttractionOptionView
+	Locales              []AttractionOptionView
+	Countries            []AttractionOptionView
+	Cities               []AttractionOptionView
+	Currencies           []AttractionOptionView
+	AccessCityOptions    []AttractionCityLinkOptionView
+	DepartureCityOptions []AttractionCityLinkOptionView
+}
+
+type AttractionOptionView struct {
+	Value       string
+	LabelKey    string
+	Selected    bool
+	CountryCode string
+}
+
+type AttractionCityLinkOptionView struct {
+	Value       string
+	CountryCode string
+	CityID      string
+	Selected    bool
 }
 
 type StaffListViewData struct {
@@ -196,6 +260,45 @@ func NewGuideListViewData(items []model.GuideApplicationModerationItem) GuideLis
 		Items:      items,
 		QueueURL:   "/admin/moderation/guides",
 		HistoryURL: "/admin/moderation/guides/history",
+	}
+}
+
+func NewAttractionListViewData(items []model.AdminAttraction, total int, filters AttractionFilterViewData) AttractionListViewData {
+	return AttractionListViewData{
+		Items:      items,
+		Total:      total,
+		Filters:    filters,
+		Pagination: attractionPagination(total, filters),
+		Countries:  attractionCountryFilterOptions(filters.CountryCode),
+		Cities:     attractionCityOptions(filters.CityID),
+	}
+}
+
+func NewAttractionFormViewData(item *model.AdminAttraction, input model.AttractionInput) AttractionFormViewData {
+	isEdit := item != nil && item.ID != uuid.Nil
+	if isEdit && input.Title == "" {
+		input = attractionInputFromItem(item)
+	}
+	submitURL := "/admin/attractions"
+	mediaURL := ""
+	if isEdit {
+		submitURL = "/admin/attractions/" + item.ID.String()
+		mediaURL = submitURL + "/media"
+	}
+	return AttractionFormViewData{
+		Item:                 item,
+		Input:                input,
+		IsEdit:               isEdit,
+		SubmitURL:            submitURL,
+		MediaURL:             mediaURL,
+		Categories:           attractionCategoryOptions(input.Category),
+		Statuses:             attractionStatusOptions(input.Status),
+		Locales:              attractionLocaleOptions(input.DefaultLocale),
+		Countries:            attractionCountryOptions(input.CountryCode),
+		Cities:               attractionCityOptions(input.CityID),
+		Currencies:           attractionCurrencyOptions(input.PriceCurrency),
+		AccessCityOptions:    attractionCityLinkOptions(input.AccessCities, input.CountryCode),
+		DepartureCityOptions: attractionCityLinkOptions(input.DepartureCities, input.CountryCode),
 	}
 }
 
@@ -336,6 +439,11 @@ func auditEntityTitle(locale string, event *model.AuditEvent, before auditStaffS
 		return translate(locale, "audit.entity.moderationCase")
 	case "guide_profile":
 		return translate(locale, "audit.entity.guideProfile")
+	case "attraction":
+		if title := auditMetadataValue(event.Metadata, "title"); title != "" {
+			return fmt.Sprintf("%s: %s", translate(locale, "audit.entity.attraction"), title)
+		}
+		return translate(locale, "audit.entity.attraction")
 	default:
 		return translate(locale, "audit.entity.unknown")
 	}
@@ -386,6 +494,13 @@ func auditDetails(locale string, event *model.AuditEvent, before auditStaffSnaps
 	case "admin.login.failed":
 		if value := auditMetadataValue(event.Metadata, "failedCount"); value != "" {
 			details = append(details, fmt.Sprintf(translate(locale, "audit.detail.failedLoginCount"), value))
+		}
+	case "attraction.created", "attraction.updated", "attraction.media.replaced", "attraction.media.updated":
+		if title := auditMetadataValue(event.Metadata, "title"); title != "" {
+			details = append(details, fmt.Sprintf("%s: %s", translate(locale, "field.title"), title))
+		}
+		if category := auditMetadataValue(event.Metadata, "category"); category != "" {
+			details = append(details, fmt.Sprintf("%s: %s", translate(locale, "field.category"), attractionCategoryText(locale, category)))
 		}
 	}
 	if len(details) == 0 {

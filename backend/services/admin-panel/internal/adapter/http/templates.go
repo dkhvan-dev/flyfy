@@ -174,6 +174,37 @@ func NewRenderer() (*Renderer, error) {
 		"guideApplicationServices":       guideApplicationServiceList,
 		"guideApplicationDecisionLocked": guideApplicationDecisionLocked,
 		"guideApplicationCanRevoke":      guideApplicationCanRevoke,
+		"attractionCategory": func(locale any, category string) string {
+			return attractionCategoryText(fmt.Sprint(locale), category)
+		},
+		"attractionCity": func(locale any, countryCode string, cityID string) string {
+			return attractionCityText(fmt.Sprint(locale), countryCode, cityID)
+		},
+		"attractionCountry": func(locale any, countryCode string) string {
+			return countryText(fmt.Sprint(locale), countryCode)
+		},
+		"attractionCityName": func(locale any, cityID string) string {
+			return attractionCityNameText(fmt.Sprint(locale), cityID)
+		},
+		"attractionCurrency": func(locale any, currency string) string {
+			return attractionCurrencyText(fmt.Sprint(locale), currency)
+		},
+		"attractionListMeta": func(locale any, item model.AdminAttraction) string {
+			return attractionListMetaText(fmt.Sprint(locale), item)
+		},
+		"attractionPaginationSummary": func(locale any, pagination AttractionPaginationViewData) string {
+			return attractionPaginationSummary(fmt.Sprint(locale), pagination)
+		},
+		"attractionMediaURL":               attractionMediaURL,
+		"attractionMediaImageURL":          attractionMediaImageURL,
+		"attractionMediaPosition":          attractionMediaPosition,
+		"attractionTags":                   attractionTagsText,
+		"attractionCityLinks":              attractionCityLinksText,
+		"attractionTranslationTitle":       attractionTranslationTitle,
+		"attractionTranslationDescription": attractionTranslationDescription,
+		"attractionVisitInfoValue":         attractionVisitInfoValue,
+		"attractionCategoryOptions":        attractionCategoryOptions,
+		"attractionOptionalStringEquals":   attractionOptionalStringEquals,
 		"moderationReasonOptions": func(locale any) []moderationReasonOption {
 			return moderationReasonCodeOptions(fmt.Sprint(locale))
 		},

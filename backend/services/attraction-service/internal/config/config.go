@@ -14,6 +14,7 @@ type Config struct {
 	Log         LogConfig
 	Security    SecurityConfig
 	UserService UserServiceConfig
+	Admin       AdminConfig
 }
 
 type AppConfig struct {
@@ -69,6 +70,10 @@ type SecurityConfig struct {
 
 type UserServiceConfig struct {
 	GRPCTarget string `env:"USER_SERVICE_GRPC_TARGET, default=dns:///user-service:9094"`
+}
+
+type AdminConfig struct {
+	AttractionAuthorUserID string `env:"ADMIN_ATTRACTION_AUTHOR_USER_ID, default=00000000-0000-4000-8000-000000000001"`
 }
 
 func Load(ctx context.Context) (*Config, error) {

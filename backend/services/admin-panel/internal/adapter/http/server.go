@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"time"
@@ -18,13 +19,14 @@ import (
 )
 
 type Server struct {
-	cfg        *config.Config
-	renderer   *Renderer
-	auth       *app.AuthUseCase
-	staff      *app.StaffUseCase
-	moderation *app.ModerationUseCase
-	audit      *app.AuditUseCase
-	readiness  func(context.Context) error
+	cfg         *config.Config
+	renderer    *Renderer
+	auth        *app.AuthUseCase
+	staff       *app.StaffUseCase
+	moderation  *app.ModerationUseCase
+	audit       *app.AuditUseCase
+	attractions *app.AttractionContentUseCase
+	readiness   func(context.Context) error
 }
 
 func NewServer(
@@ -34,8 +36,9 @@ func NewServer(
 	staff *app.StaffUseCase,
 	moderation *app.ModerationUseCase,
 	audit *app.AuditUseCase,
+	attractions *app.AttractionContentUseCase,
 ) *Server {
-	return &Server{cfg: cfg, renderer: renderer, auth: auth, staff: staff, moderation: moderation, audit: audit}
+	return &Server{cfg: cfg, renderer: renderer, auth: auth, staff: staff, moderation: moderation, audit: audit, attractions: attractions}
 }
 
 func (s *Server) SetReadinessCheck(check func(context.Context) error) {
@@ -83,6 +86,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/moderation/guides/{caseID}/approve", s.ApproveGuideApplication)
 	mux.HandleFunc("POST /admin/moderation/guides/{caseID}/reject", s.RejectGuideApplication)
 	mux.HandleFunc("POST /admin/moderation/guides/{caseID}/revoke", s.RevokeGuideApplication)
+	mux.HandleFunc("GET /admin/attractions", s.AttractionList)
+	mux.HandleFunc("GET /admin/attractions/new", s.NewAttractionPage)
+	mux.HandleFunc("POST /admin/attractions", s.CreateAttraction)
+	mux.HandleFunc("GET /admin/attraction-media/{fileID}", s.AttractionMedia)
+	mux.HandleFunc("GET /admin/attractions/{attractionID}/edit", s.EditAttractionPage)
+	mux.HandleFunc("POST /admin/attractions/{attractionID}", s.UpdateAttraction)
+	mux.HandleFunc("POST /admin/attractions/{attractionID}/media", s.ReplaceAttractionMedia)
 	mux.HandleFunc("GET /admin/staff", s.StaffList)
 	mux.HandleFunc("POST /admin/staff", s.CreateStaff)
 	mux.HandleFunc("GET /admin/staff/{staffID}/edit", s.EditStaffPage)
@@ -585,6 +595,156 @@ func (s *Server) RevokeActiveGuide(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectWithFlash("/admin/moderation/guides/current", "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
+func (s *Server) AttractionList(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	filters := attractionListQuery(r.URL.Query())
+	items, total, err := s.attractions.ListAttractions(r.Context(), staff, model.AdminAttractionFilter{
+		Search:      filters.Search,
+		Locale:      localeFromContext(r.Context()),
+		Category:    filters.Category,
+		CountryCode: filters.CountryCode,
+		CityID:      filters.CityID,
+		Status:      filters.Status,
+		Limit:       attractionListPageSize,
+		Offset:      (filters.Page - 1) * attractionListPageSize,
+	})
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "attractions/index", "attraction.title", "attractions", NewAttractionListViewData(nil, 0, filters), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "attractions/index", "attraction.title", "attractions", NewAttractionListViewData(items, total, filters), "")
+}
+
+func (s *Server) NewAttractionPage(w http.ResponseWriter, r *http.Request) {
+	if staff := staffFromContext(r.Context()); staff == nil || !staff.HasPermission(enum.PermissionAttractionManage) {
+		s.renderPage(w, http.StatusForbidden, r, "attractions/form", "attraction.createTitle", "attractions", NewAttractionFormViewData(nil, attractionInputFromItem(nil)), publicError(localeFromContext(r.Context()), app.ErrPermissionDenied))
+		return
+	}
+	data := NewAttractionFormViewData(nil, attractionInputFromItem(nil))
+	s.renderPage(w, http.StatusOK, r, "attractions/form", "attraction.createTitle", "attractions", data, "")
+}
+
+func (s *Server) CreateAttraction(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	input, images, err := parseAttractionForm(r)
+	if err != nil {
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.createTitle", "attractions", NewAttractionFormViewData(nil, input), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	item, err := s.attractions.CreateAttraction(r.Context(), staff, input, requestMetadata(r))
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.createTitle", "attractions", NewAttractionFormViewData(nil, input), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	if len(images) > 0 && item != nil {
+		metadata := requestMetadata(r)
+		for i := range images {
+			images[i].Metadata = metadata
+		}
+		if err = s.attractions.ReplaceCarouselImages(r.Context(), staff, item.ID, images); err != nil {
+			s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, input), publicError(localeFromContext(r.Context()), err))
+			return
+		}
+	}
+	http.Redirect(w, r, redirectWithFlash("/admin/attractions", "attraction.created"), http.StatusSeeOther)
+}
+
+func (s *Server) EditAttractionPage(w http.ResponseWriter, r *http.Request) {
+	attractionID, ok := parsePathUUID(w, r, "attractionID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	item, err := s.attractions.GetAttraction(r.Context(), staff, attractionID)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(nil, model.AttractionInput{}), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), "")
+}
+
+func (s *Server) UpdateAttraction(w http.ResponseWriter, r *http.Request) {
+	attractionID, ok := parsePathUUID(w, r, "attractionID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	input, _, err := parseAttractionForm(r)
+	if err != nil {
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(&model.AdminAttraction{ID: attractionID}, input), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	item, err := s.attractions.UpdateAttraction(r.Context(), staff, attractionID, input, requestMetadata(r))
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(&model.AdminAttraction{ID: attractionID}, input), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash("/admin/attractions/"+item.ID.String()+"/edit", "attraction.updated"), http.StatusSeeOther)
+}
+
+func (s *Server) ReplaceAttractionMedia(w http.ResponseWriter, r *http.Request) {
+	attractionID, ok := parsePathUUID(w, r, "attractionID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	if err := parseRequestForm(r); err != nil {
+		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	images, err := parseAttractionImages(r)
+	if err != nil {
+		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	existingMediaIDs, err := parseUUIDValues(r.Form["media_ids"])
+	if err != nil {
+		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	deleteMediaIDs, err := parseUUIDValues(r.Form["delete_media_ids"])
+	if err != nil {
+		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		return
+	}
+	metadata := requestMetadata(r)
+	for i := range images {
+		images[i].Metadata = metadata
+	}
+	if err = s.attractions.UpdateCarouselImages(r.Context(), staff, attractionID, app.AttractionMediaUpdateInput{
+		Action:           app.AttractionMediaAction(r.Form.Get("media_action")),
+		ExistingMediaIDs: existingMediaIDs,
+		DeleteMediaIDs:   deleteMediaIDs,
+		Uploads:          images,
+		Metadata:         metadata,
+	}); err != nil {
+		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
+		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash("/admin/attractions/"+attractionID.String()+"/edit", "attraction.mediaUpdated"), http.StatusSeeOther)
+}
+
+func (s *Server) AttractionMedia(w http.ResponseWriter, r *http.Request) {
+	fileID, ok := parsePathUUID(w, r, "fileID")
+	if !ok {
+		return
+	}
+	content, err := s.attractions.GetPublicImageContent(r.Context(), staffFromContext(r.Context()), fileID)
+	if err != nil {
+		http.Error(w, publicError(localeFromContext(r.Context()), err), errorStatus(err))
+		return
+	}
+	w.Header().Set("Content-Type", content.ContentType)
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(content.Content)
+}
+
 func (s *Server) decideExcursion(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
 	caseID, ok := parsePathUUID(w, r, "caseID")
 	if !ok {
@@ -912,6 +1072,178 @@ func parseRoles(values []string) []enum.StaffRole {
 	return out
 }
 
+func parseAttractionForm(r *http.Request) (model.AttractionInput, []app.AttractionImageUploadInput, error) {
+	if err := parseRequestForm(r); err != nil {
+		return model.AttractionInput{}, nil, err
+	}
+
+	latitude, err := parseOptionalFloat(r.Form.Get("latitude"))
+	if err != nil {
+		return model.AttractionInput{}, nil, err
+	}
+	longitude, err := parseOptionalFloat(r.Form.Get("longitude"))
+	if err != nil {
+		return model.AttractionInput{}, nil, err
+	}
+	locationSourceURL := r.Form.Get("location_source_url")
+	if (latitude == nil || longitude == nil) && strings.TrimSpace(locationSourceURL) != "" {
+		if parsedLatitude, parsedLongitude, ok := coordinatesFromMapURL(locationSourceURL); ok {
+			if latitude == nil {
+				latitude = parsedLatitude
+			}
+			if longitude == nil {
+				longitude = parsedLongitude
+			}
+		}
+	}
+	priceAmount, err := parseOptionalFloat(r.Form.Get("price_amount"))
+	if err != nil {
+		return model.AttractionInput{}, nil, err
+	}
+	durationValue, err := parseOptionalInt(r.Form.Get("duration_value"))
+	if err != nil {
+		return model.AttractionInput{}, nil, err
+	}
+	spots, err := parseOptionalInt(r.Form.Get("spots"))
+	if err != nil {
+		return model.AttractionInput{}, nil, err
+	}
+
+	defaultLocale := strings.TrimSpace(r.Form.Get("default_locale"))
+	translations := map[string]model.AttractionTranslation{}
+	for _, locale := range []string{"ru", "en", "kk"} {
+		title := strings.TrimSpace(r.Form.Get("title_" + locale))
+		description := strings.TrimSpace(r.Form.Get("description_" + locale))
+		if title != "" || description != "" {
+			translations[locale] = model.AttractionTranslation{
+				Title:       title,
+				Description: description,
+			}
+		}
+	}
+	defaultTranslation := translations[normalizeFormLocale(defaultLocale)]
+	priceCurrency := optionalString(r.Form.Get("price_currency"))
+	durationUnit := optionalString(r.Form.Get("duration_unit"))
+	bookingRequired := optionalBool(r.Form.Get("booking_required"))
+	visitInfo := &model.AttractionVisitInfo{
+		BestTime:        strings.TrimSpace(r.Form.Get("visit_best_time")),
+		Accessibility:   strings.TrimSpace(r.Form.Get("visit_accessibility")),
+		BookingRequired: bookingRequired,
+		OpeningHours:    strings.TrimSpace(r.Form.Get("visit_opening_hours")),
+		Amenities:       splitCSV(r.Form.Get("visit_amenities")),
+		Audience:        splitCSV(r.Form.Get("visit_audience")),
+		SafetyNotes:     splitCSV(r.Form.Get("visit_safety_notes")),
+	}
+	input := model.AttractionInput{
+		Title:             defaultTranslation.Title,
+		Description:       defaultTranslation.Description,
+		DefaultLocale:     defaultLocale,
+		Translations:      translations,
+		CountryCode:       r.Form.Get("country_code"),
+		CityID:            r.Form.Get("city_id"),
+		AccessCities:      parseCityLinkValues(r.Form["access_cities"], r.Form.Get("country_code")),
+		DepartureCities:   parseCityLinkValues(r.Form["departure_cities"], r.Form.Get("country_code")),
+		Latitude:          latitude,
+		Longitude:         longitude,
+		LocationSourceURL: locationSourceURL,
+		Category:          r.Form.Get("category"),
+		PriceAmount:       priceAmount,
+		PriceCurrency:     priceCurrency,
+		DurationValue:     durationValue,
+		DurationUnit:      durationUnit,
+		Spots:             spots,
+		Status:            r.Form.Get("status"),
+		Tags:              splitCSV(r.Form.Get("tags")),
+		VisitInfo:         visitInfo,
+	}
+	images, err := parseAttractionImages(r)
+	return input, images, err
+}
+
+func parseAttractionImages(r *http.Request) ([]app.AttractionImageUploadInput, error) {
+	if err := parseRequestForm(r); err != nil {
+		return nil, err
+	}
+	if r.MultipartForm == nil {
+		return nil, nil
+	}
+
+	headers := make([]*multipart.FileHeader, 0)
+	headers = append(headers, r.MultipartForm.File["media_images"]...)
+	headers = append(headers, r.MultipartForm.File["cover_image"]...)
+	if len(headers) == 0 {
+		return nil, nil
+	}
+	if len(headers) > 10 {
+		return nil, app.ErrInvalidInput
+	}
+
+	images := make([]app.AttractionImageUploadInput, 0, len(headers))
+	for _, header := range headers {
+		if header == nil {
+			continue
+		}
+		image, err := readAttractionImage(header)
+		if err != nil {
+			return nil, err
+		}
+		images = append(images, image)
+	}
+	return images, nil
+}
+
+func readAttractionImage(header *multipart.FileHeader) (app.AttractionImageUploadInput, error) {
+	file, err := header.Open()
+	if err != nil {
+		return app.AttractionImageUploadInput{}, err
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(io.LimitReader(file, 25<<20))
+	if err != nil {
+		return app.AttractionImageUploadInput{}, err
+	}
+	if len(content) == 0 {
+		return app.AttractionImageUploadInput{}, app.ErrInvalidInput
+	}
+	contentType := ""
+	contentType = header.Header.Get("Content-Type")
+	if strings.TrimSpace(contentType) == "" {
+		contentType = http.DetectContentType(content)
+	}
+	return app.AttractionImageUploadInput{
+		FileName:    header.Filename,
+		ContentType: contentType,
+		Content:     content,
+	}, nil
+}
+
+func normalizeFormLocale(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "en", "kk":
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return "ru"
+	}
+}
+
+func optionalString(raw string) *string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	return &raw
+}
+
+func optionalBool(raw string) *bool {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	if raw == "" {
+		return nil
+	}
+	value := raw == "true" || raw == "1" || raw == "on" || raw == "yes"
+	return &value
+}
+
 func splitCSV(value string) []string {
 	parts := strings.Split(value, ",")
 	out := make([]string, 0, len(parts))
@@ -922,6 +1254,22 @@ func splitCSV(value string) []string {
 		}
 	}
 	return out
+}
+
+func parseUUIDValues(values []string) ([]uuid.UUID, error) {
+	out := make([]uuid.UUID, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		id, err := uuid.Parse(value)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+	return out, nil
 }
 
 func publicError(locale string, err error) string {
@@ -936,6 +1284,9 @@ func publicError(locale string, err error) string {
 	}
 	if errors.Is(err, app.ErrStaffNotFound) {
 		return translate(locale, "error.staffNotFound")
+	}
+	if errors.Is(err, app.ErrAttractionNotFound) {
+		return translate(locale, "error.attractionNotFound")
 	}
 	if errors.Is(err, app.ErrDuplicateDecision) {
 		return translate(locale, "error.duplicateDecision")
@@ -956,6 +1307,8 @@ func errorStatus(err error) int {
 	case errors.Is(err, app.ErrModerationCaseNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, app.ErrStaffNotFound):
+		return http.StatusNotFound
+	case errors.Is(err, app.ErrAttractionNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, app.ErrModerationCaseConflict):
 		return http.StatusConflict

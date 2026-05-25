@@ -218,7 +218,8 @@ INSERT INTO staff_permissions(code, domain, action, description) VALUES
     ('moderation.assign', 'moderation', 'assign', 'Assign moderation cases'),
     ('excursion.moderate', 'excursion', 'moderate', 'Approve or reject excursion cases'),
     ('activity.moderate', 'activity', 'moderate', 'Approve or reject activity cases'),
-    ('chat.moderate', 'chat', 'moderate', 'Moderate chat cases')
+    ('chat.moderate', 'chat', 'moderate', 'Moderate chat cases'),
+    ('attraction.manage', 'attraction', 'manage', 'Create and edit attraction content')
 ON CONFLICT (code) DO UPDATE
 SET domain = EXCLUDED.domain,
     action = EXCLUDED.action,

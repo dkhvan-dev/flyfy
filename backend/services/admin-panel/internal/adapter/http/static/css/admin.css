@@ -22,6 +22,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   min-height: 100%;
@@ -59,6 +63,11 @@ button,
 button:hover,
 .button:hover {
   border-color: #aeb9c8;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 button.primary,
@@ -268,6 +277,144 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.localized-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.card.subtle {
+  box-shadow: none;
+  background: #fbfcfe;
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.media-thumb {
+  position: relative;
+  margin: 0;
+}
+
+.media-thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--surface-soft);
+}
+
+.media-thumb figcaption {
+  display: grid;
+  gap: 2px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.media-manager-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.media-manager-card {
+  border-radius: 8px;
+}
+
+.media-manager-card.is-deleted img,
+.media-manager-card.is-deleted .media-placeholder {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.media-manager-card.is-deleted figcaption small {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.media-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  min-width: 32px;
+  min-height: 32px;
+  border-color: rgba(180, 35, 24, 0.22);
+  background: rgba(255, 241, 240, 0.95);
+  color: var(--danger);
+  padding: 0 8px;
+  font-weight: 800;
+}
+
+.media-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.media-card-actions button {
+  min-height: 34px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+}
+
+.media-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.media-placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.media-preview-empty {
+  margin: 0;
+}
+
+.media-preview {
+  display: grid;
+  gap: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 12px;
+}
+
+.media-preview[hidden] {
+  display: none;
+}
+
+.media-preview-head {
+  display: grid;
+  gap: 4px;
+}
+
+.media-preview-head span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.media-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+}
+
+.media-preview-thumb img {
+  background: #fff;
+}
+
 .meta-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -405,6 +552,36 @@ textarea:focus {
   outline: 3px solid rgba(23, 107, 87, 0.14);
 }
 
+.form small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.field-error {
+  display: none;
+  color: var(--danger);
+}
+
+.form.was-validated input:invalid,
+.form.was-validated select:invalid,
+.form.was-validated textarea:invalid {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.form.was-validated input:invalid:focus,
+.form.was-validated select:invalid:focus,
+.form.was-validated textarea:invalid:focus {
+  outline-color: rgba(180, 35, 24, 0.16);
+}
+
+.form.was-validated input:invalid + .field-error,
+.form.was-validated select:invalid + .field-error,
+.form.was-validated textarea:invalid + .field-error {
+  display: block;
+}
+
 .filter-bar {
   display: grid;
   gap: 14px;
@@ -435,6 +612,29 @@ textarea:focus {
   gap: 10px;
 }
 
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 12px 14px;
+}
+
+.pagination p {
+  margin: 0;
+}
+
+.pagination-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
 .checks {
   display: grid;
   gap: 8px;
@@ -454,6 +654,19 @@ textarea:focus {
 
 .checks input {
   width: auto;
+}
+
+.checks legend {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.option-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.option-grid label {
+  align-items: flex-start;
 }
 
 .table-wrap {

@@ -13,6 +13,7 @@ import (
 	userserviceadapter "github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/adapter/userservice"
 	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/app"
 	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/config"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -47,7 +48,11 @@ func main() {
 	defer userClient.Close()
 
 	repo := repository.NewPGAttractionRepository(pool)
-	useCase := app.NewAttractionUseCase(repo, userClient)
+	adminAuthorUserID, err := uuid.Parse(cfg.Admin.AttractionAuthorUserID)
+	if err != nil || adminAuthorUserID == uuid.Nil {
+		log.Fatal().Err(err).Str("admin_author_user_id", cfg.Admin.AttractionAuthorUserID).Msg("invalid admin attraction author user id")
+	}
+	useCase := app.NewAttractionUseCase(repo, userClient, app.WithAdminAuthorUserID(adminAuthorUserID))
 
 	handler := httpadapter.NewHandler(useCase)
 	mux := http.NewServeMux()

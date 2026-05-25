@@ -141,3 +141,16 @@ type ChatMessageDecisionInput struct {
 	IdempotencyKey  string
 	RequestID       string
 }
+
+type AttractionAdminClient interface {
+	ListAttractions(ctx context.Context, filter model.AdminAttractionFilter) ([]model.AdminAttraction, int, error)
+	GetAttraction(ctx context.Context, id uuid.UUID) (*model.AdminAttraction, error)
+	CreateAttraction(ctx context.Context, input model.AttractionInput) (*model.AdminAttraction, error)
+	UpdateAttraction(ctx context.Context, id uuid.UUID, input model.AttractionInput) (*model.AdminAttraction, error)
+	ReplaceMedia(ctx context.Context, id uuid.UUID, media []model.AttractionMediaInput) error
+}
+
+type FileUploadClient interface {
+	UploadPublicAttractionImage(ctx context.Context, input model.FileUploadInput) (*model.UploadedFile, error)
+	GetPublicContent(ctx context.Context, fileID uuid.UUID) (*model.FileContent, error)
+}

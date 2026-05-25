@@ -19,6 +19,8 @@ type Config struct {
 	Activity  ActivityServiceConfig
 	Guide     GuideServiceConfig
 	Chat      ChatServiceConfig
+	Attraction AttractionServiceConfig
+	FileManager FileManagerServiceConfig
 	Bootstrap BootstrapConfig
 }
 
@@ -120,6 +122,17 @@ type GuideServiceConfig struct {
 type ChatServiceConfig struct {
 	BaseURL string        `env:"CHAT_SERVICE_URL, default=http://chat-service:8088"`
 	Timeout time.Duration `env:"CHAT_SERVICE_TIMEOUT, default=5s"`
+}
+
+type AttractionServiceConfig struct {
+	BaseURL string        `env:"ATTRACTION_SERVICE_URL, default=http://attraction-service:8090"`
+	Timeout time.Duration `env:"ATTRACTION_SERVICE_TIMEOUT, default=5s"`
+}
+
+type FileManagerServiceConfig struct {
+	BaseURL             string        `env:"FILE_MANAGER_SERVICE_URL, default=http://file-manager-service:8083"`
+	Timeout             time.Duration `env:"FILE_MANAGER_SERVICE_TIMEOUT, default=15s"`
+	MaxAttractionImageBytes int64     `env:"MAX_ATTRACTION_IMAGE_BYTES, default=20971520"`
 }
 
 type BootstrapConfig struct {

@@ -155,9 +155,13 @@ type CreateReviewInput struct {
 }
 
 type ReplaceMediaInput struct {
-	FileID    uuid.UUID
-	MediaType string
-	Position  int
+	FileID      uuid.UUID
+	ExternalURL string
+	SourceURL   string
+	Credit      string
+	License     string
+	MediaType   string
+	Position    int
 }
 
 // ---------------------------------------------------------------------------
@@ -165,12 +169,35 @@ type ReplaceMediaInput struct {
 // ---------------------------------------------------------------------------
 
 type AttractionUseCase struct {
-	repo  port.AttractionRepository
-	users UserServiceClient
+	repo              port.AttractionRepository
+	users             UserServiceClient
+	adminAuthorUserID uuid.UUID
 }
 
-func NewAttractionUseCase(repo port.AttractionRepository, users UserServiceClient) *AttractionUseCase {
-	return &AttractionUseCase{repo: repo, users: users}
+type AttractionUseCaseOption func(*AttractionUseCase)
+
+var defaultAdminAttractionAuthorUserID = uuid.MustParse("00000000-0000-4000-8000-000000000001")
+
+func WithAdminAuthorUserID(userID uuid.UUID) AttractionUseCaseOption {
+	return func(u *AttractionUseCase) {
+		if userID != uuid.Nil {
+			u.adminAuthorUserID = userID
+		}
+	}
+}
+
+func NewAttractionUseCase(repo port.AttractionRepository, users UserServiceClient, options ...AttractionUseCaseOption) *AttractionUseCase {
+	uc := &AttractionUseCase{
+		repo:              repo,
+		users:             users,
+		adminAuthorUserID: defaultAdminAttractionAuthorUserID,
+	}
+	for _, option := range options {
+		if option != nil {
+			option(uc)
+		}
+	}
+	return uc
 }
 
 func NormalizeAttractionLocale(raw string) string {
@@ -190,7 +217,14 @@ func (u *AttractionUseCase) CreateAttraction(ctx context.Context, subject string
 	if err != nil {
 		return nil, err
 	}
+	return u.createAttraction(ctx, authorUserID, enum.SourceUser, input)
+}
 
+func (u *AttractionUseCase) CreateAttractionByAdmin(ctx context.Context, input CreateAttractionInput) (*AttractionView, error) {
+	return u.createAttraction(ctx, u.adminAuthorUserID, enum.SourceImport, input)
+}
+
+func (u *AttractionUseCase) createAttraction(ctx context.Context, authorUserID uuid.UUID, source enum.ContentSource, input CreateAttractionInput) (*AttractionView, error) {
 	category := enum.AttractionCategory(strings.ToUpper(strings.TrimSpace(input.Category)))
 	if !category.IsValid() {
 		return nil, ErrInvalidCategory
@@ -273,7 +307,7 @@ func (u *AttractionUseCase) CreateAttraction(ctx context.Context, subject string
 		DurationValue:     input.DurationValue,
 		Rating:            input.Rating,
 		Spots:             input.Spots,
-		Source:            enum.SourceUser,
+		Source:            source,
 		Status:            status,
 		Tags:              tags,
 		VisitInfo:         visitInfo,
@@ -312,6 +346,21 @@ func (u *AttractionUseCase) UpdateAttraction(ctx context.Context, subject string
 		return nil, ErrAccessDenied
 	}
 
+	return u.updateAttractionRecord(ctx, attraction, input)
+}
+
+func (u *AttractionUseCase) UpdateAttractionByAdmin(ctx context.Context, attractionID uuid.UUID, input UpdateAttractionInput) (*AttractionView, error) {
+	attraction, err := u.repo.GetAttractionByID(ctx, attractionID, "")
+	if err != nil {
+		return nil, fmt.Errorf("get attraction: %w", err)
+	}
+	if attraction == nil {
+		return nil, ErrAttractionNotFound
+	}
+	return u.updateAttractionRecord(ctx, attraction, input)
+}
+
+func (u *AttractionUseCase) updateAttractionRecord(ctx context.Context, attraction *model.Attraction, input UpdateAttractionInput) (*AttractionView, error) {
 	category := enum.AttractionCategory(strings.ToUpper(strings.TrimSpace(input.Category)))
 	if !category.IsValid() {
 		return nil, ErrInvalidCategory
@@ -564,6 +613,21 @@ func (u *AttractionUseCase) ReplaceAttractionMedia(ctx context.Context, subject 
 		return ErrAccessDenied
 	}
 
+	return u.replaceAttractionMedia(ctx, attractionID, media)
+}
+
+func (u *AttractionUseCase) ReplaceAttractionMediaByAdmin(ctx context.Context, attractionID uuid.UUID, media []ReplaceMediaInput) error {
+	attraction, err := u.repo.GetAttractionByID(ctx, attractionID, "")
+	if err != nil {
+		return fmt.Errorf("get attraction: %w", err)
+	}
+	if attraction == nil {
+		return ErrAttractionNotFound
+	}
+	return u.replaceAttractionMedia(ctx, attractionID, media)
+}
+
+func (u *AttractionUseCase) replaceAttractionMedia(ctx context.Context, attractionID uuid.UUID, media []ReplaceMediaInput) error {
 	now := time.Now().UTC()
 	models := make([]model.AttractionMedia, 0, len(media))
 	for _, m := range media {
@@ -575,6 +639,10 @@ func (u *AttractionUseCase) ReplaceAttractionMedia(ctx context.Context, subject 
 			ID:           uuid.New(),
 			AttractionID: attractionID,
 			FileID:       m.FileID,
+			ExternalURL:  strings.TrimSpace(m.ExternalURL),
+			SourceURL:    strings.TrimSpace(m.SourceURL),
+			Credit:       strings.TrimSpace(m.Credit),
+			License:      strings.TrimSpace(m.License),
 			MediaType:    mt,
 			Position:     m.Position,
 			CreatedAt:    now,

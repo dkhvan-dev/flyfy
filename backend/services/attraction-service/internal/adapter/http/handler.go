@@ -43,6 +43,11 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /v1/reviews/{id}", h.DeleteReview)
 
 	// Internal commands
+	mux.HandleFunc("GET /internal/v1/admin/attractions", h.ListAttractions)
+	mux.HandleFunc("POST /internal/v1/admin/attractions", h.AdminCreateAttraction)
+	mux.HandleFunc("GET /internal/v1/admin/attractions/{id}", h.GetAttraction)
+	mux.HandleFunc("PUT /internal/v1/admin/attractions/{id}", h.AdminUpdateAttraction)
+	mux.HandleFunc("PUT /internal/v1/admin/attractions/{id}/media", h.AdminReplaceAttractionMedia)
 	mux.HandleFunc("POST /internal/v1/attractions/{id}/rating/recalculate", h.RecalculateRating)
 	mux.HandleFunc("POST /internal/v1/attractions/{id}/rating/sources", h.ApplyRatingSourceSnapshot)
 }
@@ -63,6 +68,44 @@ func (h *Handler) CreateAttraction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	view, err := h.useCase.CreateAttraction(r.Context(), SubjectFromContext(r.Context()), app.CreateAttractionInput{
+		Title:             req.Title,
+		Description:       req.Description,
+		DefaultLocale:     req.DefaultLocale,
+		Translations:      toAppTranslationInputs(req.Translations),
+		CountryCode:       req.CountryCode,
+		CityID:            req.CityID,
+		AccessCities:      toAppCityLinkInputs(req.AccessCities),
+		DepartureCities:   toAppCityLinkInputs(req.DepartureCities),
+		Latitude:          req.Latitude,
+		Longitude:         req.Longitude,
+		LocationSourceURL: req.LocationSourceURL,
+		Category:          req.Category,
+		PriceAmount:       req.PriceAmount,
+		PriceCurrency:     req.PriceCurrency,
+		DurationValue:     req.DurationValue,
+		DurationUnit:      req.DurationUnit,
+		Rating:            req.Rating,
+		Spots:             req.Spots,
+		Status:            req.Status,
+		Tags:              req.Tags,
+		VisitInfo:         toAppVisitInfoInput(req.VisitInfo),
+	})
+	if err != nil {
+		h.writeUseCaseError(w, err, "failed to create attraction")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, toAttractionResponse(view))
+}
+
+func (h *Handler) AdminCreateAttraction(w http.ResponseWriter, r *http.Request) {
+	var req dto.CreateAttractionRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	view, err := h.useCase.CreateAttractionByAdmin(r.Context(), app.CreateAttractionInput{
 		Title:             req.Title,
 		Description:       req.Description,
 		DefaultLocale:     req.DefaultLocale,
@@ -144,6 +187,49 @@ func (h *Handler) UpdateAttraction(w http.ResponseWriter, r *http.Request) {
 		Tags:              req.Tags,
 		VisitInfo:         toAppVisitInfoInput(req.VisitInfo),
 	}, UserRolesFromContext(r.Context()))
+	if err != nil {
+		h.writeUseCaseError(w, err, "failed to update attraction")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toAttractionResponse(view))
+}
+
+func (h *Handler) AdminUpdateAttraction(w http.ResponseWriter, r *http.Request) {
+	attractionID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid attraction id")
+		return
+	}
+
+	var req dto.UpdateAttractionRequest
+	if err = decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	view, err := h.useCase.UpdateAttractionByAdmin(r.Context(), attractionID, app.UpdateAttractionInput{
+		Title:             req.Title,
+		Description:       req.Description,
+		DefaultLocale:     req.DefaultLocale,
+		Translations:      toAppTranslationInputs(req.Translations),
+		CountryCode:       req.CountryCode,
+		CityID:            req.CityID,
+		AccessCities:      toAppCityLinkInputs(req.AccessCities),
+		DepartureCities:   toAppCityLinkInputs(req.DepartureCities),
+		Latitude:          req.Latitude,
+		Longitude:         req.Longitude,
+		LocationSourceURL: req.LocationSourceURL,
+		Category:          req.Category,
+		PriceAmount:       req.PriceAmount,
+		PriceCurrency:     req.PriceCurrency,
+		DurationValue:     req.DurationValue,
+		DurationUnit:      req.DurationUnit,
+		Spots:             req.Spots,
+		Status:            req.Status,
+		Tags:              req.Tags,
+		VisitInfo:         toAppVisitInfoInput(req.VisitInfo),
+	})
 	if err != nil {
 		h.writeUseCaseError(w, err, "failed to update attraction")
 		return
@@ -289,6 +375,53 @@ func (h *Handler) ReplaceAttractionMedia(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) AdminReplaceAttractionMedia(w http.ResponseWriter, r *http.Request) {
+	attractionID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid attraction id")
+		return
+	}
+
+	media, ok := h.parseReplaceMediaRequest(w, r)
+	if !ok {
+		return
+	}
+
+	if err = h.useCase.ReplaceAttractionMediaByAdmin(r.Context(), attractionID, media); err != nil {
+		h.writeUseCaseError(w, err, "failed to replace attraction media")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) parseReplaceMediaRequest(w http.ResponseWriter, r *http.Request) ([]app.ReplaceMediaInput, bool) {
+	var req dto.ReplaceMediaRequest
+	if err := decodeBody(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return nil, false
+	}
+
+	media := make([]app.ReplaceMediaInput, 0, len(req.Media))
+	for _, m := range req.Media {
+		fileID, parseErr := uuid.Parse(m.FileID)
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, "invalid file id in media")
+			return nil, false
+		}
+		media = append(media, app.ReplaceMediaInput{
+			FileID:      fileID,
+			ExternalURL: strings.TrimSpace(m.ExternalURL),
+			SourceURL:   strings.TrimSpace(m.SourceURL),
+			Credit:      strings.TrimSpace(m.Credit),
+			License:     strings.TrimSpace(m.License),
+			MediaType:   m.MediaType,
+			Position:    m.Position,
+		})
+	}
+	return media, true
 }
 
 // ---------------------------------------------------------------------------

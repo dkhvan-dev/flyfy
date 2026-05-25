@@ -12,8 +12,10 @@ import (
 	_ "time/tzdata"
 
 	activityadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/activity"
+	attractionadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/attraction"
 	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/chat"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/excursion"
+	filemanageradapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/filemanager"
 	guideadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/guide"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/repository"
@@ -68,6 +70,16 @@ func main() {
 		cfg.Chat.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
+	attractionClient := attractionadapter.NewClient(
+		cfg.Attraction.BaseURL,
+		cfg.Attraction.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
+	fileManagerClient := filemanageradapter.NewClient(
+		cfg.FileManager.BaseURL,
+		cfg.FileManager.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
 
 	authUC := app.NewAuthUseCase(staffRepo, sessionRepo, loginAttemptRepo, auditRepo, app.AuthConfig{
 		IdleTimeout:      cfg.Security.SessionIdleTimeout,
@@ -77,6 +89,9 @@ func main() {
 	})
 	staffUC := app.NewStaffUseCase(staffRepo, auditRepo, sessionRepo)
 	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, activityClient, guideClient, chatClient, auditRepo)
+	attractionUC := app.NewAttractionContentUseCase(attractionClient, fileManagerClient, auditRepo, app.AttractionContentConfig{
+		MaxImageBytes: cfg.FileManager.MaxAttractionImageBytes,
+	})
 	auditUC := app.NewAuditUseCase(auditRepo)
 
 	if created, err := bootstrapSuperAdmin(ctx, cfg, staffUC); err != nil {
@@ -91,7 +106,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize renderer")
 	}
-	adminServer := httpadapter.NewServer(cfg, renderer, authUC, staffUC, moderationUC, auditUC)
+	adminServer := httpadapter.NewServer(cfg, renderer, authUC, staffUC, moderationUC, auditUC, attractionUC)
 	adminServer.SetReadinessCheck(pool.Ping)
 
 	server := &http.Server{
