@@ -1,6 +1,9 @@
 package http
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -38,5 +41,29 @@ func TestAttractionMediaURLUsesDedicatedRoute(t *testing.T) {
 	want := "/admin/attraction-media/" + fileID.String()
 	if got != want {
 		t.Fatalf("attractionMediaURL() = %q, want %q", got, want)
+	}
+}
+
+func TestSecurityHeadersAllowTrustedWikimediaAttractionImages(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(http.MethodGet, "/admin/attractions/id/edit", nil)
+	recorder := httptest.NewRecorder()
+	handler := securityHeadersMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	handler.ServeHTTP(recorder, request)
+
+	csp := recorder.Header().Get("Content-Security-Policy")
+	for _, expected := range []string{
+		"img-src",
+		"blob:",
+		"https://upload.wikimedia.org",
+		"https://commons.wikimedia.org",
+	} {
+		if !strings.Contains(csp, expected) {
+			t.Fatalf("Content-Security-Policy = %q, want trusted Wikimedia image source %q", csp, expected)
+		}
 	}
 }

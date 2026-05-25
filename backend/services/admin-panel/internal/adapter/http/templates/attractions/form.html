@@ -101,7 +101,7 @@
           <select name="city_id" required>
             <option value="">{{t .Locale "common.select"}}</option>
             {{range .Data.Cities}}
-              <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{attractionCityName $.Locale .Value}}</option>
+              <option value="{{.Value}}" data-country="{{.CountryCode}}" {{if .Selected}}selected{{end}}>{{attractionCityName $.Locale .Value}}</option>
             {{end}}
           </select>
           <small class="field-error">{{t .Locale "validation.required"}}</small>

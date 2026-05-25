@@ -158,6 +158,80 @@ func TestKazakhstanCityAttractionMediaSeedMigrationCoversEveryCityAttraction(t *
 	}
 }
 
+func TestRussiaCityAttractionsSeedMigrationCoversProductionAnchors(t *testing.T) {
+	upSQL := readMigration(t, "011_seed_russia_city_attractions.up.sql")
+	downSQL := readMigration(t, "011_seed_russia_city_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"WITH seed_locations",
+		"'RU'",
+		"source = 'IMPORT'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Russia up migration must contain %q", fragment)
+		}
+	}
+
+	requiredCities := []string{
+		"moscow",
+		"saint-petersburg",
+		"kazan",
+		"sochi",
+		"nizhny-novgorod",
+		"yekaterinburg",
+		"vladivostok",
+		"kaliningrad",
+		"volgograd",
+	}
+	for _, cityID := range requiredCities {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Russia up migration must seed attractions for city_id %q", cityID)
+		}
+	}
+
+	requiredAttractions := []string{
+		"Red Square",
+		"Tretyakov Gallery",
+		"Gorky Park Moscow",
+		"State Hermitage Museum",
+		"Peterhof Museum-Reserve",
+		"Kazan Kremlin",
+		"Sochi Arboretum",
+		"Nizhny Novgorod Kremlin",
+		"Yeltsin Center",
+		"Russky Bridge",
+		"Koenigsberg Cathedral",
+		"Mamayev Kurgan",
+	}
+	for _, title := range requiredAttractions {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Russia up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, attractionID := range russiaCityAttractionIDs {
+		if !strings.Contains(upSQL, attractionID) {
+			t.Fatalf("Russia up migration must include attraction id %s", attractionID)
+		}
+		if !strings.Contains(downSQL, attractionID) {
+			t.Fatalf("Russia down migration must delete attraction id %s", attractionID)
+		}
+	}
+	for _, mediaID := range russiaCityMediaIDs {
+		if !strings.Contains(upSQL, mediaID) {
+			t.Fatalf("Russia up migration must include media id %s", mediaID)
+		}
+		if !strings.Contains(downSQL, mediaID) {
+			t.Fatalf("Russia down migration must delete media id %s", mediaID)
+		}
+	}
+}
+
 var kazakhstanCityAttractionIDs = []string{
 	"2eeacb52-12ef-4499-b229-05e52a199d22",
 	"6acdc04c-67b9-4e86-a43f-160738c3dda3",
@@ -232,6 +306,48 @@ var kazakhstanCityMediaIDs = []string{
 	"11000000-0000-4000-8000-000000000033",
 	"11000000-0000-4000-8000-000000000034",
 	"11000000-0000-4000-8000-000000000035",
+}
+
+var russiaCityAttractionIDs = []string{
+	"5d5ebfed-9a11-4b17-8710-85e08c8eb9bd",
+	"e7891871-76f9-443e-8bef-176277bdd3be",
+	"de526545-792c-4c0e-86fe-f837f5085761",
+	"38ea9d41-97be-4d8f-b094-cf5531df72c2",
+	"e8a575ba-7601-4dff-b166-91a6ced0c519",
+	"fc20e31e-1fe7-4945-bb6e-1bd5b9b24a7e",
+	"d751994b-5412-4a5c-8d35-883a676c3932",
+	"8c3f6b2e-5300-4dda-803c-6925926eea0d",
+	"e7adb0e1-4533-4717-a651-8aa4dfa25b16",
+	"c719ca75-9b21-45e9-b34e-51bfaad2b1eb",
+	"0523f916-2f45-4ccc-9bbc-f55aae4db530",
+	"bc9dffeb-7a16-4ee7-8e23-4c2a65dabe6b",
+	"0950a134-fee3-4dbf-93f3-d226c816872e",
+	"918a79bf-7734-4c69-b7e0-794db0c557d0",
+	"22976b07-8e74-49ae-88c3-4a7bde1284c9",
+	"60dd38a5-6c88-47f3-9399-0c475d0a0750",
+	"8485cd1c-d85f-416b-a1f1-6b6463ef0714",
+	"cf5d37e3-9fb7-4bf1-b8f1-73098af22c48",
+}
+
+var russiaCityMediaIDs = []string{
+	"33000000-0000-4000-8000-000000000001",
+	"33000000-0000-4000-8000-000000000002",
+	"33000000-0000-4000-8000-000000000003",
+	"33000000-0000-4000-8000-000000000004",
+	"33000000-0000-4000-8000-000000000005",
+	"33000000-0000-4000-8000-000000000006",
+	"33000000-0000-4000-8000-000000000007",
+	"33000000-0000-4000-8000-000000000008",
+	"33000000-0000-4000-8000-000000000009",
+	"33000000-0000-4000-8000-000000000010",
+	"33000000-0000-4000-8000-000000000011",
+	"33000000-0000-4000-8000-000000000012",
+	"33000000-0000-4000-8000-000000000013",
+	"33000000-0000-4000-8000-000000000014",
+	"33000000-0000-4000-8000-000000000015",
+	"33000000-0000-4000-8000-000000000016",
+	"33000000-0000-4000-8000-000000000017",
+	"33000000-0000-4000-8000-000000000018",
 }
 
 func readMigration(t *testing.T, filename string) string {

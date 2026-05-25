@@ -402,6 +402,32 @@ func TestAdminStylesKeepHiddenElementsInvisible(t *testing.T) {
 	}
 }
 
+func TestAdminJSKeepsAttractionUploadPreviewCaptionsReadable(t *testing.T) {
+	t.Parallel()
+
+	content, err := embeddedFiles.ReadFile("static/js/admin.js")
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	js := string(content)
+	for _, unexpected := range []string{
+		"caption.textContent = index === 0 ? `#${index + 1} · ${coverLabel} · ${file.name}` : `#${index + 1} · ${file.name}`",
+		"image.alt = file.name",
+	} {
+		if strings.Contains(js, unexpected) {
+			t.Fatalf("admin js should not render uploaded file names as visible preview text: %s", unexpected)
+		}
+	}
+	for _, expected := range []string{
+		"caption.textContent = index === 0 ? `#${index + 1} · ${coverLabel}` : `#${index + 1}`",
+		"caption.title = file.name",
+	} {
+		if !strings.Contains(js, expected) {
+			t.Fatalf("admin js should keep preview captions short and preserve filename as metadata, missing %q", expected)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListLocalizedRows(t *testing.T) {
 	t.Parallel()
 

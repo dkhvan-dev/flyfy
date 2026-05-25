@@ -165,6 +165,38 @@ func TestAttractionListQueryDefaultsInvalidPage(t *testing.T) {
 	}
 }
 
+func TestAttractionReferenceOptionsIncludeRussianFederationCities(t *testing.T) {
+	t.Parallel()
+
+	countries := attractionCountryOptions("RU")
+	var foundRussia bool
+	for _, option := range countries {
+		if option.Value == "RU" && option.Selected {
+			foundRussia = true
+			break
+		}
+	}
+	if !foundRussia {
+		t.Fatalf("country options = %#v, want selected RU option", countries)
+	}
+
+	cities := attractionCityOptions("moscow")
+	var foundMoscow bool
+	for _, option := range cities {
+		if option.Value == "moscow" && option.CountryCode == "RU" && option.Selected {
+			foundMoscow = true
+			break
+		}
+	}
+	if !foundMoscow {
+		t.Fatalf("city options = %#v, want selected RU Moscow option", cities)
+	}
+
+	if got := attractionCityText(localeRU, "RU", "saint-petersburg"); got != "Санкт-Петербург, Российская Федерация" {
+		t.Fatalf("city text = %q, want localized Russian Federation city", got)
+	}
+}
+
 func TestAttractionCategoryTextLocalizesAttractionServiceCategories(t *testing.T) {
 	t.Parallel()
 

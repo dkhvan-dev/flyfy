@@ -339,10 +339,12 @@
         remove.setAttribute("aria-label", locale === "ru" ? "Убрать из выбора" : "Remove from selection");
         const image = document.createElement("img");
         image.src = url;
-        image.alt = file.name;
+        image.alt = locale === "ru" ? `Предпросмотр изображения ${index + 1}` : `Image preview ${index + 1}`;
+        image.title = file.name;
         const caption = document.createElement("figcaption");
         const coverLabel = locale === "ru" ? "обложка" : "cover";
-        caption.textContent = index === 0 ? `#${index + 1} · ${coverLabel} · ${file.name}` : `#${index + 1} · ${file.name}`;
+        caption.textContent = index === 0 ? `#${index + 1} · ${coverLabel}` : `#${index + 1}`;
+        caption.title = file.name;
         const actions = document.createElement("div");
         actions.className = "media-card-actions";
         const up = document.createElement("button");

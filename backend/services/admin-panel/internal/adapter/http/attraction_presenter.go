@@ -37,29 +37,43 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ"}
+var attractionCountryValues = []string{"KZ", "RU"}
 
-var attractionCityValues = []string{
-	"almaty",
-	"astana",
-	"shymkent",
-	"taldykorgan",
-	"aktau",
-	"aktobe",
-	"atyrau",
-	"balkhash",
-	"karaganda",
-	"kokshetau",
-	"kostanay",
-	"kyzylorda",
-	"oral",
-	"pavlodar",
-	"petropavlovsk",
-	"semey",
-	"taraz",
-	"turkestan",
-	"ust-kamenogorsk",
-	"zhezkazgan",
+type attractionCityReference struct {
+	CountryCode string
+	CityID      string
+}
+
+var attractionCityValues = []attractionCityReference{
+	{CountryCode: "KZ", CityID: "almaty"},
+	{CountryCode: "KZ", CityID: "astana"},
+	{CountryCode: "KZ", CityID: "shymkent"},
+	{CountryCode: "KZ", CityID: "taldykorgan"},
+	{CountryCode: "KZ", CityID: "aktau"},
+	{CountryCode: "KZ", CityID: "aktobe"},
+	{CountryCode: "KZ", CityID: "atyrau"},
+	{CountryCode: "KZ", CityID: "balkhash"},
+	{CountryCode: "KZ", CityID: "karaganda"},
+	{CountryCode: "KZ", CityID: "kokshetau"},
+	{CountryCode: "KZ", CityID: "kostanay"},
+	{CountryCode: "KZ", CityID: "kyzylorda"},
+	{CountryCode: "KZ", CityID: "oral"},
+	{CountryCode: "KZ", CityID: "pavlodar"},
+	{CountryCode: "KZ", CityID: "petropavlovsk"},
+	{CountryCode: "KZ", CityID: "semey"},
+	{CountryCode: "KZ", CityID: "taraz"},
+	{CountryCode: "KZ", CityID: "turkestan"},
+	{CountryCode: "KZ", CityID: "ust-kamenogorsk"},
+	{CountryCode: "KZ", CityID: "zhezkazgan"},
+	{CountryCode: "RU", CityID: "moscow"},
+	{CountryCode: "RU", CityID: "saint-petersburg"},
+	{CountryCode: "RU", CityID: "kazan"},
+	{CountryCode: "RU", CityID: "sochi"},
+	{CountryCode: "RU", CityID: "nizhny-novgorod"},
+	{CountryCode: "RU", CityID: "yekaterinburg"},
+	{CountryCode: "RU", CityID: "vladivostok"},
+	{CountryCode: "RU", CityID: "kaliningrad"},
+	{CountryCode: "RU", CityID: "volgograd"},
 }
 
 var attractionCurrencyValues = []string{"KZT", "USD", "EUR"}
@@ -317,13 +331,40 @@ func attractionCountryFilterOptions(selected string) []AttractionOptionView {
 
 func attractionCityOptions(selected string) []AttractionOptionView {
 	selected = strings.ToLower(strings.TrimSpace(selected))
-	options := attractionValueOptions(attractionCityValues, selected, false)
-	for i := range options {
-		if strings.TrimSpace(options[i].CountryCode) == "" {
-			options[i].CountryCode = "KZ"
+	seen := make(map[string]bool, len(attractionCityValues)+1)
+	out := make([]AttractionOptionView, 0, len(attractionCityValues)+1)
+	for _, item := range attractionCityValues {
+		country := strings.ToUpper(strings.TrimSpace(item.CountryCode))
+		cityID := strings.ToLower(strings.TrimSpace(item.CityID))
+		if country == "" || cityID == "" || seen[country+":"+cityID] {
+			continue
+		}
+		seen[country+":"+cityID] = true
+		out = append(out, AttractionOptionView{
+			Value:       cityID,
+			LabelKey:    cityID,
+			Selected:    selected == cityID,
+			CountryCode: country,
+		})
+	}
+	if selected != "" {
+		var found bool
+		for _, item := range out {
+			if item.Value == selected {
+				found = true
+				break
+			}
+		}
+		if !found {
+			out = append(out, AttractionOptionView{
+				Value:       selected,
+				LabelKey:    selected,
+				Selected:    true,
+				CountryCode: "KZ",
+			})
 		}
 	}
-	return options
+	return out
 }
 
 func attractionCurrencyOptions(selected *string) []AttractionOptionView {
@@ -500,16 +541,17 @@ func attractionCityLinkOptions(selected []model.AttractionCityLink, fallbackCoun
 
 	out := make([]AttractionCityLinkOptionView, 0, len(attractionCityValues)+len(selectedMap))
 	seen := make(map[string]bool, len(attractionCityValues)+len(selectedMap))
-	for _, cityID := range attractionCityValues {
-		cityID = strings.ToLower(strings.TrimSpace(cityID))
-		if cityID == "" {
+	for _, item := range attractionCityValues {
+		country := strings.ToUpper(strings.TrimSpace(item.CountryCode))
+		cityID := strings.ToLower(strings.TrimSpace(item.CityID))
+		if country == "" || cityID == "" {
 			continue
 		}
-		value := "KZ:" + cityID
+		value := country + ":" + cityID
 		_, selected := selectedMap[value]
 		out = append(out, AttractionCityLinkOptionView{
 			Value:       value,
-			CountryCode: "KZ",
+			CountryCode: country,
 			CityID:      cityID,
 			Selected:    selected,
 		})
