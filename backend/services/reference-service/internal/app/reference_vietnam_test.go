@@ -122,3 +122,69 @@ func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *test
 		t.Fatalf("search koh samui in Thailand = %#v, want koh-samui first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesPhilippinesCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("PH")
+	if country == nil {
+		t.Fatal("expected Philippines country reference")
+	}
+	if country.Name.Ru != "Филиппины" {
+		t.Fatalf("Philippines Russian name = %q, want Филиппины", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("PH")
+	if currency == nil {
+		t.Fatal("expected Philippine peso currency by country")
+	}
+	if currency.Code != "PHP" {
+		t.Fatalf("Philippines currency = %q, want PHP", currency.Code)
+	}
+
+	cities := uc.ListCities("PH")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"manila",
+		"makati",
+		"taguig",
+		"tagaytay",
+		"cebu-city",
+		"mactan",
+		"bohol",
+		"boracay",
+		"iloilo",
+		"bacolod",
+		"puerto-princesa",
+		"el-nido",
+		"coron",
+		"davao",
+		"siargao",
+		"cagayan-de-oro",
+		"camiguin",
+		"baguio",
+		"vigan",
+		"banaue",
+		"sagada",
+		"la-union",
+		"pagudpud",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Philippines city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("puerto princesa", "PH", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "puerto-princesa" {
+		t.Fatalf("search puerto princesa in Philippines = %#v, want puerto-princesa first", searchResults)
+	}
+}

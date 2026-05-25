@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -105,9 +105,32 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "TH", CityID: "koh-phangan"},
 	{CountryCode: "TH", CityID: "koh-tao"},
 	{CountryCode: "TH", CityID: "hua-hin"},
+	{CountryCode: "PH", CityID: "manila"},
+	{CountryCode: "PH", CityID: "makati"},
+	{CountryCode: "PH", CityID: "taguig"},
+	{CountryCode: "PH", CityID: "tagaytay"},
+	{CountryCode: "PH", CityID: "cebu-city"},
+	{CountryCode: "PH", CityID: "mactan"},
+	{CountryCode: "PH", CityID: "bohol"},
+	{CountryCode: "PH", CityID: "boracay"},
+	{CountryCode: "PH", CityID: "iloilo"},
+	{CountryCode: "PH", CityID: "bacolod"},
+	{CountryCode: "PH", CityID: "puerto-princesa"},
+	{CountryCode: "PH", CityID: "el-nido"},
+	{CountryCode: "PH", CityID: "coron"},
+	{CountryCode: "PH", CityID: "davao"},
+	{CountryCode: "PH", CityID: "siargao"},
+	{CountryCode: "PH", CityID: "cagayan-de-oro"},
+	{CountryCode: "PH", CityID: "camiguin"},
+	{CountryCode: "PH", CityID: "baguio"},
+	{CountryCode: "PH", CityID: "vigan"},
+	{CountryCode: "PH", CityID: "banaue"},
+	{CountryCode: "PH", CityID: "sagada"},
+	{CountryCode: "PH", CityID: "la-union"},
+	{CountryCode: "PH", CityID: "pagudpud"},
 }
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -200,6 +223,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Тайский бат"
 		}
 		return "Thai baht"
+	case "PHP":
+		if locale == localeRU {
+			return "Филиппинское песо"
+		}
+		return "Philippine peso"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}

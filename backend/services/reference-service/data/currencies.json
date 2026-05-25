@@ -15,6 +15,7 @@
   {"code": "AED", "numeric": "784", "decimals": 2, "symbol": "د.إ", "name": {"en": "UAE Dirham", "ru": "Дирхам ОАЭ", "kk": "БАЭ дирхамы"}},
   {"code": "VND", "numeric": "704", "decimals": 0, "symbol": "₫", "name": {"en": "Vietnamese Dong", "ru": "Вьетнамский донг", "kk": "Вьетнам донгы"}},
   {"code": "THB", "numeric": "764", "decimals": 2, "symbol": "฿", "name": {"en": "Thai Baht", "ru": "Тайский бат", "kk": "Тай баты"}},
+  {"code": "PHP", "numeric": "608", "decimals": 2, "symbol": "₱", "name": {"en": "Philippine Peso", "ru": "Филиппинское песо", "kk": "Филиппин песосы"}},
   {"code": "EGP", "numeric": "818", "decimals": 2, "symbol": "E£", "name": {"en": "Egyptian Pound", "ru": "Египетский фунт", "kk": "Мысыр фунты"}},
   {"code": "CNY", "numeric": "156", "decimals": 2, "symbol": "¥", "name": {"en": "Chinese Yuan", "ru": "Китайский юань", "kk": "Қытай юані"}},
   {"code": "KRW", "numeric": "410", "decimals": 0, "symbol": "₩", "name": {"en": "South Korean Won", "ru": "Южнокорейская вона", "kk": "Оңтүстік Корея воны"}},

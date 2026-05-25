@@ -860,6 +860,120 @@ func TestThailandPriorityAttractionsSeedMigrationCoversTouristClusters(t *testin
 	}
 }
 
+func TestPhilippinesPriorityAttractionsSeedMigrationCoversTouristClusters(t *testing.T) {
+	upSQL := readMigration(t, "022_seed_philippines_priority_attractions.up.sql")
+	downSQL := readMigration(t, "022_seed_philippines_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_philippines_resolved_attractions AS",
+		"'PH'",
+		"source = 'IMPORT'",
+		"md5('ph-attraction:'",
+		"md5('ph-media:'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Philippines up migration must contain %q", fragment)
+		}
+	}
+
+	if strings.Contains(upSQL, "ON COMMIT DROP") {
+		t.Fatalf("Philippines up migration must not use ON COMMIT DROP because psql-based migrator runs statements in autocommit mode")
+	}
+	if !strings.Contains(upSQL, "DROP TABLE IF EXISTS seed_philippines_resolved_attractions") {
+		t.Fatalf("Philippines up migration must explicitly drop the resolved seed temp table after using it")
+	}
+
+	requiredCities := []string{
+		"manila",
+		"makati",
+		"taguig",
+		"tagaytay",
+		"cebu-city",
+		"mactan",
+		"bohol",
+		"puerto-princesa",
+		"el-nido",
+		"coron",
+		"boracay",
+		"iloilo",
+		"bacolod",
+		"davao",
+		"siargao",
+		"cagayan-de-oro",
+		"camiguin",
+		"baguio",
+		"vigan",
+		"banaue",
+		"sagada",
+		"la-union",
+		"pagudpud",
+	}
+	for _, cityID := range requiredCities {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Philippines up migration must seed attractions for city_id %q", cityID)
+		}
+	}
+
+	requiredAttractions := []string{
+		"Intramuros",
+		"SM Mall of Asia",
+		"Sky Ranch Tagaytay",
+		"Magellan''s Cross",
+		"Carbon Market",
+		"Chocolate Hills",
+		"Puerto Princesa Subterranean River National Park",
+		"Big Lagoon",
+		"Kayangan Lake",
+		"White Beach",
+		"D''Talipapa Market",
+		"Iloilo River Esplanade",
+		"The Ruins",
+		"Roxas Night Market",
+		"Cloud 9 Siargao",
+		"Camiguin White Island",
+		"Burnham Park",
+		"Calle Crisologo",
+		"Banaue Rice Terraces",
+		"Sagada Hanging Coffins",
+		"San Juan Surf Beach",
+		"Bangui Windmills",
+	}
+	for _, title := range requiredAttractions {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Philippines up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'TEMPLE'", "'MUSEUM'", "'ENTERTAINMENT'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Philippines up migration must include category %s", category)
+		}
+	}
+
+	for _, slug := range []string{
+		"intramuros",
+		"puerto-princesa-underground-river",
+		"white-beach-boracay",
+		"cloud-9-siargao",
+		"banaue-rice-terraces",
+	} {
+		if !strings.Contains(upSQL, "'"+slug+"'") {
+			t.Fatalf("Philippines up migration must include slug %q", slug)
+		}
+		if !strings.Contains(downSQL, "'"+slug+"'") {
+			t.Fatalf("Philippines down migration must delete slug %q", slug)
+		}
+	}
+	if !strings.Contains(downSQL, "md5('ph-attraction:'") || !strings.Contains(downSQL, "md5('ph-media:'") {
+		t.Fatalf("Philippines down migration must compute deterministic attraction and media ids")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

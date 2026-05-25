@@ -357,6 +357,102 @@ func TestRendererRendersAttractionFormCityLinksScopedToCountry(t *testing.T) {
 	}
 }
 
+func TestRendererRendersPhilippinesAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=PH&city=cebu-city",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Крест Магеллана",
+				CountryCode:   "PH",
+				CityID:        "cebu-city",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "PH",
+			CityID:      "cebu-city",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="PH" selected`,
+		`Филиппины`,
+		`value="cebu-city" data-country="PH" selected`,
+		`Себу`,
+		`Себу, Филиппины`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Philippines attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">PH<") || strings.Contains(listBody, ">cebu-city<") {
+		t.Fatalf("Philippines attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Крест Магеллана",
+		Description:   "Историческая достопримечательность Себу.",
+		CountryCode:   "PH",
+		CityID:        "cebu-city",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "PH", CityID: "cebu-city"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "PH", CityID: "cebu-city"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="PH" selected>Филиппины</option>`,
+		`<option value="cebu-city" data-country="PH" selected>Себу</option>`,
+		`type="checkbox" name="access_cities" value="PH:cebu-city" checked`,
+		`type="checkbox" name="departure_cities" value="PH:cebu-city" checked`,
+		`Себу, Филиппины`,
+		`<option value="PHP" >Филиппинское песо</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Philippines attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

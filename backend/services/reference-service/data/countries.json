@@ -144,6 +144,15 @@
     "capital": {"en": "Bangkok", "ru": "Бангкок", "kk": "Бангкок"}
   },
   {
+    "code": "PH",
+    "code3": "PHL",
+    "numeric": "608",
+    "currencyCode": "PHP",
+    "phoneCode": "+63",
+    "name": {"en": "Philippines", "ru": "Филиппины", "kk": "Филиппин"},
+    "capital": {"en": "Manila", "ru": "Манила", "kk": "Манила"}
+  },
+  {
     "code": "EG",
     "code3": "EGY",
     "numeric": "818",
