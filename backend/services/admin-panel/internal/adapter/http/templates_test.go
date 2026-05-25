@@ -854,6 +854,111 @@ func TestRendererRendersArmeniaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersChinaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=CN&city=xian",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Терракотовая армия",
+				CountryCode:   "CN",
+				CityID:        "xian",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "CN",
+			CityID:      "xian",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="CN" selected`,
+		`Китай`,
+		`value="xian" data-country="CN" selected`,
+		`Сиань`,
+		`Сиань, Китай`,
+		`value="hainan" data-country="CN"`,
+		`Хайнань`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("China attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">CN<") || strings.Contains(listBody, ">xian<") {
+		t.Fatalf("China attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Терракотовая армия",
+		Description:   "Музейный комплекс первого императора Цинь.",
+		CountryCode:   "CN",
+		CityID:        "xian",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "CN", CityID: "beijing"},
+			{CountryCode: "CN", CityID: "xian"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "CN", CityID: "beijing"},
+			{CountryCode: "CN", CityID: "xian"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="CN" selected>Китай</option>`,
+		`<option value="xian" data-country="CN" selected>Сиань</option>`,
+		`<option value="beijing" data-country="CN" >Пекин</option>`,
+		`<option value="haikou" data-country="CN" >Хайкоу</option>`,
+		`type="checkbox" name="access_cities" value="CN:beijing" checked`,
+		`type="checkbox" name="departure_cities" value="CN:xian" checked`,
+		`Сиань, Китай`,
+		`<option value="CNY" >Китайский юань</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("China attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+	if strings.Contains(editBody, `value="hainan" data-country="CN"`) {
+		t.Fatalf("China attraction form must not offer Hainan as a concrete attraction city: %s", editBody)
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

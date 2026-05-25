@@ -580,6 +580,10 @@ func (u *AttractionUseCase) ListAttractions(ctx context.Context, input ListAttra
 		regionID = "bali"
 		cityID = ""
 	}
+	if regionID == "" && countryCode == "CN" && cityID == "hainan" {
+		regionID = "hainan"
+		cityID = ""
+	}
 	accessCityID, err := normalizeOptionalCityID(input.AccessCityID)
 	if err != nil {
 		return nil, 0, err

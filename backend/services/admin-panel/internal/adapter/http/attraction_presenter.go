@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE", "AM"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE", "AM", "CN"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -243,13 +243,47 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "AM", CityID: "khndzoresk"},
 	{CountryCode: "AM", CityID: "kapan"},
 	{CountryCode: "AM", CityID: "meghri"},
+	{CountryCode: "CN", CityID: "beijing"},
+	{CountryCode: "CN", CityID: "shanghai"},
+	{CountryCode: "CN", CityID: "tianjin"},
+	{CountryCode: "CN", CityID: "chengde"},
+	{CountryCode: "CN", CityID: "qinhuangdao"},
+	{CountryCode: "CN", CityID: "datong"},
+	{CountryCode: "CN", CityID: "xinzhou"},
+	{CountryCode: "CN", CityID: "guangzhou"},
+	{CountryCode: "CN", CityID: "shenzhen"},
+	{CountryCode: "CN", CityID: "hangzhou"},
+	{CountryCode: "CN", CityID: "suzhou"},
+	{CountryCode: "CN", CityID: "nanjing"},
+	{CountryCode: "CN", CityID: "xian"},
+	{CountryCode: "CN", CityID: "chengdu"},
+	{CountryCode: "CN", CityID: "chongqing"},
+	{CountryCode: "CN", CityID: "haikou"},
+	{CountryCode: "CN", CityID: "sanya"},
+	{CountryCode: "CN", CityID: "wanning"},
+	{CountryCode: "CN", CityID: "lingshui"},
+	{CountryCode: "CN", CityID: "qionghai"},
+	{CountryCode: "CN", CityID: "danzhou"},
+	{CountryCode: "CN", CityID: "wenchang"},
+	{CountryCode: "CN", CityID: "xiamen"},
+	{CountryCode: "CN", CityID: "qingdao"},
+	{CountryCode: "CN", CityID: "guilin"},
+	{CountryCode: "CN", CityID: "yangshuo"},
+	{CountryCode: "CN", CityID: "zhangjiajie"},
+	{CountryCode: "CN", CityID: "huangshan"},
+	{CountryCode: "CN", CityID: "lijiang"},
+	{CountryCode: "CN", CityID: "dali"},
+	{CountryCode: "CN", CityID: "kunming"},
+	{CountryCode: "CN", CityID: "luoyang"},
+	{CountryCode: "CN", CityID: "dengfeng"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "ID", CityID: "bali"},
+	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -367,6 +401,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Армянский драм"
 		}
 		return "Armenian dram"
+	case "CNY":
+		if locale == localeRU {
+			return "Китайский юань"
+		}
+		return "Chinese yuan"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}

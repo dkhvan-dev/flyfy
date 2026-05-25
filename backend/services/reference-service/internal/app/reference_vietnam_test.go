@@ -445,3 +445,80 @@ func TestReferenceUseCaseIncludesArmeniaCountryCurrencyAndTouristCities(t *testi
 		t.Fatalf("search echmiadzin in Armenia = %#v, want vagharshapat first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesChinaCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("CN")
+	if country == nil {
+		t.Fatal("expected China country reference")
+	}
+	if country.Name.Ru != "Китай" {
+		t.Fatalf("China Russian name = %q, want Китай", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("CN")
+	if currency == nil {
+		t.Fatal("expected Chinese yuan currency by country")
+	}
+	if currency.Code != "CNY" {
+		t.Fatalf("China currency = %q, want CNY", currency.Code)
+	}
+
+	cities := uc.ListCities("CN")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"beijing",
+		"shanghai",
+		"guangzhou",
+		"shenzhen",
+		"hangzhou",
+		"suzhou",
+		"nanjing",
+		"xian",
+		"chengdu",
+		"chongqing",
+		"hainan",
+		"haikou",
+		"sanya",
+		"wanning",
+		"lingshui",
+		"qionghai",
+		"danzhou",
+		"wenchang",
+		"xiamen",
+		"qingdao",
+		"guilin",
+		"yangshuo",
+		"zhangjiajie",
+		"huangshan",
+		"lijiang",
+		"dali",
+		"kunming",
+		"luoyang",
+		"dengfeng",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("China city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("zhangjiajie", "CN", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "zhangjiajie" {
+		t.Fatalf("search zhangjiajie in China = %#v, want zhangjiajie first", searchResults)
+	}
+
+	searchResults = uc.SearchCities("hainan", "CN", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "hainan" {
+		t.Fatalf("search hainan in China = %#v, want hainan first", searchResults)
+	}
+}

@@ -1428,6 +1428,162 @@ func TestArmeniaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.
 	}
 }
 
+func TestChinaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "029_seed_china_priority_attractions.up.sql")
+	downSQL := readMigration(t, "029_seed_china_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_china_resolved_attractions AS",
+		"'CN'",
+		"china-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("China up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"beijing",
+		"shanghai",
+		"hangzhou",
+		"suzhou",
+		"nanjing",
+		"xian",
+		"chengdu",
+		"chongqing",
+		"guangzhou",
+		"shenzhen",
+		"sanya",
+		"xiamen",
+		"qingdao",
+		"guilin",
+		"yangshuo",
+		"zhangjiajie",
+		"huangshan",
+		"lijiang",
+		"dali",
+		"kunming",
+		"luoyang",
+		"dengfeng",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("China up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Forbidden City",
+		"Mutianyu Great Wall",
+		"Summer Palace",
+		"The Bund",
+		"Yu Garden",
+		"West Lake",
+		"Humble Administrator Garden",
+		"Confucius Temple Qinhuai Scenic Area",
+		"Terracotta Army",
+		"Giant Wild Goose Pagoda",
+		"Chengdu Research Base of Giant Panda Breeding",
+		"Kuanzhai Alley",
+		"Hongya Cave",
+		"Canton Tower",
+		"Window of the World",
+		"Yalong Bay",
+		"Gulangyu Island",
+		"Tsingtao Beer Museum",
+		"Li River",
+		"Zhangjiajie National Forest Park",
+		"Yellow Mountain",
+		"Lijiang Old Town",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("China up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("China up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['china', city_id") {
+		t.Fatalf("China up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "china-seed-v1") || !strings.Contains(downSQL, "country_code = 'CN'") {
+		t.Fatalf("China down migration must remove only tagged China seed attractions")
+	}
+}
+
+func TestChinaHainanExtendedAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "030_seed_china_hainan_extended_attractions.up.sql")
+	downSQL := readMigration(t, "030_seed_china_hainan_extended_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_china_hainan_resolved_attractions AS",
+		"'CN'",
+		"china-hainan-seed-v1",
+		"array_append",
+		"array_remove",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL+downSQL, fragment) {
+			t.Fatalf("Hainan migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{"haikou", "sanya", "wanning", "lingshui", "qionghai", "danzhou", "wenchang"} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Hainan up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Haikou Qilou Old Street",
+		"Hainan Museum",
+		"Holiday Beach",
+		"Mission Hills Haikou",
+		"Dadonghai Beach",
+		"Luhuitou Park",
+		"Yalong Bay Tropical Paradise Forest Park",
+		"Riyue Bay",
+		"Shimei Bay",
+		"Xinglong Tropical Botanical Garden",
+		"Boundary Island",
+		"Nanwan Monkey Island",
+		"Hainan Ocean Paradise",
+		"Boao Forum for Asia Permanent Site",
+		"Yudai Beach",
+		"Wenchang Space Launch Site",
+		"Ocean Flower Island",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Hainan up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Hainan up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['china', 'hainan', city_id") {
+		t.Fatalf("Hainan up migration must tag every new attraction with the Hainan region")
+	}
+	if !strings.Contains(downSQL, "china-hainan-seed-v1") || !strings.Contains(downSQL, "country_code = 'CN'") {
+		t.Fatalf("Hainan down migration must remove only tagged Hainan seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

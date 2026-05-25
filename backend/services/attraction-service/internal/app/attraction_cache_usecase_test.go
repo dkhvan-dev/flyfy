@@ -73,6 +73,29 @@ func TestListAttractionsTreatsBaliCityAliasAsIndonesiaRegion(t *testing.T) {
 	}
 }
 
+func TestListAttractionsTreatsHainanCityAliasAsChinaRegion(t *testing.T) {
+	t.Parallel()
+
+	repo := &cacheAttractionRepoStub{
+		listAttractions: []*model.Attraction{testCacheAttraction(uuid.New(), "Hainan attraction")},
+		listTotal:       1,
+	}
+	uc := NewAttractionUseCase(repo, &cacheUserClientStub{})
+
+	_, _, err := uc.ListAttractions(context.Background(), ListAttractionsInput{
+		CountryCode: "CN",
+		CityID:      "hainan",
+		Locale:      "ru",
+	})
+	if err != nil {
+		t.Fatalf("ListAttractions() error = %v", err)
+	}
+
+	if repo.lastListFilter.CountryCode != "CN" || repo.lastListFilter.CityID != "" || repo.lastListFilter.RegionID != "hainan" {
+		t.Fatalf("repository filter = %#v, want country CN, empty city and Hainan region", repo.lastListFilter)
+	}
+}
+
 func TestGetAttractionUsesReadThroughCache(t *testing.T) {
 	t.Parallel()
 
