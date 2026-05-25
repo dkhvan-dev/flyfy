@@ -101,6 +101,7 @@ type AttractionListFilter struct {
 	Category        string
 	CountryCode     string
 	CityID          string
+	RegionID        string
 	AccessCityID    string
 	DepartureCityID string
 	PriceMin        *float64

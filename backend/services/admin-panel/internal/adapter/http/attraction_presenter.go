@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -128,9 +128,41 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "PH", CityID: "sagada"},
 	{CountryCode: "PH", CityID: "la-union"},
 	{CountryCode: "PH", CityID: "pagudpud"},
+	{CountryCode: "ID", CityID: "denpasar"},
+	{CountryCode: "ID", CityID: "kuta"},
+	{CountryCode: "ID", CityID: "legian"},
+	{CountryCode: "ID", CityID: "seminyak"},
+	{CountryCode: "ID", CityID: "canggu"},
+	{CountryCode: "ID", CityID: "sanur"},
+	{CountryCode: "ID", CityID: "nusa-dua"},
+	{CountryCode: "ID", CityID: "jimbaran"},
+	{CountryCode: "ID", CityID: "uluwatu"},
+	{CountryCode: "ID", CityID: "ubud"},
+	{CountryCode: "ID", CityID: "gianyar"},
+	{CountryCode: "ID", CityID: "sukawati"},
+	{CountryCode: "ID", CityID: "tegallalang"},
+	{CountryCode: "ID", CityID: "tampaksiring"},
+	{CountryCode: "ID", CityID: "bedugul"},
+	{CountryCode: "ID", CityID: "tabanan"},
+	{CountryCode: "ID", CityID: "jatiluwih"},
+	{CountryCode: "ID", CityID: "lovina"},
+	{CountryCode: "ID", CityID: "singaraja"},
+	{CountryCode: "ID", CityID: "munduk"},
+	{CountryCode: "ID", CityID: "amed"},
+	{CountryCode: "ID", CityID: "candidasa"},
+	{CountryCode: "ID", CityID: "sidemen"},
+	{CountryCode: "ID", CityID: "karangasem"},
+	{CountryCode: "ID", CityID: "kintamani"},
+	{CountryCode: "ID", CityID: "gilimanuk"},
+	{CountryCode: "ID", CityID: "nusa-penida"},
+	{CountryCode: "ID", CityID: "nusa-lembongan"},
 }
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP"}
+var attractionCityFilterValues = append([]attractionCityReference{
+	{CountryCode: "ID", CityID: "bali"},
+}, attractionCityValues...)
+
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -228,6 +260,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Филиппинское песо"
 		}
 		return "Philippine peso"
+	case "IDR":
+		if locale == localeRU {
+			return "Индонезийская рупия"
+		}
+		return "Indonesian rupiah"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}
@@ -399,10 +436,18 @@ func attractionCountryFilterOptions(selected string) []AttractionOptionView {
 }
 
 func attractionCityOptions(selected string) []AttractionOptionView {
+	return attractionCityOptionsFromReferences(attractionCityValues, selected)
+}
+
+func attractionCityFilterOptions(selected string) []AttractionOptionView {
+	return attractionCityOptionsFromReferences(attractionCityFilterValues, selected)
+}
+
+func attractionCityOptionsFromReferences(values []attractionCityReference, selected string) []AttractionOptionView {
 	selected = strings.ToLower(strings.TrimSpace(selected))
-	seen := make(map[string]bool, len(attractionCityValues)+1)
-	out := make([]AttractionOptionView, 0, len(attractionCityValues)+1)
-	for _, item := range attractionCityValues {
+	seen := make(map[string]bool, len(values)+1)
+	out := make([]AttractionOptionView, 0, len(values)+1)
+	for _, item := range values {
 		country := strings.ToUpper(strings.TrimSpace(item.CountryCode))
 		cityID := strings.ToLower(strings.TrimSpace(item.CityID))
 		if country == "" || cityID == "" || seen[country+":"+cityID] {

@@ -271,7 +271,7 @@ func NewAttractionListViewData(items []model.AdminAttraction, total int, filters
 		Filters:    filters,
 		Pagination: attractionPagination(total, filters),
 		Countries:  attractionCountryFilterOptions(filters.CountryCode),
-		Cities:     attractionCityOptions(filters.CityID),
+		Cities:     attractionCityFilterOptions(filters.CityID),
 	}
 }
 

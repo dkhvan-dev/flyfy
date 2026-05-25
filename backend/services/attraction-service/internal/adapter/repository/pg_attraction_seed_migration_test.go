@@ -974,6 +974,210 @@ func TestPhilippinesPriorityAttractionsSeedMigrationCoversTouristClusters(t *tes
 	}
 }
 
+func TestIndonesiaPriorityAttractionsSeedMigrationCoversTouristClusters(t *testing.T) {
+	upSQL := readMigration(t, "023_seed_indonesia_priority_attractions.up.sql")
+	downSQL := readMigration(t, "023_seed_indonesia_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_indonesia_resolved_attractions AS",
+		"'ID'",
+		"source = 'IMPORT'",
+		"md5('id-bali-attraction:'",
+		"md5('id-bali-media:'",
+		"indonesia-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Indonesia up migration must contain %q", fragment)
+		}
+	}
+
+	if strings.Contains(upSQL, "ON COMMIT DROP") {
+		t.Fatalf("Indonesia up migration must not use ON COMMIT DROP because psql-based migrator runs statements in autocommit mode")
+	}
+	if !strings.Contains(upSQL, "DROP TABLE IF EXISTS seed_indonesia_resolved_attractions") {
+		t.Fatalf("Indonesia up migration must explicitly drop the resolved seed temp table after using it")
+	}
+
+	requiredCities := []string{
+		"denpasar",
+		"kuta",
+		"legian",
+		"seminyak",
+		"canggu",
+		"sanur",
+		"nusa-dua",
+		"jimbaran",
+		"uluwatu",
+		"ubud",
+		"gianyar",
+		"sukawati",
+		"tegallalang",
+		"tampaksiring",
+		"bedugul",
+		"tabanan",
+		"jatiluwih",
+		"lovina",
+		"singaraja",
+		"munduk",
+		"amed",
+		"candidasa",
+		"sidemen",
+		"karangasem",
+		"kintamani",
+		"gilimanuk",
+		"nusa-penida",
+		"nusa-lembongan",
+	}
+	for _, cityID := range requiredCities {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Indonesia up migration must seed attractions for city_id %q", cityID)
+		}
+	}
+
+	requiredAttractions := []string{
+		"Bajra Sandhi Monument",
+		"Waterbom Bali",
+		"Beachwalk Shopping Center",
+		"Kuta Art Market",
+		"Seminyak Beach",
+		"Love Anchor Market",
+		"Sindhu Night Market",
+		"Museum Pasifika",
+		"Jimbaran Bay Seafood Sunset",
+		"Uluwatu Temple",
+		"Garuda Wisnu Kencana Cultural Park",
+		"Sacred Monkey Forest Sanctuary",
+		"Ubud Art Market",
+		"Tegenungan Waterfall",
+		"Bali Safari and Marine Park",
+		"Tegalalang Rice Terrace",
+		"Tirta Empul Temple",
+		"Ulun Danu Beratan Temple",
+		"Tanah Lot",
+		"Jatiluwih Rice Terraces",
+		"Sekumpul Waterfall",
+		"West Bali National Park",
+		"Tirta Gangga Water Palace",
+		"Besakih Temple",
+		"Mount Batur",
+		"Kelingking Beach",
+		"Devil''s Tears",
+	}
+	for _, title := range requiredAttractions {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Indonesia up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'TEMPLE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Indonesia up migration must include category %s", category)
+		}
+	}
+
+	for _, slug := range []string{
+		"bajra-sandhi-monument",
+		"kuta-beach",
+		"sacred-monkey-forest-ubud",
+		"tanah-lot",
+		"mount-batur",
+		"kelingking-beach",
+		"devils-tears",
+	} {
+		if !strings.Contains(upSQL, "'"+slug+"'") {
+			t.Fatalf("Indonesia up migration must include slug %q", slug)
+		}
+	}
+	if !strings.Contains(downSQL, "indonesia-seed-v1") || !strings.Contains(downSQL, "country_code = 'ID'") {
+		t.Fatalf("Indonesia down migration must remove only tagged Indonesia seed attractions")
+	}
+}
+
+func TestIndonesiaBaliExtendedAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "025_seed_indonesia_bali_extended_attractions.up.sql")
+	downSQL := readMigration(t, "025_seed_indonesia_bali_extended_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_indonesia_bali_extended_resolved AS",
+		"'ID'",
+		"indonesia-bali-extended-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("extended Bali up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"denpasar",
+		"kuta",
+		"legian",
+		"seminyak",
+		"canggu",
+		"sanur",
+		"nusa-dua",
+		"jimbaran",
+		"uluwatu",
+		"ubud",
+		"gianyar",
+		"sukawati",
+		"tegallalang",
+		"bedugul",
+		"tabanan",
+		"lovina",
+		"singaraja",
+		"munduk",
+		"amed",
+		"karangasem",
+		"kintamani",
+		"nusa-penida",
+		"nusa-lembongan",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("extended Bali up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Discovery Shopping Mall",
+		"Berawa Beach",
+		"Petitenget Beach",
+		"Puja Mandala",
+		"Batuan Temple",
+		"Tibumana Waterfall",
+		"The Blooms Garden Bali",
+		"Lovina Dolphin Statue",
+		"Tukad Cepung Waterfall",
+		"Atuh Beach",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("extended Bali up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'TEMPLE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("extended Bali up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['indonesia', 'bali', city_id") {
+		t.Fatalf("extended Bali up migration must tag every attraction with the Bali region")
+	}
+	if !strings.Contains(downSQL, "indonesia-bali-extended-seed-v1") || !strings.Contains(downSQL, "country_code = 'ID'") {
+		t.Fatalf("extended Bali down migration must remove only tagged Indonesia Bali seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

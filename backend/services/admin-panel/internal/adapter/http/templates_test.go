@@ -453,6 +453,112 @@ func TestRendererRendersPhilippinesAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersIndonesiaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=ID&city=ubud",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Священный лес обезьян Убуда",
+				CountryCode:   "ID",
+				CityID:        "ubud",
+				Category:      "PARK",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "ID",
+			CityID:      "ubud",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="ID" selected`,
+		`Индонезия`,
+		`value="ubud" data-country="ID" selected`,
+		`Убуд`,
+		`Убуд, Индонезия`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Indonesia attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">ID<") || strings.Contains(listBody, ">ubud<") {
+		t.Fatalf("Indonesia attraction list still renders raw codes: %s", listBody)
+	}
+	if !strings.Contains(listBody, `value="bali" data-country="ID"`) {
+		t.Fatalf("Indonesia attraction list should render Bali as a regional filter option: %s", listBody)
+	}
+	if strings.Contains(listBody, `value="jakarta" data-country="ID"`) {
+		t.Fatalf("Indonesia attraction list should not render empty Jakarta city filter: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Священный лес обезьян Убуда",
+		Description:   "Лесной заповедник с макаками и храмами.",
+		CountryCode:   "ID",
+		CityID:        "ubud",
+		Category:      "PARK",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "ID", CityID: "ubud"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "ID", CityID: "ubud"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="ID" selected>Индонезия</option>`,
+		`<option value="ubud" data-country="ID" selected>Убуд</option>`,
+		`<option value="gianyar" data-country="ID" >Гианьяр</option>`,
+		`type="checkbox" name="access_cities" value="ID:ubud" checked`,
+		`type="checkbox" name="departure_cities" value="ID:ubud" checked`,
+		`Убуд, Индонезия`,
+		`<option value="IDR" >Индонезийская рупия</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Indonesia attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+	if strings.Contains(editBody, `value="bali" data-country="ID"`) {
+		t.Fatalf("Indonesia attraction form must not offer Bali as a concrete attraction city: %s", editBody)
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

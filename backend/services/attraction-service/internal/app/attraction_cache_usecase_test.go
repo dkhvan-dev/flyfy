@@ -50,6 +50,29 @@ func TestListAttractionsUsesReadThroughCache(t *testing.T) {
 	}
 }
 
+func TestListAttractionsTreatsBaliCityAliasAsIndonesiaRegion(t *testing.T) {
+	t.Parallel()
+
+	repo := &cacheAttractionRepoStub{
+		listAttractions: []*model.Attraction{testCacheAttraction(uuid.New(), "Bali attraction")},
+		listTotal:       1,
+	}
+	uc := NewAttractionUseCase(repo, &cacheUserClientStub{})
+
+	_, _, err := uc.ListAttractions(context.Background(), ListAttractionsInput{
+		CountryCode: "ID",
+		CityID:      "bali",
+		Locale:      "ru",
+	})
+	if err != nil {
+		t.Fatalf("ListAttractions() error = %v", err)
+	}
+
+	if repo.lastListFilter.CountryCode != "ID" || repo.lastListFilter.CityID != "" || repo.lastListFilter.RegionID != "bali" {
+		t.Fatalf("repository filter = %#v, want country ID, empty city and Bali region", repo.lastListFilter)
+	}
+}
+
 func TestGetAttractionUsesReadThroughCache(t *testing.T) {
 	t.Parallel()
 
@@ -242,6 +265,7 @@ type cacheAttractionRepoStub struct {
 	attractionsByID map[uuid.UUID]*model.Attraction
 	listAttractions []*model.Attraction
 	listTotal       int
+	lastListFilter  model.AttractionListFilter
 	getCalls        int
 	listCalls       int
 }
@@ -288,8 +312,9 @@ func (r *cacheAttractionRepoStub) GetAttractionByID(_ context.Context, id uuid.U
 	return copied, nil
 }
 
-func (r *cacheAttractionRepoStub) ListAttractions(_ context.Context, _ model.AttractionListFilter) ([]*model.Attraction, int, error) {
+func (r *cacheAttractionRepoStub) ListAttractions(_ context.Context, filter model.AttractionListFilter) ([]*model.Attraction, int, error) {
 	r.listCalls++
+	r.lastListFilter = filter
 	return cloneCacheAttractions(r.listAttractions), r.listTotal, nil
 }
 

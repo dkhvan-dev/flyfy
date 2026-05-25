@@ -116,6 +116,7 @@ type ListAttractionsInput struct {
 	Category        string
 	CountryCode     string
 	CityID          string
+	RegionID        string
 	AccessCityID    string
 	DepartureCityID string
 	PriceMin        *float64
@@ -571,6 +572,14 @@ func (u *AttractionUseCase) ListAttractions(ctx context.Context, input ListAttra
 	if err != nil {
 		return nil, 0, err
 	}
+	regionID, err := normalizeOptionalCityID(input.RegionID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if regionID == "" && countryCode == "ID" && cityID == "bali" {
+		regionID = "bali"
+		cityID = ""
+	}
 	accessCityID, err := normalizeOptionalCityID(input.AccessCityID)
 	if err != nil {
 		return nil, 0, err
@@ -592,6 +601,7 @@ func (u *AttractionUseCase) ListAttractions(ctx context.Context, input ListAttra
 		Category:        strings.ToUpper(strings.TrimSpace(input.Category)),
 		CountryCode:     countryCode,
 		CityID:          cityID,
+		RegionID:        regionID,
 		AccessCityID:    accessCityID,
 		DepartureCityID: departureCityID,
 		PriceMin:        input.PriceMin,
@@ -915,6 +925,7 @@ type attractionListCacheKeyPayload struct {
 	Category        string   `json:"category,omitempty"`
 	CountryCode     string   `json:"countryCode,omitempty"`
 	CityID          string   `json:"cityId,omitempty"`
+	RegionID        string   `json:"regionId,omitempty"`
 	AccessCityID    string   `json:"accessCityId,omitempty"`
 	DepartureCityID string   `json:"departureCityId,omitempty"`
 	PriceMin        *float64 `json:"priceMin,omitempty"`
@@ -963,6 +974,7 @@ func (u *AttractionUseCase) attractionListCacheKey(ctx context.Context, filter m
 		Category:        filter.Category,
 		CountryCode:     filter.CountryCode,
 		CityID:          filter.CityID,
+		RegionID:        filter.RegionID,
 		AccessCityID:    filter.AccessCityID,
 		DepartureCityID: filter.DepartureCityID,
 		PriceMin:        filter.PriceMin,

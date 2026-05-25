@@ -187,6 +187,20 @@ func TestAttractionListQueryIgnoresCityWithoutCountry(t *testing.T) {
 	}
 }
 
+func TestAttractionListQueryPreservesIndonesiaBaliRegionalFilter(t *testing.T) {
+	t.Parallel()
+
+	values := url.Values{}
+	values.Set("country", "ID")
+	values.Set("city", "bali")
+
+	got := attractionListQuery(values)
+
+	if got.CountryCode != "ID" || got.CityID != "bali" || got.Query != "city=bali&country=ID" {
+		t.Fatalf("filters = %#v, want Bali regional filter preserved for Indonesia", got)
+	}
+}
+
 func TestAttractionListQueryDefaultsInvalidPage(t *testing.T) {
 	t.Parallel()
 

@@ -353,6 +353,10 @@ func (r *PGAttractionRepository) ListAttractions(ctx context.Context, filter mod
 		args = append(args, filter.CityID)
 		clauses = append(clauses, fmt.Sprintf("a.city_id = $%d", len(args)))
 	}
+	if filter.RegionID != "" {
+		args = append(args, strings.ToLower(strings.TrimSpace(filter.RegionID)))
+		clauses = append(clauses, fmt.Sprintf("a.tags @> ARRAY[$%d]::text[]", len(args)))
+	}
 	if filter.AccessCityID != "" {
 		args = append(args, filter.AccessCityID)
 		clauses = append(clauses, fmt.Sprintf(`EXISTS (

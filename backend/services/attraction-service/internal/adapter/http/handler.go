@@ -307,6 +307,7 @@ func (h *Handler) ListAttractions(w http.ResponseWriter, r *http.Request) {
 		Category:        query.Get("category"),
 		CountryCode:     query.Get("countryCode"),
 		CityID:          query.Get("cityId"),
+		RegionID:        firstNonEmpty(query.Get("regionId"), query.Get("destinationId")),
 		AccessCityID:    query.Get("accessCityId"),
 		DepartureCityID: query.Get("departureCityId"),
 		PriceMin:        priceMin,
@@ -920,6 +921,15 @@ func decodeBody(r *http.Request, target any) error {
 
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

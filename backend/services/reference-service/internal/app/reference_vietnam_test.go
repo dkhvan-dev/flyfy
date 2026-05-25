@@ -188,3 +188,71 @@ func TestReferenceUseCaseIncludesPhilippinesCountryCurrencyAndTouristCities(t *t
 		t.Fatalf("search puerto princesa in Philippines = %#v, want puerto-princesa first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesIndonesiaCountryCurrencyAndTouristHubs(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("ID")
+	if country == nil {
+		t.Fatal("expected Indonesia country reference")
+	}
+	if country.Name.Ru != "Индонезия" {
+		t.Fatalf("Indonesia Russian name = %q, want Индонезия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("ID")
+	if currency == nil {
+		t.Fatal("expected Indonesian rupiah currency by country")
+	}
+	if currency.Code != "IDR" {
+		t.Fatalf("Indonesia currency = %q, want IDR", currency.Code)
+	}
+
+	cities := uc.ListCities("ID")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"bali",
+		"denpasar",
+		"kuta",
+		"seminyak",
+		"canggu",
+		"sanur",
+		"nusa-dua",
+		"jimbaran",
+		"uluwatu",
+		"ubud",
+		"gianyar",
+		"tegallalang",
+		"tampaksiring",
+		"bedugul",
+		"tabanan",
+		"lovina",
+		"singaraja",
+		"munduk",
+		"amed",
+		"candidasa",
+		"sidemen",
+		"karangasem",
+		"kintamani",
+		"nusa-penida",
+		"nusa-lembongan",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Indonesia city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("nusa penida", "ID", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "nusa-penida" {
+		t.Fatalf("search nusa penida in Indonesia = %#v, want nusa-penida first", searchResults)
+	}
+}
