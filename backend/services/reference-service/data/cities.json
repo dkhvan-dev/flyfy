@@ -69,9 +69,18 @@
   {"id": "sharjah", "countryCode": "AE", "name": {"en": "Sharjah", "ru": "Шарджа", "kk": "Шарджа"}, "population": 1400000},
 
   {"id": "bangkok", "countryCode": "TH", "name": {"en": "Bangkok", "ru": "Бангкок", "kk": "Бангкок"}, "population": 10700000},
+  {"id": "ayutthaya", "countryCode": "TH", "name": {"en": "Ayutthaya", "ru": "Аюттхая", "kk": "Аюттхая"}, "population": 53000},
   {"id": "phuket", "countryCode": "TH", "name": {"en": "Phuket", "ru": "Пхукет", "kk": "Пхукет"}, "population": 416000},
   {"id": "pattaya", "countryCode": "TH", "name": {"en": "Pattaya", "ru": "Паттайя", "kk": "Паттайя"}, "population": 120000},
   {"id": "chiang-mai", "countryCode": "TH", "name": {"en": "Chiang Mai", "ru": "Чиангмай", "kk": "Чиангмай"}, "population": 127000},
+  {"id": "chiang-rai", "countryCode": "TH", "name": {"en": "Chiang Rai", "ru": "Чианграй", "kk": "Чианграй"}, "population": 70000},
+  {"id": "pai", "countryCode": "TH", "name": {"en": "Pai", "ru": "Пай", "kk": "Пай"}, "population": 3000},
+  {"id": "krabi", "countryCode": "TH", "name": {"en": "Krabi", "ru": "Краби", "kk": "Краби"}, "population": 33000},
+  {"id": "phang-nga", "countryCode": "TH", "name": {"en": "Phang Nga", "ru": "Пхангнга", "kk": "Пхангнга"}, "population": 10000},
+  {"id": "koh-samui", "countryCode": "TH", "name": {"en": "Koh Samui", "ru": "Самуи", "kk": "Самуи"}, "population": 68000},
+  {"id": "koh-phangan", "countryCode": "TH", "name": {"en": "Koh Phangan", "ru": "Панган", "kk": "Панган"}, "population": 12000},
+  {"id": "koh-tao", "countryCode": "TH", "name": {"en": "Koh Tao", "ru": "Ко Тао", "kk": "Ко Тао"}, "population": 1500},
+  {"id": "hua-hin", "countryCode": "TH", "name": {"en": "Hua Hin", "ru": "Хуахин", "kk": "Хуахин"}, "population": 85000},
 
   {"id": "ho-chi-minh-city", "countryCode": "VN", "name": {"en": "Ho Chi Minh City", "ru": "Хошимин", "kk": "Хошимин"}, "population": 9400000},
   {"id": "hanoi", "countryCode": "VN", "name": {"en": "Hanoi", "ru": "Ханой", "kk": "Ханой"}, "population": 8500000},

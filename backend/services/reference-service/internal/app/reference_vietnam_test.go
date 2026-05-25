@@ -66,3 +66,59 @@ func TestReferenceUseCaseIncludesVietnamCountryCurrencyAndTouristCities(t *testi
 		t.Fatalf("search phan thiet in Vietnam = %#v, want phan-thiet first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("TH")
+	if country == nil {
+		t.Fatal("expected Thailand country reference")
+	}
+	if country.Name.Ru != "Таиланд" {
+		t.Fatalf("Thailand Russian name = %q, want Таиланд", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("TH")
+	if currency == nil {
+		t.Fatal("expected Thai baht currency by country")
+	}
+	if currency.Code != "THB" {
+		t.Fatalf("Thailand currency = %q, want THB", currency.Code)
+	}
+
+	cities := uc.ListCities("TH")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"bangkok",
+		"ayutthaya",
+		"pattaya",
+		"phuket",
+		"krabi",
+		"phang-nga",
+		"chiang-mai",
+		"chiang-rai",
+		"pai",
+		"koh-samui",
+		"koh-phangan",
+		"koh-tao",
+		"hua-hin",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Thailand city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("koh samui", "TH", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "koh-samui" {
+		t.Fatalf("search koh samui in Thailand = %#v, want koh-samui first", searchResults)
+	}
+}

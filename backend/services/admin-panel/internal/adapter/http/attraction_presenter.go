@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -92,9 +92,22 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "VN", CityID: "cat-ba"},
 	{CountryCode: "VN", CityID: "ha-giang"},
 	{CountryCode: "VN", CityID: "phong-nha"},
+	{CountryCode: "TH", CityID: "bangkok"},
+	{CountryCode: "TH", CityID: "ayutthaya"},
+	{CountryCode: "TH", CityID: "pattaya"},
+	{CountryCode: "TH", CityID: "phuket"},
+	{CountryCode: "TH", CityID: "krabi"},
+	{CountryCode: "TH", CityID: "phang-nga"},
+	{CountryCode: "TH", CityID: "chiang-mai"},
+	{CountryCode: "TH", CityID: "chiang-rai"},
+	{CountryCode: "TH", CityID: "pai"},
+	{CountryCode: "TH", CityID: "koh-samui"},
+	{CountryCode: "TH", CityID: "koh-phangan"},
+	{CountryCode: "TH", CityID: "koh-tao"},
+	{CountryCode: "TH", CityID: "hua-hin"},
 }
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -182,6 +195,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Вьетнамский донг"
 		}
 		return "Vietnamese dong"
+	case "THB":
+		if locale == localeRU {
+			return "Тайский бат"
+		}
+		return "Thai baht"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}

@@ -270,6 +270,41 @@ func TestAttractionReferenceOptionsIncludeVietnamCitiesAndCurrency(t *testing.T)
 	}
 }
 
+func TestAttractionReferenceOptionsIncludeThailandCitiesAndCurrency(t *testing.T) {
+	t.Parallel()
+
+	countries := attractionCountryOptions("TH")
+	var foundThailand bool
+	for _, option := range countries {
+		if option.Value == "TH" && option.Selected {
+			foundThailand = true
+			break
+		}
+	}
+	if !foundThailand {
+		t.Fatalf("country options = %#v, want selected TH option", countries)
+	}
+
+	cities := attractionCityOptions("koh-samui")
+	var foundKohSamui bool
+	for _, option := range cities {
+		if option.Value == "koh-samui" && option.CountryCode == "TH" && option.Selected {
+			foundKohSamui = true
+			break
+		}
+	}
+	if !foundKohSamui {
+		t.Fatalf("city options = %#v, want selected TH Koh Samui option", cities)
+	}
+
+	if got := attractionCityText(localeRU, "TH", "phang-nga"); got != "Пхангнга, Таиланд" {
+		t.Fatalf("city text = %q, want localized Phang Nga city", got)
+	}
+	if got := attractionCurrencyText(localeRU, "THB"); got != "Тайский бат" {
+		t.Fatalf("currency text = %q, want localized Thai baht", got)
+	}
+}
+
 func TestAttractionCategoryOptionsIncludeMarket(t *testing.T) {
 	t.Parallel()
 
