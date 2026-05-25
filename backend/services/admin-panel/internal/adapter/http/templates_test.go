@@ -559,6 +559,103 @@ func TestRendererRendersIndonesiaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersMaldivesAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=MV&city=maafushi",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Bikini Beach Маафуши",
+				CountryCode:   "MV",
+				CityID:        "maafushi",
+				Category:      "BEACH",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "MV",
+			CityID:      "maafushi",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="MV" selected`,
+		`Мальдивы`,
+		`value="maafushi" data-country="MV" selected`,
+		`Маафуши`,
+		`Маафуши, Мальдивы`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Maldives attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">MV<") || strings.Contains(listBody, ">maafushi<") {
+		t.Fatalf("Maldives attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Bikini Beach Маафуши",
+		Description:   "Главная туристическая пляжная зона Маафуши.",
+		CountryCode:   "MV",
+		CityID:        "maafushi",
+		Category:      "BEACH",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "MV", CityID: "maafushi"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "MV", CityID: "maafushi"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="MV" selected>Мальдивы</option>`,
+		`<option value="maafushi" data-country="MV" selected>Маафуши</option>`,
+		`<option value="hulhumale" data-country="MV" >Хулхумале</option>`,
+		`type="checkbox" name="access_cities" value="MV:maafushi" checked`,
+		`type="checkbox" name="departure_cities" value="MV:maafushi" checked`,
+		`Маафуши, Мальдивы`,
+		`<option value="MVR" >Мальдивская руфия</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Maldives attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

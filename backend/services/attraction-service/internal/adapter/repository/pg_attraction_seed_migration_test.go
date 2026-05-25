@@ -1178,6 +1178,87 @@ func TestIndonesiaBaliExtendedAttractionsSeedMigrationCoversTouristBreadth(t *te
 	}
 }
 
+func TestMaldivesPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "026_seed_maldives_priority_attractions.up.sql")
+	downSQL := readMigration(t, "026_seed_maldives_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_maldives_resolved_attractions AS",
+		"'MV'",
+		"maldives-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Maldives up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"male",
+		"hulhumale",
+		"villingili",
+		"maafushi",
+		"gulhi",
+		"guraidhoo",
+		"dhiffushi",
+		"thulusdhoo",
+		"himmafushi",
+		"huraa",
+		"fulidhoo",
+		"vaadhoo",
+		"rasdhoo",
+		"ukulhas",
+		"dhigurah",
+		"maamigili",
+		"dharavandhoo",
+		"baa-atoll",
+		"addu-city",
+		"fuvahmulah",
+		"gan",
+		"utheemu",
+		"isdhoo",
+		"lhaviyani-atoll",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Maldives up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"National Museum of Maldives",
+		"Male Fish Market",
+		"Hulhumale Beach",
+		"Maafushi Bikini Beach",
+		"Thulusdhoo Cokes Surf Break",
+		"Hanifaru Bay",
+		"Addu Nature Park",
+		"Fuvahmulah Tiger Shark Point",
+		"Vaadhoo Sea of Stars",
+		"Utheemu Ganduvaru",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Maldives up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Maldives up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['maldives', city_id") {
+		t.Fatalf("Maldives up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "maldives-seed-v1") || !strings.Contains(downSQL, "country_code = 'MV'") {
+		t.Fatalf("Maldives down migration must remove only tagged Maldives seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

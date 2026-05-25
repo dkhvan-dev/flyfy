@@ -256,3 +256,70 @@ func TestReferenceUseCaseIncludesIndonesiaCountryCurrencyAndTouristHubs(t *testi
 		t.Fatalf("search nusa penida in Indonesia = %#v, want nusa-penida first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesMaldivesCountryCurrencyAndTouristIslands(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("MV")
+	if country == nil {
+		t.Fatal("expected Maldives country reference")
+	}
+	if country.Name.Ru != "Мальдивы" {
+		t.Fatalf("Maldives Russian name = %q, want Мальдивы", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("MV")
+	if currency == nil {
+		t.Fatal("expected Maldivian rufiyaa currency by country")
+	}
+	if currency.Code != "MVR" {
+		t.Fatalf("Maldives currency = %q, want MVR", currency.Code)
+	}
+
+	cities := uc.ListCities("MV")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"male",
+		"hulhumale",
+		"villingili",
+		"maafushi",
+		"gulhi",
+		"guraidhoo",
+		"dhiffushi",
+		"thulusdhoo",
+		"himmafushi",
+		"huraa",
+		"fulidhoo",
+		"vaadhoo",
+		"rasdhoo",
+		"ukulhas",
+		"dhigurah",
+		"maamigili",
+		"dharavandhoo",
+		"baa-atoll",
+		"addu-city",
+		"fuvahmulah",
+		"gan",
+		"utheemu",
+		"isdhoo",
+		"lhaviyani-atoll",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Maldives city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("maafushi", "MV", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "maafushi" {
+		t.Fatalf("search maafushi in Maldives = %#v, want maafushi first", searchResults)
+	}
+}

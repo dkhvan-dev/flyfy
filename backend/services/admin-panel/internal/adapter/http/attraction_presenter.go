@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -156,13 +156,37 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "ID", CityID: "gilimanuk"},
 	{CountryCode: "ID", CityID: "nusa-penida"},
 	{CountryCode: "ID", CityID: "nusa-lembongan"},
+	{CountryCode: "MV", CityID: "male"},
+	{CountryCode: "MV", CityID: "hulhumale"},
+	{CountryCode: "MV", CityID: "villingili"},
+	{CountryCode: "MV", CityID: "maafushi"},
+	{CountryCode: "MV", CityID: "gulhi"},
+	{CountryCode: "MV", CityID: "guraidhoo"},
+	{CountryCode: "MV", CityID: "dhiffushi"},
+	{CountryCode: "MV", CityID: "thulusdhoo"},
+	{CountryCode: "MV", CityID: "himmafushi"},
+	{CountryCode: "MV", CityID: "huraa"},
+	{CountryCode: "MV", CityID: "fulidhoo"},
+	{CountryCode: "MV", CityID: "vaadhoo"},
+	{CountryCode: "MV", CityID: "rasdhoo"},
+	{CountryCode: "MV", CityID: "ukulhas"},
+	{CountryCode: "MV", CityID: "dhigurah"},
+	{CountryCode: "MV", CityID: "maamigili"},
+	{CountryCode: "MV", CityID: "dharavandhoo"},
+	{CountryCode: "MV", CityID: "baa-atoll"},
+	{CountryCode: "MV", CityID: "addu-city"},
+	{CountryCode: "MV", CityID: "fuvahmulah"},
+	{CountryCode: "MV", CityID: "gan"},
+	{CountryCode: "MV", CityID: "utheemu"},
+	{CountryCode: "MV", CityID: "isdhoo"},
+	{CountryCode: "MV", CityID: "lhaviyani-atoll"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "ID", CityID: "bali"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -265,6 +289,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Индонезийская рупия"
 		}
 		return "Indonesian rupiah"
+	case "MVR":
+		if locale == localeRU {
+			return "Мальдивская руфия"
+		}
+		return "Maldivian rufiyaa"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}

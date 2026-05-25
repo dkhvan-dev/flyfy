@@ -319,6 +319,41 @@ func TestAttractionReferenceOptionsIncludeThailandCitiesAndCurrency(t *testing.T
 	}
 }
 
+func TestAttractionReferenceOptionsIncludeMaldivesCitiesAndCurrency(t *testing.T) {
+	t.Parallel()
+
+	countries := attractionCountryOptions("MV")
+	var foundMaldives bool
+	for _, option := range countries {
+		if option.Value == "MV" && option.Selected {
+			foundMaldives = true
+			break
+		}
+	}
+	if !foundMaldives {
+		t.Fatalf("country options = %#v, want selected MV option", countries)
+	}
+
+	cities := attractionCityOptions("maafushi")
+	var foundMaafushi bool
+	for _, option := range cities {
+		if option.Value == "maafushi" && option.CountryCode == "MV" && option.Selected {
+			foundMaafushi = true
+			break
+		}
+	}
+	if !foundMaafushi {
+		t.Fatalf("city options = %#v, want selected MV Maafushi option", cities)
+	}
+
+	if got := attractionCityText(localeRU, "MV", "hulhumale"); got != "Хулхумале, Мальдивы" {
+		t.Fatalf("city text = %q, want localized Hulhumale city", got)
+	}
+	if got := attractionCurrencyText(localeRU, "MVR"); got != "Мальдивская руфия" {
+		t.Fatalf("currency text = %q, want localized Maldivian rufiyaa", got)
+	}
+}
+
 func TestAttractionCategoryOptionsIncludeMarket(t *testing.T) {
 	t.Parallel()
 
