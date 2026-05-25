@@ -113,6 +113,24 @@ func NewRenderer() (*Renderer, error) {
 			return activityCategoryText(fmt.Sprint(locale), item)
 		},
 		"activityModerationTriggeredAt": activityModerationTriggeredAt,
+		"chatMessagePreview": func(locale any, item *model.ChatMessageModerationItem) string {
+			return chatMessagePreviewText(fmt.Sprint(locale), item)
+		},
+		"chatMessageSender": chatMessageSenderText,
+		"chatMessageConversation": func(locale any, item *model.ChatMessageModerationItem) string {
+			return chatMessageConversationText(fmt.Sprint(locale), item)
+		},
+		"chatMessageSignals": func(locale any, item *model.ChatMessageModerationItem) string {
+			return chatMessageSignalsText(fmt.Sprint(locale), item)
+		},
+		"chatMessageDecisionLocked": chatMessageDecisionLocked,
+		"chatMessageType": func(locale any, value string) string {
+			return chatMessageTypeText(fmt.Sprint(locale), value)
+		},
+		"chatContextSender": chatContextSenderText,
+		"chatContextContent": func(locale any, item model.ChatMessageContextItem) string {
+			return chatContextContentText(fmt.Sprint(locale), item)
+		},
 		"guideApplicationPrimary": func(item *model.GuideApplicationModerationItem) string {
 			return guideApplicationPrimaryText(item)
 		},
@@ -170,9 +188,9 @@ func NewRenderer() (*Renderer, error) {
 				return "badge badge-warn"
 			case "IN_REVIEW", "UNDER_REVIEW", "ESCALATED", "DRAFT":
 				return "badge badge-info"
-			case "APPROVED", "PUBLISHED", "ACTIVE", "ENROLLMENT_OPEN":
+			case "APPROVED", "PUBLISHED", "ACTIVE", "ENROLLMENT_OPEN", "CLEARED":
 				return "badge badge-success"
-			case "REJECTED", "REVOKED", "DISABLED", "LOCKED":
+			case "REJECTED", "REVOKED", "DISABLED", "LOCKED", "HIDDEN_BY_MODERATION":
 				return "badge badge-danger"
 			case "SUPERSEDED":
 				return "badge"

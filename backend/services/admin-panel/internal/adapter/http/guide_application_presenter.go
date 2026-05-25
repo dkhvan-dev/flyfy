@@ -340,6 +340,8 @@ func moderationReasonCodeOptions(locale string) []moderationReasonOption {
 		"document_or_identity_issue",
 		"spam_or_abuse",
 		"off_platform_contact",
+		"phone_number",
+		"external_link",
 		"quality_standards",
 	}
 	out := make([]moderationReasonOption, 0, len(codes))

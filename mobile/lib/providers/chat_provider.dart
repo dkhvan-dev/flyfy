@@ -437,11 +437,16 @@ class ChatProvider extends ChangeNotifier {
       final deletedAt = DateTime.tryParse(
         event.payload['deletedAt'] as String? ?? '',
       );
+      final moderationStatus = event.payload['moderationStatus']?.toString();
+      final moderationPublicComment =
+          event.payload['moderationPublicComment']?.toString();
       _messages = _messages
           .map(
             (message) => message.id == messageId
                 ? message.copyWith(
                     deletedAt: deletedAt ?? DateTime.now().toUtc(),
+                    moderationStatus: moderationStatus,
+                    moderationPublicComment: moderationPublicComment,
                   )
                 : message,
           )

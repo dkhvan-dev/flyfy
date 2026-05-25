@@ -32,6 +32,11 @@ type MessageFilter struct {
 	Direction      string // "older" or "newer"
 }
 
+type ChatModerationFilter struct {
+	Limit  int
+	Offset int
+}
+
 type ChatTxRepository interface {
 	CreateConversation(ctx context.Context, conv *model.Conversation) error
 	UpdateConversation(ctx context.Context, conv *model.Conversation) error
@@ -108,5 +113,8 @@ type ChatRepository interface {
 	GetLastMessage(ctx context.Context, conversationID uuid.UUID) (*model.Message, error)
 	GetMessageFileIDs(ctx context.Context, messageID uuid.UUID) ([]string, error)
 	ListPinnedMessagesByConversationID(ctx context.Context, conversationID uuid.UUID) ([]*model.ConversationPin, error)
+	ListFlaggedMessagesForModeration(ctx context.Context, filter ChatModerationFilter) ([]*model.ChatMessageModerationItem, error)
+	GetMessageForModeration(ctx context.Context, messageID uuid.UUID, before int, after int) (*model.ChatMessageModerationItem, error)
+	UpdateMessageModeration(ctx context.Context, messageID uuid.UUID, status string, reasonCodes []string, publicComment string, internalComment string, moderatedBy uuid.UUID, now time.Time) (*model.Message, error)
 	WithTx(ctx context.Context, fn func(repo ChatTxRepository) error) error
 }

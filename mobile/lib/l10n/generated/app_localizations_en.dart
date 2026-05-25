@@ -5026,6 +5026,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatMessageDeleted => 'Message deleted';
 
   @override
+  String get chatMessageRemovedByModerator => 'Message removed by moderator';
+
+  @override
+  String chatModeratorComment(Object comment) {
+    return 'Moderator comment: $comment';
+  }
+
+  @override
   String get chatDeleteAction => 'Delete';
 
   @override

@@ -65,6 +65,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /admin/moderation/activities/sync", s.SyncActivityQueue)
 	mux.HandleFunc("POST /admin/moderation/activities/{caseID}/approve", s.ApproveActivity)
 	mux.HandleFunc("POST /admin/moderation/activities/{caseID}/reject", s.RejectActivity)
+	mux.HandleFunc("GET /admin/moderation/chats", s.ChatMessageQueue)
+	mux.HandleFunc("GET /admin/moderation/chats/history", s.ChatMessageHistory)
+	mux.HandleFunc("GET /admin/moderation/chats/{caseID}", s.ChatMessageCase)
+	mux.HandleFunc("POST /admin/moderation/chats/sync", s.SyncChatMessageQueue)
+	mux.HandleFunc("POST /admin/moderation/chats/{caseID}/approve", s.ApproveChatMessage)
+	mux.HandleFunc("POST /admin/moderation/chats/{caseID}/reject", s.RejectChatMessage)
 	mux.HandleFunc("GET /admin/moderation/guides", s.GuideApplicationQueue)
 	mux.HandleFunc("GET /admin/moderation/guides/current", s.ActiveGuideList)
 	mux.HandleFunc("GET /admin/moderation/guides/history", s.GuideApplicationHistory)
@@ -310,6 +316,75 @@ func (s *Server) RejectActivity(w http.ResponseWriter, r *http.Request) {
 	s.decideActivity(w, r, enum.ModerationDecisionReject)
 }
 
+func (s *Server) SyncChatMessageQueue(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	if err := s.moderation.SyncChatMessageQueue(r.Context(), staff); err != nil {
+		_, viewFilter := parseExcursionQueueFilter(r)
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.chatQueue", "chats", NewChatMessageQueueViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	redirectURL := "/admin/moderation/chats"
+	if r.URL.RawQuery != "" {
+		redirectURL += "?" + r.URL.RawQuery
+	}
+	http.Redirect(w, r, redirectWithFlash(redirectURL, "moderation.queueSynced"), http.StatusSeeOther)
+}
+
+func (s *Server) ChatMessageQueue(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	_ = s.moderation.SyncChatMessageQueue(r.Context(), staff)
+	targetType := model.ModerationTargetChatMessage
+	filter, viewFilter := parseExcursionQueueFilter(r)
+	filter.TargetType = &targetType
+	filter.Limit = 100
+	cases, err := s.moderation.ListQueue(r.Context(), staff, filter)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.chatQueue", "chats", NewChatMessageQueueViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/queue", "moderation.chatQueue", "chats", NewChatMessageQueueViewData(cases, viewFilter), "")
+}
+
+func (s *Server) ChatMessageHistory(w http.ResponseWriter, r *http.Request) {
+	staff := staffFromContext(r.Context())
+	targetType := model.ModerationTargetChatMessage
+	filter, viewFilter := parseExcursionHistoryFilter(r)
+	filter.TargetType = &targetType
+	filter.Limit = 100
+	cases, err := s.moderation.ListQueue(r.Context(), staff, filter)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/queue", "moderation.chatHistory", "chats", NewChatMessageHistoryViewData(nil, viewFilter), publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/queue", "moderation.chatHistory", "chats", NewChatMessageHistoryViewData(cases, viewFilter), "")
+}
+
+func (s *Server) ChatMessageCase(w http.ResponseWriter, r *http.Request) {
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	detail, err := s.moderation.GetCaseDetail(r.Context(), staff, caseID)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "chats", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetChatMessage {
+		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "chats", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "chats", CaseDetailViewData{Detail: detail}, "")
+}
+
+func (s *Server) ApproveChatMessage(w http.ResponseWriter, r *http.Request) {
+	s.decideChatMessage(w, r, enum.ModerationDecisionApprove)
+}
+
+func (s *Server) RejectChatMessage(w http.ResponseWriter, r *http.Request) {
+	s.decideChatMessage(w, r, enum.ModerationDecisionReject)
+}
+
 func (s *Server) SyncGuideApplicationQueue(w http.ResponseWriter, r *http.Request) {
 	staff := staffFromContext(r.Context())
 	if err := s.moderation.SyncGuideApplicationQueue(r.Context(), staff); err != nil {
@@ -498,6 +573,33 @@ func (s *Server) decideActivity(w http.ResponseWriter, r *http.Request, decision
 		return
 	}
 	http.Redirect(w, r, redirectWithFlash("/admin/moderation/activities/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
+}
+
+func (s *Server) decideChatMessage(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
+	caseID, ok := parsePathUUID(w, r, "caseID")
+	if !ok {
+		return
+	}
+	staff := staffFromContext(r.Context())
+	_, err := s.moderation.DecideChatMessage(r.Context(), app.ModerationDecisionInput{
+		Actor:           staff,
+		CaseID:          caseID,
+		Decision:        decision,
+		ReasonCodes:     splitCSV(r.Form.Get("reason_codes")),
+		PublicComment:   r.Form.Get("public_comment"),
+		InternalComment: r.Form.Get("internal_comment"),
+		IdempotencyKey:  r.Form.Get("idempotency_key"),
+		RequestMetadata: requestMetadata(r),
+	})
+	if err != nil {
+		viewData := CaseDetailViewData{}
+		if detail, detailErr := s.moderation.GetCaseDetail(r.Context(), staff, caseID); detailErr == nil {
+			viewData.Detail = detail
+		}
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "chats", viewData, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	http.Redirect(w, r, redirectWithFlash("/admin/moderation/chats/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
 func (s *Server) decideGuideApplication(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {

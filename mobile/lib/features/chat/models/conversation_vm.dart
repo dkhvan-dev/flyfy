@@ -127,6 +127,8 @@ class LastMessagePreview {
   final String? stickerId;
   final String? stickerFileId;
   final DateTime? deletedAt;
+  final String moderationStatus;
+  final String? moderationPublicComment;
   final DateTime sentAt;
 
   const LastMessagePreview({
@@ -139,10 +141,14 @@ class LastMessagePreview {
     this.stickerId,
     this.stickerFileId,
     this.deletedAt,
+    this.moderationStatus = '',
+    this.moderationPublicComment,
     required this.sentAt,
   });
 
   bool get isDeleted => deletedAt != null;
+  bool get isHiddenByModerator =>
+      moderationStatus.trim().toUpperCase() == 'HIDDEN_BY_MODERATION';
   bool get isSticker =>
       type == 'sticker' &&
       ((stickerFileId?.trim().isNotEmpty ?? false) || fileIds.length == 1);
@@ -163,6 +169,10 @@ class LastMessagePreview {
       stickerId: json['stickerId']?.toString(),
       stickerFileId: json['stickerFileId']?.toString(),
       deletedAt: _parseDateTimeOrNull(json['deletedAt']),
+      moderationStatus: json['moderationStatus']?.toString() ?? '',
+      moderationPublicComment: _trimmedStringOrNull(
+        json['moderationPublicComment'],
+      ),
       sentAt: DateTime.parse(json['sentAt'] as String),
     );
   }
@@ -285,6 +295,12 @@ DateTime? _parseDateTimeOrNull(Object? value) {
   final raw = value?.toString().trim() ?? '';
   if (raw.isEmpty) return null;
   return DateTime.tryParse(raw);
+}
+
+String? _trimmedStringOrNull(Object? value) {
+  final raw = value?.toString().trim() ?? '';
+  if (raw.isEmpty || raw.toLowerCase() == 'null') return null;
+  return raw;
 }
 
 class ParticipantInfo {

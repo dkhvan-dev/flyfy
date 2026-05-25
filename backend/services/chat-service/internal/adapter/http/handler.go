@@ -43,6 +43,9 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /v1/conversations", h.ListConversations)
 	mux.HandleFunc("POST /v1/conversations", h.CreateConversation)
+	mux.HandleFunc("GET /v1/admin/chat/messages/moderation/flagged", h.ListFlaggedChatMessages)
+	mux.HandleFunc("GET /v1/admin/chat/messages/", h.handleAdminChatMessageRoutes)
+	mux.HandleFunc("POST /v1/admin/chat/messages/", h.handleAdminChatMessageRoutes)
 	mux.HandleFunc("POST /v1/internal/activity-conversations/participants", h.EnsureActivityParticipant)
 	mux.HandleFunc("POST /v1/internal/activity-conversations/sync", h.SyncActivityConversation)
 	mux.HandleFunc("POST /v1/internal/excursion-schedule-slot-conversations/sync", h.SyncExcursionScheduleSlotConversation)
@@ -56,6 +59,93 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) ListFlaggedChatMessages(w http.ResponseWriter, r *http.Request) {
+	if !requireChatModerationAccess(w, r) {
+		return
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	items, err := h.messageUC.ListFlaggedMessagesForModeration(r.Context(), limit, offset)
+	if err != nil {
+		h.writeAppError(w, err, "list flagged chat messages failed")
+		return
+	}
+	response := dto.ChatMessageModerationListResponse{
+		Items: make([]dto.ChatMessageModerationResponse, 0, len(items)),
+	}
+	for _, item := range items {
+		response.Items = append(response.Items, chatMessageModerationResponseFromModel(item))
+	}
+	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *Handler) handleAdminChatMessageRoutes(w http.ResponseWriter, r *http.Request) {
+	if !requireChatModerationAccess(w, r) {
+		return
+	}
+	path := strings.TrimPrefix(r.URL.Path, "/v1/admin/chat/messages/")
+	path = strings.Trim(path, "/")
+	parts := strings.Split(path, "/")
+	if len(parts) == 0 || strings.TrimSpace(parts[0]) == "" {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+	messageID, err := uuid.Parse(parts[0])
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid message id")
+		return
+	}
+	if len(parts) == 1 && r.Method == http.MethodGet {
+		item, err := h.messageUC.GetMessageForModeration(r.Context(), messageID)
+		if err != nil {
+			h.writeAppError(w, err, "get chat message moderation item failed")
+			return
+		}
+		writeJSON(w, http.StatusOK, chatMessageModerationResponseFromModel(item))
+		return
+	}
+	if len(parts) == 3 && parts[1] == "moderation" && r.Method == http.MethodPost {
+		var req dto.ChatModerationDecisionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		actorID, ok := adminActorIDFromRequest(w, r)
+		if !ok {
+			return
+		}
+		var item *model.ChatMessageModerationItem
+		switch parts[2] {
+		case "approve":
+			item, err = h.messageUC.ApproveMessageForModeration(
+				r.Context(),
+				messageID,
+				actorID,
+				req.InternalComment,
+			)
+		case "reject", "hide":
+			item, err = h.messageUC.HideMessageForModeration(
+				r.Context(),
+				messageID,
+				actorID,
+				req.ReasonCodes,
+				req.PublicComment,
+				req.InternalComment,
+			)
+		default:
+			writeError(w, http.StatusNotFound, "not found")
+			return
+		}
+		if err != nil {
+			h.writeAppError(w, err, "apply chat message moderation decision failed")
+			return
+		}
+		writeJSON(w, http.StatusOK, chatMessageModerationResponseFromModel(item))
+		return
+	}
+	writeError(w, http.StatusNotFound, "not found")
 }
 
 func (h *Handler) WebSocketUpgrade(w http.ResponseWriter, r *http.Request) {
@@ -130,22 +220,37 @@ func (h *Handler) ListConversations(w http.ResponseWriter, r *http.Request) {
 		}
 		if c.LastMessage != nil {
 			preview := c.LastMessage.Content
+			fileIDs := c.LastMessage.FileIDs
+			deletedAt := c.LastMessage.DeletedAt
+			moderationStatus := ""
+			var moderationPublicComment *string
+			if c.LastMessage.IsHiddenByModeration() {
+				preview = ""
+				fileIDs = nil
+				deletedAt = c.LastMessage.ModerationReviewedAt
+				moderationStatus = model.MessageModerationStatusHiddenByModeration
+				if comment := strings.TrimSpace(c.LastMessage.ModerationPublicComment); comment != "" {
+					moderationPublicComment = &comment
+				}
+			}
 			if len(preview) > 100 {
 				preview = preview[:100]
 			}
 			item.LastMessage = &dto.LastMessagePreview{
-				ID:                c.LastMessage.ID.String(),
-				SenderUserID:      c.LastMessage.SenderUserID.String(),
-				SenderDisplayName: c.LastMessage.SenderDisplayName,
-				Type:              c.LastMessage.Type,
-				ContentPreview:    preview,
-				FileIDs:           append([]string(nil), c.LastMessage.FileIDs...),
-				StickerID:         uuidPtrToString(c.LastMessage.StickerID),
-				StickerFileID:     c.LastMessage.StickerFileID,
-				SentAt:            c.LastMessage.SentAt.Format(time.RFC3339),
+				ID:                      c.LastMessage.ID.String(),
+				SenderUserID:            c.LastMessage.SenderUserID.String(),
+				SenderDisplayName:       c.LastMessage.SenderDisplayName,
+				Type:                    c.LastMessage.Type,
+				ContentPreview:          preview,
+				FileIDs:                 append([]string(nil), fileIDs...),
+				StickerID:               uuidPtrToString(c.LastMessage.StickerID),
+				StickerFileID:           c.LastMessage.StickerFileID,
+				ModerationStatus:        moderationStatus,
+				ModerationPublicComment: moderationPublicComment,
+				SentAt:                  c.LastMessage.SentAt.Format(time.RFC3339),
 			}
-			if c.LastMessage.DeletedAt != nil {
-				s := c.LastMessage.DeletedAt.UTC().Format(time.RFC3339)
+			if deletedAt != nil {
+				s := deletedAt.UTC().Format(time.RFC3339)
 				item.LastMessage.DeletedAt = &s
 			}
 		}
@@ -943,15 +1048,47 @@ func (h *Handler) UnpinMessage(w http.ResponseWriter, r *http.Request, convID, m
 	})
 }
 
+func requireChatModerationAccess(w http.ResponseWriter, r *http.Request) bool {
+	if !InternalCallFromContext(r.Context()) {
+		writeError(w, http.StatusUnauthorized, "missing internal service token")
+		return false
+	}
+	for _, role := range RolesFromContext(r.Context()) {
+		switch strings.ToUpper(strings.TrimSpace(role)) {
+		case "SUPER_ADMIN", "MODERATION_LEAD", "CHAT_MODERATOR":
+			return true
+		}
+	}
+	writeError(w, http.StatusForbidden, "missing chat moderation role")
+	return false
+}
+
+func adminActorIDFromRequest(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
+	actorID, err := uuid.Parse(UserIDFromContext(r.Context()))
+	if err != nil || actorID == uuid.Nil {
+		writeError(w, http.StatusUnauthorized, "invalid authenticated admin")
+		return uuid.Nil, false
+	}
+	return actorID, true
+}
+
 func messageResponseFromModel(m *model.Message) dto.MessageResponse {
+	content := m.Content
+	fileIDs := m.FileIDs
+	deletedAt := m.DeletedAt
+	if m.IsHiddenByModeration() {
+		content = ""
+		fileIDs = nil
+		deletedAt = m.ModerationReviewedAt
+	}
 	item := dto.MessageResponse{
 		ID:                        m.ID.String(),
 		SenderUserID:              m.SenderUserID.String(),
 		SenderDisplayName:         m.SenderDisplayName,
 		SenderAvatarFileID:        m.SenderAvatarFileID,
 		Type:                      m.Type,
-		Content:                   m.Content,
-		FileIDs:                   m.FileIDs,
+		Content:                   content,
+		FileIDs:                   fileIDs,
 		StickerID:                 uuidPtrToString(m.StickerID),
 		StickerFileID:             m.StickerFileID,
 		ForwardedFromMessageID:    uuidPtrToString(m.ForwardedFromMessageID),
@@ -960,6 +1097,12 @@ func messageResponseFromModel(m *model.Message) dto.MessageResponse {
 		Reactions:                 reactionInfosFromModel(m.Reactions),
 		ReadReceipts:              readReceiptInfosFromModel(m.ReadReceipts),
 		SentAt:                    m.SentAt.Format(time.RFC3339),
+	}
+	if m.IsHiddenByModeration() {
+		item.ModerationStatus = model.MessageModerationStatusHiddenByModeration
+		if comment := strings.TrimSpace(m.ModerationPublicComment); comment != "" {
+			item.ModerationPublicComment = &comment
+		}
 	}
 	if strings.TrimSpace(m.ForwardedFromSenderName) != "" {
 		name := strings.TrimSpace(m.ForwardedFromSenderName)
@@ -973,11 +1116,83 @@ func messageResponseFromModel(m *model.Message) dto.MessageResponse {
 		s := m.EditedAt.Format(time.RFC3339)
 		item.EditedAt = &s
 	}
-	if m.DeletedAt != nil {
-		s := m.DeletedAt.Format(time.RFC3339)
+	if deletedAt != nil {
+		s := deletedAt.Format(time.RFC3339)
 		item.DeletedAt = &s
 	}
 	return item
+}
+
+func chatMessageModerationResponseFromModel(item *model.ChatMessageModerationItem) dto.ChatMessageModerationResponse {
+	if item == nil {
+		return dto.ChatMessageModerationResponse{}
+	}
+	response := dto.ChatMessageModerationResponse{
+		ID:                    item.ID.String(),
+		ConversationID:        item.ConversationID.String(),
+		ConversationType:      item.ConversationType,
+		ConversationTitle:     item.ConversationTitle,
+		SenderUserID:          item.SenderUserID.String(),
+		SenderDisplayName:     item.SenderDisplayName,
+		Type:                  item.Type,
+		Content:               item.Content,
+		FileIDs:               append([]string(nil), item.FileIDs...),
+		ModerationStatus:      item.ModerationStatus,
+		ModerationRiskScore:   item.ModerationRiskScore,
+		ModerationReasonCodes: append([]string(nil), item.ModerationReasonCodes...),
+		ContextBefore:         chatMessageContextResponses(item.ContextBefore),
+		ContextAfter:          chatMessageContextResponses(item.ContextAfter),
+		Participants:          chatParticipantModerationResponses(item.Participants),
+		Revision:              item.Revision,
+		SentAt:                item.SentAt.Format(time.RFC3339),
+		CreatedAt:             item.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:             item.UpdatedAt.Format(time.RFC3339),
+	}
+	response.ActivityID = uuidPtrToString(item.ActivityID)
+	response.ExcursionScheduleSlotID = uuidPtrToString(item.ExcursionScheduleSlotID)
+	response.ModerationTriggeredAt = timePtrToString(item.ModerationTriggeredAt)
+	response.ModerationReviewedAt = timePtrToString(item.ModerationReviewedAt)
+	response.EditedAt = timePtrToString(item.EditedAt)
+	response.DeletedAt = timePtrToString(item.DeletedAt)
+	return response
+}
+
+func chatMessageContextResponses(items []model.ChatMessageContextItem) []dto.ChatMessageContextResponse {
+	out := make([]dto.ChatMessageContextResponse, 0, len(items))
+	for _, item := range items {
+		out = append(out, dto.ChatMessageContextResponse{
+			ID:                item.ID.String(),
+			SenderUserID:      item.SenderUserID.String(),
+			SenderDisplayName: item.SenderDisplayName,
+			Type:              item.Type,
+			Content:           item.Content,
+			FileIDs:           append([]string(nil), item.FileIDs...),
+			EditedAt:          timePtrToString(item.EditedAt),
+			DeletedAt:         timePtrToString(item.DeletedAt),
+			SentAt:            item.SentAt.Format(time.RFC3339),
+		})
+	}
+	return out
+}
+
+func chatParticipantModerationResponses(items []model.ChatParticipantModerationItem) []dto.ChatParticipantModerationResponse {
+	out := make([]dto.ChatParticipantModerationResponse, 0, len(items))
+	for _, item := range items {
+		out = append(out, dto.ChatParticipantModerationResponse{
+			UserID:      item.UserID.String(),
+			DisplayName: item.DisplayName,
+			Role:        item.Role,
+		})
+	}
+	return out
+}
+
+func timePtrToString(value *time.Time) *string {
+	if value == nil {
+		return nil
+	}
+	formatted := value.UTC().Format(time.RFC3339)
+	return &formatted
 }
 
 func reactionInfosFromModel(
@@ -1090,7 +1305,8 @@ func (h *Handler) writeAppError(w http.ResponseWriter, err error, fallback strin
 		errors.Is(err, app.ErrDirectChatCannotLeave),
 		errors.Is(err, app.ErrCannotPinInDirectChat),
 		errors.Is(err, app.ErrMessageEditExpired),
-		errors.Is(err, app.ErrMessageAlreadyDeleted):
+		errors.Is(err, app.ErrMessageAlreadyDeleted),
+		errors.Is(err, app.ErrInvalidModerationDecision):
 		writeError(w, http.StatusBadRequest, err.Error())
 
 	case errors.Is(err, app.ErrConversationNotFound),

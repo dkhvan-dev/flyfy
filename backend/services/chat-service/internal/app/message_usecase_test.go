@@ -174,6 +174,41 @@ func TestSendMessageStoresTextContent(t *testing.T) {
 	}
 }
 
+func TestSendMessageFlagsOffPlatformContactForModeration(t *testing.T) {
+	t.Parallel()
+
+	conversationID := uuid.New()
+	senderID := uuid.New()
+	repo := newFakeMessageRepo(conversationID, senderID)
+	useCase := NewMessageUseCase(repo, &fakeEventPublisher{}, nil)
+
+	msg, err := useCase.SendMessage(context.Background(), SendMessageInput{
+		ConversationID: conversationID,
+		SenderUserID:   senderID,
+		Type:           "text",
+		Content:        "Напишите мне в WhatsApp +77011234567 перед участием",
+	})
+	if err != nil {
+		t.Fatalf("SendMessage error: %v", err)
+	}
+
+	if msg.ModerationStatus != model.MessageModerationStatusFlagged {
+		t.Fatalf("ModerationStatus = %q, want %q", msg.ModerationStatus, model.MessageModerationStatusFlagged)
+	}
+	if msg.ModerationRiskScore <= 0 {
+		t.Fatalf("ModerationRiskScore = %d, want positive", msg.ModerationRiskScore)
+	}
+	if !containsString(msg.ModerationReasonCodes, "off_platform_contact") {
+		t.Fatalf("ModerationReasonCodes = %#v, want off_platform_contact", msg.ModerationReasonCodes)
+	}
+	if !containsString(msg.ModerationReasonCodes, "phone_number") {
+		t.Fatalf("ModerationReasonCodes = %#v, want phone_number", msg.ModerationReasonCodes)
+	}
+	if msg.ModerationTriggeredAt == nil {
+		t.Fatal("ModerationTriggeredAt must be set for flagged messages")
+	}
+}
+
 func TestForwardMessageCreatesTargetCopyAndTracksForwardMetadata(t *testing.T) {
 	t.Parallel()
 
@@ -410,6 +445,60 @@ func (r *fakeMessageRepo) ListPinnedMessagesByConversationID(context.Context, uu
 	return nil, nil
 }
 
+func (r *fakeMessageRepo) ListFlaggedMessagesForModeration(
+	context.Context,
+	port.ChatModerationFilter,
+) ([]*model.ChatMessageModerationItem, error) {
+	if r.createdMessage == nil || r.createdMessage.ModerationStatus != model.MessageModerationStatusFlagged {
+		return nil, nil
+	}
+	return []*model.ChatMessageModerationItem{
+		chatModerationItemFromMessage(r.createdMessage),
+	}, nil
+}
+
+func (r *fakeMessageRepo) GetMessageForModeration(
+	_ context.Context,
+	messageID uuid.UUID,
+	_ int,
+	_ int,
+) (*model.ChatMessageModerationItem, error) {
+	if r.createdMessage != nil && r.createdMessage.ID == messageID {
+		return chatModerationItemFromMessage(r.createdMessage), nil
+	}
+	if r.messagesByID != nil && r.messagesByID[messageID] != nil {
+		return chatModerationItemFromMessage(r.messagesByID[messageID]), nil
+	}
+	return nil, nil
+}
+
+func (r *fakeMessageRepo) UpdateMessageModeration(
+	_ context.Context,
+	messageID uuid.UUID,
+	status string,
+	reasonCodes []string,
+	publicComment string,
+	internalComment string,
+	moderatedBy uuid.UUID,
+	now time.Time,
+) (*model.Message, error) {
+	msg := r.createdMessage
+	if r.messagesByID != nil && r.messagesByID[messageID] != nil {
+		msg = r.messagesByID[messageID]
+	}
+	if msg == nil || msg.ID != messageID {
+		return nil, nil
+	}
+	msg.ModerationStatus = status
+	msg.ModerationReasonCodes = append([]string(nil), reasonCodes...)
+	msg.ModerationPublicComment = publicComment
+	msg.ModerationInternalComment = internalComment
+	msg.ModerationReviewedBy = &moderatedBy
+	msg.ModerationReviewedAt = &now
+	msg.ModerationRevision++
+	return msg, nil
+}
+
 func (r *fakeMessageRepo) GetConversationByActivityIDForUpdate(context.Context, uuid.UUID) (*model.Conversation, error) {
 	return nil, nil
 }
@@ -521,3 +610,34 @@ type fakeEventPublisher struct{}
 
 func (fakeEventPublisher) Publish(context.Context, string, event.Event) error { return nil }
 func (fakeEventPublisher) Close() error                                       { return nil }
+
+func chatModerationItemFromMessage(msg *model.Message) *model.ChatMessageModerationItem {
+	if msg == nil {
+		return nil
+	}
+	return &model.ChatMessageModerationItem{
+		ID:                    msg.ID,
+		ConversationID:        msg.ConversationID,
+		SenderUserID:          msg.SenderUserID,
+		SenderDisplayName:     msg.SenderDisplayName,
+		Type:                  msg.Type,
+		Content:               msg.Content,
+		FileIDs:               append([]string(nil), msg.FileIDs...),
+		ModerationStatus:      msg.ModerationStatus,
+		ModerationRiskScore:   msg.ModerationRiskScore,
+		ModerationReasonCodes: append([]string(nil), msg.ModerationReasonCodes...),
+		ModerationTriggeredAt: msg.ModerationTriggeredAt,
+		ModerationReviewedAt:  msg.ModerationReviewedAt,
+		Revision:              msg.ModerationRevision,
+		SentAt:                msg.SentAt,
+	}
+}
+
+func containsString(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
+			return true
+		}
+	}
+	return false
+}

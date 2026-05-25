@@ -41,6 +41,8 @@ type MessageResponse struct {
 	ForwardCount              int                      `json:"forwardCount"`
 	EditedAt                  *string                  `json:"editedAt,omitempty"`
 	DeletedAt                 *string                  `json:"deletedAt,omitempty"`
+	ModerationStatus          string                   `json:"moderationStatus,omitempty"`
+	ModerationPublicComment   *string                  `json:"moderationPublicComment,omitempty"`
 	Reactions                 []MessageReactionInfo    `json:"reactions,omitempty"`
 	ReadReceipts              []MessageReadReceiptInfo `json:"readReceipts,omitempty"`
 	SentAt                    string                   `json:"sentAt"`
@@ -77,4 +79,60 @@ type MessageListResponse struct {
 type DeleteMessageResponse struct {
 	HardDeleted bool    `json:"hardDeleted"`
 	DeletedAt   *string `json:"deletedAt,omitempty"`
+}
+
+type ChatModerationDecisionRequest struct {
+	ReasonCodes     []string `json:"reasonCodes"`
+	PublicComment   string   `json:"publicComment"`
+	InternalComment string   `json:"internalComment"`
+}
+
+type ChatMessageModerationListResponse struct {
+	Items []ChatMessageModerationResponse `json:"items"`
+}
+
+type ChatParticipantModerationResponse struct {
+	UserID      string `json:"userId"`
+	DisplayName string `json:"displayName,omitempty"`
+	Role        string `json:"role,omitempty"`
+}
+
+type ChatMessageContextResponse struct {
+	ID                string   `json:"id"`
+	SenderUserID      string   `json:"senderUserId"`
+	SenderDisplayName string   `json:"senderDisplayName,omitempty"`
+	Type              string   `json:"type"`
+	Content           string   `json:"content"`
+	FileIDs           []string `json:"fileIds,omitempty"`
+	EditedAt          *string  `json:"editedAt,omitempty"`
+	DeletedAt         *string  `json:"deletedAt,omitempty"`
+	SentAt            string   `json:"sentAt"`
+}
+
+type ChatMessageModerationResponse struct {
+	ID                      string                              `json:"id"`
+	ConversationID          string                              `json:"conversationId"`
+	ConversationType        string                              `json:"conversationType"`
+	ConversationTitle       string                              `json:"conversationTitle,omitempty"`
+	ActivityID              *string                             `json:"activityId,omitempty"`
+	ExcursionScheduleSlotID *string                             `json:"excursionScheduleSlotId,omitempty"`
+	SenderUserID            string                              `json:"senderUserId"`
+	SenderDisplayName       string                              `json:"senderDisplayName,omitempty"`
+	Type                    string                              `json:"type"`
+	Content                 string                              `json:"content"`
+	FileIDs                 []string                            `json:"fileIds,omitempty"`
+	ModerationStatus        string                              `json:"moderationStatus"`
+	ModerationRiskScore     int                                 `json:"moderationRiskScore"`
+	ModerationReasonCodes   []string                            `json:"moderationReasonCodes,omitempty"`
+	ModerationTriggeredAt   *string                             `json:"moderationTriggeredAt,omitempty"`
+	ModerationReviewedAt    *string                             `json:"moderationReviewedAt,omitempty"`
+	ContextBefore           []ChatMessageContextResponse        `json:"contextBefore,omitempty"`
+	ContextAfter            []ChatMessageContextResponse        `json:"contextAfter,omitempty"`
+	Participants            []ChatParticipantModerationResponse `json:"participants,omitempty"`
+	Revision                int                                 `json:"revision"`
+	EditedAt                *string                             `json:"editedAt,omitempty"`
+	DeletedAt               *string                             `json:"deletedAt,omitempty"`
+	SentAt                  string                              `json:"sentAt"`
+	CreatedAt               string                              `json:"createdAt"`
+	UpdatedAt               string                              `json:"updatedAt"`
 }

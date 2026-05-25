@@ -5,11 +5,12 @@
 {{$caseBasePath := "/admin/moderation/excursions"}}
 {{if $detail.Activity}}{{$caseBasePath = "/admin/moderation/activities"}}{{end}}
 {{if $detail.GuideApplication}}{{$caseBasePath = "/admin/moderation/guides"}}{{end}}
+{{if $detail.ChatMessage}}{{$caseBasePath = "/admin/moderation/chats"}}{{end}}
 <section class="section">
   <div class="section-head">
     <div>
       <p class="eyebrow">{{t .Locale "moderation.case"}} <code>{{shortID $detail.Case.ID}}</code></p>
-      <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else if $detail.Activity}}{{$detail.Activity.Title}}{{else if $detail.GuideApplication}}{{guideApplicationPrimary $detail.GuideApplication}}{{else}}{{t .Locale "moderation.caseTitle"}}{{end}}</h1>
+      <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else if $detail.Activity}}{{$detail.Activity.Title}}{{else if $detail.GuideApplication}}{{guideApplicationPrimary $detail.GuideApplication}}{{else if $detail.ChatMessage}}{{chatMessagePreview .Locale $detail.ChatMessage}}{{else}}{{t .Locale "moderation.caseTitle"}}{{end}}</h1>
     </div>
     <a class="button" href="{{$caseBasePath}}">{{t .Locale "action.backToQueue"}}</a>
   </div>
@@ -129,6 +130,61 @@
           </li>
         </ol>
       {{end}}
+      {{with $detail.ChatMessage}}
+        <dl class="facts">
+          <div><dt>{{t $.Locale "label.status"}}</dt><dd>{{statusText $.Locale .ModerationStatus}}</dd></div>
+          <div><dt>{{t $.Locale "label.conversation"}}</dt><dd>{{chatMessageConversation $.Locale .}}</dd></div>
+          <div><dt>{{t $.Locale "label.sender"}}</dt><dd>{{chatMessageSender .}}</dd></div>
+          <div><dt>{{t $.Locale "label.riskScore"}}</dt><dd>{{.ModerationRiskScore}}</dd></div>
+          <div><dt>{{t $.Locale "label.messageType"}}</dt><dd>{{chatMessageType $.Locale .Type}}</dd></div>
+          <div><dt>{{t $.Locale "label.sentAt"}}</dt><dd>{{formatTime .SentAt}}</dd></div>
+          <div><dt>{{t $.Locale "label.attachments"}}</dt><dd>{{len .FileIDs}}</dd></div>
+          <div><dt>{{t $.Locale "label.triggeredAt"}}</dt><dd>{{formatTime .ModerationTriggeredAt}}</dd></div>
+        </dl>
+        {{if .ModerationReasonCodes}}
+          <p class="reason">{{t $.Locale "label.signals"}}: {{chatMessageSignals $.Locale .}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.message"}}</h2>
+        <p class="preline">{{chatMessagePreview $.Locale .}}</p>
+        <h2>{{t $.Locale "section.participants"}}</h2>
+        {{if .Participants}}
+          <div class="chip-list">
+            {{range .Participants}}
+              <span class="chip">{{if .DisplayName}}{{.DisplayName}}{{else}}{{t $.Locale "label.user"}}{{end}}{{if .Role}} · {{.Role}}{{end}}</span>
+            {{end}}
+          </div>
+        {{else}}
+          <p class="empty">{{t $.Locale "empty.noParticipants"}}</p>
+        {{end}}
+        <h2>{{t $.Locale "section.chatContext"}}</h2>
+        <ol class="timeline">
+          {{range .ContextBefore}}
+            <li class="timeline-step">
+              <div class="timeline-marker">{{formatTime .SentAt}}</div>
+              <div class="timeline-body">
+                <h3>{{chatContextSender .}}</h3>
+                <p class="preline">{{chatContextContent $.Locale .}}</p>
+              </div>
+            </li>
+          {{end}}
+          <li class="timeline-step">
+            <div class="timeline-marker">{{formatTime .SentAt}}</div>
+            <div class="timeline-body highlighted">
+              <h3>{{chatMessageSender .}}</h3>
+              <p class="preline">{{chatMessagePreview $.Locale .}}</p>
+            </div>
+          </li>
+          {{range .ContextAfter}}
+            <li class="timeline-step">
+              <div class="timeline-marker">{{formatTime .SentAt}}</div>
+              <div class="timeline-body">
+                <h3>{{chatContextSender .}}</h3>
+                <p class="preline">{{chatContextContent $.Locale .}}</p>
+              </div>
+            </li>
+          {{end}}
+        </ol>
+      {{end}}
       {{with $detail.GuideApplication}}
         <dl class="facts">
           <div><dt>{{t $.Locale "label.status"}}</dt><dd>{{statusText $.Locale .Status}}</dd></div>
@@ -224,7 +280,41 @@
 
     <aside class="card">
       <h2>{{t .Locale "section.decision"}}</h2>
-      {{if activityDecisionLocked $detail.Activity}}
+      {{if chatMessageDecisionLocked $detail.ChatMessage}}
+        <p class="empty">{{t .Locale "moderation.chatDecisionLocked"}}</p>
+      {{else if $detail.ChatMessage}}
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/approve" class="form compact" data-confirm-form="approve">
+          {{csrfField $.CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t $.Locale "field.internalComment"}}</span>
+            <textarea name="internal_comment" rows="3" required placeholder="{{t $.Locale "placeholder.chatKeepInternalComment"}}"></textarea>
+          </label>
+          <button class="primary" type="submit">{{t $.Locale "action.keepMessage"}}</button>
+        </form>
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/reject" class="form compact danger-zone" data-confirm-form="reject">
+          {{csrfField $.CSRFToken}}
+          <input type="hidden" name="idempotency_key" value="{{newID}}">
+          <label>
+            <span>{{t $.Locale "field.reasonCodes"}}</span>
+            <select name="reason_codes" required>
+              <option value="">{{t $.Locale "placeholder.selectReasonCode"}}</option>
+              {{range moderationReasonOptions $.Locale}}
+                <option value="{{.Code}}">{{.Label}}</option>
+              {{end}}
+            </select>
+          </label>
+          <label>
+            <span>{{t $.Locale "field.publicComment"}}</span>
+            <textarea name="public_comment" rows="3" required placeholder="{{t $.Locale "placeholder.chatHidePublicComment"}}"></textarea>
+          </label>
+          <label>
+            <span>{{t $.Locale "field.internalComment"}}</span>
+            <textarea name="internal_comment" rows="3" required></textarea>
+          </label>
+          <button class="danger" type="submit">{{t $.Locale "action.hideMessage"}}</button>
+        </form>
+      {{else if activityDecisionLocked $detail.Activity}}
         <p class="empty">{{t .Locale "moderation.activityDecisionLocked"}}</p>
       {{else if guideApplicationCanRevoke $detail.GuideApplication}}
         <p class="empty">{{t .Locale "moderation.guideApplicationRevokeHint"}}</p>

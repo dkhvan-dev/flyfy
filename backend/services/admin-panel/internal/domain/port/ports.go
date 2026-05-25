@@ -52,6 +52,8 @@ type ModerationRepository interface {
 	CancelStaleActivityCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
 	UpsertGuideApplicationCase(ctx context.Context, item model.GuideApplicationModerationItem) (*model.ModerationCase, error)
 	CancelStaleGuideApplicationCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
+	UpsertChatMessageCase(ctx context.Context, item model.ChatMessageModerationItem) (*model.ModerationCase, error)
+	CancelStaleChatMessageCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error
 	ListCases(ctx context.Context, filter model.ModerationQueueFilter) ([]*model.ModerationCase, error)
 	GetCase(ctx context.Context, id uuid.UUID) (*model.ModerationCase, error)
 	ListDecisions(ctx context.Context, caseID uuid.UUID) ([]*model.ModerationDecision, error)
@@ -120,4 +122,21 @@ type GuideProfileDecisionInput struct {
 	PublicComment  string
 	IdempotencyKey string
 	RequestID      string
+}
+
+type ChatClient interface {
+	ListFlaggedMessages(ctx context.Context, limit int, offset int) ([]model.ChatMessageModerationItem, error)
+	GetMessage(ctx context.Context, id uuid.UUID) (*model.ChatMessageModerationItem, error)
+	ApproveMessage(ctx context.Context, input ChatMessageDecisionInput) (*model.ChatMessageModerationItem, []byte, error)
+	HideMessage(ctx context.Context, input ChatMessageDecisionInput) (*model.ChatMessageModerationItem, []byte, error)
+}
+
+type ChatMessageDecisionInput struct {
+	MessageID       uuid.UUID
+	ActorStaffID    uuid.UUID
+	ReasonCodes     []string
+	PublicComment   string
+	InternalComment string
+	IdempotencyKey  string
+	RequestID       string
 }

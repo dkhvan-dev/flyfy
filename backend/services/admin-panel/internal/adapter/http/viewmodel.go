@@ -43,6 +43,7 @@ type QueueViewData struct {
 	EmptyHistoryKey      string
 	TargetHeaderKey      string
 	HostHeaderKey        string
+	LocationHeaderKey    string
 	SearchPlaceholderKey string
 }
 
@@ -61,6 +62,7 @@ type ModerationQueueItemView struct {
 	Excursion        *model.ExcursionModerationItem
 	Activity         *model.ActivityModerationItem
 	GuideApplication *model.GuideApplicationModerationItem
+	ChatMessage      *model.ChatMessageModerationItem
 	TargetTitle      string
 	TargetSubtitle   string
 	GuideName        string
@@ -389,6 +391,10 @@ func NewGuideApplicationQueueViewData(cases []*model.ModerationCase, filters ...
 	return newQueueViewData(cases, model.ModerationTargetGuideApplication, filters...)
 }
 
+func NewChatMessageQueueViewData(cases []*model.ModerationCase, filters ...QueueFilterViewData) QueueViewData {
+	return newQueueViewData(cases, model.ModerationTargetChatMessage, filters...)
+}
+
 func newQueueViewData(cases []*model.ModerationCase, targetType model.ModerationTargetType, filters ...QueueFilterViewData) QueueViewData {
 	items := make([]ModerationQueueItemView, 0, len(cases))
 	for _, item := range cases {
@@ -398,14 +404,16 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		excursion := excursionFromSnapshot(item)
 		activity := activityFromSnapshot(item)
 		guideApplication := guideApplicationFromSnapshot(item)
+		chatMessage := chatMessageFromSnapshot(item)
 		view := ModerationQueueItemView{
 			Case:             item,
 			Excursion:        excursion,
 			Activity:         activity,
 			GuideApplication: guideApplication,
+			ChatMessage:      chatMessage,
 		}
-		view.TargetTitle = queueTargetTitle(item, excursion, activity, guideApplication)
-		view.TargetSubtitle = queueTargetSubtitle(excursion, activity, guideApplication)
+		view.TargetTitle = queueTargetTitle(item, excursion, activity, guideApplication, chatMessage)
+		view.TargetSubtitle = queueTargetSubtitle(excursion, activity, guideApplication, chatMessage)
 		if excursion != nil {
 			view.GuideName = excursionGuidePrimaryText(excursion)
 			view.GuideFullName = excursionGuideFullNameText(excursion)
@@ -415,6 +423,9 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		} else if guideApplication != nil {
 			view.GuideName = guideApplicationPrimaryText(guideApplication)
 			view.GuideFullName = guideApplicationFullNameText(guideApplication)
+		} else if chatMessage != nil {
+			view.GuideName = chatMessageSenderText(chatMessage)
+			view.GuideFullName = chatMessageConversationText(defaultLocale, chatMessage)
 		}
 		if view.GuideName == "" {
 			view.GuideName = "-"
@@ -441,6 +452,7 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		EmptyHistoryKey:      queueEmptyHistoryKey(targetType),
 		TargetHeaderKey:      queueTargetHeaderKey(targetType),
 		HostHeaderKey:        queueHostHeaderKey(targetType),
+		LocationHeaderKey:    queueLocationHeaderKey(targetType),
 		SearchPlaceholderKey: queueSearchPlaceholderKey(targetType),
 	}
 	if targetType == model.ModerationTargetGuideApplication {
@@ -467,6 +479,14 @@ func NewActivityHistoryViewData(cases []*model.ModerationCase, filters QueueFilt
 
 func NewGuideApplicationHistoryViewData(cases []*model.ModerationCase, filters QueueFilterViewData) QueueViewData {
 	data := NewGuideApplicationQueueViewData(cases, filters)
+	data.IsHistory = true
+	data.FilterAction = data.HistoryURL
+	data.ResetURL = data.HistoryURL
+	return data
+}
+
+func NewChatMessageHistoryViewData(cases []*model.ModerationCase, filters QueueFilterViewData) QueueViewData {
+	data := NewChatMessageQueueViewData(cases, filters)
 	data.IsHistory = true
 	data.FilterAction = data.HistoryURL
 	data.ResetURL = data.HistoryURL
@@ -515,7 +535,21 @@ func guideApplicationFromSnapshot(item *model.ModerationCase) *model.GuideApplic
 	return &application
 }
 
-func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem) string {
+func chatMessageFromSnapshot(item *model.ModerationCase) *model.ChatMessageModerationItem {
+	if item == nil || item.TargetType != model.ModerationTargetChatMessage || len(item.Snapshot) == 0 {
+		return nil
+	}
+	var chatMessage model.ChatMessageModerationItem
+	if err := json.Unmarshal(item.Snapshot, &chatMessage); err != nil {
+		return nil
+	}
+	if chatMessage.ID.String() == "00000000-0000-0000-0000-000000000000" {
+		chatMessage.ID = item.TargetID
+	}
+	return &chatMessage
+}
+
+func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem, chatMessage *model.ChatMessageModerationItem) string {
 	if excursion != nil {
 		if title := strings.TrimSpace(excursion.Title); title != "" {
 			return title
@@ -537,17 +571,23 @@ func queueTargetTitle(item *model.ModerationCase, excursion *model.ExcursionMode
 			return title
 		}
 	}
+	if chatMessage != nil {
+		return chatMessagePreviewText(defaultLocale, chatMessage)
+	}
 	if item == nil {
 		return "-"
 	}
 	return string(item.TargetType) + " " + shortString(item.TargetID.String())
 }
 
-func queueTargetSubtitle(excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem) string {
+func queueTargetSubtitle(excursion *model.ExcursionModerationItem, activity *model.ActivityModerationItem, guideApplication *model.GuideApplicationModerationItem, chatMessage *model.ChatMessageModerationItem) string {
 	if excursion == nil {
 		if activity == nil {
 			if guideApplication == nil {
-				return ""
+				if chatMessage == nil {
+					return ""
+				}
+				return chatMessageSignalsText(defaultLocale, chatMessage)
 			}
 			return guideApplicationTypeText(defaultLocale, guideApplication)
 		}
@@ -571,6 +611,9 @@ func activityHostSecondaryText(item *model.ActivityModerationItem) string {
 }
 
 func queueBaseURL(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return "/admin/moderation/chats"
+	}
 	if targetType == model.ModerationTargetActivity {
 		return "/admin/moderation/activities"
 	}
@@ -585,6 +628,9 @@ func queueDetailBaseURL(targetType model.ModerationTargetType) string {
 }
 
 func queueTitleKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return "moderation.chatQueue"
+	}
 	if targetType == model.ModerationTargetActivity {
 		return "moderation.activityQueue"
 	}
@@ -595,6 +641,9 @@ func queueTitleKey(targetType model.ModerationTargetType) string {
 }
 
 func queueHistoryTitleKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return "moderation.chatHistory"
+	}
 	if targetType == model.ModerationTargetActivity {
 		return "moderation.activityHistory"
 	}
@@ -605,6 +654,9 @@ func queueHistoryTitleKey(targetType model.ModerationTargetType) string {
 }
 
 func queueEmptyQueueKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return "moderation.noChatCases"
+	}
 	if targetType == model.ModerationTargetActivity {
 		return "moderation.noActivityCases"
 	}
@@ -615,6 +667,9 @@ func queueEmptyQueueKey(targetType model.ModerationTargetType) string {
 }
 
 func queueEmptyHistoryKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return "moderation.noChatHistory"
+	}
 	if targetType == model.ModerationTargetActivity {
 		return "moderation.noActivityHistory"
 	}
@@ -625,6 +680,9 @@ func queueEmptyHistoryKey(targetType model.ModerationTargetType) string {
 }
 
 func queueTargetHeaderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return "table.message"
+	}
 	if targetType == model.ModerationTargetActivity {
 		return "table.activity"
 	}
@@ -635,6 +693,9 @@ func queueTargetHeaderKey(targetType model.ModerationTargetType) string {
 }
 
 func queueHostHeaderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return "table.sender"
+	}
 	if targetType == model.ModerationTargetActivity {
 		return "table.host"
 	}
@@ -644,7 +705,17 @@ func queueHostHeaderKey(targetType model.ModerationTargetType) string {
 	return "table.guide"
 }
 
+func queueLocationHeaderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return "table.conversation"
+	}
+	return "table.city"
+}
+
 func queueSearchPlaceholderKey(targetType model.ModerationTargetType) string {
+	if targetType == model.ModerationTargetChatMessage {
+		return "placeholder.searchChats"
+	}
 	if targetType == model.ModerationTargetActivity {
 		return "placeholder.searchActivities"
 	}

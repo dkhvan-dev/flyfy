@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ const maxMessageSize = 4096
 const maxFilesPerMessage = 10
 const editWindowHours = 24
 const maxReactionLength = 32
+const moderationContextWindow = 5
 
 const (
 	messageTypeText    = "text"
@@ -33,6 +35,8 @@ var allowedReactionEmojis = map[string]struct{}{
 	"🙏":  {},
 	"🔥":  {},
 }
+
+var phoneLikePattern = regexp.MustCompile(`(?i)(?:\+?\d[\d\s().-]{6,}\d)`)
 
 type MessageUseCase struct {
 	repo             port.ChatRepository
@@ -201,6 +205,13 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	}
 
 	now := time.Now().UTC()
+	moderationStatus := model.MessageModerationStatusVisible
+	moderationReasonCodes, moderationRiskScore := detectMessageModerationSignals(input.Content)
+	var moderationTriggeredAt *time.Time
+	if moderationRiskScore > 0 {
+		moderationStatus = model.MessageModerationStatusFlagged
+		moderationTriggeredAt = &now
+	}
 	if conv.IsMessagingClosed(now) {
 		return nil, ErrConversationMessagingClosed
 	}
@@ -214,16 +225,21 @@ func (u *MessageUseCase) SendMessage(ctx context.Context, input SendMessageInput
 	}
 
 	msg := &model.Message{
-		ID:               uuid.New(),
-		ConversationID:   input.ConversationID,
-		SenderUserID:     input.SenderUserID,
-		Type:             messageType,
-		Content:          input.Content,
-		StickerID:        stickerID,
-		StickerFileID:    stickerFileID,
-		StickerPayload:   stickerPayload,
-		ReplyToMessageID: input.ReplyToMessageID,
-		SentAt:           now,
+		ID:                    uuid.New(),
+		ConversationID:        input.ConversationID,
+		SenderUserID:          input.SenderUserID,
+		Type:                  messageType,
+		Content:               input.Content,
+		StickerID:             stickerID,
+		StickerFileID:         stickerFileID,
+		StickerPayload:        stickerPayload,
+		ReplyToMessageID:      input.ReplyToMessageID,
+		ModerationStatus:      moderationStatus,
+		ModerationReasonCodes: moderationReasonCodes,
+		ModerationRiskScore:   moderationRiskScore,
+		ModerationTriggeredAt: moderationTriggeredAt,
+		ModerationRevision:    1,
+		SentAt:                now,
 	}
 
 	err = u.repo.WithTx(ctx, func(txRepo port.ChatTxRepository) error {
@@ -781,6 +797,215 @@ func (u *MessageUseCase) ListMessages(ctx context.Context, conversationID, actor
 	enrichMessages(ctx, u.profileResolver, msgs)
 
 	return msgs, nil
+}
+
+func (u *MessageUseCase) ListFlaggedMessagesForModeration(ctx context.Context, limit int, offset int) ([]*model.ChatMessageModerationItem, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	items, err := u.repo.ListFlaggedMessagesForModeration(ctx, port.ChatModerationFilter{
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+	enrichModerationItems(ctx, u.profileResolver, items)
+	return items, nil
+}
+
+func (u *MessageUseCase) GetMessageForModeration(ctx context.Context, messageID uuid.UUID) (*model.ChatMessageModerationItem, error) {
+	if messageID == uuid.Nil {
+		return nil, ErrInvalidMessageID
+	}
+	item, err := u.repo.GetMessageForModeration(ctx, messageID, moderationContextWindow, moderationContextWindow)
+	if err != nil {
+		return nil, err
+	}
+	if item == nil {
+		return nil, ErrMessageNotFound
+	}
+	enrichModerationItems(ctx, u.profileResolver, []*model.ChatMessageModerationItem{item})
+	return item, nil
+}
+
+func (u *MessageUseCase) ApproveMessageForModeration(
+	ctx context.Context,
+	messageID uuid.UUID,
+	actorStaffID uuid.UUID,
+	internalComment string,
+) (*model.ChatMessageModerationItem, error) {
+	if strings.TrimSpace(internalComment) == "" {
+		return nil, ErrInvalidModerationDecision
+	}
+	msg, err := u.repo.UpdateMessageModeration(
+		ctx,
+		messageID,
+		model.MessageModerationStatusCleared,
+		nil,
+		"",
+		internalComment,
+		actorStaffID,
+		time.Now().UTC(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	if msg == nil {
+		return nil, ErrMessageNotFound
+	}
+	return u.GetMessageForModeration(ctx, messageID)
+}
+
+func (u *MessageUseCase) HideMessageForModeration(
+	ctx context.Context,
+	messageID uuid.UUID,
+	actorStaffID uuid.UUID,
+	reasonCodes []string,
+	publicComment string,
+	internalComment string,
+) (*model.ChatMessageModerationItem, error) {
+	reasonCodes = normalizeModerationReasonCodes(reasonCodes)
+	if len(reasonCodes) == 0 ||
+		strings.TrimSpace(publicComment) == "" ||
+		strings.TrimSpace(internalComment) == "" {
+		return nil, ErrInvalidModerationDecision
+	}
+	msg, err := u.repo.UpdateMessageModeration(
+		ctx,
+		messageID,
+		model.MessageModerationStatusHiddenByModeration,
+		reasonCodes,
+		publicComment,
+		internalComment,
+		actorStaffID,
+		time.Now().UTC(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	if msg == nil {
+		return nil, ErrMessageNotFound
+	}
+	if u.publisher != nil {
+		go func() {
+			deletedAt := msg.ModerationReviewedAt
+			evt := event.New("message.deleted", msg.ConversationID, event.MessageDeletedPayload{
+				MessageID:               messageID,
+				DeletedAt:               deletedAt,
+				HardDeleted:             false,
+				ModerationStatus:        model.MessageModerationStatusHiddenByModeration,
+				ModerationPublicComment: strings.TrimSpace(msg.ModerationPublicComment),
+			})
+			_ = u.publisher.Publish(context.Background(), "chat.message.deleted", evt)
+		}()
+	}
+	return u.GetMessageForModeration(ctx, messageID)
+}
+
+func detectMessageModerationSignals(content string) ([]string, int) {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return nil, 0
+	}
+	lower := strings.ToLower(content)
+	codes := make([]string, 0, 3)
+	risk := 0
+	if strings.Contains(lower, "whatsapp") ||
+		strings.Contains(lower, "telegram") ||
+		strings.Contains(lower, "instagram") ||
+		strings.Contains(lower, "wa.me/") ||
+		strings.Contains(lower, "t.me/") {
+		codes = append(codes, "off_platform_contact")
+		risk += 60
+	}
+	if phoneLikePattern.MatchString(content) {
+		codes = append(codes, "phone_number")
+		risk += 30
+	}
+	if strings.Contains(lower, "http://") || strings.Contains(lower, "https://") {
+		codes = append(codes, "external_link")
+		risk += 20
+	}
+	codes = normalizeModerationReasonCodes(codes)
+	if risk > 100 {
+		risk = 100
+	}
+	return codes, risk
+}
+
+func normalizeModerationReasonCodes(input []string) []string {
+	seen := make(map[string]struct{}, len(input))
+	out := make([]string, 0, len(input))
+	for _, code := range input {
+		code = strings.ToLower(strings.TrimSpace(code))
+		if code == "" {
+			continue
+		}
+		if _, ok := seen[code]; ok {
+			continue
+		}
+		seen[code] = struct{}{}
+		out = append(out, code)
+	}
+	return out
+}
+
+func enrichModerationItems(ctx context.Context, resolver port.UserProfileResolver, items []*model.ChatMessageModerationItem) {
+	if resolver == nil || len(items) == 0 {
+		return
+	}
+	userIDs := make([]uuid.UUID, 0, len(items)*3)
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		if item.SenderUserID != uuid.Nil {
+			userIDs = append(userIDs, item.SenderUserID)
+		}
+		for _, participant := range item.Participants {
+			if participant.UserID != uuid.Nil {
+				userIDs = append(userIDs, participant.UserID)
+			}
+		}
+		for _, message := range item.ContextBefore {
+			if message.SenderUserID != uuid.Nil {
+				userIDs = append(userIDs, message.SenderUserID)
+			}
+		}
+		for _, message := range item.ContextAfter {
+			if message.SenderUserID != uuid.Nil {
+				userIDs = append(userIDs, message.SenderUserID)
+			}
+		}
+	}
+	profiles := loadPublicProfiles(ctx, resolver, userIDs)
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		if profile, ok := profiles[item.SenderUserID]; ok && strings.TrimSpace(profile.DisplayName) != "" {
+			item.SenderDisplayName = profile.DisplayName
+		}
+		for idx := range item.Participants {
+			if profile, ok := profiles[item.Participants[idx].UserID]; ok && strings.TrimSpace(profile.DisplayName) != "" {
+				item.Participants[idx].DisplayName = profile.DisplayName
+			}
+		}
+		enrichModerationContextMessages(profiles, item.ContextBefore)
+		enrichModerationContextMessages(profiles, item.ContextAfter)
+	}
+}
+
+func enrichModerationContextMessages(profiles map[uuid.UUID]port.PublicUserProfile, messages []model.ChatMessageContextItem) {
+	for idx := range messages {
+		if profile, ok := profiles[messages[idx].SenderUserID]; ok && strings.TrimSpace(profile.DisplayName) != "" {
+			messages[idx].SenderDisplayName = profile.DisplayName
+		}
+	}
 }
 
 func reactionSummariesForEvent(

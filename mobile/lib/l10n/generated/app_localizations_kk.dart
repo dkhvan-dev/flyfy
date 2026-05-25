@@ -5060,6 +5060,14 @@ class AppLocalizationsKk extends AppLocalizations {
   String get chatMessageDeleted => 'Хабар өшірілді';
 
   @override
+  String get chatMessageRemovedByModerator => 'Хабарды модератор өшірді';
+
+  @override
+  String chatModeratorComment(Object comment) {
+    return 'Модератор түсіндірмесі: $comment';
+  }
+
+  @override
   String get chatDeleteAction => 'Өшіру';
 
   @override

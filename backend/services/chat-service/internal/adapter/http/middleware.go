@@ -44,7 +44,7 @@ func authContextMiddleware(cfg *config.Config, next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		internalPath := strings.HasPrefix(r.URL.Path, "/v1/internal/")
+		internalPath := strings.HasPrefix(r.URL.Path, "/v1/internal/") || strings.HasPrefix(r.URL.Path, "/v1/admin/")
 
 		if internalPath {
 			token := strings.TrimSpace(r.Header.Get("X-Internal-Service-Token"))

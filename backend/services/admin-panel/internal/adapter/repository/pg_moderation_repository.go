@@ -191,6 +191,61 @@ func (r *PGModerationRepository) CancelStaleGuideApplicationCases(ctx context.Co
 	return nil
 }
 
+func (r *PGModerationRepository) UpsertChatMessageCase(ctx context.Context, item model.ChatMessageModerationItem) (*model.ModerationCase, error) {
+	now := time.Now().UTC()
+	snapshot, err := json.Marshal(item)
+	if err != nil {
+		return nil, err
+	}
+	caseID := uuid.New()
+	row := r.pool.QueryRow(ctx, `
+		INSERT INTO moderation_cases (
+			id, target_type, target_id, source_service, source_revision, status,
+			priority, snapshot, metadata, opened_at, created_at, updated_at
+		)
+		VALUES ($1, 'CHAT_MESSAGE', $2, 'chat-service', $3, 'OPEN',
+		        $4, $5, '{}'::jsonb, $6, $6, $6)
+		ON CONFLICT (target_type, target_id, source_revision)
+		    WHERE status IN ('OPEN', 'IN_REVIEW', 'ESCALATED')
+		DO UPDATE SET
+		    snapshot = EXCLUDED.snapshot,
+		    priority = GREATEST(moderation_cases.priority, EXCLUDED.priority),
+		    updated_at = EXCLUDED.updated_at
+		RETURNING id, target_type, target_id, source_service, source_revision, status,
+		          priority, reason, snapshot, metadata, assigned_admin_id, opened_by,
+		          opened_at, due_at, resolved_at, lock_version, created_at, updated_at
+	`, caseID, item.ID, item.Revision, chatMessageModerationPriority(item), string(snapshot), now)
+	return scanModerationCase(row)
+}
+
+func (r *PGModerationRepository) CancelStaleChatMessageCases(ctx context.Context, activeTargetIDs []uuid.UUID, now time.Time) error {
+	ids := make([]uuid.UUID, 0, len(activeTargetIDs))
+	seen := make(map[uuid.UUID]struct{}, len(activeTargetIDs))
+	for _, id := range activeTargetIDs {
+		if id == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	_, err := r.pool.Exec(ctx, `
+		UPDATE moderation_cases
+		SET status = 'CANCELLED',
+		    resolved_at = $1,
+		    updated_at = $1
+		WHERE target_type = 'CHAT_MESSAGE'
+		  AND status IN ('OPEN', 'IN_REVIEW', 'ESCALATED')
+		  AND NOT (target_id = ANY($2::uuid[]))
+	`, now, ids)
+	if err != nil {
+		return fmt.Errorf("cancel stale chat message cases: %w", err)
+	}
+	return nil
+}
+
 func (r *PGModerationRepository) ListCases(ctx context.Context, filter model.ModerationQueueFilter) ([]*model.ModerationCase, error) {
 	query, args := buildListCasesQuery(filter)
 	rows, err := r.pool.Query(ctx, query, args...)
@@ -295,6 +350,10 @@ func moderationSearchSQL() string {
 		"COALESCE(snapshot->>'GuideFirstName', '') || ' ' || " +
 		"COALESCE(snapshot->>'GuideLastName', '') || ' ' || " +
 		"COALESCE(snapshot->>'HostDisplayName', '') || ' ' || " +
+		"COALESCE(snapshot->>'Content', '') || ' ' || " +
+		"COALESCE(snapshot->>'SenderDisplayName', '') || ' ' || " +
+		"COALESCE(snapshot->>'ConversationTitle', '') || ' ' || " +
+		"COALESCE(snapshot->>'Participants', '') || ' ' || " +
 		"COALESCE(snapshot->>'CategorySlug', '') || ' ' || " +
 		"COALESCE(snapshot->>'AddressText', '') || ' ' || " +
 		"COALESCE(snapshot->>'GuideDisplayName', '') || ' ' || " +
@@ -474,6 +533,22 @@ func guideApplicationModerationPriority(item model.GuideApplicationModerationIte
 		return 80
 	}
 	return 50
+}
+
+func chatMessageModerationPriority(item model.ChatMessageModerationItem) int {
+	if item.ModerationRiskScore > 100 {
+		return 100
+	}
+	if item.ModerationRiskScore < 0 {
+		return 0
+	}
+	if item.ModerationRiskScore > 0 {
+		return item.ModerationRiskScore
+	}
+	if len(item.ModerationReasonCodes) > 0 {
+		return 50
+	}
+	return 10
 }
 
 func scanModerationCase(row staffScanner) (*model.ModerationCase, error) {

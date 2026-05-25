@@ -53,9 +53,11 @@ type MessageEditedPayload struct {
 }
 
 type MessageDeletedPayload struct {
-	MessageID   uuid.UUID  `json:"messageId"`
-	DeletedAt   *time.Time `json:"deletedAt,omitempty"`
-	HardDeleted bool       `json:"hardDeleted"`
+	MessageID               uuid.UUID  `json:"messageId"`
+	DeletedAt               *time.Time `json:"deletedAt,omitempty"`
+	HardDeleted             bool       `json:"hardDeleted"`
+	ModerationStatus        string     `json:"moderationStatus,omitempty"`
+	ModerationPublicComment string     `json:"moderationPublicComment,omitempty"`
 }
 
 type MessageReactionUpdatedPayload struct {

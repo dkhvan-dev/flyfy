@@ -9122,6 +9122,18 @@ abstract class AppLocalizations {
   /// **'Message deleted'**
   String get chatMessageDeleted;
 
+  /// No description provided for @chatMessageRemovedByModerator.
+  ///
+  /// In en, this message translates to:
+  /// **'Message removed by moderator'**
+  String get chatMessageRemovedByModerator;
+
+  /// No description provided for @chatModeratorComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator comment: {comment}'**
+  String chatModeratorComment(Object comment);
+
   /// No description provided for @chatDeleteAction.
   ///
   /// In en, this message translates to:

@@ -211,6 +211,56 @@ type ActivityModerationItem struct {
 	UpdatedAt time.Time
 }
 
+type ChatParticipantModerationItem struct {
+	UserID      uuid.UUID `json:"userId"`
+	DisplayName string    `json:"displayName,omitempty"`
+	Role        string    `json:"role,omitempty"`
+}
+
+type ChatMessageContextItem struct {
+	ID                uuid.UUID  `json:"id"`
+	SenderUserID      uuid.UUID  `json:"senderUserId"`
+	SenderDisplayName string     `json:"senderDisplayName,omitempty"`
+	Type              string     `json:"type"`
+	Content           string     `json:"content"`
+	FileIDs           []string   `json:"fileIds,omitempty"`
+	EditedAt          *time.Time `json:"editedAt,omitempty"`
+	DeletedAt         *time.Time `json:"deletedAt,omitempty"`
+	SentAt            time.Time  `json:"sentAt"`
+}
+
+type ChatMessageModerationItem struct {
+	ID                      uuid.UUID
+	ConversationID          uuid.UUID
+	ConversationType        string
+	ConversationTitle       string
+	ActivityID              *uuid.UUID
+	ExcursionScheduleSlotID *uuid.UUID
+
+	SenderUserID      uuid.UUID
+	SenderDisplayName string
+	Type              string
+	Content           string
+	FileIDs           []string
+
+	ModerationStatus      string
+	ModerationRiskScore   int
+	ModerationReasonCodes []string
+	ModerationTriggeredAt *time.Time
+	ModerationReviewedAt  *time.Time
+
+	ContextBefore []ChatMessageContextItem
+	ContextAfter  []ChatMessageContextItem
+	Participants  []ChatParticipantModerationItem
+
+	Revision  int
+	EditedAt  *time.Time
+	DeletedAt *time.Time
+	SentAt    time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type GuideApplicationDocument struct {
 	ID           uuid.UUID
 	FileID       uuid.UUID

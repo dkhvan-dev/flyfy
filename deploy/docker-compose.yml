@@ -840,6 +840,8 @@ services:
         condition: service_completed_successfully
       guide-service:
         condition: service_started
+      chat-service:
+        condition: service_started
       file-manager-service:
         condition: service_started
       translation-service:
@@ -915,6 +917,7 @@ services:
       EXCURSION_SERVICE_URL: http://excursion-service:8093
       ACTIVITY_SERVICE_URL: http://activity-service:8086
       GUIDE_SERVICE_URL: http://guide-service:8085
+      CHAT_SERVICE_URL: http://chat-service:8088
       BOOTSTRAP_SUPERADMIN_EMAIL: admin@flyfy.local
       BOOTSTRAP_SUPERADMIN_DISPLAY_NAME: FlyFy Super Admin
       BOOTSTRAP_SUPERADMIN_PASSWORD: AdminPanelDevPass123!

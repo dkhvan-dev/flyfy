@@ -2839,7 +2839,9 @@ String _senderNameForMessage(
 
 String _messagePreviewText(MessageVm message, AppLocalizations l10n) {
   if (message.isDeleted) {
-    return l10n.chatMessageDeleted;
+    return message.isHiddenByModerator
+        ? l10n.chatMessageRemovedByModerator
+        : l10n.chatMessageDeleted;
   }
   if (message.isSticker) {
     return l10n.chatStickerMessage;
@@ -4215,6 +4217,8 @@ class _MessageBubble extends StatelessWidget {
     final senderName = _senderNameForMessage(message, participants, l10n);
     final isDeleted = message.isDeleted;
     final isSticker = message.isSticker;
+    final moderationPublicComment =
+        message.moderationPublicComment?.trim() ?? '';
 
     if (message.isSystem) {
       return _SystemMessageDivider(text: _systemMessageText(senderName, l10n));
@@ -4395,14 +4399,36 @@ class _MessageBubble extends StatelessWidget {
                           message.content.trim().isNotEmpty)
                         SizedBox(height: _scale(context, 12)),
                       if (isDeleted)
-                        Text(
-                          l10n.chatMessageDeleted,
-                          style: TextStyle(
-                            fontStyle: FontStyle.italic,
-                            fontSize: _scale(context, 15),
-                            height: 1.4,
-                            color: Colors.white.withValues(alpha: 0.58),
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              message.isHiddenByModerator
+                                  ? l10n.chatMessageRemovedByModerator
+                                  : l10n.chatMessageDeleted,
+                              style: TextStyle(
+                                fontStyle: FontStyle.italic,
+                                fontSize: _scale(context, 15),
+                                height: 1.4,
+                                color: Colors.white.withValues(alpha: 0.58),
+                              ),
+                            ),
+                            if (message.isHiddenByModerator &&
+                                moderationPublicComment.isNotEmpty) ...[
+                              SizedBox(height: _scale(context, 8)),
+                              Text(
+                                l10n.chatModeratorComment(
+                                  moderationPublicComment,
+                                ),
+                                style: TextStyle(
+                                  fontSize: _scale(context, 14),
+                                  height: 1.45,
+                                  color: Colors.white.withValues(alpha: 0.72),
+                                ),
+                              ),
+                            ],
+                          ],
                         )
                       else if (message.content.trim().isNotEmpty)
                         _HyperlinkedMessageText(

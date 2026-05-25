@@ -18,6 +18,7 @@ type Config struct {
 	Excursion ExcursionServiceConfig
 	Activity  ActivityServiceConfig
 	Guide     GuideServiceConfig
+	Chat      ChatServiceConfig
 	Bootstrap BootstrapConfig
 }
 
@@ -114,6 +115,11 @@ type ActivityServiceConfig struct {
 type GuideServiceConfig struct {
 	BaseURL string        `env:"GUIDE_SERVICE_URL, default=http://guide-service:8085"`
 	Timeout time.Duration `env:"GUIDE_SERVICE_TIMEOUT, default=5s"`
+}
+
+type ChatServiceConfig struct {
+	BaseURL string        `env:"CHAT_SERVICE_URL, default=http://chat-service:8088"`
+	Timeout time.Duration `env:"CHAT_SERVICE_TIMEOUT, default=5s"`
 }
 
 type BootstrapConfig struct {

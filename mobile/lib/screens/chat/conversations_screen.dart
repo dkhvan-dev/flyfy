@@ -502,7 +502,11 @@ class _LastMessagePreviewLineState extends State<_LastMessagePreviewLine> {
     _LastAttachmentPreviewData? attachment,
   ) {
     final message = widget.message;
-    if (message.isDeleted) return l10n.chatMessageDeleted;
+    if (message.isDeleted) {
+      return message.isHiddenByModerator
+          ? l10n.chatMessageRemovedByModerator
+          : l10n.chatMessageDeleted;
+    }
     if (message.senderDisplayName.trim().toLowerCase() == 'system') {
       return message.contentPreview;
     }

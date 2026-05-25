@@ -1892,6 +1892,13 @@
   "chatDateToday": "Today",
   "chatDateYesterday": "Yesterday",
   "chatMessageDeleted": "Message deleted",
+  "chatMessageRemovedByModerator": "Message removed by moderator",
+  "chatModeratorComment": "Moderator comment: {comment}",
+  "@chatModeratorComment": {
+    "placeholders": {
+      "comment": {}
+    }
+  },
   "chatDeleteAction": "Delete",
   "chatDeleteFailed": "Failed to delete the message. Please try again.",
   "chatEditedLabel": "edited",

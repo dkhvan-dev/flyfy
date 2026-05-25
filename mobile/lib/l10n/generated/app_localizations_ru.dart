@@ -5063,6 +5063,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatMessageDeleted => 'Сообщение удалено';
 
   @override
+  String get chatMessageRemovedByModerator => 'Сообщение удалено модератором';
+
+  @override
+  String chatModeratorComment(Object comment) {
+    return 'Комментарий модератора: $comment';
+  }
+
+  @override
   String get chatDeleteAction => 'Удалить';
 
   @override

@@ -1892,6 +1892,13 @@
   "chatDateToday": "Сегодня",
   "chatDateYesterday": "Вчера",
   "chatMessageDeleted": "Сообщение удалено",
+  "chatMessageRemovedByModerator": "Сообщение удалено модератором",
+  "chatModeratorComment": "Комментарий модератора: {comment}",
+  "@chatModeratorComment": {
+    "placeholders": {
+      "comment": {}
+    }
+  },
   "chatDeleteAction": "Удалить",
   "chatDeleteFailed": "Не удалось удалить сообщение. Попробуйте еще раз.",
   "chatEditedLabel": "изменено",

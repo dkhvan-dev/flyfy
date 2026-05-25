@@ -1892,6 +1892,13 @@
   "chatDateToday": "Бүгін",
   "chatDateYesterday": "Кеше",
   "chatMessageDeleted": "Хабар өшірілді",
+  "chatMessageRemovedByModerator": "Хабарды модератор өшірді",
+  "chatModeratorComment": "Модератор түсіндірмесі: {comment}",
+  "@chatModeratorComment": {
+    "placeholders": {
+      "comment": {}
+    }
+  },
   "chatDeleteAction": "Өшіру",
   "chatDeleteFailed": "Хабарды өшіру мүмкін болмады. Қайта көріңіз.",
   "chatEditedLabel": "өзгертілді",

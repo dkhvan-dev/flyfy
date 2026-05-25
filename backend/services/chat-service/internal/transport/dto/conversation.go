@@ -51,16 +51,18 @@ type ConversationListItem struct {
 }
 
 type LastMessagePreview struct {
-	ID                string   `json:"id"`
-	SenderUserID      string   `json:"senderUserId"`
-	SenderDisplayName string   `json:"senderDisplayName"`
-	Type              string   `json:"type"`
-	ContentPreview    string   `json:"contentPreview"`
-	FileIDs           []string `json:"fileIds,omitempty"`
-	StickerID         *string  `json:"stickerId,omitempty"`
-	StickerFileID     *string  `json:"stickerFileId,omitempty"`
-	DeletedAt         *string  `json:"deletedAt,omitempty"`
-	SentAt            string   `json:"sentAt"`
+	ID                      string   `json:"id"`
+	SenderUserID            string   `json:"senderUserId"`
+	SenderDisplayName       string   `json:"senderDisplayName"`
+	Type                    string   `json:"type"`
+	ContentPreview          string   `json:"contentPreview"`
+	FileIDs                 []string `json:"fileIds,omitempty"`
+	StickerID               *string  `json:"stickerId,omitempty"`
+	StickerFileID           *string  `json:"stickerFileId,omitempty"`
+	DeletedAt               *string  `json:"deletedAt,omitempty"`
+	ModerationStatus        string   `json:"moderationStatus,omitempty"`
+	ModerationPublicComment *string  `json:"moderationPublicComment,omitempty"`
+	SentAt                  string   `json:"sentAt"`
 }
 
 type ConversationDetail struct {

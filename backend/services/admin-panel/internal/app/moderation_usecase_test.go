@@ -47,7 +47,7 @@ func TestDecideExcursionSupersedesPreviousAppliedDecision(t *testing.T) {
 			Status:   "PUBLISHED",
 		},
 	}
-	uc := NewModerationUseCase(repo, excursion, &moderationActivityClientStub{}, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, excursion, &moderationActivityClientStub{}, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 	_, err := uc.DecideExcursion(context.Background(), ModerationDecisionInput{
 		Actor:           actor,
@@ -98,7 +98,7 @@ func TestSyncActivityQueueUpsertsActiveFlaggedActivityCases(t *testing.T) {
 			},
 		},
 	}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 	if err := uc.SyncActivityQueue(context.Background(), actor); err != nil {
 		t.Fatalf("SyncActivityQueue() error = %v", err)
@@ -142,7 +142,7 @@ func TestSyncGuideApplicationQueueUpsertsPendingApplicationCases(t *testing.T) {
 			},
 		},
 	}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 	if err := uc.SyncGuideApplicationQueue(context.Background(), actor); err != nil {
 		t.Fatalf("SyncGuideApplicationQueue() error = %v", err)
@@ -155,6 +155,236 @@ func TestSyncGuideApplicationQueueUpsertsPendingApplicationCases(t *testing.T) {
 	}
 	if len(repo.cancelledGuideApplicationIDs) != 1 || repo.cancelledGuideApplicationIDs[0] != applicationID {
 		t.Fatalf("cancelled stale guide application ids = %#v, want [%s]", repo.cancelledGuideApplicationIDs, applicationID)
+	}
+}
+
+func TestSyncChatMessageQueueUpsertsFlaggedMessageCases(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "chat-moderator@flyfy.local",
+		DisplayName: "Chat Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+		},
+	}
+	messageID := uuid.New()
+	conversationID := uuid.New()
+	repo := &moderationRepoStub{}
+	chat := &moderationChatClientStub{
+		items: []model.ChatMessageModerationItem{
+			{
+				ID:                    messageID,
+				ConversationID:        conversationID,
+				ConversationTitle:     "Medeu private tour",
+				SenderDisplayName:     "Risky Sender",
+				Content:               "Напишите мне в WhatsApp +77011234567",
+				ModerationStatus:      "FLAGGED",
+				ModerationRiskScore:   80,
+				ModerationReasonCodes: []string{"off_platform_contact"},
+				Revision:              2,
+				SentAt:                time.Now().UTC(),
+			},
+		},
+	}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, &moderationGuideClientStub{}, chat, &moderationAuditRepoStub{})
+
+	if err := uc.SyncChatMessageQueue(context.Background(), actor); err != nil {
+		t.Fatalf("SyncChatMessageQueue() error = %v", err)
+	}
+	if len(repo.upsertedChatMessages) != 1 {
+		t.Fatalf("upserted chat messages = %d, want 1", len(repo.upsertedChatMessages))
+	}
+	if repo.upsertedChatMessages[0].ID != messageID {
+		t.Fatalf("upserted chat message id = %s, want %s", repo.upsertedChatMessages[0].ID, messageID)
+	}
+	if len(repo.cancelledChatMessageIDs) != 1 || repo.cancelledChatMessageIDs[0] != messageID {
+		t.Fatalf("cancelled stale chat message ids = %#v, want [%s]", repo.cancelledChatMessageIDs, messageID)
+	}
+}
+
+func TestDecideChatMessageRejectRequiresPublicAndInternalComments(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "chat-moderator@flyfy.local",
+		DisplayName: "Chat Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionChatModerate,
+		},
+	}
+	caseID := uuid.New()
+	messageID := uuid.New()
+
+	for _, tc := range []struct {
+		name            string
+		publicComment   string
+		internalComment string
+	}{
+		{name: "missing public comment", internalComment: "Off-platform contact confirmed."},
+		{name: "missing internal comment", publicComment: "Сообщение скрыто из-за попытки увести общение из FlyFy."},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := &moderationRepoStub{
+				item: &model.ModerationCase{
+					ID:             caseID,
+					TargetType:     model.ModerationTargetChatMessage,
+					TargetID:       messageID,
+					SourceRevision: 2,
+					Status:         enum.ModerationCaseStatusOpen,
+					CreatedAt:      time.Now().UTC(),
+					UpdatedAt:      time.Now().UTC(),
+				},
+			}
+			chat := &moderationChatClientStub{
+				item: &model.ChatMessageModerationItem{
+					ID:               messageID,
+					Revision:         2,
+					ModerationStatus: "FLAGGED",
+				},
+			}
+			uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, &moderationGuideClientStub{}, chat, &moderationAuditRepoStub{})
+
+			_, err := uc.DecideChatMessage(context.Background(), ModerationDecisionInput{
+				Actor:           actor,
+				CaseID:          caseID,
+				Decision:        enum.ModerationDecisionReject,
+				ReasonCodes:     []string{"off_platform_contact"},
+				PublicComment:   tc.publicComment,
+				InternalComment: tc.internalComment,
+				IdempotencyKey:  "chat-hide",
+			})
+
+			if !errors.Is(err, ErrInvalidInput) {
+				t.Fatalf("DecideChatMessage() error = %v, want %v", err, ErrInvalidInput)
+			}
+			if repo.createdDecision != nil {
+				t.Fatal("DecideChatMessage() created decision without mandatory comments")
+			}
+			if chat.lastHideInput.MessageID != uuid.Nil {
+				t.Fatal("DecideChatMessage() called chat service without mandatory comments")
+			}
+		})
+	}
+}
+
+func TestDecideChatMessageRejectHidesMessageAndMarksCaseRejected(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "chat-moderator@flyfy.local",
+		DisplayName: "Chat Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionChatModerate,
+		},
+	}
+	caseID := uuid.New()
+	messageID := uuid.New()
+	repo := &moderationRepoStub{
+		item: &model.ModerationCase{
+			ID:             caseID,
+			TargetType:     model.ModerationTargetChatMessage,
+			TargetID:       messageID,
+			SourceRevision: 2,
+			Status:         enum.ModerationCaseStatusOpen,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		},
+	}
+	chat := &moderationChatClientStub{
+		item: &model.ChatMessageModerationItem{
+			ID:               messageID,
+			Revision:         3,
+			ModerationStatus: "HIDDEN_BY_MODERATION",
+		},
+	}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, &moderationGuideClientStub{}, chat, &moderationAuditRepoStub{})
+
+	_, err := uc.DecideChatMessage(context.Background(), ModerationDecisionInput{
+		Actor:           actor,
+		CaseID:          caseID,
+		Decision:        enum.ModerationDecisionReject,
+		ReasonCodes:     []string{"off_platform_contact"},
+		PublicComment:   "Сообщение скрыто из-за попытки увести общение из FlyFy.",
+		InternalComment: "Phone number and WhatsApp mention confirmed.",
+		IdempotencyKey:  "chat-hide",
+	})
+
+	if err != nil {
+		t.Fatalf("DecideChatMessage() error = %v", err)
+	}
+	if chat.lastHideInput.MessageID != messageID {
+		t.Fatalf("hidden message id = %s, want %s", chat.lastHideInput.MessageID, messageID)
+	}
+	if chat.lastHideInput.PublicComment == "" {
+		t.Fatal("public comment must be sent to chat service")
+	}
+	if repo.item.Status != enum.ModerationCaseStatusRejected {
+		t.Fatalf("case status = %s, want %s", repo.item.Status, enum.ModerationCaseStatusRejected)
+	}
+}
+
+func TestDecideChatMessageApproveMarksMessageSafe(t *testing.T) {
+	t.Parallel()
+
+	actor := &model.StaffUser{
+		ID:          uuid.New(),
+		Email:       "chat-moderator@flyfy.local",
+		DisplayName: "Chat Moderator",
+		Status:      enum.StaffStatusActive,
+		Permissions: []enum.Permission{
+			enum.PermissionModerationRead,
+			enum.PermissionChatModerate,
+		},
+	}
+	caseID := uuid.New()
+	messageID := uuid.New()
+	repo := &moderationRepoStub{
+		item: &model.ModerationCase{
+			ID:             caseID,
+			TargetType:     model.ModerationTargetChatMessage,
+			TargetID:       messageID,
+			SourceRevision: 2,
+			Status:         enum.ModerationCaseStatusOpen,
+			CreatedAt:      time.Now().UTC(),
+			UpdatedAt:      time.Now().UTC(),
+		},
+	}
+	chat := &moderationChatClientStub{
+		item: &model.ChatMessageModerationItem{
+			ID:               messageID,
+			Revision:         3,
+			ModerationStatus: "CLEARED",
+		},
+	}
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, &moderationGuideClientStub{}, chat, &moderationAuditRepoStub{})
+
+	_, err := uc.DecideChatMessage(context.Background(), ModerationDecisionInput{
+		Actor:           actor,
+		CaseID:          caseID,
+		Decision:        enum.ModerationDecisionApprove,
+		InternalComment: "Context reviewed, no violation.",
+		IdempotencyKey:  "chat-safe",
+	})
+
+	if err != nil {
+		t.Fatalf("DecideChatMessage() error = %v", err)
+	}
+	if chat.lastApproveInput.MessageID != messageID {
+		t.Fatalf("approved message id = %s, want %s", chat.lastApproveInput.MessageID, messageID)
+	}
+	if repo.item.Status != enum.ModerationCaseStatusApproved {
+		t.Fatalf("case status = %s, want %s", repo.item.Status, enum.ModerationCaseStatusApproved)
 	}
 }
 
@@ -192,7 +422,7 @@ func TestDecideActivityApproveKeepsCaseAuditedAndApplied(t *testing.T) {
 			ModerationStatus: "APPROVED",
 		},
 	}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 	_, err := uc.DecideActivity(context.Background(), ModerationDecisionInput{
 		Actor:           actor,
@@ -262,7 +492,7 @@ func TestDecideActivityRejectRequiresPublicAndInternalComments(t *testing.T) {
 					ModerationStatus: "FLAGGED",
 				},
 			}
-			uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
+			uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 			_, err := uc.DecideActivity(context.Background(), ModerationDecisionInput{
 				Actor:           actor,
@@ -321,7 +551,7 @@ func TestDecideActivityRejectSendsPublicCommentToActivityService(t *testing.T) {
 			ModerationStatus: "REJECTED",
 		},
 	}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, activity, &moderationGuideClientStub{}, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 	_, err := uc.DecideActivity(context.Background(), ModerationDecisionInput{
 		Actor:           actor,
@@ -387,7 +617,7 @@ func TestDecideGuideApplicationRejectRequiresPublicAndInternalComments(t *testin
 					GuideStatus: "PENDING_REVIEW",
 				},
 			}
-			uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+			uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 			_, err := uc.DecideGuideApplication(context.Background(), ModerationDecisionInput{
 				Actor:           actor,
@@ -446,7 +676,7 @@ func TestDecideGuideApplicationRejectSendsPublicCommentToGuideService(t *testing
 			GuideStatus: "REJECTED",
 		},
 	}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 	_, err := uc.DecideGuideApplication(context.Background(), ModerationDecisionInput{
 		Actor:           actor,
@@ -500,7 +730,7 @@ func TestDecideGuideApplicationRevokeSendsPublicCommentAndMarksCaseRevoked(t *te
 			GuideStatus: "REVOKED",
 		},
 	}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 	_, err := uc.DecideGuideApplication(context.Background(), ModerationDecisionInput{
 		Actor:           actor,
@@ -550,7 +780,7 @@ func TestDecideGuideApplicationRevokeRejectedCaseIsDenied(t *testing.T) {
 		},
 	}
 	guide := &moderationGuideClientStub{}
-	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(repo, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 	_, err := uc.DecideGuideApplication(context.Background(), ModerationDecisionInput{
 		Actor:           actor,
@@ -593,7 +823,7 @@ func TestListActiveGuidesUsesGuideClient(t *testing.T) {
 			},
 		},
 	}
-	uc := NewModerationUseCase(&moderationRepoStub{}, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationAuditRepoStub{})
+	uc := NewModerationUseCase(&moderationRepoStub{}, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationChatClientStub{}, &moderationAuditRepoStub{})
 
 	items, err := uc.ListActiveGuides(context.Background(), actor, 100, 0)
 
@@ -629,7 +859,7 @@ func TestRevokeActiveGuideUsesGuideProfileIDAndAudit(t *testing.T) {
 			GuideStatus:    "REVOKED",
 		},
 	}
-	uc := NewModerationUseCase(&moderationRepoStub{}, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, audit)
+	uc := NewModerationUseCase(&moderationRepoStub{}, &moderationExcursionClientStub{}, &moderationActivityClientStub{}, guide, &moderationChatClientStub{}, audit)
 
 	item, err := uc.RevokeActiveGuide(context.Background(), RevokeActiveGuideInput{
 		Actor:           actor,
@@ -668,6 +898,8 @@ type moderationRepoStub struct {
 	cancelledActivityIDs         []uuid.UUID
 	upsertedGuideApplications    []model.GuideApplicationModerationItem
 	cancelledGuideApplicationIDs []uuid.UUID
+	upsertedChatMessages         []model.ChatMessageModerationItem
+	cancelledChatMessageIDs      []uuid.UUID
 }
 
 func (r *moderationRepoStub) UpsertExcursionCase(context.Context, model.ExcursionModerationItem) (*model.ModerationCase, error) {
@@ -695,6 +927,16 @@ func (r *moderationRepoStub) UpsertGuideApplicationCase(_ context.Context, item 
 
 func (r *moderationRepoStub) CancelStaleGuideApplicationCases(_ context.Context, activeTargetIDs []uuid.UUID, _ time.Time) error {
 	r.cancelledGuideApplicationIDs = append([]uuid.UUID(nil), activeTargetIDs...)
+	return nil
+}
+
+func (r *moderationRepoStub) UpsertChatMessageCase(_ context.Context, item model.ChatMessageModerationItem) (*model.ModerationCase, error) {
+	r.upsertedChatMessages = append(r.upsertedChatMessages, item)
+	return nil, nil
+}
+
+func (r *moderationRepoStub) CancelStaleChatMessageCases(_ context.Context, activeTargetIDs []uuid.UUID, _ time.Time) error {
+	r.cancelledChatMessageIDs = append([]uuid.UUID(nil), activeTargetIDs...)
 	return nil
 }
 
@@ -785,6 +1027,33 @@ func (c *moderationActivityClientStub) Approve(_ context.Context, input port.Act
 
 func (c *moderationActivityClientStub) Reject(_ context.Context, input port.ActivityDecisionInput) (*model.ActivityModerationItem, []byte, error) {
 	c.lastRejectInput = input
+	raw, _ := json.Marshal(c.item)
+	return c.item, raw, nil
+}
+
+type moderationChatClientStub struct {
+	item             *model.ChatMessageModerationItem
+	items            []model.ChatMessageModerationItem
+	lastApproveInput port.ChatMessageDecisionInput
+	lastHideInput    port.ChatMessageDecisionInput
+}
+
+func (c *moderationChatClientStub) ListFlaggedMessages(context.Context, int, int) ([]model.ChatMessageModerationItem, error) {
+	return c.items, nil
+}
+
+func (c *moderationChatClientStub) GetMessage(context.Context, uuid.UUID) (*model.ChatMessageModerationItem, error) {
+	return c.item, nil
+}
+
+func (c *moderationChatClientStub) ApproveMessage(_ context.Context, input port.ChatMessageDecisionInput) (*model.ChatMessageModerationItem, []byte, error) {
+	c.lastApproveInput = input
+	raw, _ := json.Marshal(c.item)
+	return c.item, raw, nil
+}
+
+func (c *moderationChatClientStub) HideMessage(_ context.Context, input port.ChatMessageDecisionInput) (*model.ChatMessageModerationItem, []byte, error) {
+	c.lastHideInput = input
 	raw, _ := json.Marshal(c.item)
 	return c.item, raw, nil
 }

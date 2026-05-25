@@ -11,6 +11,7 @@ import (
 	"time"
 
 	activityadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/activity"
+	chatadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/chat"
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/excursion"
 	guideadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/guide"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/adapter/http"
@@ -61,6 +62,11 @@ func main() {
 		cfg.Guide.Timeout,
 		cfg.Security.TrustedInternalToken,
 	)
+	chatClient := chatadapter.NewClient(
+		cfg.Chat.BaseURL,
+		cfg.Chat.Timeout,
+		cfg.Security.TrustedInternalToken,
+	)
 
 	authUC := app.NewAuthUseCase(staffRepo, sessionRepo, loginAttemptRepo, auditRepo, app.AuthConfig{
 		IdleTimeout:      cfg.Security.SessionIdleTimeout,
@@ -69,7 +75,7 @@ func main() {
 		MaxLoginFailures: cfg.Security.LoginRateLimitMaxFailures,
 	})
 	staffUC := app.NewStaffUseCase(staffRepo, auditRepo, sessionRepo)
-	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, activityClient, guideClient, auditRepo)
+	moderationUC := app.NewModerationUseCase(moderationRepo, excursionClient, activityClient, guideClient, chatClient, auditRepo)
 	auditUC := app.NewAuditUseCase(auditRepo)
 
 	if created, err := bootstrapSuperAdmin(ctx, cfg, staffUC); err != nil {

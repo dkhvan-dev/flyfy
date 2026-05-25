@@ -15,6 +15,8 @@ class MessageVm {
   final int forwardCount;
   final DateTime? editedAt;
   final DateTime? deletedAt;
+  final String moderationStatus;
+  final String? moderationPublicComment;
   final List<MessageReactionVm> reactions;
   final List<MessageReadReceiptVm> readReceipts;
   final DateTime sentAt;
@@ -36,12 +38,16 @@ class MessageVm {
     this.forwardCount = 0,
     this.editedAt,
     this.deletedAt,
+    this.moderationStatus = '',
+    this.moderationPublicComment,
     this.reactions = const [],
     this.readReceipts = const [],
     required this.sentAt,
   });
 
   bool get isDeleted => deletedAt != null;
+  bool get isHiddenByModerator =>
+      moderationStatus.trim().toUpperCase() == 'HIDDEN_BY_MODERATION';
   bool get isEdited => editedAt != null;
   bool get hasFiles => fileIds.isNotEmpty;
   bool get isSystem => type == 'system';
@@ -71,6 +77,8 @@ class MessageVm {
     int? forwardCount,
     DateTime? editedAt,
     DateTime? deletedAt,
+    String? moderationStatus,
+    String? moderationPublicComment,
     List<MessageReactionVm>? reactions,
     List<MessageReadReceiptVm>? readReceipts,
   }) {
@@ -94,6 +102,9 @@ class MessageVm {
       forwardCount: forwardCount ?? this.forwardCount,
       editedAt: editedAt ?? this.editedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
+      moderationPublicComment:
+          moderationPublicComment ?? this.moderationPublicComment,
       reactions: reactions ?? this.reactions,
       readReceipts: readReceipts ?? this.readReceipts,
       sentAt: sentAt,
@@ -125,6 +136,10 @@ class MessageVm {
       deletedAt: json['deletedAt'] != null
           ? DateTime.parse(json['deletedAt'] as String)
           : null,
+      moderationStatus: json['moderationStatus']?.toString() ?? '',
+      moderationPublicComment: _trimmedStringOrNull(
+        json['moderationPublicComment'],
+      ),
       reactions: (json['reactions'] as List<dynamic>?)
               ?.whereType<Map<String, dynamic>>()
               .map(MessageReactionVm.fromJson)
@@ -138,6 +153,12 @@ class MessageVm {
       sentAt: DateTime.parse(json['sentAt'] as String),
     );
   }
+}
+
+String? _trimmedStringOrNull(Object? value) {
+  final raw = value?.toString().trim() ?? '';
+  if (raw.isEmpty || raw.toLowerCase() == 'null') return null;
+  return raw;
 }
 
 class MessageReadReceiptVm {
