@@ -1858,6 +1858,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attractionFilterCategoryFood => 'Food';
 
   @override
+  String get attractionFilterCategoryMarket => 'Market';
+
+  @override
   String get attractionFilterCategoryShopping => 'Shopping';
 
   @override

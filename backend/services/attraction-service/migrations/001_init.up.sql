@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS attractions (
 
     CONSTRAINT chk_attractions_category CHECK (category IN (
         'NATURE', 'ARCHITECTURE', 'MUSEUM', 'BEACH', 'PARK',
-        'TEMPLE', 'ENTERTAINMENT', 'FOOD', 'SHOPPING', 'OTHER'
+        'TEMPLE', 'ENTERTAINMENT', 'FOOD', 'MARKET', 'SHOPPING', 'OTHER'
     )),
     CONSTRAINT chk_attractions_source CHECK (source IN ('USER', 'AI_AGENT', 'IMPORT')),
     CONSTRAINT chk_attractions_status CHECK (status IN ('DRAFT', 'PUBLISHED')),

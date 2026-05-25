@@ -13,6 +13,7 @@
   {"code": "MDL", "numeric": "498", "decimals": 2, "symbol": "L", "name": {"en": "Moldovan Leu", "ru": "Молдавский лей", "kk": "Молдова лейі"}},
   {"code": "TRY", "numeric": "949", "decimals": 2, "symbol": "₺", "name": {"en": "Turkish Lira", "ru": "Турецкая лира", "kk": "Түрік лирасы"}},
   {"code": "AED", "numeric": "784", "decimals": 2, "symbol": "د.إ", "name": {"en": "UAE Dirham", "ru": "Дирхам ОАЭ", "kk": "БАЭ дирхамы"}},
+  {"code": "VND", "numeric": "704", "decimals": 0, "symbol": "₫", "name": {"en": "Vietnamese Dong", "ru": "Вьетнамский донг", "kk": "Вьетнам донгы"}},
   {"code": "THB", "numeric": "764", "decimals": 2, "symbol": "฿", "name": {"en": "Thai Baht", "ru": "Тайский бат", "kk": "Тай баты"}},
   {"code": "EGP", "numeric": "818", "decimals": 2, "symbol": "E£", "name": {"en": "Egyptian Pound", "ru": "Египетский фунт", "kk": "Мысыр фунты"}},
   {"code": "CNY", "numeric": "156", "decimals": 2, "symbol": "¥", "name": {"en": "Chinese Yuan", "ru": "Китайский юань", "kk": "Қытай юані"}},

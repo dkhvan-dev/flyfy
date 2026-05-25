@@ -172,6 +172,37 @@
       mapInput.addEventListener("change", () => syncMapCoordinates(true));
       syncMapCoordinates();
     }
+    const countrySelect = form.querySelector("[data-attraction-country-select]");
+    const citySelect = form.querySelector("[data-attraction-city-select]");
+    const cityLinkOptions = Array.from(form.querySelectorAll("[data-attraction-city-link-option]"));
+    if (countrySelect) {
+      const syncAttractionCountryFields = () => {
+        const selectedCountry = (countrySelect.value || "").trim().toUpperCase();
+        if (citySelect) {
+          Array.from(citySelect.options).forEach((option) => {
+            const optionCountry = (option.getAttribute("data-country") || "").trim().toUpperCase();
+            const isBlank = option.value === "";
+            const isVisible = isBlank || optionCountry === selectedCountry;
+            option.hidden = !isVisible;
+            option.disabled = !isVisible;
+          });
+          const currentOption = citySelect.selectedOptions[0];
+          if (currentOption && currentOption.disabled) {
+            citySelect.value = "";
+          }
+        }
+        cityLinkOptions.forEach((option) => {
+          const optionCountry = (option.getAttribute("data-country") || "").trim().toUpperCase();
+          const isVisible = selectedCountry !== "" && optionCountry === selectedCountry;
+          option.hidden = !isVisible;
+          option.querySelectorAll("input").forEach((input) => {
+            input.disabled = !isVisible;
+          });
+        });
+      };
+      countrySelect.addEventListener("change", syncAttractionCountryFields);
+      syncAttractionCountryFields();
+    }
   });
 
   document.querySelectorAll("[data-attraction-filter-form]").forEach((form) => {

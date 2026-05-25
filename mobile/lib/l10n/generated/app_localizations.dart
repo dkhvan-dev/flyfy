@@ -3478,6 +3478,12 @@ abstract class AppLocalizations {
   /// **'Food'**
   String get attractionFilterCategoryFood;
 
+  /// No description provided for @attractionFilterCategoryMarket.
+  ///
+  /// In en, this message translates to:
+  /// **'Market'**
+  String get attractionFilterCategoryMarket;
+
   /// No description provided for @attractionFilterCategoryShopping.
   ///
   /// In en, this message translates to:

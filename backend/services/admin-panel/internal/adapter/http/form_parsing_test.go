@@ -120,6 +120,41 @@ func TestParseCityLinkValuesReadsCheckboxValues(t *testing.T) {
 	}
 }
 
+func TestParseCityLinkValuesDropsCitiesOutsideSelectedCountry(t *testing.T) {
+	t.Parallel()
+
+	got := parseCityLinkValues([]string{"VN:hanoi", "KZ:almaty", "ha-long"}, "VN")
+	if len(got) != 2 {
+		t.Fatalf("city links count = %d, want only VN links: %#v", len(got), got)
+	}
+	if got[0].CountryCode != "VN" || got[0].CityID != "hanoi" ||
+		got[1].CountryCode != "VN" || got[1].CityID != "ha-long" {
+		t.Fatalf("city links = %#v, want foreign explicit countries removed and fallback country applied", got)
+	}
+}
+
+func TestAttractionCityLinkOptionsHideCitiesOutsideAttractionCountry(t *testing.T) {
+	t.Parallel()
+
+	options := attractionCityLinkOptions(nil, "VN")
+	var foundVietnamCity bool
+	for _, option := range options {
+		if option.CountryCode == "VN" && option.CityID == "hanoi" {
+			foundVietnamCity = true
+			if option.Hidden {
+				t.Fatalf("Vietnam city option should be visible for VN attraction: %#v", option)
+			}
+			continue
+		}
+		if option.CountryCode != "VN" && !option.Hidden {
+			t.Fatalf("foreign city option should be hidden for VN attraction: %#v", option)
+		}
+	}
+	if !foundVietnamCity {
+		t.Fatalf("city options = %#v, want visible Hanoi option", options)
+	}
+}
+
 func TestAttractionListQueryPreservesCountryAndCityFilters(t *testing.T) {
 	t.Parallel()
 
@@ -194,6 +229,71 @@ func TestAttractionReferenceOptionsIncludeRussianFederationCities(t *testing.T) 
 
 	if got := attractionCityText(localeRU, "RU", "saint-petersburg"); got != "Санкт-Петербург, Российская Федерация" {
 		t.Fatalf("city text = %q, want localized Russian Federation city", got)
+	}
+}
+
+func TestAttractionReferenceOptionsIncludeVietnamCitiesAndCurrency(t *testing.T) {
+	t.Parallel()
+
+	countries := attractionCountryOptions("VN")
+	var foundVietnam bool
+	for _, option := range countries {
+		if option.Value == "VN" && option.Selected {
+			foundVietnam = true
+			break
+		}
+	}
+	if !foundVietnam {
+		t.Fatalf("country options = %#v, want selected VN option", countries)
+	}
+
+	cities := attractionCityOptions("ho-chi-minh-city")
+	var foundHoChiMinhCity bool
+	for _, option := range cities {
+		if option.Value == "ho-chi-minh-city" && option.CountryCode == "VN" && option.Selected {
+			foundHoChiMinhCity = true
+			break
+		}
+	}
+	if !foundHoChiMinhCity {
+		t.Fatalf("city options = %#v, want selected VN Ho Chi Minh City option", cities)
+	}
+
+	if got := attractionCityText(localeRU, "VN", "da-nang"); got != "Дананг, Вьетнам" {
+		t.Fatalf("city text = %q, want localized Vietnam city", got)
+	}
+	if got := attractionCityText(localeRU, "VN", "phan-thiet"); got != "Фантхьет, Вьетнам" {
+		t.Fatalf("city text = %q, want localized Phan Thiet city", got)
+	}
+	if got := attractionCurrencyText(localeRU, "VND"); got != "Вьетнамский донг" {
+		t.Fatalf("currency text = %q, want localized Vietnamese dong", got)
+	}
+}
+
+func TestAttractionCategoryOptionsIncludeMarket(t *testing.T) {
+	t.Parallel()
+
+	options := attractionCategoryOptions("MARKET")
+	var foundMarket bool
+	for _, option := range options {
+		if option.Value == "MARKET" {
+			foundMarket = true
+			if !option.Selected {
+				t.Fatalf("MARKET category option should be selected: %#v", option)
+			}
+			if option.LabelKey != "attraction.category.MARKET" {
+				t.Fatalf("MARKET option label key = %q, want attraction.category.MARKET", option.LabelKey)
+			}
+		}
+	}
+	if !foundMarket {
+		t.Fatalf("category options = %#v, want MARKET option", options)
+	}
+	if got := attractionCategoryText(localeRU, "MARKET"); got != "Рынок" {
+		t.Fatalf("Russian MARKET label = %q, want Рынок", got)
+	}
+	if got := attractionCategoryText(localeEN, "MARKET"); got != "Market" {
+		t.Fatalf("English MARKET label = %q, want Market", got)
 	}
 }
 

@@ -23,6 +23,7 @@ var attractionCategoryNames = map[string]map[string]string{
 	"TEMPLE":        {localeEN: "Temple", localeRU: "Храм"},
 	"ENTERTAINMENT": {localeEN: "Entertainment", localeRU: "Развлечения"},
 	"FOOD":          {localeEN: "Food", localeRU: "Еда"},
+	"MARKET":        {localeEN: "Market", localeRU: "Рынок"},
 	"SHOPPING":      {localeEN: "Shopping", localeRU: "Шопинг"},
 	"OTHER":         {localeEN: "Other", localeRU: "Другое"},
 	"CULTURE":       {localeEN: "Culture", localeRU: "Культура"},
@@ -37,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU"}
+var attractionCountryValues = []string{"KZ", "RU", "VN"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -74,9 +75,26 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "RU", CityID: "vladivostok"},
 	{CountryCode: "RU", CityID: "kaliningrad"},
 	{CountryCode: "RU", CityID: "volgograd"},
+	{CountryCode: "VN", CityID: "hanoi"},
+	{CountryCode: "VN", CityID: "ha-long"},
+	{CountryCode: "VN", CityID: "ninh-binh"},
+	{CountryCode: "VN", CityID: "hue"},
+	{CountryCode: "VN", CityID: "da-nang"},
+	{CountryCode: "VN", CityID: "hoi-an"},
+	{CountryCode: "VN", CityID: "ho-chi-minh-city"},
+	{CountryCode: "VN", CityID: "nha-trang"},
+	{CountryCode: "VN", CityID: "phu-quoc"},
+	{CountryCode: "VN", CityID: "sa-pa"},
+	{CountryCode: "VN", CityID: "can-tho"},
+	{CountryCode: "VN", CityID: "da-lat"},
+	{CountryCode: "VN", CityID: "phan-thiet"},
+	{CountryCode: "VN", CityID: "vung-tau"},
+	{CountryCode: "VN", CityID: "cat-ba"},
+	{CountryCode: "VN", CityID: "ha-giang"},
+	{CountryCode: "VN", CityID: "phong-nha"},
 }
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -159,6 +177,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Евро"
 		}
 		return "Euro"
+	case "VND":
+		if locale == localeRU {
+			return "Вьетнамский донг"
+		}
+		return "Vietnamese dong"
 	default:
 		return strings.ToUpper(strings.TrimSpace(currency))
 	}
@@ -307,7 +330,7 @@ func attractionTranslationDescription(input model.AttractionInput, locale string
 }
 
 func attractionCategoryOptions(selected string) []AttractionOptionView {
-	values := []string{"NATURE", "ARCHITECTURE", "MUSEUM", "BEACH", "PARK", "TEMPLE", "ENTERTAINMENT", "FOOD", "SHOPPING", "OTHER"}
+	values := []string{"NATURE", "ARCHITECTURE", "MUSEUM", "BEACH", "PARK", "TEMPLE", "ENTERTAINMENT", "FOOD", "MARKET", "SHOPPING", "OTHER"}
 	return attractionOptions(values, "attraction.category.", selected)
 }
 
@@ -523,11 +546,15 @@ func attractionPaginationSummary(locale string, pagination AttractionPaginationV
 }
 
 func attractionCityLinkOptions(selected []model.AttractionCityLink, fallbackCountry string) []AttractionCityLinkOptionView {
+	visibleCountry := strings.ToUpper(strings.TrimSpace(fallbackCountry))
+	if visibleCountry == "" {
+		visibleCountry = "KZ"
+	}
 	selectedMap := make(map[string]model.AttractionCityLink, len(selected))
 	for _, item := range selected {
 		country := strings.ToUpper(strings.TrimSpace(item.CountryCode))
 		if country == "" {
-			country = strings.ToUpper(strings.TrimSpace(fallbackCountry))
+			country = visibleCountry
 		}
 		if country == "" {
 			country = "KZ"
@@ -554,6 +581,7 @@ func attractionCityLinkOptions(selected []model.AttractionCityLink, fallbackCoun
 			CountryCode: country,
 			CityID:      cityID,
 			Selected:    selected,
+			Hidden:      country != visibleCountry,
 		})
 		seen[value] = true
 	}
@@ -566,6 +594,7 @@ func attractionCityLinkOptions(selected []model.AttractionCityLink, fallbackCoun
 			CountryCode: item.CountryCode,
 			CityID:      item.CityID,
 			Selected:    true,
+			Hidden:      item.CountryCode != visibleCountry,
 		})
 	}
 	return out
@@ -591,6 +620,7 @@ func parseCityLinkValues(values []string, fallbackCountry string) []model.Attrac
 	for _, value := range values {
 		items = append(items, splitCSV(value)...)
 	}
+	allowedCountry := strings.ToUpper(strings.TrimSpace(fallbackCountry))
 	out := make([]model.AttractionCityLink, 0, len(items))
 	seen := make(map[string]bool, len(items))
 	for _, item := range items {
@@ -606,6 +636,12 @@ func parseCityLinkValues(values []string, fallbackCountry string) []model.Attrac
 			continue
 		}
 		country = strings.ToUpper(strings.TrimSpace(country))
+		if allowedCountry != "" && country != "" && country != allowedCountry {
+			continue
+		}
+		if country == "" {
+			country = allowedCountry
+		}
 		if country == "" {
 			country = "KZ"
 		}

@@ -11,6 +11,7 @@ const (
 	CategoryTemple        AttractionCategory = "TEMPLE"
 	CategoryEntertainment AttractionCategory = "ENTERTAINMENT"
 	CategoryFood          AttractionCategory = "FOOD"
+	CategoryMarket        AttractionCategory = "MARKET"
 	CategoryShopping      AttractionCategory = "SHOPPING"
 	CategoryOther         AttractionCategory = "OTHER"
 )
@@ -24,6 +25,7 @@ var validCategories = map[AttractionCategory]bool{
 	CategoryTemple:        true,
 	CategoryEntertainment: true,
 	CategoryFood:          true,
+	CategoryMarket:        true,
 	CategoryShopping:      true,
 	CategoryOther:         true,
 }

@@ -126,6 +126,15 @@
     "capital": {"en": "Abu Dhabi", "ru": "Абу-Даби", "kk": "Абу-Даби"}
   },
   {
+    "code": "VN",
+    "code3": "VNM",
+    "numeric": "704",
+    "currencyCode": "VND",
+    "phoneCode": "+84",
+    "name": {"en": "Vietnam", "ru": "Вьетнам", "kk": "Вьетнам"},
+    "capital": {"en": "Hanoi", "ru": "Ханой", "kk": "Ханой"}
+  },
+  {
     "code": "TH",
     "code3": "THA",
     "numeric": "764",

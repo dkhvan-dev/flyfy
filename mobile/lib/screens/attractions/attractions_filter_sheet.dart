@@ -505,6 +505,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
         value: 'ENTERTAINMENT',
       ),
       _ChipModel(label: l10n.attractionFilterCategoryFood, value: 'FOOD'),
+      _ChipModel(label: l10n.attractionFilterCategoryMarket, value: 'MARKET'),
       _ChipModel(
         label: l10n.attractionFilterCategoryShopping,
         value: 'SHOPPING',

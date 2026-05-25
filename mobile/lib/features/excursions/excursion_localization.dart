@@ -195,6 +195,8 @@ String localizedExcursionCategoryLabel(
     case 'culinary':
     case 'gourmet':
       return l10n.createExcursionCategoryCulinary;
+    case 'market':
+      return l10n.attractionFilterCategoryMarket;
     case 'wellness':
       return l10n.createExcursionCategoryWellness;
     default:

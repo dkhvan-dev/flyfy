@@ -243,8 +243,8 @@ func TestRendererRendersAttractionEditFormWithOptionalValues(t *testing.T) {
 		t.Fatalf("attraction edit form did not render useful content: %s", body)
 	}
 	for _, expected := range []string{
-		`<select name="country_code" required>`,
-		`<select name="city_id" required>`,
+		`<select name="country_code" required data-attraction-country-select>`,
+		`<select name="city_id" required data-attraction-city-select>`,
 		`<select name="price_currency">`,
 		`name="location_source_url" value="https://www.openstreetmap.org/" placeholder="https://maps..." data-map-url-input`,
 		`name="latitude" value="43.243534" inputmode="decimal" data-latitude-input`,
@@ -312,6 +312,47 @@ func TestRendererRendersAttractionCreateFormWithUploadPreview(t *testing.T) {
 	} {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("attraction create form did not render media preview control %q: %s", expected, body)
+		}
+	}
+}
+
+func TestRendererRendersAttractionFormCityLinksScopedToCountry(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+	pageData := PageData{
+		Title:     "Create attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/new",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data: NewAttractionFormViewData(nil, model.AttractionInput{
+			CountryCode: "VN",
+			CityID:      "hanoi",
+		}),
+	}
+
+	var rendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&rendered, "attractions/form", pageData); err != nil {
+		t.Fatalf("ExecuteTemplate returned error: %v", err)
+	}
+	body := html.UnescapeString(rendered.String())
+	for _, expected := range []string{
+		`name="country_code" required data-attraction-country-select`,
+		`name="city_id" required data-attraction-city-select`,
+		`data-attraction-city-link-option data-country="VN"`,
+		`type="checkbox" name="access_cities" value="VN:hanoi"`,
+		`type="checkbox" name="departure_cities" value="VN:hanoi"`,
+		`Ханой, Вьетнам`,
+		`data-attraction-city-link-option hidden data-country="KZ"`,
+		`type="checkbox" name="access_cities" value="KZ:almaty" disabled`,
+		`type="checkbox" name="departure_cities" value="KZ:almaty" disabled`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("attraction form did not scope city link option %q: %s", expected, body)
 		}
 	}
 }

@@ -1860,6 +1860,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attractionFilterCategoryFood => 'Еда';
 
   @override
+  String get attractionFilterCategoryMarket => 'Рынок';
+
+  @override
   String get attractionFilterCategoryShopping => 'Шопинг';
 
   @override

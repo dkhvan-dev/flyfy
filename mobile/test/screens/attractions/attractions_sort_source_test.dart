@@ -105,6 +105,7 @@ void main() {
       'TEMPLE',
       'ENTERTAINMENT',
       'FOOD',
+      'MARKET',
       'SHOPPING',
       'OTHER',
     ]) {
@@ -126,6 +127,7 @@ void main() {
 
     expect(sheetSource, contains("value: 'PARK'"));
     expect(sheetSource, contains("value: 'MUSEUM'"));
+    expect(sheetSource, contains("value: 'MARKET'"));
     expect(sheetSource, isNot(contains("value: 'PARKS'")));
     expect(sheetSource, isNot(contains("value: 'MUSEUMS'")));
   });

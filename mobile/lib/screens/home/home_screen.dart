@@ -3678,6 +3678,8 @@ String _homeAttractionCategoryLabel(
       return l10n.attractionFilterCategoryEntertainment;
     case 'FOOD':
       return l10n.attractionFilterCategoryFood;
+    case 'MARKET':
+      return l10n.attractionFilterCategoryMarket;
     case 'SHOPPING':
       return l10n.attractionFilterCategoryShopping;
     case 'OTHER':

@@ -236,6 +236,7 @@ void main() {
       'TEMPLE',
       'ENTERTAINMENT',
       'FOOD',
+      'MARKET',
       'SHOPPING',
       'OTHER',
     ]) {

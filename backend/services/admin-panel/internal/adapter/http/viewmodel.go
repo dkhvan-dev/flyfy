@@ -155,6 +155,7 @@ type AttractionCityLinkOptionView struct {
 	CountryCode string
 	CityID      string
 	Selected    bool
+	Hidden      bool
 }
 
 type StaffListViewData struct {
@@ -278,6 +279,22 @@ func NewAttractionFormViewData(item *model.AdminAttraction, input model.Attracti
 	isEdit := item != nil && item.ID != uuid.Nil
 	if isEdit && input.Title == "" {
 		input = attractionInputFromItem(item)
+	}
+	input.CountryCode = strings.ToUpper(strings.TrimSpace(input.CountryCode))
+	if input.CountryCode == "" {
+		input.CountryCode = "KZ"
+	}
+	input.DefaultLocale = strings.ToLower(strings.TrimSpace(input.DefaultLocale))
+	if input.DefaultLocale == "" {
+		input.DefaultLocale = "ru"
+	}
+	input.Category = strings.ToUpper(strings.TrimSpace(input.Category))
+	if input.Category == "" {
+		input.Category = "NATURE"
+	}
+	input.Status = strings.ToUpper(strings.TrimSpace(input.Status))
+	if input.Status == "" {
+		input.Status = "PUBLISHED"
 	}
 	submitURL := "/admin/attractions"
 	mediaURL := ""

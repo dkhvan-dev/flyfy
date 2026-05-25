@@ -1872,6 +1872,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get attractionFilterCategoryFood => 'Тағам';
 
   @override
+  String get attractionFilterCategoryMarket => 'Базар';
+
+  @override
   String get attractionFilterCategoryShopping => 'Шопинг';
 
   @override

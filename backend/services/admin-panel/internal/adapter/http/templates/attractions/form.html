@@ -89,7 +89,7 @@
       <div class="grid three">
         <label>
           <span>{{t .Locale "field.country"}}</span>
-          <select name="country_code" required>
+          <select name="country_code" required data-attraction-country-select>
             {{range .Data.Countries}}
               <option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{attractionCountry $.Locale .Value}}</option>
             {{end}}
@@ -98,7 +98,7 @@
         </label>
         <label>
           <span>{{t .Locale "field.city"}}</span>
-          <select name="city_id" required>
+          <select name="city_id" required data-attraction-city-select>
             <option value="">{{t .Locale "common.select"}}</option>
             {{range .Data.Cities}}
               <option value="{{.Value}}" data-country="{{.CountryCode}}" {{if .Selected}}selected{{end}}>{{attractionCityName $.Locale .Value}}</option>
@@ -122,8 +122,8 @@
       <fieldset class="checks option-grid">
         <legend>{{t .Locale "field.accessCities"}}</legend>
         {{range .Data.AccessCityOptions}}
-          <label>
-            <input type="checkbox" name="access_cities" value="{{.Value}}" {{if .Selected}}checked{{end}}>
+          <label data-attraction-city-link-option {{if .Hidden}}hidden {{end}}data-country="{{.CountryCode}}">
+            <input type="checkbox" name="access_cities" value="{{.Value}}"{{if .Selected}} checked{{end}}{{if .Hidden}} disabled{{end}}>
             <span>{{attractionCity $.Locale .CountryCode .CityID}}</span>
           </label>
         {{end}}
@@ -131,8 +131,8 @@
       <fieldset class="checks option-grid">
         <legend>{{t .Locale "field.departureCities"}}</legend>
         {{range .Data.DepartureCityOptions}}
-          <label>
-            <input type="checkbox" name="departure_cities" value="{{.Value}}" {{if .Selected}}checked{{end}}>
+          <label data-attraction-city-link-option {{if .Hidden}}hidden {{end}}data-country="{{.CountryCode}}">
+            <input type="checkbox" name="departure_cities" value="{{.Value}}"{{if .Selected}} checked{{end}}{{if .Hidden}} disabled{{end}}>
             <span>{{attractionCity $.Locale .CountryCode .CityID}}</span>
           </label>
         {{end}}
