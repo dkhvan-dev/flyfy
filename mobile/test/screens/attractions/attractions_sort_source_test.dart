@@ -88,7 +88,10 @@ void main() {
     ).readAsString();
 
     final labelStart = source.indexOf('String _categoryLabel');
-    final placeholderStart = source.indexOf('Widget _placeholder()');
+    final placeholderStart = source.indexOf(
+      'Widget _placeholder()',
+      labelStart,
+    );
     expect(labelStart, isNonNegative);
     expect(placeholderStart, greaterThan(labelStart));
     final labelSource = source.substring(labelStart, placeholderStart);

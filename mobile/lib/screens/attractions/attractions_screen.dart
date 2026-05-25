@@ -17,6 +17,7 @@ import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/home_location_provider.dart';
 import '../../shared/widgets/app_city_filter_section.dart';
+import '../../shared/widgets/app_localized_location_text.dart';
 import 'attractions_filter_sheet.dart';
 
 enum _AttractionSortField { rating, duration, price }
@@ -249,6 +250,37 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     context.push('/attractions/${attraction.id}', extra: attraction);
   }
 
+  AppCityFilterValue? _currentCityValue(HomeLocationProvider provider) {
+    if (_filters.city != null) return _filters.city;
+
+    final location = provider.effectiveLocation;
+    return AppCityFilterValue.fromParts(
+      cityId: location.cityId,
+      cityName: location.cityName,
+      countryCode: location.countryCode,
+    );
+  }
+
+  List<AttractionVm> _mustVisitAttractions(AppCityFilterValue? city) {
+    if (city == null || _attractions.isEmpty) return const [];
+
+    final currentCityItems = _attractions
+        .where(
+          (item) => city.matches(
+            cityId: item.cityId,
+            countryCode: item.countryCode,
+          ),
+        )
+        .toList()
+      ..sort((a, b) {
+        final ratingCompare = b.rating.compareTo(a.rating);
+        if (ratingCompare != 0) return ratingCompare;
+        return b.reviewCount.compareTo(a.reviewCount);
+      });
+
+    return currentCityItems.take(5).toList(growable: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AttractionTextScale(
@@ -346,6 +378,9 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     }
 
     final padX = a.scale(24, minFactor: 0.78);
+    final locationProvider = context.watch<HomeLocationProvider>();
+    final currentCity = _currentCityValue(locationProvider);
+    final mustVisitAttractions = _mustVisitAttractions(currentCity);
 
     return RefreshIndicator(
       color: AppColors.accent,
@@ -366,6 +401,16 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (currentCity != null && mustVisitAttractions.isNotEmpty)
+                    _MustVisitSection(
+                      l10n: l10n,
+                      adaptive: a,
+                      city: currentCity,
+                      attractions: mustVisitAttractions,
+                      onTap: _openDetails,
+                    ),
+                  if (currentCity != null && mustVisitAttractions.isNotEmpty)
+                    SizedBox(height: a.scale(24, minFactor: 0.72)),
                   _AttractionSortBar(
                     l10n: l10n,
                     adaptive: a,
@@ -473,6 +518,305 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   double _discoverImageHeight(double cardWidth) {
     return (cardWidth * 1.33).clamp(200.0, 230.0);
   }
+}
+
+class _MustVisitSection extends StatelessWidget {
+  const _MustVisitSection({
+    required this.l10n,
+    required this.adaptive,
+    required this.city,
+    required this.attractions,
+    required this.onTap,
+  });
+
+  final AppLocalizations l10n;
+  final AttractionAdaptive adaptive;
+  final AppCityFilterValue city;
+  final List<AttractionVm> attractions;
+  final void Function(AttractionVm) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (attractions.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: adaptive.scale(32, minFactor: 0.86),
+              height: adaptive.scale(32, minFactor: 0.86),
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                color: AppColors.accent,
+                size: adaptive.scale(17, minFactor: 0.86),
+              ),
+            ),
+            SizedBox(width: adaptive.scale(10, minFactor: 0.74)),
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      l10n.attractionMustVisitBadge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: adaptive.scale(18, minFactor: 0.84),
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                        height: 1.08,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: adaptive.scale(8, minFactor: 0.72)),
+                  Container(
+                    width: adaptive.scale(4, minFactor: 0.72),
+                    height: adaptive.scale(4, minFactor: 0.72),
+                    decoration: const BoxDecoration(
+                      color: AppColors.textCaption,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(width: adaptive.scale(8, minFactor: 0.72)),
+                  Flexible(
+                    child: AppLocalizedLocationText(
+                      cityId: city.cityId,
+                      cityName: city.cityName,
+                      countryCode: city.countryCode,
+                      fallbackText: city.fallbackLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: adaptive.scale(18, minFactor: 0.84),
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0,
+                        height: 1.08,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: adaptive.scale(14, minFactor: 0.72)),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth =
+                (constraints.maxWidth * (adaptive.isVeryNarrow ? 0.78 : 0.68))
+                    .clamp(174.0, 238.0)
+                    .toDouble();
+
+            return SingleChildScrollView(
+              clipBehavior: Clip.none,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  for (var i = 0; i < attractions.length; i++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        right: i == attractions.length - 1
+                            ? 0
+                            : adaptive.scale(12, minFactor: 0.72),
+                      ),
+                      child: _MustVisitCard(
+                        attraction: attractions[i],
+                        l10n: l10n,
+                        adaptive: adaptive,
+                        width: cardWidth,
+                        onTap: onTap,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MustVisitCard extends StatelessWidget {
+  const _MustVisitCard({
+    required this.attraction,
+    required this.l10n,
+    required this.adaptive,
+    required this.width,
+    required this.onTap,
+  });
+
+  final AttractionVm attraction;
+  final AppLocalizations l10n;
+  final AttractionAdaptive adaptive;
+  final double width;
+  final void Function(AttractionVm) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final coverMedia = attraction.coverMedia;
+    final coverUrl = coverMedia == null
+        ? null
+        : resolveAttractionMediaUrl(
+            coverMedia,
+          );
+    final imageTargetWidth = attractionImageTargetWidth(
+      context,
+      width,
+      minWidth: 360,
+      maxWidth: 620,
+    );
+
+    return GestureDetector(
+      onTap: () => onTap(attraction),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: width,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(adaptive.radius(16)),
+              child: AspectRatio(
+                aspectRatio: 1.42,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (coverUrl != null)
+                      Image.network(
+                        coverUrl,
+                        headers: attractionImageRequestHeaders(coverUrl),
+                        fit: BoxFit.cover,
+                        cacheWidth: imageTargetWidth,
+                        filterQuality: FilterQuality.medium,
+                        gaplessPlayback: true,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return _placeholder();
+                        },
+                        errorBuilder: (_, __, ___) => _placeholder(),
+                      )
+                    else
+                      _placeholder(),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.02),
+                              Colors.black.withValues(alpha: 0.48),
+                            ],
+                            stops: const [0.4, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: adaptive.scale(8, minFactor: 0.78),
+                      right: adaptive.scale(8, minFactor: 0.78),
+                      child: _ratingBadge(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: adaptive.scale(10, minFactor: 0.72)),
+            Text(
+              attraction.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: adaptive.scale(15, minFactor: 0.86),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+                height: 1.12,
+              ),
+            ),
+            SizedBox(height: adaptive.scale(4, minFactor: 0.72)),
+            Text(
+              _secondaryLabel(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.textCaption,
+                fontSize: adaptive.scale(12, minFactor: 0.86),
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+                height: 1.18,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _secondaryLabel(BuildContext context) {
+    final duration = formatAttractionDurationLabel(l10n, attraction).trim();
+    if (duration.isNotEmpty) return duration;
+    return formatAttractionPriceLabel(context, l10n, attraction);
+  }
+
+  Widget _ratingBadge() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xD41B211F),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: adaptive.scale(8, minFactor: 0.78),
+          vertical: adaptive.scale(5, minFactor: 0.78),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.star_rounded,
+              color: AppColors.accent,
+              size: adaptive.scale(13, minFactor: 0.82),
+            ),
+            SizedBox(width: adaptive.scale(2, minFactor: 0.72)),
+            Text(
+              attraction.rating.toStringAsFixed(1),
+              style: TextStyle(
+                color: AppColors.accent,
+                fontSize: adaptive.scale(12, minFactor: 0.82),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+                height: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder() => Container(
+        color: Colors.white.withValues(alpha: 0.05),
+        child: const Center(
+          child: Icon(
+            Icons.landscape_rounded,
+            color: AppColors.textCaption,
+            size: 34,
+          ),
+        ),
+      );
 }
 
 class _AttractionSortBar extends StatelessWidget {
