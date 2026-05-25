@@ -347,7 +347,7 @@ func (r *PGAttractionRepository) ListAttractions(ctx context.Context, filter mod
 	}
 	if filter.CountryCode != "" {
 		args = append(args, strings.ToUpper(strings.TrimSpace(filter.CountryCode)))
-		clauses = append(clauses, fmt.Sprintf("UPPER(a.country_code) = $%d", len(args)))
+		clauses = append(clauses, fmt.Sprintf("a.country_code = $%d", len(args)))
 	}
 	if filter.CityID != "" {
 		args = append(args, filter.CityID)

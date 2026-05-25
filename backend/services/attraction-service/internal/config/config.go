@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/sethvargo/go-envconfig"
 )
@@ -12,6 +13,7 @@ type Config struct {
 	HTTP        HTTPConfig
 	Postgres    PostgresConfig
 	Log         LogConfig
+	Redis       RedisConfig
 	Security    SecurityConfig
 	UserService UserServiceConfig
 	Admin       AdminConfig
@@ -57,6 +59,16 @@ func (c PostgresConfig) DSN() string {
 
 type LogConfig struct {
 	Level string `env:"LOG_LEVEL, default=info"`
+}
+
+type RedisConfig struct {
+	Enabled   bool          `env:"ATTRACTION_CACHE_ENABLED, default=true"`
+	Addr      string        `env:"REDIS_ADDR"`
+	Password  string        `env:"REDIS_PASSWORD"`
+	DB        int           `env:"REDIS_CACHE_DB, default=4"`
+	KeyPrefix string        `env:"ATTRACTION_CACHE_KEY_PREFIX, default=attraction-service:cache:"`
+	DetailTTL time.Duration `env:"ATTRACTION_DETAIL_CACHE_TTL, default=15m"`
+	ListTTL   time.Duration `env:"ATTRACTION_LIST_CACHE_TTL, default=5m"`
 }
 
 type SecurityConfig struct {

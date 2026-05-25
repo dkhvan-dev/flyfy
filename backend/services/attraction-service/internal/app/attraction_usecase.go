@@ -2,6 +2,9 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -32,6 +35,8 @@ const (
 	defaultReviewLimit = 20
 
 	fallbackAttractionLocale = "en"
+
+	attractionListCacheVersionScope = "attraction:list"
 )
 
 // ---------------------------------------------------------------------------
@@ -171,6 +176,9 @@ type ReplaceMediaInput struct {
 type AttractionUseCase struct {
 	repo              port.AttractionRepository
 	users             UserServiceClient
+	cache             port.AttractionCache
+	detailCacheTTL    time.Duration
+	listCacheTTL      time.Duration
 	adminAuthorUserID uuid.UUID
 }
 
@@ -183,6 +191,14 @@ func WithAdminAuthorUserID(userID uuid.UUID) AttractionUseCaseOption {
 		if userID != uuid.Nil {
 			u.adminAuthorUserID = userID
 		}
+	}
+}
+
+func WithAttractionCache(cache port.AttractionCache, detailTTL time.Duration, listTTL time.Duration) AttractionUseCaseOption {
+	return func(u *AttractionUseCase) {
+		u.cache = cache
+		u.detailCacheTTL = detailTTL
+		u.listCacheTTL = listTTL
 	}
 }
 
@@ -324,6 +340,7 @@ func (u *AttractionUseCase) createAttraction(ctx context.Context, authorUserID u
 	if err = u.repo.CreateAttraction(ctx, attraction); err != nil {
 		return nil, fmt.Errorf("create attraction: %w", err)
 	}
+	u.bumpAttractionCacheVersion(ctx, uuid.Nil)
 
 	return u.toAttractionView(ctx, attraction)
 }
@@ -458,6 +475,7 @@ func (u *AttractionUseCase) updateAttractionRecord(ctx context.Context, attracti
 		}
 		return nil, fmt.Errorf("update attraction: %w", err)
 	}
+	u.bumpAttractionCacheVersion(ctx, attraction.ID)
 
 	return u.toAttractionView(ctx, attraction)
 }
@@ -486,6 +504,7 @@ func (u *AttractionUseCase) DeleteAttraction(ctx context.Context, subject string
 		}
 		return fmt.Errorf("delete attraction: %w", err)
 	}
+	u.bumpAttractionCacheVersion(ctx, attractionID)
 	return nil
 }
 
@@ -500,6 +519,7 @@ func (u *AttractionUseCase) RecoverAttraction(ctx context.Context, attractionID 
 		}
 		return nil, fmt.Errorf("recover attraction: %w", err)
 	}
+	u.bumpAttractionCacheVersion(ctx, attractionID)
 
 	attraction, err := u.repo.GetAttractionByID(ctx, attractionID, "")
 	if err != nil {
@@ -509,12 +529,25 @@ func (u *AttractionUseCase) RecoverAttraction(ctx context.Context, attractionID 
 }
 
 func (u *AttractionUseCase) GetAttraction(ctx context.Context, attractionID uuid.UUID, locale string) (*AttractionView, error) {
-	attraction, err := u.repo.GetAttractionByID(ctx, attractionID, NormalizeAttractionLocale(locale))
+	normalizedLocale := NormalizeAttractionLocale(locale)
+	detailCacheKey, detailCacheOK := u.attractionDetailCacheKey(ctx, attractionID, normalizedLocale)
+	if detailCacheOK {
+		cacheKey := detailCacheKey
+		attraction, hit, err := u.cache.GetAttraction(ctx, cacheKey)
+		if err == nil && hit && attraction != nil {
+			return u.toAttractionView(ctx, attraction)
+		}
+	}
+
+	attraction, err := u.repo.GetAttractionByID(ctx, attractionID, normalizedLocale)
 	if err != nil {
 		return nil, fmt.Errorf("get attraction: %w", err)
 	}
 	if attraction == nil {
 		return nil, ErrAttractionNotFound
+	}
+	if detailCacheOK {
+		_ = u.cache.SetAttraction(ctx, detailCacheKey, attraction, u.detailCacheTTL)
 	}
 	return u.toAttractionView(ctx, attraction)
 }
@@ -575,11 +608,28 @@ func (u *AttractionUseCase) ListAttractions(ctx context.Context, input ListAttra
 		Offset:          input.Offset,
 	}
 
+	listCacheKey, listCacheOK := u.attractionListCacheKey(ctx, filter)
+	if listCacheOK {
+		cacheKey := listCacheKey
+		attractions, total, hit, cacheErr := u.cache.GetAttractionList(ctx, cacheKey)
+		if cacheErr == nil && hit {
+			return u.attractionsToViews(ctx, attractions, total)
+		}
+	}
+
 	attractions, total, err := u.repo.ListAttractions(ctx, filter)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list attractions: %w", err)
 	}
 
+	if listCacheOK {
+		_ = u.cache.SetAttractionList(ctx, listCacheKey, attractions, total, u.listCacheTTL)
+	}
+
+	return u.attractionsToViews(ctx, attractions, total)
+}
+
+func (u *AttractionUseCase) attractionsToViews(ctx context.Context, attractions []*model.Attraction, total int) ([]*AttractionView, int, error) {
 	views := make([]*AttractionView, 0, len(attractions))
 	for _, a := range attractions {
 		v, vErr := u.toAttractionView(ctx, a)
@@ -649,7 +699,11 @@ func (u *AttractionUseCase) replaceAttractionMedia(ctx context.Context, attracti
 		})
 	}
 
-	return u.repo.ReplaceAttractionMedia(ctx, attractionID, models)
+	if err := u.repo.ReplaceAttractionMedia(ctx, attractionID, models); err != nil {
+		return err
+	}
+	u.bumpAttractionCacheVersion(ctx, attractionID)
+	return nil
 }
 
 // ---------------------------------------------------------------------------
@@ -722,6 +776,7 @@ func (u *AttractionUseCase) CreateReview(ctx context.Context, subject string, at
 		}
 		return nil, fmt.Errorf("create review: %w", err)
 	}
+	u.bumpAttractionCacheVersion(ctx, attractionID)
 
 	return u.toReviewView(ctx, review)
 }
@@ -732,11 +787,17 @@ func (u *AttractionUseCase) DeleteReview(ctx context.Context, subject string, re
 		return err
 	}
 
+	review, _ := u.repo.GetReviewByID(ctx, reviewID)
 	if err = u.repo.SoftDeleteReview(ctx, reviewID, userID); err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return ErrReviewNotFound
 		}
 		return fmt.Errorf("delete review: %w", err)
+	}
+	if review != nil {
+		u.bumpAttractionCacheVersion(ctx, review.AttractionID)
+	} else {
+		u.bumpAttractionListCacheVersion(ctx)
 	}
 	return nil
 }
@@ -749,6 +810,7 @@ func (u *AttractionUseCase) RecalculateRating(ctx context.Context, attractionID 
 	if err != nil {
 		return 0, 0, fmt.Errorf("recalculate attraction rating: %w", err)
 	}
+	u.bumpAttractionCacheVersion(ctx, attractionID)
 	return rating, reviewCount, nil
 }
 
@@ -786,6 +848,7 @@ func (u *AttractionUseCase) ApplyRatingSourceSnapshot(ctx context.Context, input
 	if err != nil {
 		return 0, 0, fmt.Errorf("apply attraction rating source snapshot: %w", err)
 	}
+	u.bumpAttractionCacheVersion(ctx, input.AttractionID)
 	return rating, reviewCount, nil
 }
 
@@ -845,6 +908,111 @@ func (u *AttractionUseCase) GetMyReview(ctx context.Context, subject string, att
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+type attractionListCacheKeyPayload struct {
+	Search          string   `json:"search,omitempty"`
+	Locale          string   `json:"locale,omitempty"`
+	Category        string   `json:"category,omitempty"`
+	CountryCode     string   `json:"countryCode,omitempty"`
+	CityID          string   `json:"cityId,omitempty"`
+	AccessCityID    string   `json:"accessCityId,omitempty"`
+	DepartureCityID string   `json:"departureCityId,omitempty"`
+	PriceMin        *float64 `json:"priceMin,omitempty"`
+	PriceMax        *float64 `json:"priceMax,omitempty"`
+	DurationMin     *int     `json:"durationMin,omitempty"`
+	DurationMax     *int     `json:"durationMax,omitempty"`
+	DurationUnit    *string  `json:"durationUnit,omitempty"`
+	SpotsMin        *int     `json:"spotsMin,omitempty"`
+	MinRating       *float64 `json:"minRating,omitempty"`
+	AuthorUserID    string   `json:"authorUserId,omitempty"`
+	IncludeDeleted  bool     `json:"includeDeleted,omitempty"`
+	Sort            string   `json:"sort,omitempty"`
+	Limit           int      `json:"limit"`
+	Offset          int      `json:"offset"`
+}
+
+func (u *AttractionUseCase) attractionDetailCacheKey(ctx context.Context, attractionID uuid.UUID, locale string) (string, bool) {
+	if u.cache == nil || u.detailCacheTTL <= 0 || attractionID == uuid.Nil {
+		return "", false
+	}
+	version, err := u.cache.CurrentVersion(ctx, attractionItemCacheVersionScope(attractionID))
+	if err != nil {
+		return "", false
+	}
+	if version < 0 {
+		version = 0
+	}
+	return fmt.Sprintf("attraction:v1:item:%s:%s:%d", attractionID.String(), locale, version), true
+}
+
+func (u *AttractionUseCase) attractionListCacheKey(ctx context.Context, filter model.AttractionListFilter) (string, bool) {
+	if u.cache == nil || u.listCacheTTL <= 0 {
+		return "", false
+	}
+	version, err := u.cache.CurrentVersion(ctx, attractionListCacheVersionScope)
+	if err != nil {
+		return "", false
+	}
+	if version < 0 {
+		version = 0
+	}
+
+	payload := attractionListCacheKeyPayload{
+		Search:          strings.TrimSpace(filter.Search),
+		Locale:          filter.Locale,
+		Category:        filter.Category,
+		CountryCode:     filter.CountryCode,
+		CityID:          filter.CityID,
+		AccessCityID:    filter.AccessCityID,
+		DepartureCityID: filter.DepartureCityID,
+		PriceMin:        filter.PriceMin,
+		PriceMax:        filter.PriceMax,
+		DurationMin:     filter.DurationMin,
+		DurationMax:     filter.DurationMax,
+		SpotsMin:        filter.SpotsMin,
+		MinRating:       filter.MinRating,
+		IncludeDeleted:  filter.IncludeDeleted,
+		Sort:            strings.TrimSpace(filter.Sort),
+		Limit:           filter.Limit,
+		Offset:          filter.Offset,
+	}
+	if filter.DurationUnit != nil {
+		durationUnit := string(*filter.DurationUnit)
+		payload.DurationUnit = &durationUnit
+	}
+	if filter.AuthorUserID != nil {
+		payload.AuthorUserID = filter.AuthorUserID.String()
+	}
+
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return "", false
+	}
+	sum := sha256.Sum256(encoded)
+	return fmt.Sprintf("attraction:v1:list:%d:%s", version, hex.EncodeToString(sum[:16])), true
+}
+
+func (u *AttractionUseCase) bumpAttractionCacheVersion(ctx context.Context, attractionID uuid.UUID) {
+	if u.cache == nil {
+		return
+	}
+	scopes := []string{attractionListCacheVersionScope}
+	if attractionID != uuid.Nil {
+		scopes = append(scopes, attractionItemCacheVersionScope(attractionID))
+	}
+	_ = u.cache.BumpVersion(ctx, scopes...)
+}
+
+func (u *AttractionUseCase) bumpAttractionListCacheVersion(ctx context.Context) {
+	if u.cache == nil {
+		return
+	}
+	_ = u.cache.BumpVersion(ctx, attractionListCacheVersionScope)
+}
+
+func attractionItemCacheVersionScope(attractionID uuid.UUID) string {
+	return "attraction:item:" + attractionID.String()
+}
 
 func (u *AttractionUseCase) requireUserID(ctx context.Context, subject string) (uuid.UUID, error) {
 	subject = strings.TrimSpace(subject)

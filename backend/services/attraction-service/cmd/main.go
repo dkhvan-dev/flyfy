@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	cacheadapter "github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/adapter/cache"
 	httpadapter "github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/adapter/http"
 	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/adapter/repository"
 	userserviceadapter "github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/adapter/userservice"
@@ -15,6 +16,7 @@ import (
 	"github.com/dkhvan-dev/flyfy/backend/services/attraction-service/internal/config"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -52,7 +54,19 @@ func main() {
 	if err != nil || adminAuthorUserID == uuid.Nil {
 		log.Fatal().Err(err).Str("admin_author_user_id", cfg.Admin.AttractionAuthorUserID).Msg("invalid admin attraction author user id")
 	}
-	useCase := app.NewAttractionUseCase(repo, userClient, app.WithAdminAuthorUserID(adminAuthorUserID))
+
+	useCaseOptions := []app.AttractionUseCaseOption{app.WithAdminAuthorUserID(adminAuthorUserID)}
+	redisClient := newRedisClient(ctx, cfg)
+	if redisClient != nil {
+		defer redisClient.Close()
+		attractionCache := cacheadapter.NewRedisAttractionCache(redisClient, cfg.Redis.KeyPrefix)
+		useCaseOptions = append(
+			useCaseOptions,
+			app.WithAttractionCache(attractionCache, cfg.Redis.DetailTTL, cfg.Redis.ListTTL),
+		)
+	}
+
+	useCase := app.NewAttractionUseCase(repo, userClient, useCaseOptions...)
 
 	handler := httpadapter.NewHandler(useCase)
 	mux := http.NewServeMux()
@@ -112,6 +126,35 @@ func newPostgresPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, er
 	}
 
 	return pool, nil
+}
+
+func newRedisClient(ctx context.Context, cfg *config.Config) *redis.Client {
+	if !cfg.Redis.Enabled || cfg.Redis.Addr == "" {
+		log.Info().Msg("attraction cache disabled")
+		return nil
+	}
+
+	client := redis.NewClient(&redis.Options{
+		Addr:     cfg.Redis.Addr,
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
+
+	pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	if err := client.Ping(pingCtx).Err(); err != nil {
+		_ = client.Close()
+		log.Warn().Err(err).Str("addr", cfg.Redis.Addr).Int("db", cfg.Redis.DB).Msg("Redis unavailable, attraction cache disabled")
+		return nil
+	}
+
+	log.Info().
+		Str("addr", cfg.Redis.Addr).
+		Int("db", cfg.Redis.DB).
+		Dur("detail_ttl", cfg.Redis.DetailTTL).
+		Dur("list_ttl", cfg.Redis.ListTTL).
+		Msg("attraction Redis cache enabled")
+	return client
 }
 
 func setupLogger(cfg *config.Config) {

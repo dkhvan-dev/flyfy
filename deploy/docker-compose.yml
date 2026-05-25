@@ -1193,6 +1193,8 @@ services:
         condition: service_completed_successfully
       user-service:
         condition: service_started
+      redis:
+        condition: service_healthy
     ports:
       - "8090:8090"
     environment:
@@ -1214,6 +1216,12 @@ services:
       POSTGRES_MIN_CONNS: 2
 
       LOG_LEVEL: info
+
+      ATTRACTION_CACHE_ENABLED: "true"
+      REDIS_ADDR: redis:6379
+      REDIS_CACHE_DB: 4
+      ATTRACTION_DETAIL_CACHE_TTL: 15m
+      ATTRACTION_LIST_CACHE_TTL: 5m
 
       INTERNAL_SERVICE_TOKEN: super-secret-internal-token
       REQUIRE_AUTHENTICATED_WRITES: "true"
