@@ -1787,6 +1787,86 @@ func TestJapanPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T)
 	}
 }
 
+func TestUAEPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "033_seed_uae_priority_attractions.up.sql")
+	downSQL := readMigration(t, "033_seed_uae_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_uae_resolved_attractions AS",
+		"'AE'",
+		"uae-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("UAE up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"dubai",
+		"abu-dhabi",
+		"al-ain",
+		"sharjah",
+		"ajman",
+		"ras-al-khaimah",
+		"fujairah",
+		"umm-al-quwain",
+		"hatta",
+		"khor-fakkan",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("UAE up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Burj Khalifa",
+		"The Dubai Mall",
+		"Gold Souk",
+		"Jumeirah Beach",
+		"Dubai Miracle Garden",
+		"Museum of the Future",
+		"Hatta Wadi Hub",
+		"Sheikh Zayed Grand Mosque",
+		"Louvre Abu Dhabi",
+		"Ferrari World Yas Island",
+		"Qasr Al Watan",
+		"Al Ain Oasis",
+		"Al Jahili Fort",
+		"Sharjah Museum of Islamic Civilization",
+		"Al Noor Island",
+		"Blue Souk",
+		"Ajman Museum",
+		"Jebel Jais",
+		"Dhayah Fort",
+		"Fujairah Fort",
+		"Al Bidya Mosque",
+		"Umm Al Quwain Fort and Museum",
+		"Dreamland Aqua Park",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("UAE up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("UAE up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['uae', city_id") {
+		t.Fatalf("UAE up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "uae-seed-v1") || !strings.Contains(downSQL, "country_code = 'AE'") {
+		t.Fatalf("UAE down migration must remove only tagged UAE seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

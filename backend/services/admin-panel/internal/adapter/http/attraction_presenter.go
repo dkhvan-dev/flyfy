@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "GE", "AM", "CN", "KR", "JP"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "AE", "GE", "AM", "CN", "KR", "JP"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -75,6 +75,16 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "RU", CityID: "vladivostok"},
 	{CountryCode: "RU", CityID: "kaliningrad"},
 	{CountryCode: "RU", CityID: "volgograd"},
+	{CountryCode: "AE", CityID: "dubai"},
+	{CountryCode: "AE", CityID: "abu-dhabi"},
+	{CountryCode: "AE", CityID: "al-ain"},
+	{CountryCode: "AE", CityID: "sharjah"},
+	{CountryCode: "AE", CityID: "ajman"},
+	{CountryCode: "AE", CityID: "ras-al-khaimah"},
+	{CountryCode: "AE", CityID: "fujairah"},
+	{CountryCode: "AE", CityID: "umm-al-quwain"},
+	{CountryCode: "AE", CityID: "hatta"},
+	{CountryCode: "AE", CityID: "khor-fakkan"},
 	{CountryCode: "VN", CityID: "hanoi"},
 	{CountryCode: "VN", CityID: "ha-long"},
 	{CountryCode: "VN", CityID: "ninh-binh"},
@@ -356,7 +366,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "AED", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -439,6 +449,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Евро"
 		}
 		return "Euro"
+	case "AED":
+		if locale == localeRU {
+			return "Дирхам ОАЭ"
+		}
+		return "UAE dirham"
 	case "VND":
 		if locale == localeRU {
 			return "Вьетнамский донг"

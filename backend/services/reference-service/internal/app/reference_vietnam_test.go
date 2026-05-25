@@ -662,3 +662,56 @@ func TestReferenceUseCaseIncludesJapanCountryCurrencyAndTouristCities(t *testing
 		t.Fatalf("search fujikawaguchiko in Japan = %#v, want fujikawaguchiko first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesUAECountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("AE")
+	if country == nil {
+		t.Fatal("expected UAE country reference")
+	}
+	if country.Name.Ru != "ОАЭ" {
+		t.Fatalf("UAE Russian name = %q, want ОАЭ", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("AE")
+	if currency == nil {
+		t.Fatal("expected UAE dirham currency by country")
+	}
+	if currency.Code != "AED" {
+		t.Fatalf("UAE currency = %q, want AED", currency.Code)
+	}
+
+	cities := uc.ListCities("AE")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"dubai",
+		"abu-dhabi",
+		"al-ain",
+		"sharjah",
+		"ajman",
+		"ras-al-khaimah",
+		"fujairah",
+		"umm-al-quwain",
+		"hatta",
+		"khor-fakkan",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("UAE city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("ras al khaimah", "AE", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "ras-al-khaimah" {
+		t.Fatalf("search ras al khaimah in UAE = %#v, want ras-al-khaimah first", searchResults)
+	}
+}

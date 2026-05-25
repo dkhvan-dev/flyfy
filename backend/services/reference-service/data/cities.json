@@ -126,7 +126,14 @@
 
   {"id": "dubai", "countryCode": "AE", "name": {"en": "Dubai", "ru": "Дубай", "kk": "Дубай"}, "population": 3500000},
   {"id": "abu-dhabi", "countryCode": "AE", "name": {"en": "Abu Dhabi", "ru": "Абу-Даби", "kk": "Абу-Даби"}, "population": 1480000},
+  {"id": "al-ain", "countryCode": "AE", "name": {"en": "Al Ain", "ru": "Аль-Айн", "kk": "Әл-Айн"}, "population": 766000},
   {"id": "sharjah", "countryCode": "AE", "name": {"en": "Sharjah", "ru": "Шарджа", "kk": "Шарджа"}, "population": 1400000},
+  {"id": "ajman", "countryCode": "AE", "name": {"en": "Ajman", "ru": "Аджман", "kk": "Аджман"}, "population": 590000},
+  {"id": "ras-al-khaimah", "countryCode": "AE", "name": {"en": "Ras Al Khaimah", "ru": "Рас-эль-Хайма", "kk": "Рас-эль-Хайма"}, "population": 400000},
+  {"id": "fujairah", "countryCode": "AE", "name": {"en": "Fujairah", "ru": "Фуджейра", "kk": "Фуджейра"}, "population": 256000},
+  {"id": "umm-al-quwain", "countryCode": "AE", "name": {"en": "Umm Al Quwain", "ru": "Умм-эль-Кувейн", "kk": "Умм-эль-Кувейн"}, "population": 72000},
+  {"id": "hatta", "countryCode": "AE", "name": {"en": "Hatta", "ru": "Хатта", "kk": "Хатта"}, "population": 12000},
+  {"id": "khor-fakkan", "countryCode": "AE", "name": {"en": "Khor Fakkan", "ru": "Хор-Факкан", "kk": "Хор-Факкан"}, "population": 39000},
 
   {"id": "bangkok", "countryCode": "TH", "name": {"en": "Bangkok", "ru": "Бангкок", "kk": "Бангкок"}, "population": 10700000},
   {"id": "ayutthaya", "countryCode": "TH", "name": {"en": "Ayutthaya", "ru": "Аюттхая", "kk": "Аюттхая"}, "population": 53000},

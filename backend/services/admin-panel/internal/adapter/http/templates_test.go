@@ -1159,6 +1159,106 @@ func TestRendererRendersJapanAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersUAEAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=AE&city=dubai",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Бурдж-Халифа",
+				CountryCode:   "AE",
+				CityID:        "dubai",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "AE",
+			CityID:      "dubai",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="AE" selected`,
+		`ОАЭ`,
+		`value="dubai" data-country="AE" selected`,
+		`Дубай`,
+		`Дубай, ОАЭ`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("UAE attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">AE<") || strings.Contains(listBody, ">dubai<") {
+		t.Fatalf("UAE attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Бурдж-Халифа",
+		Description:   "Главная смотровая башня Дубая.",
+		CountryCode:   "AE",
+		CityID:        "dubai",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "AE", CityID: "dubai"},
+			{CountryCode: "AE", CityID: "abu-dhabi"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "AE", CityID: "dubai"},
+			{CountryCode: "AE", CityID: "abu-dhabi"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="AE" selected>ОАЭ</option>`,
+		`<option value="dubai" data-country="AE" selected>Дубай</option>`,
+		`<option value="abu-dhabi" data-country="AE" >Абу-Даби</option>`,
+		`type="checkbox" name="access_cities" value="AE:abu-dhabi" checked`,
+		`type="checkbox" name="departure_cities" value="AE:dubai" checked`,
+		`Дубай, ОАЭ`,
+		`<option value="AED" >Дирхам ОАЭ</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("UAE attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 
