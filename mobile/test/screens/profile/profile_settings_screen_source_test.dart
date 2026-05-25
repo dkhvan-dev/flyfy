@@ -10,11 +10,13 @@ void main() {
         'lib/screens/profile/profile_settings_screen.dart',
       ).readAsString();
 
-      final overviewStart = source.indexOf(
-        'ProfileSectionHeading(title: l10n.profileOverviewSectionTitle)',
+      final overviewStart = _headingIndex(
+        source,
+        'l10n.profileOverviewSectionTitle',
       );
-      final accountStart = source.indexOf(
-        'ProfileSectionHeading(title: l10n.profileAccountSectionTitle)',
+      final accountStart = _headingIndex(
+        source,
+        'l10n.profileAccountSectionTitle',
       );
 
       expect(overviewStart, isNonNegative);
@@ -67,4 +69,13 @@ void main() {
     expect(profileSource, isNot(contains('profileSecurityRowTitle')));
     expect(profileSource, isNot(contains('profileSupportTitle')));
   });
+}
+
+int _headingIndex(String source, String titleExpression) {
+  final pattern = RegExp(
+    r'ProfileSectionHeading\s*\(\s*title:\s*' +
+        RegExp.escape(titleExpression) +
+        r'\s*,?\s*\)',
+  );
+  return pattern.firstMatch(source)?.start ?? -1;
 }

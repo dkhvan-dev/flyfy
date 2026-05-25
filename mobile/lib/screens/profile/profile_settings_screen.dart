@@ -28,11 +28,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   Future<_ProfileReferenceLabels>? _referenceLabelsFuture;
   String _referenceLabelsKey = '';
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final profile = context.watch<SessionProvider>().profile;
-    final lang = Localizations.localeOf(context).languageCode;
+  Future<_ProfileReferenceLabels> _referenceLabelsFutureFor(
+    UserProfileVm? profile,
+    String lang,
+  ) {
     final nextKey = [
       lang,
       profile?.countryCode ?? '',
@@ -44,6 +43,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _referenceLabelsKey = nextKey;
       _referenceLabelsFuture = _resolveReferenceLabels(profile, lang);
     }
+
+    return _referenceLabelsFuture!;
+  }
+
+  Future<void> _refreshProfileSettings() async {
+    setState(() {
+      _referenceLabelsFuture = null;
+      _referenceLabelsKey = '';
+    });
+
+    await context.read<SessionProvider>().reloadProfile();
   }
 
   Future<_ProfileReferenceLabels> _resolveReferenceLabels(
@@ -201,83 +211,101 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
 
     final padding = profileScaled(context, 20, min: 14, max: 20);
+    final lang = Localizations.localeOf(context).languageCode;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
           child: SafeArea(
-            child: ListView(
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              padding: EdgeInsets.fromLTRB(
-                padding,
-                profileScaled(context, 14, min: 10, max: 18),
-                padding,
-                profileScaled(context, 28, min: 20, max: 34),
-              ),
-              children: [
-                _SubpageTopBar(title: l10n.profileSettingsPageTitle),
-                SizedBox(height: profileScaled(context, 26, min: 18, max: 30)),
-                ProfileSectionHeading(title: l10n.profileOverviewSectionTitle),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                FutureBuilder<_ProfileReferenceLabels>(
-                  future: _referenceLabelsFuture,
-                  builder: (context, snapshot) {
-                    return _ProfileOverviewCard(
-                      profile: profile,
-                      labels: snapshot.data,
-                    );
-                  },
+            child: RefreshIndicator(
+              onRefresh: _refreshProfileSettings,
+              color: AppColors.accent,
+              backgroundColor: AppColors.surface,
+              child: ListView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
                 ),
-                SizedBox(height: profileScaled(context, 28, min: 24, max: 32)),
-                ProfileSectionHeading(title: l10n.profileAccountSectionTitle),
-                SizedBox(height: profileScaled(context, 16, min: 12, max: 18)),
-                _SettingsActionTile(
-                  icon: Icons.edit_outlined,
-                  title: l10n.editProfileButton,
-                  subtitle: l10n.profileSettingsEditSubtitle,
-                  onTap: _openEditProfile,
+                padding: EdgeInsets.fromLTRB(
+                  padding,
+                  profileScaled(context, 14, min: 10, max: 18),
+                  padding,
+                  profileScaled(context, 28, min: 20, max: 34),
                 ),
-                _SettingsActionTile(
-                  icon: Icons.notifications_none_rounded,
-                  title: l10n.profileNotificationsRowTitle,
-                  subtitle: l10n.profileNotificationsRowSubtitle,
-                  onTap: () => context.push('/profile/notifications'),
-                ),
-                _SettingsActionTile(
-                  icon: Icons.lock_outline_rounded,
-                  title: l10n.profileSecurityRowTitle,
-                  subtitle: l10n.profileSecurityRowSubtitle,
-                  onTap: () => context.push('/profile/security'),
-                ),
-                SizedBox(height: profileScaled(context, 26, min: 20, max: 30)),
-                FilledButton.tonal(
-                  onPressed: _confirmLogout,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.destructive,
-                    foregroundColor: AppColors.textPrimary,
-                    minimumSize: Size(
-                      double.infinity,
-                      profileScaled(context, 54, min: 48, max: 56),
+                children: [
+                  _SubpageTopBar(title: l10n.profileSettingsPageTitle),
+                  SizedBox(
+                    height: profileScaled(context, 26, min: 18, max: 30),
+                  ),
+                  ProfileSectionHeading(
+                    title: l10n.profileOverviewSectionTitle,
+                  ),
+                  SizedBox(
+                    height: profileScaled(context, 16, min: 12, max: 18),
+                  ),
+                  FutureBuilder<_ProfileReferenceLabels>(
+                    future: _referenceLabelsFutureFor(profile, lang),
+                    builder: (context, snapshot) {
+                      return _ProfileOverviewCard(
+                        profile: profile,
+                        labels: snapshot.data,
+                      );
+                    },
+                  ),
+                  SizedBox(
+                    height: profileScaled(context, 28, min: 24, max: 32),
+                  ),
+                  ProfileSectionHeading(title: l10n.profileAccountSectionTitle),
+                  SizedBox(
+                    height: profileScaled(context, 16, min: 12, max: 18),
+                  ),
+                  _SettingsActionTile(
+                    icon: Icons.edit_outlined,
+                    title: l10n.editProfileButton,
+                    subtitle: l10n.profileSettingsEditSubtitle,
+                    onTap: _openEditProfile,
+                  ),
+                  _SettingsActionTile(
+                    icon: Icons.notifications_none_rounded,
+                    title: l10n.profileNotificationsRowTitle,
+                    subtitle: l10n.profileNotificationsRowSubtitle,
+                    onTap: () => context.push('/profile/notifications'),
+                  ),
+                  _SettingsActionTile(
+                    icon: Icons.lock_outline_rounded,
+                    title: l10n.profileSecurityRowTitle,
+                    subtitle: l10n.profileSecurityRowSubtitle,
+                    onTap: () => context.push('/profile/security'),
+                  ),
+                  SizedBox(
+                    height: profileScaled(context, 26, min: 20, max: 30),
+                  ),
+                  FilledButton.tonal(
+                    onPressed: _confirmLogout,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.destructive,
+                      foregroundColor: AppColors.textPrimary,
+                      minimumSize: Size(
+                        double.infinity,
+                        profileScaled(context, 54, min: 48, max: 56),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          profileScaled(context, 20, min: 18, max: 22),
+                        ),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        profileScaled(context, 20, min: 18, max: 22),
+                    child: Text(
+                      l10n.logoutButton,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: profileScaled(context, 15, min: 14, max: 16),
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
-                  child: Text(
-                    l10n.logoutButton,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: profileScaled(context, 15, min: 14, max: 16),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

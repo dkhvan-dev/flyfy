@@ -92,14 +92,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _configureForeignProfileFuture() {
-    _relationshipOverrideUserId = '';
-    _followersCountOverride = null;
-    _isFollowedByMeOverride = null;
-    _friendshipStatusOverride = null;
-    _isFollowActionLoading = false;
-    _isFriendshipActionLoading = false;
-    _isMessageActionLoading = false;
+  void _clearProfileDataFutures() {
+    _extrasFuture = null;
+    _extrasKey = '';
+    _activityCountFuture = null;
+    _activityCountKey = '';
     _publishedStoriesCountFuture = null;
     _publishedStoriesCountKey = '';
     _foreignRecentActivitiesFuture = null;
@@ -110,6 +107,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _guideReviewsKey = '';
     _directGuideReviewsFuture = null;
     _directGuideReviewsKey = '';
+  }
+
+  void _configureForeignProfileFuture() {
+    _relationshipOverrideUserId = '';
+    _followersCountOverride = null;
+    _isFollowedByMeOverride = null;
+    _friendshipStatusOverride = null;
+    _isFollowActionLoading = false;
+    _isFriendshipActionLoading = false;
+    _isMessageActionLoading = false;
+    _clearProfileDataFutures();
 
     final userId = widget.userId?.trim() ?? '';
     if (userId.isEmpty) {
@@ -131,6 +139,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isFollowedByMe: _isFollowedByMeOverride,
       friendshipStatus: _friendshipStatusOverride,
     );
+  }
+
+  Future<void> _refreshProfile() async {
+    final requestedUserId = widget.userId?.trim() ?? '';
+    final session = context.read<SessionProvider>();
+    final currentUserId = session.profile?.userId.trim() ?? '';
+    final isOwnProfile =
+        requestedUserId.isEmpty || requestedUserId == currentUserId;
+
+    if (isOwnProfile) {
+      await session.reloadProfile();
+      if (!mounted) return;
+      setState(_clearProfileDataFutures);
+      return;
+    }
+
+    Future<UserProfileVm>? refreshedProfile;
+    setState(() {
+      _configureForeignProfileFuture();
+      refreshedProfile = _foreignProfileFuture;
+    });
+
+    try {
+      await refreshedProfile;
+    } catch (_) {
+      // FutureBuilder renders the failed refresh state; keep pull-to-refresh calm.
+    }
   }
 
   Future<void> _toggleFollow(UserProfileVm profile) async {
@@ -544,13 +579,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (updated == true && mounted) {
-      _extrasKey = '';
-      _extrasFuture = null;
-      _activityCountKey = '';
-      _activityCountFuture = null;
-      _publishedStoriesCountKey = '';
-      _publishedStoriesCountFuture = null;
       await context.read<SessionProvider>().reloadProfile();
+      if (!mounted) return;
+      setState(_clearProfileDataFutures);
     }
   }
 
@@ -588,37 +619,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: ProfileResponsiveScope(
         child: ProfileGlassBackground(
           child: SafeArea(
-            child: isOwnProfile
-                ? _buildResolvedProfile(
-                    context,
-                    session.profile,
-                    isOwnProfile: true,
-                  )
-                : FutureBuilder<UserProfileVm>(
-                    future: _foreignProfileFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+            child: RefreshIndicator(
+              onRefresh: _refreshProfile,
+              color: AppColors.accent,
+              backgroundColor: AppColors.surface,
+              child: isOwnProfile
+                  ? _buildResolvedProfile(
+                      context,
+                      session.profile,
+                      isOwnProfile: true,
+                    )
+                  : FutureBuilder<UserProfileVm>(
+                      future: _foreignProfileFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
 
-                      if (snapshot.hasError || snapshot.data == null) {
-                        return Center(
-                          child: Text(
-                            l10n.profileNotAvailable,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                        if (snapshot.hasError || snapshot.data == null) {
+                          return Center(
+                            child: Text(
+                              l10n.profileNotAvailable,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                              ),
                             ),
-                          ),
-                        );
-                      }
+                          );
+                        }
 
-                      return _buildResolvedProfile(
-                        context,
-                        snapshot.data,
-                        isOwnProfile: false,
-                      );
-                    },
-                  ),
+                        return _buildResolvedProfile(
+                          context,
+                          snapshot.data,
+                          isOwnProfile: false,
+                        );
+                      },
+                    ),
+            ),
           ),
         ),
       ),
