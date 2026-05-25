@@ -290,6 +290,57 @@ h3 {
   font-size: 1.6rem;
 }
 
+.dashboard-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.dashboard-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.dashboard-panel-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.dashboard-items {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-item {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 14px;
+}
+
+.dashboard-item-main {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.dashboard-item-title {
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.dashboard-item-title:hover {
+  color: var(--accent);
+}
+
 .block {
   display: block;
 }
@@ -687,6 +738,16 @@ tr:last-child td {
 
   .section-actions {
     justify-content: flex-start;
+  }
+
+  .dashboard-panel-head,
+  .dashboard-item {
+    display: grid;
+  }
+
+  .dashboard-item > .button,
+  .dashboard-panel-head > .button {
+    width: fit-content;
   }
 
   .grid.three,

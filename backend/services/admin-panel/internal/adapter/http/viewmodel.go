@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/dkhvan-dev/flyfy/backend/services/admin-panel/internal/app"
@@ -24,6 +25,17 @@ type PageData struct {
 
 type LoginViewData struct {
 	Email string
+}
+
+type DashboardViewData struct {
+	Sections []DashboardSectionView
+}
+
+type DashboardSectionView struct {
+	TitleKey   string
+	EmptyKey   string
+	ViewAllURL string
+	Items      []ModerationQueueItemView
 }
 
 type QueueViewData struct {
@@ -150,6 +162,64 @@ func NewGuideListViewData(items []model.GuideApplicationModerationItem) GuideLis
 		Items:      items,
 		QueueURL:   "/admin/moderation/guides",
 		HistoryURL: "/admin/moderation/guides/history",
+	}
+}
+
+func NewDashboardViewData(
+	excursions []*model.ModerationCase,
+	activities []*model.ModerationCase,
+	guideApplications []*model.ModerationCase,
+	chatMessages []*model.ModerationCase,
+) DashboardViewData {
+	return DashboardViewData{
+		Sections: []DashboardSectionView{
+			newDashboardSection(model.ModerationTargetExcursion, excursions),
+			newDashboardSection(model.ModerationTargetActivity, activities),
+			newDashboardSection(model.ModerationTargetGuideApplication, guideApplications),
+			newDashboardSection(model.ModerationTargetChatMessage, chatMessages),
+		},
+	}
+}
+
+func newDashboardSection(targetType model.ModerationTargetType, cases []*model.ModerationCase) DashboardSectionView {
+	latest := latestDashboardCases(cases, 5)
+	return DashboardSectionView{
+		TitleKey:   dashboardSectionTitleKey(targetType),
+		EmptyKey:   queueEmptyQueueKey(targetType),
+		ViewAllURL: queueBaseURL(targetType),
+		Items:      newQueueViewData(latest, targetType).Items,
+	}
+}
+
+func latestDashboardCases(cases []*model.ModerationCase, limit int) []*model.ModerationCase {
+	if limit <= 0 {
+		return nil
+	}
+	latest := make([]*model.ModerationCase, 0, len(cases))
+	for _, item := range cases {
+		if item != nil {
+			latest = append(latest, item)
+		}
+	}
+	sort.SliceStable(latest, func(i, j int) bool {
+		return latest[i].OpenedAt.After(latest[j].OpenedAt)
+	})
+	if len(latest) > limit {
+		latest = latest[:limit]
+	}
+	return latest
+}
+
+func dashboardSectionTitleKey(targetType model.ModerationTargetType) string {
+	switch targetType {
+	case model.ModerationTargetActivity:
+		return "dashboard.activityModeration"
+	case model.ModerationTargetGuideApplication:
+		return "dashboard.guideModeration"
+	case model.ModerationTargetChatMessage:
+		return "dashboard.chatModeration"
+	default:
+		return "dashboard.excursionModeration"
 	}
 }
 

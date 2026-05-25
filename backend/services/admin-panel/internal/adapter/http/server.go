@@ -175,7 +175,46 @@ func (s *Server) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) Dashboard(w http.ResponseWriter, r *http.Request) {
-	s.renderPage(w, http.StatusOK, r, "dashboard/index", "dashboard.title", "dashboard", nil, "")
+	staff := staffFromContext(r.Context())
+	data, err := s.dashboardViewData(r.Context(), staff)
+	if err != nil {
+		s.renderPage(w, errorStatus(err), r, "dashboard/index", "dashboard.title", "dashboard", data, publicError(localeFromContext(r.Context()), err))
+		return
+	}
+	s.renderPage(w, http.StatusOK, r, "dashboard/index", "dashboard.title", "dashboard", data, "")
+}
+
+func (s *Server) dashboardViewData(ctx context.Context, staff *model.StaffUser) (DashboardViewData, error) {
+	if staff == nil || !staff.HasPermission(enum.PermissionModerationRead) {
+		return NewDashboardViewData(nil, nil, nil, nil), nil
+	}
+	excursions, err := s.latestDashboardCases(ctx, staff, model.ModerationTargetExcursion)
+	if err != nil {
+		return NewDashboardViewData(nil, nil, nil, nil), err
+	}
+	activities, err := s.latestDashboardCases(ctx, staff, model.ModerationTargetActivity)
+	if err != nil {
+		return NewDashboardViewData(excursions, nil, nil, nil), err
+	}
+	guideApplications, err := s.latestDashboardCases(ctx, staff, model.ModerationTargetGuideApplication)
+	if err != nil {
+		return NewDashboardViewData(excursions, activities, nil, nil), err
+	}
+	chatMessages, err := s.latestDashboardCases(ctx, staff, model.ModerationTargetChatMessage)
+	if err != nil {
+		return NewDashboardViewData(excursions, activities, guideApplications, nil), err
+	}
+	return NewDashboardViewData(excursions, activities, guideApplications, chatMessages), nil
+}
+
+func (s *Server) latestDashboardCases(ctx context.Context, staff *model.StaffUser, targetType model.ModerationTargetType) ([]*model.ModerationCase, error) {
+	filter := model.ModerationQueueFilter{
+		TargetType: &targetType,
+		Statuses:   activeModerationCaseStatuses,
+		Sort:       model.ModerationQueueSortOpenedDesc,
+		Limit:      5,
+	}
+	return s.moderation.ListQueue(ctx, staff, filter)
 }
 
 func (s *Server) SyncExcursionQueue(w http.ResponseWriter, r *http.Request) {

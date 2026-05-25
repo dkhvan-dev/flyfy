@@ -71,7 +71,7 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 	templates := map[string]any{
 		"auth/login":           LoginViewData{Email: "moderator@flyfy.local"},
 		"auth/change_password": nil,
-		"dashboard/index":      nil,
+		"dashboard/index":      NewDashboardViewData([]*model.ModerationCase{queueCase}, nil, nil, nil),
 		"moderation/queue": NewQueueViewData([]*model.ModerationCase{queueCase}, QueueFilterViewData{
 			Status: excursionQueueStatusActive,
 			City:   "Almaty",
@@ -96,6 +96,16 @@ func TestRendererRendersCoreTemplates(t *testing.T) {
 			}
 			if !strings.Contains(recorder.Body.String(), "FlyFy") {
 				t.Fatalf("rendered template %s does not contain shell content", name)
+			}
+			if name == "dashboard/index" {
+				body := html.UnescapeString(recorder.Body.String())
+				if !strings.Contains(body, "Kok-Tobe + Cathedral") ||
+					!strings.Contains(body, "View all") {
+					t.Fatalf("dashboard did not render latest moderation context: %s", body)
+				}
+				if strings.Contains(body, `class="metric card"`) {
+					t.Fatal("dashboard still renders legacy metric navigation cards")
+				}
 			}
 			if name == "moderation/queue" {
 				body := html.UnescapeString(recorder.Body.String())

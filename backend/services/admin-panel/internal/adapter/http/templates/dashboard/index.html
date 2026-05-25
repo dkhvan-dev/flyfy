@@ -7,31 +7,50 @@
       <h1>{{t .Locale "dashboard.title"}}</h1>
     </div>
   </div>
-  <div class="grid three">
-    <a class="metric card" href="/admin/moderation/excursions">
-      <span>{{t .Locale "dashboard.excursionModeration"}}</span>
-      <strong>{{t .Locale "dashboard.queue"}}</strong>
-    </a>
-    <a class="metric card" href="/admin/moderation/activities">
-      <span>{{t .Locale "dashboard.activityModeration"}}</span>
-      <strong>{{t .Locale "dashboard.queue"}}</strong>
-    </a>
-    <a class="metric card" href="/admin/moderation/guides">
-      <span>{{t .Locale "dashboard.guideModeration"}}</span>
-      <strong>{{t .Locale "dashboard.queue"}}</strong>
-    </a>
-    <a class="metric card" href="/admin/moderation/chats">
-      <span>{{t .Locale "dashboard.chatModeration"}}</span>
-      <strong>{{t .Locale "dashboard.queue"}}</strong>
-    </a>
-    <a class="metric card" href="/admin/staff">
-      <span>{{t .Locale "dashboard.accessControl"}}</span>
-      <strong>{{t .Locale "dashboard.staff"}}</strong>
-    </a>
-    <a class="metric card" href="/admin/audit">
-      <span>{{t .Locale "dashboard.compliance"}}</span>
-      <strong>{{t .Locale "dashboard.auditLog"}}</strong>
-    </a>
+  <div class="dashboard-stack">
+    {{range .Data.Sections}}
+      <article class="dashboard-panel card">
+        <div class="dashboard-panel-head">
+          <div>
+            <p class="eyebrow">{{t $.Locale "dashboard.latestIncoming"}}</p>
+            <h2>{{t $.Locale .TitleKey}}</h2>
+          </div>
+          <a class="button" href="{{.ViewAllURL}}">{{t $.Locale "action.viewAll"}}</a>
+        </div>
+
+        {{if .Items}}
+          <div class="dashboard-items">
+            {{range .Items}}
+              {{$title := .TargetTitle}}
+              {{if .Excursion}}{{$title = excursionTitle $.Locale .Excursion .TargetTitle}}{{end}}
+              {{if .ChatMessage}}{{$title = chatMessagePreview $.Locale .ChatMessage}}{{end}}
+              {{$subtitle := .TargetSubtitle}}
+              {{if .Excursion}}{{$subtitle = excursionAttractions $.Locale .Excursion}}{{end}}
+              {{if .GuideApplication}}{{$subtitle = guideApplicationType $.Locale .GuideApplication}}{{end}}
+              {{if .ChatMessage}}{{$subtitle = chatMessageSignals $.Locale .ChatMessage}}{{end}}
+              {{$location := ""}}
+              {{if .Excursion}}{{$location = excursionLocation $.Locale .Excursion}}{{else if .Activity}}{{$location = activityLocation $.Locale .Activity}}{{else if .ChatMessage}}{{$location = chatMessageConversation $.Locale .ChatMessage}}{{else if .GuideApplication}}{{$location = guideApplicationLocation $.Locale .GuideApplication}}{{end}}
+              <div class="dashboard-item">
+                <div class="dashboard-item-main">
+                  <a class="dashboard-item-title" href="{{.DetailURL}}">{{$title}}</a>
+                  {{if $subtitle}}{{if ne $subtitle $title}}<span class="muted block">{{$subtitle}}</span>{{end}}{{end}}
+                  <div class="meta-row compact">
+                    <span>{{statusText $.Locale .Case.Status}}</span>
+                    <span>{{t $.Locale "table.priority"}} {{.Case.Priority}}</span>
+                    {{if .GuideName}}<span>{{.GuideName}}</span>{{end}}
+                    {{if $location}}<span>{{$location}}</span>{{end}}
+                    <span>{{formatTime .Case.OpenedAt}}</span>
+                  </div>
+                </div>
+                <a class="button" href="{{.DetailURL}}">{{t $.Locale "action.review"}}</a>
+              </div>
+            {{end}}
+          </div>
+        {{else}}
+          <div class="empty">{{t $.Locale .EmptyKey}}</div>
+        {{end}}
+      </article>
+    {{end}}
   </div>
 </section>
 {{template "pageEnd" .}}

@@ -63,6 +63,7 @@ var translations = map[string]map[string]string{
 		"action.openGuideApplications": "Guide applications",
 		"action.keepMessage":           "Keep message",
 		"action.hideMessage":           "Hide message",
+		"action.viewAll":               "View all",
 
 		"field.email":           "Email",
 		"field.password":        "Password",
@@ -133,6 +134,7 @@ var translations = map[string]map[string]string{
 		"dashboard.staff":               "Staff",
 		"dashboard.compliance":          "Compliance",
 		"dashboard.auditLog":            "Audit log",
+		"dashboard.latestIncoming":      "Latest incoming",
 
 		"moderation.eyebrow":                        "Moderation",
 		"moderation.excursionQueue":                 "Excursion queue",
@@ -434,6 +436,7 @@ var translations = map[string]map[string]string{
 		"action.openGuideApplications": "Заявки гидов",
 		"action.keepMessage":           "Оставить сообщение",
 		"action.hideMessage":           "Скрыть сообщение",
+		"action.viewAll":               "Посмотреть все",
 
 		"field.email":           "Почта",
 		"field.password":        "Пароль",
@@ -504,6 +507,7 @@ var translations = map[string]map[string]string{
 		"dashboard.staff":               "Сотрудники",
 		"dashboard.compliance":          "Контроль",
 		"dashboard.auditLog":            "Журнал аудита",
+		"dashboard.latestIncoming":      "Последние поступившие",
 
 		"moderation.eyebrow":                        "Модерация",
 		"moderation.excursionQueue":                 "Очередь экскурсий",
