@@ -37,6 +37,7 @@ var countryNames = map[string]map[string]string{
 	"PL": {localeEN: "Poland", localeRU: "Польша"},
 	"MX": {localeEN: "Mexico", localeRU: "Мексика"},
 	"BR": {localeEN: "Brazil", localeRU: "Бразилия"},
+	"AB": {localeEN: "Abkhazia", localeRU: "Абхазия"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -694,6 +695,19 @@ var brazilCityNames = map[string]map[string]string{
 	"sao-paulo":             {localeEN: "Sao Paulo", localeRU: "Сан-Паулу"},
 }
 
+var abkhaziaCityNames = map[string]map[string]string{
+	"gagra":      {localeEN: "Gagra", localeRU: "Гагра"},
+	"gali":       {localeEN: "Gali", localeRU: "Гал"},
+	"gudauta":    {localeEN: "Gudauta", localeRU: "Гудаута"},
+	"lake-ritsa": {localeEN: "Lake Ritsa", localeRU: "Озеро Рица"},
+	"new-athos":  {localeEN: "New Athos", localeRU: "Новый Афон"},
+	"ochamchira": {localeEN: "Ochamchira", localeRU: "Очамчира"},
+	"otap":       {localeEN: "Otap", localeRU: "Отап"},
+	"pitsunda":   {localeEN: "Pitsunda", localeRU: "Пицунда"},
+	"sukhum":     {localeEN: "Sukhum", localeRU: "Сухум"},
+	"tkvarcheli": {localeEN: "Tkvarcheli", localeRU: "Ткуарчал"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -723,6 +737,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range brazilCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range abkhaziaCityNames {
 		cityNames[cityID] = names
 	}
 }

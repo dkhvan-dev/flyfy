@@ -3030,6 +3030,81 @@ func TestBrazilPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
+	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_abkhazia_resolved_attractions AS",
+		"'AB'",
+		"'RUB'",
+		"abkhazia-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Abkhazia up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"sukhum",
+		"gagra",
+		"pitsunda",
+		"new-athos",
+		"gudauta",
+		"lake-ritsa",
+		"tkvarcheli",
+		"ochamchira",
+		"gali",
+		"otap",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Abkhazia up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Sukhum Botanical Garden",
+		"Sukhum Monkey Nursery",
+		"Abkhazian State Museum",
+		"Gagra Colonnade",
+		"Oldenburg Prince Castle",
+		"Pitsunda Cathedral",
+		"Lake Ritsa",
+		"Blue Lake",
+		"New Athos Cave",
+		"New Athos Monastery",
+		"Anakopia Fortress",
+		"Lykhny Church",
+		"Gegsky Waterfall",
+		"Abrskil Cave",
+		"Mokva Cathedral",
+		"Tkvarcheli Akarmara",
+		"Gali Market",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Abkhazia up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Abkhazia up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['abkhazia', city_id") {
+		t.Fatalf("Abkhazia up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "abkhazia-seed-v1") || !strings.Contains(downSQL, "country_code = 'AB'") {
+		t.Fatalf("Abkhazia down migration must remove only tagged Abkhazia seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

@@ -595,6 +595,17 @@
   {"id": "ouro-preto", "countryCode": "BR", "name": {"en": "Ouro Preto", "ru": "Ору-Прету", "kk": "Ору-Прету"}, "population": 74000},
   {"id": "belo-horizonte", "countryCode": "BR", "name": {"en": "Belo Horizonte", "ru": "Белу-Оризонти", "kk": "Белу-Оризонти"}, "population": 2316000},
 
+  {"id": "sukhum", "countryCode": "AB", "name": {"en": "Sukhum", "ru": "Сухум", "kk": "Сухум"}, "population": 65000},
+  {"id": "gagra", "countryCode": "AB", "name": {"en": "Gagra", "ru": "Гагра", "kk": "Гагра"}, "population": 12000},
+  {"id": "pitsunda", "countryCode": "AB", "name": {"en": "Pitsunda", "ru": "Пицунда", "kk": "Пицунда"}, "population": 4000},
+  {"id": "new-athos", "countryCode": "AB", "name": {"en": "New Athos", "ru": "Новый Афон", "kk": "Жаңа Афон"}, "population": 1500},
+  {"id": "gudauta", "countryCode": "AB", "name": {"en": "Gudauta", "ru": "Гудаута", "kk": "Гудаута"}, "population": 8000},
+  {"id": "lake-ritsa", "countryCode": "AB", "name": {"en": "Lake Ritsa", "ru": "Озеро Рица", "kk": "Рица көлі"}, "population": 0},
+  {"id": "tkvarcheli", "countryCode": "AB", "name": {"en": "Tkvarcheli", "ru": "Ткуарчал", "kk": "Ткуарчал"}, "population": 5000},
+  {"id": "ochamchira", "countryCode": "AB", "name": {"en": "Ochamchira", "ru": "Очамчира", "kk": "Очамчира"}, "population": 5000},
+  {"id": "gali", "countryCode": "AB", "name": {"en": "Gali", "ru": "Гал", "kk": "Гал"}, "population": 7000},
+  {"id": "otap", "countryCode": "AB", "name": {"en": "Otap", "ru": "Отап", "kk": "Отап"}, "population": 500},
+
   {"id": "colombo", "countryCode": "LK", "name": {"en": "Colombo", "ru": "Коломбо", "kk": "Коломбо"}, "population": 752000},
   {"id": "negombo", "countryCode": "LK", "name": {"en": "Negombo", "ru": "Негомбо", "kk": "Негомбо"}, "population": 142000},
   {"id": "mount-lavinia", "countryCode": "LK", "name": {"en": "Mount Lavinia", "ru": "Маунт-Лавиния", "kk": "Маунт-Лавиния"}, "population": 245000},

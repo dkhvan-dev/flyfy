@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -657,6 +657,16 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "BR", CityID: "chapada-dos-veadeiros"},
 	{CountryCode: "BR", CityID: "ouro-preto"},
 	{CountryCode: "BR", CityID: "belo-horizonte"},
+	{CountryCode: "AB", CityID: "sukhum"},
+	{CountryCode: "AB", CityID: "gagra"},
+	{CountryCode: "AB", CityID: "pitsunda"},
+	{CountryCode: "AB", CityID: "new-athos"},
+	{CountryCode: "AB", CityID: "gudauta"},
+	{CountryCode: "AB", CityID: "lake-ritsa"},
+	{CountryCode: "AB", CityID: "tkvarcheli"},
+	{CountryCode: "AB", CityID: "ochamchira"},
+	{CountryCode: "AB", CityID: "gali"},
+	{CountryCode: "AB", CityID: "otap"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -664,7 +674,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -747,6 +757,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Евро"
 		}
 		return "Euro"
+	case "RUB":
+		if locale == localeRU {
+			return "Российский рубль"
+		}
+		return "Russian ruble"
 	case "TRY":
 		if locale == localeRU {
 			return "Турецкая лира"

@@ -2474,6 +2474,108 @@ func TestRendererRendersBrazilAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=AB&city=sukhum",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Сухумский ботанический сад",
+				CountryCode:   "AB",
+				CityID:        "sukhum",
+				Category:      "PARK",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "AB",
+			CityID:      "sukhum",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="AB" selected`,
+		`Абхазия`,
+		`value="sukhum" data-country="AB" selected`,
+		`Сухум`,
+		`Сухум, Абхазия`,
+		`Парк`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Abkhazia attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">AB<") || strings.Contains(listBody, ">sukhum<") {
+		t.Fatalf("Abkhazia attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "RUB"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Сухумский ботанический сад",
+		Description:   "Исторический ботанический сад в центре Сухума.",
+		CountryCode:   "AB",
+		CityID:        "sukhum",
+		Category:      "PARK",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "AB", CityID: "gagra"},
+			{CountryCode: "AB", CityID: "new-athos"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "AB", CityID: "pitsunda"},
+			{CountryCode: "AB", CityID: "lake-ritsa"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="AB" selected>Абхазия</option>`,
+		`<option value="sukhum" data-country="AB" selected>Сухум</option>`,
+		`<option value="gagra" data-country="AB" >Гагра</option>`,
+		`type="checkbox" name="access_cities" value="AB:gagra" checked`,
+		`type="checkbox" name="departure_cities" value="AB:pitsunda" checked`,
+		`Сухум, Абхазия`,
+		`<option value="RUB" selected>Российский рубль</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Abkhazia attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

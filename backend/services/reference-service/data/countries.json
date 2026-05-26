@@ -324,6 +324,15 @@
     "capital": {"en": "Brasilia", "ru": "Бразилиа", "kk": "Бразилиа"}
   },
   {
+    "code": "AB",
+    "code3": "ABH",
+    "numeric": "895",
+    "currencyCode": "RUB",
+    "phoneCode": "+7",
+    "name": {"en": "Abkhazia", "ru": "Абхазия", "kk": "Абхазия"},
+    "capital": {"en": "Sukhum", "ru": "Сухум", "kk": "Сухум"}
+  },
+  {
     "code": "LK",
     "code3": "LKA",
     "numeric": "144",

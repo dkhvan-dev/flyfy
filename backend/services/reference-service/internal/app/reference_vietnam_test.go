@@ -1523,3 +1523,56 @@ func TestReferenceUseCaseIncludesBrazilCountryCurrencyAndTouristDestinations(t *
 		t.Fatalf("search rio de janeiro in Brazil = %#v, want rio-de-janeiro first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesAbkhaziaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("AB")
+	if country == nil {
+		t.Fatal("expected Abkhazia country reference")
+	}
+	if country.Name.Ru != "Абхазия" {
+		t.Fatalf("Abkhazia Russian name = %q, want Абхазия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("AB")
+	if currency == nil {
+		t.Fatal("expected Russian ruble currency by Abkhazia country")
+	}
+	if currency.Code != "RUB" {
+		t.Fatalf("Abkhazia currency = %q, want RUB", currency.Code)
+	}
+
+	cities := uc.ListCities("AB")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"sukhum",
+		"gagra",
+		"pitsunda",
+		"new-athos",
+		"gudauta",
+		"lake-ritsa",
+		"tkvarcheli",
+		"ochamchira",
+		"gali",
+		"otap",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Abkhazia city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("sukhum", "AB", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "sukhum" {
+		t.Fatalf("search sukhum in Abkhazia = %#v, want sukhum first", searchResults)
+	}
+}
