@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -107,6 +107,26 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "TR", CityID: "mardin"},
 	{CountryCode: "TR", CityID: "sanliurfa"},
 	{CountryCode: "TR", CityID: "gaziantep"},
+	{CountryCode: "EG", CityID: "cairo"},
+	{CountryCode: "EG", CityID: "giza"},
+	{CountryCode: "EG", CityID: "alexandria"},
+	{CountryCode: "EG", CityID: "north-coast"},
+	{CountryCode: "EG", CityID: "port-said"},
+	{CountryCode: "EG", CityID: "suez"},
+	{CountryCode: "EG", CityID: "ain-sokhna"},
+	{CountryCode: "EG", CityID: "luxor"},
+	{CountryCode: "EG", CityID: "aswan"},
+	{CountryCode: "EG", CityID: "abu-simbel"},
+	{CountryCode: "EG", CityID: "hurghada"},
+	{CountryCode: "EG", CityID: "el-gouna"},
+	{CountryCode: "EG", CityID: "marsa-alam"},
+	{CountryCode: "EG", CityID: "sharm-el-sheikh"},
+	{CountryCode: "EG", CityID: "dahab"},
+	{CountryCode: "EG", CityID: "saint-catherine"},
+	{CountryCode: "EG", CityID: "siwa"},
+	{CountryCode: "EG", CityID: "fayoum"},
+	{CountryCode: "EG", CityID: "bahariya-oasis"},
+	{CountryCode: "EG", CityID: "white-desert"},
 	{CountryCode: "AE", CityID: "dubai"},
 	{CountryCode: "AE", CityID: "abu-dhabi"},
 	{CountryCode: "AE", CityID: "al-ain"},
@@ -398,7 +418,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -491,6 +511,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Дирхам ОАЭ"
 		}
 		return "UAE dirham"
+	case "EGP":
+		if locale == localeRU {
+			return "Египетский фунт"
+		}
+		return "Egyptian pound"
 	case "VND":
 		if locale == localeRU {
 			return "Вьетнамский донг"

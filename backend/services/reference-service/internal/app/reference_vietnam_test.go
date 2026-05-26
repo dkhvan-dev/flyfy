@@ -790,3 +790,66 @@ func TestReferenceUseCaseIncludesTurkeyCountryCurrencyAndTouristCities(t *testin
 		t.Fatalf("search pamukkale in Turkey = %#v, want pamukkale first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesEgyptCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("EG")
+	if country == nil {
+		t.Fatal("expected Egypt country reference")
+	}
+	if country.Name.Ru != "Египет" {
+		t.Fatalf("Egypt Russian name = %q, want Египет", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("EG")
+	if currency == nil {
+		t.Fatal("expected Egyptian pound currency by country")
+	}
+	if currency.Code != "EGP" {
+		t.Fatalf("Egypt currency = %q, want EGP", currency.Code)
+	}
+
+	cities := uc.ListCities("EG")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"cairo",
+		"giza",
+		"alexandria",
+		"north-coast",
+		"port-said",
+		"suez",
+		"ain-sokhna",
+		"luxor",
+		"aswan",
+		"abu-simbel",
+		"hurghada",
+		"el-gouna",
+		"marsa-alam",
+		"sharm-el-sheikh",
+		"dahab",
+		"saint-catherine",
+		"siwa",
+		"fayoum",
+		"bahariya-oasis",
+		"white-desert",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Egypt city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("sharm el sheikh", "EG", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "sharm-el-sheikh" {
+		t.Fatalf("search sharm el sheikh in Egypt = %#v, want sharm-el-sheikh first", searchResults)
+	}
+}

@@ -1360,6 +1360,107 @@ func TestRendererRendersTurkeyAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersEgyptAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=EG&city=giza",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Пирамиды Гизы",
+				CountryCode:   "EG",
+				CityID:        "giza",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "EG",
+			CityID:      "giza",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="EG" selected`,
+		`Египет`,
+		`value="giza" data-country="EG" selected`,
+		`Гиза`,
+		`Гиза, Египет`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Egypt attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">EG<") || strings.Contains(listBody, ">giza<") {
+		t.Fatalf("Egypt attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Пирамиды Гизы",
+		Description:   "Главный археологический комплекс Египта.",
+		CountryCode:   "EG",
+		CityID:        "giza",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "EG", CityID: "cairo"},
+			{CountryCode: "EG", CityID: "luxor"},
+			{CountryCode: "EG", CityID: "sharm-el-sheikh"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "EG", CityID: "cairo"},
+			{CountryCode: "EG", CityID: "hurghada"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="EG" selected>Египет</option>`,
+		`<option value="giza" data-country="EG" selected>Гиза</option>`,
+		`<option value="luxor" data-country="EG" >Луксор</option>`,
+		`type="checkbox" name="access_cities" value="EG:sharm-el-sheikh" checked`,
+		`type="checkbox" name="departure_cities" value="EG:hurghada" checked`,
+		`Гиза, Египет`,
+		`<option value="EGP" >Египетский фунт</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Egypt attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

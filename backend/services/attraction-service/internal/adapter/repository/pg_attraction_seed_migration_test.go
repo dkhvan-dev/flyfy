@@ -1974,6 +1974,93 @@ func TestTurkeyPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestEgyptPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "035_seed_egypt_priority_attractions.up.sql")
+	downSQL := readMigration(t, "035_seed_egypt_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_egypt_resolved_attractions AS",
+		"'EG'",
+		"egypt-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Egypt up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"cairo",
+		"giza",
+		"alexandria",
+		"north-coast",
+		"port-said",
+		"suez",
+		"ain-sokhna",
+		"luxor",
+		"aswan",
+		"abu-simbel",
+		"hurghada",
+		"el-gouna",
+		"marsa-alam",
+		"sharm-el-sheikh",
+		"dahab",
+		"saint-catherine",
+		"siwa",
+		"fayoum",
+		"bahariya-oasis",
+		"white-desert",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Egypt up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Pyramids of Giza",
+		"Great Sphinx of Giza",
+		"Grand Egyptian Museum",
+		"Egyptian Museum",
+		"Khan El Khalili Bazaar",
+		"Citadel of Qaitbay",
+		"Bibliotheca Alexandrina",
+		"Karnak Temple",
+		"Valley of the Kings",
+		"Luxor Temple",
+		"Philae Temple",
+		"Abu Simbel Temples",
+		"Giftun Islands",
+		"El Gouna Marina",
+		"Ras Mohammed National Park",
+		"Blue Hole Dahab",
+		"Saint Catherine Monastery",
+		"Siwa Oasis",
+		"Wadi El Hitan",
+		"White Desert National Park",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Egypt up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Egypt up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['egypt', city_id") {
+		t.Fatalf("Egypt up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "egypt-seed-v1") || !strings.Contains(downSQL, "country_code = 'EG'") {
+		t.Fatalf("Egypt down migration must remove only tagged Egypt seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",
