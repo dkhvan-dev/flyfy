@@ -33,6 +33,7 @@ var countryNames = map[string]map[string]string{
 	"EG": {localeEN: "Egypt", localeRU: "Египет"},
 	"MY": {localeEN: "Malaysia", localeRU: "Малайзия"},
 	"LK": {localeEN: "Sri Lanka", localeRU: "Шри-Ланка"},
+	"SC": {localeEN: "Seychelles", localeRU: "Сейшелы"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -572,6 +573,30 @@ var cyprusCityNames = map[string]map[string]string{
 	"troodos":      {localeEN: "Troodos", localeRU: "Троодос"},
 }
 
+var seychellesCityNames = map[string]map[string]string{
+	"anse-reunion":       {localeEN: "Anse Reunion", localeRU: "Анс-Реюньон"},
+	"anse-royale":        {localeEN: "Anse Royale", localeRU: "Анс-Руаяль"},
+	"baie-sainte-anne":   {localeEN: "Baie Sainte Anne", localeRU: "Бэ-Сент-Анн"},
+	"beau-vallon":        {localeEN: "Beau Vallon", localeRU: "Бо-Валлон"},
+	"cerf-island":        {localeEN: "Cerf Island", localeRU: "Остров Серф"},
+	"cousin-island":      {localeEN: "Cousin Island", localeRU: "Остров Кузен"},
+	"curieuse-island":    {localeEN: "Curieuse Island", localeRU: "Остров Кюрьёз"},
+	"eden-island":        {localeEN: "Eden Island", localeRU: "Иден-Айленд"},
+	"felicite-island":    {localeEN: "Felicite Island", localeRU: "Остров Фелисите"},
+	"grand-anse-praslin": {localeEN: "Grand Anse Praslin", localeRU: "Гранд-Анс Праслин"},
+	"ile-cocos":          {localeEN: "Ile Cocos", localeRU: "Иль-Кокос"},
+	"la-digue":           {localeEN: "La Digue", localeRU: "Ла-Диг"},
+	"la-passe":           {localeEN: "La Passe", localeRU: "Ла-Пасс"},
+	"mahe":               {localeEN: "Mahe", localeRU: "Маэ"},
+	"moyenne-island":     {localeEN: "Moyenne Island", localeRU: "Остров Муаен"},
+	"port-glaud":         {localeEN: "Port Glaud", localeRU: "Порт-Гло"},
+	"praslin":            {localeEN: "Praslin", localeRU: "Праслин"},
+	"sainte-anne-island": {localeEN: "Sainte Anne Island", localeRU: "Остров Сент-Анн"},
+	"silhouette-island":  {localeEN: "Silhouette Island", localeRU: "Остров Силуэт"},
+	"takamaka":           {localeEN: "Takamaka", localeRU: "Такамака"},
+	"victoria":           {localeEN: "Victoria", localeRU: "Виктория"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -589,6 +614,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range cyprusCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range seychellesCityNames {
 		cityNames[cityID] = names
 	}
 }

@@ -28,5 +28,6 @@
   {"code": "MYR", "numeric": "458", "decimals": 2, "symbol": "RM", "name": {"en": "Malaysian Ringgit", "ru": "Малайзийский ринггит", "kk": "Малайзия ринггиті"}},
   {"code": "IDR", "numeric": "360", "decimals": 2, "symbol": "Rp", "name": {"en": "Indonesian Rupiah", "ru": "Индонезийская рупия", "kk": "Индонезия рупиясы"}},
   {"code": "MVR", "numeric": "462", "decimals": 2, "symbol": "Rf", "name": {"en": "Maldivian Rufiyaa", "ru": "Мальдивская руфия", "kk": "Мальдив руфиясы"}},
+  {"code": "SCR", "numeric": "690", "decimals": 2, "symbol": "SR", "name": {"en": "Seychellois Rupee", "ru": "Сейшельская рупия", "kk": "Сейшел рупиясы"}},
   {"code": "LKR", "numeric": "144", "decimals": 2, "symbol": "Rs", "name": {"en": "Sri Lankan Rupee", "ru": "Шри-ланкийская рупия", "kk": "Шри-Ланка рупиясы"}}
 ]

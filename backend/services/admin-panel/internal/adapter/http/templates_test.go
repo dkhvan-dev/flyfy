@@ -2066,6 +2066,108 @@ func TestRendererRendersCyprusAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersSeychellesAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=SC&city=victoria",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Национальный ботанический сад Сейшел",
+				CountryCode:   "SC",
+				CityID:        "victoria",
+				Category:      "PARK",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "SC",
+			CityID:      "victoria",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="SC" selected`,
+		`Сейшелы`,
+		`value="victoria" data-country="SC" selected`,
+		`Виктория`,
+		`Виктория, Сейшелы`,
+		`Парк`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Seychelles attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">SC<") || strings.Contains(listBody, ">victoria<") {
+		t.Fatalf("Seychelles attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "SCR"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Национальный ботанический сад Сейшел",
+		Description:   "Сад в Виктории с эндемичными растениями и гигантскими черепахами.",
+		CountryCode:   "SC",
+		CityID:        "victoria",
+		Category:      "PARK",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "SC", CityID: "beau-vallon"},
+			{CountryCode: "SC", CityID: "eden-island"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "SC", CityID: "la-digue"},
+			{CountryCode: "SC", CityID: "praslin"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="SC" selected>Сейшелы</option>`,
+		`<option value="victoria" data-country="SC" selected>Виктория</option>`,
+		`<option value="beau-vallon" data-country="SC" >Бо-Валлон</option>`,
+		`type="checkbox" name="access_cities" value="SC:beau-vallon" checked`,
+		`type="checkbox" name="departure_cities" value="SC:la-digue" checked`,
+		`Виктория, Сейшелы`,
+		`<option value="SCR" selected>Сейшельская рупия</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Seychelles attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

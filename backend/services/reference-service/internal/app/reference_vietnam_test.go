@@ -1249,3 +1249,67 @@ func TestReferenceUseCaseIncludesCyprusCountryCurrencyAndTouristDestinations(t *
 		t.Fatalf("search ayia napa in Cyprus = %#v, want ayia-napa first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesSeychellesCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("SC")
+	if country == nil {
+		t.Fatal("expected Seychelles country reference")
+	}
+	if country.Name.Ru != "Сейшелы" {
+		t.Fatalf("Seychelles Russian name = %q, want Сейшелы", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("SC")
+	if currency == nil {
+		t.Fatal("expected Seychellois rupee currency by country")
+	}
+	if currency.Code != "SCR" {
+		t.Fatalf("Seychelles currency = %q, want SCR", currency.Code)
+	}
+
+	cities := uc.ListCities("SC")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"victoria",
+		"beau-vallon",
+		"eden-island",
+		"port-glaud",
+		"anse-royale",
+		"takamaka",
+		"mahe",
+		"praslin",
+		"baie-sainte-anne",
+		"grand-anse-praslin",
+		"la-digue",
+		"anse-reunion",
+		"la-passe",
+		"curieuse-island",
+		"cousin-island",
+		"silhouette-island",
+		"sainte-anne-island",
+		"moyenne-island",
+		"cerf-island",
+		"felicite-island",
+		"ile-cocos",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Seychelles city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("beau vallon", "SC", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "beau-vallon" {
+		t.Fatalf("search beau vallon in Seychelles = %#v, want beau-vallon first", searchResults)
+	}
+}

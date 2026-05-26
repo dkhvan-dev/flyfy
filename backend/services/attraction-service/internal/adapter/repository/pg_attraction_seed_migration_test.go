@@ -2635,6 +2635,100 @@ func TestCyprusPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestSeychellesPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "042_seed_seychelles_priority_attractions.up.sql")
+	downSQL := readMigration(t, "042_seed_seychelles_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_seychelles_resolved_attractions AS",
+		"'SC'",
+		"'SCR'",
+		"seychelles-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Seychelles up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"victoria",
+		"beau-vallon",
+		"eden-island",
+		"port-glaud",
+		"anse-royale",
+		"takamaka",
+		"mahe",
+		"praslin",
+		"baie-sainte-anne",
+		"grand-anse-praslin",
+		"la-digue",
+		"anse-reunion",
+		"la-passe",
+		"curieuse-island",
+		"cousin-island",
+		"silhouette-island",
+		"sainte-anne-island",
+		"moyenne-island",
+		"cerf-island",
+		"felicite-island",
+		"ile-cocos",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Seychelles up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Sir Selwyn Selwyn-Clarke Market",
+		"Seychelles National Botanical Garden",
+		"Seychelles National Museum of History",
+		"Beau Vallon Beach",
+		"Morne Seychellois National Park",
+		"Copolia Trail",
+		"Mission Lodge",
+		"Eden Plaza",
+		"Anse Royale Beach",
+		"Jardin du Roi Spice Garden",
+		"Anse Intendance",
+		"Vallee de Mai Nature Reserve",
+		"Anse Lazio",
+		"Anse Georgette",
+		"Curieuse Marine National Park",
+		"Cousin Island Special Reserve",
+		"L'Union Estate",
+		"Anse Source d'Argent",
+		"Grand Anse La Digue",
+		"Anse Cocos",
+		"Nid d'Aigle",
+		"Ile Cocos Marine National Park",
+		"Sainte Anne Marine National Park",
+		"Moyenne Island National Park",
+		"Silhouette National Park",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Seychelles up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Seychelles up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['seychelles', city_id") {
+		t.Fatalf("Seychelles up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "seychelles-seed-v1") || !strings.Contains(downSQL, "country_code = 'SC'") {
+		t.Fatalf("Seychelles down migration must remove only tagged Seychelles seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

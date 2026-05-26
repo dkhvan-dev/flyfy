@@ -288,6 +288,15 @@
     "capital": {"en": "Male", "ru": "Мале", "kk": "Мале"}
   },
   {
+    "code": "SC",
+    "code3": "SYC",
+    "numeric": "690",
+    "currencyCode": "SCR",
+    "phoneCode": "+248",
+    "name": {"en": "Seychelles", "ru": "Сейшелы", "kk": "Сейшел аралдары"},
+    "capital": {"en": "Victoria", "ru": "Виктория", "kk": "Виктория"}
+  },
+  {
     "code": "LK",
     "code3": "LKA",
     "numeric": "144",

@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -551,6 +551,27 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "CY", CityID: "kourion"},
 	{CountryCode: "CY", CityID: "choirokoitia"},
 	{CountryCode: "CY", CityID: "agros"},
+	{CountryCode: "SC", CityID: "victoria"},
+	{CountryCode: "SC", CityID: "beau-vallon"},
+	{CountryCode: "SC", CityID: "eden-island"},
+	{CountryCode: "SC", CityID: "port-glaud"},
+	{CountryCode: "SC", CityID: "anse-royale"},
+	{CountryCode: "SC", CityID: "takamaka"},
+	{CountryCode: "SC", CityID: "mahe"},
+	{CountryCode: "SC", CityID: "praslin"},
+	{CountryCode: "SC", CityID: "baie-sainte-anne"},
+	{CountryCode: "SC", CityID: "grand-anse-praslin"},
+	{CountryCode: "SC", CityID: "la-digue"},
+	{CountryCode: "SC", CityID: "anse-reunion"},
+	{CountryCode: "SC", CityID: "la-passe"},
+	{CountryCode: "SC", CityID: "curieuse-island"},
+	{CountryCode: "SC", CityID: "cousin-island"},
+	{CountryCode: "SC", CityID: "silhouette-island"},
+	{CountryCode: "SC", CityID: "sainte-anne-island"},
+	{CountryCode: "SC", CityID: "moyenne-island"},
+	{CountryCode: "SC", CityID: "cerf-island"},
+	{CountryCode: "SC", CityID: "felicite-island"},
+	{CountryCode: "SC", CityID: "ile-cocos"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -558,7 +579,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -696,6 +717,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Мальдивская руфия"
 		}
 		return "Maldivian rufiyaa"
+	case "SCR":
+		if locale == localeRU {
+			return "Сейшельская рупия"
+		}
+		return "Seychellois rupee"
 	case "GEL":
 		if locale == localeRU {
 			return "Грузинский лари"
