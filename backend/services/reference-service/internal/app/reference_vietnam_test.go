@@ -1524,6 +1524,78 @@ func TestReferenceUseCaseIncludesBrazilCountryCurrencyAndTouristDestinations(t *
 	}
 }
 
+func TestReferenceUseCaseIncludesArgentinaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("AR")
+	if country == nil {
+		t.Fatal("expected Argentina country reference")
+	}
+	if country.Name.Ru != "Аргентина" {
+		t.Fatalf("Argentina Russian name = %q, want Аргентина", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("AR")
+	if currency == nil {
+		t.Fatal("expected Argentine peso currency by country")
+	}
+	if currency.Code != "ARS" {
+		t.Fatalf("Argentina currency = %q, want ARS", currency.Code)
+	}
+
+	cities := uc.ListCities("AR")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"buenos-aires",
+		"la-plata",
+		"tigre",
+		"mar-del-plata",
+		"bariloche",
+		"el-calafate",
+		"el-chalten",
+		"ushuaia",
+		"puerto-madryn",
+		"peninsula-valdes",
+		"puerto-iguazu",
+		"iguazu-falls",
+		"posadas",
+		"corrientes",
+		"esteros-del-ibera",
+		"rosario",
+		"salta",
+		"jujuy",
+		"purmamarca",
+		"tilcara",
+		"humahuaca",
+		"cafayate",
+		"tucuman",
+		"mendoza",
+		"san-rafael",
+		"uspallata",
+		"aconcagua",
+		"cordoba-argentina",
+		"villa-carlos-paz",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Argentina city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("buenos aires", "AR", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "buenos-aires" {
+		t.Fatalf("search buenos aires in Argentina = %#v, want buenos-aires first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesAbkhaziaCountryCurrencyAndTouristDestinations(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

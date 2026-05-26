@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -657,6 +657,40 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "BR", CityID: "chapada-dos-veadeiros"},
 	{CountryCode: "BR", CityID: "ouro-preto"},
 	{CountryCode: "BR", CityID: "belo-horizonte"},
+	{CountryCode: "AR", CityID: "buenos-aires"},
+	{CountryCode: "AR", CityID: "la-plata"},
+	{CountryCode: "AR", CityID: "tigre"},
+	{CountryCode: "AR", CityID: "mar-del-plata"},
+	{CountryCode: "AR", CityID: "pinamar"},
+	{CountryCode: "AR", CityID: "carilo"},
+	{CountryCode: "AR", CityID: "villa-gesell"},
+	{CountryCode: "AR", CityID: "mar-de-las-pampas"},
+	{CountryCode: "AR", CityID: "san-clemente-del-tuyu"},
+	{CountryCode: "AR", CityID: "bariloche"},
+	{CountryCode: "AR", CityID: "el-calafate"},
+	{CountryCode: "AR", CityID: "el-chalten"},
+	{CountryCode: "AR", CityID: "ushuaia"},
+	{CountryCode: "AR", CityID: "puerto-madryn"},
+	{CountryCode: "AR", CityID: "peninsula-valdes"},
+	{CountryCode: "AR", CityID: "puerto-iguazu"},
+	{CountryCode: "AR", CityID: "iguazu-falls"},
+	{CountryCode: "AR", CityID: "posadas"},
+	{CountryCode: "AR", CityID: "corrientes"},
+	{CountryCode: "AR", CityID: "esteros-del-ibera"},
+	{CountryCode: "AR", CityID: "rosario"},
+	{CountryCode: "AR", CityID: "salta"},
+	{CountryCode: "AR", CityID: "jujuy"},
+	{CountryCode: "AR", CityID: "purmamarca"},
+	{CountryCode: "AR", CityID: "tilcara"},
+	{CountryCode: "AR", CityID: "humahuaca"},
+	{CountryCode: "AR", CityID: "cafayate"},
+	{CountryCode: "AR", CityID: "tucuman"},
+	{CountryCode: "AR", CityID: "mendoza"},
+	{CountryCode: "AR", CityID: "san-rafael"},
+	{CountryCode: "AR", CityID: "uspallata"},
+	{CountryCode: "AR", CityID: "aconcagua"},
+	{CountryCode: "AR", CityID: "cordoba-argentina"},
+	{CountryCode: "AR", CityID: "villa-carlos-paz"},
 	{CountryCode: "AB", CityID: "sukhum"},
 	{CountryCode: "AB", CityID: "gagra"},
 	{CountryCode: "AB", CityID: "pitsunda"},
@@ -1037,7 +1071,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1215,6 +1249,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Бразильский реал"
 		}
 		return "Brazilian real"
+	case "ARS":
+		if locale == localeRU {
+			return "Аргентинский песо"
+		}
+		return "Argentine peso"
 	case "CUP":
 		if locale == localeRU {
 			return "Кубинский песо"

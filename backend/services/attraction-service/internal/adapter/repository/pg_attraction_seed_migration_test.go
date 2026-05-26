@@ -3030,6 +3030,107 @@ func TestBrazilPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestArgentinaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "059_seed_argentina_priority_attractions.up.sql")
+	downSQL := readMigration(t, "059_seed_argentina_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_argentina_resolved_attractions AS",
+		"'AR'",
+		"'ARS'",
+		"argentina-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Argentina up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"buenos-aires",
+		"la-plata",
+		"tigre",
+		"mar-del-plata",
+		"bariloche",
+		"el-calafate",
+		"el-chalten",
+		"ushuaia",
+		"puerto-madryn",
+		"peninsula-valdes",
+		"puerto-iguazu",
+		"iguazu-falls",
+		"posadas",
+		"corrientes",
+		"esteros-del-ibera",
+		"rosario",
+		"salta",
+		"jujuy",
+		"purmamarca",
+		"tilcara",
+		"humahuaca",
+		"cafayate",
+		"tucuman",
+		"mendoza",
+		"san-rafael",
+		"uspallata",
+		"aconcagua",
+		"cordoba-argentina",
+		"villa-carlos-paz",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Argentina up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Teatro Colon",
+		"Recoleta Cemetery",
+		"Caminito La Boca",
+		"San Telmo Market",
+		"Puerto Madero Waterfront",
+		"Tigre Delta",
+		"Mar del Plata Central Beach",
+		"Perito Moreno Glacier",
+		"Mount Fitz Roy",
+		"Nahuel Huapi National Park",
+		"End of the World Train",
+		"Peninsula Valdes",
+		"Iguazu Falls",
+		"Ibera Wetlands",
+		"Independence Park Rosario",
+		"Salta Cathedral",
+		"Quebrada de Humahuaca",
+		"Hill of Seven Colors",
+		"Cafayate Wineries",
+		"Aconcagua Provincial Park",
+		"Mendoza Wine Route",
+		"Atuel Canyon",
+		"Cordoba Jesuit Block",
+		"Villa Carlos Paz Cuckoo Clock",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Argentina up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Argentina up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['argentina', city_id") {
+		t.Fatalf("Argentina up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "argentina-seed-v1") || !strings.Contains(downSQL, "country_code = 'AR'") {
+		t.Fatalf("Argentina down migration must remove only tagged Argentina seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

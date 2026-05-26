@@ -37,6 +37,7 @@ var countryNames = map[string]map[string]string{
 	"PL": {localeEN: "Poland", localeRU: "Польша"},
 	"MX": {localeEN: "Mexico", localeRU: "Мексика"},
 	"BR": {localeEN: "Brazil", localeRU: "Бразилия"},
+	"AR": {localeEN: "Argentina", localeRU: "Аргентина"},
 	"AB": {localeEN: "Abkhazia", localeRU: "Абхазия"},
 	"CU": {localeEN: "Cuba", localeRU: "Куба"},
 	"MA": {localeEN: "Morocco", localeRU: "Марокко"},
@@ -706,6 +707,43 @@ var brazilCityNames = map[string]map[string]string{
 	"sao-paulo":             {localeEN: "Sao Paulo", localeRU: "Сан-Паулу"},
 }
 
+var argentinaCityNames = map[string]map[string]string{
+	"aconcagua":             {localeEN: "Aconcagua", localeRU: "Аконкагуа"},
+	"bariloche":             {localeEN: "Bariloche", localeRU: "Барилоче"},
+	"buenos-aires":          {localeEN: "Buenos Aires", localeRU: "Буэнос-Айрес"},
+	"cafayate":              {localeEN: "Cafayate", localeRU: "Кафаяте"},
+	"carilo":                {localeEN: "Carilo", localeRU: "Карило"},
+	"cordoba-argentina":     {localeEN: "Cordoba", localeRU: "Кордова"},
+	"corrientes":            {localeEN: "Corrientes", localeRU: "Корриентес"},
+	"el-calafate":           {localeEN: "El Calafate", localeRU: "Эль-Калафате"},
+	"el-chalten":            {localeEN: "El Chalten", localeRU: "Эль-Чальтен"},
+	"esteros-del-ibera":     {localeEN: "Esteros del Ibera", localeRU: "Эстерос-дель-Ибера"},
+	"humahuaca":             {localeEN: "Humahuaca", localeRU: "Умауака"},
+	"iguazu-falls":          {localeEN: "Iguazu Falls", localeRU: "Водопады Игуасу"},
+	"jujuy":                 {localeEN: "Jujuy", localeRU: "Жужуй"},
+	"la-plata":              {localeEN: "La Plata", localeRU: "Ла-Плата"},
+	"mar-de-las-pampas":     {localeEN: "Mar de las Pampas", localeRU: "Мар-де-лас-Пампас"},
+	"mar-del-plata":         {localeEN: "Mar del Plata", localeRU: "Мар-дель-Плата"},
+	"mendoza":               {localeEN: "Mendoza", localeRU: "Мендоса"},
+	"peninsula-valdes":      {localeEN: "Peninsula Valdes", localeRU: "Полуостров Вальдес"},
+	"pinamar":               {localeEN: "Pinamar", localeRU: "Пинамар"},
+	"posadas":               {localeEN: "Posadas", localeRU: "Посадас"},
+	"puerto-iguazu":         {localeEN: "Puerto Iguazu", localeRU: "Пуэрто-Игуасу"},
+	"puerto-madryn":         {localeEN: "Puerto Madryn", localeRU: "Пуэрто-Мадрин"},
+	"purmamarca":            {localeEN: "Purmamarca", localeRU: "Пурмамарка"},
+	"rosario":               {localeEN: "Rosario", localeRU: "Росарио"},
+	"salta":                 {localeEN: "Salta", localeRU: "Сальта"},
+	"san-clemente-del-tuyu": {localeEN: "San Clemente del Tuyu", localeRU: "Сан-Клементе-дель-Тую"},
+	"san-rafael":            {localeEN: "San Rafael", localeRU: "Сан-Рафаэль"},
+	"tigre":                 {localeEN: "Tigre", localeRU: "Тигре"},
+	"tilcara":               {localeEN: "Tilcara", localeRU: "Тилкара"},
+	"tucuman":               {localeEN: "Tucuman", localeRU: "Тукуман"},
+	"ushuaia":               {localeEN: "Ushuaia", localeRU: "Ушуая"},
+	"uspallata":             {localeEN: "Uspallata", localeRU: "Успальята"},
+	"villa-carlos-paz":      {localeEN: "Villa Carlos Paz", localeRU: "Вилья-Карлос-Пас"},
+	"villa-gesell":          {localeEN: "Villa Gesell", localeRU: "Вилья-Хесель"},
+}
+
 var abkhaziaCityNames = map[string]map[string]string{
 	"gagra":      {localeEN: "Gagra", localeRU: "Гагра"},
 	"gali":       {localeEN: "Gali", localeRU: "Гал"},
@@ -1144,6 +1182,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range brazilCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range argentinaCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range abkhaziaCityNames {

@@ -2474,6 +2474,108 @@ func TestRendererRendersBrazilAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersArgentinaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=AR&city=buenos-aires",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Театр Колон",
+				CountryCode:   "AR",
+				CityID:        "buenos-aires",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "AR",
+			CityID:      "buenos-aires",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="AR" selected`,
+		`Аргентина`,
+		`value="buenos-aires" data-country="AR" selected`,
+		`Буэнос-Айрес`,
+		`Буэнос-Айрес, Аргентина`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Argentina attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">AR<") || strings.Contains(listBody, ">buenos-aires<") {
+		t.Fatalf("Argentina attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "ARS"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Театр Колон",
+		Description:   "Историческая опера Буэнос-Айреса и одна из главных культурных сцен страны.",
+		CountryCode:   "AR",
+		CityID:        "buenos-aires",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "AR", CityID: "tigre"},
+			{CountryCode: "AR", CityID: "la-plata"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "AR", CityID: "mendoza"},
+			{CountryCode: "AR", CityID: "bariloche"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="AR" selected>Аргентина</option>`,
+		`<option value="buenos-aires" data-country="AR" selected>Буэнос-Айрес</option>`,
+		`<option value="tigre" data-country="AR" >Тигре</option>`,
+		`type="checkbox" name="access_cities" value="AR:tigre" checked`,
+		`type="checkbox" name="departure_cities" value="AR:mendoza" checked`,
+		`Буэнос-Айрес, Аргентина`,
+		`<option value="ARS" selected>Аргентинский песо</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Argentina attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

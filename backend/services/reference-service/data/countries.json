@@ -360,6 +360,15 @@
     "capital": {"en": "Brasilia", "ru": "Бразилиа", "kk": "Бразилиа"}
   },
   {
+    "code": "AR",
+    "code3": "ARG",
+    "numeric": "032",
+    "currencyCode": "ARS",
+    "phoneCode": "+54",
+    "name": {"en": "Argentina", "ru": "Аргентина", "kk": "Аргентина"},
+    "capital": {"en": "Buenos Aires", "ru": "Буэнос-Айрес", "kk": "Буэнос-Айрес"}
+  },
+  {
     "code": "AB",
     "code3": "ABH",
     "numeric": "895",
