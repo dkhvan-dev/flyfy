@@ -46,6 +46,7 @@ var countryNames = map[string]map[string]string{
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
 	"AU": {localeEN: "Australia", localeRU: "Австралия"},
 	"TZ": {localeEN: "Tanzania", localeRU: "Танзания"},
+	"KE": {localeEN: "Kenya", localeRU: "Кения"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -960,6 +961,52 @@ var tanzaniaCityNames = map[string]map[string]string{
 	"zanzibar-city":  {localeEN: "Zanzibar City", localeRU: "Занзибар"},
 }
 
+var kenyaCityNames = map[string]map[string]string{
+	"aberdares":        {localeEN: "Aberdares", localeRU: "Абердэр"},
+	"amboseli":         {localeEN: "Amboseli", localeRU: "Амбосели"},
+	"diani":            {localeEN: "Diani", localeRU: "Диани"},
+	"eldoret":          {localeEN: "Eldoret", localeRU: "Элдорет"},
+	"hells-gate":       {localeEN: "Hell's Gate", localeRU: "Хеллс-Гейт"},
+	"kakamega":         {localeEN: "Kakamega", localeRU: "Какамега"},
+	"karen":            {localeEN: "Karen", localeRU: "Карен"},
+	"kericho":          {localeEN: "Kericho", localeRU: "Керичо"},
+	"kiambu":           {localeEN: "Kiambu", localeRU: "Киамбу"},
+	"kilifi":           {localeEN: "Kilifi", localeRU: "Килифи"},
+	"kisite-mpunguti":  {localeEN: "Kisite-Mpunguti", localeRU: "Кисите-Мпунгути"},
+	"kisumu":           {localeEN: "Kisumu", localeRU: "Кисуму"},
+	"kitale":           {localeEN: "Kitale", localeRU: "Китале"},
+	"lake-baringo":     {localeEN: "Lake Baringo", localeRU: "Озеро Баринго"},
+	"lake-bogoria":     {localeEN: "Lake Bogoria", localeRU: "Озеро Богория"},
+	"lake-elementaita": {localeEN: "Lake Elementaita", localeRU: "Озеро Элементайта"},
+	"lake-naivasha":    {localeEN: "Lake Naivasha", localeRU: "Озеро Найваша"},
+	"lake-nakuru":      {localeEN: "Lake Nakuru", localeRU: "Озеро Накуру"},
+	"lake-turkana":     {localeEN: "Lake Turkana", localeRU: "Озеро Туркана"},
+	"lake-victoria":    {localeEN: "Lake Victoria", localeRU: "Озеро Виктория"},
+	"laikipia":         {localeEN: "Laikipia", localeRU: "Лайкипия"},
+	"lamu":             {localeEN: "Lamu", localeRU: "Ламу"},
+	"langata":          {localeEN: "Langata", localeRU: "Лангата"},
+	"malindi":          {localeEN: "Malindi", localeRU: "Малинди"},
+	"marsabit":         {localeEN: "Marsabit", localeRU: "Марсабит"},
+	"masai-mara":       {localeEN: "Masai Mara", localeRU: "Масаи-Мара"},
+	"meru":             {localeEN: "Meru", localeRU: "Меру"},
+	"mombasa":          {localeEN: "Mombasa", localeRU: "Момбаса"},
+	"mount-kenya":      {localeEN: "Mount Kenya", localeRU: "Гора Кения"},
+	"nairobi":          {localeEN: "Nairobi", localeRU: "Найроби"},
+	"naivasha":         {localeEN: "Naivasha", localeRU: "Найваша"},
+	"nakuru":           {localeEN: "Nakuru", localeRU: "Накуру"},
+	"nanyuki":          {localeEN: "Nanyuki", localeRU: "Наньюки"},
+	"narok":            {localeEN: "Narok", localeRU: "Нарок"},
+	"ndere-island":     {localeEN: "Ndere Island", localeRU: "Остров Ндере"},
+	"nyeri":            {localeEN: "Nyeri", localeRU: "Ньери"},
+	"ol-pejeta":        {localeEN: "Ol Pejeta", localeRU: "Ол-Педжета"},
+	"rusinga-island":   {localeEN: "Rusinga Island", localeRU: "Остров Русинга"},
+	"samburu":          {localeEN: "Samburu", localeRU: "Самбуру"},
+	"shimoni":          {localeEN: "Shimoni", localeRU: "Шимони"},
+	"tsavo-east":       {localeEN: "Tsavo East", localeRU: "Восточный Цаво"},
+	"tsavo-west":       {localeEN: "Tsavo West", localeRU: "Западный Цаво"},
+	"watamu":           {localeEN: "Watamu", localeRU: "Ватаму"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -1016,6 +1063,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range tanzaniaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range kenyaCityNames {
 		cityNames[cityID] = names
 	}
 }

@@ -3880,6 +3880,117 @@ func TestTanzaniaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing
 	}
 }
 
+func TestKenyaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "055_seed_kenya_priority_attractions.up.sql")
+	downSQL := readMigration(t, "055_seed_kenya_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_kenya_resolved_attractions AS",
+		"'KE'",
+		"'KES'",
+		"kenya-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Kenya up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"nairobi",
+		"karen",
+		"langata",
+		"kiambu",
+		"naivasha",
+		"mount-kenya",
+		"aberdares",
+		"nyeri",
+		"masai-mara",
+		"narok",
+		"nakuru",
+		"lake-nakuru",
+		"lake-naivasha",
+		"hells-gate",
+		"lake-elementaita",
+		"lake-bogoria",
+		"lake-baringo",
+		"eldoret",
+		"kericho",
+		"mombasa",
+		"diani",
+		"malindi",
+		"watamu",
+		"lamu",
+		"kilifi",
+		"shimoni",
+		"kisite-mpunguti",
+		"amboseli",
+		"tsavo-east",
+		"tsavo-west",
+		"samburu",
+		"nanyuki",
+		"laikipia",
+		"ol-pejeta",
+		"meru",
+		"marsabit",
+		"lake-turkana",
+		"kisumu",
+		"lake-victoria",
+		"kakamega",
+		"kitale",
+		"rusinga-island",
+		"ndere-island",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Kenya up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Nairobi National Park",
+		"Nairobi National Museum",
+		"Karen Blixen Museum",
+		"Giraffe Centre",
+		"Masai Mara National Reserve",
+		"Lake Nakuru National Park",
+		"Hell''s Gate National Park",
+		"Amboseli National Park",
+		"Tsavo East National Park",
+		"Tsavo West National Park",
+		"Samburu National Reserve",
+		"Mount Kenya National Park",
+		"Fort Jesus",
+		"Diani Beach",
+		"Watamu Marine National Park",
+		"Lamu Old Town",
+		"Kisite-Mpunguti Marine Park",
+		"Kisumu Impala Sanctuary",
+		"Kakamega Forest",
+		"Ndere Island National Park",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Kenya up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Kenya up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['kenya', city_id") {
+		t.Fatalf("Kenya up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "kenya-seed-v1") || !strings.Contains(downSQL, "country_code = 'KE'") {
+		t.Fatalf("Kenya down migration must remove only tagged Kenya seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

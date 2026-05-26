@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "DE", "AT", "AU", "TZ", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "DE", "AT", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -887,6 +887,49 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "TZ", CityID: "gombe"},
 	{CountryCode: "TZ", CityID: "mahale"},
 	{CountryCode: "TZ", CityID: "tabora"},
+	{CountryCode: "KE", CityID: "nairobi"},
+	{CountryCode: "KE", CityID: "karen"},
+	{CountryCode: "KE", CityID: "langata"},
+	{CountryCode: "KE", CityID: "kiambu"},
+	{CountryCode: "KE", CityID: "naivasha"},
+	{CountryCode: "KE", CityID: "mount-kenya"},
+	{CountryCode: "KE", CityID: "aberdares"},
+	{CountryCode: "KE", CityID: "nyeri"},
+	{CountryCode: "KE", CityID: "masai-mara"},
+	{CountryCode: "KE", CityID: "narok"},
+	{CountryCode: "KE", CityID: "nakuru"},
+	{CountryCode: "KE", CityID: "lake-nakuru"},
+	{CountryCode: "KE", CityID: "lake-naivasha"},
+	{CountryCode: "KE", CityID: "hells-gate"},
+	{CountryCode: "KE", CityID: "lake-elementaita"},
+	{CountryCode: "KE", CityID: "lake-bogoria"},
+	{CountryCode: "KE", CityID: "lake-baringo"},
+	{CountryCode: "KE", CityID: "eldoret"},
+	{CountryCode: "KE", CityID: "kericho"},
+	{CountryCode: "KE", CityID: "mombasa"},
+	{CountryCode: "KE", CityID: "diani"},
+	{CountryCode: "KE", CityID: "malindi"},
+	{CountryCode: "KE", CityID: "watamu"},
+	{CountryCode: "KE", CityID: "lamu"},
+	{CountryCode: "KE", CityID: "kilifi"},
+	{CountryCode: "KE", CityID: "shimoni"},
+	{CountryCode: "KE", CityID: "kisite-mpunguti"},
+	{CountryCode: "KE", CityID: "amboseli"},
+	{CountryCode: "KE", CityID: "tsavo-east"},
+	{CountryCode: "KE", CityID: "tsavo-west"},
+	{CountryCode: "KE", CityID: "samburu"},
+	{CountryCode: "KE", CityID: "nanyuki"},
+	{CountryCode: "KE", CityID: "laikipia"},
+	{CountryCode: "KE", CityID: "ol-pejeta"},
+	{CountryCode: "KE", CityID: "meru"},
+	{CountryCode: "KE", CityID: "marsabit"},
+	{CountryCode: "KE", CityID: "lake-turkana"},
+	{CountryCode: "KE", CityID: "kisumu"},
+	{CountryCode: "KE", CityID: "lake-victoria"},
+	{CountryCode: "KE", CityID: "kakamega"},
+	{CountryCode: "KE", CityID: "kitale"},
+	{CountryCode: "KE", CityID: "rusinga-island"},
+	{CountryCode: "KE", CityID: "ndere-island"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -894,7 +937,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "AUD", "TZS", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -992,6 +1035,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Танзанийский шиллинг"
 		}
 		return "Tanzanian shilling"
+	case "KES":
+		if locale == localeRU {
+			return "Кенийский шиллинг"
+		}
+		return "Kenyan shilling"
 	case "TRY":
 		if locale == localeRU {
 			return "Турецкая лира"

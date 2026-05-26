@@ -252,6 +252,15 @@
     "capital": {"en": "Dodoma", "ru": "Додома", "kk": "Додома"}
   },
   {
+    "code": "KE",
+    "code3": "KEN",
+    "numeric": "404",
+    "currencyCode": "KES",
+    "phoneCode": "+254",
+    "name": {"en": "Kenya", "ru": "Кения", "kk": "Кения"},
+    "capital": {"en": "Nairobi", "ru": "Найроби", "kk": "Найроби"}
+  },
+  {
     "code": "FR",
     "code3": "FRA",
     "numeric": "250",

@@ -3391,6 +3391,108 @@ func TestRendererRendersTanzaniaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersKenyaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=KE&city=nairobi",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Национальный музей Найроби",
+				CountryCode:   "KE",
+				CityID:        "nairobi",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "KE",
+			CityID:      "nairobi",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="KE" selected`,
+		`Кения`,
+		`value="nairobi" data-country="KE" selected`,
+		`Найроби`,
+		`Найроби, Кения`,
+		`Музей`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Kenya attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">KE<") || strings.Contains(listBody, ">nairobi<") {
+		t.Fatalf("Kenya attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "KES"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Национальный музей Найроби",
+		Description:   "Главный музей Кении о культуре, природе и истории страны.",
+		CountryCode:   "KE",
+		CityID:        "nairobi",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "KE", CityID: "mombasa"},
+			{CountryCode: "KE", CityID: "masai-mara"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "KE", CityID: "nairobi"},
+			{CountryCode: "KE", CityID: "diani"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="KE" selected>Кения</option>`,
+		`<option value="nairobi" data-country="KE" selected>Найроби</option>`,
+		`<option value="mombasa" data-country="KE" >Момбаса</option>`,
+		`type="checkbox" name="access_cities" value="KE:mombasa" checked`,
+		`type="checkbox" name="departure_cities" value="KE:nairobi" checked`,
+		`Найроби, Кения`,
+		`<option value="KES" selected>Кенийский шиллинг</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Kenya attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

@@ -2140,3 +2140,89 @@ func TestReferenceUseCaseIncludesTanzaniaCountryCurrencyAndTouristDestinations(t
 		t.Fatalf("search dar es salaam in Tanzania = %#v, want dar-es-salaam first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesKenyaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("KE")
+	if country == nil {
+		t.Fatal("expected Kenya country reference")
+	}
+	if country.Name.Ru != "Кения" {
+		t.Fatalf("Kenya Russian name = %q, want Кения", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("KE")
+	if currency == nil {
+		t.Fatal("expected Kenyan shilling currency by Kenya country")
+	}
+	if currency.Code != "KES" {
+		t.Fatalf("Kenya currency = %q, want KES", currency.Code)
+	}
+
+	cities := uc.ListCities("KE")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"nairobi",
+		"karen",
+		"langata",
+		"kiambu",
+		"naivasha",
+		"mount-kenya",
+		"aberdares",
+		"nyeri",
+		"masai-mara",
+		"narok",
+		"nakuru",
+		"lake-nakuru",
+		"lake-naivasha",
+		"hells-gate",
+		"lake-elementaita",
+		"lake-bogoria",
+		"lake-baringo",
+		"eldoret",
+		"kericho",
+		"mombasa",
+		"diani",
+		"malindi",
+		"watamu",
+		"lamu",
+		"kilifi",
+		"shimoni",
+		"kisite-mpunguti",
+		"amboseli",
+		"tsavo-east",
+		"tsavo-west",
+		"samburu",
+		"nanyuki",
+		"laikipia",
+		"ol-pejeta",
+		"meru",
+		"marsabit",
+		"lake-turkana",
+		"kisumu",
+		"lake-victoria",
+		"kakamega",
+		"kitale",
+		"rusinga-island",
+		"ndere-island",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Kenya city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("nairobi", "KE", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "nairobi" {
+		t.Fatalf("search nairobi in Kenya = %#v, want nairobi first", searchResults)
+	}
+}
