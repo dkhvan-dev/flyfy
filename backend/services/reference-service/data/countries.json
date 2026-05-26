@@ -315,6 +315,15 @@
     "capital": {"en": "Mexico City", "ru": "Мехико", "kk": "Мехико"}
   },
   {
+    "code": "BR",
+    "code3": "BRA",
+    "numeric": "076",
+    "currencyCode": "BRL",
+    "phoneCode": "+55",
+    "name": {"en": "Brazil", "ru": "Бразилия", "kk": "Бразилия"},
+    "capital": {"en": "Brasilia", "ru": "Бразилиа", "kk": "Бразилиа"}
+  },
+  {
     "code": "LK",
     "code3": "LKA",
     "numeric": "144",

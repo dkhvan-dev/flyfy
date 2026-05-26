@@ -36,6 +36,7 @@ var countryNames = map[string]map[string]string{
 	"SC": {localeEN: "Seychelles", localeRU: "Сейшелы"},
 	"PL": {localeEN: "Poland", localeRU: "Польша"},
 	"MX": {localeEN: "Mexico", localeRU: "Мексика"},
+	"BR": {localeEN: "Brazil", localeRU: "Бразилия"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -659,6 +660,40 @@ var mexicoCityNames = map[string]map[string]string{
 	"zihuatanejo":                {localeEN: "Zihuatanejo", localeRU: "Сиуатанехо"},
 }
 
+var brazilCityNames = map[string]map[string]string{
+	"angra-dos-reis":        {localeEN: "Angra dos Reis", localeRU: "Ангра-дус-Рейс"},
+	"belem":                 {localeEN: "Belem", localeRU: "Белен"},
+	"belo-horizonte":        {localeEN: "Belo Horizonte", localeRU: "Белу-Оризонти"},
+	"bonito":                {localeEN: "Bonito", localeRU: "Бонито"},
+	"brasilia":              {localeEN: "Brasilia", localeRU: "Бразилиа"},
+	"buzios":                {localeEN: "Buzios", localeRU: "Бузиос"},
+	"chapada-dos-veadeiros": {localeEN: "Chapada dos Veadeiros", localeRU: "Шапада-дус-Веадейрус"},
+	"cuiaba":                {localeEN: "Cuiaba", localeRU: "Куяба"},
+	"curitiba":              {localeEN: "Curitiba", localeRU: "Куритиба"},
+	"florianopolis":         {localeEN: "Florianopolis", localeRU: "Флорианополис"},
+	"fortaleza":             {localeEN: "Fortaleza", localeRU: "Форталеза"},
+	"foz-do-iguacu":         {localeEN: "Foz do Iguacu", localeRU: "Фос-ду-Игуасу"},
+	"gramado":               {localeEN: "Gramado", localeRU: "Грамаду"},
+	"jericoacoara":          {localeEN: "Jericoacoara", localeRU: "Жерикоакоара"},
+	"lencois-maranhenses":   {localeEN: "Lencois Maranhenses", localeRU: "Ленсойс-Мараньенсис"},
+	"manaus":                {localeEN: "Manaus", localeRU: "Манаус"},
+	"natal":                 {localeEN: "Natal", localeRU: "Натал"},
+	"olinda":                {localeEN: "Olinda", localeRU: "Олинда"},
+	"ouro-preto":            {localeEN: "Ouro Preto", localeRU: "Ору-Прету"},
+	"pantanal":              {localeEN: "Pantanal", localeRU: "Пантанал"},
+	"paraty":                {localeEN: "Paraty", localeRU: "Парати"},
+	"petropolis":            {localeEN: "Petropolis", localeRU: "Петрополис"},
+	"pipa":                  {localeEN: "Pipa", localeRU: "Пипа"},
+	"porto-alegre":          {localeEN: "Porto Alegre", localeRU: "Порту-Алегри"},
+	"porto-de-galinhas":     {localeEN: "Porto de Galinhas", localeRU: "Порту-де-Галиньяс"},
+	"recife":                {localeEN: "Recife", localeRU: "Ресифи"},
+	"rio-de-janeiro":        {localeEN: "Rio de Janeiro", localeRU: "Рио-де-Жанейро"},
+	"salvador":              {localeEN: "Salvador", localeRU: "Салвадор"},
+	"santos":                {localeEN: "Santos", localeRU: "Сантус"},
+	"sao-luis":              {localeEN: "Sao Luis", localeRU: "Сан-Луис"},
+	"sao-paulo":             {localeEN: "Sao Paulo", localeRU: "Сан-Паулу"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -685,6 +720,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range mexicoCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range brazilCityNames {
 		cityNames[cityID] = names
 	}
 }

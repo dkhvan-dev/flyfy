@@ -2926,6 +2926,110 @@ func TestMexicoPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestBrazilPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "045_seed_brazil_priority_attractions.up.sql")
+	downSQL := readMigration(t, "045_seed_brazil_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_brazil_resolved_attractions AS",
+		"'BR'",
+		"'BRL'",
+		"brazil-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Brazil up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"rio-de-janeiro",
+		"petropolis",
+		"paraty",
+		"buzios",
+		"angra-dos-reis",
+		"sao-paulo",
+		"santos",
+		"curitiba",
+		"florianopolis",
+		"foz-do-iguacu",
+		"gramado",
+		"porto-alegre",
+		"salvador",
+		"recife",
+		"olinda",
+		"porto-de-galinhas",
+		"natal",
+		"pipa",
+		"fortaleza",
+		"jericoacoara",
+		"sao-luis",
+		"lencois-maranhenses",
+		"manaus",
+		"belem",
+		"brasilia",
+		"bonito",
+		"pantanal",
+		"cuiaba",
+		"chapada-dos-veadeiros",
+		"ouro-preto",
+		"belo-horizonte",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Brazil up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Christ the Redeemer",
+		"Sugarloaf Mountain",
+		"Ipanema Beach",
+		"Copacabana Beach",
+		"Museum of Tomorrow",
+		"Ibirapuera Park",
+		"MASP",
+		"Municipal Market of Sao Paulo",
+		"Iguazu Falls",
+		"Botanical Garden of Curitiba",
+		"Joaquina Beach",
+		"Pelourinho",
+		"Mercado Modelo Salvador",
+		"Recife Antigo",
+		"Olinda Historic Center",
+		"Porto de Galinhas Natural Pools",
+		"Jericoacoara National Park",
+		"Lencois Maranhenses National Park",
+		"Amazon Theatre",
+		"Ver-o-Peso Market",
+		"Brasilia Cathedral",
+		"Bonito Blue Lake Cave",
+		"Pantanal",
+		"Ouro Preto Historic Center",
+		"Inhotim",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Brazil up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Brazil up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['brazil', city_id") {
+		t.Fatalf("Brazil up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "brazil-seed-v1") || !strings.Contains(downSQL, "country_code = 'BR'") {
+		t.Fatalf("Brazil down migration must remove only tagged Brazil seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

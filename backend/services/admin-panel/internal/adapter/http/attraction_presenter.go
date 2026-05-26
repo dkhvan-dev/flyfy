@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -626,6 +626,37 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "MX", CityID: "san-cristobal-de-las-casas"},
 	{CountryCode: "MX", CityID: "palenque"},
 	{CountryCode: "MX", CityID: "monterrey"},
+	{CountryCode: "BR", CityID: "rio-de-janeiro"},
+	{CountryCode: "BR", CityID: "petropolis"},
+	{CountryCode: "BR", CityID: "paraty"},
+	{CountryCode: "BR", CityID: "buzios"},
+	{CountryCode: "BR", CityID: "angra-dos-reis"},
+	{CountryCode: "BR", CityID: "sao-paulo"},
+	{CountryCode: "BR", CityID: "santos"},
+	{CountryCode: "BR", CityID: "curitiba"},
+	{CountryCode: "BR", CityID: "florianopolis"},
+	{CountryCode: "BR", CityID: "foz-do-iguacu"},
+	{CountryCode: "BR", CityID: "gramado"},
+	{CountryCode: "BR", CityID: "porto-alegre"},
+	{CountryCode: "BR", CityID: "salvador"},
+	{CountryCode: "BR", CityID: "recife"},
+	{CountryCode: "BR", CityID: "olinda"},
+	{CountryCode: "BR", CityID: "porto-de-galinhas"},
+	{CountryCode: "BR", CityID: "natal"},
+	{CountryCode: "BR", CityID: "pipa"},
+	{CountryCode: "BR", CityID: "fortaleza"},
+	{CountryCode: "BR", CityID: "jericoacoara"},
+	{CountryCode: "BR", CityID: "sao-luis"},
+	{CountryCode: "BR", CityID: "lencois-maranhenses"},
+	{CountryCode: "BR", CityID: "manaus"},
+	{CountryCode: "BR", CityID: "belem"},
+	{CountryCode: "BR", CityID: "brasilia"},
+	{CountryCode: "BR", CityID: "bonito"},
+	{CountryCode: "BR", CityID: "pantanal"},
+	{CountryCode: "BR", CityID: "cuiaba"},
+	{CountryCode: "BR", CityID: "chapada-dos-veadeiros"},
+	{CountryCode: "BR", CityID: "ouro-preto"},
+	{CountryCode: "BR", CityID: "belo-horizonte"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -633,7 +664,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -786,6 +817,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Мексиканский песо"
 		}
 		return "Mexican peso"
+	case "BRL":
+		if locale == localeRU {
+			return "Бразильский реал"
+		}
+		return "Brazilian real"
 	case "GEL":
 		if locale == localeRU {
 			return "Грузинский лари"

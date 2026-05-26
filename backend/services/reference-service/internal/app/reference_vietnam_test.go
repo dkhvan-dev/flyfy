@@ -1449,3 +1449,77 @@ func TestReferenceUseCaseIncludesMexicoCountryCurrencyAndTouristDestinations(t *
 		t.Fatalf("search mexico city in Mexico = %#v, want mexico-city first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesBrazilCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("BR")
+	if country == nil {
+		t.Fatal("expected Brazil country reference")
+	}
+	if country.Name.Ru != "Бразилия" {
+		t.Fatalf("Brazil Russian name = %q, want Бразилия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("BR")
+	if currency == nil {
+		t.Fatal("expected Brazilian real currency by country")
+	}
+	if currency.Code != "BRL" {
+		t.Fatalf("Brazil currency = %q, want BRL", currency.Code)
+	}
+
+	cities := uc.ListCities("BR")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"rio-de-janeiro",
+		"petropolis",
+		"paraty",
+		"buzios",
+		"angra-dos-reis",
+		"sao-paulo",
+		"santos",
+		"curitiba",
+		"florianopolis",
+		"foz-do-iguacu",
+		"gramado",
+		"porto-alegre",
+		"salvador",
+		"recife",
+		"olinda",
+		"porto-de-galinhas",
+		"natal",
+		"pipa",
+		"fortaleza",
+		"jericoacoara",
+		"sao-luis",
+		"lencois-maranhenses",
+		"manaus",
+		"belem",
+		"brasilia",
+		"bonito",
+		"pantanal",
+		"cuiaba",
+		"chapada-dos-veadeiros",
+		"ouro-preto",
+		"belo-horizonte",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Brazil city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("rio de janeiro", "BR", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "rio-de-janeiro" {
+		t.Fatalf("search rio de janeiro in Brazil = %#v, want rio-de-janeiro first", searchResults)
+	}
+}

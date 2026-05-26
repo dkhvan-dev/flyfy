@@ -2372,6 +2372,108 @@ func TestRendererRendersMexicoAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersBrazilAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=BR&city=rio-de-janeiro",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Христос-Искупитель",
+				CountryCode:   "BR",
+				CityID:        "rio-de-janeiro",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "BR",
+			CityID:      "rio-de-janeiro",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="BR" selected`,
+		`Бразилия`,
+		`value="rio-de-janeiro" data-country="BR" selected`,
+		`Рио-де-Жанейро`,
+		`Рио-де-Жанейро, Бразилия`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Brazil attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">BR<") || strings.Contains(listBody, ">rio-de-janeiro<") {
+		t.Fatalf("Brazil attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "BRL"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Христос-Искупитель",
+		Description:   "Главный символ Рио-де-Жанейро с видом на город, бухту и пляжи.",
+		CountryCode:   "BR",
+		CityID:        "rio-de-janeiro",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "BR", CityID: "petropolis"},
+			{CountryCode: "BR", CityID: "paraty"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "BR", CityID: "sao-paulo"},
+			{CountryCode: "BR", CityID: "salvador"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="BR" selected>Бразилия</option>`,
+		`<option value="rio-de-janeiro" data-country="BR" selected>Рио-де-Жанейро</option>`,
+		`<option value="petropolis" data-country="BR" >Петрополис</option>`,
+		`type="checkbox" name="access_cities" value="BR:petropolis" checked`,
+		`type="checkbox" name="departure_cities" value="BR:sao-paulo" checked`,
+		`Рио-де-Жанейро, Бразилия`,
+		`<option value="BRL" selected>Бразильский реал</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Brazil attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 
