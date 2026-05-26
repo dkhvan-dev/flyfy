@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -705,6 +705,34 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "MA", CityID: "taghazout"},
 	{CountryCode: "MA", CityID: "ouarzazate"},
 	{CountryCode: "MA", CityID: "merzouga"},
+	{CountryCode: "PT", CityID: "lisbon"},
+	{CountryCode: "PT", CityID: "sintra"},
+	{CountryCode: "PT", CityID: "cascais"},
+	{CountryCode: "PT", CityID: "setubal"},
+	{CountryCode: "PT", CityID: "porto"},
+	{CountryCode: "PT", CityID: "vila-nova-de-gaia"},
+	{CountryCode: "PT", CityID: "braga"},
+	{CountryCode: "PT", CityID: "guimaraes"},
+	{CountryCode: "PT", CityID: "viana-do-castelo"},
+	{CountryCode: "PT", CityID: "douro-valley"},
+	{CountryCode: "PT", CityID: "coimbra"},
+	{CountryCode: "PT", CityID: "aveiro"},
+	{CountryCode: "PT", CityID: "nazare"},
+	{CountryCode: "PT", CityID: "obidos"},
+	{CountryCode: "PT", CityID: "fatima"},
+	{CountryCode: "PT", CityID: "evora"},
+	{CountryCode: "PT", CityID: "faro"},
+	{CountryCode: "PT", CityID: "albufeira"},
+	{CountryCode: "PT", CityID: "lagoa"},
+	{CountryCode: "PT", CityID: "lagos"},
+	{CountryCode: "PT", CityID: "portimao"},
+	{CountryCode: "PT", CityID: "tavira"},
+	{CountryCode: "PT", CityID: "sagres"},
+	{CountryCode: "PT", CityID: "vilamoura"},
+	{CountryCode: "PT", CityID: "funchal"},
+	{CountryCode: "PT", CityID: "madeira"},
+	{CountryCode: "PT", CityID: "ponta-delgada"},
+	{CountryCode: "PT", CityID: "sao-miguel"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{

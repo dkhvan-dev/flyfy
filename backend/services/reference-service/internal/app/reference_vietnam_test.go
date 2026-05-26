@@ -1700,3 +1700,74 @@ func TestReferenceUseCaseIncludesMoroccoCountryCurrencyAndTouristDestinations(t 
 		t.Fatalf("search marrakech in Morocco = %#v, want marrakech first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesPortugalCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("PT")
+	if country == nil {
+		t.Fatal("expected Portugal country reference")
+	}
+	if country.Name.Ru != "Португалия" {
+		t.Fatalf("Portugal Russian name = %q, want Португалия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("PT")
+	if currency == nil {
+		t.Fatal("expected euro currency by Portugal country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Portugal currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("PT")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"lisbon",
+		"sintra",
+		"cascais",
+		"setubal",
+		"porto",
+		"vila-nova-de-gaia",
+		"braga",
+		"guimaraes",
+		"viana-do-castelo",
+		"douro-valley",
+		"coimbra",
+		"aveiro",
+		"nazare",
+		"obidos",
+		"fatima",
+		"evora",
+		"faro",
+		"albufeira",
+		"lagoa",
+		"lagos",
+		"portimao",
+		"tavira",
+		"sagres",
+		"vilamoura",
+		"funchal",
+		"madeira",
+		"ponta-delgada",
+		"sao-miguel",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Portugal city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("lisbon", "PT", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "lisbon" {
+		t.Fatalf("search lisbon in Portugal = %#v, want lisbon first", searchResults)
+	}
+}

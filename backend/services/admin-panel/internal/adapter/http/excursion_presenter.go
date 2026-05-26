@@ -40,6 +40,7 @@ var countryNames = map[string]map[string]string{
 	"AB": {localeEN: "Abkhazia", localeRU: "Абхазия"},
 	"CU": {localeEN: "Cuba", localeRU: "Куба"},
 	"MA": {localeEN: "Morocco", localeRU: "Марокко"},
+	"PT": {localeEN: "Portugal", localeRU: "Португалия"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -754,6 +755,37 @@ var moroccoCityNames = map[string]map[string]string{
 	"volubilis":        {localeEN: "Volubilis", localeRU: "Волюбилис"},
 }
 
+var portugalCityNames = map[string]map[string]string{
+	"albufeira":         {localeEN: "Albufeira", localeRU: "Албуфейра"},
+	"aveiro":            {localeEN: "Aveiro", localeRU: "Авейру"},
+	"braga":             {localeEN: "Braga", localeRU: "Брага"},
+	"cascais":           {localeEN: "Cascais", localeRU: "Кашкайш"},
+	"coimbra":           {localeEN: "Coimbra", localeRU: "Коимбра"},
+	"douro-valley":      {localeEN: "Douro Valley", localeRU: "Долина Дору"},
+	"evora":             {localeEN: "Evora", localeRU: "Эвора"},
+	"faro":              {localeEN: "Faro", localeRU: "Фару"},
+	"fatima":            {localeEN: "Fatima", localeRU: "Фатима"},
+	"funchal":           {localeEN: "Funchal", localeRU: "Фуншал"},
+	"guimaraes":         {localeEN: "Guimaraes", localeRU: "Гимарайнш"},
+	"lagoa":             {localeEN: "Lagoa", localeRU: "Лагоа"},
+	"lagos":             {localeEN: "Lagos", localeRU: "Лагуш"},
+	"lisbon":            {localeEN: "Lisbon", localeRU: "Лиссабон"},
+	"madeira":           {localeEN: "Madeira", localeRU: "Мадейра"},
+	"nazare":            {localeEN: "Nazare", localeRU: "Назаре"},
+	"obidos":            {localeEN: "Obidos", localeRU: "Обидуш"},
+	"ponta-delgada":     {localeEN: "Ponta Delgada", localeRU: "Понта-Делгада"},
+	"portimao":          {localeEN: "Portimao", localeRU: "Портиман"},
+	"porto":             {localeEN: "Porto", localeRU: "Порту"},
+	"sagres":            {localeEN: "Sagres", localeRU: "Сагреш"},
+	"sao-miguel":        {localeEN: "Sao Miguel", localeRU: "Сан-Мигел"},
+	"setubal":           {localeEN: "Setubal", localeRU: "Сетубал"},
+	"sintra":            {localeEN: "Sintra", localeRU: "Синтра"},
+	"tavira":            {localeEN: "Tavira", localeRU: "Тавира"},
+	"viana-do-castelo":  {localeEN: "Viana do Castelo", localeRU: "Виана-ду-Каштелу"},
+	"vila-nova-de-gaia": {localeEN: "Vila Nova de Gaia", localeRU: "Вила-Нова-де-Гая"},
+	"vilamoura":         {localeEN: "Vilamoura", localeRU: "Виламора"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -792,6 +824,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range moroccoCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range portugalCityNames {
 		cityNames[cityID] = names
 	}
 }

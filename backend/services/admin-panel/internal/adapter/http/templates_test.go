@@ -2780,6 +2780,108 @@ func TestRendererRendersMoroccoAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersPortugalAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=PT&city=lisbon",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Монастырь Жеронимуш",
+				CountryCode:   "PT",
+				CityID:        "lisbon",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "PT",
+			CityID:      "lisbon",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="PT" selected`,
+		`Португалия`,
+		`value="lisbon" data-country="PT" selected`,
+		`Лиссабон`,
+		`Лиссабон, Португалия`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Portugal attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">PT<") || strings.Contains(listBody, ">lisbon<") {
+		t.Fatalf("Portugal attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "EUR"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Монастырь Жеронимуш",
+		Description:   "Один из главных памятников Лиссабона.",
+		CountryCode:   "PT",
+		CityID:        "lisbon",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "PT", CityID: "sintra"},
+			{CountryCode: "PT", CityID: "cascais"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "PT", CityID: "lisbon"},
+			{CountryCode: "PT", CityID: "porto"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="PT" selected>Португалия</option>`,
+		`<option value="lisbon" data-country="PT" selected>Лиссабон</option>`,
+		`<option value="sintra" data-country="PT" >Синтра</option>`,
+		`type="checkbox" name="access_cities" value="PT:sintra" checked`,
+		`type="checkbox" name="departure_cities" value="PT:lisbon" checked`,
+		`Лиссабон, Португалия`,
+		`<option value="EUR" selected>Евро</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Portugal attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

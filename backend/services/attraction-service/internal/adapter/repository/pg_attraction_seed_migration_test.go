@@ -3282,6 +3282,102 @@ func TestMoroccoPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.
 	}
 }
 
+func TestPortugalPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "049_seed_portugal_priority_attractions.up.sql")
+	downSQL := readMigration(t, "049_seed_portugal_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_portugal_resolved_attractions AS",
+		"'PT'",
+		"'EUR'",
+		"portugal-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Portugal up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"lisbon",
+		"sintra",
+		"cascais",
+		"setubal",
+		"porto",
+		"vila-nova-de-gaia",
+		"braga",
+		"guimaraes",
+		"viana-do-castelo",
+		"douro-valley",
+		"coimbra",
+		"aveiro",
+		"nazare",
+		"obidos",
+		"fatima",
+		"evora",
+		"faro",
+		"albufeira",
+		"lagoa",
+		"lagos",
+		"portimao",
+		"tavira",
+		"sagres",
+		"vilamoura",
+		"funchal",
+		"madeira",
+		"ponta-delgada",
+		"sao-miguel",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Portugal up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Jeronimos Monastery",
+		"Belem Tower",
+		"Time Out Market Lisboa",
+		"Pena Palace",
+		"Quinta da Regaleira",
+		"Ribeira District",
+		"Livraria Lello",
+		"Mercado do Bolhao",
+		"Bom Jesus do Monte",
+		"University of Coimbra",
+		"Praia da Nazare",
+		"Sanctuary of Fatima",
+		"Roman Temple of Evora",
+		"Benagil Cave",
+		"Ponta da Piedade",
+		"Praia da Rocha",
+		"Ria Formosa Natural Park",
+		"Mercado dos Lavradores",
+		"Cabo Girao Skywalk",
+		"Sete Cidades",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Portugal up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Portugal up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['portugal', city_id") {
+		t.Fatalf("Portugal up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "portugal-seed-v1") || !strings.Contains(downSQL, "country_code = 'PT'") {
+		t.Fatalf("Portugal down migration must remove only tagged Portugal seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

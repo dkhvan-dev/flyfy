@@ -385,5 +385,14 @@
     "phoneCode": "+212",
     "name": {"en": "Morocco", "ru": "Марокко", "kk": "Марокко"},
     "capital": {"en": "Rabat", "ru": "Рабат", "kk": "Рабат"}
+  },
+  {
+    "code": "PT",
+    "code3": "PRT",
+    "numeric": "620",
+    "currencyCode": "EUR",
+    "phoneCode": "+351",
+    "name": {"en": "Portugal", "ru": "Португалия", "kk": "Португалия"},
+    "capital": {"en": "Lisbon", "ru": "Лиссабон", "kk": "Лиссабон"}
   }
 ]
