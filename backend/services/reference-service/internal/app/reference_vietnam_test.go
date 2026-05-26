@@ -1733,6 +1733,73 @@ func TestReferenceUseCaseIncludesSwedenCountryCurrencyAndTouristDestinations(t *
 	}
 }
 
+func TestReferenceUseCaseIncludesCzechiaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("CZ")
+	if country == nil {
+		t.Fatal("expected Czechia country reference")
+	}
+	if country.Name.Ru != "Чехия" {
+		t.Fatalf("Czechia Russian name = %q, want Чехия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("CZ")
+	if currency == nil {
+		t.Fatal("expected Czech koruna currency by Czechia country")
+	}
+	if currency.Code != "CZK" {
+		t.Fatalf("Czechia currency = %q, want CZK", currency.Code)
+	}
+
+	cities := uc.ListCities("CZ")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"prague",
+		"karlstejn",
+		"kutna-hora",
+		"brno",
+		"lednice-valtice",
+		"mikulov",
+		"moravian-karst",
+		"cesky-krumlov",
+		"ceske-budejovice",
+		"sumava",
+		"telc",
+		"trebic",
+		"karlovy-vary",
+		"marianske-lazne",
+		"plzen",
+		"litomysl",
+		"olomouc",
+		"ostrava",
+		"liberec",
+		"hradec-kralove",
+		"pardubice",
+		"bohemian-switzerland",
+		"cesky-raj",
+		"krkonose",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Czechia city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("prague", "CZ", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "prague" {
+		t.Fatalf("search prague in Czechia = %#v, want prague first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesAbkhaziaCountryCurrencyAndTouristDestinations(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

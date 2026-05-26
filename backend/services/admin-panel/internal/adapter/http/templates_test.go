@@ -2780,6 +2780,108 @@ func TestRendererRendersSwedenAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersCzechiaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=CZ&city=prague",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Пражский Град",
+				CountryCode:   "CZ",
+				CityID:        "prague",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "CZ",
+			CityID:      "prague",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="CZ" selected`,
+		`Чехия`,
+		`value="prague" data-country="CZ" selected`,
+		`Прага`,
+		`Прага, Чехия`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Czechia attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">CZ<") || strings.Contains(listBody, ">prague<") {
+		t.Fatalf("Czechia attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "CZK"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Пражский Град",
+		Description:   "Крупнейший исторический комплекс Праги.",
+		CountryCode:   "CZ",
+		CityID:        "prague",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "CZ", CityID: "karlstejn"},
+			{CountryCode: "CZ", CityID: "kutna-hora"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "CZ", CityID: "brno"},
+			{CountryCode: "CZ", CityID: "plzen"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="CZ" selected>Чехия</option>`,
+		`<option value="prague" data-country="CZ" selected>Прага</option>`,
+		`<option value="karlstejn" data-country="CZ" >Карлштейн</option>`,
+		`type="checkbox" name="access_cities" value="CZ:karlstejn" checked`,
+		`type="checkbox" name="departure_cities" value="CZ:brno" checked`,
+		`Прага, Чехия`,
+		`<option value="CZK" selected>Чешская крона</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Czechia attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

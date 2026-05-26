@@ -40,5 +40,6 @@
   {"code": "LKR", "numeric": "144", "decimals": 2, "symbol": "Rs", "name": {"en": "Sri Lankan Rupee", "ru": "Шри-ланкийская рупия", "kk": "Шри-Ланка рупиясы"}},
   {"code": "CUP", "numeric": "192", "decimals": 2, "symbol": "$", "name": {"en": "Cuban Peso", "ru": "Кубинский песо", "kk": "Куба песосы"}},
   {"code": "MAD", "numeric": "504", "decimals": 2, "symbol": "DH", "name": {"en": "Moroccan Dirham", "ru": "Марокканский дирхам", "kk": "Марокко дирхамы"}},
-  {"code": "SEK", "numeric": "752", "decimals": 2, "symbol": "kr", "name": {"en": "Swedish Krona", "ru": "Шведская крона", "kk": "Швед кронасы"}}
+  {"code": "SEK", "numeric": "752", "decimals": 2, "symbol": "kr", "name": {"en": "Swedish Krona", "ru": "Шведская крона", "kk": "Швед кронасы"}},
+  {"code": "CZK", "numeric": "203", "decimals": 2, "symbol": "Kč", "name": {"en": "Czech Koruna", "ru": "Чешская крона", "kk": "Чех кронасы"}}
 ]

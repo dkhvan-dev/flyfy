@@ -466,5 +466,14 @@
     "phoneCode": "+46",
     "name": {"en": "Sweden", "ru": "Швеция", "kk": "Швеция"},
     "capital": {"en": "Stockholm", "ru": "Стокгольм", "kk": "Стокгольм"}
+  },
+  {
+    "code": "CZ",
+    "code3": "CZE",
+    "numeric": "203",
+    "currencyCode": "CZK",
+    "phoneCode": "+420",
+    "name": {"en": "Czechia", "ru": "Чехия", "kk": "Чехия"},
+    "capital": {"en": "Prague", "ru": "Прага", "kk": "Прага"}
   }
 ]

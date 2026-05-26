@@ -49,6 +49,7 @@ var countryNames = map[string]map[string]string{
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
 	"CH": {localeEN: "Switzerland", localeRU: "Швейцария"},
 	"SE": {localeEN: "Sweden", localeRU: "Швеция"},
+	"CZ": {localeEN: "Czechia", localeRU: "Чехия"},
 	"AU": {localeEN: "Australia", localeRU: "Австралия"},
 	"TZ": {localeEN: "Tanzania", localeRU: "Танзания"},
 	"KE": {localeEN: "Kenya", localeRU: "Кения"},
@@ -1092,6 +1093,33 @@ var swedenCityNames = map[string]map[string]string{
 	"visby":         {localeEN: "Visby", localeRU: "Висбю"},
 }
 
+var czechiaCityNames = map[string]map[string]string{
+	"bohemian-switzerland": {localeEN: "Bohemian Switzerland", localeRU: "Чешская Швейцария"},
+	"brno":                 {localeEN: "Brno", localeRU: "Брно"},
+	"ceske-budejovice":     {localeEN: "Ceske Budejovice", localeRU: "Ческе-Будеёвице"},
+	"cesky-krumlov":        {localeEN: "Cesky Krumlov", localeRU: "Чески-Крумлов"},
+	"cesky-raj":            {localeEN: "Cesky Raj", localeRU: "Чешский рай"},
+	"hradec-kralove":       {localeEN: "Hradec Kralove", localeRU: "Градец-Кралове"},
+	"karlovy-vary":         {localeEN: "Karlovy Vary", localeRU: "Карловы Вары"},
+	"karlstejn":            {localeEN: "Karlstejn", localeRU: "Карлштейн"},
+	"krkonose":             {localeEN: "Krkonose", localeRU: "Крконоше"},
+	"kutna-hora":           {localeEN: "Kutna Hora", localeRU: "Кутна-Гора"},
+	"lednice-valtice":      {localeEN: "Lednice-Valtice", localeRU: "Леднице-Валтице"},
+	"liberec":              {localeEN: "Liberec", localeRU: "Либерец"},
+	"litomysl":             {localeEN: "Litomysl", localeRU: "Литомишль"},
+	"marianske-lazne":      {localeEN: "Marianske Lazne", localeRU: "Марианске-Лазне"},
+	"mikulov":              {localeEN: "Mikulov", localeRU: "Микулов"},
+	"moravian-karst":       {localeEN: "Moravian Karst", localeRU: "Моравский Крас"},
+	"olomouc":              {localeEN: "Olomouc", localeRU: "Оломоуц"},
+	"ostrava":              {localeEN: "Ostrava", localeRU: "Острава"},
+	"pardubice":            {localeEN: "Pardubice", localeRU: "Пардубице"},
+	"plzen":                {localeEN: "Plzen", localeRU: "Пльзень"},
+	"prague":               {localeEN: "Prague", localeRU: "Прага"},
+	"sumava":               {localeEN: "Sumava", localeRU: "Шумава"},
+	"telc":                 {localeEN: "Telc", localeRU: "Тельч"},
+	"trebic":               {localeEN: "Trebic", localeRU: "Тршебич"},
+}
+
 var australiaCityNames = map[string]map[string]string{
 	"adelaide":         {localeEN: "Adelaide", localeRU: "Аделаида"},
 	"airlie-beach":     {localeEN: "Airlie Beach", localeRU: "Эрли-Бич"},
@@ -1277,6 +1305,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range swedenCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range czechiaCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range australiaCityNames {
