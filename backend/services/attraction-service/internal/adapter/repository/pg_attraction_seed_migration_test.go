@@ -3599,6 +3599,117 @@ func TestItalyPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T)
 	}
 }
 
+func TestSpainPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "058_seed_spain_priority_attractions.up.sql")
+	downSQL := readMigration(t, "058_seed_spain_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_spain_resolved_attractions AS",
+		"'ES'",
+		"'EUR'",
+		"spain-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Spain up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"madrid",
+		"barcelona",
+		"toledo",
+		"segovia",
+		"el-escorial",
+		"aranjuez",
+		"girona",
+		"figueres",
+		"montserrat",
+		"costa-brava",
+		"salou",
+		"valencia",
+		"alicante",
+		"benidorm",
+		"murcia",
+		"mallorca",
+		"ibiza",
+		"menorca",
+		"seville",
+		"cordoba",
+		"granada",
+		"malaga",
+		"marbella",
+		"ronda",
+		"cadiz",
+		"tarifa",
+		"tenerife",
+		"gran-canaria",
+		"lanzarote",
+		"fuerteventura",
+		"bilbao",
+		"san-sebastian",
+		"pamplona",
+		"santander",
+		"asturias",
+		"santiago-de-compostela",
+		"a-coruna",
+		"zaragoza",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Spain up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Prado Museum",
+		"Royal Palace of Madrid",
+		"El Rastro Market",
+		"Retiro Park",
+		"Sagrada Familia",
+		"La Boqueria Market",
+		"Park Guell",
+		"PortAventura World",
+		"Alhambra",
+		"Seville Cathedral",
+		"Royal Alcazar of Seville",
+		"Cordoba Mosque-Cathedral",
+		"Malaga Picasso Museum",
+		"La Malagueta Beach",
+		"City of Arts and Sciences",
+		"Central Market of Valencia",
+		"Benidorm Levante Beach",
+		"Palma Cathedral",
+		"Ibiza Dalt Vila",
+		"Teide National Park",
+		"Maspalomas Dunes",
+		"Guggenheim Museum Bilbao",
+		"La Concha Beach",
+		"Santiago de Compostela Cathedral",
+		"Basilica del Pilar",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Spain up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Spain up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['spain', city_id") {
+		t.Fatalf("Spain up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "spain-seed-v1") || !strings.Contains(downSQL, "country_code = 'ES'") {
+		t.Fatalf("Spain down migration must remove only tagged Spain seed attractions")
+	}
+}
+
 func TestLuxembourgPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "050_seed_luxembourg_priority_attractions.up.sql")
 	downSQL := readMigration(t, "050_seed_luxembourg_priority_attractions.down.sql")

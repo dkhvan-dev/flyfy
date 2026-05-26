@@ -1862,6 +1862,87 @@ func TestReferenceUseCaseIncludesItalyCountryCurrencyAndTouristDestinations(t *t
 	}
 }
 
+func TestReferenceUseCaseIncludesSpainCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("ES")
+	if country == nil {
+		t.Fatal("expected Spain country reference")
+	}
+	if country.Name.Ru != "Испания" {
+		t.Fatalf("Spain Russian name = %q, want Испания", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("ES")
+	if currency == nil {
+		t.Fatal("expected euro currency by Spain country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Spain currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("ES")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"madrid",
+		"barcelona",
+		"toledo",
+		"segovia",
+		"el-escorial",
+		"aranjuez",
+		"girona",
+		"figueres",
+		"montserrat",
+		"costa-brava",
+		"salou",
+		"valencia",
+		"alicante",
+		"benidorm",
+		"murcia",
+		"mallorca",
+		"ibiza",
+		"menorca",
+		"seville",
+		"cordoba",
+		"granada",
+		"malaga",
+		"marbella",
+		"ronda",
+		"cadiz",
+		"tarifa",
+		"tenerife",
+		"gran-canaria",
+		"lanzarote",
+		"fuerteventura",
+		"bilbao",
+		"san-sebastian",
+		"pamplona",
+		"santander",
+		"asturias",
+		"santiago-de-compostela",
+		"a-coruna",
+		"zaragoza",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Spain city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("barcelona", "ES", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "barcelona" {
+		t.Fatalf("search barcelona in Spain = %#v, want barcelona first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesLuxembourgCountryCurrencyAndTouristDestinations(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

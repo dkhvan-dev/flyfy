@@ -2986,6 +2986,109 @@ func TestRendererRendersItalyAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersSpainAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=ES&city=barcelona",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Саграда Фамилия",
+				CountryCode:   "ES",
+				CityID:        "barcelona",
+				Category:      "TEMPLE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "ES",
+			CityID:      "barcelona",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="ES" selected`,
+		`Испания`,
+		`value="barcelona" data-country="ES" selected`,
+		`Барселона`,
+		`Барселона, Испания`,
+		`Храм`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Spain attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">ES<") || strings.Contains(listBody, ">barcelona<") {
+		t.Fatalf("Spain attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "EUR"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Саграда Фамилия",
+		Description:   "Главный храм Барселоны и один из символов Испании.",
+		CountryCode:   "ES",
+		CityID:        "barcelona",
+		Category:      "TEMPLE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "ES", CityID: "girona"},
+			{CountryCode: "ES", CityID: "costa-brava"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "ES", CityID: "barcelona"},
+			{CountryCode: "ES", CityID: "salou"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="ES" selected>Испания</option>`,
+		`<option value="barcelona" data-country="ES" selected>Барселона</option>`,
+		`<option value="girona" data-country="ES" >Жирона</option>`,
+		`<option value="costa-brava" data-country="ES" >Коста-Брава</option>`,
+		`type="checkbox" name="access_cities" value="ES:girona" checked`,
+		`type="checkbox" name="departure_cities" value="ES:barcelona" checked`,
+		`Барселона, Испания`,
+		`<option value="EUR" selected>Евро</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Spain attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersLuxembourgAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

@@ -42,6 +42,7 @@ var countryNames = map[string]map[string]string{
 	"MA": {localeEN: "Morocco", localeRU: "Марокко"},
 	"PT": {localeEN: "Portugal", localeRU: "Португалия"},
 	"IT": {localeEN: "Italy", localeRU: "Италия"},
+	"ES": {localeEN: "Spain", localeRU: "Испания"},
 	"LU": {localeEN: "Luxembourg", localeRU: "Люксембург"},
 	"DE": {localeEN: "Germany", localeRU: "Германия"},
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
@@ -853,6 +854,52 @@ var italyCityNames = map[string]map[string]string{
 	"zingaro":           {localeEN: "Zingaro", localeRU: "Дзингаро"},
 }
 
+var spainCityNames = map[string]map[string]string{
+	"a-coruna":               {localeEN: "A Coruna", localeRU: "А-Корунья"},
+	"alicante":               {localeEN: "Alicante", localeRU: "Аликанте"},
+	"andalusia":              {localeEN: "Andalusia", localeRU: "Андалусия"},
+	"aranjuez":               {localeEN: "Aranjuez", localeRU: "Аранхуэс"},
+	"asturias":               {localeEN: "Asturias", localeRU: "Астурия"},
+	"barcelona":              {localeEN: "Barcelona", localeRU: "Барселона"},
+	"benidorm":               {localeEN: "Benidorm", localeRU: "Бенидорм"},
+	"bilbao":                 {localeEN: "Bilbao", localeRU: "Бильбао"},
+	"cadiz":                  {localeEN: "Cadiz", localeRU: "Кадис"},
+	"calpe":                  {localeEN: "Calpe", localeRU: "Кальпе"},
+	"cartagena":              {localeEN: "Cartagena", localeRU: "Картахена"},
+	"cordoba":                {localeEN: "Cordoba", localeRU: "Кордова"},
+	"costa-brava":            {localeEN: "Costa Brava", localeRU: "Коста-Брава"},
+	"el-escorial":            {localeEN: "El Escorial", localeRU: "Эль-Эскориал"},
+	"elche":                  {localeEN: "Elche", localeRU: "Эльче"},
+	"figueres":               {localeEN: "Figueres", localeRU: "Фигерас"},
+	"fuerteventura":          {localeEN: "Fuerteventura", localeRU: "Фуэртевентура"},
+	"girona":                 {localeEN: "Girona", localeRU: "Жирона"},
+	"gran-canaria":           {localeEN: "Gran Canaria", localeRU: "Гран-Канария"},
+	"granada":                {localeEN: "Granada", localeRU: "Гранада"},
+	"ibiza":                  {localeEN: "Ibiza", localeRU: "Ибица"},
+	"lanzarote":              {localeEN: "Lanzarote", localeRU: "Лансароте"},
+	"madrid":                 {localeEN: "Madrid", localeRU: "Мадрид"},
+	"malaga":                 {localeEN: "Malaga", localeRU: "Малага"},
+	"mallorca":               {localeEN: "Mallorca", localeRU: "Майорка"},
+	"marbella":               {localeEN: "Marbella", localeRU: "Марбелья"},
+	"menorca":                {localeEN: "Menorca", localeRU: "Менорка"},
+	"montserrat":             {localeEN: "Montserrat", localeRU: "Монсеррат"},
+	"murcia":                 {localeEN: "Murcia", localeRU: "Мурсия"},
+	"pamplona":               {localeEN: "Pamplona", localeRU: "Памплона"},
+	"ronda":                  {localeEN: "Ronda", localeRU: "Ронда"},
+	"salou":                  {localeEN: "Salou", localeRU: "Салоу"},
+	"san-sebastian":          {localeEN: "San Sebastian", localeRU: "Сан-Себастьян"},
+	"santander":              {localeEN: "Santander", localeRU: "Сантандер"},
+	"santiago-de-compostela": {localeEN: "Santiago de Compostela", localeRU: "Сантьяго-де-Компостела"},
+	"segovia":                {localeEN: "Segovia", localeRU: "Сеговия"},
+	"seville":                {localeEN: "Seville", localeRU: "Севилья"},
+	"sierra-guadarrama":      {localeEN: "Sierra de Guadarrama", localeRU: "Сьерра-де-Гвадаррама"},
+	"tarifa":                 {localeEN: "Tarifa", localeRU: "Тарифа"},
+	"tenerife":               {localeEN: "Tenerife", localeRU: "Тенерифе"},
+	"toledo":                 {localeEN: "Toledo", localeRU: "Толедо"},
+	"valencia":               {localeEN: "Valencia", localeRU: "Валенсия"},
+	"zaragoza":               {localeEN: "Zaragoza", localeRU: "Сарагоса"},
+}
+
 var luxembourgCityNames = map[string]map[string]string{
 	"beaufort":          {localeEN: "Beaufort", localeRU: "Бофор"},
 	"belval":            {localeEN: "Belval", localeRU: "Бельваль"},
@@ -1112,6 +1159,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range italyCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range spainCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range luxembourgCityNames {
