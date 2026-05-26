@@ -3378,6 +3378,122 @@ func TestPortugalPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing
 	}
 }
 
+func TestPortugalExtendedAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "056_seed_portugal_extended_attractions.up.sql")
+	downSQL := readMigration(t, "056_seed_portugal_extended_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_portugal_extended_resolved_attractions AS",
+		"'PT'",
+		"'EUR'",
+		"portugal-extended-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Portugal extended up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"lisbon",
+		"sintra",
+		"cascais",
+		"setubal",
+		"porto",
+		"vila-nova-de-gaia",
+		"braga",
+		"guimaraes",
+		"douro-valley",
+		"aveiro",
+		"tomar",
+		"batalha",
+		"alcobaca",
+		"peniche",
+		"berlengas",
+		"serra-da-estrela",
+		"monsaraz",
+		"comporta",
+		"sesimbra",
+		"peneda-geres",
+		"faro",
+		"albufeira",
+		"lagos",
+		"portimao",
+		"tavira",
+		"sagres",
+		"loule",
+		"carvoeiro",
+		"porto-santo",
+		"terceira",
+		"pico",
+		"faial",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Portugal extended up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Lisbon Zoo",
+		"Feira da Ladra",
+		"Praia Grande",
+		"Mercado da Vila Cascais",
+		"Convent of Christ",
+		"Batalha Monastery",
+		"Alcobaca Monastery",
+		"Santa Clara-a-Velha Monastery",
+		"Berlengas Nature Reserve",
+		"Serra da Estrela Natural Park",
+		"Monsaraz Castle",
+		"Almendres Cromlech",
+		"Dark Sky Alqueva Observatory",
+		"Comporta Beach",
+		"Arrabida Beaches",
+		"Peneda-Geres National Park",
+		"Crystal Palace Gardens",
+		"SEA LIFE Porto",
+		"Beira-Rio Market",
+		"Bom Jesus Funicular",
+		"Guimaraes Cable Car",
+		"Douro Historical Train",
+		"Costa Nova",
+		"Loule Market",
+		"Algarve International Sand Sculpture Festival",
+		"Praia de Faro",
+		"Lagos Zoo",
+		"Algarve International Circuit",
+		"Praia do Barril",
+		"Seven Hanging Valleys Trail",
+		"Loriga River Beach",
+		"Bread Museum",
+		"Porto Santo Beach",
+		"Algar do Carvao",
+		"Mount Pico",
+		"Capelinhos Volcano",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Portugal extended up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Portugal extended up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['portugal', city_id") {
+		t.Fatalf("Portugal extended up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "portugal-extended-seed-v1") || !strings.Contains(downSQL, "country_code = 'PT'") {
+		t.Fatalf("Portugal extended down migration must remove only tagged Portugal seed attractions")
+	}
+}
+
 func TestLuxembourgPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "050_seed_luxembourg_priority_attractions.up.sql")
 	downSQL := readMigration(t, "050_seed_luxembourg_priority_attractions.down.sql")

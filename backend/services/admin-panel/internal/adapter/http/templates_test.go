@@ -2871,6 +2871,7 @@ func TestRendererRendersPortugalAttractionReferencesLocalized(t *testing.T) {
 		`<option value="PT" selected>Португалия</option>`,
 		`<option value="lisbon" data-country="PT" selected>Лиссабон</option>`,
 		`<option value="sintra" data-country="PT" >Синтра</option>`,
+		`<option value="tomar" data-country="PT" >Томар</option>`,
 		`type="checkbox" name="access_cities" value="PT:sintra" checked`,
 		`type="checkbox" name="departure_cities" value="PT:lisbon" checked`,
 		`Лиссабон, Португалия`,
