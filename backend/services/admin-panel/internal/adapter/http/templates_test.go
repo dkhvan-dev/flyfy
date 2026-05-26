@@ -2678,6 +2678,108 @@ func TestRendererRendersSwitzerlandAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersSwedenAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=SE&city=stockholm",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Музей Васа",
+				CountryCode:   "SE",
+				CityID:        "stockholm",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "SE",
+			CityID:      "stockholm",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="SE" selected`,
+		`Швеция`,
+		`value="stockholm" data-country="SE" selected`,
+		`Стокгольм`,
+		`Стокгольм, Швеция`,
+		`Музей`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Sweden attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">SE<") || strings.Contains(listBody, ">stockholm<") {
+		t.Fatalf("Sweden attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "SEK"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Музей Васа",
+		Description:   "Морской музей с историческим кораблем XVII века.",
+		CountryCode:   "SE",
+		CityID:        "stockholm",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "SE", CityID: "uppsala"},
+			{CountryCode: "SE", CityID: "sigtuna"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "SE", CityID: "gothenburg"},
+			{CountryCode: "SE", CityID: "malmo"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="SE" selected>Швеция</option>`,
+		`<option value="stockholm" data-country="SE" selected>Стокгольм</option>`,
+		`<option value="uppsala" data-country="SE" >Уппсала</option>`,
+		`type="checkbox" name="access_cities" value="SE:uppsala" checked`,
+		`type="checkbox" name="departure_cities" value="SE:gothenburg" checked`,
+		`Стокгольм, Швеция`,
+		`<option value="SEK" selected>Шведская крона</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Sweden attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

@@ -3228,6 +3228,108 @@ func TestSwitzerlandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *test
 	}
 }
 
+func TestSwedenPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "061_seed_sweden_priority_attractions.up.sql")
+	downSQL := readMigration(t, "061_seed_sweden_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_sweden_resolved_attractions AS",
+		"'SE'",
+		"'SEK'",
+		"sweden-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Sweden up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"stockholm",
+		"uppsala",
+		"sigtuna",
+		"drottningholm",
+		"gothenburg",
+		"malmo",
+		"lund",
+		"helsingborg",
+		"kiruna",
+		"abisko",
+		"jukkasjarvi",
+		"lulea",
+		"umea",
+		"visby",
+		"kalmar",
+		"vaxjo",
+		"karlskrona",
+		"oland",
+		"orebro",
+		"linkoping",
+		"norrkoping",
+		"vasteras",
+		"jonkoping",
+		"falun",
+		"mora",
+		"are",
+		"ostersund",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Sweden up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Vasa Museum",
+		"Stockholm Old Town Gamla Stan",
+		"Skansen Open-Air Museum",
+		"ABBA The Museum",
+		"Fotografiska Stockholm",
+		"Drottningholm Palace",
+		"Uppsala Cathedral",
+		"Liseberg Amusement Park",
+		"Universeum",
+		"Feskekorka",
+		"Turning Torso",
+		"Malmo Saluhall",
+		"Lund Cathedral",
+		"Karnan Helsingborg",
+		"Kiruna Church",
+		"Abisko National Park",
+		"ICEHOTEL Jukkasjarvi",
+		"Gammelstad Church Town",
+		"Visby City Wall",
+		"Kalmar Castle",
+		"Karlskrona Naval Museum",
+		"Borgholm Castle",
+		"Orebro Castle",
+		"Falun Copper Mine",
+		"Vasa Ski Museum",
+		"Are Ski Resort",
+		"Jamtli Museum",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Sweden up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Sweden up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['sweden', city_id") {
+		t.Fatalf("Sweden up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "sweden-seed-v1") || !strings.Contains(downSQL, "country_code = 'SE'") {
+		t.Fatalf("Sweden down migration must remove only tagged Sweden seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

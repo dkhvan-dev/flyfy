@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -977,6 +977,33 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "CH", CityID: "davos"},
 	{CountryCode: "CH", CityID: "chur"},
 	{CountryCode: "CH", CityID: "swiss-national-park"},
+	{CountryCode: "SE", CityID: "stockholm"},
+	{CountryCode: "SE", CityID: "uppsala"},
+	{CountryCode: "SE", CityID: "sigtuna"},
+	{CountryCode: "SE", CityID: "drottningholm"},
+	{CountryCode: "SE", CityID: "gothenburg"},
+	{CountryCode: "SE", CityID: "malmo"},
+	{CountryCode: "SE", CityID: "lund"},
+	{CountryCode: "SE", CityID: "helsingborg"},
+	{CountryCode: "SE", CityID: "kiruna"},
+	{CountryCode: "SE", CityID: "abisko"},
+	{CountryCode: "SE", CityID: "jukkasjarvi"},
+	{CountryCode: "SE", CityID: "lulea"},
+	{CountryCode: "SE", CityID: "umea"},
+	{CountryCode: "SE", CityID: "visby"},
+	{CountryCode: "SE", CityID: "kalmar"},
+	{CountryCode: "SE", CityID: "vaxjo"},
+	{CountryCode: "SE", CityID: "karlskrona"},
+	{CountryCode: "SE", CityID: "oland"},
+	{CountryCode: "SE", CityID: "orebro"},
+	{CountryCode: "SE", CityID: "linkoping"},
+	{CountryCode: "SE", CityID: "norrkoping"},
+	{CountryCode: "SE", CityID: "vasteras"},
+	{CountryCode: "SE", CityID: "jonkoping"},
+	{CountryCode: "SE", CityID: "falun"},
+	{CountryCode: "SE", CityID: "mora"},
+	{CountryCode: "SE", CityID: "are"},
+	{CountryCode: "SE", CityID: "ostersund"},
 	{CountryCode: "AU", CityID: "sydney"},
 	{CountryCode: "AU", CityID: "blue-mountains"},
 	{CountryCode: "AU", CityID: "canberra"},
@@ -1095,7 +1122,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "CHF", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "CHF", "SEK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1183,6 +1210,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Швейцарский франк"
 		}
 		return "Swiss franc"
+	case "SEK":
+		if locale == localeRU {
+			return "Шведская крона"
+		}
+		return "Swedish krona"
 	case "RUB":
 		if locale == localeRU {
 			return "Российский рубль"

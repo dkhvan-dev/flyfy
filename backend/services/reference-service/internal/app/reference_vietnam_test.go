@@ -1663,6 +1663,76 @@ func TestReferenceUseCaseIncludesSwitzerlandCountryCurrencyAndTouristDestination
 	}
 }
 
+func TestReferenceUseCaseIncludesSwedenCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("SE")
+	if country == nil {
+		t.Fatal("expected Sweden country reference")
+	}
+	if country.Name.Ru != "Швеция" {
+		t.Fatalf("Sweden Russian name = %q, want Швеция", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("SE")
+	if currency == nil {
+		t.Fatal("expected Swedish krona currency by Sweden country")
+	}
+	if currency.Code != "SEK" {
+		t.Fatalf("Sweden currency = %q, want SEK", currency.Code)
+	}
+
+	cities := uc.ListCities("SE")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"stockholm",
+		"uppsala",
+		"sigtuna",
+		"drottningholm",
+		"gothenburg",
+		"malmo",
+		"lund",
+		"helsingborg",
+		"kiruna",
+		"abisko",
+		"jukkasjarvi",
+		"lulea",
+		"umea",
+		"visby",
+		"kalmar",
+		"vaxjo",
+		"karlskrona",
+		"oland",
+		"orebro",
+		"linkoping",
+		"norrkoping",
+		"vasteras",
+		"jonkoping",
+		"falun",
+		"mora",
+		"are",
+		"ostersund",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Sweden city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("stockholm", "SE", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "stockholm" {
+		t.Fatalf("search stockholm in Sweden = %#v, want stockholm first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesAbkhaziaCountryCurrencyAndTouristDestinations(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

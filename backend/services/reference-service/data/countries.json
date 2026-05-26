@@ -457,5 +457,14 @@
     "phoneCode": "+352",
     "name": {"en": "Luxembourg", "ru": "Люксембург", "kk": "Люксембург"},
     "capital": {"en": "Luxembourg City", "ru": "Люксембург", "kk": "Люксембург"}
+  },
+  {
+    "code": "SE",
+    "code3": "SWE",
+    "numeric": "752",
+    "currencyCode": "SEK",
+    "phoneCode": "+46",
+    "name": {"en": "Sweden", "ru": "Швеция", "kk": "Швеция"},
+    "capital": {"en": "Stockholm", "ru": "Стокгольм", "kk": "Стокгольм"}
   }
 ]

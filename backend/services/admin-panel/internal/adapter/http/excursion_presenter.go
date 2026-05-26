@@ -48,6 +48,7 @@ var countryNames = map[string]map[string]string{
 	"DE": {localeEN: "Germany", localeRU: "Германия"},
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
 	"CH": {localeEN: "Switzerland", localeRU: "Швейцария"},
+	"SE": {localeEN: "Sweden", localeRU: "Швеция"},
 	"AU": {localeEN: "Australia", localeRU: "Австралия"},
 	"TZ": {localeEN: "Tanzania", localeRU: "Танзания"},
 	"KE": {localeEN: "Kenya", localeRU: "Кения"},
@@ -1061,6 +1062,36 @@ var switzerlandCityNames = map[string]map[string]string{
 	"zurich":              {localeEN: "Zurich", localeRU: "Цюрих"},
 }
 
+var swedenCityNames = map[string]map[string]string{
+	"abisko":        {localeEN: "Abisko", localeRU: "Абиску"},
+	"are":           {localeEN: "Are", localeRU: "Оре"},
+	"drottningholm": {localeEN: "Drottningholm", localeRU: "Дроттнингхольм"},
+	"falun":         {localeEN: "Falun", localeRU: "Фалун"},
+	"gothenburg":    {localeEN: "Gothenburg", localeRU: "Гётеборг"},
+	"helsingborg":   {localeEN: "Helsingborg", localeRU: "Хельсингборг"},
+	"jonkoping":     {localeEN: "Jonkoping", localeRU: "Йёнчёпинг"},
+	"jukkasjarvi":   {localeEN: "Jukkasjarvi", localeRU: "Юккасъярви"},
+	"kalmar":        {localeEN: "Kalmar", localeRU: "Кальмар"},
+	"karlskrona":    {localeEN: "Karlskrona", localeRU: "Карлскруна"},
+	"kiruna":        {localeEN: "Kiruna", localeRU: "Кируна"},
+	"linkoping":     {localeEN: "Linkoping", localeRU: "Линчёпинг"},
+	"lulea":         {localeEN: "Lulea", localeRU: "Лулео"},
+	"lund":          {localeEN: "Lund", localeRU: "Лунд"},
+	"malmo":         {localeEN: "Malmo", localeRU: "Мальмё"},
+	"mora":          {localeEN: "Mora", localeRU: "Мура"},
+	"norrkoping":    {localeEN: "Norrkoping", localeRU: "Норрчёпинг"},
+	"oland":         {localeEN: "Oland", localeRU: "Эланд"},
+	"orebro":        {localeEN: "Orebro", localeRU: "Эребру"},
+	"ostersund":     {localeEN: "Ostersund", localeRU: "Эстерсунд"},
+	"sigtuna":       {localeEN: "Sigtuna", localeRU: "Сигтуна"},
+	"stockholm":     {localeEN: "Stockholm", localeRU: "Стокгольм"},
+	"umea":          {localeEN: "Umea", localeRU: "Умео"},
+	"uppsala":       {localeEN: "Uppsala", localeRU: "Уппсала"},
+	"vasteras":      {localeEN: "Vasteras", localeRU: "Вестерос"},
+	"vaxjo":         {localeEN: "Vaxjo", localeRU: "Векшё"},
+	"visby":         {localeEN: "Visby", localeRU: "Висбю"},
+}
+
 var australiaCityNames = map[string]map[string]string{
 	"adelaide":         {localeEN: "Adelaide", localeRU: "Аделаида"},
 	"airlie-beach":     {localeEN: "Airlie Beach", localeRU: "Эрли-Бич"},
@@ -1243,6 +1274,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range switzerlandCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range swedenCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range australiaCityNames {
