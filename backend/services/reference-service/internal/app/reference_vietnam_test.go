@@ -1788,6 +1788,80 @@ func TestReferenceUseCaseIncludesPortugalCountryCurrencyAndTouristDestinations(t
 	}
 }
 
+func TestReferenceUseCaseIncludesItalyCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("IT")
+	if country == nil {
+		t.Fatal("expected Italy country reference")
+	}
+	if country.Name.Ru != "Италия" {
+		t.Fatalf("Italy Russian name = %q, want Италия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("IT")
+	if currency == nil {
+		t.Fatal("expected euro currency by Italy country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Italy currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("IT")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"rome",
+		"milan",
+		"venice",
+		"florence",
+		"pisa",
+		"siena",
+		"lucca",
+		"tivoli",
+		"castelli-romani",
+		"ostia",
+		"verona",
+		"lake-garda",
+		"lake-como",
+		"naples",
+		"amalfi-coast",
+		"capri",
+		"pompeii",
+		"mount-vesuvius",
+		"sorrento",
+		"palermo",
+		"catania",
+		"agrigento",
+		"bari",
+		"polignano-a-mare",
+		"alberobello",
+		"matera",
+		"tropea",
+		"reggio-calabria",
+		"sardinia",
+		"cagliari",
+		"la-maddalena",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Italy city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("florence", "IT", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "florence" {
+		t.Fatalf("search florence in Italy = %#v, want florence first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesLuxembourgCountryCurrencyAndTouristDestinations(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

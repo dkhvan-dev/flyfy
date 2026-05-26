@@ -3494,6 +3494,111 @@ func TestPortugalExtendedAttractionsSeedMigrationCoversTouristBreadth(t *testing
 	}
 }
 
+func TestItalyPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "057_seed_italy_priority_attractions.up.sql")
+	downSQL := readMigration(t, "057_seed_italy_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_italy_resolved_attractions AS",
+		"'IT'",
+		"'EUR'",
+		"italy-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Italy up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"rome",
+		"florence",
+		"pisa",
+		"siena",
+		"lucca",
+		"tivoli",
+		"castelli-romani",
+		"ostia",
+		"milan",
+		"venice",
+		"verona",
+		"lake-garda",
+		"lake-como",
+		"naples",
+		"amalfi-coast",
+		"capri",
+		"pompeii",
+		"mount-vesuvius",
+		"sorrento",
+		"palermo",
+		"catania",
+		"agrigento",
+		"bari",
+		"polignano-a-mare",
+		"alberobello",
+		"matera",
+		"tropea",
+		"reggio-calabria",
+		"sardinia",
+		"cagliari",
+		"la-maddalena",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Italy up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Colosseum",
+		"Campo dei Fiori Market",
+		"Villa Borghese",
+		"Uffizi Gallery",
+		"San Lorenzo Market",
+		"Leaning Tower of Pisa",
+		"San Rossore Estate",
+		"Verona Arena",
+		"Gardaland Resort",
+		"Rialto Market",
+		"Milan Cathedral",
+		"Mercato Centrale Milano",
+		"Lake Como Bellagio",
+		"Naples National Archaeological Museum",
+		"Amalfi Cathedral",
+		"Blue Grotto",
+		"Pompeii Archaeological Park",
+		"Mount Vesuvius Gran Cono",
+		"Ballaro Market",
+		"Mount Etna",
+		"Bari Old Town",
+		"Trulli of Alberobello",
+		"Sassi of Matera",
+		"Tropea Old Town",
+		"La Maddalena Archipelago National Park",
+		"Poetto Beach",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Italy up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Italy up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['italy', city_id") {
+		t.Fatalf("Italy up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "italy-seed-v1") || !strings.Contains(downSQL, "country_code = 'IT'") {
+		t.Fatalf("Italy down migration must remove only tagged Italy seed attractions")
+	}
+}
+
 func TestLuxembourgPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "050_seed_luxembourg_priority_attractions.up.sql")
 	downSQL := readMigration(t, "050_seed_luxembourg_priority_attractions.down.sql")

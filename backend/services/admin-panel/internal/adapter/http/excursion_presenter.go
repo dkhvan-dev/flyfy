@@ -41,6 +41,7 @@ var countryNames = map[string]map[string]string{
 	"CU": {localeEN: "Cuba", localeRU: "Куба"},
 	"MA": {localeEN: "Morocco", localeRU: "Марокко"},
 	"PT": {localeEN: "Portugal", localeRU: "Португалия"},
+	"IT": {localeEN: "Italy", localeRU: "Италия"},
 	"LU": {localeEN: "Luxembourg", localeRU: "Люксембург"},
 	"DE": {localeEN: "Germany", localeRU: "Германия"},
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
@@ -808,6 +809,50 @@ var portugalCityNames = map[string]map[string]string{
 	"vilamoura":         {localeEN: "Vilamoura", localeRU: "Виламора"},
 }
 
+var italyCityNames = map[string]map[string]string{
+	"agrigento":         {localeEN: "Agrigento", localeRU: "Агридженто"},
+	"alberobello":       {localeEN: "Alberobello", localeRU: "Альберобелло"},
+	"amalfi-coast":      {localeEN: "Amalfi Coast", localeRU: "Амальфитанское побережье"},
+	"andria":            {localeEN: "Andria", localeRU: "Андрия"},
+	"bari":              {localeEN: "Bari", localeRU: "Бари"},
+	"barumini":          {localeEN: "Barumini", localeRU: "Барумини"},
+	"baunei":            {localeEN: "Baunei", localeRU: "Баунеи"},
+	"cagliari":          {localeEN: "Cagliari", localeRU: "Кальяри"},
+	"capri":             {localeEN: "Capri", localeRU: "Капри"},
+	"castellana-grotte": {localeEN: "Castellana Grotte", localeRU: "Кастеллана-Гротте"},
+	"castelli-romani":   {localeEN: "Castelli Romani", localeRU: "Кастелли-Романи"},
+	"catania":           {localeEN: "Catania", localeRU: "Катания"},
+	"costa-smeralda":    {localeEN: "Costa Smeralda", localeRU: "Коста-Смеральда"},
+	"florence":          {localeEN: "Florence", localeRU: "Флоренция"},
+	"lake-como":         {localeEN: "Lake Como", localeRU: "Озеро Комо"},
+	"lake-garda":        {localeEN: "Lake Garda", localeRU: "Озеро Гарда"},
+	"la-maddalena":      {localeEN: "La Maddalena", localeRU: "Ла-Маддалена"},
+	"lazio-coast":       {localeEN: "Lazio Coast", localeRU: "Побережье Лацио"},
+	"lucca":             {localeEN: "Lucca", localeRU: "Лукка"},
+	"matera":            {localeEN: "Matera", localeRU: "Матера"},
+	"milan":             {localeEN: "Milan", localeRU: "Милан"},
+	"mount-vesuvius":    {localeEN: "Mount Vesuvius", localeRU: "Везувий"},
+	"naples":            {localeEN: "Naples", localeRU: "Неаполь"},
+	"ostia":             {localeEN: "Ostia", localeRU: "Остия"},
+	"palermo":           {localeEN: "Palermo", localeRU: "Палермо"},
+	"pisa":              {localeEN: "Pisa", localeRU: "Пиза"},
+	"polignano-a-mare":  {localeEN: "Polignano a Mare", localeRU: "Полиньяно-а-Маре"},
+	"pollino":           {localeEN: "Pollino", localeRU: "Поллино"},
+	"pompeii":           {localeEN: "Pompeii", localeRU: "Помпеи"},
+	"reggio-calabria":   {localeEN: "Reggio Calabria", localeRU: "Реджо-ди-Калабрия"},
+	"rome":              {localeEN: "Rome", localeRU: "Рим"},
+	"sardinia":          {localeEN: "Sardinia", localeRU: "Сардиния"},
+	"scilla":            {localeEN: "Scilla", localeRU: "Шилла"},
+	"siena":             {localeEN: "Siena", localeRU: "Сиена"},
+	"sorrento":          {localeEN: "Sorrento", localeRU: "Сорренто"},
+	"tivoli":            {localeEN: "Tivoli", localeRU: "Тиволи"},
+	"tropea":            {localeEN: "Tropea", localeRU: "Тропея"},
+	"valmontone":        {localeEN: "Valmontone", localeRU: "Вальмонтоне"},
+	"venice":            {localeEN: "Venice", localeRU: "Венеция"},
+	"verona":            {localeEN: "Verona", localeRU: "Верона"},
+	"zingaro":           {localeEN: "Zingaro", localeRU: "Дзингаро"},
+}
+
 var luxembourgCityNames = map[string]map[string]string{
 	"beaufort":          {localeEN: "Beaufort", localeRU: "Бофор"},
 	"belval":            {localeEN: "Belval", localeRU: "Бельваль"},
@@ -1064,6 +1109,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range portugalCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range italyCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range luxembourgCityNames {
