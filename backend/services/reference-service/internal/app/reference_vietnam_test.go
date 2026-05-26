@@ -1635,3 +1635,68 @@ func TestReferenceUseCaseIncludesCubaCountryCurrencyAndTouristDestinations(t *te
 		t.Fatalf("search havana in Cuba = %#v, want havana first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesMoroccoCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("MA")
+	if country == nil {
+		t.Fatal("expected Morocco country reference")
+	}
+	if country.Name.Ru != "Марокко" {
+		t.Fatalf("Morocco Russian name = %q, want Марокко", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("MA")
+	if currency == nil {
+		t.Fatal("expected Moroccan dirham currency by Morocco country")
+	}
+	if currency.Code != "MAD" {
+		t.Fatalf("Morocco currency = %q, want MAD", currency.Code)
+	}
+
+	cities := uc.ListCities("MA")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"casablanca",
+		"rabat",
+		"tangier",
+		"chefchaouen",
+		"tetouan",
+		"asilah",
+		"marrakech",
+		"ourika",
+		"agafay",
+		"lalla-takerkoust",
+		"imlil",
+		"ouzoud",
+		"azilal",
+		"fes",
+		"meknes",
+		"volubilis",
+		"ifrane",
+		"agadir",
+		"essaouira",
+		"taghazout",
+		"ouarzazate",
+		"merzouga",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Morocco city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("marrakech", "MA", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "marrakech" {
+		t.Fatalf("search marrakech in Morocco = %#v, want marrakech first", searchResults)
+	}
+}

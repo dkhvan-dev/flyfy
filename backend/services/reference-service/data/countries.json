@@ -376,5 +376,14 @@
     "phoneCode": "+53",
     "name": {"en": "Cuba", "ru": "Куба", "kk": "Куба"},
     "capital": {"en": "Havana", "ru": "Гавана", "kk": "Гавана"}
+  },
+  {
+    "code": "MA",
+    "code3": "MAR",
+    "numeric": "504",
+    "currencyCode": "MAD",
+    "phoneCode": "+212",
+    "name": {"en": "Morocco", "ru": "Марокко", "kk": "Марокко"},
+    "capital": {"en": "Rabat", "ru": "Рабат", "kk": "Рабат"}
   }
 ]

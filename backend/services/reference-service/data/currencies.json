@@ -33,5 +33,6 @@
   {"code": "MXN", "numeric": "484", "decimals": 2, "symbol": "$", "name": {"en": "Mexican Peso", "ru": "Мексиканский песо", "kk": "Мексика песосы"}},
   {"code": "BRL", "numeric": "986", "decimals": 2, "symbol": "R$", "name": {"en": "Brazilian Real", "ru": "Бразильский реал", "kk": "Бразилия реалы"}},
   {"code": "LKR", "numeric": "144", "decimals": 2, "symbol": "Rs", "name": {"en": "Sri Lankan Rupee", "ru": "Шри-ланкийская рупия", "kk": "Шри-Ланка рупиясы"}},
-  {"code": "CUP", "numeric": "192", "decimals": 2, "symbol": "$", "name": {"en": "Cuban Peso", "ru": "Кубинский песо", "kk": "Куба песосы"}}
+  {"code": "CUP", "numeric": "192", "decimals": 2, "symbol": "$", "name": {"en": "Cuban Peso", "ru": "Кубинский песо", "kk": "Куба песосы"}},
+  {"code": "MAD", "numeric": "504", "decimals": 2, "symbol": "DH", "name": {"en": "Moroccan Dirham", "ru": "Марокканский дирхам", "kk": "Марокко дирхамы"}}
 ]

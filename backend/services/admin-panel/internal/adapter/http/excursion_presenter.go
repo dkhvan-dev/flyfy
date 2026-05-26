@@ -39,6 +39,7 @@ var countryNames = map[string]map[string]string{
 	"BR": {localeEN: "Brazil", localeRU: "Бразилия"},
 	"AB": {localeEN: "Abkhazia", localeRU: "Абхазия"},
 	"CU": {localeEN: "Cuba", localeRU: "Куба"},
+	"MA": {localeEN: "Morocco", localeRU: "Марокко"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -728,6 +729,31 @@ var cubaCityNames = map[string]map[string]string{
 	"vinales":          {localeEN: "Vinales", localeRU: "Виньялес"},
 }
 
+var moroccoCityNames = map[string]map[string]string{
+	"agadir":           {localeEN: "Agadir", localeRU: "Агадир"},
+	"agafay":           {localeEN: "Agafay", localeRU: "Агафай"},
+	"asilah":           {localeEN: "Asilah", localeRU: "Асила"},
+	"azilal":           {localeEN: "Azilal", localeRU: "Азилаль"},
+	"casablanca":       {localeEN: "Casablanca", localeRU: "Касабланка"},
+	"chefchaouen":      {localeEN: "Chefchaouen", localeRU: "Шефшауэн"},
+	"essaouira":        {localeEN: "Essaouira", localeRU: "Эс-Сувейра"},
+	"fes":              {localeEN: "Fes", localeRU: "Фес"},
+	"ifrane":           {localeEN: "Ifrane", localeRU: "Ифран"},
+	"imlil":            {localeEN: "Imlil", localeRU: "Имлиль"},
+	"lalla-takerkoust": {localeEN: "Lalla Takerkoust", localeRU: "Лалла-Такеркуст"},
+	"marrakech":        {localeEN: "Marrakech", localeRU: "Марракеш"},
+	"meknes":           {localeEN: "Meknes", localeRU: "Мекнес"},
+	"merzouga":         {localeEN: "Merzouga", localeRU: "Мерзуга"},
+	"ouarzazate":       {localeEN: "Ouarzazate", localeRU: "Уарзазат"},
+	"ourika":           {localeEN: "Ourika", localeRU: "Урика"},
+	"ouzoud":           {localeEN: "Ouzoud", localeRU: "Узуд"},
+	"rabat":            {localeEN: "Rabat", localeRU: "Рабат"},
+	"taghazout":        {localeEN: "Taghazout", localeRU: "Тагазут"},
+	"tangier":          {localeEN: "Tangier", localeRU: "Танжер"},
+	"tetouan":          {localeEN: "Tetouan", localeRU: "Тетуан"},
+	"volubilis":        {localeEN: "Volubilis", localeRU: "Волюбилис"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -763,6 +789,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range cubaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range moroccoCityNames {
 		cityNames[cityID] = names
 	}
 }

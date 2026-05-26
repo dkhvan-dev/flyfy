@@ -3192,6 +3192,96 @@ func TestCubaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) 
 	}
 }
 
+func TestMoroccoPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "048_seed_morocco_priority_attractions.up.sql")
+	downSQL := readMigration(t, "048_seed_morocco_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_morocco_resolved_attractions AS",
+		"'MA'",
+		"'MAD'",
+		"morocco-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Morocco up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"casablanca",
+		"rabat",
+		"tangier",
+		"chefchaouen",
+		"tetouan",
+		"asilah",
+		"marrakech",
+		"ourika",
+		"agafay",
+		"lalla-takerkoust",
+		"imlil",
+		"ouzoud",
+		"azilal",
+		"fes",
+		"meknes",
+		"volubilis",
+		"ifrane",
+		"agadir",
+		"essaouira",
+		"taghazout",
+		"ouarzazate",
+		"merzouga",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Morocco up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Hassan II Mosque",
+		"Morocco Mall",
+		"Hassan Tower and Mohammed V Mausoleum",
+		"Kasbah of the Oudayas",
+		"Chefchaouen Medina",
+		"Jemaa el-Fna Square",
+		"Jardin Majorelle",
+		"Agafay Desert",
+		"Fes el-Bali Medina",
+		"Chouara Tanneries",
+		"Bab Mansour",
+		"Archaeological Site of Volubilis",
+		"Ifrane National Park",
+		"Agadir Beach and Corniche",
+		"Souk El Had",
+		"Medina of Essaouira",
+		"Taghazout Beach",
+		"Ksar Ait Ben Haddou",
+		"Atlas Studios",
+		"Erg Chebbi Dunes",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Morocco up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Morocco up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['morocco', city_id") {
+		t.Fatalf("Morocco up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "morocco-seed-v1") || !strings.Contains(downSQL, "country_code = 'MA'") {
+		t.Fatalf("Morocco down migration must remove only tagged Morocco seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

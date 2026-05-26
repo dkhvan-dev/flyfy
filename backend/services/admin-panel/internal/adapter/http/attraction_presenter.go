@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -683,6 +683,28 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "CU", CityID: "holguin"},
 	{CountryCode: "CU", CityID: "guardalavaca"},
 	{CountryCode: "CU", CityID: "baracoa"},
+	{CountryCode: "MA", CityID: "casablanca"},
+	{CountryCode: "MA", CityID: "rabat"},
+	{CountryCode: "MA", CityID: "tangier"},
+	{CountryCode: "MA", CityID: "chefchaouen"},
+	{CountryCode: "MA", CityID: "tetouan"},
+	{CountryCode: "MA", CityID: "asilah"},
+	{CountryCode: "MA", CityID: "marrakech"},
+	{CountryCode: "MA", CityID: "ourika"},
+	{CountryCode: "MA", CityID: "agafay"},
+	{CountryCode: "MA", CityID: "lalla-takerkoust"},
+	{CountryCode: "MA", CityID: "imlil"},
+	{CountryCode: "MA", CityID: "ouzoud"},
+	{CountryCode: "MA", CityID: "azilal"},
+	{CountryCode: "MA", CityID: "fes"},
+	{CountryCode: "MA", CityID: "meknes"},
+	{CountryCode: "MA", CityID: "volubilis"},
+	{CountryCode: "MA", CityID: "ifrane"},
+	{CountryCode: "MA", CityID: "agadir"},
+	{CountryCode: "MA", CityID: "essaouira"},
+	{CountryCode: "MA", CityID: "taghazout"},
+	{CountryCode: "MA", CityID: "ouarzazate"},
+	{CountryCode: "MA", CityID: "merzouga"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -690,7 +712,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -858,6 +880,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Кубинский песо"
 		}
 		return "Cuban peso"
+	case "MAD":
+		if locale == localeRU {
+			return "Марокканский дирхам"
+		}
+		return "Moroccan dirham"
 	case "GEL":
 		if locale == localeRU {
 			return "Грузинский лари"
