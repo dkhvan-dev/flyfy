@@ -3468,6 +3468,112 @@ func TestLuxembourgPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testi
 	}
 }
 
+func TestGermanyPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "051_seed_germany_priority_attractions.up.sql")
+	downSQL := readMigration(t, "051_seed_germany_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_germany_resolved_attractions AS",
+		"'DE'",
+		"'EUR'",
+		"germany-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Germany up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"berlin",
+		"potsdam",
+		"hamburg",
+		"bremen",
+		"lubeck",
+		"sylt",
+		"rugen",
+		"hannover",
+		"wolfsburg",
+		"munich",
+		"nuremberg",
+		"rothenburg-ob-der-tauber",
+		"fussen",
+		"garmisch-partenkirchen",
+		"berchtesgaden",
+		"rust",
+		"cologne",
+		"dusseldorf",
+		"bonn",
+		"frankfurt",
+		"mainz",
+		"koblenz",
+		"trier",
+		"heidelberg",
+		"stuttgart",
+		"baden-baden",
+		"freiburg",
+		"dresden",
+		"leipzig",
+		"weimar",
+		"erfurt",
+		"goslar",
+		"wernigerode",
+		"oberhausen",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Germany up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Brandenburg Gate",
+		"Museum Island",
+		"East Side Gallery",
+		"Sanssouci Palace",
+		"Miniatur Wunderland",
+		"Hamburg Fish Market",
+		"Neuschwanstein Castle",
+		"Marienplatz",
+		"Nuremberg Castle",
+		"Europa-Park",
+		"Cologne Cathedral",
+		"Konigsallee",
+		"Romerberg",
+		"Heidelberg Castle",
+		"Dresden Frauenkirche",
+		"Zwinger Palace",
+		"Monument to the Battle of the Nations",
+		"Baden-Baden Kurhaus",
+		"Black Forest Scenic Route",
+		"Zugspitze",
+		"Rugen Chalk Cliffs",
+		"Sylt Westerland Beach",
+		"Autostadt Wolfsburg",
+		"Trier Porta Nigra",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Germany up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Germany up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['germany', city_id") {
+		t.Fatalf("Germany up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "germany-seed-v1") || !strings.Contains(downSQL, "country_code = 'DE'") {
+		t.Fatalf("Germany down migration must remove only tagged Germany seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

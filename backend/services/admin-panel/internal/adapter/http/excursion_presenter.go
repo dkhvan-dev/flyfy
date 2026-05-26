@@ -42,6 +42,7 @@ var countryNames = map[string]map[string]string{
 	"MA": {localeEN: "Morocco", localeRU: "Марокко"},
 	"PT": {localeEN: "Portugal", localeRU: "Португалия"},
 	"LU": {localeEN: "Luxembourg", localeRU: "Люксембург"},
+	"DE": {localeEN: "Germany", localeRU: "Германия"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -812,6 +813,43 @@ var luxembourgCityNames = map[string]map[string]string{
 	"wiltz":             {localeEN: "Wiltz", localeRU: "Вильц"},
 }
 
+var germanyCityNames = map[string]map[string]string{
+	"baden-baden":              {localeEN: "Baden-Baden", localeRU: "Баден-Баден"},
+	"berchtesgaden":            {localeEN: "Berchtesgaden", localeRU: "Берхтесгаден"},
+	"berlin":                   {localeEN: "Berlin", localeRU: "Берлин"},
+	"bonn":                     {localeEN: "Bonn", localeRU: "Бонн"},
+	"bremen":                   {localeEN: "Bremen", localeRU: "Бремен"},
+	"cologne":                  {localeEN: "Cologne", localeRU: "Кёльн"},
+	"dresden":                  {localeEN: "Dresden", localeRU: "Дрезден"},
+	"dusseldorf":               {localeEN: "Dusseldorf", localeRU: "Дюссельдорф"},
+	"erfurt":                   {localeEN: "Erfurt", localeRU: "Эрфурт"},
+	"frankfurt":                {localeEN: "Frankfurt", localeRU: "Франкфурт"},
+	"freiburg":                 {localeEN: "Freiburg", localeRU: "Фрайбург"},
+	"fussen":                   {localeEN: "Fussen", localeRU: "Фюссен"},
+	"garmisch-partenkirchen":   {localeEN: "Garmisch-Partenkirchen", localeRU: "Гармиш-Партенкирхен"},
+	"goslar":                   {localeEN: "Goslar", localeRU: "Гослар"},
+	"hamburg":                  {localeEN: "Hamburg", localeRU: "Гамбург"},
+	"hannover":                 {localeEN: "Hannover", localeRU: "Ганновер"},
+	"heidelberg":               {localeEN: "Heidelberg", localeRU: "Гейдельберг"},
+	"koblenz":                  {localeEN: "Koblenz", localeRU: "Кобленц"},
+	"leipzig":                  {localeEN: "Leipzig", localeRU: "Лейпциг"},
+	"lubeck":                   {localeEN: "Lubeck", localeRU: "Любек"},
+	"mainz":                    {localeEN: "Mainz", localeRU: "Майнц"},
+	"munich":                   {localeEN: "Munich", localeRU: "Мюнхен"},
+	"nuremberg":                {localeEN: "Nuremberg", localeRU: "Нюрнберг"},
+	"oberhausen":               {localeEN: "Oberhausen", localeRU: "Оберхаузен"},
+	"potsdam":                  {localeEN: "Potsdam", localeRU: "Потсдам"},
+	"rothenburg-ob-der-tauber": {localeEN: "Rothenburg ob der Tauber", localeRU: "Ротенбург-об-дер-Таубер"},
+	"rugen":                    {localeEN: "Rugen", localeRU: "Рюген"},
+	"rust":                     {localeEN: "Rust", localeRU: "Руст"},
+	"stuttgart":                {localeEN: "Stuttgart", localeRU: "Штутгарт"},
+	"sylt":                     {localeEN: "Sylt", localeRU: "Зюльт"},
+	"trier":                    {localeEN: "Trier", localeRU: "Трир"},
+	"weimar":                   {localeEN: "Weimar", localeRU: "Веймар"},
+	"wernigerode":              {localeEN: "Wernigerode", localeRU: "Вернигероде"},
+	"wolfsburg":                {localeEN: "Wolfsburg", localeRU: "Вольфсбург"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -856,6 +894,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range luxembourgCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range germanyCityNames {
 		cityNames[cityID] = names
 	}
 }

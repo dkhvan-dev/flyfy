@@ -1836,3 +1836,80 @@ func TestReferenceUseCaseIncludesLuxembourgCountryCurrencyAndTouristDestinations
 		t.Fatalf("search luxembourg in Luxembourg = %#v, want luxembourg-city first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesGermanyCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("DE")
+	if country == nil {
+		t.Fatal("expected Germany country reference")
+	}
+	if country.Name.Ru != "Германия" {
+		t.Fatalf("Germany Russian name = %q, want Германия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("DE")
+	if currency == nil {
+		t.Fatal("expected euro currency by Germany country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Germany currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("DE")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"berlin",
+		"potsdam",
+		"hamburg",
+		"bremen",
+		"lubeck",
+		"sylt",
+		"rugen",
+		"hannover",
+		"wolfsburg",
+		"munich",
+		"nuremberg",
+		"rothenburg-ob-der-tauber",
+		"fussen",
+		"garmisch-partenkirchen",
+		"berchtesgaden",
+		"rust",
+		"cologne",
+		"dusseldorf",
+		"bonn",
+		"frankfurt",
+		"mainz",
+		"koblenz",
+		"trier",
+		"heidelberg",
+		"stuttgart",
+		"baden-baden",
+		"freiburg",
+		"dresden",
+		"leipzig",
+		"weimar",
+		"erfurt",
+		"goslar",
+		"wernigerode",
+		"oberhausen",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Germany city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("berlin", "DE", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "berlin" {
+		t.Fatalf("search berlin in Germany = %#v, want berlin first", searchResults)
+	}
+}

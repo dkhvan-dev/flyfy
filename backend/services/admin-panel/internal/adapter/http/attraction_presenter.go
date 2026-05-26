@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "DE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -755,6 +755,40 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "LU", CityID: "grevenmacher"},
 	{CountryCode: "LU", CityID: "schengen"},
 	{CountryCode: "LU", CityID: "mondorf-les-bains"},
+	{CountryCode: "DE", CityID: "berlin"},
+	{CountryCode: "DE", CityID: "potsdam"},
+	{CountryCode: "DE", CityID: "hamburg"},
+	{CountryCode: "DE", CityID: "bremen"},
+	{CountryCode: "DE", CityID: "lubeck"},
+	{CountryCode: "DE", CityID: "sylt"},
+	{CountryCode: "DE", CityID: "rugen"},
+	{CountryCode: "DE", CityID: "hannover"},
+	{CountryCode: "DE", CityID: "wolfsburg"},
+	{CountryCode: "DE", CityID: "munich"},
+	{CountryCode: "DE", CityID: "nuremberg"},
+	{CountryCode: "DE", CityID: "rothenburg-ob-der-tauber"},
+	{CountryCode: "DE", CityID: "fussen"},
+	{CountryCode: "DE", CityID: "garmisch-partenkirchen"},
+	{CountryCode: "DE", CityID: "berchtesgaden"},
+	{CountryCode: "DE", CityID: "rust"},
+	{CountryCode: "DE", CityID: "cologne"},
+	{CountryCode: "DE", CityID: "dusseldorf"},
+	{CountryCode: "DE", CityID: "bonn"},
+	{CountryCode: "DE", CityID: "frankfurt"},
+	{CountryCode: "DE", CityID: "mainz"},
+	{CountryCode: "DE", CityID: "koblenz"},
+	{CountryCode: "DE", CityID: "trier"},
+	{CountryCode: "DE", CityID: "heidelberg"},
+	{CountryCode: "DE", CityID: "stuttgart"},
+	{CountryCode: "DE", CityID: "baden-baden"},
+	{CountryCode: "DE", CityID: "freiburg"},
+	{CountryCode: "DE", CityID: "dresden"},
+	{CountryCode: "DE", CityID: "leipzig"},
+	{CountryCode: "DE", CityID: "weimar"},
+	{CountryCode: "DE", CityID: "erfurt"},
+	{CountryCode: "DE", CityID: "goslar"},
+	{CountryCode: "DE", CityID: "wernigerode"},
+	{CountryCode: "DE", CityID: "oberhausen"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
