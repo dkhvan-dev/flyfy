@@ -34,6 +34,7 @@ var countryNames = map[string]map[string]string{
 	"MY": {localeEN: "Malaysia", localeRU: "Малайзия"},
 	"LK": {localeEN: "Sri Lanka", localeRU: "Шри-Ланка"},
 	"SC": {localeEN: "Seychelles", localeRU: "Сейшелы"},
+	"PL": {localeEN: "Poland", localeRU: "Польша"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -597,6 +598,30 @@ var seychellesCityNames = map[string]map[string]string{
 	"victoria":           {localeEN: "Victoria", localeRU: "Виктория"},
 }
 
+var polandCityNames = map[string]map[string]string{
+	"bialowieza":  {localeEN: "Bialowieza", localeRU: "Беловежа"},
+	"bialystok":   {localeEN: "Bialystok", localeRU: "Белосток"},
+	"chorzow":     {localeEN: "Chorzow", localeRU: "Хожув"},
+	"czestochowa": {localeEN: "Czestochowa", localeRU: "Ченстохова"},
+	"gdansk":      {localeEN: "Gdansk", localeRU: "Гданьск"},
+	"gdynia":      {localeEN: "Gdynia", localeRU: "Гдыня"},
+	"katowice":    {localeEN: "Katowice", localeRU: "Катовице"},
+	"krakow":      {localeEN: "Krakow", localeRU: "Краков"},
+	"lodz":        {localeEN: "Lodz", localeRU: "Лодзь"},
+	"lublin":      {localeEN: "Lublin", localeRU: "Люблин"},
+	"malbork":     {localeEN: "Malbork", localeRU: "Мальборк"},
+	"oswiecim":    {localeEN: "Oswiecim", localeRU: "Освенцим"},
+	"poznan":      {localeEN: "Poznan", localeRU: "Познань"},
+	"sopot":       {localeEN: "Sopot", localeRU: "Сопот"},
+	"szczecin":    {localeEN: "Szczecin", localeRU: "Щецин"},
+	"torun":       {localeEN: "Torun", localeRU: "Торунь"},
+	"warsaw":      {localeEN: "Warsaw", localeRU: "Варшава"},
+	"wieliczka":   {localeEN: "Wieliczka", localeRU: "Величка"},
+	"wroclaw":     {localeEN: "Wroclaw", localeRU: "Вроцлав"},
+	"zakopane":    {localeEN: "Zakopane", localeRU: "Закопане"},
+	"zamosc":      {localeEN: "Zamosc", localeRU: "Замосць"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -617,6 +642,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range seychellesCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range polandCityNames {
 		cityNames[cityID] = names
 	}
 }

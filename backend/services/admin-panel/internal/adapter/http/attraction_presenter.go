@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -572,6 +572,27 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "SC", CityID: "cerf-island"},
 	{CountryCode: "SC", CityID: "felicite-island"},
 	{CountryCode: "SC", CityID: "ile-cocos"},
+	{CountryCode: "PL", CityID: "warsaw"},
+	{CountryCode: "PL", CityID: "krakow"},
+	{CountryCode: "PL", CityID: "wieliczka"},
+	{CountryCode: "PL", CityID: "oswiecim"},
+	{CountryCode: "PL", CityID: "zakopane"},
+	{CountryCode: "PL", CityID: "gdansk"},
+	{CountryCode: "PL", CityID: "sopot"},
+	{CountryCode: "PL", CityID: "gdynia"},
+	{CountryCode: "PL", CityID: "malbork"},
+	{CountryCode: "PL", CityID: "torun"},
+	{CountryCode: "PL", CityID: "wroclaw"},
+	{CountryCode: "PL", CityID: "poznan"},
+	{CountryCode: "PL", CityID: "lodz"},
+	{CountryCode: "PL", CityID: "katowice"},
+	{CountryCode: "PL", CityID: "chorzow"},
+	{CountryCode: "PL", CityID: "lublin"},
+	{CountryCode: "PL", CityID: "bialowieza"},
+	{CountryCode: "PL", CityID: "bialystok"},
+	{CountryCode: "PL", CityID: "czestochowa"},
+	{CountryCode: "PL", CityID: "zamosc"},
+	{CountryCode: "PL", CityID: "szczecin"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -579,7 +600,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -722,6 +743,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Сейшельская рупия"
 		}
 		return "Seychellois rupee"
+	case "PLN":
+		if locale == localeRU {
+			return "Польский злотый"
+		}
+		return "Polish zloty"
 	case "GEL":
 		if locale == localeRU {
 			return "Грузинский лари"

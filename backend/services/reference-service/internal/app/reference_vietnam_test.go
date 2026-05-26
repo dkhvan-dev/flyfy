@@ -1313,3 +1313,67 @@ func TestReferenceUseCaseIncludesSeychellesCountryCurrencyAndTouristDestinations
 		t.Fatalf("search beau vallon in Seychelles = %#v, want beau-vallon first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesPolandCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("PL")
+	if country == nil {
+		t.Fatal("expected Poland country reference")
+	}
+	if country.Name.Ru != "Польша" {
+		t.Fatalf("Poland Russian name = %q, want Польша", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("PL")
+	if currency == nil {
+		t.Fatal("expected Polish zloty currency by country")
+	}
+	if currency.Code != "PLN" {
+		t.Fatalf("Poland currency = %q, want PLN", currency.Code)
+	}
+
+	cities := uc.ListCities("PL")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"warsaw",
+		"krakow",
+		"wieliczka",
+		"oswiecim",
+		"zakopane",
+		"gdansk",
+		"sopot",
+		"gdynia",
+		"malbork",
+		"torun",
+		"wroclaw",
+		"poznan",
+		"lodz",
+		"katowice",
+		"chorzow",
+		"lublin",
+		"bialowieza",
+		"bialystok",
+		"czestochowa",
+		"zamosc",
+		"szczecin",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Poland city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("wroclaw", "PL", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "wroclaw" {
+		t.Fatalf("search wroclaw in Poland = %#v, want wroclaw first", searchResults)
+	}
+}

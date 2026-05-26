@@ -2168,6 +2168,108 @@ func TestRendererRendersSeychellesAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersPolandAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=PL&city=warsaw",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Старый город Варшавы",
+				CountryCode:   "PL",
+				CityID:        "warsaw",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "PL",
+			CityID:      "warsaw",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="PL" selected`,
+		`Польша`,
+		`value="warsaw" data-country="PL" selected`,
+		`Варшава`,
+		`Варшава, Польша`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Poland attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">PL<") || strings.Contains(listBody, ">warsaw<") {
+		t.Fatalf("Poland attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "PLN"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Старый город Варшавы",
+		Description:   "Исторический центр Варшавы с площадями, крепостными стенами и Королевским замком.",
+		CountryCode:   "PL",
+		CityID:        "warsaw",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "PL", CityID: "krakow"},
+			{CountryCode: "PL", CityID: "gdansk"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "PL", CityID: "wroclaw"},
+			{CountryCode: "PL", CityID: "poznan"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="PL" selected>Польша</option>`,
+		`<option value="warsaw" data-country="PL" selected>Варшава</option>`,
+		`<option value="krakow" data-country="PL" >Краков</option>`,
+		`type="checkbox" name="access_cities" value="PL:krakow" checked`,
+		`type="checkbox" name="departure_cities" value="PL:wroclaw" checked`,
+		`Варшава, Польша`,
+		`<option value="PLN" selected>Польский злотый</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Poland attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

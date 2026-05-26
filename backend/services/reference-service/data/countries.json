@@ -297,6 +297,15 @@
     "capital": {"en": "Victoria", "ru": "Виктория", "kk": "Виктория"}
   },
   {
+    "code": "PL",
+    "code3": "POL",
+    "numeric": "616",
+    "currencyCode": "PLN",
+    "phoneCode": "+48",
+    "name": {"en": "Poland", "ru": "Польша", "kk": "Польша"},
+    "capital": {"en": "Warsaw", "ru": "Варшава", "kk": "Варшава"}
+  },
+  {
     "code": "LK",
     "code3": "LKA",
     "numeric": "144",
