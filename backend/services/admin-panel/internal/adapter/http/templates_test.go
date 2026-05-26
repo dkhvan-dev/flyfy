@@ -2882,6 +2882,107 @@ func TestRendererRendersPortugalAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersLuxembourgAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=LU&city=luxembourg-city",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Казематы Бок",
+				CountryCode:   "LU",
+				CityID:        "luxembourg-city",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "LU",
+			CityID:      "luxembourg-city",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="LU" selected`,
+		`Люксембург`,
+		`value="luxembourg-city" data-country="LU" selected`,
+		`Люксембург, Люксембург`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Luxembourg attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">LU<") || strings.Contains(listBody, ">luxembourg-city<") {
+		t.Fatalf("Luxembourg attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "EUR"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Казематы Бок",
+		Description:   "Подземные укрепления Люксембурга.",
+		CountryCode:   "LU",
+		CityID:        "luxembourg-city",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "LU", CityID: "vianden"},
+			{CountryCode: "LU", CityID: "echternach"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "LU", CityID: "luxembourg-city"},
+			{CountryCode: "LU", CityID: "esch-sur-alzette"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="LU" selected>Люксембург</option>`,
+		`<option value="luxembourg-city" data-country="LU" selected>Люксембург</option>`,
+		`<option value="vianden" data-country="LU" >Вианден</option>`,
+		`type="checkbox" name="access_cities" value="LU:vianden" checked`,
+		`type="checkbox" name="departure_cities" value="LU:luxembourg-city" checked`,
+		`Люксембург, Люксембург`,
+		`<option value="EUR" selected>Евро</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Luxembourg attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

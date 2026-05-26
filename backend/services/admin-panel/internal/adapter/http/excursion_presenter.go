@@ -41,6 +41,7 @@ var countryNames = map[string]map[string]string{
 	"CU": {localeEN: "Cuba", localeRU: "Куба"},
 	"MA": {localeEN: "Morocco", localeRU: "Марокко"},
 	"PT": {localeEN: "Portugal", localeRU: "Португалия"},
+	"LU": {localeEN: "Luxembourg", localeRU: "Люксембург"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -786,6 +787,31 @@ var portugalCityNames = map[string]map[string]string{
 	"vilamoura":         {localeEN: "Vilamoura", localeRU: "Виламора"},
 }
 
+var luxembourgCityNames = map[string]map[string]string{
+	"beaufort":          {localeEN: "Beaufort", localeRU: "Бофор"},
+	"belval":            {localeEN: "Belval", localeRU: "Бельваль"},
+	"berdorf":           {localeEN: "Berdorf", localeRU: "Бердорф"},
+	"bourscheid":        {localeEN: "Bourscheid", localeRU: "Буршайд"},
+	"clervaux":          {localeEN: "Clervaux", localeRU: "Клерво"},
+	"diekirch":          {localeEN: "Diekirch", localeRU: "Дикирх"},
+	"differdange":       {localeEN: "Differdange", localeRU: "Дифферданж"},
+	"dudelange":         {localeEN: "Dudelange", localeRU: "Дюделанж"},
+	"echternach":        {localeEN: "Echternach", localeRU: "Эхтернах"},
+	"esch-sur-alzette":  {localeEN: "Esch-sur-Alzette", localeRU: "Эш-сюр-Альзетт"},
+	"esch-sur-sure":     {localeEN: "Esch-sur-Sure", localeRU: "Эш-сюр-Сюр"},
+	"ettelbruck":        {localeEN: "Ettelbruck", localeRU: "Эттельбрюк"},
+	"grevenmacher":      {localeEN: "Grevenmacher", localeRU: "Гревенмахер"},
+	"kirchberg":         {localeEN: "Kirchberg", localeRU: "Кирхберг"},
+	"larochette":        {localeEN: "Larochette", localeRU: "Ларошетт"},
+	"luxembourg-city":   {localeEN: "Luxembourg City", localeRU: "Люксембург"},
+	"mondorf-les-bains": {localeEN: "Mondorf-les-Bains", localeRU: "Мондорф-ле-Бен"},
+	"mullerthal":        {localeEN: "Mullerthal", localeRU: "Мюллерталь"},
+	"remich":            {localeEN: "Remich", localeRU: "Ремих"},
+	"schengen":          {localeEN: "Schengen", localeRU: "Шенген"},
+	"vianden":           {localeEN: "Vianden", localeRU: "Вианден"},
+	"wiltz":             {localeEN: "Wiltz", localeRU: "Вильц"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -827,6 +853,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range portugalCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range luxembourgCityNames {
 		cityNames[cityID] = names
 	}
 }

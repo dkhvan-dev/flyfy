@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -733,6 +733,28 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "PT", CityID: "madeira"},
 	{CountryCode: "PT", CityID: "ponta-delgada"},
 	{CountryCode: "PT", CityID: "sao-miguel"},
+	{CountryCode: "LU", CityID: "luxembourg-city"},
+	{CountryCode: "LU", CityID: "kirchberg"},
+	{CountryCode: "LU", CityID: "clervaux"},
+	{CountryCode: "LU", CityID: "vianden"},
+	{CountryCode: "LU", CityID: "bourscheid"},
+	{CountryCode: "LU", CityID: "wiltz"},
+	{CountryCode: "LU", CityID: "esch-sur-sure"},
+	{CountryCode: "LU", CityID: "diekirch"},
+	{CountryCode: "LU", CityID: "ettelbruck"},
+	{CountryCode: "LU", CityID: "echternach"},
+	{CountryCode: "LU", CityID: "mullerthal"},
+	{CountryCode: "LU", CityID: "berdorf"},
+	{CountryCode: "LU", CityID: "beaufort"},
+	{CountryCode: "LU", CityID: "larochette"},
+	{CountryCode: "LU", CityID: "esch-sur-alzette"},
+	{CountryCode: "LU", CityID: "belval"},
+	{CountryCode: "LU", CityID: "differdange"},
+	{CountryCode: "LU", CityID: "dudelange"},
+	{CountryCode: "LU", CityID: "remich"},
+	{CountryCode: "LU", CityID: "grevenmacher"},
+	{CountryCode: "LU", CityID: "schengen"},
+	{CountryCode: "LU", CityID: "mondorf-les-bains"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{

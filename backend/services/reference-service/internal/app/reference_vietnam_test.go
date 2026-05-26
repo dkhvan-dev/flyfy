@@ -1771,3 +1771,68 @@ func TestReferenceUseCaseIncludesPortugalCountryCurrencyAndTouristDestinations(t
 		t.Fatalf("search lisbon in Portugal = %#v, want lisbon first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesLuxembourgCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("LU")
+	if country == nil {
+		t.Fatal("expected Luxembourg country reference")
+	}
+	if country.Name.Ru != "Люксембург" {
+		t.Fatalf("Luxembourg Russian name = %q, want Люксембург", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("LU")
+	if currency == nil {
+		t.Fatal("expected euro currency by Luxembourg country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Luxembourg currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("LU")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"luxembourg-city",
+		"kirchberg",
+		"clervaux",
+		"vianden",
+		"bourscheid",
+		"wiltz",
+		"esch-sur-sure",
+		"diekirch",
+		"ettelbruck",
+		"echternach",
+		"mullerthal",
+		"berdorf",
+		"beaufort",
+		"larochette",
+		"esch-sur-alzette",
+		"belval",
+		"differdange",
+		"dudelange",
+		"remich",
+		"grevenmacher",
+		"schengen",
+		"mondorf-les-bains",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Luxembourg city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("luxembourg", "LU", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "luxembourg-city" {
+		t.Fatalf("search luxembourg in Luxembourg = %#v, want luxembourg-city first", searchResults)
+	}
+}
