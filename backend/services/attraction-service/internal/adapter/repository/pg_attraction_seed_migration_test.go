@@ -2334,6 +2334,119 @@ func TestMontenegroPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testi
 	}
 }
 
+func TestIndiaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "039_seed_india_priority_attractions.up.sql")
+	downSQL := readMigration(t, "039_seed_india_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_india_resolved_attractions AS",
+		"'IN'",
+		"'INR'",
+		"india-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("India up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"delhi",
+		"agra",
+		"jaipur",
+		"varanasi",
+		"amritsar",
+		"mumbai",
+		"goa",
+		"udaipur",
+		"jodhpur",
+		"ahmedabad",
+		"pune",
+		"bengaluru",
+		"chennai",
+		"kochi",
+		"mysuru",
+		"hyderabad",
+		"hampi",
+		"munnar",
+		"alappuzha",
+		"kovalam",
+		"kolkata",
+		"darjeeling",
+		"shillong",
+		"guwahati",
+		"gangtok",
+		"rishikesh",
+		"haridwar",
+		"manali",
+		"leh",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("India up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Taj Mahal",
+		"Agra Fort",
+		"Red Fort",
+		"Qutub Minar",
+		"Humayun's Tomb",
+		"India Gate",
+		"Jama Masjid",
+		"Chandni Chowk",
+		"Jaipur City Palace",
+		"Hawa Mahal",
+		"Amber Fort",
+		"Jantar Mantar Jaipur",
+		"Varanasi Ghats",
+		"Kashi Vishwanath Temple",
+		"Golden Temple",
+		"Gateway of India",
+		"Chhatrapati Shivaji Maharaj Terminus",
+		"Elephanta Caves",
+		"Colaba Causeway",
+		"Baga Beach",
+		"Anjuna Flea Market",
+		"Dudhsagar Falls",
+		"City Palace Udaipur",
+		"Mehrangarh Fort",
+		"Sabarmati Ashram",
+		"Mysore Palace",
+		"Hampi Group of Monuments",
+		"Charminar",
+		"Fort Kochi",
+		"Alleppey Backwaters",
+		"Victoria Memorial",
+		"Darjeeling Himalayan Railway",
+		"Umiam Lake",
+		"Kamakhya Temple",
+		"Rishikesh Ganga Aarti",
+		"Manali Mall Road",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("India up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("India up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['india', city_id") {
+		t.Fatalf("India up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "india-seed-v1") || !strings.Contains(downSQL, "country_code = 'IN'") {
+		t.Fatalf("India down migration must remove only tagged India seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

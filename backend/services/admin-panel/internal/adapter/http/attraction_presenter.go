@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -479,6 +479,35 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "ME", CityID: "biogradska-gora"},
 	{CountryCode: "ME", CityID: "plav"},
 	{CountryCode: "ME", CityID: "gusinje"},
+	{CountryCode: "IN", CityID: "delhi"},
+	{CountryCode: "IN", CityID: "agra"},
+	{CountryCode: "IN", CityID: "jaipur"},
+	{CountryCode: "IN", CityID: "varanasi"},
+	{CountryCode: "IN", CityID: "amritsar"},
+	{CountryCode: "IN", CityID: "mumbai"},
+	{CountryCode: "IN", CityID: "goa"},
+	{CountryCode: "IN", CityID: "udaipur"},
+	{CountryCode: "IN", CityID: "jodhpur"},
+	{CountryCode: "IN", CityID: "ahmedabad"},
+	{CountryCode: "IN", CityID: "pune"},
+	{CountryCode: "IN", CityID: "bengaluru"},
+	{CountryCode: "IN", CityID: "chennai"},
+	{CountryCode: "IN", CityID: "kochi"},
+	{CountryCode: "IN", CityID: "mysuru"},
+	{CountryCode: "IN", CityID: "hyderabad"},
+	{CountryCode: "IN", CityID: "hampi"},
+	{CountryCode: "IN", CityID: "munnar"},
+	{CountryCode: "IN", CityID: "alappuzha"},
+	{CountryCode: "IN", CityID: "kovalam"},
+	{CountryCode: "IN", CityID: "kolkata"},
+	{CountryCode: "IN", CityID: "darjeeling"},
+	{CountryCode: "IN", CityID: "shillong"},
+	{CountryCode: "IN", CityID: "guwahati"},
+	{CountryCode: "IN", CityID: "gangtok"},
+	{CountryCode: "IN", CityID: "rishikesh"},
+	{CountryCode: "IN", CityID: "haridwar"},
+	{CountryCode: "IN", CityID: "manali"},
+	{CountryCode: "IN", CityID: "leh"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -486,7 +515,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -594,6 +623,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Шри-ланкийская рупия"
 		}
 		return "Sri Lankan rupee"
+	case "INR":
+		if locale == localeRU {
+			return "Индийская рупия"
+		}
+		return "Indian rupee"
 	case "VND":
 		if locale == localeRU {
 			return "Вьетнамский донг"

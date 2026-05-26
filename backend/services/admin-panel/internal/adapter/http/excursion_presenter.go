@@ -34,6 +34,7 @@ var countryNames = map[string]map[string]string{
 	"MY": {localeEN: "Malaysia", localeRU: "Малайзия"},
 	"LK": {localeEN: "Sri Lanka", localeRU: "Шри-Ланка"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
+	"IN": {localeEN: "India", localeRU: "Индия"},
 	"AZ": {localeEN: "Azerbaijan", localeRU: "Азербайджан"},
 	"US": {localeEN: "United States", localeRU: "США"},
 }
@@ -488,6 +489,38 @@ var montenegroCityNames = map[string]map[string]string{
 	"zabljak":         {localeEN: "Zabljak", localeRU: "Жабляк"},
 }
 
+var indiaCityNames = map[string]map[string]string{
+	"agra":       {localeEN: "Agra", localeRU: "Агра"},
+	"ahmedabad":  {localeEN: "Ahmedabad", localeRU: "Ахмадабад"},
+	"alappuzha":  {localeEN: "Alappuzha", localeRU: "Алаппужа"},
+	"amritsar":   {localeEN: "Amritsar", localeRU: "Амритсар"},
+	"bengaluru":  {localeEN: "Bengaluru", localeRU: "Бенгалуру"},
+	"chennai":    {localeEN: "Chennai", localeRU: "Ченнаи"},
+	"darjeeling": {localeEN: "Darjeeling", localeRU: "Дарджилинг"},
+	"delhi":      {localeEN: "Delhi", localeRU: "Дели"},
+	"gangtok":    {localeEN: "Gangtok", localeRU: "Гангток"},
+	"goa":        {localeEN: "Goa", localeRU: "Гоа"},
+	"guwahati":   {localeEN: "Guwahati", localeRU: "Гувахати"},
+	"hampi":      {localeEN: "Hampi", localeRU: "Хампи"},
+	"haridwar":   {localeEN: "Haridwar", localeRU: "Харидвар"},
+	"hyderabad":  {localeEN: "Hyderabad", localeRU: "Хайдарабад"},
+	"jaipur":     {localeEN: "Jaipur", localeRU: "Джайпур"},
+	"jodhpur":    {localeEN: "Jodhpur", localeRU: "Джодхпур"},
+	"kochi":      {localeEN: "Kochi", localeRU: "Кочи"},
+	"kolkata":    {localeEN: "Kolkata", localeRU: "Калькутта"},
+	"kovalam":    {localeEN: "Kovalam", localeRU: "Ковалам"},
+	"leh":        {localeEN: "Leh", localeRU: "Лех"},
+	"manali":     {localeEN: "Manali", localeRU: "Манали"},
+	"mumbai":     {localeEN: "Mumbai", localeRU: "Мумбаи"},
+	"munnar":     {localeEN: "Munnar", localeRU: "Муннар"},
+	"mysuru":     {localeEN: "Mysuru", localeRU: "Майсур"},
+	"pune":       {localeEN: "Pune", localeRU: "Пуна"},
+	"rishikesh":  {localeEN: "Rishikesh", localeRU: "Ришикеш"},
+	"shillong":   {localeEN: "Shillong", localeRU: "Шиллонг"},
+	"udaipur":    {localeEN: "Udaipur", localeRU: "Удайпур"},
+	"varanasi":   {localeEN: "Varanasi", localeRU: "Варанаси"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -496,6 +529,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range montenegroCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range indiaCityNames {
 		cityNames[cityID] = names
 	}
 }

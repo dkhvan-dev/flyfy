@@ -1764,6 +1764,107 @@ func TestRendererRendersMontenegroAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersIndiaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=IN&city=delhi",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Красный форт",
+				CountryCode:   "IN",
+				CityID:        "delhi",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "IN",
+			CityID:      "delhi",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="IN" selected`,
+		`Индия`,
+		`value="delhi" data-country="IN" selected`,
+		`Дели`,
+		`Дели, Индия`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("India attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">IN<") || strings.Contains(listBody, ">delhi<") {
+		t.Fatalf("India attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Красный форт",
+		Description:   "Исторический форт в Старом Дели.",
+		CountryCode:   "IN",
+		CityID:        "delhi",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "IN", CityID: "agra"},
+			{CountryCode: "IN", CityID: "jaipur"},
+			{CountryCode: "IN", CityID: "varanasi"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "IN", CityID: "mumbai"},
+			{CountryCode: "IN", CityID: "goa"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="IN" selected>Индия</option>`,
+		`<option value="delhi" data-country="IN" selected>Дели</option>`,
+		`<option value="goa" data-country="IN" >Гоа</option>`,
+		`type="checkbox" name="access_cities" value="IN:agra" checked`,
+		`type="checkbox" name="departure_cities" value="IN:mumbai" checked`,
+		`Дели, Индия`,
+		`<option value="INR" >Индийская рупия</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("India attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

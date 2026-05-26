@@ -1050,3 +1050,75 @@ func TestReferenceUseCaseIncludesMontenegroCountryCurrencyAndTouristCities(t *te
 		t.Fatalf("search sveti stefan in Montenegro = %#v, want sveti-stefan first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesIndiaCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("IN")
+	if country == nil {
+		t.Fatal("expected India country reference")
+	}
+	if country.Name.Ru != "Индия" {
+		t.Fatalf("India Russian name = %q, want Индия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("IN")
+	if currency == nil {
+		t.Fatal("expected Indian rupee currency by country")
+	}
+	if currency.Code != "INR" {
+		t.Fatalf("India currency = %q, want INR", currency.Code)
+	}
+
+	cities := uc.ListCities("IN")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"delhi",
+		"agra",
+		"jaipur",
+		"varanasi",
+		"amritsar",
+		"mumbai",
+		"goa",
+		"udaipur",
+		"jodhpur",
+		"ahmedabad",
+		"pune",
+		"bengaluru",
+		"chennai",
+		"kochi",
+		"mysuru",
+		"hyderabad",
+		"hampi",
+		"munnar",
+		"alappuzha",
+		"kovalam",
+		"kolkata",
+		"darjeeling",
+		"shillong",
+		"guwahati",
+		"gangtok",
+		"rishikesh",
+		"haridwar",
+		"manali",
+		"leh",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("India city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("rishikesh", "IN", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "rishikesh" {
+		t.Fatalf("search rishikesh in India = %#v, want rishikesh first", searchResults)
+	}
+}
