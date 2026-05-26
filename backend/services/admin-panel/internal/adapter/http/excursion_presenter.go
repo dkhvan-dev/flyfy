@@ -44,6 +44,7 @@ var countryNames = map[string]map[string]string{
 	"LU": {localeEN: "Luxembourg", localeRU: "Люксембург"},
 	"DE": {localeEN: "Germany", localeRU: "Германия"},
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
+	"AU": {localeEN: "Australia", localeRU: "Австралия"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -884,6 +885,39 @@ var austriaCityNames = map[string]map[string]string{
 	"zell-am-see":         {localeEN: "Zell am See", localeRU: "Целль-ам-Зе"},
 }
 
+var australiaCityNames = map[string]map[string]string{
+	"adelaide":         {localeEN: "Adelaide", localeRU: "Аделаида"},
+	"airlie-beach":     {localeEN: "Airlie Beach", localeRU: "Эрли-Бич"},
+	"alice-springs":    {localeEN: "Alice Springs", localeRU: "Алис-Спрингс"},
+	"barossa-valley":   {localeEN: "Barossa Valley", localeRU: "Долина Баросса"},
+	"blue-mountains":   {localeEN: "Blue Mountains", localeRU: "Голубые горы"},
+	"brisbane":         {localeEN: "Brisbane", localeRU: "Брисбен"},
+	"broome":           {localeEN: "Broome", localeRU: "Брум"},
+	"byron-bay":        {localeEN: "Byron Bay", localeRU: "Байрон-Бей"},
+	"cairns":           {localeEN: "Cairns", localeRU: "Кэрнс"},
+	"canberra":         {localeEN: "Canberra", localeRU: "Канберра"},
+	"darwin":           {localeEN: "Darwin", localeRU: "Дарвин"},
+	"fremantle":        {localeEN: "Fremantle", localeRU: "Фримантл"},
+	"gold-coast":       {localeEN: "Gold Coast", localeRU: "Голд-Кост"},
+	"great-ocean-road": {localeEN: "Great Ocean Road", localeRU: "Великая океанская дорога"},
+	"hobart":           {localeEN: "Hobart", localeRU: "Хобарт"},
+	"kakadu":           {localeEN: "Kakadu", localeRU: "Какаду"},
+	"kangaroo-island":  {localeEN: "Kangaroo Island", localeRU: "Остров Кенгуру"},
+	"kuranda":          {localeEN: "Kuranda", localeRU: "Куранда"},
+	"launceston":       {localeEN: "Launceston", localeRU: "Лонсестон"},
+	"margaret-river":   {localeEN: "Margaret River", localeRU: "Маргарет-Ривер"},
+	"melbourne":        {localeEN: "Melbourne", localeRU: "Мельбурн"},
+	"noosa":            {localeEN: "Noosa", localeRU: "Нуса"},
+	"perth":            {localeEN: "Perth", localeRU: "Перт"},
+	"phillip-island":   {localeEN: "Phillip Island", localeRU: "Остров Филлип"},
+	"port-douglas":     {localeEN: "Port Douglas", localeRU: "Порт-Дуглас"},
+	"rottnest-island":  {localeEN: "Rottnest Island", localeRU: "Остров Роттнест"},
+	"sunshine-coast":   {localeEN: "Sunshine Coast", localeRU: "Саншайн-Кост"},
+	"sydney":           {localeEN: "Sydney", localeRU: "Сидней"},
+	"uluru":            {localeEN: "Uluru", localeRU: "Улуру"},
+	"whitsundays":      {localeEN: "Whitsundays", localeRU: "Уитсанди"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -934,6 +968,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range austriaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range australiaCityNames {
 		cityNames[cityID] = names
 	}
 }

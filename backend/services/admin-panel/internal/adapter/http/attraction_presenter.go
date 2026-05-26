@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "DE", "AT", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "DE", "AT", "AU", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -819,6 +819,36 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "AT", CityID: "wels"},
 	{CountryCode: "AT", CityID: "st-polten"},
 	{CountryCode: "AT", CityID: "grossglockner"},
+	{CountryCode: "AU", CityID: "sydney"},
+	{CountryCode: "AU", CityID: "blue-mountains"},
+	{CountryCode: "AU", CityID: "canberra"},
+	{CountryCode: "AU", CityID: "byron-bay"},
+	{CountryCode: "AU", CityID: "melbourne"},
+	{CountryCode: "AU", CityID: "great-ocean-road"},
+	{CountryCode: "AU", CityID: "phillip-island"},
+	{CountryCode: "AU", CityID: "hobart"},
+	{CountryCode: "AU", CityID: "launceston"},
+	{CountryCode: "AU", CityID: "brisbane"},
+	{CountryCode: "AU", CityID: "gold-coast"},
+	{CountryCode: "AU", CityID: "sunshine-coast"},
+	{CountryCode: "AU", CityID: "noosa"},
+	{CountryCode: "AU", CityID: "cairns"},
+	{CountryCode: "AU", CityID: "port-douglas"},
+	{CountryCode: "AU", CityID: "kuranda"},
+	{CountryCode: "AU", CityID: "airlie-beach"},
+	{CountryCode: "AU", CityID: "whitsundays"},
+	{CountryCode: "AU", CityID: "adelaide"},
+	{CountryCode: "AU", CityID: "barossa-valley"},
+	{CountryCode: "AU", CityID: "kangaroo-island"},
+	{CountryCode: "AU", CityID: "darwin"},
+	{CountryCode: "AU", CityID: "kakadu"},
+	{CountryCode: "AU", CityID: "alice-springs"},
+	{CountryCode: "AU", CityID: "uluru"},
+	{CountryCode: "AU", CityID: "perth"},
+	{CountryCode: "AU", CityID: "fremantle"},
+	{CountryCode: "AU", CityID: "rottnest-island"},
+	{CountryCode: "AU", CityID: "margaret-river"},
+	{CountryCode: "AU", CityID: "broome"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -826,7 +856,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "AUD", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -914,6 +944,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Российский рубль"
 		}
 		return "Russian ruble"
+	case "AUD":
+		if locale == localeRU {
+			return "Австралийский доллар"
+		}
+		return "Australian dollar"
 	case "TRY":
 		if locale == localeRU {
 			return "Турецкая лира"

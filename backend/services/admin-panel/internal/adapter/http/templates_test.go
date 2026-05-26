@@ -3187,6 +3187,108 @@ func TestRendererRendersAustriaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersAustraliaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=AU&city=sydney",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Сиднейская опера",
+				CountryCode:   "AU",
+				CityID:        "sydney",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "AU",
+			CityID:      "sydney",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="AU" selected`,
+		`Австралия`,
+		`value="sydney" data-country="AU" selected`,
+		`Сидней`,
+		`Сидней, Австралия`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Australia attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">AU<") || strings.Contains(listBody, ">sydney<") {
+		t.Fatalf("Australia attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "AUD"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Сиднейская опера",
+		Description:   "Знаковый концертный комплекс на гавани Сиднея.",
+		CountryCode:   "AU",
+		CityID:        "sydney",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "AU", CityID: "blue-mountains"},
+			{CountryCode: "AU", CityID: "canberra"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "AU", CityID: "sydney"},
+			{CountryCode: "AU", CityID: "melbourne"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="AU" selected>Австралия</option>`,
+		`<option value="sydney" data-country="AU" selected>Сидней</option>`,
+		`<option value="blue-mountains" data-country="AU" >Голубые горы</option>`,
+		`type="checkbox" name="access_cities" value="AU:blue-mountains" checked`,
+		`type="checkbox" name="departure_cities" value="AU:sydney" checked`,
+		`Сидней, Австралия`,
+		`<option value="AUD" selected>Австралийский доллар</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Australia attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

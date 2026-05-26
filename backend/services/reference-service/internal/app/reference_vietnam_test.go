@@ -1986,3 +1986,76 @@ func TestReferenceUseCaseIncludesAustriaCountryCurrencyAndTouristDestinations(t 
 		t.Fatalf("search zell am see in Austria = %#v, want zell-am-see first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesAustraliaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("AU")
+	if country == nil {
+		t.Fatal("expected Australia country reference")
+	}
+	if country.Name.Ru != "Австралия" {
+		t.Fatalf("Australia Russian name = %q, want Австралия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("AU")
+	if currency == nil {
+		t.Fatal("expected Australian dollar currency by Australia country")
+	}
+	if currency.Code != "AUD" {
+		t.Fatalf("Australia currency = %q, want AUD", currency.Code)
+	}
+
+	cities := uc.ListCities("AU")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"sydney",
+		"blue-mountains",
+		"canberra",
+		"byron-bay",
+		"melbourne",
+		"great-ocean-road",
+		"phillip-island",
+		"hobart",
+		"launceston",
+		"brisbane",
+		"gold-coast",
+		"sunshine-coast",
+		"noosa",
+		"cairns",
+		"port-douglas",
+		"kuranda",
+		"airlie-beach",
+		"whitsundays",
+		"adelaide",
+		"barossa-valley",
+		"kangaroo-island",
+		"darwin",
+		"kakadu",
+		"alice-springs",
+		"uluru",
+		"perth",
+		"fremantle",
+		"rottnest-island",
+		"margaret-river",
+		"broome",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Australia city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("gold coast", "AU", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "gold-coast" {
+		t.Fatalf("search gold coast in Australia = %#v, want gold-coast first", searchResults)
+	}
+}

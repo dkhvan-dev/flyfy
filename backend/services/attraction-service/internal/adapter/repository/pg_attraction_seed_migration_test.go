@@ -3675,6 +3675,105 @@ func TestAustriaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.
 	}
 }
 
+func TestAustraliaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "053_seed_australia_priority_attractions.up.sql")
+	downSQL := readMigration(t, "053_seed_australia_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_australia_resolved_attractions AS",
+		"'AU'",
+		"'AUD'",
+		"australia-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Australia up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"sydney",
+		"blue-mountains",
+		"canberra",
+		"byron-bay",
+		"melbourne",
+		"great-ocean-road",
+		"phillip-island",
+		"hobart",
+		"launceston",
+		"brisbane",
+		"gold-coast",
+		"sunshine-coast",
+		"noosa",
+		"cairns",
+		"port-douglas",
+		"kuranda",
+		"airlie-beach",
+		"whitsundays",
+		"adelaide",
+		"barossa-valley",
+		"kangaroo-island",
+		"darwin",
+		"kakadu",
+		"alice-springs",
+		"uluru",
+		"perth",
+		"fremantle",
+		"rottnest-island",
+		"margaret-river",
+		"broome",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Australia up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Sydney Opera House",
+		"Sydney Harbour Bridge",
+		"Bondi Beach",
+		"Blue Mountains Three Sisters",
+		"Australian War Memorial",
+		"Federation Square",
+		"Queen Victoria Market",
+		"Twelve Apostles",
+		"Penguin Parade",
+		"Salamanca Market",
+		"South Bank Parklands",
+		"Surfers Paradise Beach",
+		"Great Barrier Reef",
+		"Kuranda Scenic Railway",
+		"Adelaide Central Market",
+		"Uluru",
+		"Kakadu Ubirr",
+		"Kings Park and Botanic Garden",
+		"Fremantle Markets",
+		"Rottnest Island",
+		"Cable Beach",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Australia up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Australia up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['australia', city_id") {
+		t.Fatalf("Australia up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "australia-seed-v1") || !strings.Contains(downSQL, "country_code = 'AU'") {
+		t.Fatalf("Australia down migration must remove only tagged Australia seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",
