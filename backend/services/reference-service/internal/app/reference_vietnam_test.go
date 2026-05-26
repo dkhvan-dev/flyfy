@@ -853,3 +853,67 @@ func TestReferenceUseCaseIncludesEgyptCountryCurrencyAndTouristCities(t *testing
 		t.Fatalf("search sharm el sheikh in Egypt = %#v, want sharm-el-sheikh first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesMalaysiaCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("MY")
+	if country == nil {
+		t.Fatal("expected Malaysia country reference")
+	}
+	if country.Name.Ru != "Малайзия" {
+		t.Fatalf("Malaysia Russian name = %q, want Малайзия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("MY")
+	if currency == nil {
+		t.Fatal("expected Malaysian ringgit currency by country")
+	}
+	if currency.Code != "MYR" {
+		t.Fatalf("Malaysia currency = %q, want MYR", currency.Code)
+	}
+
+	cities := uc.ListCities("MY")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"kuala-lumpur",
+		"putrajaya",
+		"selangor",
+		"george-town",
+		"penang",
+		"langkawi",
+		"melaka",
+		"ipoh",
+		"cameron-highlands",
+		"kota-kinabalu",
+		"sandakan",
+		"semporna",
+		"kuching",
+		"miri",
+		"johor-bahru",
+		"desaru",
+		"tioman",
+		"perhentian-islands",
+		"redang",
+		"kuala-terengganu",
+		"kuantan",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Malaysia city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("george town", "MY", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "george-town" {
+		t.Fatalf("search george town in Malaysia = %#v, want george-town first", searchResults)
+	}
+}

@@ -31,6 +31,7 @@ var countryNames = map[string]map[string]string{
 	"KR": {localeEN: "South Korea", localeRU: "Южная Корея"},
 	"JP": {localeEN: "Japan", localeRU: "Япония"},
 	"EG": {localeEN: "Egypt", localeRU: "Египет"},
+	"MY": {localeEN: "Malaysia", localeRU: "Малайзия"},
 	"AZ": {localeEN: "Azerbaijan", localeRU: "Азербайджан"},
 	"US": {localeEN: "United States", localeRU: "США"},
 }
@@ -406,6 +407,36 @@ var cityNames = map[string]map[string]string{
 	"yenokavan":        {localeEN: "Yenokavan", localeRU: "Енокаван"},
 	"yerevan":          {localeEN: "Yerevan", localeRU: "Ереван"},
 	"zhezkazgan":       {localeEN: "Zhezkazgan", localeRU: "Жезказган"},
+}
+
+var malaysiaCityNames = map[string]map[string]string{
+	"cameron-highlands":  {localeEN: "Cameron Highlands", localeRU: "Камерон-Хайлендс"},
+	"desaru":             {localeEN: "Desaru", localeRU: "Десару"},
+	"george-town":        {localeEN: "George Town", localeRU: "Джорджтаун"},
+	"ipoh":               {localeEN: "Ipoh", localeRU: "Ипох"},
+	"johor-bahru":        {localeEN: "Johor Bahru", localeRU: "Джохор-Бару"},
+	"kota-kinabalu":      {localeEN: "Kota Kinabalu", localeRU: "Кота-Кинабалу"},
+	"kuala-lumpur":       {localeEN: "Kuala Lumpur", localeRU: "Куала-Лумпур"},
+	"kuala-terengganu":   {localeEN: "Kuala Terengganu", localeRU: "Куала-Теренггану"},
+	"kuantan":            {localeEN: "Kuantan", localeRU: "Куантан"},
+	"kuching":            {localeEN: "Kuching", localeRU: "Кучинг"},
+	"langkawi":           {localeEN: "Langkawi", localeRU: "Лангкави"},
+	"melaka":             {localeEN: "Melaka", localeRU: "Малакка"},
+	"miri":               {localeEN: "Miri", localeRU: "Мири"},
+	"penang":             {localeEN: "Penang", localeRU: "Пенанг"},
+	"perhentian-islands": {localeEN: "Perhentian Islands", localeRU: "Перхентианские острова"},
+	"putrajaya":          {localeEN: "Putrajaya", localeRU: "Путраджая"},
+	"redang":             {localeEN: "Redang", localeRU: "Реданг"},
+	"sandakan":           {localeEN: "Sandakan", localeRU: "Сандакан"},
+	"selangor":           {localeEN: "Selangor", localeRU: "Селангор"},
+	"semporna":           {localeEN: "Semporna", localeRU: "Семпорна"},
+	"tioman":             {localeEN: "Tioman", localeRU: "Тиоман"},
+}
+
+func init() {
+	for cityID, names := range malaysiaCityNames {
+		cityNames[cityID] = names
+	}
 }
 
 var languageNames = map[string]map[string]string{

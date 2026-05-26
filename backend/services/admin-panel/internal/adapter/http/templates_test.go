@@ -1461,6 +1461,107 @@ func TestRendererRendersEgyptAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersMalaysiaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=MY&city=george-town",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Джорджтаун",
+				CountryCode:   "MY",
+				CityID:        "george-town",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "MY",
+			CityID:      "george-town",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="MY" selected`,
+		`Малайзия`,
+		`value="george-town" data-country="MY" selected`,
+		`Джорджтаун`,
+		`Джорджтаун, Малайзия`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Malaysia attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">MY<") || strings.Contains(listBody, ">george-town<") {
+		t.Fatalf("Malaysia attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Джорджтаун",
+		Description:   "Исторический центр Пенанга.",
+		CountryCode:   "MY",
+		CityID:        "george-town",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "MY", CityID: "penang"},
+			{CountryCode: "MY", CityID: "langkawi"},
+			{CountryCode: "MY", CityID: "kuala-lumpur"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "MY", CityID: "penang"},
+			{CountryCode: "MY", CityID: "kuala-lumpur"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="MY" selected>Малайзия</option>`,
+		`<option value="george-town" data-country="MY" selected>Джорджтаун</option>`,
+		`<option value="kota-kinabalu" data-country="MY" >Кота-Кинабалу</option>`,
+		`type="checkbox" name="access_cities" value="MY:langkawi" checked`,
+		`type="checkbox" name="departure_cities" value="MY:kuala-lumpur" checked`,
+		`Джорджтаун, Малайзия`,
+		`<option value="MYR" >Малайзийский ринггит</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Malaysia attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

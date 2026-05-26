@@ -2061,6 +2061,94 @@ func TestEgyptPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T)
 	}
 }
 
+func TestMalaysiaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "036_seed_malaysia_priority_attractions.up.sql")
+	downSQL := readMigration(t, "036_seed_malaysia_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_malaysia_resolved_attractions AS",
+		"'MY'",
+		"malaysia-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Malaysia up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"kuala-lumpur",
+		"putrajaya",
+		"selangor",
+		"george-town",
+		"penang",
+		"langkawi",
+		"melaka",
+		"ipoh",
+		"cameron-highlands",
+		"kota-kinabalu",
+		"sandakan",
+		"semporna",
+		"kuching",
+		"miri",
+		"johor-bahru",
+		"desaru",
+		"tioman",
+		"perhentian-islands",
+		"redang",
+		"kuala-terengganu",
+		"kuantan",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Malaysia up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Petronas Twin Towers",
+		"Batu Caves",
+		"Putrajaya Mosque",
+		"George Town UNESCO Heritage Core",
+		"Penang Hill",
+		"Langkawi Sky Bridge",
+		"Jonker Street Night Market",
+		"A Famosa",
+		"Kellie's Castle",
+		"Cameron BOH Tea Centre",
+		"Kinabalu Park",
+		"Sepilok Orangutan Rehabilitation Centre",
+		"Sipadan Island",
+		"Sarawak Cultural Village",
+		"Gunung Mulu National Park",
+		"LEGOLAND Malaysia",
+		"Desaru Coast Adventure Waterpark",
+		"Tioman Island",
+		"Perhentian Islands",
+		"Redang Island",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Malaysia up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Malaysia up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['malaysia', city_id") {
+		t.Fatalf("Malaysia up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "malaysia-seed-v1") || !strings.Contains(downSQL, "country_code = 'MY'") {
+		t.Fatalf("Malaysia down migration must remove only tagged Malaysia seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

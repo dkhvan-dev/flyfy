@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -127,6 +127,27 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "EG", CityID: "fayoum"},
 	{CountryCode: "EG", CityID: "bahariya-oasis"},
 	{CountryCode: "EG", CityID: "white-desert"},
+	{CountryCode: "MY", CityID: "kuala-lumpur"},
+	{CountryCode: "MY", CityID: "putrajaya"},
+	{CountryCode: "MY", CityID: "selangor"},
+	{CountryCode: "MY", CityID: "george-town"},
+	{CountryCode: "MY", CityID: "penang"},
+	{CountryCode: "MY", CityID: "langkawi"},
+	{CountryCode: "MY", CityID: "melaka"},
+	{CountryCode: "MY", CityID: "ipoh"},
+	{CountryCode: "MY", CityID: "cameron-highlands"},
+	{CountryCode: "MY", CityID: "kota-kinabalu"},
+	{CountryCode: "MY", CityID: "sandakan"},
+	{CountryCode: "MY", CityID: "semporna"},
+	{CountryCode: "MY", CityID: "kuching"},
+	{CountryCode: "MY", CityID: "miri"},
+	{CountryCode: "MY", CityID: "johor-bahru"},
+	{CountryCode: "MY", CityID: "desaru"},
+	{CountryCode: "MY", CityID: "tioman"},
+	{CountryCode: "MY", CityID: "perhentian-islands"},
+	{CountryCode: "MY", CityID: "redang"},
+	{CountryCode: "MY", CityID: "kuala-terengganu"},
+	{CountryCode: "MY", CityID: "kuantan"},
 	{CountryCode: "AE", CityID: "dubai"},
 	{CountryCode: "AE", CityID: "abu-dhabi"},
 	{CountryCode: "AE", CityID: "al-ain"},
@@ -418,7 +439,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -516,6 +537,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Египетский фунт"
 		}
 		return "Egyptian pound"
+	case "MYR":
+		if locale == localeRU {
+			return "Малайзийский ринггит"
+		}
+		return "Malaysian ringgit"
 	case "VND":
 		if locale == localeRU {
 			return "Вьетнамский донг"
