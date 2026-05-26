@@ -243,6 +243,15 @@
     "capital": {"en": "Canberra", "ru": "Канберра", "kk": "Канберра"}
   },
   {
+    "code": "TZ",
+    "code3": "TZA",
+    "numeric": "834",
+    "currencyCode": "TZS",
+    "phoneCode": "+255",
+    "name": {"en": "Tanzania", "ru": "Танзания", "kk": "Танзания"},
+    "capital": {"en": "Dodoma", "ru": "Додома", "kk": "Додома"}
+  },
+  {
     "code": "FR",
     "code3": "FRA",
     "numeric": "250",

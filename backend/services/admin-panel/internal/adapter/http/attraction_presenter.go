@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "DE", "AT", "AU", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "DE", "AT", "AU", "TZ", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -849,6 +849,44 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "AU", CityID: "rottnest-island"},
 	{CountryCode: "AU", CityID: "margaret-river"},
 	{CountryCode: "AU", CityID: "broome"},
+	{CountryCode: "TZ", CityID: "dar-es-salaam"},
+	{CountryCode: "TZ", CityID: "bagamoyo"},
+	{CountryCode: "TZ", CityID: "tanga"},
+	{CountryCode: "TZ", CityID: "pangani"},
+	{CountryCode: "TZ", CityID: "saadani"},
+	{CountryCode: "TZ", CityID: "mafia-island"},
+	{CountryCode: "TZ", CityID: "zanzibar-city"},
+	{CountryCode: "TZ", CityID: "stone-town"},
+	{CountryCode: "TZ", CityID: "nungwi"},
+	{CountryCode: "TZ", CityID: "kendwa"},
+	{CountryCode: "TZ", CityID: "paje"},
+	{CountryCode: "TZ", CityID: "jambiani"},
+	{CountryCode: "TZ", CityID: "jozani"},
+	{CountryCode: "TZ", CityID: "mnemba"},
+	{CountryCode: "TZ", CityID: "arusha"},
+	{CountryCode: "TZ", CityID: "moshi"},
+	{CountryCode: "TZ", CityID: "kilimanjaro"},
+	{CountryCode: "TZ", CityID: "mount-meru"},
+	{CountryCode: "TZ", CityID: "serengeti"},
+	{CountryCode: "TZ", CityID: "ngorongoro"},
+	{CountryCode: "TZ", CityID: "tarangire"},
+	{CountryCode: "TZ", CityID: "lake-manyara"},
+	{CountryCode: "TZ", CityID: "karatu"},
+	{CountryCode: "TZ", CityID: "dodoma"},
+	{CountryCode: "TZ", CityID: "morogoro"},
+	{CountryCode: "TZ", CityID: "mikumi"},
+	{CountryCode: "TZ", CityID: "ruaha"},
+	{CountryCode: "TZ", CityID: "nyerere"},
+	{CountryCode: "TZ", CityID: "iringa"},
+	{CountryCode: "TZ", CityID: "udzungwa"},
+	{CountryCode: "TZ", CityID: "mbeya"},
+	{CountryCode: "TZ", CityID: "kitulo"},
+	{CountryCode: "TZ", CityID: "mwanza"},
+	{CountryCode: "TZ", CityID: "rubondo-island"},
+	{CountryCode: "TZ", CityID: "kigoma"},
+	{CountryCode: "TZ", CityID: "gombe"},
+	{CountryCode: "TZ", CityID: "mahale"},
+	{CountryCode: "TZ", CityID: "tabora"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -856,7 +894,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "AUD", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "AUD", "TZS", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -949,6 +987,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Австралийский доллар"
 		}
 		return "Australian dollar"
+	case "TZS":
+		if locale == localeRU {
+			return "Танзанийский шиллинг"
+		}
+		return "Tanzanian shilling"
 	case "TRY":
 		if locale == localeRU {
 			return "Турецкая лира"

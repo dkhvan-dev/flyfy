@@ -2059,3 +2059,84 @@ func TestReferenceUseCaseIncludesAustraliaCountryCurrencyAndTouristDestinations(
 		t.Fatalf("search gold coast in Australia = %#v, want gold-coast first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesTanzaniaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("TZ")
+	if country == nil {
+		t.Fatal("expected Tanzania country reference")
+	}
+	if country.Name.Ru != "Танзания" {
+		t.Fatalf("Tanzania Russian name = %q, want Танзания", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("TZ")
+	if currency == nil {
+		t.Fatal("expected Tanzanian shilling currency by Tanzania country")
+	}
+	if currency.Code != "TZS" {
+		t.Fatalf("Tanzania currency = %q, want TZS", currency.Code)
+	}
+
+	cities := uc.ListCities("TZ")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"dar-es-salaam",
+		"bagamoyo",
+		"tanga",
+		"pangani",
+		"saadani",
+		"mafia-island",
+		"zanzibar-city",
+		"stone-town",
+		"nungwi",
+		"kendwa",
+		"paje",
+		"jambiani",
+		"jozani",
+		"mnemba",
+		"arusha",
+		"moshi",
+		"kilimanjaro",
+		"mount-meru",
+		"serengeti",
+		"ngorongoro",
+		"tarangire",
+		"lake-manyara",
+		"karatu",
+		"dodoma",
+		"morogoro",
+		"mikumi",
+		"ruaha",
+		"nyerere",
+		"iringa",
+		"udzungwa",
+		"mbeya",
+		"kitulo",
+		"mwanza",
+		"rubondo-island",
+		"kigoma",
+		"gombe",
+		"mahale",
+		"tabora",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Tanzania city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("dar es salaam", "TZ", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "dar-es-salaam" {
+		t.Fatalf("search dar es salaam in Tanzania = %#v, want dar-es-salaam first", searchResults)
+	}
+}

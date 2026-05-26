@@ -45,6 +45,7 @@ var countryNames = map[string]map[string]string{
 	"DE": {localeEN: "Germany", localeRU: "Германия"},
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
 	"AU": {localeEN: "Australia", localeRU: "Австралия"},
+	"TZ": {localeEN: "Tanzania", localeRU: "Танзания"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -918,6 +919,47 @@ var australiaCityNames = map[string]map[string]string{
 	"whitsundays":      {localeEN: "Whitsundays", localeRU: "Уитсанди"},
 }
 
+var tanzaniaCityNames = map[string]map[string]string{
+	"arusha":         {localeEN: "Arusha", localeRU: "Аруша"},
+	"bagamoyo":       {localeEN: "Bagamoyo", localeRU: "Багамойо"},
+	"dar-es-salaam":  {localeEN: "Dar es Salaam", localeRU: "Дар-эс-Салам"},
+	"dodoma":         {localeEN: "Dodoma", localeRU: "Додома"},
+	"gombe":          {localeEN: "Gombe", localeRU: "Гомбе"},
+	"iringa":         {localeEN: "Iringa", localeRU: "Иринга"},
+	"jambiani":       {localeEN: "Jambiani", localeRU: "Джамбиани"},
+	"jozani":         {localeEN: "Jozani", localeRU: "Джозани"},
+	"karatu":         {localeEN: "Karatu", localeRU: "Карату"},
+	"kendwa":         {localeEN: "Kendwa", localeRU: "Кендва"},
+	"kigoma":         {localeEN: "Kigoma", localeRU: "Кигома"},
+	"kilimanjaro":    {localeEN: "Kilimanjaro", localeRU: "Килиманджаро"},
+	"kitulo":         {localeEN: "Kitulo", localeRU: "Китуло"},
+	"lake-manyara":   {localeEN: "Lake Manyara", localeRU: "Озеро Маньяра"},
+	"mafia-island":   {localeEN: "Mafia Island", localeRU: "Остров Мафия"},
+	"mahale":         {localeEN: "Mahale", localeRU: "Махале"},
+	"mbeya":          {localeEN: "Mbeya", localeRU: "Мбея"},
+	"mikumi":         {localeEN: "Mikumi", localeRU: "Микуми"},
+	"mnemba":         {localeEN: "Mnemba", localeRU: "Мнемба"},
+	"morogoro":       {localeEN: "Morogoro", localeRU: "Морогоро"},
+	"moshi":          {localeEN: "Moshi", localeRU: "Моши"},
+	"mount-meru":     {localeEN: "Mount Meru", localeRU: "Гора Меру"},
+	"mwanza":         {localeEN: "Mwanza", localeRU: "Мванза"},
+	"ngorongoro":     {localeEN: "Ngorongoro", localeRU: "Нгоронгоро"},
+	"nungwi":         {localeEN: "Nungwi", localeRU: "Нунгви"},
+	"nyerere":        {localeEN: "Nyerere", localeRU: "Ньерере"},
+	"paje":           {localeEN: "Paje", localeRU: "Паже"},
+	"pangani":        {localeEN: "Pangani", localeRU: "Пангани"},
+	"ruaha":          {localeEN: "Ruaha", localeRU: "Руаха"},
+	"rubondo-island": {localeEN: "Rubondo Island", localeRU: "Остров Рубондо"},
+	"saadani":        {localeEN: "Saadani", localeRU: "Саадани"},
+	"serengeti":      {localeEN: "Serengeti", localeRU: "Серенгети"},
+	"stone-town":     {localeEN: "Stone Town", localeRU: "Стоун-Таун"},
+	"tabora":         {localeEN: "Tabora", localeRU: "Табора"},
+	"tanga":          {localeEN: "Tanga", localeRU: "Танга"},
+	"tarangire":      {localeEN: "Tarangire", localeRU: "Тарангире"},
+	"udzungwa":       {localeEN: "Udzungwa", localeRU: "Удзунгва"},
+	"zanzibar-city":  {localeEN: "Zanzibar City", localeRU: "Занзибар"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -971,6 +1013,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range australiaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range tanzaniaCityNames {
 		cityNames[cityID] = names
 	}
 }

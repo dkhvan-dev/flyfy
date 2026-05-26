@@ -22,6 +22,7 @@
   {"code": "JPY", "numeric": "392", "decimals": 0, "symbol": "¥", "name": {"en": "Japanese Yen", "ru": "Японская иена", "kk": "Жапон иенасы"}},
   {"code": "INR", "numeric": "356", "decimals": 2, "symbol": "₹", "name": {"en": "Indian Rupee", "ru": "Индийская рупия", "kk": "Үнді рупиясы"}},
   {"code": "AUD", "numeric": "036", "decimals": 2, "symbol": "A$", "name": {"en": "Australian Dollar", "ru": "Австралийский доллар", "kk": "Австралия доллары"}},
+  {"code": "TZS", "numeric": "834", "decimals": 2, "symbol": "TSh", "name": {"en": "Tanzanian Shilling", "ru": "Танзанийский шиллинг", "kk": "Танзания шиллингі"}},
   {"code": "USD", "numeric": "840", "decimals": 2, "symbol": "$", "name": {"en": "US Dollar", "ru": "Доллар США", "kk": "АҚШ доллары"}},
   {"code": "GBP", "numeric": "826", "decimals": 2, "symbol": "£", "name": {"en": "British Pound", "ru": "Британский фунт", "kk": "Британ фунты"}},
   {"code": "EUR", "numeric": "978", "decimals": 2, "symbol": "€", "name": {"en": "Euro", "ru": "Евро", "kk": "Еуро"}},

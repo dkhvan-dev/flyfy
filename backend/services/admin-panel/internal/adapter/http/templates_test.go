@@ -3289,6 +3289,108 @@ func TestRendererRendersAustraliaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersTanzaniaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=TZ&city=dar-es-salaam",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Национальный музей Танзании",
+				CountryCode:   "TZ",
+				CityID:        "dar-es-salaam",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "TZ",
+			CityID:      "dar-es-salaam",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="TZ" selected`,
+		`Танзания`,
+		`value="dar-es-salaam" data-country="TZ" selected`,
+		`Дар-эс-Салам`,
+		`Дар-эс-Салам, Танзания`,
+		`Музей`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Tanzania attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">TZ<") || strings.Contains(listBody, ">dar-es-salaam<") {
+		t.Fatalf("Tanzania attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "TZS"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Национальный музей Танзании",
+		Description:   "Главный музей Дар-эс-Салама о стране, истории и культуре.",
+		CountryCode:   "TZ",
+		CityID:        "dar-es-salaam",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "TZ", CityID: "zanzibar-city"},
+			{CountryCode: "TZ", CityID: "arusha"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "TZ", CityID: "dar-es-salaam"},
+			{CountryCode: "TZ", CityID: "stone-town"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="TZ" selected>Танзания</option>`,
+		`<option value="dar-es-salaam" data-country="TZ" selected>Дар-эс-Салам</option>`,
+		`<option value="zanzibar-city" data-country="TZ" >Занзибар</option>`,
+		`type="checkbox" name="access_cities" value="TZ:zanzibar-city" checked`,
+		`type="checkbox" name="departure_cities" value="TZ:dar-es-salaam" checked`,
+		`Дар-эс-Салам, Танзания`,
+		`<option value="TZS" selected>Танзанийский шиллинг</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Tanzania attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 
