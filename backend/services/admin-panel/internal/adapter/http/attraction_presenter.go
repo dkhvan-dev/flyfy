@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -953,6 +953,30 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "AT", CityID: "wels"},
 	{CountryCode: "AT", CityID: "st-polten"},
 	{CountryCode: "AT", CityID: "grossglockner"},
+	{CountryCode: "CH", CityID: "zurich"},
+	{CountryCode: "CH", CityID: "lucerne"},
+	{CountryCode: "CH", CityID: "basel"},
+	{CountryCode: "CH", CityID: "schaffhausen"},
+	{CountryCode: "CH", CityID: "bern"},
+	{CountryCode: "CH", CityID: "interlaken"},
+	{CountryCode: "CH", CityID: "grindelwald"},
+	{CountryCode: "CH", CityID: "lauterbrunnen"},
+	{CountryCode: "CH", CityID: "jungfraujoch"},
+	{CountryCode: "CH", CityID: "thun"},
+	{CountryCode: "CH", CityID: "geneva"},
+	{CountryCode: "CH", CityID: "lausanne"},
+	{CountryCode: "CH", CityID: "montreux"},
+	{CountryCode: "CH", CityID: "vevey"},
+	{CountryCode: "CH", CityID: "gruyeres"},
+	{CountryCode: "CH", CityID: "zermatt"},
+	{CountryCode: "CH", CityID: "lugano"},
+	{CountryCode: "CH", CityID: "locarno"},
+	{CountryCode: "CH", CityID: "bellinzona"},
+	{CountryCode: "CH", CityID: "ascona"},
+	{CountryCode: "CH", CityID: "st-moritz"},
+	{CountryCode: "CH", CityID: "davos"},
+	{CountryCode: "CH", CityID: "chur"},
+	{CountryCode: "CH", CityID: "swiss-national-park"},
 	{CountryCode: "AU", CityID: "sydney"},
 	{CountryCode: "AU", CityID: "blue-mountains"},
 	{CountryCode: "AU", CityID: "canberra"},
@@ -1071,7 +1095,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "CHF", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1154,6 +1178,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Евро"
 		}
 		return "Euro"
+	case "CHF":
+		if locale == localeRU {
+			return "Швейцарский франк"
+		}
+		return "Swiss franc"
 	case "RUB":
 		if locale == localeRU {
 			return "Российский рубль"

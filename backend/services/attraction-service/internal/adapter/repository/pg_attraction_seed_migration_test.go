@@ -3131,6 +3131,103 @@ func TestArgentinaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testin
 	}
 }
 
+func TestSwitzerlandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "060_seed_switzerland_priority_attractions.up.sql")
+	downSQL := readMigration(t, "060_seed_switzerland_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_switzerland_resolved_attractions AS",
+		"'CH'",
+		"'CHF'",
+		"switzerland-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Switzerland up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"zurich",
+		"lucerne",
+		"basel",
+		"schaffhausen",
+		"bern",
+		"interlaken",
+		"grindelwald",
+		"lauterbrunnen",
+		"jungfraujoch",
+		"thun",
+		"geneva",
+		"lausanne",
+		"montreux",
+		"vevey",
+		"gruyeres",
+		"zermatt",
+		"lugano",
+		"locarno",
+		"bellinzona",
+		"ascona",
+		"st-moritz",
+		"davos",
+		"chur",
+		"swiss-national-park",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Switzerland up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Kunsthaus Zurich",
+		"Lake Zurich Promenade",
+		"Chapel Bridge",
+		"Lion Monument",
+		"Rhine Falls",
+		"Basel Minster",
+		"Bern Old City",
+		"Zytglogge Clock Tower",
+		"Jungfraujoch Top of Europe",
+		"Grindelwald-First",
+		"Lauterbrunnen Valley",
+		"Lake Thun",
+		"Jet d Eau",
+		"Palais des Nations",
+		"Olympic Museum",
+		"Chillon Castle",
+		"Chaplins World",
+		"Gruyeres Castle",
+		"Matterhorn",
+		"Gornergrat Railway",
+		"Lake Lugano",
+		"Monte San Salvatore",
+		"Three Castles of Bellinzona",
+		"St Moritz Lake",
+		"Swiss National Park",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Switzerland up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Switzerland up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['switzerland', city_id") {
+		t.Fatalf("Switzerland up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "switzerland-seed-v1") || !strings.Contains(downSQL, "country_code = 'CH'") {
+		t.Fatalf("Switzerland down migration must remove only tagged Switzerland seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

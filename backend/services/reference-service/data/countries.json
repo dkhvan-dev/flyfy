@@ -234,6 +234,15 @@
     "capital": {"en": "Vienna", "ru": "Вена", "kk": "Вена"}
   },
   {
+    "code": "CH",
+    "code3": "CHE",
+    "numeric": "756",
+    "currencyCode": "CHF",
+    "phoneCode": "+41",
+    "name": {"en": "Switzerland", "ru": "Швейцария", "kk": "Швейцария"},
+    "capital": {"en": "Bern", "ru": "Берн", "kk": "Берн"}
+  },
+  {
     "code": "AU",
     "code3": "AUS",
     "numeric": "036",

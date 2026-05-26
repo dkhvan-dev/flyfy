@@ -2576,6 +2576,108 @@ func TestRendererRendersArgentinaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersSwitzerlandAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=CH&city=zurich",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Кунстхаус Цюрих",
+				CountryCode:   "CH",
+				CityID:        "zurich",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "CH",
+			CityID:      "zurich",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="CH" selected`,
+		`Швейцария`,
+		`value="zurich" data-country="CH" selected`,
+		`Цюрих`,
+		`Цюрих, Швейцария`,
+		`Музей`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Switzerland attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">CH<") || strings.Contains(listBody, ">zurich<") {
+		t.Fatalf("Switzerland attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "CHF"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Кунстхаус Цюрих",
+		Description:   "Один из ключевых художественных музеев Швейцарии.",
+		CountryCode:   "CH",
+		CityID:        "zurich",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "CH", CityID: "lucerne"},
+			{CountryCode: "CH", CityID: "basel"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "CH", CityID: "geneva"},
+			{CountryCode: "CH", CityID: "zermatt"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="CH" selected>Швейцария</option>`,
+		`<option value="zurich" data-country="CH" selected>Цюрих</option>`,
+		`<option value="lucerne" data-country="CH" >Люцерн</option>`,
+		`type="checkbox" name="access_cities" value="CH:lucerne" checked`,
+		`type="checkbox" name="departure_cities" value="CH:geneva" checked`,
+		`Цюрих, Швейцария`,
+		`<option value="CHF" selected>Швейцарский франк</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Switzerland attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

@@ -1596,6 +1596,73 @@ func TestReferenceUseCaseIncludesArgentinaCountryCurrencyAndTouristDestinations(
 	}
 }
 
+func TestReferenceUseCaseIncludesSwitzerlandCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("CH")
+	if country == nil {
+		t.Fatal("expected Switzerland country reference")
+	}
+	if country.Name.Ru != "Швейцария" {
+		t.Fatalf("Switzerland Russian name = %q, want Швейцария", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("CH")
+	if currency == nil {
+		t.Fatal("expected Swiss franc currency by Switzerland country")
+	}
+	if currency.Code != "CHF" {
+		t.Fatalf("Switzerland currency = %q, want CHF", currency.Code)
+	}
+
+	cities := uc.ListCities("CH")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"zurich",
+		"lucerne",
+		"basel",
+		"schaffhausen",
+		"bern",
+		"interlaken",
+		"grindelwald",
+		"lauterbrunnen",
+		"jungfraujoch",
+		"thun",
+		"geneva",
+		"lausanne",
+		"montreux",
+		"vevey",
+		"gruyeres",
+		"zermatt",
+		"lugano",
+		"locarno",
+		"bellinzona",
+		"ascona",
+		"st-moritz",
+		"davos",
+		"chur",
+		"swiss-national-park",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Switzerland city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("zurich", "CH", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "zurich" {
+		t.Fatalf("search zurich in Switzerland = %#v, want zurich first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesAbkhaziaCountryCurrencyAndTouristDestinations(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

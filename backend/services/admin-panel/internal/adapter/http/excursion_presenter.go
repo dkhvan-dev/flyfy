@@ -47,6 +47,7 @@ var countryNames = map[string]map[string]string{
 	"LU": {localeEN: "Luxembourg", localeRU: "Люксембург"},
 	"DE": {localeEN: "Germany", localeRU: "Германия"},
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
+	"CH": {localeEN: "Switzerland", localeRU: "Швейцария"},
 	"AU": {localeEN: "Australia", localeRU: "Австралия"},
 	"TZ": {localeEN: "Tanzania", localeRU: "Танзания"},
 	"KE": {localeEN: "Kenya", localeRU: "Кения"},
@@ -1033,6 +1034,33 @@ var austriaCityNames = map[string]map[string]string{
 	"zell-am-see":         {localeEN: "Zell am See", localeRU: "Целль-ам-Зе"},
 }
 
+var switzerlandCityNames = map[string]map[string]string{
+	"ascona":              {localeEN: "Ascona", localeRU: "Аскона"},
+	"basel":               {localeEN: "Basel", localeRU: "Базель"},
+	"bellinzona":          {localeEN: "Bellinzona", localeRU: "Беллинцона"},
+	"bern":                {localeEN: "Bern", localeRU: "Берн"},
+	"chur":                {localeEN: "Chur", localeRU: "Кур"},
+	"davos":               {localeEN: "Davos", localeRU: "Давос"},
+	"geneva":              {localeEN: "Geneva", localeRU: "Женева"},
+	"grindelwald":         {localeEN: "Grindelwald", localeRU: "Гриндельвальд"},
+	"gruyeres":            {localeEN: "Gruyeres", localeRU: "Грюйер"},
+	"interlaken":          {localeEN: "Interlaken", localeRU: "Интерлакен"},
+	"jungfraujoch":        {localeEN: "Jungfraujoch", localeRU: "Юнгфрауйох"},
+	"lausanne":            {localeEN: "Lausanne", localeRU: "Лозанна"},
+	"lauterbrunnen":       {localeEN: "Lauterbrunnen", localeRU: "Лаутербруннен"},
+	"locarno":             {localeEN: "Locarno", localeRU: "Локарно"},
+	"lucerne":             {localeEN: "Lucerne", localeRU: "Люцерн"},
+	"lugano":              {localeEN: "Lugano", localeRU: "Лугано"},
+	"montreux":            {localeEN: "Montreux", localeRU: "Монтрё"},
+	"schaffhausen":        {localeEN: "Schaffhausen", localeRU: "Шаффхаузен"},
+	"st-moritz":           {localeEN: "St Moritz", localeRU: "Санкт-Мориц"},
+	"swiss-national-park": {localeEN: "Swiss National Park", localeRU: "Швейцарский национальный парк"},
+	"thun":                {localeEN: "Thun", localeRU: "Тун"},
+	"vevey":               {localeEN: "Vevey", localeRU: "Веве"},
+	"zermatt":             {localeEN: "Zermatt", localeRU: "Церматт"},
+	"zurich":              {localeEN: "Zurich", localeRU: "Цюрих"},
+}
+
 var australiaCityNames = map[string]map[string]string{
 	"adelaide":         {localeEN: "Adelaide", localeRU: "Аделаида"},
 	"airlie-beach":     {localeEN: "Airlie Beach", localeRU: "Эрли-Бич"},
@@ -1212,6 +1240,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range austriaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range switzerlandCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range australiaCityNames {
