@@ -67,6 +67,70 @@ func TestReferenceUseCaseIncludesVietnamCountryCurrencyAndTouristCities(t *testi
 	}
 }
 
+func TestReferenceUseCaseIncludesUzbekistanCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("UZ")
+	if country == nil {
+		t.Fatal("expected Uzbekistan country reference")
+	}
+	if country.Name.Ru != "Узбекистан" {
+		t.Fatalf("Uzbekistan Russian name = %q, want Узбекистан", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("UZ")
+	if currency == nil {
+		t.Fatal("expected Uzbekistani som currency by Uzbekistan country")
+	}
+	if currency.Code != "UZS" {
+		t.Fatalf("Uzbekistan currency = %q, want UZS", currency.Code)
+	}
+
+	cities := uc.ListCities("UZ")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"tashkent",
+		"samarkand",
+		"bukhara",
+		"khiva",
+		"urgench",
+		"nukus",
+		"muynak",
+		"aral-sea",
+		"fergana",
+		"margilan",
+		"kokand",
+		"rishtan",
+		"andijan",
+		"namangan",
+		"chimgan",
+		"charvak",
+		"shahrisabz",
+		"termez",
+		"navoi",
+		"nurata",
+		"zaamin",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Uzbekistan city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("shahrisabz", "UZ", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "shahrisabz" {
+		t.Fatalf("search shahrisabz in Uzbekistan = %#v, want shahrisabz first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

@@ -1203,6 +1203,30 @@ var unitedKingdomCityNames = map[string]map[string]string{
 	"york":                {localeEN: "York", localeRU: "Йорк"},
 }
 
+var uzbekistanCityNames = map[string]map[string]string{
+	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
+	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
+	"bukhara":    {localeEN: "Bukhara", localeRU: "Бухара"},
+	"charvak":    {localeEN: "Charvak", localeRU: "Чарвак"},
+	"chimgan":    {localeEN: "Chimgan", localeRU: "Чимган"},
+	"fergana":    {localeEN: "Fergana", localeRU: "Фергана"},
+	"khiva":      {localeEN: "Khiva", localeRU: "Хива"},
+	"kokand":     {localeEN: "Kokand", localeRU: "Коканд"},
+	"margilan":   {localeEN: "Margilan", localeRU: "Маргилан"},
+	"muynak":     {localeEN: "Muynak", localeRU: "Муйнак"},
+	"namangan":   {localeEN: "Namangan", localeRU: "Наманган"},
+	"navoi":      {localeEN: "Navoi", localeRU: "Навои"},
+	"nukus":      {localeEN: "Nukus", localeRU: "Нукус"},
+	"nurata":     {localeEN: "Nurata", localeRU: "Нурата"},
+	"rishtan":    {localeEN: "Rishtan", localeRU: "Риштан"},
+	"samarkand":  {localeEN: "Samarkand", localeRU: "Самарканд"},
+	"shahrisabz": {localeEN: "Shahrisabz", localeRU: "Шахрисабз"},
+	"tashkent":   {localeEN: "Tashkent", localeRU: "Ташкент"},
+	"termez":     {localeEN: "Termez", localeRU: "Термез"},
+	"urgench":    {localeEN: "Urgench", localeRU: "Ургенч"},
+	"zaamin":     {localeEN: "Zaamin", localeRU: "Заамин"},
+}
+
 var australiaCityNames = map[string]map[string]string{
 	"adelaide":         {localeEN: "Adelaide", localeRU: "Аделаида"},
 	"airlie-beach":     {localeEN: "Airlie Beach", localeRU: "Эрли-Бич"},
@@ -1397,6 +1421,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range unitedKingdomCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range uzbekistanCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range australiaCityNames {
