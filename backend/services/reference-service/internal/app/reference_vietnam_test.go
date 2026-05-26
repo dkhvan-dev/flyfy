@@ -983,3 +983,70 @@ func TestReferenceUseCaseIncludesSriLankaCountryCurrencyAndTouristCities(t *test
 		t.Fatalf("search arugam bay in Sri Lanka = %#v, want arugam-bay first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesMontenegroCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("ME")
+	if country == nil {
+		t.Fatal("expected Montenegro country reference")
+	}
+	if country.Name.Ru != "Черногория" {
+		t.Fatalf("Montenegro Russian name = %q, want Черногория", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("ME")
+	if currency == nil {
+		t.Fatal("expected euro currency by country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Montenegro currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("ME")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"podgorica",
+		"cetinje",
+		"lovcen",
+		"virpazar",
+		"ostrog",
+		"niksic",
+		"kotor",
+		"perast",
+		"tivat",
+		"herceg-novi",
+		"risan",
+		"budva",
+		"becici",
+		"sveti-stefan",
+		"petrovac",
+		"bar",
+		"ulcinj",
+		"ada-bojana",
+		"zabljak",
+		"durmitor",
+		"kolasin",
+		"biogradska-gora",
+		"plav",
+		"gusinje",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Montenegro city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("sveti stefan", "ME", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "sveti-stefan" {
+		t.Fatalf("search sveti stefan in Montenegro = %#v, want sveti-stefan first", searchResults)
+	}
+}

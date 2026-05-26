@@ -1663,6 +1663,107 @@ func TestRendererRendersSriLankaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersMontenegroAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=ME&city=kotor",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Старый город Котор",
+				CountryCode:   "ME",
+				CityID:        "kotor",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "ME",
+			CityID:      "kotor",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="ME" selected`,
+		`Черногория`,
+		`value="kotor" data-country="ME" selected`,
+		`Котор`,
+		`Котор, Черногория`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Montenegro attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">ME<") || strings.Contains(listBody, ">kotor<") {
+		t.Fatalf("Montenegro attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Старый город Котор",
+		Description:   "Исторический город в Боко-Которской бухте.",
+		CountryCode:   "ME",
+		CityID:        "kotor",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "ME", CityID: "perast"},
+			{CountryCode: "ME", CityID: "tivat"},
+			{CountryCode: "ME", CityID: "podgorica"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "ME", CityID: "podgorica"},
+			{CountryCode: "ME", CityID: "budva"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="ME" selected>Черногория</option>`,
+		`<option value="kotor" data-country="ME" selected>Котор</option>`,
+		`<option value="budva" data-country="ME" >Будва</option>`,
+		`type="checkbox" name="access_cities" value="ME:perast" checked`,
+		`type="checkbox" name="departure_cities" value="ME:podgorica" checked`,
+		`Котор, Черногория`,
+		`<option value="EUR" >Евро</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Montenegro attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

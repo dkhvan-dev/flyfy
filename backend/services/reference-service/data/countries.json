@@ -295,5 +295,14 @@
     "phoneCode": "+94",
     "name": {"en": "Sri Lanka", "ru": "Шри-Ланка", "kk": "Шри-Ланка"},
     "capital": {"en": "Sri Jayawardenepura Kotte", "ru": "Шри-Джаяварденепура-Котте", "kk": "Шри-Джаяварденепура-Котте"}
+  },
+  {
+    "code": "ME",
+    "code3": "MNE",
+    "numeric": "499",
+    "currencyCode": "EUR",
+    "phoneCode": "+382",
+    "name": {"en": "Montenegro", "ru": "Черногория", "kk": "Черногория"},
+    "capital": {"en": "Podgorica", "ru": "Подгорица", "kk": "Подгорица"}
   }
 ]

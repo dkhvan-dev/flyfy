@@ -2239,6 +2239,101 @@ func TestSriLankaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing
 	}
 }
 
+func TestMontenegroPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "038_seed_montenegro_priority_attractions.up.sql")
+	downSQL := readMigration(t, "038_seed_montenegro_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_montenegro_resolved_attractions AS",
+		"'ME'",
+		"montenegro-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Montenegro up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"podgorica",
+		"cetinje",
+		"lovcen",
+		"virpazar",
+		"ostrog",
+		"niksic",
+		"kotor",
+		"perast",
+		"tivat",
+		"herceg-novi",
+		"risan",
+		"budva",
+		"becici",
+		"sveti-stefan",
+		"petrovac",
+		"bar",
+		"ulcinj",
+		"ada-bojana",
+		"zabljak",
+		"durmitor",
+		"kolasin",
+		"biogradska-gora",
+		"plav",
+		"gusinje",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Montenegro up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Kotor Old Town",
+		"Bay of Kotor",
+		"Our Lady of the Rocks",
+		"Porto Montenegro",
+		"Budva Old Town",
+		"Sveti Stefan",
+		"Mogren Beach",
+		"Jaz Beach",
+		"Kotor Cable Car",
+		"Lovcen National Park",
+		"Njegos Mausoleum",
+		"Ostrog Monastery",
+		"Lake Skadar National Park",
+		"Durmitor National Park",
+		"Black Lake",
+		"Tara Bridge",
+		"Biogradska Gora National Park",
+		"Prokletije National Park",
+		"Old Bar",
+		"Ulcinj Old Town",
+		"Velika Plaza",
+		"Ada Bojana",
+		"Mall of Montenegro",
+		"Cetinje Monastery",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Montenegro up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Montenegro up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['montenegro', city_id") {
+		t.Fatalf("Montenegro up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "montenegro-seed-v1") || !strings.Contains(downSQL, "country_code = 'ME'") {
+		t.Fatalf("Montenegro down migration must remove only tagged Montenegro seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

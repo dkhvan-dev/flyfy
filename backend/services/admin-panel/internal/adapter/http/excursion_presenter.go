@@ -33,6 +33,7 @@ var countryNames = map[string]map[string]string{
 	"EG": {localeEN: "Egypt", localeRU: "Египет"},
 	"MY": {localeEN: "Malaysia", localeRU: "Малайзия"},
 	"LK": {localeEN: "Sri Lanka", localeRU: "Шри-Ланка"},
+	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"AZ": {localeEN: "Azerbaijan", localeRU: "Азербайджан"},
 	"US": {localeEN: "United States", localeRU: "США"},
 }
@@ -460,11 +461,41 @@ var sriLankaCityNames = map[string]map[string]string{
 	"yala":          {localeEN: "Yala", localeRU: "Яла"},
 }
 
+var montenegroCityNames = map[string]map[string]string{
+	"ada-bojana":      {localeEN: "Ada Bojana", localeRU: "Ада-Бояна"},
+	"bar":             {localeEN: "Bar", localeRU: "Бар"},
+	"becici":          {localeEN: "Becici", localeRU: "Бечичи"},
+	"biogradska-gora": {localeEN: "Biogradska Gora", localeRU: "Биоградская гора"},
+	"budva":           {localeEN: "Budva", localeRU: "Будва"},
+	"cetinje":         {localeEN: "Cetinje", localeRU: "Цетине"},
+	"durmitor":        {localeEN: "Durmitor", localeRU: "Дурмитор"},
+	"gusinje":         {localeEN: "Gusinje", localeRU: "Гусине"},
+	"herceg-novi":     {localeEN: "Herceg Novi", localeRU: "Херцег-Нови"},
+	"kolasin":         {localeEN: "Kolasin", localeRU: "Колашин"},
+	"kotor":           {localeEN: "Kotor", localeRU: "Котор"},
+	"lovcen":          {localeEN: "Lovcen", localeRU: "Ловчен"},
+	"niksic":          {localeEN: "Niksic", localeRU: "Никшич"},
+	"ostrog":          {localeEN: "Ostrog", localeRU: "Острог"},
+	"perast":          {localeEN: "Perast", localeRU: "Пераст"},
+	"petrovac":        {localeEN: "Petrovac", localeRU: "Петровац"},
+	"plav":            {localeEN: "Plav", localeRU: "Плав"},
+	"podgorica":       {localeEN: "Podgorica", localeRU: "Подгорица"},
+	"risan":           {localeEN: "Risan", localeRU: "Рисан"},
+	"sveti-stefan":    {localeEN: "Sveti Stefan", localeRU: "Свети-Стефан"},
+	"tivat":           {localeEN: "Tivat", localeRU: "Тиват"},
+	"ulcinj":          {localeEN: "Ulcinj", localeRU: "Ульцинь"},
+	"virpazar":        {localeEN: "Virpazar", localeRU: "Вирпазар"},
+	"zabljak":         {localeEN: "Zabljak", localeRU: "Жабляк"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range sriLankaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range montenegroCityNames {
 		cityNames[cityID] = names
 	}
 }

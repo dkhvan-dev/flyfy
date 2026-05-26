@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -455,6 +455,30 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "JP", CityID: "ishigaki"},
 	{CountryCode: "JP", CityID: "takamatsu"},
 	{CountryCode: "JP", CityID: "matsuyama"},
+	{CountryCode: "ME", CityID: "podgorica"},
+	{CountryCode: "ME", CityID: "cetinje"},
+	{CountryCode: "ME", CityID: "lovcen"},
+	{CountryCode: "ME", CityID: "virpazar"},
+	{CountryCode: "ME", CityID: "ostrog"},
+	{CountryCode: "ME", CityID: "niksic"},
+	{CountryCode: "ME", CityID: "kotor"},
+	{CountryCode: "ME", CityID: "perast"},
+	{CountryCode: "ME", CityID: "tivat"},
+	{CountryCode: "ME", CityID: "herceg-novi"},
+	{CountryCode: "ME", CityID: "risan"},
+	{CountryCode: "ME", CityID: "budva"},
+	{CountryCode: "ME", CityID: "becici"},
+	{CountryCode: "ME", CityID: "sveti-stefan"},
+	{CountryCode: "ME", CityID: "petrovac"},
+	{CountryCode: "ME", CityID: "bar"},
+	{CountryCode: "ME", CityID: "ulcinj"},
+	{CountryCode: "ME", CityID: "ada-bojana"},
+	{CountryCode: "ME", CityID: "zabljak"},
+	{CountryCode: "ME", CityID: "durmitor"},
+	{CountryCode: "ME", CityID: "kolasin"},
+	{CountryCode: "ME", CityID: "biogradska-gora"},
+	{CountryCode: "ME", CityID: "plav"},
+	{CountryCode: "ME", CityID: "gusinje"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
