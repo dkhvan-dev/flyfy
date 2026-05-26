@@ -297,6 +297,15 @@
     "capital": {"en": "Sri Jayawardenepura Kotte", "ru": "Шри-Джаяварденепура-Котте", "kk": "Шри-Джаяварденепура-Котте"}
   },
   {
+    "code": "MT",
+    "code3": "MLT",
+    "numeric": "470",
+    "currencyCode": "EUR",
+    "phoneCode": "+356",
+    "name": {"en": "Malta", "ru": "Мальта", "kk": "Мальта"},
+    "capital": {"en": "Valletta", "ru": "Валлетта", "kk": "Валлетта"}
+  },
+  {
     "code": "ME",
     "code3": "MNE",
     "numeric": "499",

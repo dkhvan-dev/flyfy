@@ -332,7 +332,14 @@ func normalize(s string) string {
 		if unicode.Is(unicode.Mn, r) {
 			continue // skip combining marks
 		}
+		if r == '\'' || r == '’' || r == '`' || r == 'ʼ' {
+			continue
+		}
+		if unicode.IsPunct(r) || unicode.IsSymbol(r) {
+			b.WriteRune(' ')
+			continue
+		}
 		b.WriteRune(r)
 	}
-	return b.String()
+	return strings.Join(strings.Fields(b.String()), " ")
 }

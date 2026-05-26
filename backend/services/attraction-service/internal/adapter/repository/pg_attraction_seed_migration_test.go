@@ -2447,6 +2447,102 @@ func TestIndiaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T)
 	}
 }
 
+func TestMaltaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "040_seed_malta_priority_attractions.up.sql")
+	downSQL := readMigration(t, "040_seed_malta_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_malta_resolved_attractions AS",
+		"'MT'",
+		"'EUR'",
+		"malta-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Malta up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"valletta",
+		"sliema",
+		"st-julians",
+		"birgu",
+		"mdina",
+		"rabat-malta",
+		"mosta",
+		"dingli",
+		"mellieha",
+		"st-pauls-bay",
+		"marsaxlokk",
+		"birzebbuga",
+		"qrendi",
+		"paola",
+		"tarxien",
+		"gozo",
+		"victoria-gozo",
+		"xaghra",
+		"xlendi",
+		"marsalforn",
+		"comino",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Malta up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"St John's Co-Cathedral",
+		"Upper Barrakka Gardens",
+		"Grand Master's Palace",
+		"National Museum of Archaeology",
+		"Valletta Waterfront",
+		"The Point Shopping Mall",
+		"Spinola Bay",
+		"Paceville",
+		"Fort St Angelo",
+		"Mdina Silent City",
+		"St Paul's Catacombs",
+		"Mosta Rotunda",
+		"Dingli Cliffs",
+		"Golden Bay",
+		"Popeye Village",
+		"Malta National Aquarium",
+		"Marsaxlokk Fish Market",
+		"Blue Grotto",
+		"Hagar Qim Temples",
+		"Mnajdra Temples",
+		"Hypogeum of Hal Saflieni",
+		"Tarxien Temples",
+		"Ggantija Temples",
+		"The Citadel Gozo",
+		"Ramla Bay",
+		"Dwejra Bay",
+		"Blue Lagoon",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Malta up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Malta up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['malta', city_id") {
+		t.Fatalf("Malta up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "malta-seed-v1") || !strings.Contains(downSQL, "country_code = 'MT'") {
+		t.Fatalf("Malta down migration must remove only tagged Malta seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

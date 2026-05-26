@@ -35,6 +35,7 @@ var countryNames = map[string]map[string]string{
 	"LK": {localeEN: "Sri Lanka", localeRU: "Шри-Ланка"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
+	"MT": {localeEN: "Malta", localeRU: "Мальта"},
 	"AZ": {localeEN: "Azerbaijan", localeRU: "Азербайджан"},
 	"US": {localeEN: "United States", localeRU: "США"},
 }
@@ -521,6 +522,32 @@ var indiaCityNames = map[string]map[string]string{
 	"varanasi":   {localeEN: "Varanasi", localeRU: "Варанаси"},
 }
 
+var maltaCityNames = map[string]map[string]string{
+	"attard":        {localeEN: "Attard", localeRU: "Аттард"},
+	"birgu":         {localeEN: "Birgu", localeRU: "Биргу"},
+	"birzebbuga":    {localeEN: "Birzebbuga", localeRU: "Бирзеббуджа"},
+	"comino":        {localeEN: "Comino", localeRU: "Комино"},
+	"dingli":        {localeEN: "Dingli", localeRU: "Дингли"},
+	"gozo":          {localeEN: "Gozo", localeRU: "Гозо"},
+	"marsalforn":    {localeEN: "Marsalforn", localeRU: "Марсалфорн"},
+	"marsaxlokk":    {localeEN: "Marsaxlokk", localeRU: "Марсашлокк"},
+	"mdina":         {localeEN: "Mdina", localeRU: "Мдина"},
+	"mellieha":      {localeEN: "Mellieha", localeRU: "Меллиха"},
+	"mosta":         {localeEN: "Mosta", localeRU: "Моста"},
+	"paola":         {localeEN: "Paola", localeRU: "Паола"},
+	"qrendi":        {localeEN: "Qrendi", localeRU: "Кренди"},
+	"rabat-malta":   {localeEN: "Rabat", localeRU: "Рабат"},
+	"sliema":        {localeEN: "Sliema", localeRU: "Слима"},
+	"st-julians":    {localeEN: "St Julian's", localeRU: "Сент-Джулианс"},
+	"st-pauls-bay":  {localeEN: "St Paul's Bay", localeRU: "Сент-Полс-Бей"},
+	"ta-qali":       {localeEN: "Ta' Qali", localeRU: "Та-Кали"},
+	"tarxien":       {localeEN: "Tarxien", localeRU: "Таршиен"},
+	"valletta":      {localeEN: "Valletta", localeRU: "Валлетта"},
+	"victoria-gozo": {localeEN: "Victoria (Gozo)", localeRU: "Виктория (Гозо)"},
+	"xaghra":        {localeEN: "Xaghra", localeRU: "Шаара"},
+	"xlendi":        {localeEN: "Xlendi", localeRU: "Шленди"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -532,6 +559,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range indiaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range maltaCityNames {
 		cityNames[cityID] = names
 	}
 }

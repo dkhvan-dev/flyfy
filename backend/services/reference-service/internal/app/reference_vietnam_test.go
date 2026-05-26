@@ -1122,3 +1122,67 @@ func TestReferenceUseCaseIncludesIndiaCountryCurrencyAndTouristCities(t *testing
 		t.Fatalf("search rishikesh in India = %#v, want rishikesh first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesMaltaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("MT")
+	if country == nil {
+		t.Fatal("expected Malta country reference")
+	}
+	if country.Name.Ru != "Мальта" {
+		t.Fatalf("Malta Russian name = %q, want Мальта", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("MT")
+	if currency == nil {
+		t.Fatal("expected euro currency by country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Malta currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("MT")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"valletta",
+		"sliema",
+		"st-julians",
+		"birgu",
+		"mdina",
+		"rabat-malta",
+		"mosta",
+		"dingli",
+		"mellieha",
+		"st-pauls-bay",
+		"marsaxlokk",
+		"birzebbuga",
+		"qrendi",
+		"paola",
+		"tarxien",
+		"gozo",
+		"victoria-gozo",
+		"xaghra",
+		"xlendi",
+		"marsalforn",
+		"comino",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Malta city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("st julians", "MT", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "st-julians" {
+		t.Fatalf("search st julians in Malta = %#v, want st-julians first", searchResults)
+	}
+}

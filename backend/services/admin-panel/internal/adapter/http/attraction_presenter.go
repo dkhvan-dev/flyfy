@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -508,6 +508,29 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "IN", CityID: "haridwar"},
 	{CountryCode: "IN", CityID: "manali"},
 	{CountryCode: "IN", CityID: "leh"},
+	{CountryCode: "MT", CityID: "valletta"},
+	{CountryCode: "MT", CityID: "sliema"},
+	{CountryCode: "MT", CityID: "st-julians"},
+	{CountryCode: "MT", CityID: "birgu"},
+	{CountryCode: "MT", CityID: "mdina"},
+	{CountryCode: "MT", CityID: "rabat-malta"},
+	{CountryCode: "MT", CityID: "mosta"},
+	{CountryCode: "MT", CityID: "dingli"},
+	{CountryCode: "MT", CityID: "attard"},
+	{CountryCode: "MT", CityID: "ta-qali"},
+	{CountryCode: "MT", CityID: "mellieha"},
+	{CountryCode: "MT", CityID: "st-pauls-bay"},
+	{CountryCode: "MT", CityID: "marsaxlokk"},
+	{CountryCode: "MT", CityID: "birzebbuga"},
+	{CountryCode: "MT", CityID: "qrendi"},
+	{CountryCode: "MT", CityID: "paola"},
+	{CountryCode: "MT", CityID: "tarxien"},
+	{CountryCode: "MT", CityID: "gozo"},
+	{CountryCode: "MT", CityID: "victoria-gozo"},
+	{CountryCode: "MT", CityID: "xaghra"},
+	{CountryCode: "MT", CityID: "xlendi"},
+	{CountryCode: "MT", CityID: "marsalforn"},
+	{CountryCode: "MT", CityID: "comino"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{

@@ -1865,6 +1865,107 @@ func TestRendererRendersIndiaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersMaltaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=MT&city=valletta",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Собор Святого Иоанна",
+				CountryCode:   "MT",
+				CityID:        "valletta",
+				Category:      "TEMPLE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "MT",
+			CityID:      "valletta",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="MT" selected`,
+		`Мальта`,
+		`value="valletta" data-country="MT" selected`,
+		`Валлетта`,
+		`Валлетта, Мальта`,
+		`Храм`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Malta attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">MT<") || strings.Contains(listBody, ">valletta<") {
+		t.Fatalf("Malta attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Собор Святого Иоанна",
+		Description:   "Барочный собор в Валлетте.",
+		CountryCode:   "MT",
+		CityID:        "valletta",
+		Category:      "TEMPLE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "MT", CityID: "sliema"},
+			{CountryCode: "MT", CityID: "mdina"},
+			{CountryCode: "MT", CityID: "gozo"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "MT", CityID: "st-julians"},
+			{CountryCode: "MT", CityID: "marsaxlokk"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="MT" selected>Мальта</option>`,
+		`<option value="valletta" data-country="MT" selected>Валлетта</option>`,
+		`<option value="gozo" data-country="MT" >Гозо</option>`,
+		`type="checkbox" name="access_cities" value="MT:sliema" checked`,
+		`type="checkbox" name="departure_cities" value="MT:st-julians" checked`,
+		`Валлетта, Мальта`,
+		`<option value="EUR" >Евро</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Malta attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 
