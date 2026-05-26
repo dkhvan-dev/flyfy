@@ -367,5 +367,14 @@
     "phoneCode": "+382",
     "name": {"en": "Montenegro", "ru": "Черногория", "kk": "Черногория"},
     "capital": {"en": "Podgorica", "ru": "Подгорица", "kk": "Подгорица"}
+  },
+  {
+    "code": "CU",
+    "code3": "CUB",
+    "numeric": "192",
+    "currencyCode": "CUP",
+    "phoneCode": "+53",
+    "name": {"en": "Cuba", "ru": "Куба", "kk": "Куба"},
+    "capital": {"en": "Havana", "ru": "Гавана", "kk": "Гавана"}
   }
 ]

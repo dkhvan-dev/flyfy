@@ -38,6 +38,7 @@ var countryNames = map[string]map[string]string{
 	"MX": {localeEN: "Mexico", localeRU: "Мексика"},
 	"BR": {localeEN: "Brazil", localeRU: "Бразилия"},
 	"AB": {localeEN: "Abkhazia", localeRU: "Абхазия"},
+	"CU": {localeEN: "Cuba", localeRU: "Куба"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -708,6 +709,25 @@ var abkhaziaCityNames = map[string]map[string]string{
 	"tkvarcheli": {localeEN: "Tkvarcheli", localeRU: "Ткуарчал"},
 }
 
+var cubaCityNames = map[string]map[string]string{
+	"baracoa":          {localeEN: "Baracoa", localeRU: "Баракоа"},
+	"camaguey":         {localeEN: "Camaguey", localeRU: "Камагуэй"},
+	"cayo-coco":        {localeEN: "Cayo Coco", localeRU: "Кайо-Коко"},
+	"cayo-guillermo":   {localeEN: "Cayo Guillermo", localeRU: "Кайо-Гильермо"},
+	"cayo-santa-maria": {localeEN: "Cayo Santa Maria", localeRU: "Кайо-Санта-Мария"},
+	"cienfuegos":       {localeEN: "Cienfuegos", localeRU: "Сьенфуэгос"},
+	"guardalavaca":     {localeEN: "Guardalavaca", localeRU: "Гуардалавака"},
+	"havana":           {localeEN: "Havana", localeRU: "Гавана"},
+	"holguin":          {localeEN: "Holguin", localeRU: "Ольгин"},
+	"matanzas":         {localeEN: "Matanzas", localeRU: "Матансас"},
+	"playa-larga":      {localeEN: "Playa Larga", localeRU: "Плая-Ларга"},
+	"santa-clara":      {localeEN: "Santa Clara", localeRU: "Санта-Клара"},
+	"santiago-de-cuba": {localeEN: "Santiago de Cuba", localeRU: "Сантьяго-де-Куба"},
+	"trinidad":         {localeEN: "Trinidad", localeRU: "Тринидад"},
+	"varadero":         {localeEN: "Varadero", localeRU: "Варадеро"},
+	"vinales":          {localeEN: "Vinales", localeRU: "Виньялес"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -740,6 +760,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range abkhaziaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range cubaCityNames {
 		cityNames[cityID] = names
 	}
 }

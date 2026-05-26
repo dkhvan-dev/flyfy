@@ -1576,3 +1576,62 @@ func TestReferenceUseCaseIncludesAbkhaziaCountryCurrencyAndTouristDestinations(t
 		t.Fatalf("search sukhum in Abkhazia = %#v, want sukhum first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesCubaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("CU")
+	if country == nil {
+		t.Fatal("expected Cuba country reference")
+	}
+	if country.Name.Ru != "Куба" {
+		t.Fatalf("Cuba Russian name = %q, want Куба", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("CU")
+	if currency == nil {
+		t.Fatal("expected Cuban peso currency by Cuba country")
+	}
+	if currency.Code != "CUP" {
+		t.Fatalf("Cuba currency = %q, want CUP", currency.Code)
+	}
+
+	cities := uc.ListCities("CU")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"havana",
+		"vinales",
+		"varadero",
+		"matanzas",
+		"playa-larga",
+		"cayo-coco",
+		"cayo-guillermo",
+		"cayo-santa-maria",
+		"trinidad",
+		"cienfuegos",
+		"santa-clara",
+		"camaguey",
+		"santiago-de-cuba",
+		"holguin",
+		"guardalavaca",
+		"baracoa",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Cuba city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("havana", "CU", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "havana" {
+		t.Fatalf("search havana in Cuba = %#v, want havana first", searchResults)
+	}
+}

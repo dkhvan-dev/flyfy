@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -667,6 +667,22 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "AB", CityID: "ochamchira"},
 	{CountryCode: "AB", CityID: "gali"},
 	{CountryCode: "AB", CityID: "otap"},
+	{CountryCode: "CU", CityID: "havana"},
+	{CountryCode: "CU", CityID: "vinales"},
+	{CountryCode: "CU", CityID: "varadero"},
+	{CountryCode: "CU", CityID: "matanzas"},
+	{CountryCode: "CU", CityID: "playa-larga"},
+	{CountryCode: "CU", CityID: "cayo-coco"},
+	{CountryCode: "CU", CityID: "cayo-guillermo"},
+	{CountryCode: "CU", CityID: "cayo-santa-maria"},
+	{CountryCode: "CU", CityID: "trinidad"},
+	{CountryCode: "CU", CityID: "cienfuegos"},
+	{CountryCode: "CU", CityID: "santa-clara"},
+	{CountryCode: "CU", CityID: "camaguey"},
+	{CountryCode: "CU", CityID: "santiago-de-cuba"},
+	{CountryCode: "CU", CityID: "holguin"},
+	{CountryCode: "CU", CityID: "guardalavaca"},
+	{CountryCode: "CU", CityID: "baracoa"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -674,7 +690,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "RUB", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "CUP", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -837,6 +853,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Бразильский реал"
 		}
 		return "Brazilian real"
+	case "CUP":
+		if locale == localeRU {
+			return "Кубинский песо"
+		}
+		return "Cuban peso"
 	case "GEL":
 		if locale == localeRU {
 			return "Грузинский лари"
