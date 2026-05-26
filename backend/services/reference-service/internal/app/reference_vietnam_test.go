@@ -715,3 +715,78 @@ func TestReferenceUseCaseIncludesUAECountryCurrencyAndTouristCities(t *testing.T
 		t.Fatalf("search ras al khaimah in UAE = %#v, want ras-al-khaimah first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesTurkeyCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("TR")
+	if country == nil {
+		t.Fatal("expected Turkey country reference")
+	}
+	if country.Name.Ru != "Турция" {
+		t.Fatalf("Turkey Russian name = %q, want Турция", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("TR")
+	if currency == nil {
+		t.Fatal("expected Turkish lira currency by country")
+	}
+	if currency.Code != "TRY" {
+		t.Fatalf("Turkey currency = %q, want TRY", currency.Code)
+	}
+
+	cities := uc.ListCities("TR")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"istanbul",
+		"princes-islands",
+		"ankara",
+		"antalya",
+		"alanya",
+		"side",
+		"belek",
+		"kemer",
+		"kas",
+		"izmir",
+		"selcuk",
+		"cesme",
+		"bodrum",
+		"marmaris",
+		"fethiye",
+		"oludeniz",
+		"pamukkale",
+		"denizli",
+		"cappadocia",
+		"goreme",
+		"nevsehir",
+		"urgup",
+		"uchisar",
+		"avanos",
+		"konya",
+		"trabzon",
+		"rize",
+		"uzungol",
+		"artvin",
+		"mardin",
+		"sanliurfa",
+		"gaziantep",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Turkey city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("pamukkale", "TR", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "pamukkale" {
+		t.Fatalf("search pamukkale in Turkey = %#v, want pamukkale first", searchResults)
+	}
+}

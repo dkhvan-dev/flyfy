@@ -1259,6 +1259,107 @@ func TestRendererRendersUAEAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersTurkeyAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=TR&city=istanbul",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Айя-София",
+				CountryCode:   "TR",
+				CityID:        "istanbul",
+				Category:      "TEMPLE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "TR",
+			CityID:      "istanbul",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="TR" selected`,
+		`Турция`,
+		`value="istanbul" data-country="TR" selected`,
+		`Стамбул`,
+		`Стамбул, Турция`,
+		`Храм`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Turkey attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">TR<") || strings.Contains(listBody, ">istanbul<") {
+		t.Fatalf("Turkey attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Айя-София",
+		Description:   "Историческая мечеть и архитектурная икона Стамбула.",
+		CountryCode:   "TR",
+		CityID:        "istanbul",
+		Category:      "TEMPLE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "TR", CityID: "istanbul"},
+			{CountryCode: "TR", CityID: "cappadocia"},
+			{CountryCode: "TR", CityID: "antalya"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "TR", CityID: "istanbul"},
+			{CountryCode: "TR", CityID: "cappadocia"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="TR" selected>Турция</option>`,
+		`<option value="istanbul" data-country="TR" selected>Стамбул</option>`,
+		`<option value="cappadocia" data-country="TR" >Каппадокия</option>`,
+		`type="checkbox" name="access_cities" value="TR:antalya" checked`,
+		`type="checkbox" name="departure_cities" value="TR:cappadocia" checked`,
+		`Стамбул, Турция`,
+		`<option value="TRY" >Турецкая лира</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Turkey attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

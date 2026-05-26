@@ -1867,6 +1867,113 @@ func TestUAEPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	}
 }
 
+func TestTurkeyPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "034_seed_turkey_priority_attractions.up.sql")
+	downSQL := readMigration(t, "034_seed_turkey_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_turkey_resolved_attractions AS",
+		"'TR'",
+		"turkey-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Turkey up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"istanbul",
+		"princes-islands",
+		"antalya",
+		"alanya",
+		"side",
+		"belek",
+		"kemer",
+		"kas",
+		"izmir",
+		"selcuk",
+		"cesme",
+		"bodrum",
+		"marmaris",
+		"fethiye",
+		"oludeniz",
+		"pamukkale",
+		"goreme",
+		"nevsehir",
+		"urgup",
+		"uchisar",
+		"avanos",
+		"ankara",
+		"konya",
+		"trabzon",
+		"rize",
+		"uzungol",
+		"artvin",
+		"mardin",
+		"sanliurfa",
+		"gaziantep",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Turkey up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Hagia Sophia",
+		"Topkapi Palace",
+		"Grand Bazaar",
+		"Galata Tower",
+		"Princes' Islands",
+		"Kaleici Old Town",
+		"Konyaalti Beach",
+		"Duden Waterfalls",
+		"Aspendos Theatre",
+		"Side Ancient City",
+		"The Land of Legends",
+		"Alanya Castle",
+		"Ephesus Ancient City",
+		"Kemeralti Bazaar",
+		"Pamukkale Travertines",
+		"Bodrum Castle",
+		"Oludeniz Blue Lagoon",
+		"Saklikent Canyon",
+		"Goreme Open Air Museum",
+		"Uchisar Castle",
+		"Derinkuyu Underground City",
+		"Anitkabir",
+		"Museum of Anatolian Civilizations",
+		"Mevlana Museum",
+		"Sumela Monastery",
+		"Uzungol",
+		"Ayder Plateau",
+		"Mardin Old Town",
+		"Gobeklitepe",
+		"Zeugma Mosaic Museum",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Turkey up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Turkey up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['turkey', city_id") {
+		t.Fatalf("Turkey up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "turkey-seed-v1") || !strings.Contains(downSQL, "country_code = 'TR'") {
+		t.Fatalf("Turkey down migration must remove only tagged Turkey seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",
