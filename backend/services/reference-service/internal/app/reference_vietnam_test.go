@@ -1913,3 +1913,76 @@ func TestReferenceUseCaseIncludesGermanyCountryCurrencyAndTouristDestinations(t 
 		t.Fatalf("search berlin in Germany = %#v, want berlin first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesAustriaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("AT")
+	if country == nil {
+		t.Fatal("expected Austria country reference")
+	}
+	if country.Name.Ru != "Австрия" {
+		t.Fatalf("Austria Russian name = %q, want Австрия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("AT")
+	if currency == nil {
+		t.Fatal("expected euro currency by Austria country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Austria currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("AT")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"vienna",
+		"klosterneuburg",
+		"laxenburg",
+		"voesendorf",
+		"petronell-carnuntum",
+		"hinterbruehl",
+		"melk",
+		"wachau",
+		"krems",
+		"duernstein",
+		"goettweig",
+		"salzburg",
+		"hallstatt",
+		"st-wolfgang",
+		"bad-ischl",
+		"zell-am-see",
+		"kaprun",
+		"innsbruck",
+		"mayrhofen",
+		"kitzbuhel",
+		"solden",
+		"bregenz",
+		"graz",
+		"klagenfurt",
+		"villach",
+		"eisenstadt",
+		"linz",
+		"wels",
+		"st-polten",
+		"grossglockner",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Austria city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("zell am see", "AT", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "zell-am-see" {
+		t.Fatalf("search zell am see in Austria = %#v, want zell-am-see first", searchResults)
+	}
+}

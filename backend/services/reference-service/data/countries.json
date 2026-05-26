@@ -225,6 +225,15 @@
     "capital": {"en": "Berlin", "ru": "Берлин", "kk": "Берлин"}
   },
   {
+    "code": "AT",
+    "code3": "AUT",
+    "numeric": "040",
+    "currencyCode": "EUR",
+    "phoneCode": "+43",
+    "name": {"en": "Austria", "ru": "Австрия", "kk": "Австрия"},
+    "capital": {"en": "Vienna", "ru": "Вена", "kk": "Вена"}
+  },
+  {
     "code": "FR",
     "code3": "FRA",
     "numeric": "250",

@@ -43,6 +43,7 @@ var countryNames = map[string]map[string]string{
 	"PT": {localeEN: "Portugal", localeRU: "Португалия"},
 	"LU": {localeEN: "Luxembourg", localeRU: "Люксембург"},
 	"DE": {localeEN: "Germany", localeRU: "Германия"},
+	"AT": {localeEN: "Austria", localeRU: "Австрия"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -850,6 +851,39 @@ var germanyCityNames = map[string]map[string]string{
 	"wolfsburg":                {localeEN: "Wolfsburg", localeRU: "Вольфсбург"},
 }
 
+var austriaCityNames = map[string]map[string]string{
+	"bad-ischl":           {localeEN: "Bad Ischl", localeRU: "Бад-Ишль"},
+	"bregenz":             {localeEN: "Bregenz", localeRU: "Брегенц"},
+	"duernstein":          {localeEN: "Duernstein", localeRU: "Дюрнштайн"},
+	"eisenstadt":          {localeEN: "Eisenstadt", localeRU: "Айзенштадт"},
+	"goettweig":           {localeEN: "Goettweig", localeRU: "Гёттвайг"},
+	"graz":                {localeEN: "Graz", localeRU: "Грац"},
+	"grossglockner":       {localeEN: "Grossglockner", localeRU: "Гросглоккнер"},
+	"hallstatt":           {localeEN: "Hallstatt", localeRU: "Халльштат"},
+	"hinterbruehl":        {localeEN: "Hinterbruehl", localeRU: "Хинтербрюль"},
+	"innsbruck":           {localeEN: "Innsbruck", localeRU: "Инсбрук"},
+	"kaprun":              {localeEN: "Kaprun", localeRU: "Капрун"},
+	"kitzbuhel":           {localeEN: "Kitzbuhel", localeRU: "Кицбюэль"},
+	"klagenfurt":          {localeEN: "Klagenfurt", localeRU: "Клагенфурт"},
+	"klosterneuburg":      {localeEN: "Klosterneuburg", localeRU: "Клостернойбург"},
+	"krems":               {localeEN: "Krems", localeRU: "Кремс"},
+	"laxenburg":           {localeEN: "Laxenburg", localeRU: "Лаксенбург"},
+	"linz":                {localeEN: "Linz", localeRU: "Линц"},
+	"mayrhofen":           {localeEN: "Mayrhofen", localeRU: "Майрхофен"},
+	"melk":                {localeEN: "Melk", localeRU: "Мельк"},
+	"petronell-carnuntum": {localeEN: "Petronell-Carnuntum", localeRU: "Петронелль-Карнунтум"},
+	"salzburg":            {localeEN: "Salzburg", localeRU: "Зальцбург"},
+	"solden":              {localeEN: "Solden", localeRU: "Зёльден"},
+	"st-polten":           {localeEN: "St. Polten", localeRU: "Санкт-Пёльтен"},
+	"st-wolfgang":         {localeEN: "St. Wolfgang", localeRU: "Санкт-Вольфганг"},
+	"vienna":              {localeEN: "Vienna", localeRU: "Вена"},
+	"villach":             {localeEN: "Villach", localeRU: "Филлах"},
+	"voesendorf":          {localeEN: "Voesendorf", localeRU: "Фёсендорф"},
+	"wachau":              {localeEN: "Wachau", localeRU: "Вахау"},
+	"wels":                {localeEN: "Wels", localeRU: "Вельс"},
+	"zell-am-see":         {localeEN: "Zell am See", localeRU: "Целль-ам-Зе"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -897,6 +931,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range germanyCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range austriaCityNames {
 		cityNames[cityID] = names
 	}
 }

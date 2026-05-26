@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "DE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AB", "CU", "MA", "PT", "LU", "DE", "AT", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -789,6 +789,36 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "DE", CityID: "goslar"},
 	{CountryCode: "DE", CityID: "wernigerode"},
 	{CountryCode: "DE", CityID: "oberhausen"},
+	{CountryCode: "AT", CityID: "vienna"},
+	{CountryCode: "AT", CityID: "klosterneuburg"},
+	{CountryCode: "AT", CityID: "laxenburg"},
+	{CountryCode: "AT", CityID: "voesendorf"},
+	{CountryCode: "AT", CityID: "petronell-carnuntum"},
+	{CountryCode: "AT", CityID: "hinterbruehl"},
+	{CountryCode: "AT", CityID: "melk"},
+	{CountryCode: "AT", CityID: "wachau"},
+	{CountryCode: "AT", CityID: "krems"},
+	{CountryCode: "AT", CityID: "duernstein"},
+	{CountryCode: "AT", CityID: "goettweig"},
+	{CountryCode: "AT", CityID: "salzburg"},
+	{CountryCode: "AT", CityID: "hallstatt"},
+	{CountryCode: "AT", CityID: "st-wolfgang"},
+	{CountryCode: "AT", CityID: "bad-ischl"},
+	{CountryCode: "AT", CityID: "zell-am-see"},
+	{CountryCode: "AT", CityID: "kaprun"},
+	{CountryCode: "AT", CityID: "innsbruck"},
+	{CountryCode: "AT", CityID: "mayrhofen"},
+	{CountryCode: "AT", CityID: "kitzbuhel"},
+	{CountryCode: "AT", CityID: "solden"},
+	{CountryCode: "AT", CityID: "bregenz"},
+	{CountryCode: "AT", CityID: "graz"},
+	{CountryCode: "AT", CityID: "klagenfurt"},
+	{CountryCode: "AT", CityID: "villach"},
+	{CountryCode: "AT", CityID: "eisenstadt"},
+	{CountryCode: "AT", CityID: "linz"},
+	{CountryCode: "AT", CityID: "wels"},
+	{CountryCode: "AT", CityID: "st-polten"},
+	{CountryCode: "AT", CityID: "grossglockner"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
