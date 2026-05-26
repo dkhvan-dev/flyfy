@@ -306,6 +306,15 @@
     "capital": {"en": "Valletta", "ru": "Валлетта", "kk": "Валлетта"}
   },
   {
+    "code": "CY",
+    "code3": "CYP",
+    "numeric": "196",
+    "currencyCode": "EUR",
+    "phoneCode": "+357",
+    "name": {"en": "Cyprus", "ru": "Кипр", "kk": "Кипр"},
+    "capital": {"en": "Nicosia", "ru": "Никосия", "kk": "Никосия"}
+  },
+  {
     "code": "ME",
     "code3": "MNE",
     "numeric": "499",

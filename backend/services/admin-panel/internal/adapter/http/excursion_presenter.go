@@ -36,6 +36,7 @@ var countryNames = map[string]map[string]string{
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
+	"CY": {localeEN: "Cyprus", localeRU: "Кипр"},
 	"AZ": {localeEN: "Azerbaijan", localeRU: "Азербайджан"},
 	"US": {localeEN: "United States", localeRU: "США"},
 }
@@ -548,6 +549,29 @@ var maltaCityNames = map[string]map[string]string{
 	"xlendi":        {localeEN: "Xlendi", localeRU: "Шленди"},
 }
 
+var cyprusCityNames = map[string]map[string]string{
+	"agros":        {localeEN: "Agros", localeRU: "Агрос"},
+	"ayia-napa":    {localeEN: "Ayia Napa", localeRU: "Айя-Напа"},
+	"choirokoitia": {localeEN: "Choirokoitia", localeRU: "Хирокития"},
+	"coral-bay":    {localeEN: "Coral Bay", localeRU: "Корал-Бэй"},
+	"famagusta":    {localeEN: "Famagusta", localeRU: "Фамагуста"},
+	"kakopetria":   {localeEN: "Kakopetria", localeRU: "Какопетрия"},
+	"kourion":      {localeEN: "Kourion", localeRU: "Курион"},
+	"kyrenia":      {localeEN: "Kyrenia", localeRU: "Кирения"},
+	"larnaca":      {localeEN: "Larnaca", localeRU: "Ларнака"},
+	"latchi":       {localeEN: "Latchi", localeRU: "Лачи"},
+	"limassol":     {localeEN: "Limassol", localeRU: "Лимасол"},
+	"nicosia":      {localeEN: "Nicosia", localeRU: "Никосия"},
+	"omodos":       {localeEN: "Omodos", localeRU: "Омодос"},
+	"paphos":       {localeEN: "Paphos", localeRU: "Пафос"},
+	"paralimni":    {localeEN: "Paralimni", localeRU: "Паралимни"},
+	"peyia":        {localeEN: "Peyia", localeRU: "Пейя"},
+	"platres":      {localeEN: "Platres", localeRU: "Платрес"},
+	"polis":        {localeEN: "Polis", localeRU: "Полис"},
+	"protaras":     {localeEN: "Protaras", localeRU: "Протарас"},
+	"troodos":      {localeEN: "Troodos", localeRU: "Троодос"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -562,6 +586,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range maltaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range cyprusCityNames {
 		cityNames[cityID] = names
 	}
 }

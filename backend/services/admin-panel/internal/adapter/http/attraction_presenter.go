@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -531,6 +531,26 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "MT", CityID: "xlendi"},
 	{CountryCode: "MT", CityID: "marsalforn"},
 	{CountryCode: "MT", CityID: "comino"},
+	{CountryCode: "CY", CityID: "nicosia"},
+	{CountryCode: "CY", CityID: "limassol"},
+	{CountryCode: "CY", CityID: "larnaca"},
+	{CountryCode: "CY", CityID: "paphos"},
+	{CountryCode: "CY", CityID: "ayia-napa"},
+	{CountryCode: "CY", CityID: "protaras"},
+	{CountryCode: "CY", CityID: "paralimni"},
+	{CountryCode: "CY", CityID: "famagusta"},
+	{CountryCode: "CY", CityID: "kyrenia"},
+	{CountryCode: "CY", CityID: "troodos"},
+	{CountryCode: "CY", CityID: "platres"},
+	{CountryCode: "CY", CityID: "kakopetria"},
+	{CountryCode: "CY", CityID: "omodos"},
+	{CountryCode: "CY", CityID: "polis"},
+	{CountryCode: "CY", CityID: "latchi"},
+	{CountryCode: "CY", CityID: "coral-bay"},
+	{CountryCode: "CY", CityID: "peyia"},
+	{CountryCode: "CY", CityID: "kourion"},
+	{CountryCode: "CY", CityID: "choirokoitia"},
+	{CountryCode: "CY", CityID: "agros"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{

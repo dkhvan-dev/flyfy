@@ -1186,3 +1186,66 @@ func TestReferenceUseCaseIncludesMaltaCountryCurrencyAndTouristDestinations(t *t
 		t.Fatalf("search st julians in Malta = %#v, want st-julians first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesCyprusCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("CY")
+	if country == nil {
+		t.Fatal("expected Cyprus country reference")
+	}
+	if country.Name.Ru != "Кипр" {
+		t.Fatalf("Cyprus Russian name = %q, want Кипр", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("CY")
+	if currency == nil {
+		t.Fatal("expected euro currency by country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Cyprus currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("CY")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"nicosia",
+		"limassol",
+		"larnaca",
+		"paphos",
+		"ayia-napa",
+		"protaras",
+		"paralimni",
+		"famagusta",
+		"kyrenia",
+		"troodos",
+		"platres",
+		"kakopetria",
+		"omodos",
+		"polis",
+		"latchi",
+		"coral-bay",
+		"peyia",
+		"kourion",
+		"choirokoitia",
+		"agros",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Cyprus city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("ayia napa", "CY", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "ayia-napa" {
+		t.Fatalf("search ayia napa in Cyprus = %#v, want ayia-napa first", searchResults)
+	}
+}

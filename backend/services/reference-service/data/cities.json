@@ -556,5 +556,26 @@
   {"id": "xaghra", "countryCode": "MT", "name": {"en": "Xaghra", "ru": "Шаара", "kk": "Шаара"}, "population": 5000},
   {"id": "xlendi", "countryCode": "MT", "name": {"en": "Xlendi", "ru": "Шленди", "kk": "Шленди"}, "population": 500},
   {"id": "marsalforn", "countryCode": "MT", "name": {"en": "Marsalforn", "ru": "Марсалфорн", "kk": "Марсалфорн"}, "population": 1000},
-  {"id": "comino", "countryCode": "MT", "name": {"en": "Comino", "ru": "Комино", "kk": "Комино"}, "population": 3}
+  {"id": "comino", "countryCode": "MT", "name": {"en": "Comino", "ru": "Комино", "kk": "Комино"}, "population": 3},
+
+  {"id": "nicosia", "countryCode": "CY", "name": {"en": "Nicosia", "ru": "Никосия", "kk": "Никосия"}, "population": 330000},
+  {"id": "limassol", "countryCode": "CY", "name": {"en": "Limassol", "ru": "Лимасол", "kk": "Лимасол"}, "population": 184000},
+  {"id": "larnaca", "countryCode": "CY", "name": {"en": "Larnaca", "ru": "Ларнака", "kk": "Ларнака"}, "population": 72000},
+  {"id": "paphos", "countryCode": "CY", "name": {"en": "Paphos", "ru": "Пафос", "kk": "Пафос"}, "population": 36000},
+  {"id": "ayia-napa", "countryCode": "CY", "name": {"en": "Ayia Napa", "ru": "Айя-Напа", "kk": "Айя-Напа"}, "population": 3200},
+  {"id": "protaras", "countryCode": "CY", "name": {"en": "Protaras", "ru": "Протарас", "kk": "Протарас"}, "population": 2000},
+  {"id": "paralimni", "countryCode": "CY", "name": {"en": "Paralimni", "ru": "Паралимни", "kk": "Паралимни"}, "population": 15000},
+  {"id": "famagusta", "countryCode": "CY", "name": {"en": "Famagusta", "ru": "Фамагуста", "kk": "Фамагуста"}, "population": 40000},
+  {"id": "kyrenia", "countryCode": "CY", "name": {"en": "Kyrenia", "ru": "Кирения", "kk": "Кирения"}, "population": 33000},
+  {"id": "troodos", "countryCode": "CY", "name": {"en": "Troodos", "ru": "Троодос", "kk": "Троодос"}, "population": 0},
+  {"id": "platres", "countryCode": "CY", "name": {"en": "Platres", "ru": "Платрес", "kk": "Платрес"}, "population": 300},
+  {"id": "kakopetria", "countryCode": "CY", "name": {"en": "Kakopetria", "ru": "Какопетрия", "kk": "Какопетрия"}, "population": 1200},
+  {"id": "omodos", "countryCode": "CY", "name": {"en": "Omodos", "ru": "Омодос", "kk": "Омодос"}, "population": 300},
+  {"id": "polis", "countryCode": "CY", "name": {"en": "Polis", "ru": "Полис", "kk": "Полис"}, "population": 3000},
+  {"id": "latchi", "countryCode": "CY", "name": {"en": "Latchi", "ru": "Лачи", "kk": "Лачи"}, "population": 600},
+  {"id": "coral-bay", "countryCode": "CY", "name": {"en": "Coral Bay", "ru": "Корал-Бэй", "kk": "Корал-Бэй"}, "population": 0},
+  {"id": "peyia", "countryCode": "CY", "name": {"en": "Peyia", "ru": "Пейя", "kk": "Пейя"}, "population": 11000},
+  {"id": "kourion", "countryCode": "CY", "name": {"en": "Kourion", "ru": "Курион", "kk": "Курион"}, "population": 0},
+  {"id": "choirokoitia", "countryCode": "CY", "name": {"en": "Choirokoitia", "ru": "Хирокития", "kk": "Хирокития"}, "population": 600},
+  {"id": "agros", "countryCode": "CY", "name": {"en": "Agros", "ru": "Агрос", "kk": "Агрос"}, "population": 800}
 ]

@@ -1966,6 +1966,106 @@ func TestRendererRendersMaltaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersCyprusAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=CY&city=paphos",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Археологический парк Пафоса",
+				CountryCode:   "CY",
+				CityID:        "paphos",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "CY",
+			CityID:      "paphos",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="CY" selected`,
+		`Кипр`,
+		`value="paphos" data-country="CY" selected`,
+		`Пафос`,
+		`Пафос, Кипр`,
+		`Музей`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Cyprus attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">CY<") || strings.Contains(listBody, ">paphos<") {
+		t.Fatalf("Cyprus attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Археологический парк Пафоса",
+		Description:   "Археологический комплекс с мозаиками и античными памятниками.",
+		CountryCode:   "CY",
+		CityID:        "paphos",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "CY", CityID: "coral-bay"},
+			{CountryCode: "CY", CityID: "polis"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "CY", CityID: "ayia-napa"},
+			{CountryCode: "CY", CityID: "limassol"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="CY" selected>Кипр</option>`,
+		`<option value="paphos" data-country="CY" selected>Пафос</option>`,
+		`<option value="ayia-napa" data-country="CY" >Айя-Напа</option>`,
+		`type="checkbox" name="access_cities" value="CY:coral-bay" checked`,
+		`type="checkbox" name="departure_cities" value="CY:ayia-napa" checked`,
+		`Пафос, Кипр`,
+		`<option value="EUR" >Евро</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Cyprus attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

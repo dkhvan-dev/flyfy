@@ -2543,6 +2543,98 @@ func TestMaltaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T)
 	}
 }
 
+func TestCyprusPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "041_seed_cyprus_priority_attractions.up.sql")
+	downSQL := readMigration(t, "041_seed_cyprus_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_cyprus_resolved_attractions AS",
+		"'CY'",
+		"'EUR'",
+		"cyprus-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Cyprus up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"nicosia",
+		"limassol",
+		"larnaca",
+		"paphos",
+		"ayia-napa",
+		"protaras",
+		"paralimni",
+		"famagusta",
+		"kyrenia",
+		"troodos",
+		"platres",
+		"kakopetria",
+		"omodos",
+		"polis",
+		"latchi",
+		"coral-bay",
+		"peyia",
+		"kourion",
+		"choirokoitia",
+		"agros",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Cyprus up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Paphos Archaeological Park",
+		"Tombs of the Kings",
+		"Aphrodite's Rock",
+		"Kato Paphos Harbour",
+		"Nissi Beach",
+		"Cape Greco",
+		"Fig Tree Bay",
+		"Larnaca Salt Lake",
+		"Church of Saint Lazarus",
+		"Finikoudes Beach",
+		"Limassol Marina",
+		"Limassol Castle",
+		"Kourion Archaeological Site",
+		"Kolossi Castle",
+		"Troodos Mountains",
+		"Kykkos Monastery",
+		"Omodos Village",
+		"Ledra Street",
+		"Cyprus Museum",
+		"Buyuk Han",
+		"Famagusta Walled City",
+		"Kyrenia Harbour",
+		"Bellapais Abbey",
+		"Choirokoitia",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Cyprus up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Cyprus up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['cyprus', city_id") {
+		t.Fatalf("Cyprus up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "cyprus-seed-v1") || !strings.Contains(downSQL, "country_code = 'CY'") {
+		t.Fatalf("Cyprus down migration must remove only tagged Cyprus seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",
