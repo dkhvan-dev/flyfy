@@ -2149,6 +2149,96 @@ func TestMalaysiaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing
 	}
 }
 
+func TestSriLankaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "037_seed_sri_lanka_priority_attractions.up.sql")
+	downSQL := readMigration(t, "037_seed_sri_lanka_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_sri_lanka_resolved_attractions AS",
+		"'LK'",
+		"sri-lanka-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Sri Lanka up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"colombo",
+		"negombo",
+		"mount-lavinia",
+		"kandy",
+		"sigiriya",
+		"dambulla",
+		"anuradhapura",
+		"polonnaruwa",
+		"galle",
+		"unawatuna",
+		"mirissa",
+		"bentota",
+		"hikkaduwa",
+		"ella",
+		"nuwara-eliya",
+		"haputale",
+		"adams-peak",
+		"yala",
+		"udawalawe",
+		"wilpattu",
+		"trincomalee",
+		"arugam-bay",
+		"jaffna",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Sri Lanka up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Sigiriya Rock Fortress",
+		"Temple of the Sacred Tooth Relic",
+		"Dambulla Cave Temple",
+		"Ancient City of Anuradhapura",
+		"Polonnaruwa Ancient City",
+		"Galle Fort",
+		"Pettah Market",
+		"Gangaramaya Temple",
+		"Colombo National Museum",
+		"Yala National Park",
+		"Udawalawe National Park",
+		"Nine Arches Bridge",
+		"Little Adam's Peak",
+		"Nuwara Eliya Tea Country",
+		"Mirissa Beach",
+		"Unawatuna Beach",
+		"Bentota Beach",
+		"Hikkaduwa Coral Sanctuary",
+		"Arugam Bay",
+		"Jaffna Fort",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Sri Lanka up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Sri Lanka up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['sri-lanka', city_id") {
+		t.Fatalf("Sri Lanka up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "sri-lanka-seed-v1") || !strings.Contains(downSQL, "country_code = 'LK'") {
+		t.Fatalf("Sri Lanka down migration must remove only tagged Sri Lanka seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

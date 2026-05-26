@@ -286,5 +286,14 @@
     "phoneCode": "+960",
     "name": {"en": "Maldives", "ru": "Мальдивы", "kk": "Мальдив аралдары"},
     "capital": {"en": "Male", "ru": "Мале", "kk": "Мале"}
+  },
+  {
+    "code": "LK",
+    "code3": "LKA",
+    "numeric": "144",
+    "currencyCode": "LKR",
+    "phoneCode": "+94",
+    "name": {"en": "Sri Lanka", "ru": "Шри-Ланка", "kk": "Шри-Ланка"},
+    "capital": {"en": "Sri Jayawardenepura Kotte", "ru": "Шри-Джаяварденепура-Котте", "kk": "Шри-Джаяварденепура-Котте"}
   }
 ]

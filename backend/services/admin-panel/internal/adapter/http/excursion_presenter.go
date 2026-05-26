@@ -32,6 +32,7 @@ var countryNames = map[string]map[string]string{
 	"JP": {localeEN: "Japan", localeRU: "Япония"},
 	"EG": {localeEN: "Egypt", localeRU: "Египет"},
 	"MY": {localeEN: "Malaysia", localeRU: "Малайзия"},
+	"LK": {localeEN: "Sri Lanka", localeRU: "Шри-Ланка"},
 	"AZ": {localeEN: "Azerbaijan", localeRU: "Азербайджан"},
 	"US": {localeEN: "United States", localeRU: "США"},
 }
@@ -433,8 +434,37 @@ var malaysiaCityNames = map[string]map[string]string{
 	"tioman":             {localeEN: "Tioman", localeRU: "Тиоман"},
 }
 
+var sriLankaCityNames = map[string]map[string]string{
+	"adams-peak":    {localeEN: "Adam's Peak", localeRU: "Пик Адама"},
+	"anuradhapura":  {localeEN: "Anuradhapura", localeRU: "Анурадхапура"},
+	"arugam-bay":    {localeEN: "Arugam Bay", localeRU: "Аругам-Бей"},
+	"bentota":       {localeEN: "Bentota", localeRU: "Бентота"},
+	"colombo":       {localeEN: "Colombo", localeRU: "Коломбо"},
+	"dambulla":      {localeEN: "Dambulla", localeRU: "Дамбулла"},
+	"ella":          {localeEN: "Ella", localeRU: "Элла"},
+	"galle":         {localeEN: "Galle", localeRU: "Галле"},
+	"haputale":      {localeEN: "Haputale", localeRU: "Хапутале"},
+	"hikkaduwa":     {localeEN: "Hikkaduwa", localeRU: "Хиккадува"},
+	"jaffna":        {localeEN: "Jaffna", localeRU: "Джафна"},
+	"kandy":         {localeEN: "Kandy", localeRU: "Канди"},
+	"mirissa":       {localeEN: "Mirissa", localeRU: "Мирисса"},
+	"mount-lavinia": {localeEN: "Mount Lavinia", localeRU: "Маунт-Лавиния"},
+	"negombo":       {localeEN: "Negombo", localeRU: "Негомбо"},
+	"nuwara-eliya":  {localeEN: "Nuwara Eliya", localeRU: "Нувара-Элия"},
+	"polonnaruwa":   {localeEN: "Polonnaruwa", localeRU: "Полоннарува"},
+	"sigiriya":      {localeEN: "Sigiriya", localeRU: "Сигирия"},
+	"trincomalee":   {localeEN: "Trincomalee", localeRU: "Тринкомали"},
+	"udawalawe":     {localeEN: "Udawalawe", localeRU: "Удавалаве"},
+	"unawatuna":     {localeEN: "Unawatuna", localeRU: "Унаватуна"},
+	"wilpattu":      {localeEN: "Wilpattu", localeRU: "Вилпатту"},
+	"yala":          {localeEN: "Yala", localeRU: "Яла"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range sriLankaCityNames {
 		cityNames[cityID] = names
 	}
 }

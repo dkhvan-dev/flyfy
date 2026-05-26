@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -148,6 +148,29 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "MY", CityID: "redang"},
 	{CountryCode: "MY", CityID: "kuala-terengganu"},
 	{CountryCode: "MY", CityID: "kuantan"},
+	{CountryCode: "LK", CityID: "colombo"},
+	{CountryCode: "LK", CityID: "negombo"},
+	{CountryCode: "LK", CityID: "mount-lavinia"},
+	{CountryCode: "LK", CityID: "kandy"},
+	{CountryCode: "LK", CityID: "sigiriya"},
+	{CountryCode: "LK", CityID: "dambulla"},
+	{CountryCode: "LK", CityID: "anuradhapura"},
+	{CountryCode: "LK", CityID: "polonnaruwa"},
+	{CountryCode: "LK", CityID: "galle"},
+	{CountryCode: "LK", CityID: "unawatuna"},
+	{CountryCode: "LK", CityID: "mirissa"},
+	{CountryCode: "LK", CityID: "bentota"},
+	{CountryCode: "LK", CityID: "hikkaduwa"},
+	{CountryCode: "LK", CityID: "ella"},
+	{CountryCode: "LK", CityID: "nuwara-eliya"},
+	{CountryCode: "LK", CityID: "haputale"},
+	{CountryCode: "LK", CityID: "adams-peak"},
+	{CountryCode: "LK", CityID: "yala"},
+	{CountryCode: "LK", CityID: "udawalawe"},
+	{CountryCode: "LK", CityID: "wilpattu"},
+	{CountryCode: "LK", CityID: "trincomalee"},
+	{CountryCode: "LK", CityID: "arugam-bay"},
+	{CountryCode: "LK", CityID: "jaffna"},
 	{CountryCode: "AE", CityID: "dubai"},
 	{CountryCode: "AE", CityID: "abu-dhabi"},
 	{CountryCode: "AE", CityID: "al-ain"},
@@ -439,7 +462,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "VND", "THB", "PHP", "IDR", "MVR", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -542,6 +565,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Малайзийский ринггит"
 		}
 		return "Malaysian ringgit"
+	case "LKR":
+		if locale == localeRU {
+			return "Шри-ланкийская рупия"
+		}
+		return "Sri Lankan rupee"
 	case "VND":
 		if locale == localeRU {
 			return "Вьетнамский донг"

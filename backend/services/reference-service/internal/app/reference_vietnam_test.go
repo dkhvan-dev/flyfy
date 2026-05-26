@@ -917,3 +917,69 @@ func TestReferenceUseCaseIncludesMalaysiaCountryCurrencyAndTouristCities(t *test
 		t.Fatalf("search george town in Malaysia = %#v, want george-town first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesSriLankaCountryCurrencyAndTouristCities(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("LK")
+	if country == nil {
+		t.Fatal("expected Sri Lanka country reference")
+	}
+	if country.Name.Ru != "Шри-Ланка" {
+		t.Fatalf("Sri Lanka Russian name = %q, want Шри-Ланка", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("LK")
+	if currency == nil {
+		t.Fatal("expected Sri Lankan rupee currency by country")
+	}
+	if currency.Code != "LKR" {
+		t.Fatalf("Sri Lanka currency = %q, want LKR", currency.Code)
+	}
+
+	cities := uc.ListCities("LK")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"colombo",
+		"negombo",
+		"mount-lavinia",
+		"kandy",
+		"sigiriya",
+		"dambulla",
+		"anuradhapura",
+		"polonnaruwa",
+		"galle",
+		"unawatuna",
+		"mirissa",
+		"bentota",
+		"hikkaduwa",
+		"ella",
+		"nuwara-eliya",
+		"haputale",
+		"adams-peak",
+		"yala",
+		"udawalawe",
+		"wilpattu",
+		"trincomalee",
+		"arugam-bay",
+		"jaffna",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Sri Lanka city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("arugam bay", "LK", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "arugam-bay" {
+		t.Fatalf("search arugam bay in Sri Lanka = %#v, want arugam-bay first", searchResults)
+	}
+}

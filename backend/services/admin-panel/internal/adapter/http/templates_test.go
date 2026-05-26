@@ -1562,6 +1562,107 @@ func TestRendererRendersMalaysiaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersSriLankaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=LK&city=sigiriya",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Сигирия",
+				CountryCode:   "LK",
+				CityID:        "sigiriya",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "LK",
+			CityID:      "sigiriya",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="LK" selected`,
+		`Шри-Ланка`,
+		`value="sigiriya" data-country="LK" selected`,
+		`Сигирия`,
+		`Сигирия, Шри-Ланка`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Sri Lanka attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">LK<") || strings.Contains(listBody, ">sigiriya<") {
+		t.Fatalf("Sri Lanka attraction list still renders raw codes: %s", listBody)
+	}
+
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Сигирия",
+		Description:   "Скальная крепость в культурном треугольнике.",
+		CountryCode:   "LK",
+		CityID:        "sigiriya",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "LK", CityID: "kandy"},
+			{CountryCode: "LK", CityID: "dambulla"},
+			{CountryCode: "LK", CityID: "colombo"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "LK", CityID: "colombo"},
+			{CountryCode: "LK", CityID: "kandy"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="LK" selected>Шри-Ланка</option>`,
+		`<option value="sigiriya" data-country="LK" selected>Сигирия</option>`,
+		`<option value="ella" data-country="LK" >Элла</option>`,
+		`type="checkbox" name="access_cities" value="LK:kandy" checked`,
+		`type="checkbox" name="departure_cities" value="LK:colombo" checked`,
+		`Сигирия, Шри-Ланка`,
+		`<option value="LKR" >Шри-ланкийская рупия</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Sri Lanka attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 
