@@ -1800,6 +1800,85 @@ func TestReferenceUseCaseIncludesCzechiaCountryCurrencyAndTouristDestinations(t 
 	}
 }
 
+func TestReferenceUseCaseIncludesFranceCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("FR")
+	if country == nil {
+		t.Fatal("expected France country reference")
+	}
+	if country.Name.Ru != "Франция" {
+		t.Fatalf("France Russian name = %q, want Франция", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("FR")
+	if currency == nil {
+		t.Fatal("expected euro currency by France country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("France currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("FR")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"paris",
+		"versailles",
+		"fontainebleau",
+		"disneyland-paris",
+		"loire-valley",
+		"mont-saint-michel",
+		"normandy",
+		"saint-malo",
+		"rennes",
+		"nantes",
+		"bordeaux",
+		"dordogne",
+		"toulouse",
+		"carcassonne",
+		"montpellier",
+		"biarritz",
+		"lourdes",
+		"pyrenees",
+		"lyon",
+		"dijon",
+		"beaune",
+		"strasbourg",
+		"colmar",
+		"reims",
+		"lille",
+		"nice",
+		"cannes",
+		"antibes",
+		"saint-tropez",
+		"marseille",
+		"aix-en-provence",
+		"avignon",
+		"arles",
+		"verdon",
+		"chamonix",
+		"annecy",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("France city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("paris", "FR", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "paris" {
+		t.Fatalf("search paris in France = %#v, want paris first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesAbkhaziaCountryCurrencyAndTouristDestinations(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

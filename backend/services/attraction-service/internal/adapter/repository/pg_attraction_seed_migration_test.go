@@ -3426,6 +3426,122 @@ func TestCzechiaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.
 	}
 }
 
+func TestFrancePriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "063_seed_france_priority_attractions.up.sql")
+	downSQL := readMigration(t, "063_seed_france_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_france_resolved_attractions AS",
+		"'FR'",
+		"'EUR'",
+		"france-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("France up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"paris",
+		"versailles",
+		"fontainebleau",
+		"disneyland-paris",
+		"loire-valley",
+		"mont-saint-michel",
+		"normandy",
+		"saint-malo",
+		"rennes",
+		"nantes",
+		"bordeaux",
+		"dordogne",
+		"toulouse",
+		"carcassonne",
+		"montpellier",
+		"biarritz",
+		"lourdes",
+		"pyrenees",
+		"lyon",
+		"dijon",
+		"beaune",
+		"strasbourg",
+		"colmar",
+		"reims",
+		"lille",
+		"nice",
+		"cannes",
+		"antibes",
+		"saint-tropez",
+		"marseille",
+		"aix-en-provence",
+		"avignon",
+		"arles",
+		"verdon",
+		"chamonix",
+		"annecy",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("France up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Eiffel Tower",
+		"Louvre Museum",
+		"Notre-Dame Cathedral",
+		"Luxembourg Gardens",
+		"Palace of Versailles",
+		"Disneyland Paris",
+		"Mont Saint-Michel Abbey",
+		"Omaha Beach",
+		"Chambord Castle",
+		"Chenonceau Castle",
+		"Nice Promenade des Anglais",
+		"Palais des Festivals Cannes",
+		"Old Port of Marseille",
+		"Mucem Marseille",
+		"Palais des Papes Avignon",
+		"Calanques National Park",
+		"Verdon Gorge",
+		"Aiguille du Midi",
+		"Annecy Old Town",
+		"Basilica of Notre-Dame de Fourviere",
+		"Les Halles de Lyon Paul Bocuse",
+		"La Cite du Vin",
+		"Place de la Bourse Bordeaux",
+		"Dune du Pilat",
+		"Carcassonne Medieval City",
+		"Strasbourg Cathedral",
+		"Colmar Old Town",
+		"Reims Cathedral",
+		"Lille Grand Place",
+		"Hospices de Beaune",
+		"Lourdes Sanctuary",
+		"Biarritz Grande Plage",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("France up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("France up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['france', city_id") {
+		t.Fatalf("France up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "france-seed-v1") || !strings.Contains(downSQL, "country_code = 'FR'") {
+		t.Fatalf("France down migration must remove only tagged France seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

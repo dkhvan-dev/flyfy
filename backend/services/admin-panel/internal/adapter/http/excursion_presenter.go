@@ -50,6 +50,7 @@ var countryNames = map[string]map[string]string{
 	"CH": {localeEN: "Switzerland", localeRU: "Швейцария"},
 	"SE": {localeEN: "Sweden", localeRU: "Швеция"},
 	"CZ": {localeEN: "Czechia", localeRU: "Чехия"},
+	"FR": {localeEN: "France", localeRU: "Франция"},
 	"AU": {localeEN: "Australia", localeRU: "Австралия"},
 	"TZ": {localeEN: "Tanzania", localeRU: "Танзания"},
 	"KE": {localeEN: "Kenya", localeRU: "Кения"},
@@ -1120,6 +1121,45 @@ var czechiaCityNames = map[string]map[string]string{
 	"trebic":               {localeEN: "Trebic", localeRU: "Тршебич"},
 }
 
+var franceCityNames = map[string]map[string]string{
+	"aix-en-provence":   {localeEN: "Aix-en-Provence", localeRU: "Экс-ан-Прованс"},
+	"annecy":            {localeEN: "Annecy", localeRU: "Анси"},
+	"antibes":           {localeEN: "Antibes", localeRU: "Антиб"},
+	"arles":             {localeEN: "Arles", localeRU: "Арль"},
+	"avignon":           {localeEN: "Avignon", localeRU: "Авиньон"},
+	"beaune":            {localeEN: "Beaune", localeRU: "Бон"},
+	"biarritz":          {localeEN: "Biarritz", localeRU: "Биарриц"},
+	"bordeaux":          {localeEN: "Bordeaux", localeRU: "Бордо"},
+	"cannes":            {localeEN: "Cannes", localeRU: "Канны"},
+	"carcassonne":       {localeEN: "Carcassonne", localeRU: "Каркассон"},
+	"chamonix":          {localeEN: "Chamonix", localeRU: "Шамони"},
+	"colmar":            {localeEN: "Colmar", localeRU: "Кольмар"},
+	"dijon":             {localeEN: "Dijon", localeRU: "Дижон"},
+	"disneyland-paris":  {localeEN: "Disneyland Paris", localeRU: "Диснейленд Париж"},
+	"dordogne":          {localeEN: "Dordogne", localeRU: "Дордонь"},
+	"fontainebleau":     {localeEN: "Fontainebleau", localeRU: "Фонтенбло"},
+	"lille":             {localeEN: "Lille", localeRU: "Лилль"},
+	"loire-valley":      {localeEN: "Loire Valley", localeRU: "Долина Луары"},
+	"lourdes":           {localeEN: "Lourdes", localeRU: "Лурд"},
+	"lyon":              {localeEN: "Lyon", localeRU: "Лион"},
+	"marseille":         {localeEN: "Marseille", localeRU: "Марсель"},
+	"mont-saint-michel": {localeEN: "Mont Saint-Michel", localeRU: "Мон-Сен-Мишель"},
+	"montpellier":       {localeEN: "Montpellier", localeRU: "Монпелье"},
+	"nantes":            {localeEN: "Nantes", localeRU: "Нант"},
+	"nice":              {localeEN: "Nice", localeRU: "Ницца"},
+	"normandy":          {localeEN: "Normandy", localeRU: "Нормандия"},
+	"paris":             {localeEN: "Paris", localeRU: "Париж"},
+	"pyrenees":          {localeEN: "Pyrenees", localeRU: "Пиренеи"},
+	"reims":             {localeEN: "Reims", localeRU: "Реймс"},
+	"rennes":            {localeEN: "Rennes", localeRU: "Ренн"},
+	"saint-malo":        {localeEN: "Saint-Malo", localeRU: "Сен-Мало"},
+	"saint-tropez":      {localeEN: "Saint-Tropez", localeRU: "Сен-Тропе"},
+	"strasbourg":        {localeEN: "Strasbourg", localeRU: "Страсбург"},
+	"toulouse":          {localeEN: "Toulouse", localeRU: "Тулуза"},
+	"verdon":            {localeEN: "Verdon", localeRU: "Вердон"},
+	"versailles":        {localeEN: "Versailles", localeRU: "Версаль"},
+}
+
 var australiaCityNames = map[string]map[string]string{
 	"adelaide":         {localeEN: "Adelaide", localeRU: "Аделаида"},
 	"airlie-beach":     {localeEN: "Airlie Beach", localeRU: "Эрли-Бич"},
@@ -1308,6 +1348,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range czechiaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range franceCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range australiaCityNames {
