@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -1064,6 +1064,45 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "FR", CityID: "verdon"},
 	{CountryCode: "FR", CityID: "chamonix"},
 	{CountryCode: "FR", CityID: "annecy"},
+	{CountryCode: "GB", CityID: "london"},
+	{CountryCode: "GB", CityID: "windsor"},
+	{CountryCode: "GB", CityID: "oxford"},
+	{CountryCode: "GB", CityID: "cambridge"},
+	{CountryCode: "GB", CityID: "bath"},
+	{CountryCode: "GB", CityID: "bristol"},
+	{CountryCode: "GB", CityID: "cotswolds"},
+	{CountryCode: "GB", CityID: "stonehenge"},
+	{CountryCode: "GB", CityID: "salisbury"},
+	{CountryCode: "GB", CityID: "brighton"},
+	{CountryCode: "GB", CityID: "canterbury"},
+	{CountryCode: "GB", CityID: "bournemouth"},
+	{CountryCode: "GB", CityID: "jurassic-coast"},
+	{CountryCode: "GB", CityID: "cornwall"},
+	{CountryCode: "GB", CityID: "devon"},
+	{CountryCode: "GB", CityID: "stratford-upon-avon"},
+	{CountryCode: "GB", CityID: "york"},
+	{CountryCode: "GB", CityID: "manchester"},
+	{CountryCode: "GB", CityID: "liverpool"},
+	{CountryCode: "GB", CityID: "birmingham"},
+	{CountryCode: "GB", CityID: "lake-district"},
+	{CountryCode: "GB", CityID: "peak-district"},
+	{CountryCode: "GB", CityID: "newcastle"},
+	{CountryCode: "GB", CityID: "leeds"},
+	{CountryCode: "GB", CityID: "edinburgh"},
+	{CountryCode: "GB", CityID: "glasgow"},
+	{CountryCode: "GB", CityID: "inverness"},
+	{CountryCode: "GB", CityID: "highlands"},
+	{CountryCode: "GB", CityID: "isle-of-skye"},
+	{CountryCode: "GB", CityID: "loch-ness"},
+	{CountryCode: "GB", CityID: "aberdeen"},
+	{CountryCode: "GB", CityID: "st-andrews"},
+	{CountryCode: "GB", CityID: "cardiff"},
+	{CountryCode: "GB", CityID: "snowdonia"},
+	{CountryCode: "GB", CityID: "conwy"},
+	{CountryCode: "GB", CityID: "pembrokeshire"},
+	{CountryCode: "GB", CityID: "belfast"},
+	{CountryCode: "GB", CityID: "giants-causeway"},
+	{CountryCode: "GB", CityID: "derry"},
 	{CountryCode: "AU", CityID: "sydney"},
 	{CountryCode: "AU", CityID: "blue-mountains"},
 	{CountryCode: "AU", CityID: "canberra"},
@@ -1182,7 +1221,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1265,6 +1304,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Евро"
 		}
 		return "Euro"
+	case "GBP":
+		if locale == localeRU {
+			return "Британский фунт"
+		}
+		return "British pound"
 	case "CHF":
 		if locale == localeRU {
 			return "Швейцарский франк"

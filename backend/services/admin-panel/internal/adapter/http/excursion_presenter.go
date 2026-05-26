@@ -51,6 +51,7 @@ var countryNames = map[string]map[string]string{
 	"SE": {localeEN: "Sweden", localeRU: "Швеция"},
 	"CZ": {localeEN: "Czechia", localeRU: "Чехия"},
 	"FR": {localeEN: "France", localeRU: "Франция"},
+	"GB": {localeEN: "United Kingdom", localeRU: "Великобритания"},
 	"AU": {localeEN: "Australia", localeRU: "Австралия"},
 	"TZ": {localeEN: "Tanzania", localeRU: "Танзания"},
 	"KE": {localeEN: "Kenya", localeRU: "Кения"},
@@ -1160,6 +1161,48 @@ var franceCityNames = map[string]map[string]string{
 	"versailles":        {localeEN: "Versailles", localeRU: "Версаль"},
 }
 
+var unitedKingdomCityNames = map[string]map[string]string{
+	"aberdeen":            {localeEN: "Aberdeen", localeRU: "Абердин"},
+	"bath":                {localeEN: "Bath", localeRU: "Бат"},
+	"belfast":             {localeEN: "Belfast", localeRU: "Белфаст"},
+	"birmingham":          {localeEN: "Birmingham", localeRU: "Бирмингем"},
+	"bournemouth":         {localeEN: "Bournemouth", localeRU: "Борнмут"},
+	"brighton":            {localeEN: "Brighton", localeRU: "Брайтон"},
+	"bristol":             {localeEN: "Bristol", localeRU: "Бристоль"},
+	"cambridge":           {localeEN: "Cambridge", localeRU: "Кембридж"},
+	"canterbury":          {localeEN: "Canterbury", localeRU: "Кентербери"},
+	"cardiff":             {localeEN: "Cardiff", localeRU: "Кардифф"},
+	"conwy":               {localeEN: "Conwy", localeRU: "Конуи"},
+	"cornwall":            {localeEN: "Cornwall", localeRU: "Корнуолл"},
+	"cotswolds":           {localeEN: "Cotswolds", localeRU: "Котсуолдс"},
+	"derry":               {localeEN: "Derry", localeRU: "Дерри"},
+	"devon":               {localeEN: "Devon", localeRU: "Девон"},
+	"edinburgh":           {localeEN: "Edinburgh", localeRU: "Эдинбург"},
+	"giants-causeway":     {localeEN: "Giant's Causeway", localeRU: "Дорога гигантов"},
+	"glasgow":             {localeEN: "Glasgow", localeRU: "Глазго"},
+	"highlands":           {localeEN: "Highlands", localeRU: "Хайлендс"},
+	"inverness":           {localeEN: "Inverness", localeRU: "Инвернесс"},
+	"isle-of-skye":        {localeEN: "Isle of Skye", localeRU: "Остров Скай"},
+	"jurassic-coast":      {localeEN: "Jurassic Coast", localeRU: "Юрское побережье"},
+	"lake-district":       {localeEN: "Lake District", localeRU: "Озерный край"},
+	"leeds":               {localeEN: "Leeds", localeRU: "Лидс"},
+	"liverpool":           {localeEN: "Liverpool", localeRU: "Ливерпуль"},
+	"loch-ness":           {localeEN: "Loch Ness", localeRU: "Лох-Несс"},
+	"london":              {localeEN: "London", localeRU: "Лондон"},
+	"manchester":          {localeEN: "Manchester", localeRU: "Манчестер"},
+	"newcastle":           {localeEN: "Newcastle", localeRU: "Ньюкасл"},
+	"oxford":              {localeEN: "Oxford", localeRU: "Оксфорд"},
+	"peak-district":       {localeEN: "Peak District", localeRU: "Пик-Дистрикт"},
+	"pembrokeshire":       {localeEN: "Pembrokeshire", localeRU: "Пембрукшир"},
+	"salisbury":           {localeEN: "Salisbury", localeRU: "Солсбери"},
+	"snowdonia":           {localeEN: "Eryri Snowdonia", localeRU: "Сноудония"},
+	"st-andrews":          {localeEN: "St Andrews", localeRU: "Сент-Эндрюс"},
+	"stonehenge":          {localeEN: "Stonehenge", localeRU: "Стоунхендж"},
+	"stratford-upon-avon": {localeEN: "Stratford-upon-Avon", localeRU: "Стратфорд-апон-Эйвон"},
+	"windsor":             {localeEN: "Windsor", localeRU: "Виндзор"},
+	"york":                {localeEN: "York", localeRU: "Йорк"},
+}
+
 var australiaCityNames = map[string]map[string]string{
 	"adelaide":         {localeEN: "Adelaide", localeRU: "Аделаида"},
 	"airlie-beach":     {localeEN: "Airlie Beach", localeRU: "Эрли-Бич"},
@@ -1351,6 +1394,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range franceCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range unitedKingdomCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range australiaCityNames {

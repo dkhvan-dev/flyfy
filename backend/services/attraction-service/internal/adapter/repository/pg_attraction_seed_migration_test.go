@@ -3542,6 +3542,132 @@ func TestFrancePriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestUnitedKingdomPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "064_seed_united_kingdom_priority_attractions.up.sql")
+	downSQL := readMigration(t, "064_seed_united_kingdom_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_united_kingdom_resolved_attractions AS",
+		"'GB'",
+		"'GBP'",
+		"united-kingdom-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("United Kingdom up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"london",
+		"windsor",
+		"oxford",
+		"cambridge",
+		"bath",
+		"bristol",
+		"cotswolds",
+		"stonehenge",
+		"salisbury",
+		"brighton",
+		"canterbury",
+		"bournemouth",
+		"jurassic-coast",
+		"cornwall",
+		"devon",
+		"stratford-upon-avon",
+		"york",
+		"manchester",
+		"liverpool",
+		"birmingham",
+		"lake-district",
+		"peak-district",
+		"newcastle",
+		"leeds",
+		"edinburgh",
+		"glasgow",
+		"inverness",
+		"highlands",
+		"isle-of-skye",
+		"loch-ness",
+		"aberdeen",
+		"st-andrews",
+		"cardiff",
+		"snowdonia",
+		"conwy",
+		"pembrokeshire",
+		"belfast",
+		"giants-causeway",
+		"derry",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("United Kingdom up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Big Ben and Palace of Westminster",
+		"Tower of London",
+		"British Museum",
+		"Hyde Park",
+		"Borough Market",
+		"Camden Market",
+		"Westfield London",
+		"Warner Bros Studio Tour London",
+		"Windsor Castle",
+		"Stonehenge",
+		"Roman Baths",
+		"Oxford University and Bodleian Library",
+		"King''s College Chapel Cambridge",
+		"Brighton Palace Pier",
+		"Canterbury Cathedral",
+		"Jurassic Coast",
+		"Eden Project",
+		"York Minster",
+		"National Railway Museum York",
+		"Science and Industry Museum Manchester",
+		"Liverpool Albert Dock",
+		"The Beatles Story",
+		"Bullring Birmingham",
+		"Lake District National Park",
+		"Peak District National Park",
+		"Edinburgh Castle",
+		"National Museum of Scotland",
+		"Arthur''s Seat",
+		"Kelvingrove Art Gallery and Museum",
+		"Loch Ness",
+		"Old Man of Storr",
+		"Eilean Donan Castle",
+		"Cardiff Castle",
+		"Eryri Snowdonia National Park",
+		"Conwy Castle",
+		"Pembrokeshire Coast National Park",
+		"Titanic Belfast",
+		"Giant''s Causeway",
+		"Derry City Walls",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("United Kingdom up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("United Kingdom up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['united-kingdom', city_id") {
+		t.Fatalf("United Kingdom up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "united-kingdom-seed-v1") || !strings.Contains(downSQL, "country_code = 'GB'") {
+		t.Fatalf("United Kingdom down migration must remove only tagged United Kingdom seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

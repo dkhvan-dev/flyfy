@@ -1879,6 +1879,88 @@ func TestReferenceUseCaseIncludesFranceCountryCurrencyAndTouristDestinations(t *
 	}
 }
 
+func TestReferenceUseCaseIncludesUnitedKingdomCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("GB")
+	if country == nil {
+		t.Fatal("expected United Kingdom country reference")
+	}
+	if country.Name.Ru != "Великобритания" {
+		t.Fatalf("United Kingdom Russian name = %q, want Великобритания", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("GB")
+	if currency == nil {
+		t.Fatal("expected British pound currency by United Kingdom country")
+	}
+	if currency.Code != "GBP" {
+		t.Fatalf("United Kingdom currency = %q, want GBP", currency.Code)
+	}
+
+	cities := uc.ListCities("GB")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"london",
+		"windsor",
+		"oxford",
+		"cambridge",
+		"bath",
+		"bristol",
+		"cotswolds",
+		"stonehenge",
+		"salisbury",
+		"brighton",
+		"canterbury",
+		"bournemouth",
+		"jurassic-coast",
+		"cornwall",
+		"devon",
+		"stratford-upon-avon",
+		"york",
+		"manchester",
+		"liverpool",
+		"birmingham",
+		"lake-district",
+		"peak-district",
+		"newcastle",
+		"leeds",
+		"edinburgh",
+		"glasgow",
+		"inverness",
+		"highlands",
+		"isle-of-skye",
+		"loch-ness",
+		"aberdeen",
+		"st-andrews",
+		"cardiff",
+		"snowdonia",
+		"conwy",
+		"pembrokeshire",
+		"belfast",
+		"giants-causeway",
+		"derry",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("United Kingdom city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("lake district", "GB", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "lake-district" {
+		t.Fatalf("search lake district in United Kingdom = %#v, want lake-district first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesAbkhaziaCountryCurrencyAndTouristDestinations(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {
