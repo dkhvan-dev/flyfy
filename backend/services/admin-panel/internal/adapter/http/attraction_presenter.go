@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -593,6 +593,39 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "PL", CityID: "czestochowa"},
 	{CountryCode: "PL", CityID: "zamosc"},
 	{CountryCode: "PL", CityID: "szczecin"},
+	{CountryCode: "MX", CityID: "mexico-city"},
+	{CountryCode: "MX", CityID: "teotihuacan"},
+	{CountryCode: "MX", CityID: "puebla"},
+	{CountryCode: "MX", CityID: "cholula"},
+	{CountryCode: "MX", CityID: "cuernavaca"},
+	{CountryCode: "MX", CityID: "cancun"},
+	{CountryCode: "MX", CityID: "isla-mujeres"},
+	{CountryCode: "MX", CityID: "playa-del-carmen"},
+	{CountryCode: "MX", CityID: "tulum"},
+	{CountryCode: "MX", CityID: "cozumel"},
+	{CountryCode: "MX", CityID: "merida"},
+	{CountryCode: "MX", CityID: "valladolid"},
+	{CountryCode: "MX", CityID: "chichen-itza"},
+	{CountryCode: "MX", CityID: "uxmal"},
+	{CountryCode: "MX", CityID: "los-cabos"},
+	{CountryCode: "MX", CityID: "cabo-san-lucas"},
+	{CountryCode: "MX", CityID: "san-jose-del-cabo"},
+	{CountryCode: "MX", CityID: "la-paz-mexico"},
+	{CountryCode: "MX", CityID: "puerto-vallarta"},
+	{CountryCode: "MX", CityID: "sayulita"},
+	{CountryCode: "MX", CityID: "mazatlan"},
+	{CountryCode: "MX", CityID: "acapulco"},
+	{CountryCode: "MX", CityID: "zihuatanejo"},
+	{CountryCode: "MX", CityID: "guadalajara"},
+	{CountryCode: "MX", CityID: "tequila"},
+	{CountryCode: "MX", CityID: "guanajuato"},
+	{CountryCode: "MX", CityID: "san-miguel-de-allende"},
+	{CountryCode: "MX", CityID: "queretaro"},
+	{CountryCode: "MX", CityID: "oaxaca"},
+	{CountryCode: "MX", CityID: "monte-alban"},
+	{CountryCode: "MX", CityID: "san-cristobal-de-las-casas"},
+	{CountryCode: "MX", CityID: "palenque"},
+	{CountryCode: "MX", CityID: "monterrey"},
 }
 
 var attractionCityFilterValues = append([]attractionCityReference{
@@ -600,7 +633,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "USD", "EUR", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -748,6 +781,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Польский злотый"
 		}
 		return "Polish zloty"
+	case "MXN":
+		if locale == localeRU {
+			return "Мексиканский песо"
+		}
+		return "Mexican peso"
 	case "GEL":
 		if locale == localeRU {
 			return "Грузинский лари"

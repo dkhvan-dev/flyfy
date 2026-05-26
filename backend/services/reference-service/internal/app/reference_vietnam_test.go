@@ -1377,3 +1377,75 @@ func TestReferenceUseCaseIncludesPolandCountryCurrencyAndTouristDestinations(t *
 		t.Fatalf("search wroclaw in Poland = %#v, want wroclaw first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesMexicoCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("MX")
+	if country == nil {
+		t.Fatal("expected Mexico country reference")
+	}
+	if country.Name.Ru != "Мексика" {
+		t.Fatalf("Mexico Russian name = %q, want Мексика", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("MX")
+	if currency == nil {
+		t.Fatal("expected Mexican peso currency by country")
+	}
+	if currency.Code != "MXN" {
+		t.Fatalf("Mexico currency = %q, want MXN", currency.Code)
+	}
+
+	cities := uc.ListCities("MX")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"mexico-city",
+		"teotihuacan",
+		"puebla",
+		"cholula",
+		"cancun",
+		"isla-mujeres",
+		"playa-del-carmen",
+		"tulum",
+		"cozumel",
+		"merida",
+		"valladolid",
+		"chichen-itza",
+		"uxmal",
+		"los-cabos",
+		"cabo-san-lucas",
+		"la-paz-mexico",
+		"puerto-vallarta",
+		"sayulita",
+		"mazatlan",
+		"acapulco",
+		"guadalajara",
+		"tequila",
+		"guanajuato",
+		"san-miguel-de-allende",
+		"queretaro",
+		"oaxaca",
+		"monte-alban",
+		"san-cristobal-de-las-casas",
+		"palenque",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Mexico city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("mexico city", "MX", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "mexico-city" {
+		t.Fatalf("search mexico city in Mexico = %#v, want mexico-city first", searchResults)
+	}
+}

@@ -30,5 +30,6 @@
   {"code": "MVR", "numeric": "462", "decimals": 2, "symbol": "Rf", "name": {"en": "Maldivian Rufiyaa", "ru": "Мальдивская руфия", "kk": "Мальдив руфиясы"}},
   {"code": "SCR", "numeric": "690", "decimals": 2, "symbol": "SR", "name": {"en": "Seychellois Rupee", "ru": "Сейшельская рупия", "kk": "Сейшел рупиясы"}},
   {"code": "PLN", "numeric": "985", "decimals": 2, "symbol": "zł", "name": {"en": "Polish Zloty", "ru": "Польский злотый", "kk": "Польша злотыйы"}},
+  {"code": "MXN", "numeric": "484", "decimals": 2, "symbol": "$", "name": {"en": "Mexican Peso", "ru": "Мексиканский песо", "kk": "Мексика песосы"}},
   {"code": "LKR", "numeric": "144", "decimals": 2, "symbol": "Rs", "name": {"en": "Sri Lankan Rupee", "ru": "Шри-ланкийская рупия", "kk": "Шри-Ланка рупиясы"}}
 ]

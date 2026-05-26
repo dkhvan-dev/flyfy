@@ -306,6 +306,15 @@
     "capital": {"en": "Warsaw", "ru": "Варшава", "kk": "Варшава"}
   },
   {
+    "code": "MX",
+    "code3": "MEX",
+    "numeric": "484",
+    "currencyCode": "MXN",
+    "phoneCode": "+52",
+    "name": {"en": "Mexico", "ru": "Мексика", "kk": "Мексика"},
+    "capital": {"en": "Mexico City", "ru": "Мехико", "kk": "Мехико"}
+  },
+  {
     "code": "LK",
     "code3": "LKA",
     "numeric": "144",

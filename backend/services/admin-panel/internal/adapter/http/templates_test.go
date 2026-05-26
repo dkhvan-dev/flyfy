@@ -2270,6 +2270,108 @@ func TestRendererRendersPolandAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersMexicoAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=MX&city=mexico-city",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Исторический центр Мехико",
+				CountryCode:   "MX",
+				CityID:        "mexico-city",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "MX",
+			CityID:      "mexico-city",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="MX" selected`,
+		`Мексика`,
+		`value="mexico-city" data-country="MX" selected`,
+		`Мехико`,
+		`Мехико, Мексика`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Mexico attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">MX<") || strings.Contains(listBody, ">mexico-city<") {
+		t.Fatalf("Mexico attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "MXN"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Исторический центр Мехико",
+		Description:   "Главная историческая зона столицы с площадью Сокало, собором и музеями.",
+		CountryCode:   "MX",
+		CityID:        "mexico-city",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "MX", CityID: "teotihuacan"},
+			{CountryCode: "MX", CityID: "puebla"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "MX", CityID: "cancun"},
+			{CountryCode: "MX", CityID: "guadalajara"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="MX" selected>Мексика</option>`,
+		`<option value="mexico-city" data-country="MX" selected>Мехико</option>`,
+		`<option value="teotihuacan" data-country="MX" >Теотиуакан</option>`,
+		`type="checkbox" name="access_cities" value="MX:teotihuacan" checked`,
+		`type="checkbox" name="departure_cities" value="MX:cancun" checked`,
+		`Мехико, Мексика`,
+		`<option value="MXN" selected>Мексиканский песо</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Mexico attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	t.Parallel()
 

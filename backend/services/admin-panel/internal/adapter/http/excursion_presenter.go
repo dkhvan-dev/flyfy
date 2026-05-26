@@ -35,6 +35,7 @@ var countryNames = map[string]map[string]string{
 	"LK": {localeEN: "Sri Lanka", localeRU: "Шри-Ланка"},
 	"SC": {localeEN: "Seychelles", localeRU: "Сейшелы"},
 	"PL": {localeEN: "Poland", localeRU: "Польша"},
+	"MX": {localeEN: "Mexico", localeRU: "Мексика"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
 	"IN": {localeEN: "India", localeRU: "Индия"},
 	"MT": {localeEN: "Malta", localeRU: "Мальта"},
@@ -622,6 +623,42 @@ var polandCityNames = map[string]map[string]string{
 	"zamosc":      {localeEN: "Zamosc", localeRU: "Замосць"},
 }
 
+var mexicoCityNames = map[string]map[string]string{
+	"acapulco":                   {localeEN: "Acapulco", localeRU: "Акапулько"},
+	"cabo-san-lucas":             {localeEN: "Cabo San Lucas", localeRU: "Кабо-Сан-Лукас"},
+	"cancun":                     {localeEN: "Cancun", localeRU: "Канкун"},
+	"chichen-itza":               {localeEN: "Chichen Itza", localeRU: "Чичен-Ица"},
+	"cholula":                    {localeEN: "Cholula", localeRU: "Чолула"},
+	"cozumel":                    {localeEN: "Cozumel", localeRU: "Косумель"},
+	"cuernavaca":                 {localeEN: "Cuernavaca", localeRU: "Куэрнавака"},
+	"guanajuato":                 {localeEN: "Guanajuato", localeRU: "Гуанахуато"},
+	"guadalajara":                {localeEN: "Guadalajara", localeRU: "Гвадалахара"},
+	"isla-mujeres":               {localeEN: "Isla Mujeres", localeRU: "Исла-Мухерес"},
+	"la-paz-mexico":              {localeEN: "La Paz", localeRU: "Ла-Пас"},
+	"los-cabos":                  {localeEN: "Los Cabos", localeRU: "Лос-Кабос"},
+	"mazatlan":                   {localeEN: "Mazatlan", localeRU: "Масатлан"},
+	"merida":                     {localeEN: "Merida", localeRU: "Мерида"},
+	"mexico-city":                {localeEN: "Mexico City", localeRU: "Мехико"},
+	"monte-alban":                {localeEN: "Monte Alban", localeRU: "Монте-Альбан"},
+	"monterrey":                  {localeEN: "Monterrey", localeRU: "Монтеррей"},
+	"oaxaca":                     {localeEN: "Oaxaca", localeRU: "Оахака"},
+	"palenque":                   {localeEN: "Palenque", localeRU: "Паленке"},
+	"playa-del-carmen":           {localeEN: "Playa del Carmen", localeRU: "Плая-дель-Кармен"},
+	"puebla":                     {localeEN: "Puebla", localeRU: "Пуэбла"},
+	"puerto-vallarta":            {localeEN: "Puerto Vallarta", localeRU: "Пуэрто-Вальярта"},
+	"queretaro":                  {localeEN: "Queretaro", localeRU: "Керетаро"},
+	"san-cristobal-de-las-casas": {localeEN: "San Cristobal de las Casas", localeRU: "Сан-Кристобаль-де-лас-Касас"},
+	"san-jose-del-cabo":          {localeEN: "San Jose del Cabo", localeRU: "Сан-Хосе-дель-Кабо"},
+	"san-miguel-de-allende":      {localeEN: "San Miguel de Allende", localeRU: "Сан-Мигель-де-Альенде"},
+	"sayulita":                   {localeEN: "Sayulita", localeRU: "Саюлита"},
+	"teotihuacan":                {localeEN: "Teotihuacan", localeRU: "Теотиуакан"},
+	"tequila":                    {localeEN: "Tequila", localeRU: "Текила"},
+	"tulum":                      {localeEN: "Tulum", localeRU: "Тулум"},
+	"uxmal":                      {localeEN: "Uxmal", localeRU: "Ушмаль"},
+	"valladolid":                 {localeEN: "Valladolid", localeRU: "Вальядолид"},
+	"zihuatanejo":                {localeEN: "Zihuatanejo", localeRU: "Сиуатанехо"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -645,6 +682,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range polandCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range mexicoCityNames {
 		cityNames[cityID] = names
 	}
 }

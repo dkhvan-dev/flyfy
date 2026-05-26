@@ -2823,6 +2823,109 @@ func TestPolandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestMexicoPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "044_seed_mexico_priority_attractions.up.sql")
+	downSQL := readMigration(t, "044_seed_mexico_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_mexico_resolved_attractions AS",
+		"'MX'",
+		"'MXN'",
+		"mexico-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Mexico up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"mexico-city",
+		"teotihuacan",
+		"puebla",
+		"cholula",
+		"cancun",
+		"isla-mujeres",
+		"playa-del-carmen",
+		"tulum",
+		"cozumel",
+		"merida",
+		"valladolid",
+		"chichen-itza",
+		"uxmal",
+		"los-cabos",
+		"cabo-san-lucas",
+		"la-paz-mexico",
+		"puerto-vallarta",
+		"sayulita",
+		"mazatlan",
+		"acapulco",
+		"guadalajara",
+		"tequila",
+		"guanajuato",
+		"san-miguel-de-allende",
+		"queretaro",
+		"oaxaca",
+		"monte-alban",
+		"san-cristobal-de-las-casas",
+		"palenque",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Mexico up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Mexico City Historic Center",
+		"Palacio de Bellas Artes",
+		"Chapultepec Park",
+		"National Museum of Anthropology",
+		"Frida Kahlo Museum",
+		"Xochimilco",
+		"Teotihuacan",
+		"Puebla Historic Center",
+		"Chichen Itza",
+		"Tulum Archaeological Zone",
+		"Cancun Hotel Zone Beaches",
+		"Isla Mujeres Playa Norte",
+		"Xcaret Park",
+		"Cozumel Reefs",
+		"Uxmal",
+		"Merida Historic Center",
+		"Los Cabos Arch",
+		"Balandra Beach",
+		"Puerto Vallarta Malecon",
+		"Guadalajara Cathedral",
+		"Tequila Town",
+		"Guanajuato Historic Center",
+		"San Miguel de Allende",
+		"Oaxaca Historic Center",
+		"Monte Alban",
+		"Palenque Archaeological Zone",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Mexico up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Mexico up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['mexico', city_id") {
+		t.Fatalf("Mexico up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "mexico-seed-v1") || !strings.Contains(downSQL, "country_code = 'MX'") {
+		t.Fatalf("Mexico down migration must remove only tagged Mexico seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",
