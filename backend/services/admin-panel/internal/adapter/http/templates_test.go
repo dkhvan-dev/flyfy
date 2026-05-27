@@ -3188,6 +3188,108 @@ func TestRendererRendersUzbekistanAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersKyrgyzstanAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=KG&city=bishkek",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Ала-Тоо",
+				CountryCode:   "KG",
+				CityID:        "bishkek",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "KG",
+			CityID:      "bishkek",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="KG" selected`,
+		`Кыргызстан`,
+		`value="bishkek" data-country="KG" selected`,
+		`Бишкек`,
+		`Бишкек, Кыргызстан`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Kyrgyzstan attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">KG<") || strings.Contains(listBody, ">bishkek<") {
+		t.Fatalf("Kyrgyzstan attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "KGS"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Ала-Тоо",
+		Description:   "Главная площадь Бишкека.",
+		CountryCode:   "KG",
+		CityID:        "bishkek",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "KG", CityID: "karakol"},
+			{CountryCode: "KG", CityID: "osh"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "KG", CityID: "bishkek"},
+			{CountryCode: "KG", CityID: "cholpon-ata"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="KG" selected>Кыргызстан</option>`,
+		`<option value="bishkek" data-country="KG" selected>Бишкек</option>`,
+		`<option value="karakol" data-country="KG" >Каракол</option>`,
+		`type="checkbox" name="access_cities" value="KG:karakol" checked`,
+		`type="checkbox" name="departure_cities" value="KG:cholpon-ata" checked`,
+		`Бишкек, Кыргызстан`,
+		`<option value="KGS" selected>Киргизский сом</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Kyrgyzstan attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

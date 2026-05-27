@@ -1203,6 +1203,37 @@ var unitedKingdomCityNames = map[string]map[string]string{
 	"york":                {localeEN: "York", localeRU: "Йорк"},
 }
 
+var kyrgyzstanCityNames = map[string]map[string]string{
+	"ala-archa":     {localeEN: "Ala Archa", localeRU: "Ала-Арча"},
+	"arslanbob":     {localeEN: "Arslanbob", localeRU: "Арсланбоб"},
+	"at-bashy":      {localeEN: "At-Bashy", localeRU: "Ат-Башы"},
+	"balykchy":      {localeEN: "Balykchy", localeRU: "Балыкчы"},
+	"barskoon":      {localeEN: "Barskoon", localeRU: "Барскоон"},
+	"bishkek":       {localeEN: "Bishkek", localeRU: "Бишкек"},
+	"bokonbaevo":    {localeEN: "Bokonbaevo", localeRU: "Боконбаево"},
+	"cholpon-ata":   {localeEN: "Cholpon-Ata", localeRU: "Чолпон-Ата"},
+	"chunkurchak":   {localeEN: "Chunkurchak", localeRU: "Чункурчак"},
+	"issyk-ata":     {localeEN: "Issyk-Ata", localeRU: "Иссык-Ата"},
+	"jalal-abad":    {localeEN: "Jalal-Abad", localeRU: "Джалал-Абад"},
+	"jeti-oguz":     {localeEN: "Jeti-Oguz", localeRU: "Джети-Огуз"},
+	"kaji-say":      {localeEN: "Kaji-Say", localeRU: "Каджи-Сай"},
+	"karakol":       {localeEN: "Karakol", localeRU: "Каракол"},
+	"kel-suu":       {localeEN: "Kel-Suu", localeRU: "Кель-Суу"},
+	"kochkor":       {localeEN: "Kochkor", localeRU: "Кочкор"},
+	"naryn":         {localeEN: "Naryn", localeRU: "Нарын"},
+	"osh":           {localeEN: "Osh", localeRU: "Ош"},
+	"sary-chelek":   {localeEN: "Sary-Chelek", localeRU: "Сары-Челек"},
+	"skazka-canyon": {localeEN: "Skazka Canyon", localeRU: "Каньон Сказка"},
+	"song-kul":      {localeEN: "Song-Kul", localeRU: "Сон-Куль"},
+	"suusamyr":      {localeEN: "Suusamyr", localeRU: "Суусамыр"},
+	"talas":         {localeEN: "Talas", localeRU: "Талас"},
+	"tamga":         {localeEN: "Tamga", localeRU: "Тамга"},
+	"tash-rabat":    {localeEN: "Tash Rabat", localeRU: "Таш-Рабат"},
+	"tokmok":        {localeEN: "Tokmok", localeRU: "Токмок"},
+	"toktogul":      {localeEN: "Toktogul", localeRU: "Токтогул"},
+	"uzgen":         {localeEN: "Uzgen", localeRU: "Узген"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1421,6 +1452,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range unitedKingdomCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range kyrgyzstanCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {

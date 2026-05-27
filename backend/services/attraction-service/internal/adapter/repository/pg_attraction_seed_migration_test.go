@@ -3774,6 +3774,113 @@ func TestUzbekistanPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testi
 	}
 }
 
+func TestKyrgyzstanPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "066_seed_kyrgyzstan_priority_attractions.up.sql")
+	downSQL := readMigration(t, "066_seed_kyrgyzstan_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_kyrgyzstan_resolved_attractions AS",
+		"'KG'",
+		"'KGS'",
+		"kyrgyzstan-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Kyrgyzstan up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"bishkek",
+		"ala-archa",
+		"tokmok",
+		"chunkurchak",
+		"issyk-ata",
+		"cholpon-ata",
+		"balykchy",
+		"karakol",
+		"jeti-oguz",
+		"barskoon",
+		"skazka-canyon",
+		"bokonbaevo",
+		"tamga",
+		"kaji-say",
+		"naryn",
+		"kochkor",
+		"song-kul",
+		"tash-rabat",
+		"kel-suu",
+		"at-bashy",
+		"osh",
+		"uzgen",
+		"jalal-abad",
+		"arslanbob",
+		"sary-chelek",
+		"talas",
+		"toktogul",
+		"suusamyr",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Kyrgyzstan up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Ala-Too Square",
+		"State History Museum Bishkek",
+		"Osh Bazaar Bishkek",
+		"Dordoi Bazaar",
+		"Bishkek Park Mall",
+		"Supara Ethno Complex",
+		"Ala Archa National Park",
+		"Burana Tower",
+		"Chunkurchak Gorge",
+		"Issyk-Ata Gorge",
+		"Issyk-Kul Lake",
+		"Rukh Ordo Cultural Center",
+		"Cholpon-Ata Petroglyphs",
+		"Kaji-Say Beach",
+		"Holy Trinity Cathedral Karakol",
+		"Dungan Mosque Karakol",
+		"Jeti-Oguz Rocks",
+		"Barskoon Waterfalls",
+		"Skazka Fairy Tale Canyon",
+		"Song-Kul Lake",
+		"Tash Rabat Caravanserai",
+		"Kel-Suu Lake",
+		"Kochkor Felt Workshops",
+		"Sulaiman-Too Sacred Mountain",
+		"Jayma Bazaar Osh",
+		"Uzgen Minaret",
+		"Arslanbob Walnut Forest",
+		"Sary-Chelek Biosphere Reserve",
+		"Manas Ordo Complex",
+		"Toktogul Reservoir",
+		"Suusamyr Valley",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Kyrgyzstan up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Kyrgyzstan up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['kyrgyzstan', city_id") {
+		t.Fatalf("Kyrgyzstan up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "kyrgyzstan-seed-v1") || !strings.Contains(downSQL, "country_code = 'KG'") {
+		t.Fatalf("Kyrgyzstan down migration must remove only tagged Kyrgyzstan seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

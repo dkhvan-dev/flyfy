@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -66,6 +66,34 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "KZ", CityID: "turkestan"},
 	{CountryCode: "KZ", CityID: "ust-kamenogorsk"},
 	{CountryCode: "KZ", CityID: "zhezkazgan"},
+	{CountryCode: "KG", CityID: "bishkek"},
+	{CountryCode: "KG", CityID: "ala-archa"},
+	{CountryCode: "KG", CityID: "tokmok"},
+	{CountryCode: "KG", CityID: "chunkurchak"},
+	{CountryCode: "KG", CityID: "issyk-ata"},
+	{CountryCode: "KG", CityID: "cholpon-ata"},
+	{CountryCode: "KG", CityID: "balykchy"},
+	{CountryCode: "KG", CityID: "karakol"},
+	{CountryCode: "KG", CityID: "jeti-oguz"},
+	{CountryCode: "KG", CityID: "barskoon"},
+	{CountryCode: "KG", CityID: "skazka-canyon"},
+	{CountryCode: "KG", CityID: "bokonbaevo"},
+	{CountryCode: "KG", CityID: "tamga"},
+	{CountryCode: "KG", CityID: "kaji-say"},
+	{CountryCode: "KG", CityID: "naryn"},
+	{CountryCode: "KG", CityID: "kochkor"},
+	{CountryCode: "KG", CityID: "song-kul"},
+	{CountryCode: "KG", CityID: "tash-rabat"},
+	{CountryCode: "KG", CityID: "kel-suu"},
+	{CountryCode: "KG", CityID: "at-bashy"},
+	{CountryCode: "KG", CityID: "osh"},
+	{CountryCode: "KG", CityID: "uzgen"},
+	{CountryCode: "KG", CityID: "jalal-abad"},
+	{CountryCode: "KG", CityID: "arslanbob"},
+	{CountryCode: "KG", CityID: "sary-chelek"},
+	{CountryCode: "KG", CityID: "talas"},
+	{CountryCode: "KG", CityID: "toktogul"},
+	{CountryCode: "KG", CityID: "suusamyr"},
 	{CountryCode: "UZ", CityID: "tashkent"},
 	{CountryCode: "UZ", CityID: "samarkand"},
 	{CountryCode: "UZ", CityID: "bukhara"},
@@ -1242,7 +1270,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "KGS", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1315,6 +1343,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Казахстанский тенге"
 		}
 		return "Kazakhstani tenge"
+	case "KGS":
+		if locale == localeRU {
+			return "Киргизский сом"
+		}
+		return "Kyrgyzstani som"
 	case "UZS":
 		if locale == localeRU {
 			return "Узбекский сум"

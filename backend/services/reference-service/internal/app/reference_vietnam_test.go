@@ -131,6 +131,77 @@ func TestReferenceUseCaseIncludesUzbekistanCountryCurrencyAndTouristDestinations
 	}
 }
 
+func TestReferenceUseCaseIncludesKyrgyzstanCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("KG")
+	if country == nil {
+		t.Fatal("expected Kyrgyzstan country reference")
+	}
+	if country.Name.Ru != "Кыргызстан" {
+		t.Fatalf("Kyrgyzstan Russian name = %q, want Кыргызстан", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("KG")
+	if currency == nil {
+		t.Fatal("expected Kyrgyzstani som currency by Kyrgyzstan country")
+	}
+	if currency.Code != "KGS" {
+		t.Fatalf("Kyrgyzstan currency = %q, want KGS", currency.Code)
+	}
+
+	cities := uc.ListCities("KG")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"bishkek",
+		"ala-archa",
+		"tokmok",
+		"chunkurchak",
+		"issyk-ata",
+		"cholpon-ata",
+		"balykchy",
+		"karakol",
+		"jeti-oguz",
+		"barskoon",
+		"skazka-canyon",
+		"bokonbaevo",
+		"tamga",
+		"kaji-say",
+		"naryn",
+		"kochkor",
+		"song-kul",
+		"tash-rabat",
+		"kel-suu",
+		"at-bashy",
+		"osh",
+		"uzgen",
+		"jalal-abad",
+		"arslanbob",
+		"sary-chelek",
+		"talas",
+		"toktogul",
+		"suusamyr",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Kyrgyzstan city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("song kul", "KG", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "song-kul" {
+		t.Fatalf("search song kul in Kyrgyzstan = %#v, want song-kul first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {
