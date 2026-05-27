@@ -197,7 +197,6 @@ INSERT INTO attraction_translations (
     locale,
     title,
     description,
-    highlights,
     created_at,
     updated_at
 )
@@ -206,7 +205,6 @@ SELECT
     'ru',
     title_ru,
     description_ru,
-    ARRAY[title_ru, 'Абхазия', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_abkhazia_resolved_attractions
@@ -216,7 +214,6 @@ SELECT
     'en',
     title_en,
     description_en,
-    ARRAY[title_en, 'Abkhazia', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_abkhazia_resolved_attractions
@@ -226,14 +223,12 @@ SELECT
     'kk',
     title_kk,
     description_kk,
-    ARRAY[title_kk, 'Абхазия', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_abkhazia_resolved_attractions
 ON CONFLICT (attraction_id, locale) DO UPDATE SET
     title = EXCLUDED.title,
     description = EXCLUDED.description,
-    highlights = EXCLUDED.highlights,
     updated_at = NOW();
 
 UPDATE attractions a

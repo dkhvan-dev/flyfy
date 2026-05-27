@@ -210,6 +210,7 @@ FROM hashed;
 
 INSERT INTO attractions (
     id,
+    author_user_id,
     country_code,
     city_id,
     category,
@@ -226,6 +227,7 @@ INSERT INTO attractions (
 )
 SELECT
     id,
+    '21c40900-2090-43ca-b7f8-4bb962b2d275'::uuid,
     'IT',
     city_id,
     category,
@@ -259,7 +261,6 @@ INSERT INTO attraction_translations (
     locale,
     title,
     description,
-    highlights,
     created_at,
     updated_at
 )
@@ -268,7 +269,6 @@ SELECT
     'ru',
     title_ru,
     description_ru,
-    ARRAY[title_ru, 'Италия', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_italy_resolved_attractions
@@ -278,7 +278,6 @@ SELECT
     'en',
     title_en,
     description_en,
-    ARRAY[title_en, 'Italy', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_italy_resolved_attractions
@@ -288,14 +287,12 @@ SELECT
     'kk',
     title_kk,
     description_kk,
-    ARRAY[title_kk, 'Италия', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_italy_resolved_attractions
 ON CONFLICT (attraction_id, locale) DO UPDATE SET
     title = EXCLUDED.title,
     description = EXCLUDED.description,
-    highlights = EXCLUDED.highlights,
     updated_at = NOW();
 
 UPDATE attractions a
@@ -342,33 +339,47 @@ ON CONFLICT (id) DO UPDATE SET
     position = EXCLUDED.position;
 
 INSERT INTO attraction_city_links (
+    id,
     attraction_id,
+    kind,
     country_code,
     city_id,
-    link_type,
+    position,
     created_at
 )
 SELECT
+    gen_random_uuid(),
     id,
-    'IT',
-    unnest(access_city_ids),
     'ACCESS',
+    'IT',
+    access_city_id,
+    ordinality - 1,
     NOW()
 FROM seed_italy_resolved_attractions
-ON CONFLICT (attraction_id, country_code, city_id, link_type) DO NOTHING;
+CROSS JOIN LATERAL unnest(access_city_ids) WITH ORDINALITY AS access(access_city_id, ordinality)
+ON CONFLICT (attraction_id, kind, city_id) DO UPDATE SET
+    country_code = EXCLUDED.country_code,
+    position = EXCLUDED.position;
 
 INSERT INTO attraction_city_links (
+    id,
     attraction_id,
+    kind,
     country_code,
     city_id,
-    link_type,
+    position,
     created_at
 )
 SELECT
+    gen_random_uuid(),
     id,
-    'IT',
-    unnest(departure_city_ids),
     'DEPARTURE',
+    'IT',
+    departure_city_id,
+    ordinality - 1,
     NOW()
 FROM seed_italy_resolved_attractions
-ON CONFLICT (attraction_id, country_code, city_id, link_type) DO NOTHING;
+CROSS JOIN LATERAL unnest(departure_city_ids) WITH ORDINALITY AS departure(departure_city_id, ordinality)
+ON CONFLICT (attraction_id, kind, city_id) DO UPDATE SET
+    country_code = EXCLUDED.country_code,
+    position = EXCLUDED.position;

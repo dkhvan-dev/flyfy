@@ -7,6 +7,94 @@ import (
 	"testing"
 )
 
+func TestAttractionSeedMigrationsDoNotWriteObsoleteTranslationHighlightsColumn(t *testing.T) {
+	entries, err := os.ReadDir(filepath.Join("..", "..", "..", "migrations"))
+	if err != nil {
+		t.Fatalf("read migrations directory: %v", err)
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".up.sql") {
+			continue
+		}
+
+		upSQL := readMigration(t, name)
+		if strings.Contains(upSQL, "highlights") {
+			t.Fatalf("%s must not write obsolete attraction_translations.highlights column", name)
+		}
+	}
+}
+
+func TestAttractionSeedMigrationsPopulateRequiredAuthorUserID(t *testing.T) {
+	entries, err := os.ReadDir(filepath.Join("..", "..", "..", "migrations"))
+	if err != nil {
+		t.Fatalf("read migrations directory: %v", err)
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".up.sql") {
+			continue
+		}
+
+		upSQL := readMigration(t, name)
+		if strings.Contains(upSQL, "INSERT INTO attractions (") && !strings.Contains(upSQL, "author_user_id") {
+			t.Fatalf("%s must populate required attractions.author_user_id column", name)
+		}
+	}
+}
+
+func TestAttractionSeedMigrationsUseCurrentCityLinkKindColumn(t *testing.T) {
+	entries, err := os.ReadDir(filepath.Join("..", "..", "..", "migrations"))
+	if err != nil {
+		t.Fatalf("read migrations directory: %v", err)
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".up.sql") {
+			continue
+		}
+
+		upSQL := readMigration(t, name)
+		if strings.Contains(upSQL, "link_type") {
+			t.Fatalf("%s must use attraction_city_links.kind, not obsolete link_type", name)
+		}
+	}
+}
+
+func TestAttractionSeedMigrationsDoNotUseRemovedAttractionTablesOrMediaColumns(t *testing.T) {
+	entries, err := os.ReadDir(filepath.Join("..", "..", "..", "migrations"))
+	if err != nil {
+		t.Fatalf("read migrations directory: %v", err)
+	}
+
+	removedFragments := []string{
+		"attraction_locations",
+		"attraction_visit_info",
+		"\n    url,",
+		"\n    alt_text,",
+		"media_type = EXCLUDED.media_type,\n    url = EXCLUDED.url",
+		"position = EXCLUDED.position,\n    position = EXCLUDED.position",
+		"NOW(),\nFROM ",
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || (!strings.HasSuffix(name, ".up.sql") && !strings.HasSuffix(name, ".down.sql")) {
+			continue
+		}
+
+		sql := readMigration(t, name)
+		for _, fragment := range removedFragments {
+			if strings.Contains(sql, fragment) {
+				t.Fatalf("%s must not use removed attraction schema fragment %q", name, fragment)
+			}
+		}
+	}
+}
+
 func TestKazakhstanCityAttractionsSeedMigrationCoversMustVisitCityAnchors(t *testing.T) {
 	upSQL := readMigration(t, "009_seed_kazakhstan_city_attractions.up.sql")
 	downSQL := readMigration(t, "009_seed_kazakhstan_city_attractions.down.sql")

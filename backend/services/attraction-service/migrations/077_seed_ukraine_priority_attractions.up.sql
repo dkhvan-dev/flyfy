@@ -379,7 +379,7 @@ SELECT
     'UA',
     access_city_id,
     ordinality - 1,
-    NOW(),
+    NOW()
 FROM seed_ukraine_resolved_attractions
 CROSS JOIN LATERAL unnest(access_city_ids) WITH ORDINALITY AS access(access_city_id, ordinality)
 UNION ALL

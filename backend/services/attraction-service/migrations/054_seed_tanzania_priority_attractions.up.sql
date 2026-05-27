@@ -194,6 +194,7 @@ FROM hashed;
 
 INSERT INTO attractions (
     id,
+    author_user_id,
     country_code,
     city_id,
     category,
@@ -210,6 +211,7 @@ INSERT INTO attractions (
 )
 SELECT
     id,
+    '21c40900-2090-43ca-b7f8-4bb962b2d275'::uuid,
     'TZ',
     city_id,
     category,
@@ -243,7 +245,6 @@ INSERT INTO attraction_translations (
     locale,
     title,
     description,
-    highlights,
     created_at,
     updated_at
 )
@@ -252,7 +253,6 @@ SELECT
     'ru',
     title_ru,
     description_ru,
-    ARRAY[title_ru, 'Танзания', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_tanzania_resolved_attractions
@@ -262,7 +262,6 @@ SELECT
     'en',
     title_en,
     description_en,
-    ARRAY[title_en, 'Tanzania', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_tanzania_resolved_attractions
@@ -272,14 +271,12 @@ SELECT
     'kk',
     title_kk,
     description_kk,
-    ARRAY[title_kk, 'Танзания', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_tanzania_resolved_attractions
 ON CONFLICT (attraction_id, locale) DO UPDATE SET
     title = EXCLUDED.title,
     description = EXCLUDED.description,
-    highlights = EXCLUDED.highlights,
     updated_at = NOW();
 
 UPDATE attractions a

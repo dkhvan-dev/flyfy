@@ -150,6 +150,7 @@ FROM hashed;
 
 INSERT INTO attractions (
     id,
+    author_user_id,
     country_code,
     city_id,
     category,
@@ -166,6 +167,7 @@ INSERT INTO attractions (
 )
 SELECT
     id,
+    '21c40900-2090-43ca-b7f8-4bb962b2d275'::uuid,
     'TJ',
     city_id,
     category,
@@ -199,7 +201,6 @@ INSERT INTO attraction_translations (
     locale,
     title,
     description,
-    highlights,
     created_at,
     updated_at
 )
@@ -208,14 +209,12 @@ SELECT
     'ru',
     title_ru,
     description_ru,
-    ARRAY[title_ru, 'Таджикистан', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_tajikistan_resolved_attractions
 ON CONFLICT (attraction_id, locale) DO UPDATE SET
     title = EXCLUDED.title,
     description = EXCLUDED.description,
-    highlights = EXCLUDED.highlights,
     updated_at = NOW();
 
 INSERT INTO attraction_translations (
@@ -223,7 +222,6 @@ INSERT INTO attraction_translations (
     locale,
     title,
     description,
-    highlights,
     created_at,
     updated_at
 )
@@ -232,14 +230,12 @@ SELECT
     'en',
     title_en,
     description_en,
-    ARRAY[title_en, 'Tajikistan', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_tajikistan_resolved_attractions
 ON CONFLICT (attraction_id, locale) DO UPDATE SET
     title = EXCLUDED.title,
     description = EXCLUDED.description,
-    highlights = EXCLUDED.highlights,
     updated_at = NOW();
 
 INSERT INTO attraction_translations (
@@ -247,7 +243,6 @@ INSERT INTO attraction_translations (
     locale,
     title,
     description,
-    highlights,
     created_at,
     updated_at
 )
@@ -256,139 +251,99 @@ SELECT
     'kk',
     title_kk,
     description_kk,
-    ARRAY[title_kk, 'Тәжікстан', city_id]::text[],
     NOW(),
     NOW()
 FROM seed_tajikistan_resolved_attractions
 ON CONFLICT (attraction_id, locale) DO UPDATE SET
     title = EXCLUDED.title,
     description = EXCLUDED.description,
-    highlights = EXCLUDED.highlights,
     updated_at = NOW();
 
-INSERT INTO attraction_locations (
-    attraction_id,
-    latitude,
-    longitude,
-    source_url,
-    created_at,
-    updated_at
-)
-SELECT
-    id,
-    latitude,
-    longitude,
-    location_source_url,
-    NOW(),
-    NOW()
-FROM seed_tajikistan_resolved_attractions
-ON CONFLICT (attraction_id) DO UPDATE SET
-    latitude = EXCLUDED.latitude,
-    longitude = EXCLUDED.longitude,
-    source_url = EXCLUDED.source_url,
-    updated_at = NOW();
+UPDATE attractions a
+SET
+    latitude = seed.latitude,
+    longitude = seed.longitude,
+    location_source_url = seed.location_source_url,
+    updated_at = NOW()
+FROM seed_tajikistan_resolved_attractions seed
+WHERE a.id = seed.id;
 
 INSERT INTO attraction_media (
     id,
     attraction_id,
-    media_type,
-    url,
+    file_id,
+    external_url,
     source_url,
+    credit,
+    license,
+    media_type,
     position,
-    alt_text,
-    created_at,
-    updated_at
+    created_at
 )
 SELECT
     media_id,
     id,
-    'IMAGE',
+    '00000000-0000-0000-0000-000000000000'::uuid,
     media_url,
     source_url,
-    1,
-    title_en,
-    NOW(),
+    'Wikimedia Commons contributors',
+    'See Wikimedia Commons source page',
+    'PHOTO',
+    0,
     NOW()
 FROM seed_tajikistan_resolved_attractions
 ON CONFLICT (id) DO UPDATE SET
     attraction_id = EXCLUDED.attraction_id,
-    media_type = EXCLUDED.media_type,
-    url = EXCLUDED.url,
+    file_id = EXCLUDED.file_id,
+    external_url = EXCLUDED.external_url,
     source_url = EXCLUDED.source_url,
-    position = EXCLUDED.position,
-    alt_text = EXCLUDED.alt_text,
-    updated_at = NOW();
-
-INSERT INTO attraction_visit_info (
-    attraction_id,
-    opening_hours,
-    best_time_to_visit,
-    visit_tips,
-    accessibility,
-    official_url,
-    phone,
-    created_at,
-    updated_at
-)
-SELECT
-    id,
-    'Check local schedule before visiting',
-    CASE
-        WHEN tags @> ARRAY['remote']::text[] OR tags @> ARRAY['trekking']::text[] OR tags @> ARRAY['seasonal-access']::text[] THEN 'Late spring to early autumn'
-        WHEN tags @> ARRAY['indoor']::text[] THEN 'Year-round'
-        ELSE 'Morning or late afternoon'
-    END,
-    CASE
-        WHEN tags @> ARRAY['gbao-permit']::text[] OR tags @> ARRAY['permit']::text[] OR tags @> ARRAY['border-zone']::text[] THEN 'Check permits, road conditions and local safety guidance before booking.'
-        WHEN tags @> ARRAY['remote']::text[] OR tags @> ARRAY['off-road']::text[] THEN 'Plan transport with a local operator and allow extra time for road conditions.'
-        ELSE 'Confirm opening hours and transport options before departure.'
-    END,
-    CASE
-        WHEN tags @> ARRAY['remote']::text[] OR tags @> ARRAY['trekking']::text[] OR tags @> ARRAY['off-road']::text[] THEN 'Limited'
-        ELSE 'General'
-    END,
-    location_source_url,
-    '',
-    NOW(),
-    NOW()
-FROM seed_tajikistan_resolved_attractions
-ON CONFLICT (attraction_id) DO UPDATE SET
-    opening_hours = EXCLUDED.opening_hours,
-    best_time_to_visit = EXCLUDED.best_time_to_visit,
-    visit_tips = EXCLUDED.visit_tips,
-    accessibility = EXCLUDED.accessibility,
-    official_url = EXCLUDED.official_url,
-    phone = EXCLUDED.phone,
-    updated_at = NOW();
+    credit = EXCLUDED.credit,
+    license = EXCLUDED.license,
+    media_type = EXCLUDED.media_type,
+    position = EXCLUDED.position;
 
 INSERT INTO attraction_city_links (
+    id,
     attraction_id,
+    kind,
     country_code,
     city_id,
-    link_type,
+    position,
     created_at
 )
 SELECT
+    gen_random_uuid(),
     id,
-    'TJ',
-    unnest(access_city_ids),
     'ACCESS',
+    'TJ',
+    access_city_id,
+    ordinality - 1,
     NOW()
 FROM seed_tajikistan_resolved_attractions
-ON CONFLICT (attraction_id, country_code, city_id, link_type) DO NOTHING;
+CROSS JOIN LATERAL unnest(access_city_ids) WITH ORDINALITY AS access(access_city_id, ordinality)
+ON CONFLICT (attraction_id, kind, city_id) DO UPDATE SET
+    country_code = EXCLUDED.country_code,
+    position = EXCLUDED.position;
 
 INSERT INTO attraction_city_links (
+    id,
     attraction_id,
+    kind,
     country_code,
     city_id,
-    link_type,
+    position,
     created_at
 )
 SELECT
+    gen_random_uuid(),
     id,
-    'TJ',
-    unnest(departure_city_ids),
     'DEPARTURE',
+    'TJ',
+    departure_city_id,
+    ordinality - 1,
     NOW()
 FROM seed_tajikistan_resolved_attractions
-ON CONFLICT (attraction_id, country_code, city_id, link_type) DO NOTHING;
+CROSS JOIN LATERAL unnest(departure_city_ids) WITH ORDINALITY AS departure(departure_city_id, ordinality)
+ON CONFLICT (attraction_id, kind, city_id) DO UPDATE SET
+    country_code = EXCLUDED.country_code,
+    position = EXCLUDED.position;
