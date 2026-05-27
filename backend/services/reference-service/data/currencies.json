@@ -9,6 +9,7 @@
   {"code": "AZN", "numeric": "944", "decimals": 2, "symbol": "₼", "name": {"en": "Azerbaijani Manat", "ru": "Азербайджанский манат", "kk": "Әзірбайжан манаты"}},
   {"code": "AMD", "numeric": "051", "decimals": 2, "symbol": "֏", "name": {"en": "Armenian Dram", "ru": "Армянский драм", "kk": "Армян драмы"}},
   {"code": "BYN", "numeric": "933", "decimals": 2, "symbol": "Br", "name": {"en": "Belarusian Ruble", "ru": "Белорусский рубль", "kk": "Беларусь рублі"}},
+  {"code": "RSD", "numeric": "941", "decimals": 2, "symbol": "дин.", "name": {"en": "Serbian Dinar", "ru": "Сербский динар", "kk": "Серб динары"}},
   {"code": "UAH", "numeric": "980", "decimals": 2, "symbol": "₴", "name": {"en": "Ukrainian Hryvnia", "ru": "Украинская гривна", "kk": "Украина гривнасы"}},
   {"code": "MDL", "numeric": "498", "decimals": 2, "symbol": "L", "name": {"en": "Moldovan Leu", "ru": "Молдавский лей", "kk": "Молдова лейі"}},
   {"code": "TRY", "numeric": "949", "decimals": 2, "symbol": "₺", "name": {"en": "Turkish Lira", "ru": "Турецкая лира", "kk": "Түрік лирасы"}},

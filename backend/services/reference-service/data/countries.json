@@ -18,6 +18,15 @@
     "capital": {"en": "Moscow", "ru": "Москва", "kk": "Мәскеу"}
   },
   {
+    "code": "RS",
+    "code3": "SRB",
+    "numeric": "688",
+    "currencyCode": "RSD",
+    "phoneCode": "+381",
+    "name": {"en": "Serbia", "ru": "Сербия", "kk": "Сербия"},
+    "capital": {"en": "Belgrade", "ru": "Белград", "kk": "Белград"}
+  },
+  {
     "code": "UZ",
     "code3": "UZB",
     "numeric": "860",

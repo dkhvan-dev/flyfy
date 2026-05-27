@@ -3465,3 +3465,77 @@ func TestReferenceUseCaseIncludesKenyaCountryCurrencyAndTouristDestinations(t *t
 		t.Fatalf("search nairobi in Kenya = %#v, want nairobi first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesSerbiaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("RS")
+	if country == nil {
+		t.Fatal("expected Serbia country reference")
+	}
+	if country.Name.Ru != "Сербия" {
+		t.Fatalf("Serbia Russian name = %q, want Сербия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("RS")
+	if currency == nil {
+		t.Fatal("expected Serbian dinar currency by Serbia country")
+	}
+	if currency.Code != "RSD" {
+		t.Fatalf("Serbia currency = %q, want RSD", currency.Code)
+	}
+
+	cities := uc.ListCities("RS")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"belgrade",
+		"zemun",
+		"avala",
+		"novi-sad",
+		"petrovaradin",
+		"sremski-karlovci",
+		"subotica",
+		"palic",
+		"fruska-gora",
+		"zrenjanin",
+		"nis",
+		"sokobanja",
+		"zajecar",
+		"felix-romuliana",
+		"djerdap",
+		"golubac",
+		"lepenski-vir",
+		"devils-town",
+		"leskovac",
+		"zlatibor",
+		"tara",
+		"mokra-gora",
+		"uvac",
+		"kopaonik",
+		"studenica",
+		"zica",
+		"novi-pazar",
+		"kragujevac",
+		"topola",
+		"cacak",
+		"ovcar-kablar",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Serbia city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("fruska gora", "RS", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "fruska-gora" {
+		t.Fatalf("search fruska gora in Serbia = %#v, want fruska-gora first", searchResults)
+	}
+}

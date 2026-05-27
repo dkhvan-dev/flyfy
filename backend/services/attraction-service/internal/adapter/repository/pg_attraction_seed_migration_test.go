@@ -5897,6 +5897,117 @@ func TestKenyaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T)
 	}
 }
 
+func TestSerbiaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "074_seed_serbia_priority_attractions.up.sql")
+	downSQL := readMigration(t, "074_seed_serbia_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_serbia_resolved_attractions AS",
+		"'RS'",
+		"'RSD'",
+		"serbia-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Serbia up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"belgrade",
+		"zemun",
+		"avala",
+		"novi-sad",
+		"petrovaradin",
+		"sremski-karlovci",
+		"subotica",
+		"palic",
+		"fruska-gora",
+		"zrenjanin",
+		"nis",
+		"sokobanja",
+		"zajecar",
+		"felix-romuliana",
+		"djerdap",
+		"golubac",
+		"lepenski-vir",
+		"devils-town",
+		"leskovac",
+		"zlatibor",
+		"tara",
+		"mokra-gora",
+		"uvac",
+		"kopaonik",
+		"studenica",
+		"zica",
+		"novi-pazar",
+		"kragujevac",
+		"topola",
+		"cacak",
+		"ovcar-kablar",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Serbia up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Belgrade Fortress",
+		"Knez Mihailova Street",
+		"Skadarlija",
+		"Nikola Tesla Museum",
+		"Saint Sava Temple",
+		"Ada Ciganlija",
+		"Usce Shopping Center",
+		"Zeleni Venac Market",
+		"Petrovaradin Fortress",
+		"Novi Sad Synagogue",
+		"Subotica City Hall",
+		"Lake Palic",
+		"Fruska Gora National Park",
+		"Nis Fortress",
+		"Skull Tower",
+		"Felix Romuliana",
+		"Golubac Fortress",
+		"Djerdap National Park",
+		"Lepenski Vir",
+		"Devils Town",
+		"Zlatibor Mountain",
+		"Tara National Park",
+		"Sargan Eight Railway",
+		"Drvengrad",
+		"Uvac Special Nature Reserve",
+		"Kopaonik National Park",
+		"Studenica Monastery",
+		"Zica Monastery",
+		"Oplenac Royal Mausoleum",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Serbia up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'", "'BEACH'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Serbia up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Serbia up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['serbia', city_id") {
+		t.Fatalf("Serbia up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "serbia-seed-v1") || !strings.Contains(downSQL, "country_code = 'RS'") {
+		t.Fatalf("Serbia down migration must remove only tagged Serbia seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

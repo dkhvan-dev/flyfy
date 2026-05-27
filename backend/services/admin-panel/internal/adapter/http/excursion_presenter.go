@@ -22,6 +22,7 @@ var countryNames = map[string]map[string]string{
 	"IE": {localeEN: "Ireland", localeRU: "Ирландия"},
 	"NL": {localeEN: "Netherlands", localeRU: "Нидерланды"},
 	"BY": {localeEN: "Belarus", localeRU: "Беларусь"},
+	"RS": {localeEN: "Serbia", localeRU: "Сербия"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
@@ -1474,6 +1475,40 @@ var belarusCityNames = map[string]map[string]string{
 	"zaslavl":               {localeEN: "Zaslavl", localeRU: "Заславль"},
 }
 
+var serbiaCityNames = map[string]map[string]string{
+	"avala":            {localeEN: "Avala", localeRU: "Авала"},
+	"belgrade":         {localeEN: "Belgrade", localeRU: "Белград"},
+	"cacak":            {localeEN: "Cacak", localeRU: "Чачак"},
+	"devils-town":      {localeEN: "Devils Town", localeRU: "Дьяволий город"},
+	"djerdap":          {localeEN: "Djerdap", localeRU: "Джердап"},
+	"felix-romuliana":  {localeEN: "Felix Romuliana", localeRU: "Феликс-Ромулиана"},
+	"fruska-gora":      {localeEN: "Fruska Gora", localeRU: "Фрушка-Гора"},
+	"golubac":          {localeEN: "Golubac", localeRU: "Голубац"},
+	"kopaonik":         {localeEN: "Kopaonik", localeRU: "Копаоник"},
+	"kragujevac":       {localeEN: "Kragujevac", localeRU: "Крагуевац"},
+	"lepenski-vir":     {localeEN: "Lepenski Vir", localeRU: "Лепенски-Вир"},
+	"leskovac":         {localeEN: "Leskovac", localeRU: "Лесковац"},
+	"mokra-gora":       {localeEN: "Mokra Gora", localeRU: "Мокра-Гора"},
+	"nis":              {localeEN: "Nis", localeRU: "Ниш"},
+	"novi-pazar":       {localeEN: "Novi Pazar", localeRU: "Нови-Пазар"},
+	"novi-sad":         {localeEN: "Novi Sad", localeRU: "Нови-Сад"},
+	"ovcar-kablar":     {localeEN: "Ovcar-Kablar", localeRU: "Овчар-Каблар"},
+	"palic":            {localeEN: "Palic", localeRU: "Палич"},
+	"petrovaradin":     {localeEN: "Petrovaradin", localeRU: "Петроварадин"},
+	"sokobanja":        {localeEN: "Sokobanja", localeRU: "Сокобаня"},
+	"sremski-karlovci": {localeEN: "Sremski Karlovci", localeRU: "Сремски-Карловци"},
+	"studenica":        {localeEN: "Studenica", localeRU: "Студеница"},
+	"subotica":         {localeEN: "Subotica", localeRU: "Суботица"},
+	"tara":             {localeEN: "Tara", localeRU: "Тара"},
+	"topola":           {localeEN: "Topola", localeRU: "Топола"},
+	"uvac":             {localeEN: "Uvac", localeRU: "Увац"},
+	"zajecar":          {localeEN: "Zajecar", localeRU: "Заечар"},
+	"zemun":            {localeEN: "Zemun", localeRU: "Земун"},
+	"zica":             {localeEN: "Zica", localeRU: "Жича"},
+	"zlatibor":         {localeEN: "Zlatibor", localeRU: "Златибор"},
+	"zrenjanin":        {localeEN: "Zrenjanin", localeRU: "Зренянин"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1716,6 +1751,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range belarusCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range serbiaCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {

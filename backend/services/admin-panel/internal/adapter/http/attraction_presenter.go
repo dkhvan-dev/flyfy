@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "BY", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "BY", "RS", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -281,6 +281,37 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "BY", CityID: "stalin-line"},
 	{CountryCode: "BY", CityID: "pripyatsky"},
 	{CountryCode: "BY", CityID: "turov"},
+	{CountryCode: "RS", CityID: "belgrade"},
+	{CountryCode: "RS", CityID: "zemun"},
+	{CountryCode: "RS", CityID: "avala"},
+	{CountryCode: "RS", CityID: "novi-sad"},
+	{CountryCode: "RS", CityID: "petrovaradin"},
+	{CountryCode: "RS", CityID: "sremski-karlovci"},
+	{CountryCode: "RS", CityID: "subotica"},
+	{CountryCode: "RS", CityID: "palic"},
+	{CountryCode: "RS", CityID: "fruska-gora"},
+	{CountryCode: "RS", CityID: "zrenjanin"},
+	{CountryCode: "RS", CityID: "nis"},
+	{CountryCode: "RS", CityID: "sokobanja"},
+	{CountryCode: "RS", CityID: "zajecar"},
+	{CountryCode: "RS", CityID: "felix-romuliana"},
+	{CountryCode: "RS", CityID: "djerdap"},
+	{CountryCode: "RS", CityID: "golubac"},
+	{CountryCode: "RS", CityID: "lepenski-vir"},
+	{CountryCode: "RS", CityID: "devils-town"},
+	{CountryCode: "RS", CityID: "leskovac"},
+	{CountryCode: "RS", CityID: "zlatibor"},
+	{CountryCode: "RS", CityID: "tara"},
+	{CountryCode: "RS", CityID: "mokra-gora"},
+	{CountryCode: "RS", CityID: "uvac"},
+	{CountryCode: "RS", CityID: "kopaonik"},
+	{CountryCode: "RS", CityID: "studenica"},
+	{CountryCode: "RS", CityID: "zica"},
+	{CountryCode: "RS", CityID: "novi-pazar"},
+	{CountryCode: "RS", CityID: "kragujevac"},
+	{CountryCode: "RS", CityID: "topola"},
+	{CountryCode: "RS", CityID: "cacak"},
+	{CountryCode: "RS", CityID: "ovcar-kablar"},
 	{CountryCode: "UZ", CityID: "tashkent"},
 	{CountryCode: "UZ", CityID: "samarkand"},
 	{CountryCode: "UZ", CityID: "bukhara"},
@@ -1483,7 +1514,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "KGS", "TJS", "MNT", "ISK", "BYN", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "KGS", "TJS", "MNT", "ISK", "BYN", "RSD", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1581,6 +1612,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Белорусский рубль"
 		}
 		return "Belarusian ruble"
+	case "RSD":
+		if locale == localeRU {
+			return "Сербский динар"
+		}
+		return "Serbian dinar"
 	case "UZS":
 		if locale == localeRU {
 			return "Узбекский сум"

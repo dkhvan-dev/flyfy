@@ -4004,6 +4004,108 @@ func TestRendererRendersBelarusAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersSerbiaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=RS&city=belgrade",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Белградская крепость",
+				CountryCode:   "RS",
+				CityID:        "belgrade",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "RS",
+			CityID:      "belgrade",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="RS" selected`,
+		`Сербия`,
+		`value="belgrade" data-country="RS" selected`,
+		`Белград`,
+		`Белград, Сербия`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Serbia attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">RS<") || strings.Contains(listBody, ">belgrade<") {
+		t.Fatalf("Serbia attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "RSD"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Белградская крепость",
+		Description:   "Историческая крепость и парк Калемегдан в центре Белграда.",
+		CountryCode:   "RS",
+		CityID:        "belgrade",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "RS", CityID: "belgrade"},
+			{CountryCode: "RS", CityID: "novi-sad"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "RS", CityID: "belgrade"},
+			{CountryCode: "RS", CityID: "nis"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="RS" selected>Сербия</option>`,
+		`<option value="belgrade" data-country="RS" selected>Белград</option>`,
+		`<option value="novi-sad" data-country="RS" >Нови-Сад</option>`,
+		`type="checkbox" name="access_cities" value="RS:novi-sad" checked`,
+		`type="checkbox" name="departure_cities" value="RS:nis" checked`,
+		`Белград, Сербия`,
+		`<option value="RSD" selected>Сербский динар</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Serbia attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 
