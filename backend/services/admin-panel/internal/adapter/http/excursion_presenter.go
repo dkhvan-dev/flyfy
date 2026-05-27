@@ -23,6 +23,7 @@ var countryNames = map[string]map[string]string{
 	"NL": {localeEN: "Netherlands", localeRU: "Нидерланды"},
 	"BY": {localeEN: "Belarus", localeRU: "Беларусь"},
 	"RS": {localeEN: "Serbia", localeRU: "Сербия"},
+	"GR": {localeEN: "Greece", localeRU: "Греция"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
@@ -1509,6 +1510,49 @@ var serbiaCityNames = map[string]map[string]string{
 	"zrenjanin":        {localeEN: "Zrenjanin", localeRU: "Зренянин"},
 }
 
+var greeceCityNames = map[string]map[string]string{
+	"agios-nikolaos": {localeEN: "Agios Nikolaos", localeRU: "Агиос-Николаос"},
+	"arachova":       {localeEN: "Arachova", localeRU: "Арахова"},
+	"athens":         {localeEN: "Athens", localeRU: "Афины"},
+	"cape-sounion":   {localeEN: "Cape Sounion", localeRU: "Мыс Сунион"},
+	"chania":         {localeEN: "Chania", localeRU: "Ханья"},
+	"corfu":          {localeEN: "Corfu", localeRU: "Корфу"},
+	"delos":          {localeEN: "Delos", localeRU: "Делос"},
+	"delphi":         {localeEN: "Delphi", localeRU: "Дельфы"},
+	"elafonisi":      {localeEN: "Elafonisi", localeRU: "Элафониси"},
+	"epidaurus":      {localeEN: "Epidaurus", localeRU: "Эпидавр"},
+	"fira":           {localeEN: "Fira", localeRU: "Фира"},
+	"glyfada":        {localeEN: "Glyfada", localeRU: "Глифада"},
+	"halkidiki":      {localeEN: "Halkidiki", localeRU: "Халкидики"},
+	"heraklion":      {localeEN: "Heraklion", localeRU: "Ираклион"},
+	"kalambaka":      {localeEN: "Kalambaka", localeRU: "Каламбака"},
+	"kalamata":       {localeEN: "Kalamata", localeRU: "Каламата"},
+	"lindos":         {localeEN: "Lindos", localeRU: "Линдос"},
+	"litochoro":      {localeEN: "Litochoro", localeRU: "Литохоро"},
+	"mani":           {localeEN: "Mani", localeRU: "Мани"},
+	"meteora":        {localeEN: "Meteora", localeRU: "Метеоры"},
+	"monemvasia":     {localeEN: "Monemvasia", localeRU: "Монемвасия"},
+	"mycenae":        {localeEN: "Mycenae", localeRU: "Микены"},
+	"mykonos":        {localeEN: "Mykonos", localeRU: "Миконос"},
+	"mystras":        {localeEN: "Mystras", localeRU: "Мистра"},
+	"nafplio":        {localeEN: "Nafplio", localeRU: "Нафплион"},
+	"naxos":          {localeEN: "Naxos", localeRU: "Наксос"},
+	"oia":            {localeEN: "Oia", localeRU: "Ия"},
+	"olympia":        {localeEN: "Olympia", localeRU: "Олимпия"},
+	"olympus":        {localeEN: "Mount Olympus", localeRU: "Олимп"},
+	"paleokastritsa": {localeEN: "Paleokastritsa", localeRU: "Палеокастрица"},
+	"paros":          {localeEN: "Paros", localeRU: "Парос"},
+	"patras":         {localeEN: "Patras", localeRU: "Патры"},
+	"pelion":         {localeEN: "Pelion", localeRU: "Пелион"},
+	"piraeus":        {localeEN: "Piraeus", localeRU: "Пирей"},
+	"rethymno":       {localeEN: "Rethymno", localeRU: "Ретимно"},
+	"rhodes":         {localeEN: "Rhodes", localeRU: "Родос"},
+	"santorini":      {localeEN: "Santorini", localeRU: "Санторини"},
+	"thessaloniki":   {localeEN: "Thessaloniki", localeRU: "Салоники"},
+	"volos":          {localeEN: "Volos", localeRU: "Волос"},
+	"zakynthos":      {localeEN: "Zakynthos", localeRU: "Закинф"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1754,6 +1798,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range serbiaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range greeceCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {

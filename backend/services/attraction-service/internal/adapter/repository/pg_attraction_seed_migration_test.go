@@ -6008,6 +6008,122 @@ func TestSerbiaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestGreecePriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "075_seed_greece_priority_attractions.up.sql")
+	downSQL := readMigration(t, "075_seed_greece_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_greece_resolved_attractions AS",
+		"'GR'",
+		"'EUR'",
+		"greece-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Greece up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"athens",
+		"piraeus",
+		"glyfada",
+		"cape-sounion",
+		"thessaloniki",
+		"meteora",
+		"kalambaka",
+		"delphi",
+		"arachova",
+		"olympus",
+		"litochoro",
+		"volos",
+		"pelion",
+		"halkidiki",
+		"santorini",
+		"oia",
+		"fira",
+		"mykonos",
+		"delos",
+		"heraklion",
+		"chania",
+		"rethymno",
+		"agios-nikolaos",
+		"elafonisi",
+		"rhodes",
+		"lindos",
+		"corfu",
+		"paleokastritsa",
+		"zakynthos",
+		"naxos",
+		"paros",
+		"nafplio",
+		"mycenae",
+		"epidaurus",
+		"olympia",
+		"patras",
+		"kalamata",
+		"monemvasia",
+		"mystras",
+		"mani",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Greece up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Acropolis of Athens",
+		"Acropolis Museum",
+		"National Archaeological Museum Athens",
+		"Monastiraki Flea Market",
+		"Stavros Niarchos Foundation Cultural Center",
+		"Temple of Poseidon Sounion",
+		"White Tower of Thessaloniki",
+		"Modiano Market",
+		"Meteora Monasteries",
+		"Archaeological Site of Delphi",
+		"Mount Olympus National Park",
+		"Navagio Beach",
+		"Palace of Knossos",
+		"Balos Lagoon",
+		"Old Town of Rhodes",
+		"Corfu Old Town",
+		"Santorini Caldera",
+		"Mykonos Windmills",
+		"Delos Archaeological Site",
+		"Ancient Mycenae",
+		"Ancient Theatre of Epidaurus",
+		"Ancient Olympia",
+		"Palamidi Fortress",
+		"Monemvasia Castle Town",
+		"Mystras",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Greece up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Greece up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Greece up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['greece', city_id") {
+		t.Fatalf("Greece up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "greece-seed-v1") || !strings.Contains(downSQL, "country_code = 'GR'") {
+		t.Fatalf("Greece down migration must remove only tagged Greece seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

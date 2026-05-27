@@ -3539,3 +3539,86 @@ func TestReferenceUseCaseIncludesSerbiaCountryCurrencyAndTouristDestinations(t *
 		t.Fatalf("search fruska gora in Serbia = %#v, want fruska-gora first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesGreeceCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("GR")
+	if country == nil {
+		t.Fatal("expected Greece country reference")
+	}
+	if country.Name.Ru != "Греция" {
+		t.Fatalf("Greece Russian name = %q, want Греция", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("GR")
+	if currency == nil {
+		t.Fatal("expected euro currency by Greece country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Greece currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("GR")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"athens",
+		"piraeus",
+		"glyfada",
+		"cape-sounion",
+		"thessaloniki",
+		"meteora",
+		"kalambaka",
+		"delphi",
+		"arachova",
+		"olympus",
+		"litochoro",
+		"volos",
+		"pelion",
+		"halkidiki",
+		"santorini",
+		"oia",
+		"fira",
+		"mykonos",
+		"delos",
+		"heraklion",
+		"chania",
+		"rethymno",
+		"agios-nikolaos",
+		"elafonisi",
+		"rhodes",
+		"lindos",
+		"corfu",
+		"paleokastritsa",
+		"zakynthos",
+		"naxos",
+		"paros",
+		"nafplio",
+		"mycenae",
+		"epidaurus",
+		"olympia",
+		"patras",
+		"kalamata",
+		"monemvasia",
+		"mystras",
+		"mani",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Greece city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("santorini", "GR", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "santorini" {
+		t.Fatalf("search santorini in Greece = %#v, want santorini first", searchResults)
+	}
+}

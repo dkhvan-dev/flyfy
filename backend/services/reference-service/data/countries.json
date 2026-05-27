@@ -27,6 +27,15 @@
     "capital": {"en": "Belgrade", "ru": "Белград", "kk": "Белград"}
   },
   {
+    "code": "GR",
+    "code3": "GRC",
+    "numeric": "300",
+    "currencyCode": "EUR",
+    "phoneCode": "+30",
+    "name": {"en": "Greece", "ru": "Греция", "kk": "Грекия"},
+    "capital": {"en": "Athens", "ru": "Афины", "kk": "Афины"}
+  },
+  {
     "code": "UZ",
     "code3": "UZB",
     "numeric": "860",

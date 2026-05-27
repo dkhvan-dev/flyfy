@@ -4106,6 +4106,108 @@ func TestRendererRendersSerbiaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersGreeceAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=GR&city=athens",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Афинский Акрополь",
+				CountryCode:   "GR",
+				CityID:        "athens",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "GR",
+			CityID:      "athens",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="GR" selected`,
+		`Греция`,
+		`value="athens" data-country="GR" selected`,
+		`Афины`,
+		`Афины, Греция`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Greece attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">GR<") || strings.Contains(listBody, ">athens<") {
+		t.Fatalf("Greece attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "EUR"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Афинский Акрополь",
+		Description:   "Классический археологический символ Афин и всей Греции.",
+		CountryCode:   "GR",
+		CityID:        "athens",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "GR", CityID: "athens"},
+			{CountryCode: "GR", CityID: "santorini"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "GR", CityID: "athens"},
+			{CountryCode: "GR", CityID: "thessaloniki"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="GR" selected>Греция</option>`,
+		`<option value="athens" data-country="GR" selected>Афины</option>`,
+		`<option value="santorini" data-country="GR" >Санторини</option>`,
+		`type="checkbox" name="access_cities" value="GR:santorini" checked`,
+		`type="checkbox" name="departure_cities" value="GR:thessaloniki" checked`,
+		`Афины, Греция`,
+		`<option value="EUR" selected>Евро</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Greece attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 
