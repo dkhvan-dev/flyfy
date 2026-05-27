@@ -55,4 +55,28 @@ void main() {
     expect(screenSource, contains('countryCode: _filters.countryCode'));
     expect(screenSource, isNot(contains('profile?.countryCode')));
   });
+
+  test('attractions filter does not apply duration by default', () async {
+    final sheetSource = await File(
+      'lib/screens/attractions/attractions_filter_sheet.dart',
+    ).readAsString();
+
+    expect(
+      sheetSource,
+      contains('static const _defaultRange = RangeValues(1.0, 12.0);'),
+    );
+    expect(sheetSource, isNot(contains('RangeValues(2.0, 8.0)')));
+  });
+
+  test('filtered city results are not mixed with duplicated must visit cards',
+      () async {
+    final screenSource = await File(
+      'lib/screens/attractions/attractions_screen.dart',
+    ).readAsString();
+
+    expect(screenSource, contains('static const int _pageSize = 24;'));
+    expect(screenSource, contains('final shouldShowMustVisit ='));
+    expect(screenSource, contains('_filters.isEmpty'));
+    expect(screenSource, contains('search.isEmpty'));
+  });
 }

@@ -101,12 +101,77 @@ int attractionImageTargetWidth(
       .toInt();
 }
 
-String? resolveAttractionMediaUrl(AttractionMediaVm media) {
-  return resolvePublicFileContentUrl(media.fileId);
+String? resolveAttractionMediaUrl(AttractionMediaVm media, {int? targetWidth}) {
+  final fileUrl = resolvePublicFileContentUrl(media.fileId);
+  if (fileUrl != null) {
+    return fileUrl;
+  }
+
+  final externalUrl = media.externalUrl.trim();
+  if (externalUrl.isEmpty) {
+    return null;
+  }
+  final uri = Uri.tryParse(externalUrl);
+  if (uri == null || (!uri.isScheme('https') && !uri.isScheme('http'))) {
+    return null;
+  }
+  return _optimizeExternalAttractionMediaUrl(uri, targetWidth) ?? externalUrl;
 }
 
 Map<String, String>? attractionImageRequestHeaders(String? url) {
   return null;
+}
+
+String? _optimizeExternalAttractionMediaUrl(Uri uri, int? targetWidth) {
+  final width = _normalizedImageTargetWidth(targetWidth);
+  if (width == null) return null;
+
+  final host = uri.host.toLowerCase();
+  if (host == 'commons.wikimedia.org' &&
+      uri.path.startsWith('/wiki/Special:FilePath/')) {
+    return uri.replace(
+      queryParameters: {
+        ...uri.queryParameters,
+        'width': '$width',
+      },
+    ).toString();
+  }
+
+  if (host == 'upload.wikimedia.org' &&
+      uri.path.startsWith('/wikipedia/commons/')) {
+    final fileName = _wikimediaUploadFileName(uri);
+    if (fileName != null) {
+      return Uri.https(
+        'commons.wikimedia.org',
+        '/wiki/Special:FilePath/$fileName',
+        {'width': '$width'},
+      ).toString();
+    }
+  }
+
+  return null;
+}
+
+String? _wikimediaUploadFileName(Uri uri) {
+  final segments = uri.pathSegments;
+  if (segments.length < 4 ||
+      segments[0] != 'wikipedia' ||
+      segments[1] != 'commons') {
+    return null;
+  }
+
+  if (segments[2] == 'thumb') {
+    if (segments.length < 6) return null;
+    return segments[5].trim().isEmpty ? null : segments[5];
+  }
+
+  final fileName = segments.last.trim();
+  return fileName.isEmpty ? null : fileName;
+}
+
+int? _normalizedImageTargetWidth(int? targetWidth) {
+  if (targetWidth == null || targetWidth <= 0) return null;
+  return targetWidth.clamp(240, 2200).toInt();
 }
 
 String formatAttractionDurationLabel(

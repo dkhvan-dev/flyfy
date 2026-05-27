@@ -142,7 +142,7 @@ class AttractionsFilterSheet extends StatefulWidget {
 class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
   static const _hourMin = 1;
   static const _hourMax = 12;
-  static const _defaultRange = RangeValues(2.0, 8.0);
+  static const _defaultRange = RangeValues(1.0, 12.0);
 
   late final AttractionApi _api;
   late final TextEditingController _minPriceController;

@@ -67,7 +67,7 @@ class AttractionsScreen extends StatefulWidget {
 }
 
 class _AttractionsScreenState extends State<AttractionsScreen> {
-  static const int _pageSize = 8;
+  static const int _pageSize = 24;
 
   final AttractionApi _api = AttractionApi();
   final TextEditingController _searchController = TextEditingController();
@@ -381,6 +381,11 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     final locationProvider = context.watch<HomeLocationProvider>();
     final currentCity = _currentCityValue(locationProvider);
     final mustVisitAttractions = _mustVisitAttractions(currentCity);
+    final search = _searchController.text.trim();
+    final shouldShowMustVisit = _filters.isEmpty &&
+        search.isEmpty &&
+        currentCity != null &&
+        mustVisitAttractions.isNotEmpty;
 
     return RefreshIndicator(
       color: AppColors.accent,
@@ -401,7 +406,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (currentCity != null && mustVisitAttractions.isNotEmpty)
+                  if (shouldShowMustVisit)
                     _MustVisitSection(
                       l10n: l10n,
                       adaptive: a,
@@ -409,7 +414,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
                       attractions: mustVisitAttractions,
                       onTap: _openDetails,
                     ),
-                  if (currentCity != null && mustVisitAttractions.isNotEmpty)
+                  if (shouldShowMustVisit)
                     SizedBox(height: a.scale(24, minFactor: 0.72)),
                   _AttractionSortBar(
                     l10n: l10n,
@@ -664,17 +669,18 @@ class _MustVisitCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final coverMedia = attraction.coverMedia;
-    final coverUrl = coverMedia == null
-        ? null
-        : resolveAttractionMediaUrl(
-            coverMedia,
-          );
     final imageTargetWidth = attractionImageTargetWidth(
       context,
       width,
       minWidth: 360,
       maxWidth: 620,
     );
+    final coverUrl = coverMedia == null
+        ? null
+        : resolveAttractionMediaUrl(
+            coverMedia,
+            targetWidth: imageTargetWidth,
+          );
 
     return GestureDetector(
       onTap: () => onTap(attraction),
@@ -887,8 +893,12 @@ class _DiscoverCard extends StatelessWidget {
             minWidth: 420,
             maxWidth: 720,
           );
-          final coverUrl =
-              coverMedia == null ? null : resolveAttractionMediaUrl(coverMedia);
+          final coverUrl = coverMedia == null
+              ? null
+              : resolveAttractionMediaUrl(
+                  coverMedia,
+                  targetWidth: imageTargetWidth,
+                );
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,

@@ -804,7 +804,10 @@ class _AttractionDetailsScreenState extends State<AttractionDetailsScreen> {
       minWidth: 900,
       maxWidth: 1600,
     );
-    final url = resolveAttractionMediaUrl(media[index]);
+    final url = resolveAttractionMediaUrl(
+      media[index],
+      targetWidth: imageTargetWidth,
+    );
     if (url == null) {
       return _heroPlaceholder();
     }
@@ -1568,7 +1571,10 @@ class _AttractionImageGalleryState extends State<_AttractionImageGallery> {
       minWidth: 900,
       maxWidth: 2200,
     );
-    final url = resolveAttractionMediaUrl(media);
+    final url = resolveAttractionMediaUrl(
+      media,
+      targetWidth: imageTargetWidth,
+    );
     if (url == null) {
       return const _GalleryPlaceholder();
     }
@@ -2204,7 +2210,10 @@ class _ReviewCard extends StatelessWidget {
       minWidth: 220,
       maxWidth: 360,
     );
-    final url = resolveAttractionMediaUrl(media);
+    final url = resolveAttractionMediaUrl(
+      media,
+      targetWidth: imageTargetWidth,
+    );
     final isVideo = media.mediaType.toUpperCase() == 'VIDEO';
 
     return ClipRRect(
