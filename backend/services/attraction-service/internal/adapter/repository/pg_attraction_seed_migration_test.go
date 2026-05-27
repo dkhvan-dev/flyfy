@@ -3881,6 +3881,113 @@ func TestKyrgyzstanPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testi
 	}
 }
 
+func TestAzerbaijanPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "067_seed_azerbaijan_priority_attractions.up.sql")
+	downSQL := readMigration(t, "067_seed_azerbaijan_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_azerbaijan_resolved_attractions AS",
+		"'AZ'",
+		"'AZN'",
+		"azerbaijan-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Azerbaijan up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"baku",
+		"absheron",
+		"gobustan",
+		"mud-volcanoes",
+		"shamakhi",
+		"lahij",
+		"quba",
+		"qusar",
+		"shahdag",
+		"khinalig",
+		"gabala",
+		"sheki",
+		"ganja",
+		"goygol",
+		"naftalan",
+		"mingachevir",
+		"lankaran",
+		"astara",
+		"masalli",
+		"lerik",
+		"hirkan",
+		"gizil-agaj",
+		"nakhchivan",
+		"ordubad",
+		"julfa",
+		"batabat",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Azerbaijan up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Icherisheher Old City",
+		"Maiden Tower Baku",
+		"Palace of the Shirvanshahs",
+		"Heydar Aliyev Center",
+		"Azerbaijan Carpet Museum",
+		"Baku Boulevard",
+		"Port Baku Mall",
+		"Taza Bazaar Baku",
+		"Ateshgah Fire Temple",
+		"Yanar Dag Burning Mountain",
+		"Bilgah Beach",
+		"Gobustan Rock Art Cultural Landscape",
+		"Gobustan Mud Volcanoes",
+		"Juma Mosque Shamakhi",
+		"Lahij Copper Craft Quarter",
+		"Shahdag Mountain Resort",
+		"Khinalig Village",
+		"Sheki Khan Palace",
+		"Sheki Caravanserai",
+		"Sheki Halva Workshop",
+		"Gabala Tufandag Mountain Resort",
+		"Gabaland Amusement Park",
+		"Nohur Lake",
+		"Nizami Mausoleum",
+		"Goygol National Park",
+		"Naftalan Oil Spa",
+		"Mingachevir Reservoir",
+		"Hirkan National Park",
+		"Yanar Bulag",
+		"Gizil-Agaj National Park",
+		"Momine Khatun Mausoleum",
+		"Alinja Castle",
+		"Batabat Lake",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Azerbaijan up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Azerbaijan up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['azerbaijan', city_id") {
+		t.Fatalf("Azerbaijan up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "azerbaijan-seed-v1") || !strings.Contains(downSQL, "country_code = 'AZ'") {
+		t.Fatalf("Azerbaijan down migration must remove only tagged Azerbaijan seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

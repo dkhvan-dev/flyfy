@@ -3290,6 +3290,108 @@ func TestRendererRendersKyrgyzstanAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersAzerbaijanAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=AZ&city=baku",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Ичери-шехер",
+				CountryCode:   "AZ",
+				CityID:        "baku",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "AZ",
+			CityID:      "baku",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="AZ" selected`,
+		`Азербайджан`,
+		`value="baku" data-country="AZ" selected`,
+		`Баку`,
+		`Баку, Азербайджан`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Azerbaijan attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">AZ<") || strings.Contains(listBody, ">baku<") {
+		t.Fatalf("Azerbaijan attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "AZN"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Ичери-шехер",
+		Description:   "Старый город Баку.",
+		CountryCode:   "AZ",
+		CityID:        "baku",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "AZ", CityID: "gabala"},
+			{CountryCode: "AZ", CityID: "sheki"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "AZ", CityID: "baku"},
+			{CountryCode: "AZ", CityID: "shahdag"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="AZ" selected>Азербайджан</option>`,
+		`<option value="baku" data-country="AZ" selected>Баку</option>`,
+		`<option value="gabala" data-country="AZ" >Габала</option>`,
+		`type="checkbox" name="access_cities" value="AZ:gabala" checked`,
+		`type="checkbox" name="departure_cities" value="AZ:shahdag" checked`,
+		`Баку, Азербайджан`,
+		`<option value="AZN" selected>Азербайджанский манат</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Azerbaijan attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

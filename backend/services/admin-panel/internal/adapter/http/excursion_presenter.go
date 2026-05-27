@@ -1234,6 +1234,35 @@ var kyrgyzstanCityNames = map[string]map[string]string{
 	"uzgen":         {localeEN: "Uzgen", localeRU: "Узген"},
 }
 
+var azerbaijanCityNames = map[string]map[string]string{
+	"absheron":      {localeEN: "Absheron", localeRU: "Апшерон"},
+	"astara":        {localeEN: "Astara", localeRU: "Астара"},
+	"baku":          {localeEN: "Baku", localeRU: "Баку"},
+	"batabat":       {localeEN: "Batabat", localeRU: "Батабат"},
+	"gabala":        {localeEN: "Gabala", localeRU: "Габала"},
+	"ganja":         {localeEN: "Ganja", localeRU: "Гянджа"},
+	"gizil-agaj":    {localeEN: "Gizil-Agaj", localeRU: "Гызыл-Агадж"},
+	"gobustan":      {localeEN: "Gobustan", localeRU: "Гобустан"},
+	"goygol":        {localeEN: "Goygol", localeRU: "Гёйгёль"},
+	"hirkan":        {localeEN: "Hirkan", localeRU: "Гиркан"},
+	"julfa":         {localeEN: "Julfa", localeRU: "Джульфа"},
+	"khinalig":      {localeEN: "Khinalig", localeRU: "Хыналыг"},
+	"lahij":         {localeEN: "Lahij", localeRU: "Лагич"},
+	"lankaran":      {localeEN: "Lankaran", localeRU: "Ленкорань"},
+	"lerik":         {localeEN: "Lerik", localeRU: "Лерик"},
+	"masalli":       {localeEN: "Masalli", localeRU: "Масаллы"},
+	"mingachevir":   {localeEN: "Mingachevir", localeRU: "Мингечевир"},
+	"mud-volcanoes": {localeEN: "Mud Volcanoes", localeRU: "Грязевые вулканы"},
+	"naftalan":      {localeEN: "Naftalan", localeRU: "Нафталан"},
+	"nakhchivan":    {localeEN: "Nakhchivan", localeRU: "Нахичевань"},
+	"ordubad":       {localeEN: "Ordubad", localeRU: "Ордубад"},
+	"quba":          {localeEN: "Quba", localeRU: "Губа"},
+	"qusar":         {localeEN: "Qusar", localeRU: "Гусар"},
+	"shahdag":       {localeEN: "Shahdag", localeRU: "Шахдаг"},
+	"shamakhi":      {localeEN: "Shamakhi", localeRU: "Шемахы"},
+	"sheki":         {localeEN: "Sheki", localeRU: "Шеки"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1455,6 +1484,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range kyrgyzstanCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range azerbaijanCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {

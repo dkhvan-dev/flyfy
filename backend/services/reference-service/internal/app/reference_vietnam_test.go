@@ -202,6 +202,75 @@ func TestReferenceUseCaseIncludesKyrgyzstanCountryCurrencyAndTouristDestinations
 	}
 }
 
+func TestReferenceUseCaseIncludesAzerbaijanCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("AZ")
+	if country == nil {
+		t.Fatal("expected Azerbaijan country reference")
+	}
+	if country.Name.Ru != "Азербайджан" {
+		t.Fatalf("Azerbaijan Russian name = %q, want Азербайджан", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("AZ")
+	if currency == nil {
+		t.Fatal("expected Azerbaijani manat currency by Azerbaijan country")
+	}
+	if currency.Code != "AZN" {
+		t.Fatalf("Azerbaijan currency = %q, want AZN", currency.Code)
+	}
+
+	cities := uc.ListCities("AZ")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"baku",
+		"absheron",
+		"gobustan",
+		"mud-volcanoes",
+		"shamakhi",
+		"lahij",
+		"quba",
+		"qusar",
+		"shahdag",
+		"khinalig",
+		"gabala",
+		"sheki",
+		"ganja",
+		"goygol",
+		"naftalan",
+		"mingachevir",
+		"lankaran",
+		"astara",
+		"masalli",
+		"lerik",
+		"hirkan",
+		"gizil-agaj",
+		"nakhchivan",
+		"ordubad",
+		"julfa",
+		"batabat",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Azerbaijan city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("shahdag", "AZ", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "shahdag" {
+		t.Fatalf("search shahdag in Azerbaijan = %#v, want shahdag first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {
