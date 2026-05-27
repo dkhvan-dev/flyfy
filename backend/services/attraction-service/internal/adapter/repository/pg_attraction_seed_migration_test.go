@@ -6580,6 +6580,95 @@ func TestDenmarkPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.
 	}
 }
 
+func TestFinlandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "081_seed_finland_priority_attractions.up.sql")
+	downSQL := readMigration(t, "081_seed_finland_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_finland_resolved_attractions AS",
+		"'FI'",
+		"'EUR'",
+		"finland-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Finland up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"helsinki",
+		"espoo",
+		"vantaa",
+		"turku",
+		"naantali",
+		"tampere",
+		"porvoo",
+		"savonlinna",
+		"kuopio",
+		"jyvaskyla",
+		"lappeenranta",
+		"lahti",
+		"rovaniemi",
+		"levi",
+		"saariselka",
+		"inari",
+		"kilpisjarvi",
+		"oulu",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Finland up migration must seed attractions for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Suomenlinna Sea Fortress",
+		"Helsinki Cathedral",
+		"Temppeliaukio Church",
+		"Oodi Central Library",
+		"Market Square Helsinki",
+		"Linnanmaki",
+		"Nuuksio National Park",
+		"Turku Castle",
+		"Moominworld",
+		"Vapriikki Museum Centre",
+		"Pyynikki Observation Tower",
+		"Porvoo Old Town",
+		"Olavinlinna Castle",
+		"Puijo Tower",
+		"Santa Claus Village",
+		"Arktikum",
+		"Levi Ski Resort",
+		"Siida Sami Museum",
+		"Oulu Market Hall",
+		"Nallikari Beach",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Finland up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'FOOD'", "'TEMPLE'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Finland up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Finland up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['finland', city_id") {
+		t.Fatalf("Finland up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "finland-seed-v1") || !strings.Contains(downSQL, "country_code = 'FI'") {
+		t.Fatalf("Finland down migration must remove only tagged Finland seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

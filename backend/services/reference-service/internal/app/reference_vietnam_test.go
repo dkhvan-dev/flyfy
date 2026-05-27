@@ -3924,3 +3924,64 @@ func TestReferenceUseCaseIncludesDenmarkCountryCurrencyAndTouristDestinations(t 
 		t.Fatalf("search copenhagen in Denmark = %#v, want copenhagen first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesFinlandCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("FI")
+	if country == nil {
+		t.Fatal("expected Finland country reference")
+	}
+	if country.Name.Ru != "Финляндия" {
+		t.Fatalf("Finland Russian name = %q, want Финляндия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("FI")
+	if currency == nil {
+		t.Fatal("expected euro currency by Finland country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Finland currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("FI")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"helsinki",
+		"espoo",
+		"vantaa",
+		"turku",
+		"naantali",
+		"tampere",
+		"porvoo",
+		"savonlinna",
+		"kuopio",
+		"jyvaskyla",
+		"lappeenranta",
+		"lahti",
+		"rovaniemi",
+		"levi",
+		"saariselka",
+		"inari",
+		"kilpisjarvi",
+		"oulu",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Finland city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("helsinki", "FI", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "helsinki" {
+		t.Fatalf("search helsinki in Finland = %#v, want helsinki first", searchResults)
+	}
+}

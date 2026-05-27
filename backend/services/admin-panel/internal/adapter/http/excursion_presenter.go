@@ -58,6 +58,7 @@ var countryNames = map[string]map[string]string{
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
 	"CH": {localeEN: "Switzerland", localeRU: "Швейцария"},
 	"DK": {localeEN: "Denmark", localeRU: "Дания"},
+	"FI": {localeEN: "Finland", localeRU: "Финляндия"},
 	"SE": {localeEN: "Sweden", localeRU: "Швеция"},
 	"CZ": {localeEN: "Czechia", localeRU: "Чехия"},
 	"FR": {localeEN: "France", localeRU: "Франция"},
@@ -1810,6 +1811,27 @@ var denmarkCityNames = map[string]map[string]string{
 	"mons-klint": {localeEN: "Mons Klint", localeRU: "Мёнс-Клинт"},
 }
 
+var finlandCityNames = map[string]map[string]string{
+	"helsinki":     {localeEN: "Helsinki", localeRU: "Хельсинки"},
+	"espoo":        {localeEN: "Espoo", localeRU: "Эспоо"},
+	"vantaa":       {localeEN: "Vantaa", localeRU: "Вантаа"},
+	"turku":        {localeEN: "Turku", localeRU: "Турку"},
+	"naantali":     {localeEN: "Naantali", localeRU: "Наантали"},
+	"tampere":      {localeEN: "Tampere", localeRU: "Тампере"},
+	"porvoo":       {localeEN: "Porvoo", localeRU: "Порвоо"},
+	"savonlinna":   {localeEN: "Savonlinna", localeRU: "Савонлинна"},
+	"kuopio":       {localeEN: "Kuopio", localeRU: "Куопио"},
+	"jyvaskyla":    {localeEN: "Jyvaskyla", localeRU: "Ювяскюля"},
+	"lappeenranta": {localeEN: "Lappeenranta", localeRU: "Лаппеэнранта"},
+	"lahti":        {localeEN: "Lahti", localeRU: "Лахти"},
+	"rovaniemi":    {localeEN: "Rovaniemi", localeRU: "Рованиеми"},
+	"levi":         {localeEN: "Levi", localeRU: "Леви"},
+	"saariselka":   {localeEN: "Saariselka", localeRU: "Саариселькя"},
+	"inari":        {localeEN: "Inari", localeRU: "Инари"},
+	"kilpisjarvi":  {localeEN: "Kilpisjarvi", localeRU: "Килписъярви"},
+	"oulu":         {localeEN: "Oulu", localeRU: "Оулу"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -1941,6 +1963,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range denmarkCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range finlandCityNames {
 		cityNames[cityID] = names
 	}
 }

@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "DK", "BY", "RS", "GR", "UA", "US", "SG", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "NZ", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "DK", "FI", "BY", "RS", "GR", "UA", "US", "SG", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "NZ", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -111,6 +111,24 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "DK", CityID: "helsingor"},
 	{CountryCode: "DK", CityID: "hillerod"},
 	{CountryCode: "DK", CityID: "mons-klint"},
+	{CountryCode: "FI", CityID: "helsinki"},
+	{CountryCode: "FI", CityID: "espoo"},
+	{CountryCode: "FI", CityID: "vantaa"},
+	{CountryCode: "FI", CityID: "turku"},
+	{CountryCode: "FI", CityID: "naantali"},
+	{CountryCode: "FI", CityID: "tampere"},
+	{CountryCode: "FI", CityID: "porvoo"},
+	{CountryCode: "FI", CityID: "savonlinna"},
+	{CountryCode: "FI", CityID: "kuopio"},
+	{CountryCode: "FI", CityID: "jyvaskyla"},
+	{CountryCode: "FI", CityID: "lappeenranta"},
+	{CountryCode: "FI", CityID: "lahti"},
+	{CountryCode: "FI", CityID: "rovaniemi"},
+	{CountryCode: "FI", CityID: "levi"},
+	{CountryCode: "FI", CityID: "saariselka"},
+	{CountryCode: "FI", CityID: "inari"},
+	{CountryCode: "FI", CityID: "kilpisjarvi"},
+	{CountryCode: "FI", CityID: "oulu"},
 	{CountryCode: "KG", CityID: "bishkek"},
 	{CountryCode: "KG", CityID: "ala-archa"},
 	{CountryCode: "KG", CityID: "tokmok"},

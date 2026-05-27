@@ -531,6 +531,15 @@
     "capital": {"en": "Copenhagen", "ru": "Копенгаген", "kk": "Копенгаген"}
   },
   {
+    "code": "FI",
+    "code3": "FIN",
+    "numeric": "246",
+    "currencyCode": "EUR",
+    "phoneCode": "+358",
+    "name": {"en": "Finland", "ru": "Финляндия", "kk": "Финляндия"},
+    "capital": {"en": "Helsinki", "ru": "Хельсинки", "kk": "Хельсинки"}
+  },
+  {
     "code": "SE",
     "code3": "SWE",
     "numeric": "752",
