@@ -75,7 +75,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
 
   List<AttractionVm> _attractions = [];
   bool _loading = true;
-  bool _hasAppliedDefaultCityFilter = false;
+  bool _hasAppliedDefaultLocationFilter = false;
   String? _error;
   AttractionFilterResult _filters = AttractionFilterResult.empty;
   Timer? _searchDebounce;
@@ -95,8 +95,7 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_initializeDefaultCityFilter());
-      _loadAttractions();
+      unawaited(_bootstrapAttractions());
     });
     _searchController.addListener(_onSearchChanged);
   }
@@ -117,29 +116,50 @@ class _AttractionsScreenState extends State<AttractionsScreen> {
     );
   }
 
-  Future<void> _initializeDefaultCityFilter() async {
+  Future<void> _bootstrapAttractions() async {
+    await _initializeDefaultLocationFilter();
+    if (!mounted) return;
+    await _loadAttractions();
+  }
+
+  Future<void> _initializeDefaultLocationFilter() async {
     final provider = context.read<HomeLocationProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
       await provider.load();
     }
     if (!mounted) return;
-    _applyDefaultCityFilter(provider);
+    _applyDefaultLocationFilter(provider);
   }
 
-  void _applyDefaultCityFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultCityFilter || _filters.city != null) return;
-    _hasAppliedDefaultCityFilter = true;
+  void _applyDefaultLocationFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultLocationFilter ||
+        _filters.country != null ||
+        _filters.city != null) {
+      return;
+    }
 
     final location = provider.selectedLocation;
-    final city = AppCityFilterValue.fromParts(
-      cityId: location?.cityId,
-      cityName: location?.cityName,
-      countryCode: location?.countryCode,
+    if (location == null) return;
+
+    _hasAppliedDefaultLocationFilter = true;
+
+    final defaultCountry = AppCountryFilterValue.fromParts(
+      countryCode: location.countryCode,
     );
-    if (city == null) return;
+    final defaultCity = defaultCountry == null
+        ? null
+        : AppCityFilterValue.fromParts(
+            cityId: location.cityId,
+            cityName: location.cityName,
+            countryCode: location.countryCode,
+          );
+    if (defaultCountry == null && defaultCity == null) return;
 
     setState(() {
-      _filters = _filters.copyWith(city: city);
+      _filters = _filters.copyWith(
+        country: defaultCountry,
+        city: defaultCity,
+      );
       _currentPage = 1;
     });
   }

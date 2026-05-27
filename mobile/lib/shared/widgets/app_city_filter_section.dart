@@ -85,6 +85,355 @@ class AppCityFilterValue {
   }
 }
 
+class AppCountryFilterValue {
+  const AppCountryFilterValue({
+    String? countryCode,
+    this.countryName,
+  }) : _countryCode = countryCode;
+
+  final String? _countryCode;
+  final String? countryName;
+
+  String? get countryCode => _normalizeCountry(_countryCode);
+
+  bool get hasValue => _normalizeCountry(countryCode) != null;
+
+  String get fallbackLabel {
+    final name = _normalize(countryName);
+    if (name != null) return name;
+    return _normalizeCountry(countryCode) ?? '';
+  }
+
+  bool matches({String? countryCode, String? countryName}) {
+    final selectedCode = _normalizeCountry(this.countryCode);
+    final candidateCode = _normalizeCountry(countryCode);
+    if (selectedCode != null && candidateCode != null) {
+      return selectedCode == candidateCode;
+    }
+
+    final selectedName = _normalizeCity(this.countryName);
+    final candidateName = _normalizeCity(countryName);
+    return selectedName != null &&
+        candidateName != null &&
+        selectedName == candidateName;
+  }
+
+  static AppCountryFilterValue? fromParts({
+    String? countryCode,
+    String? countryName,
+  }) {
+    final value = AppCountryFilterValue(
+      countryCode: _normalizeCountry(countryCode),
+      countryName: _normalize(countryName),
+    );
+    return value.hasValue ? value : null;
+  }
+
+  factory AppCountryFilterValue.fromCountry(ReferenceCountry country) {
+    return AppCountryFilterValue(
+      countryCode: _normalizeCountry(country.code),
+      countryName: _normalize(country.name),
+    );
+  }
+}
+
+class AppCountryFilterSection extends StatefulWidget {
+  const AppCountryFilterSection({
+    super.key,
+    required this.title,
+    required this.allCountriesLabel,
+    required this.searchHint,
+    required this.noResultsText,
+    required this.selectedCountry,
+    required this.onChanged,
+    this.api,
+    this.maxResultsHeight = 224,
+  });
+
+  final String title;
+  final String allCountriesLabel;
+  final String searchHint;
+  final String noResultsText;
+  final AppCountryFilterValue? selectedCountry;
+  final ValueChanged<AppCountryFilterValue?> onChanged;
+  final ReferenceApi? api;
+  final double maxResultsHeight;
+
+  @override
+  State<AppCountryFilterSection> createState() =>
+      _AppCountryFilterSectionState();
+}
+
+class _AppCountryFilterSectionState extends State<AppCountryFilterSection> {
+  late final ReferenceApi _api;
+  final TextEditingController _countrySearchController =
+      TextEditingController();
+  Timer? _searchDebounce;
+  List<ReferenceCountry> _visibleCountries = const [];
+  String _countrySearchQuery = '';
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _api = widget.api ?? ReferenceApi();
+    _countrySearchController.addListener(_handleSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _countrySearchController
+      ..removeListener(_handleSearchChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleSearchChanged() {
+    final query = _countrySearchController.text.trim();
+    if (query == _countrySearchQuery) return;
+    _countrySearchQuery = query;
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 260), _runSearch);
+  }
+
+  Future<void> _runSearch() async {
+    final query = _countrySearchQuery;
+    if (query.length < 2) {
+      if (!mounted) return;
+      setState(() {
+        _visibleCountries = const [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+    try {
+      final countries = await _api.searchCountries(
+        query,
+        lang: Localizations.localeOf(context).languageCode,
+        limit: 24,
+      );
+      if (!mounted || _countrySearchQuery != query) return;
+      setState(() {
+        _visibleCountries = countries;
+        _isSearching = false;
+      });
+    } catch (_) {
+      if (!mounted || _countrySearchQuery != query) return;
+      setState(() {
+        _visibleCountries = const [];
+        _isSearching = false;
+      });
+    }
+  }
+
+  void _selectCountry(ReferenceCountry country) {
+    final value = AppCountryFilterValue.fromCountry(country);
+    final current = widget.selectedCountry;
+    final next = current != null &&
+            value.matches(
+              countryCode: current.countryCode,
+              countryName: current.countryName,
+            )
+        ? null
+        : value;
+    _countrySearchController.clear();
+    setState(() {
+      _countrySearchQuery = '';
+      _visibleCountries = const [];
+    });
+    widget.onChanged(next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedCountry = widget.selectedCountry;
+    final queryHasEnoughText = _countrySearchQuery.trim().length >= 2;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          widget.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 16),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2118),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.flag_rounded,
+                  color: AppColors.accent,
+                  size: 21,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: selectedCountry == null
+                      ? Text(
+                          widget.allCountriesLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        )
+                      : AppLocalizedLocationText(
+                          countryCode: selectedCountry.countryCode,
+                          cityId: null,
+                          cityName: null,
+                          fallbackText: selectedCountry.fallbackLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                ),
+                if (selectedCountry != null)
+                  IconButton(
+                    tooltip: widget.allCountriesLabel,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => widget.onChanged(null),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFFBDAA98),
+                      size: 20,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _countrySearchController,
+          cursorColor: AppColors.accent,
+          textInputAction: TextInputAction.search,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+          decoration: InputDecoration(
+            hintText: widget.searchHint,
+            hintStyle: const TextStyle(
+              color: Color(0xFF9D8877),
+              fontWeight: FontWeight.w600,
+            ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: AppColors.accent,
+            ),
+            filled: true,
+            fillColor: const Color(0xFF171009),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide:
+                  BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(
+                color: AppColors.accent,
+                width: 1.2,
+              ),
+            ),
+          ),
+        ),
+        if (_isSearching) ...[
+          const SizedBox(height: 12),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                color: AppColors.accent,
+              ),
+            ),
+          ),
+        ] else if (queryHasEnoughText) ...[
+          const SizedBox(height: 12),
+          if (_visibleCountries.isEmpty)
+            Row(
+              children: [
+                const Icon(
+                  Icons.flag_circle_rounded,
+                  color: AppColors.accent,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.noResultsText,
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: widget.maxResultsHeight),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                itemCount: _visibleCountries.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final country = _visibleCountries[index];
+                  final selected = widget.selectedCountry?.matches(
+                        countryCode: country.code,
+                        countryName: country.name,
+                      ) ??
+                      false;
+                  return _CountryOptionRow(
+                    country: country,
+                    selected: selected,
+                    onTap: () => _selectCountry(country),
+                  );
+                },
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
 class AppCityFilterSection extends StatefulWidget {
   const AppCityFilterSection({
     super.key,
@@ -94,6 +443,7 @@ class AppCityFilterSection extends StatefulWidget {
     required this.noResultsText,
     required this.selectedCity,
     required this.onChanged,
+    this.countryCode,
     this.api,
     this.maxResultsHeight = 224,
   });
@@ -104,6 +454,7 @@ class AppCityFilterSection extends StatefulWidget {
   final String noResultsText;
   final AppCityFilterValue? selectedCity;
   final ValueChanged<AppCityFilterValue?> onChanged;
+  final String? countryCode;
   final ReferenceApi? api;
   final double maxResultsHeight;
 
@@ -158,6 +509,7 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
     try {
       final cities = await _api.searchCities(
         query,
+        countryCode: widget.countryCode,
         lang: Localizations.localeOf(context).languageCode,
         limit: 24,
       );
@@ -378,6 +730,82 @@ class _AppCityFilterSectionState extends State<AppCityFilterSection> {
             ),
         ],
       ],
+    );
+  }
+}
+
+class _CountryOptionRow extends StatelessWidget {
+  const _CountryOptionRow({
+    required this.country,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ReferenceCountry country;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final code = country.code.trim().toUpperCase();
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.accent.withValues(alpha: 0.18)
+                : const Color(0xFF2C2118),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? AppColors.accent
+                  : Colors.white.withValues(alpha: 0.07),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    country.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                if (code.isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  Text(
+                    code,
+                    style: const TextStyle(
+                      color: Color(0xFFBDAA98),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+                if (selected) ...[
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.accent,
+                    size: 18,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

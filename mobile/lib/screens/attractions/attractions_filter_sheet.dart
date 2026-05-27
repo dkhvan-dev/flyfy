@@ -13,6 +13,7 @@ import '../../shared/widgets/app_city_filter_section.dart';
 /// Result handed back to the discover screen when the user taps "Show N spots".
 class AttractionFilterResult {
   const AttractionFilterResult({
+    this.country,
     this.city,
     this.category,
     this.minRating,
@@ -23,6 +24,7 @@ class AttractionFilterResult {
     this.priceMax,
   });
 
+  final AppCountryFilterValue? country;
   final AppCityFilterValue? city;
   final String? category;
   final double? minRating;
@@ -34,9 +36,10 @@ class AttractionFilterResult {
 
   String? get cityId => city?.cityId;
   String? get cityName => city?.cityName;
-  String? get countryCode => city?.countryCode;
+  String? get countryCode => country?.countryCode ?? city?.countryCode;
 
   bool get isEmpty =>
+      country == null &&
       city == null &&
       category == null &&
       minRating == null &&
@@ -47,6 +50,7 @@ class AttractionFilterResult {
       priceMax == null;
 
   int get activeCount =>
+      (country == null ? 0 : 1) +
       (city == null ? 0 : 1) +
       (category == null ? 0 : 1) +
       (minRating == null ? 0 : 1) +
@@ -59,6 +63,7 @@ class AttractionFilterResult {
   static const empty = AttractionFilterResult();
 
   AttractionFilterResult copyWith({
+    Object? country = _unset,
     Object? city = _unset,
     String? category,
     bool clearCategory = false,
@@ -74,6 +79,9 @@ class AttractionFilterResult {
     bool clearPriceMax = false,
   }) {
     return AttractionFilterResult(
+      country: identical(country, _unset)
+          ? this.country
+          : country as AppCountryFilterValue?,
       city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
       category: clearCategory ? null : category ?? this.category,
       minRating: clearMinRating ? null : minRating ?? this.minRating,
@@ -148,6 +156,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
   late final TextEditingController _minPriceController;
   late final TextEditingController _maxPriceController;
 
+  AppCountryFilterValue? _country;
   AppCityFilterValue? _city;
   String? _category;
   double? _minRating;
@@ -163,6 +172,10 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
     _api = widget.api ?? AttractionApi();
 
     final initial = widget.initial;
+    _country = initial.country ??
+        AppCountryFilterValue.fromParts(
+          countryCode: initial.city?.countryCode ?? widget.fallbackCountryCode,
+        );
     _city = initial.city;
     _category = initial.category;
     _minRating = initial.minRating;
@@ -282,6 +295,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
     }
 
     return AttractionFilterResult(
+      country: _country,
       city: _city,
       category: _category,
       minRating: _minRating,
@@ -294,6 +308,14 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
   }
 
   // ---- handlers -----------------------------------------------------------
+
+  void _setCountry(AppCountryFilterValue? value) {
+    setState(() {
+      _country = value;
+      _city = null;
+    });
+    _schedulePreview();
+  }
 
   void _setCity(AppCityFilterValue? value) {
     setState(() => _city = value);
@@ -335,6 +357,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
 
   void _clearAll() {
     setState(() {
+      _country = null;
       _city = null;
       _category = null;
       _minRating = null;
@@ -418,10 +441,11 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildCountrySection(
-                                      l10n,
-                                      adaptive,
-                                    ),
+                                    _buildCountrySection(l10n, adaptive),
+                                    if (_country != null) ...[
+                                      SizedBox(height: adaptive.scale(38)),
+                                      _buildCitySection(l10n, adaptive),
+                                    ],
                                     SizedBox(height: adaptive.scale(38)),
                                     _buildCategoriesSection(l10n, adaptive),
                                     SizedBox(height: adaptive.scale(38)),
@@ -471,6 +495,20 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
     AppLocalizations l10n,
     AttractionAdaptive adaptive,
   ) {
+    return AppCountryFilterSection(
+      title: l10n.attractionFilterCountrySection,
+      allCountriesLabel: l10n.attractionFilterCountryAll,
+      searchHint: l10n.attractionFilterCountrySearchHint,
+      noResultsText: l10n.attractionFilterCountryNoResults,
+      selectedCountry: _country,
+      onChanged: _setCountry,
+    );
+  }
+
+  Widget _buildCitySection(
+    AppLocalizations l10n,
+    AttractionAdaptive adaptive,
+  ) {
     return AppCityFilterSection(
       title: l10n.locationFilterCitySection,
       allCitiesLabel: l10n.locationFilterAllCities,
@@ -478,6 +516,7 @@ class _AttractionsFilterSheetState extends State<AttractionsFilterSheet> {
       noResultsText: l10n.locationFilterCityNoResults,
       selectedCity: _city,
       onChanged: _setCity,
+      countryCode: _country?.countryCode,
     );
   }
 
