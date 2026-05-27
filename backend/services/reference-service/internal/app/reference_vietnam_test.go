@@ -3755,3 +3755,78 @@ func TestReferenceUseCaseIncludesUkraineTouristDestinations(t *testing.T) {
 		t.Fatalf("search bukovel in Ukraine = %#v, want bukovel first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesUnitedStatesTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("US")
+	if country == nil {
+		t.Fatal("expected United States country reference")
+	}
+	if country.Name.Ru != "США" {
+		t.Fatalf("United States Russian name = %q, want США", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("US")
+	if currency == nil {
+		t.Fatal("expected US dollar currency by United States country")
+	}
+	if currency.Code != "USD" {
+		t.Fatalf("United States currency = %q, want USD", currency.Code)
+	}
+
+	cities := uc.ListCities("US")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"new-york",
+		"washington-dc",
+		"boston",
+		"philadelphia",
+		"niagara-falls",
+		"chicago",
+		"los-angeles",
+		"san-francisco",
+		"san-diego",
+		"las-vegas",
+		"seattle",
+		"portland",
+		"miami",
+		"orlando",
+		"new-orleans",
+		"austin",
+		"dallas",
+		"houston",
+		"san-antonio",
+		"grand-canyon",
+		"yellowstone",
+		"yosemite",
+		"zion",
+		"rocky-mountain",
+		"honolulu",
+		"maui",
+		"anchorage",
+		"denali",
+		"nashville",
+		"atlanta",
+		"charleston",
+		"savannah",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("United States city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("yosemite", "US", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "yosemite" {
+		t.Fatalf("search yosemite in United States = %#v, want yosemite first", searchResults)
+	}
+}

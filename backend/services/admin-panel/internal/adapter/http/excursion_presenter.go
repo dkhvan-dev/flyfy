@@ -1754,6 +1754,41 @@ var kenyaCityNames = map[string]map[string]string{
 	"watamu":           {localeEN: "Watamu", localeRU: "Ватаму"},
 }
 
+var unitedStatesCityNames = map[string]map[string]string{
+	"new-york":       {localeEN: "New York", localeRU: "Нью-Йорк"},
+	"washington-dc":  {localeEN: "Washington, DC", localeRU: "Вашингтон"},
+	"boston":         {localeEN: "Boston", localeRU: "Бостон"},
+	"philadelphia":   {localeEN: "Philadelphia", localeRU: "Филадельфия"},
+	"niagara-falls":  {localeEN: "Niagara Falls", localeRU: "Ниагара-Фолс"},
+	"chicago":        {localeEN: "Chicago", localeRU: "Чикаго"},
+	"los-angeles":    {localeEN: "Los Angeles", localeRU: "Лос-Анджелес"},
+	"san-francisco":  {localeEN: "San Francisco", localeRU: "Сан-Франциско"},
+	"san-diego":      {localeEN: "San Diego", localeRU: "Сан-Диего"},
+	"las-vegas":      {localeEN: "Las Vegas", localeRU: "Лас-Вегас"},
+	"seattle":        {localeEN: "Seattle", localeRU: "Сиэтл"},
+	"portland":       {localeEN: "Portland", localeRU: "Портленд"},
+	"miami":          {localeEN: "Miami", localeRU: "Майами"},
+	"orlando":        {localeEN: "Orlando", localeRU: "Орландо"},
+	"new-orleans":    {localeEN: "New Orleans", localeRU: "Новый Орлеан"},
+	"austin":         {localeEN: "Austin", localeRU: "Остин"},
+	"dallas":         {localeEN: "Dallas", localeRU: "Даллас"},
+	"houston":        {localeEN: "Houston", localeRU: "Хьюстон"},
+	"san-antonio":    {localeEN: "San Antonio", localeRU: "Сан-Антонио"},
+	"grand-canyon":   {localeEN: "Grand Canyon", localeRU: "Гранд-Каньон"},
+	"yellowstone":    {localeEN: "Yellowstone", localeRU: "Йеллоустоун"},
+	"yosemite":       {localeEN: "Yosemite", localeRU: "Йосемити"},
+	"zion":           {localeEN: "Zion", localeRU: "Зайон"},
+	"rocky-mountain": {localeEN: "Rocky Mountain", localeRU: "Роки-Маунтин"},
+	"honolulu":       {localeEN: "Honolulu", localeRU: "Гонолулу"},
+	"maui":           {localeEN: "Maui", localeRU: "Мауи"},
+	"anchorage":      {localeEN: "Anchorage", localeRU: "Анкоридж"},
+	"denali":         {localeEN: "Denali", localeRU: "Денали"},
+	"nashville":      {localeEN: "Nashville", localeRU: "Нэшвилл"},
+	"atlanta":        {localeEN: "Atlanta", localeRU: "Атланта"},
+	"charleston":     {localeEN: "Charleston", localeRU: "Чарлстон"},
+	"savannah":       {localeEN: "Savannah", localeRU: "Саванна"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -1876,6 +1911,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range kenyaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range unitedStatesCityNames {
 		cityNames[cityID] = names
 	}
 }

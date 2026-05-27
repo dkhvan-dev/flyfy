@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "BY", "RS", "GR", "UA", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "NZ", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "BY", "RS", "GR", "UA", "US", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "NZ", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -66,6 +66,38 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "KZ", CityID: "turkestan"},
 	{CountryCode: "KZ", CityID: "ust-kamenogorsk"},
 	{CountryCode: "KZ", CityID: "zhezkazgan"},
+	{CountryCode: "US", CityID: "new-york"},
+	{CountryCode: "US", CityID: "washington-dc"},
+	{CountryCode: "US", CityID: "boston"},
+	{CountryCode: "US", CityID: "philadelphia"},
+	{CountryCode: "US", CityID: "niagara-falls"},
+	{CountryCode: "US", CityID: "chicago"},
+	{CountryCode: "US", CityID: "los-angeles"},
+	{CountryCode: "US", CityID: "san-francisco"},
+	{CountryCode: "US", CityID: "san-diego"},
+	{CountryCode: "US", CityID: "las-vegas"},
+	{CountryCode: "US", CityID: "seattle"},
+	{CountryCode: "US", CityID: "portland"},
+	{CountryCode: "US", CityID: "miami"},
+	{CountryCode: "US", CityID: "orlando"},
+	{CountryCode: "US", CityID: "new-orleans"},
+	{CountryCode: "US", CityID: "austin"},
+	{CountryCode: "US", CityID: "dallas"},
+	{CountryCode: "US", CityID: "houston"},
+	{CountryCode: "US", CityID: "san-antonio"},
+	{CountryCode: "US", CityID: "grand-canyon"},
+	{CountryCode: "US", CityID: "yellowstone"},
+	{CountryCode: "US", CityID: "yosemite"},
+	{CountryCode: "US", CityID: "zion"},
+	{CountryCode: "US", CityID: "rocky-mountain"},
+	{CountryCode: "US", CityID: "honolulu"},
+	{CountryCode: "US", CityID: "maui"},
+	{CountryCode: "US", CityID: "anchorage"},
+	{CountryCode: "US", CityID: "denali"},
+	{CountryCode: "US", CityID: "nashville"},
+	{CountryCode: "US", CityID: "atlanta"},
+	{CountryCode: "US", CityID: "charleston"},
+	{CountryCode: "US", CityID: "savannah"},
 	{CountryCode: "KG", CityID: "bishkek"},
 	{CountryCode: "KG", CityID: "ala-archa"},
 	{CountryCode: "KG", CityID: "tokmok"},

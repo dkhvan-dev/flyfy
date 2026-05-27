@@ -6322,6 +6322,114 @@ func TestUkrainePriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.
 	}
 }
 
+func TestUnitedStatesPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "078_seed_united_states_priority_attractions.up.sql")
+	downSQL := readMigration(t, "078_seed_united_states_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_united_states_resolved_attractions AS",
+		"'US'",
+		"'USD'",
+		"united-states-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("United States up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"new-york",
+		"washington-dc",
+		"boston",
+		"philadelphia",
+		"niagara-falls",
+		"chicago",
+		"los-angeles",
+		"san-francisco",
+		"san-diego",
+		"las-vegas",
+		"seattle",
+		"portland",
+		"miami",
+		"orlando",
+		"new-orleans",
+		"austin",
+		"dallas",
+		"houston",
+		"san-antonio",
+		"grand-canyon",
+		"yellowstone",
+		"yosemite",
+		"zion",
+		"rocky-mountain",
+		"honolulu",
+		"maui",
+		"anchorage",
+		"denali",
+		"nashville",
+		"atlanta",
+		"charleston",
+		"savannah",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("United States up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Statue of Liberty and Ellis Island",
+		"Central Park",
+		"National Mall and Memorial Parks",
+		"Freedom Trail Boston",
+		"Independence Hall and Liberty Bell",
+		"Niagara Falls State Park",
+		"Millennium Park Chicago",
+		"Griffith Observatory",
+		"Golden Gate Bridge",
+		"San Diego Zoo",
+		"Fountains of Bellagio",
+		"Pike Place Market",
+		"Walt Disney World Resort",
+		"French Quarter New Orleans",
+		"Space Center Houston",
+		"The Alamo",
+		"Grand Canyon South Rim",
+		"Old Faithful Yellowstone",
+		"Yosemite Valley",
+		"Zion Canyon Scenic Drive",
+		"Waikiki Beach",
+		"Denali National Park",
+		"Grand Ole Opry",
+		"Georgia Aquarium",
+		"Forsyth Park Savannah",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("United States up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("United States up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("United States up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['united-states', city_id") {
+		t.Fatalf("United States up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "united-states-seed-v1") || !strings.Contains(downSQL, "country_code = 'US'") {
+		t.Fatalf("United States down migration must remove only tagged United States seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",
