@@ -57,6 +57,7 @@ var countryNames = map[string]map[string]string{
 	"DE": {localeEN: "Germany", localeRU: "Германия"},
 	"AT": {localeEN: "Austria", localeRU: "Австрия"},
 	"CH": {localeEN: "Switzerland", localeRU: "Швейцария"},
+	"DK": {localeEN: "Denmark", localeRU: "Дания"},
 	"SE": {localeEN: "Sweden", localeRU: "Швеция"},
 	"CZ": {localeEN: "Czechia", localeRU: "Чехия"},
 	"FR": {localeEN: "France", localeRU: "Франция"},
@@ -1794,6 +1795,21 @@ var singaporeCityNames = map[string]map[string]string{
 	"singapore": {localeEN: "Singapore", localeRU: "Сингапур"},
 }
 
+var denmarkCityNames = map[string]map[string]string{
+	"copenhagen": {localeEN: "Copenhagen", localeRU: "Копенгаген"},
+	"aarhus":     {localeEN: "Aarhus", localeRU: "Орхус"},
+	"odense":     {localeEN: "Odense", localeRU: "Оденсе"},
+	"aalborg":    {localeEN: "Aalborg", localeRU: "Ольборг"},
+	"billund":    {localeEN: "Billund", localeRU: "Биллунн"},
+	"skagen":     {localeEN: "Skagen", localeRU: "Скаген"},
+	"ribe":       {localeEN: "Ribe", localeRU: "Рибе"},
+	"esbjerg":    {localeEN: "Esbjerg", localeRU: "Эсбьерг"},
+	"roskilde":   {localeEN: "Roskilde", localeRU: "Роскилле"},
+	"helsingor":  {localeEN: "Helsingor", localeRU: "Хельсингёр"},
+	"hillerod":   {localeEN: "Hillerod", localeRU: "Хиллерёд"},
+	"mons-klint": {localeEN: "Mons Klint", localeRU: "Мёнс-Клинт"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -1922,6 +1938,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range singaporeCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range denmarkCityNames {
 		cityNames[cityID] = names
 	}
 }

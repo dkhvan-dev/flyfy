@@ -4608,6 +4608,102 @@ func TestRendererRendersSingaporeAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersDenmarkAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=DK&city=copenhagen",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Сады Тиволи",
+				CountryCode:   "DK",
+				CityID:        "copenhagen",
+				Category:      "ENTERTAINMENT",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "DK",
+			CityID:      "copenhagen",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="DK" selected`,
+		`Дания`,
+		`value="copenhagen" data-country="DK" selected`,
+		`Копенгаген, Дания`,
+		`Развлечения`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Denmark attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">DK<") || strings.Contains(listBody, ">copenhagen<") {
+		t.Fatalf("Denmark attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "DKK"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Сады Тиволи",
+		Description:   "Исторический парк развлечений в центре Копенгагена.",
+		CountryCode:   "DK",
+		CityID:        "copenhagen",
+		Category:      "ENTERTAINMENT",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "DK", CityID: "copenhagen"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "DK", CityID: "copenhagen"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate form returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="DK" selected>Дания</option>`,
+		`<option value="copenhagen" data-country="DK" selected>Копенгаген</option>`,
+		`<option value="DKK" selected>Датская крона</option>`,
+		`Копенгаген, Дания`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Denmark attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

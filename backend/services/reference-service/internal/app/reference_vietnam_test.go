@@ -3869,3 +3869,58 @@ func TestReferenceUseCaseIncludesSingaporeTouristDestination(t *testing.T) {
 		t.Fatalf("search singapore in Singapore = %#v, want singapore first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesDenmarkCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("DK")
+	if country == nil {
+		t.Fatal("expected Denmark country reference")
+	}
+	if country.Name.Ru != "Дания" {
+		t.Fatalf("Denmark Russian name = %q, want Дания", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("DK")
+	if currency == nil {
+		t.Fatal("expected Danish krone currency by Denmark country")
+	}
+	if currency.Code != "DKK" {
+		t.Fatalf("Denmark currency = %q, want DKK", currency.Code)
+	}
+
+	cities := uc.ListCities("DK")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"copenhagen",
+		"aarhus",
+		"odense",
+		"aalborg",
+		"billund",
+		"skagen",
+		"ribe",
+		"esbjerg",
+		"roskilde",
+		"helsingor",
+		"hillerod",
+		"mons-klint",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Denmark city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("copenhagen", "DK", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "copenhagen" {
+		t.Fatalf("search copenhagen in Denmark = %#v, want copenhagen first", searchResults)
+	}
+}

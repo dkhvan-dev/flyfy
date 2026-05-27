@@ -522,6 +522,15 @@
     "capital": {"en": "Amsterdam", "ru": "Амстердам", "kk": "Амстердам"}
   },
   {
+    "code": "DK",
+    "code3": "DNK",
+    "numeric": "208",
+    "currencyCode": "DKK",
+    "phoneCode": "+45",
+    "name": {"en": "Denmark", "ru": "Дания", "kk": "Дания"},
+    "capital": {"en": "Copenhagen", "ru": "Копенгаген", "kk": "Копенгаген"}
+  },
+  {
     "code": "SE",
     "code3": "SWE",
     "numeric": "752",

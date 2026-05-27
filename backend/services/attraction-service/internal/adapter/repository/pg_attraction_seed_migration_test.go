@@ -6499,6 +6499,87 @@ func TestSingaporePriorityAttractionsSeedMigrationCoversTouristBreadth(t *testin
 	}
 }
 
+func TestDenmarkPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "080_seed_denmark_priority_attractions.up.sql")
+	downSQL := readMigration(t, "080_seed_denmark_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_denmark_resolved_attractions AS",
+		"'DK'",
+		"'DKK'",
+		"denmark-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Denmark up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"copenhagen",
+		"aarhus",
+		"odense",
+		"aalborg",
+		"billund",
+		"skagen",
+		"ribe",
+		"esbjerg",
+		"roskilde",
+		"helsingor",
+		"hillerod",
+		"mons-klint",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Denmark up migration must seed attractions for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Tivoli Gardens",
+		"Nyhavn",
+		"The Little Mermaid",
+		"SMK - National Gallery of Denmark",
+		"TorvehallerneKBH",
+		"ARoS Aarhus Art Museum",
+		"Den Gamle By",
+		"Moesgaard Museum",
+		"LEGOLAND Billund Resort",
+		"LEGO House",
+		"H. C. Andersen House",
+		"Egeskov Castle",
+		"Skagen Grenen",
+		"Ribe Viking Center",
+		"Roskilde Cathedral",
+		"Kronborg Castle",
+		"Frederiksborg Castle",
+		"Mons Klint",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Denmark up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Denmark up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Denmark up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['denmark', city_id") {
+		t.Fatalf("Denmark up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "denmark-seed-v1") || !strings.Contains(downSQL, "country_code = 'DK'") {
+		t.Fatalf("Denmark down migration must remove only tagged Denmark seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",
