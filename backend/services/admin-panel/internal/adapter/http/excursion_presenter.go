@@ -71,6 +71,7 @@ var countryNames = map[string]map[string]string{
 	"CY": {localeEN: "Cyprus", localeRU: "Кипр"},
 	"AZ": {localeEN: "Azerbaijan", localeRU: "Азербайджан"},
 	"US": {localeEN: "United States", localeRU: "США"},
+	"SG": {localeEN: "Singapore", localeRU: "Сингапур"},
 }
 
 var cityNames = map[string]map[string]string{
@@ -1789,6 +1790,10 @@ var unitedStatesCityNames = map[string]map[string]string{
 	"savannah":       {localeEN: "Savannah", localeRU: "Саванна"},
 }
 
+var singaporeCityNames = map[string]map[string]string{
+	"singapore": {localeEN: "Singapore", localeRU: "Сингапур"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -1914,6 +1919,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range unitedStatesCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range singaporeCityNames {
 		cityNames[cityID] = names
 	}
 }

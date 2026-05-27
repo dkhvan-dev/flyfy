@@ -3830,3 +3830,42 @@ func TestReferenceUseCaseIncludesUnitedStatesTouristDestinations(t *testing.T) {
 		t.Fatalf("search yosemite in United States = %#v, want yosemite first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesSingaporeTouristDestination(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("SG")
+	if country == nil {
+		t.Fatal("expected Singapore country reference")
+	}
+	if country.Name.Ru != "Сингапур" {
+		t.Fatalf("Singapore Russian name = %q, want Сингапур", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("SG")
+	if currency == nil {
+		t.Fatal("expected Singapore dollar currency by Singapore country")
+	}
+	if currency.Code != "SGD" {
+		t.Fatalf("Singapore currency = %q, want SGD", currency.Code)
+	}
+
+	cities := uc.ListCities("SG")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	if !cityIDs["singapore"] {
+		t.Fatalf("Singapore city references must include singapore; got %#v", cityIDs)
+	}
+
+	searchResults := uc.SearchCities("singapore", "SG", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "singapore" {
+		t.Fatalf("search singapore in Singapore = %#v, want singapore first", searchResults)
+	}
+}

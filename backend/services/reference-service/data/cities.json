@@ -638,6 +638,7 @@
   {"id": "atlanta", "countryCode": "US", "name": {"en": "Atlanta", "ru": "Атланта", "kk": "Атланта"}, "population": 499000},
   {"id": "charleston", "countryCode": "US", "name": {"en": "Charleston", "ru": "Чарлстон", "kk": "Чарлстон"}, "population": 153000},
   {"id": "savannah", "countryCode": "US", "name": {"en": "Savannah", "ru": "Саванна", "kk": "Саванна"}, "population": 148000},
+  {"id": "singapore", "countryCode": "SG", "name": {"en": "Singapore", "ru": "Сингапур", "kk": "Сингапур"}, "population": 5920000},
 
   {"id": "london", "countryCode": "GB", "name": {"en": "London", "ru": "Лондон", "kk": "Лондон"}, "population": 8980000},
   {"id": "manchester", "countryCode": "GB", "name": {"en": "Manchester", "ru": "Манчестер", "kk": "Манчестер"}, "population": 553000},

@@ -6430,6 +6430,75 @@ func TestUnitedStatesPriorityAttractionsSeedMigrationCoversTouristBreadth(t *tes
 	}
 }
 
+func TestSingaporePriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "079_seed_singapore_priority_attractions.up.sql")
+	downSQL := readMigration(t, "079_seed_singapore_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_singapore_resolved_attractions AS",
+		"'SG'",
+		"'SGD'",
+		"singapore-seed-v1",
+		"'singapore'",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Singapore up migration must contain %q", fragment)
+		}
+	}
+
+	for _, title := range []string{
+		"Gardens by the Bay",
+		"Marina Bay Sands",
+		"Merlion Park",
+		"ArtScience Museum",
+		"National Gallery Singapore",
+		"Lau Pa Sat",
+		"Universal Studios Singapore",
+		"Singapore Oceanarium",
+		"Adventure Cove Waterpark",
+		"Siloso Beach",
+		"Fort Siloso",
+		"Buddha Tooth Relic Temple and Museum",
+		"Sri Mariamman Temple",
+		"Tekka Centre",
+		"Sultan Mosque",
+		"Haji Lane",
+		"Singapore Botanic Gardens",
+		"Singapore Zoo",
+		"Night Safari",
+		"Bird Paradise",
+		"Jewel Changi Airport",
+		"East Coast Park",
+		"MacRitchie Reservoir Park",
+		"Newton Food Centre",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Singapore up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'FOOD'", "'TEMPLE'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Singapore up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Singapore up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['singapore', city_id") {
+		t.Fatalf("Singapore up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "singapore-seed-v1") || !strings.Contains(downSQL, "country_code = 'SG'") {
+		t.Fatalf("Singapore down migration must remove only tagged Singapore seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

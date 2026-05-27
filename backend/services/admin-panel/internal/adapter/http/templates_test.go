@@ -4512,6 +4512,102 @@ func TestRendererRendersUnitedStatesAttractionReferencesLocalized(t *testing.T) 
 	}
 }
 
+func TestRendererRendersSingaporeAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=SG&city=singapore",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Сады у залива",
+				CountryCode:   "SG",
+				CityID:        "singapore",
+				Category:      "PARK",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "SG",
+			CityID:      "singapore",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="SG" selected`,
+		`Сингапур`,
+		`value="singapore" data-country="SG" selected`,
+		`Сингапур, Сингапур`,
+		`Парк`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Singapore attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">SG<") || strings.Contains(listBody, ">singapore<") {
+		t.Fatalf("Singapore attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "SGD"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Сады у залива",
+		Description:   "Большой парк и теплицы в районе Marina Bay.",
+		CountryCode:   "SG",
+		CityID:        "singapore",
+		Category:      "PARK",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "SG", CityID: "singapore"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "SG", CityID: "singapore"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate form returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="SG" selected>Сингапур</option>`,
+		`<option value="singapore" data-country="SG" selected>Сингапур</option>`,
+		`<option value="SGD" selected>Сингапурский доллар</option>`,
+		`Сингапур, Сингапур`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Singapore attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

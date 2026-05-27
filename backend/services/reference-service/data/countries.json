@@ -225,6 +225,15 @@
     "capital": {"en": "Washington", "ru": "Вашингтон", "kk": "Вашингтон"}
   },
   {
+    "code": "SG",
+    "code3": "SGP",
+    "numeric": "702",
+    "currencyCode": "SGD",
+    "phoneCode": "+65",
+    "name": {"en": "Singapore", "ru": "Сингапур", "kk": "Сингапур"},
+    "capital": {"en": "Singapore", "ru": "Сингапур", "kk": "Сингапур"}
+  },
+  {
     "code": "GB",
     "code3": "GBR",
     "numeric": "826",
