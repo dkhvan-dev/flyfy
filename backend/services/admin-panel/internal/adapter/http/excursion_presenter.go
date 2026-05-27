@@ -60,6 +60,7 @@ var countryNames = map[string]map[string]string{
 	"CH": {localeEN: "Switzerland", localeRU: "Швейцария"},
 	"DK": {localeEN: "Denmark", localeRU: "Дания"},
 	"FI": {localeEN: "Finland", localeRU: "Финляндия"},
+	"EE": {localeEN: "Estonia", localeRU: "Эстония"},
 	"SE": {localeEN: "Sweden", localeRU: "Швеция"},
 	"CZ": {localeEN: "Czechia", localeRU: "Чехия"},
 	"FR": {localeEN: "France", localeRU: "Франция"},
@@ -1857,6 +1858,25 @@ var finlandCityNames = map[string]map[string]string{
 	"oulu":         {localeEN: "Oulu", localeRU: "Оулу"},
 }
 
+var estoniaCityNames = map[string]map[string]string{
+	"tallinn":      {localeEN: "Tallinn", localeRU: "Таллин"},
+	"tartu":        {localeEN: "Tartu", localeRU: "Тарту"},
+	"parnu":        {localeEN: "Parnu", localeRU: "Пярну"},
+	"haapsalu":     {localeEN: "Haapsalu", localeRU: "Хаапсалу"},
+	"kuressaare":   {localeEN: "Kuressaare", localeRU: "Курессааре"},
+	"saaremaa":     {localeEN: "Saaremaa", localeRU: "Сааремаа"},
+	"hiiumaa":      {localeEN: "Hiiumaa", localeRU: "Хийумаа"},
+	"narva":        {localeEN: "Narva", localeRU: "Нарва"},
+	"narva-joesuu": {localeEN: "Narva-Joesuu", localeRU: "Нарва-Йыэсуу"},
+	"lahemaa":      {localeEN: "Lahemaa", localeRU: "Лахемаа"},
+	"rakvere":      {localeEN: "Rakvere", localeRU: "Раквере"},
+	"ida-viru":     {localeEN: "Ida-Viru", localeRU: "Ида-Виру"},
+	"otepaa":       {localeEN: "Otepaa", localeRU: "Отепя"},
+	"viljandi":     {localeEN: "Viljandi", localeRU: "Вильянди"},
+	"vorumaa":      {localeEN: "Vorumaa", localeRU: "Вырумаа"},
+	"soomaa":       {localeEN: "Soomaa", localeRU: "Соомаа"},
+}
+
 func init() {
 	for cityID, names := range malaysiaCityNames {
 		cityNames[cityID] = names
@@ -1994,6 +2014,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range finlandCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range estoniaCityNames {
 		cityNames[cityID] = names
 	}
 }

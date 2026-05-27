@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "DK", "FI", "BY", "RS", "GR", "UA", "US", "CA", "SG", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "NZ", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "DK", "FI", "EE", "BY", "RS", "GR", "UA", "US", "CA", "SG", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "NZ", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -150,6 +150,22 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "FI", CityID: "inari"},
 	{CountryCode: "FI", CityID: "kilpisjarvi"},
 	{CountryCode: "FI", CityID: "oulu"},
+	{CountryCode: "EE", CityID: "tallinn"},
+	{CountryCode: "EE", CityID: "tartu"},
+	{CountryCode: "EE", CityID: "parnu"},
+	{CountryCode: "EE", CityID: "haapsalu"},
+	{CountryCode: "EE", CityID: "kuressaare"},
+	{CountryCode: "EE", CityID: "saaremaa"},
+	{CountryCode: "EE", CityID: "hiiumaa"},
+	{CountryCode: "EE", CityID: "narva"},
+	{CountryCode: "EE", CityID: "narva-joesuu"},
+	{CountryCode: "EE", CityID: "lahemaa"},
+	{CountryCode: "EE", CityID: "rakvere"},
+	{CountryCode: "EE", CityID: "ida-viru"},
+	{CountryCode: "EE", CityID: "otepaa"},
+	{CountryCode: "EE", CityID: "viljandi"},
+	{CountryCode: "EE", CityID: "vorumaa"},
+	{CountryCode: "EE", CityID: "soomaa"},
 	{CountryCode: "KG", CityID: "bishkek"},
 	{CountryCode: "KG", CityID: "ala-archa"},
 	{CountryCode: "KG", CityID: "tokmok"},

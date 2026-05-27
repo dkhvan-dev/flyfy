@@ -549,6 +549,15 @@
     "capital": {"en": "Helsinki", "ru": "Хельсинки", "kk": "Хельсинки"}
   },
   {
+    "code": "EE",
+    "code3": "EST",
+    "numeric": "233",
+    "currencyCode": "EUR",
+    "phoneCode": "+372",
+    "name": {"en": "Estonia", "ru": "Эстония", "kk": "Эстония"},
+    "capital": {"en": "Tallinn", "ru": "Таллин", "kk": "Таллин"}
+  },
+  {
     "code": "SE",
     "code3": "SWE",
     "numeric": "752",

@@ -4896,6 +4896,102 @@ func TestRendererRendersCanadaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersEstoniaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=EE&city=tallinn",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Старый город Таллина",
+				CountryCode:   "EE",
+				CityID:        "tallinn",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "EE",
+			CityID:      "tallinn",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="EE" selected`,
+		`Эстония`,
+		`value="tallinn" data-country="EE" selected`,
+		`Таллин, Эстония`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Estonia attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">EE<") || strings.Contains(listBody, ">tallinn<") {
+		t.Fatalf("Estonia attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "EUR"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Старый город Таллина",
+		Description:   "Исторический центр столицы Эстонии.",
+		CountryCode:   "EE",
+		CityID:        "tallinn",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "EE", CityID: "tallinn"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "EE", CityID: "tallinn"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate form returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="EE" selected>Эстония</option>`,
+		`<option value="tallinn" data-country="EE" selected>Таллин</option>`,
+		`<option value="EUR" selected>Евро</option>`,
+		`Таллин, Эстония`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Estonia attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

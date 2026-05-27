@@ -4049,3 +4049,61 @@ func TestReferenceUseCaseIncludesCanadaCountryCurrencyAndTouristDestinations(t *
 		t.Fatalf("search toronto in Canada = %#v, want toronto first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesEstoniaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("EE")
+	if country == nil {
+		t.Fatal("expected Estonia country reference")
+	}
+	if country.Name.Ru != "Эстония" {
+		t.Fatalf("Estonia Russian name = %q, want Эстония", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("EE")
+	if currency == nil {
+		t.Fatal("expected euro currency by Estonia country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Estonia currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("EE")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"tallinn",
+		"tartu",
+		"parnu",
+		"haapsalu",
+		"kuressaare",
+		"saaremaa",
+		"hiiumaa",
+		"narva",
+		"narva-joesuu",
+		"lahemaa",
+		"rakvere",
+		"otepaa",
+		"viljandi",
+		"vorumaa",
+		"soomaa",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Estonia city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("tallinn", "EE", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "tallinn" {
+		t.Fatalf("search tallinn in Estonia = %#v, want tallinn first", searchResults)
+	}
+}

@@ -6759,6 +6759,90 @@ func TestCanadaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestEstoniaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "083_seed_estonia_priority_attractions.up.sql")
+	downSQL := readMigration(t, "083_seed_estonia_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_estonia_resolved_attractions AS",
+		"'EE'",
+		"'EUR'",
+		"estonia-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Estonia up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"tallinn",
+		"tartu",
+		"parnu",
+		"haapsalu",
+		"kuressaare",
+		"saaremaa",
+		"hiiumaa",
+		"narva",
+		"narva-joesuu",
+		"lahemaa",
+		"rakvere",
+		"otepaa",
+		"viljandi",
+		"vorumaa",
+		"soomaa",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Estonia up migration must seed attractions for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Tallinn Old Town",
+		"Seaplane Harbour",
+		"Kadriorg Park",
+		"Kumu Art Museum",
+		"Balti Jaama Turg",
+		"Telliskivi Creative City",
+		"Tartu Town Hall Square",
+		"Estonian National Museum",
+		"AHHAA Science Centre",
+		"Parnu Beach",
+		"Kuressaare Castle",
+		"Kaali Meteorite Crater",
+		"Narva Castle",
+		"Lahemaa National Park",
+		"Viru Bog Nature Trail",
+		"Rakvere Castle",
+		"Soomaa National Park",
+		"Viljandi Castle Ruins",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Estonia up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'FOOD'", "'TEMPLE'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Estonia up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Estonia up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['estonia', city_id") {
+		t.Fatalf("Estonia up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "estonia-seed-v1") || !strings.Contains(downSQL, "country_code = 'EE'") {
+		t.Fatalf("Estonia down migration must remove only tagged Estonia seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",
