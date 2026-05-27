@@ -632,6 +632,72 @@ func TestReferenceUseCaseIncludesNetherlandsCountryCurrencyAndTouristDestination
 	}
 }
 
+func TestReferenceUseCaseIncludesBelarusCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("BY")
+	if country == nil {
+		t.Fatal("expected Belarus country reference")
+	}
+	if country.Name.Ru != "Беларусь" {
+		t.Fatalf("Belarus Russian name = %q, want Беларусь", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("BY")
+	if currency == nil {
+		t.Fatal("expected Belarusian ruble currency by Belarus country")
+	}
+	if currency.Code != "BYN" {
+		t.Fatalf("Belarus currency = %q, want BYN", currency.Code)
+	}
+
+	cities := uc.ListCities("BY")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"minsk",
+		"mir",
+		"nesvizh",
+		"brest",
+		"belovezhskaya-pushcha",
+		"grodno",
+		"lida",
+		"pinsk",
+		"vitebsk",
+		"polotsk",
+		"mogilev",
+		"gomel",
+		"braslav",
+		"naroch",
+		"dudutki",
+		"sula",
+		"silichi",
+		"logoisk",
+		"zaslavl",
+		"khatyn",
+		"stalin-line",
+		"pripyatsky",
+		"turov",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Belarus city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("belovezh", "BY", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "belovezhskaya-pushcha" {
+		t.Fatalf("search belovezh in Belarus = %#v, want belovezhskaya-pushcha first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

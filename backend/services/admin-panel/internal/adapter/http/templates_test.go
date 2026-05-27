@@ -3902,6 +3902,108 @@ func TestRendererRendersNetherlandsAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersBelarusAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=BY&city=minsk",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Национальная библиотека Беларуси",
+				CountryCode:   "BY",
+				CityID:        "minsk",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "BY",
+			CityID:      "minsk",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="BY" selected`,
+		`Беларусь`,
+		`value="minsk" data-country="BY" selected`,
+		`Минск`,
+		`Минск, Беларусь`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Belarus attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">BY<") || strings.Contains(listBody, ">minsk<") {
+		t.Fatalf("Belarus attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "BYN"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Национальная библиотека Беларуси",
+		Description:   "Современный символ Минска со смотровой площадкой и музеем книги.",
+		CountryCode:   "BY",
+		CityID:        "minsk",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "BY", CityID: "minsk"},
+			{CountryCode: "BY", CityID: "mir"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "BY", CityID: "minsk"},
+			{CountryCode: "BY", CityID: "brest"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="BY" selected>Беларусь</option>`,
+		`<option value="minsk" data-country="BY" selected>Минск</option>`,
+		`<option value="mir" data-country="BY" >Мир</option>`,
+		`type="checkbox" name="access_cities" value="BY:mir" checked`,
+		`type="checkbox" name="departure_cities" value="BY:brest" checked`,
+		`Минск, Беларусь`,
+		`<option value="BYN" selected>Белорусский рубль</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Belarus attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

@@ -21,6 +21,7 @@ var countryNames = map[string]map[string]string{
 	"IS": {localeEN: "Iceland", localeRU: "Исландия"},
 	"IE": {localeEN: "Ireland", localeRU: "Ирландия"},
 	"NL": {localeEN: "Netherlands", localeRU: "Нидерланды"},
+	"BY": {localeEN: "Belarus", localeRU: "Беларусь"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
@@ -1447,6 +1448,32 @@ var netherlandsCityNames = map[string]map[string]string{
 	"zandvoort":     {localeEN: "Zandvoort", localeRU: "Зандворт"},
 }
 
+var belarusCityNames = map[string]map[string]string{
+	"belovezhskaya-pushcha": {localeEN: "Belovezhskaya Pushcha", localeRU: "Беловежская пуща"},
+	"braslav":               {localeEN: "Braslav", localeRU: "Браслав"},
+	"brest":                 {localeEN: "Brest", localeRU: "Брест"},
+	"dudutki":               {localeEN: "Dudutki", localeRU: "Дудутки"},
+	"gomel":                 {localeEN: "Gomel", localeRU: "Гомель"},
+	"grodno":                {localeEN: "Grodno", localeRU: "Гродно"},
+	"khatyn":                {localeEN: "Khatyn", localeRU: "Хатынь"},
+	"lida":                  {localeEN: "Lida", localeRU: "Лида"},
+	"logoisk":               {localeEN: "Logoisk", localeRU: "Логойск"},
+	"minsk":                 {localeEN: "Minsk", localeRU: "Минск"},
+	"mir":                   {localeEN: "Mir", localeRU: "Мир"},
+	"mogilev":               {localeEN: "Mogilev", localeRU: "Могилев"},
+	"naroch":                {localeEN: "Naroch", localeRU: "Нарочь"},
+	"nesvizh":               {localeEN: "Nesvizh", localeRU: "Несвиж"},
+	"pinsk":                 {localeEN: "Pinsk", localeRU: "Пинск"},
+	"polotsk":               {localeEN: "Polotsk", localeRU: "Полоцк"},
+	"pripyatsky":            {localeEN: "Pripyatsky National Park", localeRU: "Припятский национальный парк"},
+	"silichi":               {localeEN: "Silichi", localeRU: "Силичи"},
+	"stalin-line":           {localeEN: "Stalin Line", localeRU: "Линия Сталина"},
+	"sula":                  {localeEN: "Sula", localeRU: "Сула"},
+	"turov":                 {localeEN: "Turov", localeRU: "Туров"},
+	"vitebsk":               {localeEN: "Vitebsk", localeRU: "Витебск"},
+	"zaslavl":               {localeEN: "Zaslavl", localeRU: "Заславль"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1686,6 +1713,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range netherlandsCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range belarusCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {
