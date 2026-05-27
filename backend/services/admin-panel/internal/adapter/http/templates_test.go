@@ -4310,6 +4310,107 @@ func TestRendererRendersNewZealandAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersUkraineAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=UA&city=kyiv",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "София Киевская",
+				CountryCode:   "UA",
+				CityID:        "kyiv",
+				Category:      "ARCHITECTURE",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "UA",
+			CityID:      "kyiv",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="UA" selected`,
+		`Украина`,
+		`value="kyiv" data-country="UA" selected`,
+		`Киев`,
+		`Киев, Украина`,
+		`Архитектура`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Ukraine attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">UA<") || strings.Contains(listBody, ">kyiv<") {
+		t.Fatalf("Ukraine attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "UAH"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "София Киевская",
+		Description:   "Исторический собор и музейный комплекс в центре Киева.",
+		CountryCode:   "UA",
+		CityID:        "kyiv",
+		Category:      "ARCHITECTURE",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "UA", CityID: "kyiv"},
+			{CountryCode: "UA", CityID: "lviv"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "UA", CityID: "kyiv"},
+			{CountryCode: "UA", CityID: "odesa"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate form returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="UA" selected>Украина</option>`,
+		`<option value="kyiv" data-country="UA" selected>Киев</option>`,
+		`<option value="UAH" selected>Украинская гривна</option>`,
+		`Киев, Украина`,
+		`Львов, Украина`,
+		`Одесса, Украина`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Ukraine attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

@@ -3692,3 +3692,66 @@ func TestReferenceUseCaseIncludesNewZealandCountryCurrencyAndTouristDestinations
 		t.Fatalf("search queenstown in New Zealand = %#v, want queenstown first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesUkraineTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("UA")
+	if country == nil {
+		t.Fatal("expected Ukraine country reference")
+	}
+	if country.Name.Ru != "Украина" {
+		t.Fatalf("Ukraine Russian name = %q, want Украина", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("UA")
+	if currency == nil {
+		t.Fatal("expected Ukrainian hryvnia currency by Ukraine country")
+	}
+	if currency.Code != "UAH" {
+		t.Fatalf("Ukraine currency = %q, want UAH", currency.Code)
+	}
+
+	cities := uc.ListCities("UA")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"kyiv",
+		"lviv",
+		"odesa",
+		"vinnytsia",
+		"cherkasy",
+		"uman",
+		"poltava",
+		"chernivtsi",
+		"ivano-frankivsk",
+		"yaremche",
+		"bukovel",
+		"uzhhorod",
+		"mukachevo",
+		"kamianets-podilskyi",
+		"bilhorod-dnistrovskyi",
+		"kharkiv",
+		"dnipro",
+		"zaporizhzhia",
+		"sumy",
+		"chernihiv",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Ukraine city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("bukovel", "UA", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "bukovel" {
+		t.Fatalf("search bukovel in Ukraine = %#v, want bukovel first", searchResults)
+	}
+}

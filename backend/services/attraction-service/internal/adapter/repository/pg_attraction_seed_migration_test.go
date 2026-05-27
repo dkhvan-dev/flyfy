@@ -6229,6 +6229,99 @@ func TestNewZealandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testi
 	}
 }
 
+func TestUkrainePriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "077_seed_ukraine_priority_attractions.up.sql")
+	downSQL := readMigration(t, "077_seed_ukraine_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_ukraine_resolved_attractions AS",
+		"'UA'",
+		"'UAH'",
+		"ukraine-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Ukraine up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"kyiv",
+		"lviv",
+		"odesa",
+		"vinnytsia",
+		"cherkasy",
+		"uman",
+		"poltava",
+		"chernivtsi",
+		"ivano-frankivsk",
+		"yaremche",
+		"bukovel",
+		"uzhhorod",
+		"mukachevo",
+		"kamianets-podilskyi",
+		"bilhorod-dnistrovskyi",
+		"kharkiv",
+		"dnipro",
+		"zaporizhzhia",
+		"sumy",
+		"chernihiv",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Ukraine up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Saint Sophia Cathedral Kyiv",
+		"Kyiv Pechersk Lavra",
+		"Golden Gate Kyiv",
+		"National Museum of the History of Ukraine",
+		"Ocean Plaza Kyiv",
+		"Besarabsky Market",
+		"Rynok Square Lviv",
+		"Lviv National Opera",
+		"Lviv High Castle Park",
+		"Privoz Market Odesa",
+		"Odesa Opera and Ballet Theater",
+		"Arcadia Beach",
+		"Sofiyivka Park Uman",
+		"Kamianets-Podilskyi Castle",
+		"Residence of Bukovinian and Dalmatian Metropolitans",
+		"Probiy Waterfall",
+		"Bukovel Resort",
+		"Palanok Castle",
+		"Derzhprom Kharkiv",
+		"Taras Shevchenko Park Dnipro",
+		"Khortytsia Island",
+		"Pyatnytska Church Chernihiv",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Ukraine up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Ukraine up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Ukraine up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['ukraine', city_id") {
+		t.Fatalf("Ukraine up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "ukraine-seed-v1") || !strings.Contains(downSQL, "country_code = 'UA'") {
+		t.Fatalf("Ukraine down migration must remove only tagged Ukraine seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

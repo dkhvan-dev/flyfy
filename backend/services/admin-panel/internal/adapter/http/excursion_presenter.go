@@ -24,6 +24,7 @@ var countryNames = map[string]map[string]string{
 	"BY": {localeEN: "Belarus", localeRU: "Беларусь"},
 	"RS": {localeEN: "Serbia", localeRU: "Сербия"},
 	"GR": {localeEN: "Greece", localeRU: "Греция"},
+	"UA": {localeEN: "Ukraine", localeRU: "Украина"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
@@ -1578,6 +1579,31 @@ var uzbekistanCityNames = map[string]map[string]string{
 	"zaamin":     {localeEN: "Zaamin", localeRU: "Заамин"},
 }
 
+var ukraineCityNames = map[string]map[string]string{
+	"bilhorod-dnistrovskyi": {localeEN: "Bilhorod-Dnistrovskyi", localeRU: "Белгород-Днестровский"},
+	"bukovel":               {localeEN: "Bukovel", localeRU: "Буковель"},
+	"cherkasy":              {localeEN: "Cherkasy", localeRU: "Черкассы"},
+	"chernihiv":             {localeEN: "Chernihiv", localeRU: "Чернигов"},
+	"chernivtsi":            {localeEN: "Chernivtsi", localeRU: "Черновцы"},
+	"dnipro":                {localeEN: "Dnipro", localeRU: "Днепр"},
+	"ivano-frankivsk":       {localeEN: "Ivano-Frankivsk", localeRU: "Ивано-Франковск"},
+	"kamianets-podilskyi":   {localeEN: "Kamianets-Podilskyi", localeRU: "Каменец-Подольский"},
+	"kharkiv":               {localeEN: "Kharkiv", localeRU: "Харьков"},
+	"kyiv":                  {localeEN: "Kyiv", localeRU: "Киев"},
+	"lviv":                  {localeEN: "Lviv", localeRU: "Львов"},
+	"mukachevo":             {localeEN: "Mukachevo", localeRU: "Мукачево"},
+	"mykolaiv":              {localeEN: "Mykolaiv", localeRU: "Николаев"},
+	"odesa":                 {localeEN: "Odesa", localeRU: "Одесса"},
+	"poltava":               {localeEN: "Poltava", localeRU: "Полтава"},
+	"shabo":                 {localeEN: "Shabo", localeRU: "Шабо"},
+	"sumy":                  {localeEN: "Sumy", localeRU: "Сумы"},
+	"uman":                  {localeEN: "Uman", localeRU: "Умань"},
+	"uzhhorod":              {localeEN: "Uzhhorod", localeRU: "Ужгород"},
+	"vinnytsia":             {localeEN: "Vinnytsia", localeRU: "Винница"},
+	"yaremche":              {localeEN: "Yaremche", localeRU: "Яремче"},
+	"zaporizhzhia":          {localeEN: "Zaporizhzhia", localeRU: "Запорожье"},
+}
+
 var australiaCityNames = map[string]map[string]string{
 	"adelaide":         {localeEN: "Adelaide", localeRU: "Аделаида"},
 	"airlie-beach":     {localeEN: "Airlie Beach", localeRU: "Эрли-Бич"},
@@ -1832,6 +1858,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range greeceCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range ukraineCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {
