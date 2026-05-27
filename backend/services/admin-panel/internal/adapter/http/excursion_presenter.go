@@ -27,6 +27,7 @@ var countryNames = map[string]map[string]string{
 	"UA": {localeEN: "Ukraine", localeRU: "Украина"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
+	"CA": {localeEN: "Canada", localeRU: "Канада"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
 	"TH": {localeEN: "Thailand", localeRU: "Таиланд"},
 	"PH": {localeEN: "Philippines", localeRU: "Филиппины"},
@@ -1792,6 +1793,30 @@ var unitedStatesCityNames = map[string]map[string]string{
 	"savannah":       {localeEN: "Savannah", localeRU: "Саванна"},
 }
 
+var canadaCityNames = map[string]map[string]string{
+	"toronto":          {localeEN: "Toronto", localeRU: "Торонто"},
+	"niagara-falls-ca": {localeEN: "Niagara Falls", localeRU: "Ниагара-Фолс"},
+	"ottawa":           {localeEN: "Ottawa", localeRU: "Оттава"},
+	"montreal":         {localeEN: "Montreal", localeRU: "Монреаль"},
+	"quebec-city":      {localeEN: "Quebec City", localeRU: "Квебек"},
+	"vancouver":        {localeEN: "Vancouver", localeRU: "Ванкувер"},
+	"victoria":         {localeEN: "Victoria", localeRU: "Виктория"},
+	"whistler":         {localeEN: "Whistler", localeRU: "Уистлер"},
+	"banff":            {localeEN: "Banff", localeRU: "Банф"},
+	"jasper":           {localeEN: "Jasper", localeRU: "Джаспер"},
+	"calgary":          {localeEN: "Calgary", localeRU: "Калгари"},
+	"edmonton":         {localeEN: "Edmonton", localeRU: "Эдмонтон"},
+	"winnipeg":         {localeEN: "Winnipeg", localeRU: "Виннипег"},
+	"saskatoon":        {localeEN: "Saskatoon", localeRU: "Саскатун"},
+	"regina":           {localeEN: "Regina", localeRU: "Реджайна"},
+	"halifax":          {localeEN: "Halifax", localeRU: "Галифакс"},
+	"charlottetown":    {localeEN: "Charlottetown", localeRU: "Шарлоттаун"},
+	"st-johns":         {localeEN: "St. John's", localeRU: "Сент-Джонс"},
+	"whitehorse":       {localeEN: "Whitehorse", localeRU: "Уайтхорс"},
+	"yellowknife":      {localeEN: "Yellowknife", localeRU: "Йеллоунайф"},
+	"churchill":        {localeEN: "Churchill", localeRU: "Черчилл"},
+}
+
 var singaporeCityNames = map[string]map[string]string{
 	"singapore": {localeEN: "Singapore", localeRU: "Сингапур"},
 }
@@ -1957,6 +1982,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range unitedStatesCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range canadaCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range singaporeCityNames {

@@ -225,6 +225,15 @@
     "capital": {"en": "Washington", "ru": "Вашингтон", "kk": "Вашингтон"}
   },
   {
+    "code": "CA",
+    "code3": "CAN",
+    "numeric": "124",
+    "currencyCode": "CAD",
+    "phoneCode": "+1",
+    "name": {"en": "Canada", "ru": "Канада", "kk": "Канада"},
+    "capital": {"en": "Ottawa", "ru": "Оттава", "kk": "Оттава"}
+  },
+  {
     "code": "SG",
     "code3": "SGP",
     "numeric": "702",

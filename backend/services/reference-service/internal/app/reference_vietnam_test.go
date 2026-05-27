@@ -3985,3 +3985,67 @@ func TestReferenceUseCaseIncludesFinlandCountryCurrencyAndTouristDestinations(t 
 		t.Fatalf("search helsinki in Finland = %#v, want helsinki first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesCanadaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("CA")
+	if country == nil {
+		t.Fatal("expected Canada country reference")
+	}
+	if country.Name.Ru != "Канада" {
+		t.Fatalf("Canada Russian name = %q, want Канада", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("CA")
+	if currency == nil {
+		t.Fatal("expected Canadian dollar currency by Canada country")
+	}
+	if currency.Code != "CAD" {
+		t.Fatalf("Canada currency = %q, want CAD", currency.Code)
+	}
+
+	cities := uc.ListCities("CA")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"toronto",
+		"niagara-falls-ca",
+		"ottawa",
+		"montreal",
+		"quebec-city",
+		"vancouver",
+		"victoria",
+		"whistler",
+		"banff",
+		"jasper",
+		"calgary",
+		"edmonton",
+		"winnipeg",
+		"saskatoon",
+		"regina",
+		"halifax",
+		"charlottetown",
+		"st-johns",
+		"whitehorse",
+		"yellowknife",
+		"churchill",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Canada city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("toronto", "CA", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "toronto" {
+		t.Fatalf("search toronto in Canada = %#v, want toronto first", searchResults)
+	}
+}

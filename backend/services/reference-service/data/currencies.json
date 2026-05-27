@@ -28,6 +28,7 @@
   {"code": "TZS", "numeric": "834", "decimals": 2, "symbol": "TSh", "name": {"en": "Tanzanian Shilling", "ru": "Танзанийский шиллинг", "kk": "Танзания шиллингі"}},
   {"code": "KES", "numeric": "404", "decimals": 2, "symbol": "KSh", "name": {"en": "Kenyan Shilling", "ru": "Кенийский шиллинг", "kk": "Кения шиллингі"}},
   {"code": "USD", "numeric": "840", "decimals": 2, "symbol": "$", "name": {"en": "US Dollar", "ru": "Доллар США", "kk": "АҚШ доллары"}},
+  {"code": "CAD", "numeric": "124", "decimals": 2, "symbol": "C$", "name": {"en": "Canadian Dollar", "ru": "Канадский доллар", "kk": "Канада доллары"}},
   {"code": "SGD", "numeric": "702", "decimals": 2, "symbol": "S$", "name": {"en": "Singapore Dollar", "ru": "Сингапурский доллар", "kk": "Сингапур доллары"}},
   {"code": "GBP", "numeric": "826", "decimals": 2, "symbol": "£", "name": {"en": "British Pound", "ru": "Британский фунт", "kk": "Британ фунты"}},
   {"code": "EUR", "numeric": "978", "decimals": 2, "symbol": "€", "name": {"en": "Euro", "ru": "Евро", "kk": "Еуро"}},
