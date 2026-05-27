@@ -271,6 +271,84 @@ func TestReferenceUseCaseIncludesAzerbaijanCountryCurrencyAndTouristDestinations
 	}
 }
 
+func TestReferenceUseCaseIncludesTajikistanCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("TJ")
+	if country == nil {
+		t.Fatal("expected Tajikistan country reference")
+	}
+	if country.Name.Ru != "Таджикистан" {
+		t.Fatalf("Tajikistan Russian name = %q, want Таджикистан", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("TJ")
+	if currency == nil {
+		t.Fatal("expected Tajikistani somoni currency by Tajikistan country")
+	}
+	if currency.Code != "TJS" {
+		t.Fatalf("Tajikistan currency = %q, want TJS", currency.Code)
+	}
+
+	cities := uc.ListCities("TJ")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"dushanbe",
+		"hisor",
+		"varzob",
+		"safed-dara",
+		"norak",
+		"khujand",
+		"guliston-qayraqqum",
+		"istaravshan",
+		"panjakent",
+		"sarazm",
+		"panjrud",
+		"seven-lakes",
+		"fann-mountains",
+		"kulikalon",
+		"alauddin",
+		"iskanderkul",
+		"khorog",
+		"garm-chashma",
+		"ishkashim",
+		"wakhan-valley",
+		"yamchun",
+		"langar",
+		"bulunkul",
+		"karakul",
+		"murghab",
+		"pamir-highway",
+		"bokhtar",
+		"vose-hulbuk",
+		"kulob",
+		"sari-khosor",
+		"dusti",
+		"shahrituz",
+		"nosiri-khusrav",
+		"qubodiyon",
+		"muminobod",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Tajikistan city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("iskanderkul", "TJ", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "iskanderkul" {
+		t.Fatalf("search iskanderkul in Tajikistan = %#v, want iskanderkul first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

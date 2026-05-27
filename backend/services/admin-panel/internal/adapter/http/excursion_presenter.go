@@ -16,6 +16,7 @@ const (
 var countryNames = map[string]map[string]string{
 	"KZ": {localeEN: "Kazakhstan", localeRU: "Казахстан"},
 	"KG": {localeEN: "Kyrgyzstan", localeRU: "Кыргызстан"},
+	"TJ": {localeEN: "Tajikistan", localeRU: "Таджикистан"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
@@ -1263,6 +1264,56 @@ var azerbaijanCityNames = map[string]map[string]string{
 	"sheki":         {localeEN: "Sheki", localeRU: "Шеки"},
 }
 
+var tajikistanCityNames = map[string]map[string]string{
+	"ak-baital":          {localeEN: "Ak-Baital", localeRU: "Ак-Байтал"},
+	"alauddin":           {localeEN: "Alauddin", localeRU: "Алаудин"},
+	"baljuvon":           {localeEN: "Baljuvon", localeRU: "Балджувон"},
+	"bokhtar":            {localeEN: "Bokhtar", localeRU: "Бохтар"},
+	"bulunkul":           {localeEN: "Bulunkul", localeRU: "Булункуль"},
+	"danghara":           {localeEN: "Danghara", localeRU: "Дангара"},
+	"dushanbe":           {localeEN: "Dushanbe", localeRU: "Душанбе"},
+	"dusti":              {localeEN: "Dusti", localeRU: "Дусти"},
+	"fann-mountains":     {localeEN: "Fann Mountains", localeRU: "Фанские горы"},
+	"farkhor":            {localeEN: "Farkhor", localeRU: "Фархор"},
+	"garm-chashma":       {localeEN: "Garm Chashma", localeRU: "Гарм-Чашма"},
+	"guliston-qayraqqum": {localeEN: "Guliston / Qayraqqum", localeRU: "Гулистон / Кайраккум"},
+	"hisor":              {localeEN: "Hisor", localeRU: "Гиссар"},
+	"ishkashim":          {localeEN: "Ishkashim", localeRU: "Ишкашим"},
+	"iskanderkul":        {localeEN: "Iskanderkul", localeRU: "Искандеркуль"},
+	"istaravshan":        {localeEN: "Istaravshan", localeRU: "Истаравшан"},
+	"jelondy":            {localeEN: "Jelondy", localeRU: "Джелонды"},
+	"karakul":            {localeEN: "Karakul", localeRU: "Каракуль"},
+	"khargush":           {localeEN: "Khargush", localeRU: "Харгуш"},
+	"khorog":             {localeEN: "Khorog", localeRU: "Хорог"},
+	"khovaling":          {localeEN: "Khovaling", localeRU: "Ховалинг"},
+	"khujand":            {localeEN: "Khujand", localeRU: "Худжанд"},
+	"kulikalon":          {localeEN: "Kulikalon", localeRU: "Куликалон"},
+	"kulob":              {localeEN: "Kulob", localeRU: "Куляб"},
+	"langar":             {localeEN: "Langar", localeRU: "Лангар"},
+	"muminobod":          {localeEN: "Muminobod", localeRU: "Муминабад"},
+	"murghab":            {localeEN: "Murghab", localeRU: "Мургаб"},
+	"namadgut":           {localeEN: "Namadgut", localeRU: "Намадгут"},
+	"norak":              {localeEN: "Norak", localeRU: "Нурек"},
+	"nosiri-khusrav":     {localeEN: "Nosiri Khusrav", localeRU: "Носири Хусрав"},
+	"pamir-highway":      {localeEN: "Pamir Highway", localeRU: "Памирский тракт"},
+	"panjakent":          {localeEN: "Panjakent", localeRU: "Пенджикент"},
+	"panjrud":            {localeEN: "Panjrud", localeRU: "Панджруд"},
+	"qubodiyon":          {localeEN: "Qubodiyon", localeRU: "Кубодиён"},
+	"rangkul":            {localeEN: "Rangkul", localeRU: "Рангкуль"},
+	"safed-dara":         {localeEN: "Safed-Dara", localeRU: "Сафед-Дара"},
+	"sarazm":             {localeEN: "Sarazm", localeRU: "Саразм"},
+	"sari-khosor":        {localeEN: "Sari Khosor", localeRU: "Сары-Хосор"},
+	"seven-lakes":        {localeEN: "Seven Lakes", localeRU: "Семь озер"},
+	"shahrituz":          {localeEN: "Shahrituz", localeRU: "Шахритус"},
+	"vakhsh":             {localeEN: "Vakhsh", localeRU: "Вахш"},
+	"varzob":             {localeEN: "Varzob", localeRU: "Варзоб"},
+	"vose-hulbuk":        {localeEN: "Vose / Hulbuk", localeRU: "Восе / Хулбук"},
+	"vrang":              {localeEN: "Vrang", localeRU: "Вранг"},
+	"wakhan-valley":      {localeEN: "Wakhan Valley", localeRU: "Ваханская долина"},
+	"yamchun":            {localeEN: "Yamchun", localeRU: "Ямчун"},
+	"zorkul":             {localeEN: "Zorkul", localeRU: "Зоркуль"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1487,6 +1538,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range azerbaijanCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range tajikistanCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {

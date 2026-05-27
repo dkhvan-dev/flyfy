@@ -3988,6 +3988,118 @@ func TestAzerbaijanPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testi
 	}
 }
 
+func TestTajikistanPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "068_seed_tajikistan_priority_attractions.up.sql")
+	downSQL := readMigration(t, "068_seed_tajikistan_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_tajikistan_resolved_attractions AS",
+		"'TJ'",
+		"'TJS'",
+		"tajikistan-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Tajikistan up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"dushanbe",
+		"hisor",
+		"varzob",
+		"safed-dara",
+		"norak",
+		"khujand",
+		"guliston-qayraqqum",
+		"istaravshan",
+		"panjakent",
+		"sarazm",
+		"seven-lakes",
+		"fann-mountains",
+		"iskanderkul",
+		"khorog",
+		"garm-chashma",
+		"ishkashim",
+		"wakhan-valley",
+		"yamchun",
+		"langar",
+		"bulunkul",
+		"karakul",
+		"murghab",
+		"pamir-highway",
+		"bokhtar",
+		"vose-hulbuk",
+		"kulob",
+		"sari-khosor",
+		"dusti",
+		"shahrituz",
+		"nosiri-khusrav",
+		"qubodiyon",
+		"muminobod",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Tajikistan up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Rudaki Park",
+		"National Museum of Tajikistan",
+		"Kokhi Navruz",
+		"Mehrgon Bazaar",
+		"Siyoma Mall",
+		"Hisor Fortress",
+		"Safed-Dara Ski Resort",
+		"Nurek Reservoir",
+		"Khujand Fortress Historical Complex",
+		"Panjshanbe Bazaar",
+		"Kok-Gumbaz Mosque Istaravshan",
+		"Ancient Panjakent",
+		"Proto-urban Site of Sarazm",
+		"Seven Lakes Haft Kul",
+		"Iskanderkul Lake",
+		"Pamir Botanical Garden",
+		"Khorog Bazaar",
+		"Garm Chashma Hot Spring",
+		"Wakhan Valley Road",
+		"Yamchun Fortress",
+		"Bibi Fatima Hot Springs",
+		"Langar Petroglyphs",
+		"Lake Karakul",
+		"Pamir Highway Khorog to Murghab",
+		"Ajina-Teppa Buddhist Monastery",
+		"Hulbuk Fortress",
+		"Mir Sayyid Ali Hamadani Mausoleum",
+		"Tigrovaya Balka Nature Reserve",
+		"Khoja Mashhad Mausoleum and Madrasa",
+		"Chiluchor Chashma Springs",
+		"Takhti Sangin Oxus Temple",
+		"Childukhtaron Mountain",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Tajikistan up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Tajikistan up migration must include category %s", category)
+		}
+	}
+
+	if !strings.Contains(upSQL, "ARRAY['tajikistan', city_id") {
+		t.Fatalf("Tajikistan up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "tajikistan-seed-v1") || !strings.Contains(downSQL, "country_code = 'TJ'") {
+		t.Fatalf("Tajikistan down migration must remove only tagged Tajikistan seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

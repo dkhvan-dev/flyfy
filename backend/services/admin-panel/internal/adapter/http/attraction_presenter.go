@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -94,6 +94,53 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "KG", CityID: "talas"},
 	{CountryCode: "KG", CityID: "toktogul"},
 	{CountryCode: "KG", CityID: "suusamyr"},
+	{CountryCode: "TJ", CityID: "dushanbe"},
+	{CountryCode: "TJ", CityID: "hisor"},
+	{CountryCode: "TJ", CityID: "varzob"},
+	{CountryCode: "TJ", CityID: "safed-dara"},
+	{CountryCode: "TJ", CityID: "norak"},
+	{CountryCode: "TJ", CityID: "khujand"},
+	{CountryCode: "TJ", CityID: "guliston-qayraqqum"},
+	{CountryCode: "TJ", CityID: "istaravshan"},
+	{CountryCode: "TJ", CityID: "panjakent"},
+	{CountryCode: "TJ", CityID: "sarazm"},
+	{CountryCode: "TJ", CityID: "panjrud"},
+	{CountryCode: "TJ", CityID: "seven-lakes"},
+	{CountryCode: "TJ", CityID: "fann-mountains"},
+	{CountryCode: "TJ", CityID: "kulikalon"},
+	{CountryCode: "TJ", CityID: "alauddin"},
+	{CountryCode: "TJ", CityID: "iskanderkul"},
+	{CountryCode: "TJ", CityID: "khorog"},
+	{CountryCode: "TJ", CityID: "garm-chashma"},
+	{CountryCode: "TJ", CityID: "jelondy"},
+	{CountryCode: "TJ", CityID: "ishkashim"},
+	{CountryCode: "TJ", CityID: "wakhan-valley"},
+	{CountryCode: "TJ", CityID: "yamchun"},
+	{CountryCode: "TJ", CityID: "namadgut"},
+	{CountryCode: "TJ", CityID: "vrang"},
+	{CountryCode: "TJ", CityID: "langar"},
+	{CountryCode: "TJ", CityID: "khargush"},
+	{CountryCode: "TJ", CityID: "zorkul"},
+	{CountryCode: "TJ", CityID: "bulunkul"},
+	{CountryCode: "TJ", CityID: "karakul"},
+	{CountryCode: "TJ", CityID: "murghab"},
+	{CountryCode: "TJ", CityID: "ak-baital"},
+	{CountryCode: "TJ", CityID: "rangkul"},
+	{CountryCode: "TJ", CityID: "pamir-highway"},
+	{CountryCode: "TJ", CityID: "bokhtar"},
+	{CountryCode: "TJ", CityID: "vakhsh"},
+	{CountryCode: "TJ", CityID: "vose-hulbuk"},
+	{CountryCode: "TJ", CityID: "kulob"},
+	{CountryCode: "TJ", CityID: "danghara"},
+	{CountryCode: "TJ", CityID: "baljuvon"},
+	{CountryCode: "TJ", CityID: "sari-khosor"},
+	{CountryCode: "TJ", CityID: "dusti"},
+	{CountryCode: "TJ", CityID: "shahrituz"},
+	{CountryCode: "TJ", CityID: "nosiri-khusrav"},
+	{CountryCode: "TJ", CityID: "qubodiyon"},
+	{CountryCode: "TJ", CityID: "muminobod"},
+	{CountryCode: "TJ", CityID: "khovaling"},
+	{CountryCode: "TJ", CityID: "farkhor"},
 	{CountryCode: "UZ", CityID: "tashkent"},
 	{CountryCode: "UZ", CityID: "samarkand"},
 	{CountryCode: "UZ", CityID: "bukhara"},
@@ -1296,7 +1343,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "KGS", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "KGS", "TJS", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1374,6 +1421,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Киргизский сом"
 		}
 		return "Kyrgyzstani som"
+	case "TJS":
+		if locale == localeRU {
+			return "Таджикский сомони"
+		}
+		return "Tajikistani somoni"
 	case "UZS":
 		if locale == localeRU {
 			return "Узбекский сум"

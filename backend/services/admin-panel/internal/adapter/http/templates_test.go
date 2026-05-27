@@ -3392,6 +3392,108 @@ func TestRendererRendersAzerbaijanAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersTajikistanAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=TJ&city=dushanbe",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Парк Рудаки",
+				CountryCode:   "TJ",
+				CityID:        "dushanbe",
+				Category:      "PARK",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "TJ",
+			CityID:      "dushanbe",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="TJ" selected`,
+		`Таджикистан`,
+		`value="dushanbe" data-country="TJ" selected`,
+		`Душанбе`,
+		`Душанбе, Таджикистан`,
+		`Парк`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Tajikistan attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">TJ<") || strings.Contains(listBody, ">dushanbe<") {
+		t.Fatalf("Tajikistan attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "TJS"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Парк Рудаки",
+		Description:   "Центральный парк Душанбе.",
+		CountryCode:   "TJ",
+		CityID:        "dushanbe",
+		Category:      "PARK",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "TJ", CityID: "hisor"},
+			{CountryCode: "TJ", CityID: "varzob"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "TJ", CityID: "dushanbe"},
+			{CountryCode: "TJ", CityID: "iskanderkul"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="TJ" selected>Таджикистан</option>`,
+		`<option value="dushanbe" data-country="TJ" selected>Душанбе</option>`,
+		`<option value="hisor" data-country="TJ" >Гиссар</option>`,
+		`type="checkbox" name="access_cities" value="TJ:hisor" checked`,
+		`type="checkbox" name="departure_cities" value="TJ:iskanderkul" checked`,
+		`Душанбе, Таджикистан`,
+		`<option value="TJS" selected>Таджикский сомони</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Tajikistan attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 
