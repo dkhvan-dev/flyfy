@@ -3622,3 +3622,73 @@ func TestReferenceUseCaseIncludesGreeceCountryCurrencyAndTouristDestinations(t *
 		t.Fatalf("search santorini in Greece = %#v, want santorini first", searchResults)
 	}
 }
+
+func TestReferenceUseCaseIncludesNewZealandCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("NZ")
+	if country == nil {
+		t.Fatal("expected New Zealand country reference")
+	}
+	if country.Name.Ru != "Новая Зеландия" {
+		t.Fatalf("New Zealand Russian name = %q, want Новая Зеландия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("NZ")
+	if currency == nil {
+		t.Fatal("expected New Zealand dollar currency by New Zealand country")
+	}
+	if currency.Code != "NZD" {
+		t.Fatalf("New Zealand currency = %q, want NZD", currency.Code)
+	}
+
+	cities := uc.ListCities("NZ")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"auckland",
+		"waiheke-island",
+		"waitakere-ranges",
+		"rotorua",
+		"taupo",
+		"waitomo",
+		"matamata",
+		"tauranga",
+		"mount-maunganui",
+		"tongariro",
+		"napier",
+		"wellington",
+		"christchurch",
+		"kaikoura",
+		"nelson",
+		"abel-tasman",
+		"dunedin",
+		"otago-peninsula",
+		"queenstown",
+		"arrowtown",
+		"wanaka",
+		"tekapo",
+		"aoraki-mount-cook",
+		"fiordland",
+		"milford-sound",
+		"franz-josef",
+		"fox-glacier",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("New Zealand city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("queenstown", "NZ", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "queenstown" {
+		t.Fatalf("search queenstown in New Zealand = %#v, want queenstown first", searchResults)
+	}
+}

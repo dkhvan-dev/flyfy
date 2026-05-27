@@ -24,6 +24,7 @@
   {"code": "CHF", "numeric": "756", "decimals": 2, "symbol": "CHF", "name": {"en": "Swiss Franc", "ru": "Швейцарский франк", "kk": "Швейцария франкі"}},
   {"code": "INR", "numeric": "356", "decimals": 2, "symbol": "₹", "name": {"en": "Indian Rupee", "ru": "Индийская рупия", "kk": "Үнді рупиясы"}},
   {"code": "AUD", "numeric": "036", "decimals": 2, "symbol": "A$", "name": {"en": "Australian Dollar", "ru": "Австралийский доллар", "kk": "Австралия доллары"}},
+  {"code": "NZD", "numeric": "554", "decimals": 2, "symbol": "NZ$", "name": {"en": "New Zealand Dollar", "ru": "Новозеландский доллар", "kk": "Жаңа Зеландия доллары"}},
   {"code": "TZS", "numeric": "834", "decimals": 2, "symbol": "TSh", "name": {"en": "Tanzanian Shilling", "ru": "Танзанийский шиллинг", "kk": "Танзания шиллингі"}},
   {"code": "KES", "numeric": "404", "decimals": 2, "symbol": "KSh", "name": {"en": "Kenyan Shilling", "ru": "Кенийский шиллинг", "kk": "Кения шиллингі"}},
   {"code": "USD", "numeric": "840", "decimals": 2, "symbol": "$", "name": {"en": "US Dollar", "ru": "Доллар США", "kk": "АҚШ доллары"}},

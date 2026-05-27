@@ -61,6 +61,7 @@ var countryNames = map[string]map[string]string{
 	"FR": {localeEN: "France", localeRU: "Франция"},
 	"GB": {localeEN: "United Kingdom", localeRU: "Великобритания"},
 	"AU": {localeEN: "Australia", localeRU: "Австралия"},
+	"NZ": {localeEN: "New Zealand", localeRU: "Новая Зеландия"},
 	"TZ": {localeEN: "Tanzania", localeRU: "Танзания"},
 	"KE": {localeEN: "Kenya", localeRU: "Кения"},
 	"ME": {localeEN: "Montenegro", localeRU: "Черногория"},
@@ -1610,6 +1611,36 @@ var australiaCityNames = map[string]map[string]string{
 	"whitsundays":      {localeEN: "Whitsundays", localeRU: "Уитсанди"},
 }
 
+var newZealandCityNames = map[string]map[string]string{
+	"abel-tasman":       {localeEN: "Abel Tasman", localeRU: "Абел-Тасман"},
+	"aoraki-mount-cook": {localeEN: "Aoraki Mount Cook", localeRU: "Аораки / Маунт-Кук"},
+	"arrowtown":         {localeEN: "Arrowtown", localeRU: "Эрроутаун"},
+	"auckland":          {localeEN: "Auckland", localeRU: "Окленд"},
+	"christchurch":      {localeEN: "Christchurch", localeRU: "Крайстчерч"},
+	"dunedin":           {localeEN: "Dunedin", localeRU: "Данидин"},
+	"fiordland":         {localeEN: "Fiordland", localeRU: "Фьордленд"},
+	"fox-glacier":       {localeEN: "Fox Glacier", localeRU: "Ледник Фокса"},
+	"franz-josef":       {localeEN: "Franz Josef", localeRU: "Франц-Иосиф"},
+	"kaikoura":          {localeEN: "Kaikoura", localeRU: "Кайкоура"},
+	"matamata":          {localeEN: "Matamata", localeRU: "Матамата"},
+	"milford-sound":     {localeEN: "Milford Sound", localeRU: "Милфорд-Саунд"},
+	"mount-maunganui":   {localeEN: "Mount Maunganui", localeRU: "Маунт-Маунгануи"},
+	"napier":            {localeEN: "Napier", localeRU: "Нейпир"},
+	"nelson":            {localeEN: "Nelson", localeRU: "Нельсон"},
+	"otago-peninsula":   {localeEN: "Otago Peninsula", localeRU: "Полуостров Отаго"},
+	"queenstown":        {localeEN: "Queenstown", localeRU: "Квинстаун"},
+	"rotorua":           {localeEN: "Rotorua", localeRU: "Роторуа"},
+	"taupo":             {localeEN: "Taupo", localeRU: "Таупо"},
+	"tauranga":          {localeEN: "Tauranga", localeRU: "Тауранга"},
+	"tekapo":            {localeEN: "Lake Tekapo", localeRU: "Текапо"},
+	"tongariro":         {localeEN: "Tongariro", localeRU: "Тонгариро"},
+	"waiheke-island":    {localeEN: "Waiheke Island", localeRU: "Уаихеке"},
+	"waitakere-ranges":  {localeEN: "Waitakere Ranges", localeRU: "Уаитакере"},
+	"waitomo":           {localeEN: "Waitomo", localeRU: "Уаитомо"},
+	"wanaka":            {localeEN: "Wanaka", localeRU: "Ванака"},
+	"wellington":        {localeEN: "Wellington", localeRU: "Веллингтон"},
+}
+
 var tanzaniaCityNames = map[string]map[string]string{
 	"arusha":         {localeEN: "Arusha", localeRU: "Аруша"},
 	"bagamoyo":       {localeEN: "Bagamoyo", localeRU: "Багамойо"},
@@ -1807,6 +1838,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range australiaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range newZealandCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range tanzaniaCityNames {

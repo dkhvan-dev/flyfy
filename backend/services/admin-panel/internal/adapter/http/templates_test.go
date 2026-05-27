@@ -4208,6 +4208,108 @@ func TestRendererRendersGreeceAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersNewZealandAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=NZ&city=auckland",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Скай Тауэр",
+				CountryCode:   "NZ",
+				CityID:        "auckland",
+				Category:      "ENTERTAINMENT",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "NZ",
+			CityID:      "auckland",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="NZ" selected`,
+		`Новая Зеландия`,
+		`value="auckland" data-country="NZ" selected`,
+		`Окленд`,
+		`Окленд, Новая Зеландия`,
+		`Развлечения`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("New Zealand attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">NZ<") || strings.Contains(listBody, ">auckland<") {
+		t.Fatalf("New Zealand attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "NZD"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Скай Тауэр",
+		Description:   "Обзорная башня в центре Окленда.",
+		CountryCode:   "NZ",
+		CityID:        "auckland",
+		Category:      "ENTERTAINMENT",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "NZ", CityID: "auckland"},
+			{CountryCode: "NZ", CityID: "queenstown"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "NZ", CityID: "auckland"},
+			{CountryCode: "NZ", CityID: "wellington"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="NZ" selected>Новая Зеландия</option>`,
+		`<option value="auckland" data-country="NZ" selected>Окленд</option>`,
+		`<option value="queenstown" data-country="NZ" >Квинстаун</option>`,
+		`type="checkbox" name="access_cities" value="NZ:queenstown" checked`,
+		`type="checkbox" name="departure_cities" value="NZ:wellington" checked`,
+		`Окленд, Новая Зеландия`,
+		`<option value="NZD" selected>Новозеландский доллар</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("New Zealand attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

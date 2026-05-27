@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "BY", "RS", "GR", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "BY", "RS", "GR", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "NZ", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -1466,6 +1466,33 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "AU", CityID: "rottnest-island"},
 	{CountryCode: "AU", CityID: "margaret-river"},
 	{CountryCode: "AU", CityID: "broome"},
+	{CountryCode: "NZ", CityID: "auckland"},
+	{CountryCode: "NZ", CityID: "waiheke-island"},
+	{CountryCode: "NZ", CityID: "waitakere-ranges"},
+	{CountryCode: "NZ", CityID: "rotorua"},
+	{CountryCode: "NZ", CityID: "taupo"},
+	{CountryCode: "NZ", CityID: "waitomo"},
+	{CountryCode: "NZ", CityID: "matamata"},
+	{CountryCode: "NZ", CityID: "tauranga"},
+	{CountryCode: "NZ", CityID: "mount-maunganui"},
+	{CountryCode: "NZ", CityID: "tongariro"},
+	{CountryCode: "NZ", CityID: "napier"},
+	{CountryCode: "NZ", CityID: "wellington"},
+	{CountryCode: "NZ", CityID: "christchurch"},
+	{CountryCode: "NZ", CityID: "kaikoura"},
+	{CountryCode: "NZ", CityID: "nelson"},
+	{CountryCode: "NZ", CityID: "abel-tasman"},
+	{CountryCode: "NZ", CityID: "dunedin"},
+	{CountryCode: "NZ", CityID: "otago-peninsula"},
+	{CountryCode: "NZ", CityID: "queenstown"},
+	{CountryCode: "NZ", CityID: "arrowtown"},
+	{CountryCode: "NZ", CityID: "wanaka"},
+	{CountryCode: "NZ", CityID: "tekapo"},
+	{CountryCode: "NZ", CityID: "aoraki-mount-cook"},
+	{CountryCode: "NZ", CityID: "fiordland"},
+	{CountryCode: "NZ", CityID: "milford-sound"},
+	{CountryCode: "NZ", CityID: "franz-josef"},
+	{CountryCode: "NZ", CityID: "fox-glacier"},
 	{CountryCode: "TZ", CityID: "dar-es-salaam"},
 	{CountryCode: "TZ", CityID: "bagamoyo"},
 	{CountryCode: "TZ", CityID: "tanga"},
@@ -1554,7 +1581,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "KGS", "TJS", "MNT", "ISK", "BYN", "RSD", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "KGS", "TJS", "MNT", "ISK", "BYN", "RSD", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "NZD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1702,6 +1729,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Австралийский доллар"
 		}
 		return "Australian dollar"
+	case "NZD":
+		if locale == localeRU {
+			return "Новозеландский доллар"
+		}
+		return "New Zealand dollar"
 	case "TZS":
 		if locale == localeRU {
 			return "Танзанийский шиллинг"

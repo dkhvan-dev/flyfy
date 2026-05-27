@@ -6124,6 +6124,111 @@ func TestGreecePriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T
 	}
 }
 
+func TestNewZealandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "076_seed_new_zealand_priority_attractions.up.sql")
+	downSQL := readMigration(t, "076_seed_new_zealand_priority_attractions.down.sql")
+
+	requiredFragments := []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_new_zealand_resolved_attractions AS",
+		"'NZ'",
+		"'NZD'",
+		"new-zealand-seed-v1",
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("New Zealand up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"auckland",
+		"waiheke-island",
+		"waitakere-ranges",
+		"rotorua",
+		"taupo",
+		"waitomo",
+		"matamata",
+		"tauranga",
+		"mount-maunganui",
+		"tongariro",
+		"napier",
+		"wellington",
+		"christchurch",
+		"kaikoura",
+		"nelson",
+		"abel-tasman",
+		"dunedin",
+		"otago-peninsula",
+		"queenstown",
+		"arrowtown",
+		"wanaka",
+		"tekapo",
+		"aoraki-mount-cook",
+		"fiordland",
+		"milford-sound",
+		"franz-josef",
+		"fox-glacier",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("New Zealand up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Sky Tower Auckland",
+		"Auckland War Memorial Museum",
+		"Waiheke Island",
+		"Auckland Night Markets",
+		"Westfield Newmarket",
+		"Piha Beach",
+		"Te Puia",
+		"Wai-O-Tapu Thermal Wonderland",
+		"Hobbiton Movie Set",
+		"Waitomo Glowworm Caves",
+		"Huka Falls",
+		"Tongariro Alpine Crossing",
+		"Te Papa Tongarewa",
+		"Wellington Cable Car",
+		"Wellington Night Market",
+		"Christchurch Botanic Gardens",
+		"Canterbury Museum",
+		"Kaikoura Whale Watching",
+		"Abel Tasman National Park",
+		"Dunedin Railway Station",
+		"Larnach Castle",
+		"Skyline Queenstown",
+		"Milford Sound",
+		"Aoraki Mount Cook National Park",
+		"Franz Josef Glacier",
+		"Lake Tekapo",
+		"Wanaka Lakefront",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("New Zealand up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'BEACH'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("New Zealand up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("New Zealand up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['new-zealand', city_id") {
+		t.Fatalf("New Zealand up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "new-zealand-seed-v1") || !strings.Contains(downSQL, "country_code = 'NZ'") {
+		t.Fatalf("New Zealand down migration must remove only tagged New Zealand seed attractions")
+	}
+}
+
 var thailandPriorityAttractionIDs = []string{
 	"60000000-0000-4000-8000-000000000001",
 	"60000000-0000-4000-8000-000000000002",

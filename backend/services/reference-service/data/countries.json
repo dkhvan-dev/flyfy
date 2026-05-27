@@ -270,6 +270,15 @@
     "capital": {"en": "Canberra", "ru": "Канберра", "kk": "Канберра"}
   },
   {
+    "code": "NZ",
+    "code3": "NZL",
+    "numeric": "554",
+    "currencyCode": "NZD",
+    "phoneCode": "+64",
+    "name": {"en": "New Zealand", "ru": "Новая Зеландия", "kk": "Жаңа Зеландия"},
+    "capital": {"en": "Wellington", "ru": "Веллингтон", "kk": "Веллингтон"}
+  },
+  {
     "code": "TZ",
     "code3": "TZA",
     "numeric": "834",
