@@ -19,6 +19,7 @@ var countryNames = map[string]map[string]string{
 	"TJ": {localeEN: "Tajikistan", localeRU: "Таджикистан"},
 	"MN": {localeEN: "Mongolia", localeRU: "Монголия"},
 	"IS": {localeEN: "Iceland", localeRU: "Исландия"},
+	"IE": {localeEN: "Ireland", localeRU: "Ирландия"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
@@ -1382,6 +1383,36 @@ var icelandCityNames = map[string]map[string]string{
 	"vik":                  {localeEN: "Vik", localeRU: "Вик"},
 }
 
+var irelandCityNames = map[string]map[string]string{
+	"achill":          {localeEN: "Achill", localeRU: "Ахилл"},
+	"aran-islands":    {localeEN: "Aran Islands", localeRU: "Аранские острова"},
+	"blarney":         {localeEN: "Blarney", localeRU: "Бларни"},
+	"bray":            {localeEN: "Bray", localeRU: "Брей"},
+	"burren":          {localeEN: "Burren", localeRU: "Буррен"},
+	"cashel":          {localeEN: "Cashel", localeRU: "Кашел"},
+	"cliffs-of-moher": {localeEN: "Cliffs of Moher", localeRU: "Утесы Мохер"},
+	"cobh":            {localeEN: "Cobh", localeRU: "Ков"},
+	"connemara":       {localeEN: "Connemara", localeRU: "Коннемара"},
+	"cork":            {localeEN: "Cork", localeRU: "Корк"},
+	"dingle":          {localeEN: "Dingle", localeRU: "Дингл"},
+	"donegal":         {localeEN: "Donegal", localeRU: "Донегол"},
+	"dublin":          {localeEN: "Dublin", localeRU: "Дублин"},
+	"dun-laoghaire":   {localeEN: "Dun Laoghaire", localeRU: "Дан-Лэаре"},
+	"galway":          {localeEN: "Galway", localeRU: "Голуэй"},
+	"glendalough":     {localeEN: "Glendalough", localeRU: "Глендалох"},
+	"howth":           {localeEN: "Howth", localeRU: "Хоут"},
+	"kilkenny":        {localeEN: "Kilkenny", localeRU: "Килкенни"},
+	"killarney":       {localeEN: "Killarney", localeRU: "Килларни"},
+	"kinsale":         {localeEN: "Kinsale", localeRU: "Кинсейл"},
+	"letterkenny":     {localeEN: "Letterkenny", localeRU: "Леттеркенни"},
+	"limerick":        {localeEN: "Limerick", localeRU: "Лимерик"},
+	"ring-of-kerry":   {localeEN: "Ring of Kerry", localeRU: "Кольцо Керри"},
+	"sligo":           {localeEN: "Sligo", localeRU: "Слайго"},
+	"waterford":       {localeEN: "Waterford", localeRU: "Уотерфорд"},
+	"westport":        {localeEN: "Westport", localeRU: "Уэстпорт"},
+	"wexford":         {localeEN: "Wexford", localeRU: "Уэксфорд"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1615,6 +1646,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range icelandCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range irelandCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {

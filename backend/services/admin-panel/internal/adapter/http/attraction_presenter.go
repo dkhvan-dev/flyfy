@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -201,6 +201,33 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "IS", CityID: "egilsstadir"},
 	{CountryCode: "IS", CityID: "seydisfjordur"},
 	{CountryCode: "IS", CityID: "borgarfjordur-eystri"},
+	{CountryCode: "IE", CityID: "dublin"},
+	{CountryCode: "IE", CityID: "howth"},
+	{CountryCode: "IE", CityID: "dun-laoghaire"},
+	{CountryCode: "IE", CityID: "bray"},
+	{CountryCode: "IE", CityID: "glendalough"},
+	{CountryCode: "IE", CityID: "galway"},
+	{CountryCode: "IE", CityID: "cliffs-of-moher"},
+	{CountryCode: "IE", CityID: "burren"},
+	{CountryCode: "IE", CityID: "connemara"},
+	{CountryCode: "IE", CityID: "aran-islands"},
+	{CountryCode: "IE", CityID: "westport"},
+	{CountryCode: "IE", CityID: "achill"},
+	{CountryCode: "IE", CityID: "cork"},
+	{CountryCode: "IE", CityID: "cobh"},
+	{CountryCode: "IE", CityID: "blarney"},
+	{CountryCode: "IE", CityID: "kinsale"},
+	{CountryCode: "IE", CityID: "killarney"},
+	{CountryCode: "IE", CityID: "ring-of-kerry"},
+	{CountryCode: "IE", CityID: "dingle"},
+	{CountryCode: "IE", CityID: "waterford"},
+	{CountryCode: "IE", CityID: "kilkenny"},
+	{CountryCode: "IE", CityID: "cashel"},
+	{CountryCode: "IE", CityID: "limerick"},
+	{CountryCode: "IE", CityID: "sligo"},
+	{CountryCode: "IE", CityID: "donegal"},
+	{CountryCode: "IE", CityID: "letterkenny"},
+	{CountryCode: "IE", CityID: "wexford"},
 	{CountryCode: "UZ", CityID: "tashkent"},
 	{CountryCode: "UZ", CityID: "samarkand"},
 	{CountryCode: "UZ", CityID: "bukhara"},

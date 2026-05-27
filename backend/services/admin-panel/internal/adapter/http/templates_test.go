@@ -3698,6 +3698,108 @@ func TestRendererRendersIcelandAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersIrelandAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=IE&city=dublin",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Тринити-колледж и Келлская книга",
+				CountryCode:   "IE",
+				CityID:        "dublin",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "IE",
+			CityID:      "dublin",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="IE" selected`,
+		`Ирландия`,
+		`value="dublin" data-country="IE" selected`,
+		`Дублин`,
+		`Дублин, Ирландия`,
+		`Музей`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Ireland attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">IE<") || strings.Contains(listBody, ">dublin<") {
+		t.Fatalf("Ireland attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "EUR"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Тринити-колледж и Келлская книга",
+		Description:   "Исторический кампус и библиотека с одной из главных рукописей Ирландии.",
+		CountryCode:   "IE",
+		CityID:        "dublin",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "IE", CityID: "dublin"},
+			{CountryCode: "IE", CityID: "glendalough"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "IE", CityID: "dublin"},
+			{CountryCode: "IE", CityID: "galway"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="IE" selected>Ирландия</option>`,
+		`<option value="dublin" data-country="IE" selected>Дублин</option>`,
+		`<option value="glendalough" data-country="IE" >Глендалох</option>`,
+		`type="checkbox" name="access_cities" value="IE:glendalough" checked`,
+		`type="checkbox" name="departure_cities" value="IE:galway" checked`,
+		`Дублин, Ирландия`,
+		`<option value="EUR" selected>Евро</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Ireland attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

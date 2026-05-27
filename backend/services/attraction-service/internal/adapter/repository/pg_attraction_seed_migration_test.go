@@ -4300,6 +4300,104 @@ func TestIcelandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.
 	}
 }
 
+func TestIrelandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "071_seed_ireland_priority_attractions.up.sql")
+	downSQL := readMigration(t, "071_seed_ireland_priority_attractions.down.sql")
+
+	for _, fragment := range []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_ireland_resolved_attractions AS",
+		"'IE'",
+		"'EUR'",
+		"ireland-seed-v1",
+	} {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Ireland up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"dublin",
+		"howth",
+		"dun-laoghaire",
+		"bray",
+		"glendalough",
+		"galway",
+		"cliffs-of-moher",
+		"burren",
+		"connemara",
+		"aran-islands",
+		"westport",
+		"achill",
+		"cork",
+		"cobh",
+		"blarney",
+		"kinsale",
+		"killarney",
+		"ring-of-kerry",
+		"dingle",
+		"waterford",
+		"kilkenny",
+		"cashel",
+		"limerick",
+		"sligo",
+		"donegal",
+		"letterkenny",
+		"wexford",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Ireland up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Guinness Storehouse",
+		"Book of Kells Experience, Trinity College Dublin",
+		"Dublin Castle",
+		"Kilmainham Gaol Museum",
+		"Temple Bar Food Market",
+		"Howth Cliff Path Loop",
+		"Glendalough Monastic Site",
+		"Cliffs of Moher",
+		"Connemara National Park",
+		"Galway Latin Quarter",
+		"Keem Bay",
+		"English Market Cork",
+		"Blarney Castle and Gardens",
+		"Killarney National Park",
+		"Ring of Kerry",
+		"Dingle Peninsula",
+		"Waterford Viking Triangle",
+		"Kilkenny Castle",
+		"Rock of Cashel",
+		"Slieve League Cliffs",
+		"Hook Lighthouse",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Ireland up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'", "'BEACH'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Ireland up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Ireland up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['ireland', city_id") {
+		t.Fatalf("Ireland up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "ireland-seed-v1") || !strings.Contains(downSQL, "country_code = 'IE'") {
+		t.Fatalf("Ireland down migration must remove only tagged Ireland seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

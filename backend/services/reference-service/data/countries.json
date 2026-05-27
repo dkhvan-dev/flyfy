@@ -468,6 +468,15 @@
     "capital": {"en": "Reykjavik", "ru": "Рейкьявик", "kk": "Рейкьявик"}
   },
   {
+    "code": "IE",
+    "code3": "IRL",
+    "numeric": "372",
+    "currencyCode": "EUR",
+    "phoneCode": "+353",
+    "name": {"en": "Ireland", "ru": "Ирландия", "kk": "Ирландия"},
+    "capital": {"en": "Dublin", "ru": "Дублин", "kk": "Дублин"}
+  },
+  {
     "code": "SE",
     "code3": "SWE",
     "numeric": "752",

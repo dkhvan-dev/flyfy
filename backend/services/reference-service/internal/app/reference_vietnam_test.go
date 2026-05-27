@@ -489,6 +489,76 @@ func TestReferenceUseCaseIncludesIcelandCountryCurrencyAndTouristDestinations(t 
 	}
 }
 
+func TestReferenceUseCaseIncludesIrelandCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("IE")
+	if country == nil {
+		t.Fatal("expected Ireland country reference")
+	}
+	if country.Name.Ru != "Ирландия" {
+		t.Fatalf("Ireland Russian name = %q, want Ирландия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("IE")
+	if currency == nil {
+		t.Fatal("expected euro currency by Ireland country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Ireland currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("IE")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"dublin",
+		"howth",
+		"dun-laoghaire",
+		"bray",
+		"glendalough",
+		"galway",
+		"cliffs-of-moher",
+		"burren",
+		"connemara",
+		"aran-islands",
+		"westport",
+		"achill",
+		"cork",
+		"cobh",
+		"blarney",
+		"kinsale",
+		"killarney",
+		"ring-of-kerry",
+		"dingle",
+		"waterford",
+		"kilkenny",
+		"cashel",
+		"limerick",
+		"sligo",
+		"donegal",
+		"letterkenny",
+		"wexford",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Ireland city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("glendalough", "IE", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "glendalough" {
+		t.Fatalf("search glendalough in Ireland = %#v, want glendalough first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {
