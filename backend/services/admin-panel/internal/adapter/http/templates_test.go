@@ -3494,6 +3494,108 @@ func TestRendererRendersTajikistanAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersMongoliaAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=MN&city=ulaanbaatar",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Национальный музей Чингисхана",
+				CountryCode:   "MN",
+				CityID:        "ulaanbaatar",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "MN",
+			CityID:      "ulaanbaatar",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="MN" selected`,
+		`Монголия`,
+		`value="ulaanbaatar" data-country="MN" selected`,
+		`Улан-Батор`,
+		`Улан-Батор, Монголия`,
+		`Музей`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Mongolia attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">MN<") || strings.Contains(listBody, ">ulaanbaatar<") {
+		t.Fatalf("Mongolia attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "MNT"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Национальный музей Чингисхана",
+		Description:   "Современный музей истории монгольских государств.",
+		CountryCode:   "MN",
+		CityID:        "ulaanbaatar",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "MN", CityID: "gorkhi-terelj"},
+			{CountryCode: "MN", CityID: "khustai"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "MN", CityID: "ulaanbaatar"},
+			{CountryCode: "MN", CityID: "kharkhorin"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="MN" selected>Монголия</option>`,
+		`<option value="ulaanbaatar" data-country="MN" selected>Улан-Батор</option>`,
+		`<option value="gorkhi-terelj" data-country="MN" >Горхи-Тэрэлж</option>`,
+		`type="checkbox" name="access_cities" value="MN:gorkhi-terelj" checked`,
+		`type="checkbox" name="departure_cities" value="MN:kharkhorin" checked`,
+		`Улан-Батор, Монголия`,
+		`<option value="MNT" selected>Монгольский тугрик</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Mongolia attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

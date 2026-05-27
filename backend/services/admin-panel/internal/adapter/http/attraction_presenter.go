@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "TJ", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -141,6 +141,37 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "TJ", CityID: "muminobod"},
 	{CountryCode: "TJ", CityID: "khovaling"},
 	{CountryCode: "TJ", CityID: "farkhor"},
+	{CountryCode: "MN", CityID: "ulaanbaatar"},
+	{CountryCode: "MN", CityID: "gorkhi-terelj"},
+	{CountryCode: "MN", CityID: "tsonjin-boldog"},
+	{CountryCode: "MN", CityID: "zuunmod"},
+	{CountryCode: "MN", CityID: "khustai"},
+	{CountryCode: "MN", CityID: "kharkhorin"},
+	{CountryCode: "MN", CityID: "orkhon-valley"},
+	{CountryCode: "MN", CityID: "tuvkhun"},
+	{CountryCode: "MN", CityID: "tsetserleg"},
+	{CountryCode: "MN", CityID: "tsenkher"},
+	{CountryCode: "MN", CityID: "khorgo-terkhiin-tsagaan-nuur"},
+	{CountryCode: "MN", CityID: "murun"},
+	{CountryCode: "MN", CityID: "khuvsgul"},
+	{CountryCode: "MN", CityID: "khatgal"},
+	{CountryCode: "MN", CityID: "amarbayasgalant"},
+	{CountryCode: "MN", CityID: "dalanzadgad"},
+	{CountryCode: "MN", CityID: "yolyn-am"},
+	{CountryCode: "MN", CityID: "khongoryn-els"},
+	{CountryCode: "MN", CityID: "bayanzag"},
+	{CountryCode: "MN", CityID: "tsagaan-suvarga"},
+	{CountryCode: "MN", CityID: "baga-gazriin-chuluu"},
+	{CountryCode: "MN", CityID: "sainshand"},
+	{CountryCode: "MN", CityID: "khamaryn-khiid"},
+	{CountryCode: "MN", CityID: "khermen-tsav"},
+	{CountryCode: "MN", CityID: "ulgii"},
+	{CountryCode: "MN", CityID: "altai-tavan-bogd"},
+	{CountryCode: "MN", CityID: "darkhan"},
+	{CountryCode: "MN", CityID: "erdenet"},
+	{CountryCode: "MN", CityID: "choibalsan"},
+	{CountryCode: "MN", CityID: "khalkh-gol"},
+	{CountryCode: "MN", CityID: "binder"},
 	{CountryCode: "UZ", CityID: "tashkent"},
 	{CountryCode: "UZ", CityID: "samarkand"},
 	{CountryCode: "UZ", CityID: "bukhara"},
@@ -1343,7 +1374,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "KGS", "TJS", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "KGS", "TJS", "MNT", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1426,6 +1457,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Таджикский сомони"
 		}
 		return "Tajikistani somoni"
+	case "MNT":
+		if locale == localeRU {
+			return "Монгольский тугрик"
+		}
+		return "Mongolian tugrik"
 	case "UZS":
 		if locale == localeRU {
 			return "Узбекский сум"

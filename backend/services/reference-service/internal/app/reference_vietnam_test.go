@@ -349,6 +349,75 @@ func TestReferenceUseCaseIncludesTajikistanCountryCurrencyAndTouristDestinations
 	}
 }
 
+func TestReferenceUseCaseIncludesMongoliaCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("MN")
+	if country == nil {
+		t.Fatal("expected Mongolia country reference")
+	}
+	if country.Name.Ru != "Монголия" {
+		t.Fatalf("Mongolia Russian name = %q, want Монголия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("MN")
+	if currency == nil {
+		t.Fatal("expected Mongolian tugrik currency by Mongolia country")
+	}
+	if currency.Code != "MNT" {
+		t.Fatalf("Mongolia currency = %q, want MNT", currency.Code)
+	}
+
+	cities := uc.ListCities("MN")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"ulaanbaatar",
+		"gorkhi-terelj",
+		"tsonjin-boldog",
+		"khustai",
+		"kharkhorin",
+		"orkhon-valley",
+		"tuvkhun",
+		"tsetserleg",
+		"khorgo-terkhiin-tsagaan-nuur",
+		"murun",
+		"khuvsgul",
+		"amarbayasgalant",
+		"dalanzadgad",
+		"yolyn-am",
+		"khongoryn-els",
+		"bayanzag",
+		"tsagaan-suvarga",
+		"baga-gazriin-chuluu",
+		"sainshand",
+		"khamaryn-khiid",
+		"ulgii",
+		"altai-tavan-bogd",
+		"darkhan",
+		"erdenet",
+		"choibalsan",
+		"khalkh-gol",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Mongolia city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("terelj", "MN", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "gorkhi-terelj" {
+		t.Fatalf("search terelj in Mongolia = %#v, want gorkhi-terelj first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

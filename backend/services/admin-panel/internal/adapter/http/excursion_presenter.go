@@ -17,6 +17,7 @@ var countryNames = map[string]map[string]string{
 	"KZ": {localeEN: "Kazakhstan", localeRU: "Казахстан"},
 	"KG": {localeEN: "Kyrgyzstan", localeRU: "Кыргызстан"},
 	"TJ": {localeEN: "Tajikistan", localeRU: "Таджикистан"},
+	"MN": {localeEN: "Mongolia", localeRU: "Монголия"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
@@ -1314,6 +1315,40 @@ var tajikistanCityNames = map[string]map[string]string{
 	"zorkul":             {localeEN: "Zorkul", localeRU: "Зоркуль"},
 }
 
+var mongoliaCityNames = map[string]map[string]string{
+	"altai-tavan-bogd":             {localeEN: "Altai Tavan Bogd", localeRU: "Алтай-Таван-Богд"},
+	"amarbayasgalant":              {localeEN: "Amarbayasgalant", localeRU: "Амарбаясгалант"},
+	"baga-gazriin-chuluu":          {localeEN: "Baga Gazriin Chuluu", localeRU: "Бага-Газрын-Чулуу"},
+	"bayanzag":                     {localeEN: "Bayanzag", localeRU: "Баянзаг"},
+	"binder":                       {localeEN: "Binder", localeRU: "Биндэр"},
+	"choibalsan":                   {localeEN: "Choibalsan", localeRU: "Чойбалсан"},
+	"dalanzadgad":                  {localeEN: "Dalanzadgad", localeRU: "Даланзадгад"},
+	"darkhan":                      {localeEN: "Darkhan", localeRU: "Дархан"},
+	"erdenet":                      {localeEN: "Erdenet", localeRU: "Эрдэнэт"},
+	"gorkhi-terelj":                {localeEN: "Gorkhi-Terelj", localeRU: "Горхи-Тэрэлж"},
+	"khatgal":                      {localeEN: "Khatgal", localeRU: "Хатгал"},
+	"khamaryn-khiid":               {localeEN: "Khamaryn Khiid", localeRU: "Хамарын-Хийд"},
+	"khalkh-gol":                   {localeEN: "Khalkh Gol", localeRU: "Халхин-Гол"},
+	"kharkhorin":                   {localeEN: "Kharkhorin", localeRU: "Хархорин"},
+	"khermen-tsav":                 {localeEN: "Khermen Tsav", localeRU: "Хэрмэн-Цав"},
+	"khongoryn-els":                {localeEN: "Khongoryn Els", localeRU: "Хонгорын-Элс"},
+	"khorgo-terkhiin-tsagaan-nuur": {localeEN: "Khorgo-Terkhiin Tsagaan Nuur", localeRU: "Хорго-Тэрхийн-Цагаан-Нуур"},
+	"khustai":                      {localeEN: "Khustai", localeRU: "Хустай"},
+	"khuvsgul":                     {localeEN: "Khuvsgul", localeRU: "Хубсугул"},
+	"murun":                        {localeEN: "Murun", localeRU: "Мурэн"},
+	"orkhon-valley":                {localeEN: "Orkhon Valley", localeRU: "Долина Орхона"},
+	"sainshand":                    {localeEN: "Sainshand", localeRU: "Сайншанд"},
+	"tsagaan-suvarga":              {localeEN: "Tsagaan Suvarga", localeRU: "Цагаан-Суварга"},
+	"tsenkher":                     {localeEN: "Tsenkher", localeRU: "Цэнхэр"},
+	"tsetserleg":                   {localeEN: "Tsetserleg", localeRU: "Цэцэрлэг"},
+	"tsonjin-boldog":               {localeEN: "Tsonjin Boldog", localeRU: "Цонжин-Болдог"},
+	"tuvkhun":                      {localeEN: "Tuvkhun", localeRU: "Тувхун"},
+	"ulaanbaatar":                  {localeEN: "Ulaanbaatar", localeRU: "Улан-Батор"},
+	"ulgii":                        {localeEN: "Ulgii", localeRU: "Улгий"},
+	"yolyn-am":                     {localeEN: "Yolyn Am", localeRU: "Ёлын-Ам"},
+	"zuunmod":                      {localeEN: "Zuunmod", localeRU: "Зуунмод"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1541,6 +1576,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range tajikistanCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range mongoliaCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {

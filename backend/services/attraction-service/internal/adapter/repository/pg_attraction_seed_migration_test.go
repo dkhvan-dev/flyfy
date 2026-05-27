@@ -4100,6 +4100,109 @@ func TestTajikistanPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testi
 	}
 }
 
+func TestMongoliaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "069_seed_mongolia_priority_attractions.up.sql")
+	downSQL := readMigration(t, "069_seed_mongolia_priority_attractions.down.sql")
+
+	for _, fragment := range []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_mongolia_resolved_attractions AS",
+		"'MN'",
+		"'MNT'",
+		"mongolia-seed-v1",
+	} {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Mongolia up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"ulaanbaatar",
+		"gorkhi-terelj",
+		"tsonjin-boldog",
+		"khustai",
+		"kharkhorin",
+		"orkhon-valley",
+		"tuvkhun",
+		"tsetserleg",
+		"khorgo-terkhiin-tsagaan-nuur",
+		"murun",
+		"khuvsgul",
+		"amarbayasgalant",
+		"dalanzadgad",
+		"yolyn-am",
+		"khongoryn-els",
+		"bayanzag",
+		"tsagaan-suvarga",
+		"baga-gazriin-chuluu",
+		"sainshand",
+		"khamaryn-khiid",
+		"ulgii",
+		"altai-tavan-bogd",
+		"darkhan",
+		"erdenet",
+		"choibalsan",
+		"khalkh-gol",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Mongolia up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Chinggis Khaan National Museum",
+		"Gandantegchinlen Monastery",
+		"Sukhbaatar Square",
+		"Zaisan Memorial",
+		"National Museum of Mongolia",
+		"Choijin Lama Temple Museum",
+		"Bogd Khaan Palace Museum",
+		"Narantuul Market",
+		"Shangri-La Mall Ulaanbaatar",
+		"Gorkhi-Terelj National Park",
+		"Chinggis Khaan Statue Complex",
+		"Khustai National Park",
+		"Erdene Zuu Monastery",
+		"Karakorum Museum",
+		"Orkhon Valley Cultural Landscape",
+		"Tuvkhun Monastery",
+		"Khorgo-Terkhiin Tsagaan Nuur National Park",
+		"Khuvsgul Lake National Park",
+		"Amarbayasgalant Monastery",
+		"Yolyn Am Gorge",
+		"Khongoryn Els Sand Dunes",
+		"Bayanzag Flaming Cliffs",
+		"Tsagaan Suvarga White Stupa",
+		"Baga Gazriin Chuluu",
+		"Khamaryn Khiid Monastery",
+		"Altai Tavan Bogd National Park",
+		"Khalkh Gol Memorial Complex",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Mongolia up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Mongolia up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Mongolia up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['mongolia', city_id") {
+		t.Fatalf("Mongolia up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "mongolia-seed-v1") || !strings.Contains(downSQL, "country_code = 'MN'") {
+		t.Fatalf("Mongolia down migration must remove only tagged Mongolia seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")
