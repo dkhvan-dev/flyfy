@@ -1769,6 +1769,64 @@ func attractionCityNameText(locale string, cityID string) string {
 	return displayReferenceCityName(locale, cityID)
 }
 
+func attractionCountrySearchText(countryCode string) string {
+	code := strings.ToUpper(strings.TrimSpace(countryCode))
+	if code == "" {
+		return ""
+	}
+	parts := []string{code}
+	if names, ok := countryNames[code]; ok {
+		parts = appendLocalizedSearchValues(parts, names)
+	}
+	return uniqueSearchText(parts)
+}
+
+func attractionCitySearchText(countryCode string, cityID string) string {
+	country := strings.ToUpper(strings.TrimSpace(countryCode))
+	city := strings.ToLower(strings.TrimSpace(cityID))
+	if city == "" {
+		return ""
+	}
+	parts := []string{city}
+	if country != "" {
+		parts = []string{country + ":" + city, city}
+	}
+	if names, ok := cityNames[city]; ok {
+		parts = appendLocalizedSearchValues(parts, names)
+	}
+	if names, ok := countryNames[country]; ok {
+		parts = appendLocalizedSearchValues(parts, names)
+	}
+	return uniqueSearchText(parts)
+}
+
+func appendLocalizedSearchValues(parts []string, names map[string]string) []string {
+	for _, locale := range []string{localeEN, localeRU} {
+		if value := strings.TrimSpace(names[locale]); value != "" {
+			parts = append(parts, value)
+		}
+	}
+	return parts
+}
+
+func uniqueSearchText(parts []string) string {
+	seen := make(map[string]struct{}, len(parts))
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		value := strings.TrimSpace(part)
+		if value == "" {
+			continue
+		}
+		key := strings.ToLower(value)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, value)
+	}
+	return strings.Join(out, " ")
+}
+
 func attractionCurrencyText(locale string, currency string) string {
 	switch strings.ToUpper(strings.TrimSpace(currency)) {
 	case "KZT":

@@ -186,6 +186,8 @@ func NewRenderer() (*Renderer, error) {
 		"attractionCityName": func(locale any, cityID string) string {
 			return attractionCityNameText(fmt.Sprint(locale), cityID)
 		},
+		"attractionCountrySearch": attractionCountrySearchText,
+		"attractionCitySearch":    attractionCitySearchText,
 		"attractionCurrency": func(locale any, currency string) string {
 			return attractionCurrencyText(fmt.Sprint(locale), currency)
 		},

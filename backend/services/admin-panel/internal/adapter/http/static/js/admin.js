@@ -206,30 +206,238 @@
   });
 
   document.querySelectorAll("[data-attraction-filter-form]").forEach((form) => {
-    const countrySelect = form.querySelector("[data-country-filter]");
+    const countryInput = form.querySelector("[data-country-filter-input]");
+    const countryValue = form.querySelector("[data-country-filter-value]");
+    const countrySuggestions = form.querySelector("[data-country-filter-suggestions]");
+    const countryOptions = Array.from(form.querySelectorAll("[data-country-filter-option]"));
     const cityGroup = form.querySelector("[data-city-filter-group]");
-    const citySelect = form.querySelector("[data-city-filter]");
-    if (!countrySelect || !cityGroup || !citySelect) {
+    const cityInput = form.querySelector("[data-city-filter-input]");
+    const cityValue = form.querySelector("[data-city-filter-value]");
+    const citySuggestions = form.querySelector("[data-city-filter-suggestions]");
+    const cityOptions = Array.from(form.querySelectorAll("[data-city-filter-option]"));
+    if (!countryInput || !countryValue || !countrySuggestions || !cityGroup || !cityInput || !cityValue || !citySuggestions) {
       return;
     }
-    const syncCityFilter = () => {
-      const selectedCountry = (countrySelect.value || "").trim().toUpperCase();
-      const hasCountry = selectedCountry !== "";
-      cityGroup.hidden = !hasCountry;
-      citySelect.disabled = !hasCountry;
-      Array.from(citySelect.options).forEach((option) => {
-        const optionCountry = (option.getAttribute("data-country") || "").trim().toUpperCase();
-        const isBlank = option.value === "";
-        const isVisible = !hasCountry || isBlank || optionCountry === selectedCountry;
+    const normalizeSearch = (value) => {
+      return (value || "")
+        .trim()
+        .toLocaleLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "");
+    };
+    const optionValue = (option) => option.getAttribute("data-value") || "";
+    const optionLabel = (option) => option.getAttribute("data-label") || option.textContent.trim();
+    const optionSearch = (option) => option.getAttribute("data-search") || "";
+    const matchesQuery = (option, rawQuery) => {
+      const query = normalizeSearch(rawQuery);
+      if (query === "") {
+        return false;
+      }
+      const value = normalizeSearch(optionValue(option));
+      const label = normalizeSearch(optionLabel(option));
+      const search = normalizeSearch(optionSearch(option));
+      return value.startsWith(query) || label.includes(query) || search.includes(query);
+    };
+    const hideSuggestions = (input, suggestions) => {
+      suggestions.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+    };
+    const renderSuggestions = (input, suggestions, options, predicate) => {
+      const query = input.value;
+      let visibleCount = 0;
+      options.forEach((option) => {
+        const isVisible = (!predicate || predicate(option)) && matchesQuery(option, query);
         option.hidden = !isVisible;
         option.disabled = !isVisible;
+        if (isVisible) {
+          visibleCount += 1;
+        }
       });
-      const currentOption = citySelect.selectedOptions[0];
-      if (!hasCountry || (currentOption && currentOption.disabled)) {
-        citySelect.value = "";
+      suggestions.hidden = visibleCount === 0;
+      input.setAttribute("aria-expanded", visibleCount === 0 ? "false" : "true");
+    };
+    const firstVisibleSuggestion = (suggestions) => {
+      return Array.from(suggestions.querySelectorAll(".filter-suggestion")).find((option) => {
+        return !option.hidden && !option.disabled;
+      });
+    };
+    const focusAdjacentSuggestion = (suggestions, currentOption, direction) => {
+      const visible = Array.from(suggestions.querySelectorAll(".filter-suggestion")).filter((option) => {
+        return !option.hidden && !option.disabled;
+      });
+      if (visible.length === 0) {
+        return;
+      }
+      const currentIndex = visible.indexOf(currentOption);
+      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + direction + visible.length) % visible.length;
+      visible[nextIndex].focus();
+    };
+    const selectedCountry = () => (countryValue.value || "").trim().toUpperCase();
+    const optionCountry = (option) => (option.getAttribute("data-country") || "").trim().toUpperCase();
+    const cityBelongsToSelectedCountry = (option) => optionCountry(option) === selectedCountry();
+    const selectedOptionMatchesInput = (options, selectedValue, input) => {
+      if (!selectedValue) {
+        return false;
+      }
+      const selected = options.find((option) => optionValue(option) === selectedValue);
+      return Boolean(selected) && normalizeSearch(optionLabel(selected)) === normalizeSearch(input.value);
+    };
+    const setCity = (option, updateInput = true) => {
+      if (!option) {
+        cityValue.value = "";
+        if (updateInput) {
+          cityInput.value = "";
+        }
+        return;
+      }
+      cityValue.value = optionValue(option);
+      if (updateInput) {
+        cityInput.value = optionLabel(option);
       }
     };
-    countrySelect.addEventListener("change", syncCityFilter);
+    const syncCityFilter = () => {
+      const country = selectedCountry();
+      const hasCountry = country !== "";
+      cityGroup.hidden = !hasCountry;
+      cityInput.disabled = !hasCountry;
+      cityValue.disabled = !hasCountry;
+      hideSuggestions(cityInput, citySuggestions);
+      cityOptions.forEach((option) => {
+        option.hidden = true;
+        option.disabled = !hasCountry || optionCountry(option) !== country;
+      });
+      const currentCity = cityOptions.find((option) => optionValue(option) === cityValue.value && cityBelongsToSelectedCountry(option));
+      if (!hasCountry || (cityValue.value && !currentCity)) {
+        setCity(null);
+      }
+    };
+    const setCountry = (option, updateInput = true) => {
+      const previousCountry = selectedCountry();
+      if (!option) {
+        countryValue.value = "";
+        setCity(null);
+      } else {
+        countryValue.value = optionValue(option);
+        if (updateInput) {
+          countryInput.value = optionLabel(option);
+        }
+        if (previousCountry !== selectedCountry()) {
+          setCity(null);
+        }
+      }
+      syncCityFilter();
+    };
+    const clearCountrySelectionAfterManualInput = () => {
+      if (!countryValue.value || selectedOptionMatchesInput(countryOptions, countryValue.value, countryInput)) {
+        return;
+      }
+      setCountry(null, false);
+    };
+    const clearCitySelectionAfterManualInput = () => {
+      if (!cityValue.value || selectedOptionMatchesInput(cityOptions, cityValue.value, cityInput)) {
+        return;
+      }
+      setCity(null, false);
+    };
+    const selectCountry = (option) => {
+      setCountry(option);
+      hideSuggestions(countryInput, countrySuggestions);
+      countryInput.focus();
+    };
+    const selectCity = (option) => {
+      setCity(option);
+      hideSuggestions(cityInput, citySuggestions);
+      cityInput.focus();
+    };
+    const bindSuggestionButton = (button, selectOption) => {
+      button.addEventListener("mousedown", (event) => event.preventDefault());
+      button.addEventListener("click", () => selectOption(button));
+      button.addEventListener("keydown", (event) => {
+        const suggestions = event.currentTarget.closest("[role='listbox']");
+        const input = suggestions ? suggestions.previousElementSibling : null;
+        if (event.key === "Escape") {
+          event.preventDefault();
+          if (input && suggestions) {
+            hideSuggestions(input, suggestions);
+            input.focus();
+          }
+        }
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          if (suggestions) {
+            focusAdjacentSuggestion(suggestions, button, event.key === "ArrowDown" ? 1 : -1);
+          }
+        }
+      });
+    };
+    countryOptions.forEach((option) => bindSuggestionButton(option, selectCountry));
+    cityOptions.forEach((option) => bindSuggestionButton(option, selectCity));
+    countryInput.addEventListener("input", () => {
+      clearCountrySelectionAfterManualInput();
+      renderSuggestions(countryInput, countrySuggestions, countryOptions);
+    });
+    countryInput.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        hideSuggestions(countryInput, countrySuggestions);
+      }
+      if (event.key === "ArrowDown" && !countrySuggestions.hidden) {
+        event.preventDefault();
+        const first = firstVisibleSuggestion(countrySuggestions);
+        if (first) {
+          first.focus();
+        }
+      }
+      if (event.key === "Enter" && !countrySuggestions.hidden) {
+        const first = firstVisibleSuggestion(countrySuggestions);
+        if (first) {
+          event.preventDefault();
+          selectCountry(first);
+        }
+      }
+    });
+    countryInput.addEventListener("blur", () => {
+      if (!countryValue.value) {
+        countryInput.value = "";
+      }
+      window.setTimeout(() => hideSuggestions(countryInput, countrySuggestions), 80);
+    });
+    cityInput.addEventListener("input", () => {
+      clearCitySelectionAfterManualInput();
+      renderSuggestions(cityInput, citySuggestions, cityOptions, cityBelongsToSelectedCountry);
+    });
+    cityInput.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        hideSuggestions(cityInput, citySuggestions);
+      }
+      if (event.key === "ArrowDown" && !citySuggestions.hidden) {
+        event.preventDefault();
+        const first = firstVisibleSuggestion(citySuggestions);
+        if (first) {
+          first.focus();
+        }
+      }
+      if (event.key === "Enter" && !citySuggestions.hidden) {
+        const first = firstVisibleSuggestion(citySuggestions);
+        if (first) {
+          event.preventDefault();
+          selectCity(first);
+        }
+      }
+    });
+    cityInput.addEventListener("blur", () => {
+      if (!cityValue.value) {
+        cityInput.value = "";
+      }
+      window.setTimeout(() => hideSuggestions(cityInput, citySuggestions), 80);
+    });
+    form.addEventListener("click", (event) => {
+      if (!countryInput.contains(event.target) && !countrySuggestions.contains(event.target)) {
+        hideSuggestions(countryInput, countrySuggestions);
+      }
+      if (!cityInput.contains(event.target) && !citySuggestions.contains(event.target)) {
+        hideSuggestions(cityInput, citySuggestions);
+      }
+    });
     syncCityFilter();
   });
 

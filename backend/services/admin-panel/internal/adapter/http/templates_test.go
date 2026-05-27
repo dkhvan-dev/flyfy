@@ -395,9 +395,9 @@ func TestRendererRendersPhilippinesAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="PH" selected`,
+		`type="hidden" name="country" value="PH" data-country-filter-value`,
 		`Филиппины`,
-		`value="cebu-city" data-country="PH" selected`,
+		`type="hidden" name="city" value="cebu-city" data-city-filter-value`,
 		`Себу`,
 		`Себу, Филиппины`,
 	} {
@@ -491,9 +491,9 @@ func TestRendererRendersIndonesiaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="ID" selected`,
+		`type="hidden" name="country" value="ID" data-country-filter-value`,
 		`Индонезия`,
-		`value="ubud" data-country="ID" selected`,
+		`type="hidden" name="city" value="ubud" data-city-filter-value`,
 		`Убуд`,
 		`Убуд, Индонезия`,
 	} {
@@ -504,10 +504,10 @@ func TestRendererRendersIndonesiaAttractionReferencesLocalized(t *testing.T) {
 	if strings.Contains(listBody, ">ID<") || strings.Contains(listBody, ">ubud<") {
 		t.Fatalf("Indonesia attraction list still renders raw codes: %s", listBody)
 	}
-	if !strings.Contains(listBody, `value="bali" data-country="ID"`) {
+	if !strings.Contains(listBody, `data-country="ID" data-value="bali"`) {
 		t.Fatalf("Indonesia attraction list should render Bali as a regional filter option: %s", listBody)
 	}
-	if strings.Contains(listBody, `value="jakarta" data-country="ID"`) {
+	if strings.Contains(listBody, `data-country="ID" data-value="jakarta"`) {
 		t.Fatalf("Indonesia attraction list should not render empty Jakarta city filter: %s", listBody)
 	}
 
@@ -597,9 +597,9 @@ func TestRendererRendersMaldivesAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="MV" selected`,
+		`type="hidden" name="country" value="MV" data-country-filter-value`,
 		`Мальдивы`,
-		`value="maafushi" data-country="MV" selected`,
+		`type="hidden" name="city" value="maafushi" data-city-filter-value`,
 		`Маафуши`,
 		`Маафуши, Мальдивы`,
 	} {
@@ -694,9 +694,9 @@ func TestRendererRendersGeorgiaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="GE" selected`,
+		`type="hidden" name="country" value="GE" data-country-filter-value`,
 		`Грузия`,
-		`value="stepantsminda" data-country="GE" selected`,
+		`type="hidden" name="city" value="stepantsminda" data-city-filter-value`,
 		`Степанцминда (Казбеги)`,
 		`Степанцминда (Казбеги), Грузия`,
 	} {
@@ -793,9 +793,9 @@ func TestRendererRendersArmeniaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="AM" selected`,
+		`type="hidden" name="country" value="AM" data-country-filter-value`,
 		`Армения`,
-		`value="vagharshapat" data-country="AM" selected`,
+		`type="hidden" name="city" value="vagharshapat" data-city-filter-value`,
 		`Вагаршапат (Эчмиадзин)`,
 		`Вагаршапат (Эчмиадзин), Армения`,
 	} {
@@ -892,12 +892,12 @@ func TestRendererRendersChinaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="CN" selected`,
+		`type="hidden" name="country" value="CN" data-country-filter-value`,
 		`Китай`,
-		`value="xian" data-country="CN" selected`,
+		`type="hidden" name="city" value="xian" data-city-filter-value`,
 		`Сиань`,
 		`Сиань, Китай`,
-		`value="hainan" data-country="CN"`,
+		`data-country="CN" data-value="hainan"`,
 		`Хайнань`,
 	} {
 		if !strings.Contains(listBody, expected) {
@@ -997,9 +997,9 @@ func TestRendererRendersSouthKoreaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="KR" selected`,
+		`type="hidden" name="country" value="KR" data-country-filter-value`,
 		`Южная Корея`,
-		`value="gyeongju" data-country="KR" selected`,
+		`type="hidden" name="city" value="gyeongju" data-city-filter-value`,
 		`Кёнджу`,
 		`Кёнджу, Южная Корея`,
 		`Храм`,
@@ -1097,9 +1097,9 @@ func TestRendererRendersJapanAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="JP" selected`,
+		`type="hidden" name="country" value="JP" data-country-filter-value`,
 		`Япония`,
-		`value="kyoto" data-country="JP" selected`,
+		`type="hidden" name="city" value="kyoto" data-city-filter-value`,
 		`Киото`,
 		`Киото, Япония`,
 		`Храм`,
@@ -1197,9 +1197,9 @@ func TestRendererRendersUAEAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="AE" selected`,
+		`type="hidden" name="country" value="AE" data-country-filter-value`,
 		`ОАЭ`,
-		`value="dubai" data-country="AE" selected`,
+		`type="hidden" name="city" value="dubai" data-city-filter-value`,
 		`Дубай`,
 		`Дубай, ОАЭ`,
 		`Архитектура`,
@@ -1297,9 +1297,9 @@ func TestRendererRendersTurkeyAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="TR" selected`,
+		`type="hidden" name="country" value="TR" data-country-filter-value`,
 		`Турция`,
-		`value="istanbul" data-country="TR" selected`,
+		`type="hidden" name="city" value="istanbul" data-city-filter-value`,
 		`Стамбул`,
 		`Стамбул, Турция`,
 		`Храм`,
@@ -1398,9 +1398,9 @@ func TestRendererRendersEgyptAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="EG" selected`,
+		`type="hidden" name="country" value="EG" data-country-filter-value`,
 		`Египет`,
-		`value="giza" data-country="EG" selected`,
+		`type="hidden" name="city" value="giza" data-city-filter-value`,
 		`Гиза`,
 		`Гиза, Египет`,
 		`Архитектура`,
@@ -1499,9 +1499,9 @@ func TestRendererRendersMalaysiaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="MY" selected`,
+		`type="hidden" name="country" value="MY" data-country-filter-value`,
 		`Малайзия`,
-		`value="george-town" data-country="MY" selected`,
+		`type="hidden" name="city" value="george-town" data-city-filter-value`,
 		`Джорджтаун`,
 		`Джорджтаун, Малайзия`,
 		`Архитектура`,
@@ -1600,9 +1600,9 @@ func TestRendererRendersSriLankaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="LK" selected`,
+		`type="hidden" name="country" value="LK" data-country-filter-value`,
 		`Шри-Ланка`,
-		`value="sigiriya" data-country="LK" selected`,
+		`type="hidden" name="city" value="sigiriya" data-city-filter-value`,
 		`Сигирия`,
 		`Сигирия, Шри-Ланка`,
 		`Архитектура`,
@@ -1701,9 +1701,9 @@ func TestRendererRendersMontenegroAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="ME" selected`,
+		`type="hidden" name="country" value="ME" data-country-filter-value`,
 		`Черногория`,
-		`value="kotor" data-country="ME" selected`,
+		`type="hidden" name="city" value="kotor" data-city-filter-value`,
 		`Котор`,
 		`Котор, Черногория`,
 		`Архитектура`,
@@ -1802,9 +1802,9 @@ func TestRendererRendersIndiaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="IN" selected`,
+		`type="hidden" name="country" value="IN" data-country-filter-value`,
 		`Индия`,
-		`value="delhi" data-country="IN" selected`,
+		`type="hidden" name="city" value="delhi" data-city-filter-value`,
 		`Дели`,
 		`Дели, Индия`,
 		`Архитектура`,
@@ -1903,9 +1903,9 @@ func TestRendererRendersMaltaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="MT" selected`,
+		`type="hidden" name="country" value="MT" data-country-filter-value`,
 		`Мальта`,
-		`value="valletta" data-country="MT" selected`,
+		`type="hidden" name="city" value="valletta" data-city-filter-value`,
 		`Валлетта`,
 		`Валлетта, Мальта`,
 		`Храм`,
@@ -2004,9 +2004,9 @@ func TestRendererRendersCyprusAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="CY" selected`,
+		`type="hidden" name="country" value="CY" data-country-filter-value`,
 		`Кипр`,
-		`value="paphos" data-country="CY" selected`,
+		`type="hidden" name="city" value="paphos" data-city-filter-value`,
 		`Пафос`,
 		`Пафос, Кипр`,
 		`Музей`,
@@ -2104,9 +2104,9 @@ func TestRendererRendersSeychellesAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="SC" selected`,
+		`type="hidden" name="country" value="SC" data-country-filter-value`,
 		`Сейшелы`,
-		`value="victoria" data-country="SC" selected`,
+		`type="hidden" name="city" value="victoria" data-city-filter-value`,
 		`Виктория`,
 		`Виктория, Сейшелы`,
 		`Парк`,
@@ -2206,9 +2206,9 @@ func TestRendererRendersPolandAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="PL" selected`,
+		`type="hidden" name="country" value="PL" data-country-filter-value`,
 		`Польша`,
-		`value="warsaw" data-country="PL" selected`,
+		`type="hidden" name="city" value="warsaw" data-city-filter-value`,
 		`Варшава`,
 		`Варшава, Польша`,
 		`Архитектура`,
@@ -2308,9 +2308,9 @@ func TestRendererRendersMexicoAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="MX" selected`,
+		`type="hidden" name="country" value="MX" data-country-filter-value`,
 		`Мексика`,
-		`value="mexico-city" data-country="MX" selected`,
+		`type="hidden" name="city" value="mexico-city" data-city-filter-value`,
 		`Мехико`,
 		`Мехико, Мексика`,
 		`Архитектура`,
@@ -2410,9 +2410,9 @@ func TestRendererRendersBrazilAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="BR" selected`,
+		`type="hidden" name="country" value="BR" data-country-filter-value`,
 		`Бразилия`,
-		`value="rio-de-janeiro" data-country="BR" selected`,
+		`type="hidden" name="city" value="rio-de-janeiro" data-city-filter-value`,
 		`Рио-де-Жанейро`,
 		`Рио-де-Жанейро, Бразилия`,
 		`Архитектура`,
@@ -2512,9 +2512,9 @@ func TestRendererRendersArgentinaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="AR" selected`,
+		`type="hidden" name="country" value="AR" data-country-filter-value`,
 		`Аргентина`,
-		`value="buenos-aires" data-country="AR" selected`,
+		`type="hidden" name="city" value="buenos-aires" data-city-filter-value`,
 		`Буэнос-Айрес`,
 		`Буэнос-Айрес, Аргентина`,
 		`Архитектура`,
@@ -2614,9 +2614,9 @@ func TestRendererRendersSwitzerlandAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="CH" selected`,
+		`type="hidden" name="country" value="CH" data-country-filter-value`,
 		`Швейцария`,
-		`value="zurich" data-country="CH" selected`,
+		`type="hidden" name="city" value="zurich" data-city-filter-value`,
 		`Цюрих`,
 		`Цюрих, Швейцария`,
 		`Музей`,
@@ -2716,9 +2716,9 @@ func TestRendererRendersSwedenAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="SE" selected`,
+		`type="hidden" name="country" value="SE" data-country-filter-value`,
 		`Швеция`,
-		`value="stockholm" data-country="SE" selected`,
+		`type="hidden" name="city" value="stockholm" data-city-filter-value`,
 		`Стокгольм`,
 		`Стокгольм, Швеция`,
 		`Музей`,
@@ -2818,9 +2818,9 @@ func TestRendererRendersCzechiaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="CZ" selected`,
+		`type="hidden" name="country" value="CZ" data-country-filter-value`,
 		`Чехия`,
-		`value="prague" data-country="CZ" selected`,
+		`type="hidden" name="city" value="prague" data-city-filter-value`,
 		`Прага`,
 		`Прага, Чехия`,
 		`Архитектура`,
@@ -2920,9 +2920,9 @@ func TestRendererRendersFranceAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="FR" selected`,
+		`type="hidden" name="country" value="FR" data-country-filter-value`,
 		`Франция`,
-		`value="paris" data-country="FR" selected`,
+		`type="hidden" name="city" value="paris" data-city-filter-value`,
 		`Париж`,
 		`Париж, Франция`,
 		`Архитектура`,
@@ -3022,9 +3022,9 @@ func TestRendererRendersUnitedKingdomAttractionReferencesLocalized(t *testing.T)
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="GB" selected`,
+		`type="hidden" name="country" value="GB" data-country-filter-value`,
 		`Великобритания`,
-		`value="london" data-country="GB" selected`,
+		`type="hidden" name="city" value="london" data-city-filter-value`,
 		`Лондон`,
 		`Лондон, Великобритания`,
 		`Архитектура`,
@@ -3124,9 +3124,9 @@ func TestRendererRendersUzbekistanAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="UZ" selected`,
+		`type="hidden" name="country" value="UZ" data-country-filter-value`,
 		`Узбекистан`,
-		`value="tashkent" data-country="UZ" selected`,
+		`type="hidden" name="city" value="tashkent" data-city-filter-value`,
 		`Ташкент`,
 		`Ташкент, Узбекистан`,
 		`Рынок`,
@@ -3226,9 +3226,9 @@ func TestRendererRendersKyrgyzstanAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="KG" selected`,
+		`type="hidden" name="country" value="KG" data-country-filter-value`,
 		`Кыргызстан`,
-		`value="bishkek" data-country="KG" selected`,
+		`type="hidden" name="city" value="bishkek" data-city-filter-value`,
 		`Бишкек`,
 		`Бишкек, Кыргызстан`,
 		`Архитектура`,
@@ -3328,9 +3328,9 @@ func TestRendererRendersAzerbaijanAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="AZ" selected`,
+		`type="hidden" name="country" value="AZ" data-country-filter-value`,
 		`Азербайджан`,
-		`value="baku" data-country="AZ" selected`,
+		`type="hidden" name="city" value="baku" data-city-filter-value`,
 		`Баку`,
 		`Баку, Азербайджан`,
 		`Архитектура`,
@@ -3430,9 +3430,9 @@ func TestRendererRendersTajikistanAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="TJ" selected`,
+		`type="hidden" name="country" value="TJ" data-country-filter-value`,
 		`Таджикистан`,
-		`value="dushanbe" data-country="TJ" selected`,
+		`type="hidden" name="city" value="dushanbe" data-city-filter-value`,
 		`Душанбе`,
 		`Душанбе, Таджикистан`,
 		`Парк`,
@@ -3532,9 +3532,9 @@ func TestRendererRendersMongoliaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="MN" selected`,
+		`type="hidden" name="country" value="MN" data-country-filter-value`,
 		`Монголия`,
-		`value="ulaanbaatar" data-country="MN" selected`,
+		`type="hidden" name="city" value="ulaanbaatar" data-city-filter-value`,
 		`Улан-Батор`,
 		`Улан-Батор, Монголия`,
 		`Музей`,
@@ -3634,9 +3634,9 @@ func TestRendererRendersIcelandAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="IS" selected`,
+		`type="hidden" name="country" value="IS" data-country-filter-value`,
 		`Исландия`,
-		`value="reykjavik" data-country="IS" selected`,
+		`type="hidden" name="city" value="reykjavik" data-city-filter-value`,
 		`Рейкьявик`,
 		`Рейкьявик, Исландия`,
 		`Музей`,
@@ -3736,9 +3736,9 @@ func TestRendererRendersIrelandAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="IE" selected`,
+		`type="hidden" name="country" value="IE" data-country-filter-value`,
 		`Ирландия`,
-		`value="dublin" data-country="IE" selected`,
+		`type="hidden" name="city" value="dublin" data-city-filter-value`,
 		`Дублин`,
 		`Дублин, Ирландия`,
 		`Музей`,
@@ -3838,9 +3838,9 @@ func TestRendererRendersNetherlandsAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="NL" selected`,
+		`type="hidden" name="country" value="NL" data-country-filter-value`,
 		`Нидерланды`,
-		`value="amsterdam" data-country="NL" selected`,
+		`type="hidden" name="city" value="amsterdam" data-city-filter-value`,
 		`Амстердам`,
 		`Амстердам, Нидерланды`,
 		`Музей`,
@@ -3940,9 +3940,9 @@ func TestRendererRendersBelarusAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="BY" selected`,
+		`type="hidden" name="country" value="BY" data-country-filter-value`,
 		`Беларусь`,
-		`value="minsk" data-country="BY" selected`,
+		`type="hidden" name="city" value="minsk" data-city-filter-value`,
 		`Минск`,
 		`Минск, Беларусь`,
 		`Архитектура`,
@@ -4042,9 +4042,9 @@ func TestRendererRendersSerbiaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="RS" selected`,
+		`type="hidden" name="country" value="RS" data-country-filter-value`,
 		`Сербия`,
-		`value="belgrade" data-country="RS" selected`,
+		`type="hidden" name="city" value="belgrade" data-city-filter-value`,
 		`Белград`,
 		`Белград, Сербия`,
 		`Архитектура`,
@@ -4144,9 +4144,9 @@ func TestRendererRendersGreeceAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="GR" selected`,
+		`type="hidden" name="country" value="GR" data-country-filter-value`,
 		`Греция`,
-		`value="athens" data-country="GR" selected`,
+		`type="hidden" name="city" value="athens" data-city-filter-value`,
 		`Афины`,
 		`Афины, Греция`,
 		`Архитектура`,
@@ -4246,9 +4246,9 @@ func TestRendererRendersNewZealandAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="NZ" selected`,
+		`type="hidden" name="country" value="NZ" data-country-filter-value`,
 		`Новая Зеландия`,
-		`value="auckland" data-country="NZ" selected`,
+		`type="hidden" name="city" value="auckland" data-city-filter-value`,
 		`Окленд`,
 		`Окленд, Новая Зеландия`,
 		`Развлечения`,
@@ -4348,9 +4348,9 @@ func TestRendererRendersUkraineAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="UA" selected`,
+		`type="hidden" name="country" value="UA" data-country-filter-value`,
 		`Украина`,
-		`value="kyiv" data-country="UA" selected`,
+		`type="hidden" name="city" value="kyiv" data-city-filter-value`,
 		`Киев`,
 		`Киев, Украина`,
 		`Архитектура`,
@@ -4449,9 +4449,9 @@ func TestRendererRendersUnitedStatesAttractionReferencesLocalized(t *testing.T) 
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="US" selected`,
+		`type="hidden" name="country" value="US" data-country-filter-value`,
 		`США`,
-		`value="new-york" data-country="US" selected`,
+		`type="hidden" name="city" value="new-york" data-city-filter-value`,
 		`Нью-Йорк`,
 		`Нью-Йорк, США`,
 		`Архитектура`,
@@ -4550,9 +4550,9 @@ func TestRendererRendersSingaporeAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="SG" selected`,
+		`type="hidden" name="country" value="SG" data-country-filter-value`,
 		`Сингапур`,
-		`value="singapore" data-country="SG" selected`,
+		`type="hidden" name="city" value="singapore" data-city-filter-value`,
 		`Сингапур, Сингапур`,
 		`Парк`,
 	} {
@@ -4646,9 +4646,9 @@ func TestRendererRendersDenmarkAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="DK" selected`,
+		`type="hidden" name="country" value="DK" data-country-filter-value`,
 		`Дания`,
-		`value="copenhagen" data-country="DK" selected`,
+		`type="hidden" name="city" value="copenhagen" data-city-filter-value`,
 		`Копенгаген, Дания`,
 		`Развлечения`,
 	} {
@@ -4742,9 +4742,9 @@ func TestRendererRendersFinlandAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="FI" selected`,
+		`type="hidden" name="country" value="FI" data-country-filter-value`,
 		`Финляндия`,
-		`value="helsinki" data-country="FI" selected`,
+		`type="hidden" name="city" value="helsinki" data-city-filter-value`,
 		`Хельсинки, Финляндия`,
 		`Архитектура`,
 	} {
@@ -4838,9 +4838,9 @@ func TestRendererRendersCanadaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="CA" selected`,
+		`type="hidden" name="country" value="CA" data-country-filter-value`,
 		`Канада`,
-		`value="toronto" data-country="CA" selected`,
+		`type="hidden" name="city" value="toronto" data-city-filter-value`,
 		`Торонто, Канада`,
 		`Архитектура`,
 	} {
@@ -4934,9 +4934,9 @@ func TestRendererRendersEstoniaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="EE" selected`,
+		`type="hidden" name="country" value="EE" data-country-filter-value`,
 		`Эстония`,
-		`value="tallinn" data-country="EE" selected`,
+		`type="hidden" name="city" value="tallinn" data-city-filter-value`,
 		`Таллин, Эстония`,
 		`Архитектура`,
 	} {
@@ -5030,9 +5030,9 @@ func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="AB" selected`,
+		`type="hidden" name="country" value="AB" data-country-filter-value`,
 		`Абхазия`,
-		`value="sukhum" data-country="AB" selected`,
+		`type="hidden" name="city" value="sukhum" data-city-filter-value`,
 		`Сухум`,
 		`Сухум, Абхазия`,
 		`Парк`,
@@ -5132,9 +5132,9 @@ func TestRendererRendersCubaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="CU" selected`,
+		`type="hidden" name="country" value="CU" data-country-filter-value`,
 		`Куба`,
-		`value="havana" data-country="CU" selected`,
+		`type="hidden" name="city" value="havana" data-city-filter-value`,
 		`Гавана`,
 		`Гавана, Куба`,
 		`Архитектура`,
@@ -5234,9 +5234,9 @@ func TestRendererRendersMoroccoAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="MA" selected`,
+		`type="hidden" name="country" value="MA" data-country-filter-value`,
 		`Марокко`,
-		`value="marrakech" data-country="MA" selected`,
+		`type="hidden" name="city" value="marrakech" data-city-filter-value`,
 		`Марракеш`,
 		`Марракеш, Марокко`,
 		`Рынок`,
@@ -5336,9 +5336,9 @@ func TestRendererRendersPortugalAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="PT" selected`,
+		`type="hidden" name="country" value="PT" data-country-filter-value`,
 		`Португалия`,
-		`value="lisbon" data-country="PT" selected`,
+		`type="hidden" name="city" value="lisbon" data-city-filter-value`,
 		`Лиссабон`,
 		`Лиссабон, Португалия`,
 		`Архитектура`,
@@ -5439,9 +5439,9 @@ func TestRendererRendersItalyAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="IT" selected`,
+		`type="hidden" name="country" value="IT" data-country-filter-value`,
 		`Италия`,
-		`value="florence" data-country="IT" selected`,
+		`type="hidden" name="city" value="florence" data-city-filter-value`,
 		`Флоренция`,
 		`Флоренция, Италия`,
 		`Музей`,
@@ -5542,9 +5542,9 @@ func TestRendererRendersSpainAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="ES" selected`,
+		`type="hidden" name="country" value="ES" data-country-filter-value`,
 		`Испания`,
-		`value="barcelona" data-country="ES" selected`,
+		`type="hidden" name="city" value="barcelona" data-city-filter-value`,
 		`Барселона`,
 		`Барселона, Испания`,
 		`Храм`,
@@ -5645,9 +5645,9 @@ func TestRendererRendersLuxembourgAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="LU" selected`,
+		`type="hidden" name="country" value="LU" data-country-filter-value`,
 		`Люксембург`,
-		`value="luxembourg-city" data-country="LU" selected`,
+		`type="hidden" name="city" value="luxembourg-city" data-city-filter-value`,
 		`Люксембург, Люксембург`,
 		`Архитектура`,
 	} {
@@ -5746,9 +5746,9 @@ func TestRendererRendersGermanyAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="DE" selected`,
+		`type="hidden" name="country" value="DE" data-country-filter-value`,
 		`Германия`,
-		`value="berlin" data-country="DE" selected`,
+		`type="hidden" name="city" value="berlin" data-city-filter-value`,
 		`Берлин`,
 		`Берлин, Германия`,
 		`Архитектура`,
@@ -5848,9 +5848,9 @@ func TestRendererRendersAustriaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="AT" selected`,
+		`type="hidden" name="country" value="AT" data-country-filter-value`,
 		`Австрия`,
-		`value="vienna" data-country="AT" selected`,
+		`type="hidden" name="city" value="vienna" data-city-filter-value`,
 		`Вена`,
 		`Вена, Австрия`,
 		`Архитектура`,
@@ -5950,9 +5950,9 @@ func TestRendererRendersAustraliaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="AU" selected`,
+		`type="hidden" name="country" value="AU" data-country-filter-value`,
 		`Австралия`,
-		`value="sydney" data-country="AU" selected`,
+		`type="hidden" name="city" value="sydney" data-city-filter-value`,
 		`Сидней`,
 		`Сидней, Австралия`,
 		`Архитектура`,
@@ -6052,9 +6052,9 @@ func TestRendererRendersTanzaniaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="TZ" selected`,
+		`type="hidden" name="country" value="TZ" data-country-filter-value`,
 		`Танзания`,
-		`value="dar-es-salaam" data-country="TZ" selected`,
+		`type="hidden" name="city" value="dar-es-salaam" data-city-filter-value`,
 		`Дар-эс-Салам`,
 		`Дар-эс-Салам, Танзания`,
 		`Музей`,
@@ -6154,9 +6154,9 @@ func TestRendererRendersKenyaAttractionReferencesLocalized(t *testing.T) {
 	}
 	listBody := html.UnescapeString(listRendered.String())
 	for _, expected := range []string{
-		`value="KE" selected`,
+		`type="hidden" name="country" value="KE" data-country-filter-value`,
 		`Кения`,
-		`value="nairobi" data-country="KE" selected`,
+		`type="hidden" name="city" value="nairobi" data-city-filter-value`,
 		`Найроби`,
 		`Найроби, Кения`,
 		`Музей`,
@@ -6218,7 +6218,7 @@ func TestRendererRendersKenyaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
-func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
+func TestRendererRendersAttractionListCountryCitySearchFilters(t *testing.T) {
 	t.Parallel()
 
 	renderer, err := NewRenderer()
@@ -6242,24 +6242,40 @@ func TestRendererRendersAttractionListCountryCityDropdownFilters(t *testing.T) {
 	}
 	body := html.UnescapeString(rendered.String())
 	for _, expected := range []string{
-		`name="country"`,
-		`data-country-filter`,
-		`value="KZ" selected`,
+		`type="hidden" name="country" value="KZ" data-country-filter-value`,
+		`type="search" data-country-filter-input`,
+		`data-country-filter-suggestions role="listbox" hidden`,
+		`type="button" class="filter-suggestion" data-country-filter-option`,
+		`data-value="KZ"`,
+		`data-label="Казахстан"`,
+		`data-search="KZ Kazakhstan Казахстан`,
 		`Казахстан`,
-		`name="city"`,
-		`data-city-filter`,
+		`type="hidden" name="city" value="almaty" data-city-filter-value`,
+		`type="search" data-city-filter-input`,
+		`data-city-filter-suggestions role="listbox" hidden`,
+		`type="button" class="filter-suggestion" data-city-filter-option`,
 		`data-city-filter-group`,
-		`value="almaty" data-country="KZ" selected`,
+		`data-country="KZ" data-value="almaty"`,
+		`data-label="Алматы"`,
+		`data-search="KZ:almaty almaty Алматы`,
 		`Алматы`,
 		`Все страны`,
 		`Все города`,
 	} {
 		if !strings.Contains(body, expected) {
-			t.Fatalf("attraction list did not render dropdown filter %q: %s", expected, body)
+			t.Fatalf("attraction list did not render searchable filter %q: %s", expected, body)
 		}
 	}
-	if strings.Contains(body, `placeholder="almaty"`) {
-		t.Fatalf("attraction list still renders free-form city input: %s", body)
+	for _, unexpected := range []string{
+		`<select name="country"`,
+		`<select name="city"`,
+		`list="attraction-country-filter-options"`,
+		`list="attraction-city-filter-options"`,
+		`<datalist`,
+	} {
+		if strings.Contains(body, unexpected) {
+			t.Fatalf("attraction list still renders dropdown filter %q: %s", unexpected, body)
+		}
 	}
 }
 
@@ -6286,8 +6302,8 @@ func TestRendererHidesAttractionCityFilterUntilCountrySelected(t *testing.T) {
 	if !strings.Contains(body, `data-city-filter-group hidden`) {
 		t.Fatalf("city filter group should be hidden before country selection: %s", body)
 	}
-	if !strings.Contains(body, `data-city-filter disabled`) {
-		t.Fatalf("city filter select should be disabled before country selection: %s", body)
+	if !strings.Contains(body, `data-city-filter-input value="" placeholder="Все города" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="attraction-city-filter-suggestions" disabled`) {
+		t.Fatalf("city filter input should be disabled before country selection: %s", body)
 	}
 }
 
@@ -6326,6 +6342,37 @@ func TestAdminJSKeepsAttractionUploadPreviewCaptionsReadable(t *testing.T) {
 	} {
 		if !strings.Contains(js, expected) {
 			t.Fatalf("admin js should keep preview captions short and preserve filename as metadata, missing %q", expected)
+		}
+	}
+}
+
+func TestAdminJSAttractionFilterDoesNotAutoSelectSearchSuggestions(t *testing.T) {
+	t.Parallel()
+
+	content, err := embeddedFiles.ReadFile("static/js/admin.js")
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	js := string(content)
+	for _, unexpected := range []string{
+		"search.split(/\\s+/).includes(query)",
+		"applyExactCountry(false)",
+		"applyExactCountry(true)",
+		"applyExactCity(false)",
+		"applyExactCity(true)",
+	} {
+		if strings.Contains(js, unexpected) {
+			t.Fatalf("admin attraction filter should not auto-select search suggestions, found %q", unexpected)
+		}
+	}
+	for _, expected := range []string{
+		"selectCountry",
+		"selectCity",
+		"renderSuggestions(countryInput, countrySuggestions, countryOptions)",
+		"renderSuggestions(cityInput, citySuggestions, cityOptions, cityBelongsToSelectedCountry)",
+	} {
+		if !strings.Contains(js, expected) {
+			t.Fatalf("admin attraction filter should keep explicit suggestion selection behavior, missing %q", expected)
 		}
 	}
 }
