@@ -296,27 +296,27 @@ func TestSyncExcursionMarketplacePassesCombinedRouteMetadataToProduct(t *testing
 	}
 
 	productArgs := exec.queryRowArgs[0]
-	if got := fmt.Sprint(productArgs[21]); got != "COMBINED_ROUTE" {
+	if got := fmt.Sprint(productArgs[22]); got != "COMBINED_ROUTE" {
 		t.Fatalf("route_kind arg = %q, want COMBINED_ROUTE", got)
 	}
-	if got := fmt.Sprint(productArgs[22]); !strings.HasPrefix(got, "route:kz:almaty:culture:2-4h:walking:") {
+	if got := fmt.Sprint(productArgs[23]); !strings.HasPrefix(got, "route:kz:almaty:culture:2-4h:walking:") {
 		t.Fatalf("route_fingerprint arg = %q, want route fingerprint", got)
 	}
-	attractionIDs, ok := productArgs[23].([]uuid.UUID)
+	attractionIDs, ok := productArgs[24].([]uuid.UUID)
 	if !ok {
-		t.Fatalf("attraction_ids arg type = %T, want []uuid.UUID", productArgs[23])
+		t.Fatalf("attraction_ids arg type = %T, want []uuid.UUID", productArgs[24])
 	}
 	if len(attractionIDs) != 2 || attractionIDs[0] != a || attractionIDs[1] != b {
 		t.Fatalf("attraction_ids arg = %#v, want sorted [%s %s]", attractionIDs, a, b)
 	}
-	attractionNames, ok := productArgs[24].([]string)
+	attractionNames, ok := productArgs[25].([]string)
 	if !ok {
-		t.Fatalf("attraction_names arg type = %T, want []string", productArgs[24])
+		t.Fatalf("attraction_names arg type = %T, want []string", productArgs[25])
 	}
 	if strings.Join(attractionNames, ",") != "Kok-Tobe,Cathedral" {
 		t.Fatalf("attraction_names arg = %#v, want sorted attraction names", attractionNames)
 	}
-	if got := fmt.Sprint(productArgs[25]); got != "2" {
+	if got := fmt.Sprint(productArgs[26]); got != "2" {
 		t.Fatalf("stop_count arg = %q, want 2", got)
 	}
 }
@@ -600,6 +600,42 @@ func TestSyncExcursionMarketplaceUsesProductCoverForSharedCardAndOfferCoverForGu
 	}
 }
 
+func TestSyncExcursionMarketplaceUsesExternalProductCoverFallback(t *testing.T) {
+	item := validRepositoryExcursion(t)
+	landmarkID := uuid.New()
+	landmarkName := "Dragon Bridge"
+	item.LandmarkID = &landmarkID
+	item.LandmarkName = &landmarkName
+	productCoverImageURL := "https://upload.wikimedia.org/dragon-bridge.jpg"
+
+	exec := &marketplaceRecordingExecutor{
+		queryRows: []uuid.UUID{uuid.New(), uuid.New()},
+	}
+	err := syncExcursionMarketplace(
+		context.Background(),
+		exec,
+		item,
+		port.ExcursionRelations{
+			LanguageCodes:        []string{"en"},
+			ProductCoverImageURL: &productCoverImageURL,
+		},
+	)
+	if err != nil {
+		t.Fatalf("syncExcursionMarketplace() error = %v", err)
+	}
+	if len(exec.queryRowArgs) != 2 {
+		t.Fatalf("QueryRow calls = %d, want 2", len(exec.queryRowArgs))
+	}
+
+	productArgs := exec.queryRowArgs[0]
+	if got, ok := productArgs[17].(*uuid.UUID); !ok || got != nil {
+		t.Fatalf("product cover file arg = %#v, want nil", productArgs[17])
+	}
+	if got, ok := productArgs[18].(*string); !ok || got == nil || *got != productCoverImageURL {
+		t.Fatalf("product cover image url arg = %#v, want %s", productArgs[18], productCoverImageURL)
+	}
+}
+
 func TestGetProductCoverFileIDUsesLegacyOfferProductCover(t *testing.T) {
 	excursionID := uuid.New()
 	productCoverFileID := uuid.New()
@@ -612,6 +648,29 @@ func TestGetProductCoverFileIDUsesLegacyOfferProductCover(t *testing.T) {
 	}
 	if got == nil || *got != productCoverFileID {
 		t.Fatalf("product cover file id = %v, want %s", got, productCoverFileID)
+	}
+	if len(exec.args) != 1 || exec.args[0] != excursionID {
+		t.Fatalf("query args = %#v, want [%s]", exec.args, excursionID)
+	}
+	if !strings.Contains(exec.query, "excursion_offers") ||
+		!strings.Contains(exec.query, "excursion_products") ||
+		!strings.Contains(exec.query, "legacy_excursion_id") {
+		t.Fatalf("query does not join offer to product cover:\n%s", exec.query)
+	}
+}
+
+func TestGetProductCoverImageURLUsesLegacyOfferProductCover(t *testing.T) {
+	excursionID := uuid.New()
+	productCoverImageURL := "https://upload.wikimedia.org/dragon-bridge.jpg"
+	exec := &singleQueryRowExecutor{row: stringRow{value: productCoverImageURL}}
+
+	got, err := getProductCoverImageURL(context.Background(), exec, excursionID)
+
+	if err != nil {
+		t.Fatalf("getProductCoverImageURL() error = %v", err)
+	}
+	if got == nil || *got != productCoverImageURL {
+		t.Fatalf("product cover image url = %v, want %s", got, productCoverImageURL)
 	}
 	if len(exec.args) != 1 || exec.args[0] != excursionID {
 		t.Fatalf("query args = %#v, want [%s]", exec.args, excursionID)
@@ -650,7 +709,7 @@ func TestSyncExcursionMarketplacePersistsPreparedTranslations(t *testing.T) {
 		t.Fatalf("QueryRow calls = %d, want 2", len(exec.queryRowArgs))
 	}
 
-	productTranslations := decodeTranslationsArg(t, exec.queryRowArgs[0][20])
+	productTranslations := decodeTranslationsArg(t, exec.queryRowArgs[0][21])
 	if got := productTranslations["kk"].Title; got != "Шарын шатқалы" {
 		t.Fatalf("product kk title = %q", got)
 	}
@@ -1063,6 +1122,22 @@ func (r uuidRow) Scan(dest ...any) error {
 		return fmt.Errorf("destination type = %T, want *uuid.UUID", dest[0])
 	}
 	*target = r.id
+	return nil
+}
+
+type stringRow struct {
+	value string
+}
+
+func (r stringRow) Scan(dest ...any) error {
+	if len(dest) != 1 {
+		return fmt.Errorf("destinations = %d, want 1", len(dest))
+	}
+	target, ok := dest[0].(*string)
+	if !ok {
+		return fmt.Errorf("destination type = %T, want *string", dest[0])
+	}
+	*target = r.value
 	return nil
 }
 

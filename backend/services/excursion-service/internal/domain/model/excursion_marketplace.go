@@ -48,6 +48,7 @@ type ExcursionProductCard struct {
 	Longitude       *float64
 	MapURL          *string
 	CoverFileID     *uuid.UUID
+	CoverImageURL   *string
 
 	MinPriceAmount       *float64
 	Currency             *string

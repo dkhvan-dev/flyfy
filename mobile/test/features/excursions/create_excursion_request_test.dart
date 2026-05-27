@@ -46,6 +46,7 @@ void main() {
       ],
       coverFileId: 'cover-file-id',
       productCoverFileId: 'attraction-cover-file-id',
+      productCoverImageUrl: 'https://upload.wikimedia.org/attraction.jpg',
     );
 
     expect(request.toJson(), {
@@ -90,6 +91,7 @@ void main() {
       ],
       'coverFileId': 'cover-file-id',
       'productCoverFileId': 'attraction-cover-file-id',
+      'productCoverImageUrl': 'https://upload.wikimedia.org/attraction.jpg',
     });
   });
 

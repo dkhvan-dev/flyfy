@@ -1235,28 +1235,29 @@ func toCreateInput(actorUserID uuid.UUID, req dto.CreateExcursionRequest) (app.C
 		return app.CreateExcursionInput{}, err
 	}
 	return app.CreateExcursionInput{
-		ActorUserID:         actorUserID,
-		LandmarkID:          landmarkID,
-		LandmarkName:        req.LandmarkName,
-		CategorySlug:        req.CategorySlug,
-		ProductTranslations: toModelTranslations(req.ProductTranslations),
-		Visibility:          req.Visibility,
-		DurationMinutes:     req.DurationMinutes,
-		MaxGroupSize:        req.MaxGroupSize,
-		LanguageCodes:       req.LanguageCodes,
-		CountryCode:         req.CountryCode,
-		CityName:            req.CityName,
-		DepartureCityID:     departureCityID,
-		MeetingPoint:        req.MeetingPoint,
-		Latitude:            req.Latitude,
-		Longitude:           req.Longitude,
-		MapURL:              req.MapURL,
-		PriceAmount:         req.PriceAmount,
-		Currency:            req.Currency,
-		CoverFileID:         coverFileID,
-		ProductCoverFileID:  productCoverFileID,
-		IncludedItems:       toIncludedItemInputs(req.IncludedItems, req.IncludedItemTranslations),
-		Itinerary:           itinerary,
+		ActorUserID:          actorUserID,
+		LandmarkID:           landmarkID,
+		LandmarkName:         req.LandmarkName,
+		CategorySlug:         req.CategorySlug,
+		ProductTranslations:  toModelTranslations(req.ProductTranslations),
+		Visibility:           req.Visibility,
+		DurationMinutes:      req.DurationMinutes,
+		MaxGroupSize:         req.MaxGroupSize,
+		LanguageCodes:        req.LanguageCodes,
+		CountryCode:          req.CountryCode,
+		CityName:             req.CityName,
+		DepartureCityID:      departureCityID,
+		MeetingPoint:         req.MeetingPoint,
+		Latitude:             req.Latitude,
+		Longitude:            req.Longitude,
+		MapURL:               req.MapURL,
+		PriceAmount:          req.PriceAmount,
+		Currency:             req.Currency,
+		CoverFileID:          coverFileID,
+		ProductCoverFileID:   productCoverFileID,
+		ProductCoverImageURL: req.ProductCoverImageURL,
+		IncludedItems:        toIncludedItemInputs(req.IncludedItems, req.IncludedItemTranslations),
+		Itinerary:            itinerary,
 	}, nil
 }
 
@@ -1266,29 +1267,30 @@ func toUpdateInput(actorUserID uuid.UUID, excursionID uuid.UUID, req dto.UpdateE
 		return app.UpdateExcursionInput{}, err
 	}
 	return app.UpdateExcursionInput{
-		ActorUserID:         createInput.ActorUserID,
-		ExcursionID:         excursionID,
-		LandmarkID:          createInput.LandmarkID,
-		LandmarkName:        createInput.LandmarkName,
-		CategorySlug:        createInput.CategorySlug,
-		ProductTranslations: createInput.ProductTranslations,
-		Visibility:          createInput.Visibility,
-		DurationMinutes:     createInput.DurationMinutes,
-		MaxGroupSize:        createInput.MaxGroupSize,
-		LanguageCodes:       createInput.LanguageCodes,
-		CountryCode:         createInput.CountryCode,
-		CityName:            createInput.CityName,
-		DepartureCityID:     createInput.DepartureCityID,
-		MeetingPoint:        createInput.MeetingPoint,
-		Latitude:            createInput.Latitude,
-		Longitude:           createInput.Longitude,
-		MapURL:              createInput.MapURL,
-		PriceAmount:         createInput.PriceAmount,
-		Currency:            createInput.Currency,
-		CoverFileID:         createInput.CoverFileID,
-		ProductCoverFileID:  createInput.ProductCoverFileID,
-		IncludedItems:       createInput.IncludedItems,
-		Itinerary:           createInput.Itinerary,
+		ActorUserID:          createInput.ActorUserID,
+		ExcursionID:          excursionID,
+		LandmarkID:           createInput.LandmarkID,
+		LandmarkName:         createInput.LandmarkName,
+		CategorySlug:         createInput.CategorySlug,
+		ProductTranslations:  createInput.ProductTranslations,
+		Visibility:           createInput.Visibility,
+		DurationMinutes:      createInput.DurationMinutes,
+		MaxGroupSize:         createInput.MaxGroupSize,
+		LanguageCodes:        createInput.LanguageCodes,
+		CountryCode:          createInput.CountryCode,
+		CityName:             createInput.CityName,
+		DepartureCityID:      createInput.DepartureCityID,
+		MeetingPoint:         createInput.MeetingPoint,
+		Latitude:             createInput.Latitude,
+		Longitude:            createInput.Longitude,
+		MapURL:               createInput.MapURL,
+		PriceAmount:          createInput.PriceAmount,
+		Currency:             createInput.Currency,
+		CoverFileID:          createInput.CoverFileID,
+		ProductCoverFileID:   createInput.ProductCoverFileID,
+		ProductCoverImageURL: createInput.ProductCoverImageURL,
+		IncludedItems:        createInput.IncludedItems,
+		Itinerary:            createInput.Itinerary,
 	}, nil
 }
 
@@ -1516,6 +1518,9 @@ func toExcursionProductCardResponse(aggregate *app.ExcursionProductCardAggregate
 	if item.CoverFileID != nil {
 		value := fmt.Sprintf("/api/v1/excursion-products/%s/cover", item.ID)
 		coverImageURL = &value
+	} else if item.CoverImageURL != nil && strings.TrimSpace(*item.CoverImageURL) != "" {
+		value := strings.TrimSpace(*item.CoverImageURL)
+		coverImageURL = &value
 	}
 	return dto.ExcursionProductCardResponse{
 		ID:                   item.ID.String(),
@@ -1650,6 +1655,9 @@ func toExcursionResponse(aggregate *app.ExcursionAggregate) dto.ExcursionRespons
 	coverImageURL := (*string)(nil)
 	if aggregate.CoverFileID != nil {
 		value := fmt.Sprintf("/api/v1/excursions/%s/cover", item.ID)
+		coverImageURL = &value
+	} else if aggregate.ProductCoverImageURL != nil && strings.TrimSpace(*aggregate.ProductCoverImageURL) != "" {
+		value := strings.TrimSpace(*aggregate.ProductCoverImageURL)
 		coverImageURL = &value
 	}
 	return dto.ExcursionResponse{
@@ -2010,6 +2018,7 @@ func (h *Handler) writeUseCaseError(w http.ResponseWriter, r *http.Request, err 
 		errors.Is(err, model.ErrInvalidExcursionDuration),
 		errors.Is(err, model.ErrInvalidExcursionGroupSize),
 		errors.Is(err, model.ErrInvalidExcursionMeeting),
+		errors.Is(err, model.ErrInvalidExcursionLocation),
 		errors.Is(err, model.ErrInvalidExcursionPrice),
 		errors.Is(err, model.ErrInvalidExcursionCurrency),
 		errors.Is(err, model.ErrInvalidExcursionPublishingDecision),

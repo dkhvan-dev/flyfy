@@ -38,12 +38,13 @@ type ExcursionFilter struct {
 }
 
 type ExcursionRelations struct {
-	Tags               []string
-	LanguageCodes      []string
-	IncludedItems      []model.ExcursionIncludedItem
-	Itinerary          []*model.ExcursionItineraryItem
-	CoverFileID        *uuid.UUID
-	ProductCoverFileID *uuid.UUID
+	Tags                 []string
+	LanguageCodes        []string
+	IncludedItems        []model.ExcursionIncludedItem
+	Itinerary            []*model.ExcursionItineraryItem
+	CoverFileID          *uuid.UUID
+	ProductCoverFileID   *uuid.UUID
+	ProductCoverImageURL *string
 }
 
 type ExcursionProductFilter struct {

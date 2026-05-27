@@ -92,7 +92,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   double _stepBackSwipeDistance = 0;
   int _mapSelectionRequestSerial = 0;
   String? _stepErrorText;
-  String? _countryErrorText;
   String? _landmarkErrorText;
   String? _itineraryErrorText;
   String? _durationErrorText;
@@ -163,7 +162,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   bool get _hasFieldValidationErrors =>
-      _countryErrorText != null ||
       _landmarkErrorText != null ||
       _itineraryErrorText != null ||
       _durationErrorText != null ||
@@ -174,7 +172,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _currencyErrorText != null;
 
   void _clearFieldValidationErrors() {
-    _countryErrorText = null;
     _landmarkErrorText = null;
     _itineraryErrorText = null;
     _durationErrorText = null;
@@ -186,7 +183,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   void _clearOfferMediaErrors() {
-    _countryErrorText = null;
     _landmarkErrorText = null;
     _itineraryErrorText = null;
   }
@@ -303,6 +299,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
               description: item.localizedDescription(
                 Localizations.localeOf(context).languageCode,
               ),
+              countryCode: excursion.countryCode,
               attractionId: item.attractionId,
               attractionName: item.attractionName,
               latitude: item.latitude,
@@ -426,10 +423,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   }
 
   String? _validateLandmarkStep(AppLocalizations l10n) {
-    if (!_hasSelectedCountry) {
-      _countryErrorText = l10n.createExcursionCountryValidation;
-      return _countryErrorText;
-    }
     if (_creationMode == _ExcursionCreationMode.singleAttraction &&
         !_hasSelectedAttraction) {
       _landmarkErrorText = l10n.createExcursionLandmarkValidation;
@@ -587,6 +580,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       currency: _selectedCurrencyCode,
       coverFileId: _offerCoverFileId,
       productCoverFileId: _productCoverFileId,
+      productCoverImageUrl: _productCoverImageUrl,
       includedItems: _includedItems
           .map((item) => item.toPayload())
           .toList(growable: false),
@@ -761,46 +755,8 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     return items;
   }
 
-  Future<void> _openCountryPicker() async {
-    if (_isEditMode) return;
-
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      isDismissible: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) =>
-          _ExcursionCountryPickerSheet(selectedCode: _selectedCountryCode),
-    );
-
-    if (result == null || !mounted) return;
-    final normalized = result.trim().toUpperCase();
-    if (normalized == (_selectedCountryCode ?? '').trim().toUpperCase()) {
-      return;
-    }
-
-    setState(() {
-      _selectedCountryCode = normalized;
-      _selectedLandmarkId = null;
-      _selectedLatitude = null;
-      _selectedLongitude = null;
-      _selectedAttractionCoverFileId = null;
-      _selectedAttractionCoverImageUrl = null;
-      _productTranslations = const {};
-      _landmarkNameCtrl.clear();
-      _cityNameCtrl.clear();
-      _mapUrlCtrl.clear();
-      _countryErrorText = null;
-      _landmarkErrorText = null;
-      _stepErrorText = null;
-    });
-  }
-
   bool get _hasSelectedMapPoint =>
       _selectedLatitude != null && _selectedLongitude != null;
-
-  bool get _hasSelectedCountry =>
-      (_selectedCountryCode ?? '').trim().isNotEmpty;
 
   bool get _hasSelectedAttraction =>
       (_selectedLandmarkId ?? '').trim().isNotEmpty;
@@ -860,6 +816,12 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       return customCover.isEmpty ? null : customCover;
     }
     return null;
+  }
+
+  String? get _productCoverImageUrl {
+    if (!_hasSelectedAttraction) return null;
+    final attractionImage = (_selectedAttractionCoverImageUrl ?? '').trim();
+    return attractionImage.isEmpty ? null : attractionImage;
   }
 
   String? get _effectiveCoverImageUrl {
@@ -1117,25 +1079,15 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
   Future<void> _openLocationSelector() async {
     if (_isEditMode) return;
 
-    final l10n = AppLocalizations.of(context)!;
-    if (!_hasSelectedCountry) {
-      setState(() {
-        _countryErrorText = l10n.createExcursionCountryValidation;
-        _stepErrorText = l10n.createExcursionCountryValidation;
-      });
-      return;
-    }
-
     FocusScope.of(context).unfocus();
     final result = await context.push<ExcursionLocationSelection>(
       '/excursions/create/location',
       extra: ExcursionLocationPickerArgs(
-        countryCode: _selectedCountryCode!,
-        accessCityId: _departureCityId,
+        countryCode: _selectedCountryCode ?? '',
         initialSelection: ExcursionLocationSelection(
           id: _selectedLandmarkId ?? '',
           name: _landmarkNameCtrl.text.trim(),
-          countryCode: _selectedCountryCode!,
+          countryCode: _selectedCountryCode ?? '',
           cityId: _departureCityId,
           cityName: _cityNameCtrl.text.trim(),
           latitude: _selectedLatitude,
@@ -1153,10 +1105,16 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       _selectedLandmarkId = result.id.trim().isEmpty ? null : result.id.trim();
       _landmarkNameCtrl.text = result.name;
       _selectedCountryCode = result.countryCode.trim().toUpperCase();
-      _departureCityId ??=
+      _departureCityId =
           result.cityId?.trim().isEmpty == false ? result.cityId!.trim() : null;
-      if ((result.cityName ?? '').trim().isNotEmpty) {
-        _cityNameCtrl.text = result.cityName!.trim();
+      final selectedCityName = (result.cityName ?? '').trim();
+      final selectedCityId = (result.cityId ?? '').trim();
+      if (selectedCityName.isNotEmpty) {
+        _cityNameCtrl.text = selectedCityName;
+      } else if (selectedCityId.isNotEmpty) {
+        _cityNameCtrl.text = selectedCityId;
+      } else {
+        _cityNameCtrl.clear();
       }
       _selectedLatitude = result.latitude;
       _selectedLongitude = result.longitude;
@@ -1180,7 +1138,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
       if (_meetingPointCtrl.text.trim().isEmpty) {
         _meetingPointCtrl.text = result.name;
       }
-      _countryErrorText = null;
       _landmarkErrorText = null;
       _stepErrorText = null;
     });
@@ -1191,13 +1148,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     final l10n = AppLocalizations.of(context)!;
     final isCombinedRoute =
         _creationMode == _ExcursionCreationMode.combinedRoute;
-    if (isCombinedRoute && !_hasSelectedCountry) {
-      setState(() {
-        _countryErrorText = l10n.createExcursionCountryValidation;
-        _stepErrorText = l10n.createExcursionCountryValidation;
-      });
-      return;
-    }
     final itemIndex = item == null ? -1 : _itinerary.indexOf(item);
     final result = await showModalBottomSheet<_ExcursionItineraryDraft>(
       context: context,
@@ -1215,6 +1165,9 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
     if (result == null) return;
 
     setState(() {
+      if ((result.countryCode ?? '').trim().isNotEmpty) {
+        _selectedCountryCode = result.countryCode!.trim().toUpperCase();
+      }
       if (itemIndex >= 0 && itemIndex < _itinerary.length) {
         _itinerary[itemIndex] = result;
       } else {
@@ -1473,12 +1426,6 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
           selectedMode: _creationMode,
           onChanged: _selectCreationMode,
         ),
-        const SizedBox(height: 12),
-        _ExcursionCountryPickerField(
-          selectedCode: _selectedCountryCode,
-          errorText: _countryErrorText,
-          onTap: _openCountryPicker,
-        ),
         if (_creationMode == _ExcursionCreationMode.singleAttraction) ...[
           const SizedBox(height: 12),
           _LandmarkSelectionCard(
@@ -1486,8 +1433,7 @@ class _CreateExcursionScreenState extends State<CreateExcursionScreen> {
             cityName: _cityNameCtrl.text,
             hasSelection: _hasSelectedAttraction,
             errorText: _landmarkErrorText,
-            onSelectLocation:
-                _hasSelectedCountry ? _openLocationSelector : null,
+            onSelectLocation: _openLocationSelector,
           ),
         ],
         const SizedBox(height: 24),
@@ -1823,6 +1769,7 @@ class _ExcursionItineraryDraft {
     required this.startOffsetMinutes,
     required this.title,
     required this.description,
+    this.countryCode,
     this.durationMinutes,
     this.attractionId,
     this.attractionName,
@@ -1832,6 +1779,7 @@ class _ExcursionItineraryDraft {
   });
 
   final int startOffsetMinutes;
+  final String? countryCode;
   final int? durationMinutes;
   final String? attractionId;
   final String? attractionName;
@@ -2000,57 +1948,6 @@ _ExcursionIncludedItemType _excursionIncludedItemTypeFromName(String rawValue) {
     'photo' || 'photos' || 'фото' => _ExcursionIncludedItemType.photo,
     _ => _ExcursionIncludedItemType.other,
   };
-}
-
-class ExcursionCountryOption {
-  const ExcursionCountryOption({
-    required this.code,
-    required this.searchAliases,
-  });
-
-  final String code;
-  final List<String> searchAliases;
-
-  String label(AppLocalizations l10n) {
-    return switch (code) {
-      'KZ' => l10n.excursionCountryKazakhstan,
-      'FR' => l10n.excursionCountryFrance,
-      'JP' => l10n.excursionCountryJapan,
-      'IT' => l10n.excursionCountryItaly,
-      _ => code,
-    };
-  }
-
-  bool matchesQuery(String query) {
-    final normalized = query.trim().toLowerCase();
-    if (normalized.isEmpty) return true;
-    if (code.toLowerCase().contains(normalized)) return true;
-    return searchAliases.any(
-      (value) => value.toLowerCase().contains(normalized),
-    );
-  }
-}
-
-const excursionCountryOptions = [
-  ExcursionCountryOption(
-    code: 'KZ',
-    searchAliases: ['Kazakhstan', 'Казахстан', 'Қазақстан'],
-  ),
-  ExcursionCountryOption(code: 'FR', searchAliases: ['France', 'Франция']),
-  ExcursionCountryOption(
-    code: 'JP',
-    searchAliases: ['Japan', 'Япония', 'Жапония'],
-  ),
-  ExcursionCountryOption(code: 'IT', searchAliases: ['Italy', 'Италия']),
-];
-
-ExcursionCountryOption? findExcursionCountryOption(String? code) {
-  final normalized = (code ?? '').trim().toUpperCase();
-  if (normalized.isEmpty) return null;
-  for (final option in excursionCountryOptions) {
-    if (option.code == normalized) return option;
-  }
-  return null;
 }
 
 const _excursionLanguagePickerCodes = [
@@ -3015,268 +2912,6 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _ExcursionCountryPickerField extends StatelessWidget {
-  const _ExcursionCountryPickerField({
-    required this.selectedCode,
-    required this.onTap,
-    this.errorText,
-  });
-
-  final String? selectedCode;
-  final VoidCallback onTap;
-  final String? errorText;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final option = findExcursionCountryOption(selectedCode);
-    final selectedLabel = option?.label(l10n);
-
-    return _ExcursionFieldShell(
-      label: l10n.createCountryLabel,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Material(
-            color: const Color(0xFF2D2115),
-            borderRadius: BorderRadius.circular(24),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(24),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 62),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: errorText == null
-                        ? AppColors.accent.withValues(alpha: 0.10)
-                        : const Color(0xFFFFB199),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.public_rounded, color: AppColors.accent),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        selectedLabel ?? l10n.createExcursionSelectCountryFirst,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: selectedLabel == null
-                              ? const Color(0xFFA99683)
-                              : const Color(0xFFFFF8F0),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFFA99683),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (errorText != null) _InlineFieldError(message: errorText!),
-        ],
-      ),
-    );
-  }
-}
-
-class _ExcursionCountryPickerSheet extends StatefulWidget {
-  const _ExcursionCountryPickerSheet({required this.selectedCode});
-
-  final String? selectedCode;
-
-  @override
-  State<_ExcursionCountryPickerSheet> createState() =>
-      _ExcursionCountryPickerSheetState();
-}
-
-class _ExcursionCountryPickerSheetState
-    extends State<_ExcursionCountryPickerSheet> {
-  final _searchCtrl = TextEditingController();
-
-  List<ExcursionCountryOption> get _visibleCountries {
-    final query = _searchCtrl.text.trim();
-    if (query.isEmpty) return excursionCountryOptions;
-    return excursionCountryOptions
-        .where((item) => item.matchesQuery(query))
-        .toList(growable: false);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _searchCtrl.addListener(() => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.78;
-
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + bottomInset),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: const Color(0xFF2D2115),
-              borderRadius: BorderRadius.circular(28),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 10),
-                Container(
-                  width: 48,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 10, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.excursionSelectLocationCountrySection,
-                          style: const TextStyle(
-                            color: Color(0xFFFFF8F0),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close_rounded),
-                        color: const Color(0xFFFFF8F0),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
-                  child: _LocationSearchLikeField(
-                    controller: _searchCtrl,
-                    hintText: l10n.excursionSelectLocationCountrySearchHint,
-                  ),
-                ),
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
-                    itemCount: _visibleCountries.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final country = _visibleCountries[index];
-                      final selected = country.code ==
-                          (widget.selectedCode ?? '').trim().toUpperCase();
-                      return ListTile(
-                        onTap: () => Navigator.of(context).pop(country.code),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        tileColor: selected
-                            ? AppColors.accent.withValues(alpha: 0.14)
-                            : const Color(0xFF3A2A1D),
-                        leading: CircleAvatar(
-                          backgroundColor: selected
-                              ? AppColors.accent
-                              : const Color(0xFF4A321D),
-                          foregroundColor: Colors.white,
-                          child: Text(country.code),
-                        ),
-                        title: Text(
-                          country.label(l10n),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFFFF8F0),
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        trailing: selected
-                            ? const Icon(
-                                Icons.check_circle_rounded,
-                                color: AppColors.accent,
-                              )
-                            : null,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LocationSearchLikeField extends StatelessWidget {
-  const _LocationSearchLikeField({
-    required this.controller,
-    required this.hintText,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 54),
-      padding: const EdgeInsets.fromLTRB(16, 4, 14, 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF21170D),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search_rounded, color: AppColors.accent, size: 25),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: const TextStyle(
-                color: Color(0xFFFFF8F0),
-                fontWeight: FontWeight.w700,
-              ),
-              decoration: InputDecoration(
-                hintText: hintText,
-                hintStyle: const TextStyle(color: Color(0xFFA99683)),
-                border: InputBorder.none,
-                isCollapsed: true,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -4387,8 +4022,14 @@ class _ExcursionBottomActionBar extends StatelessWidget {
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: isSubmitting ? null : onSecondaryPressed,
-                icon: Icon(secondaryIcon),
+                icon: Icon(secondaryIcon,
+                    color: AppColors.textSecondary, size: 18),
                 label: Text(
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                   secondaryLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -4428,6 +4069,7 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
   final _descriptionCtrl = TextEditingController();
   String? _selectedAttractionId;
   String? _selectedAttractionName;
+  String? _selectedCountryCode;
   double? _selectedLatitude;
   double? _selectedLongitude;
   String? _errorText;
@@ -4439,6 +4081,7 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
   @override
   void initState() {
     super.initState();
+    _selectedCountryCode = (widget.countryCode ?? '').trim().toUpperCase();
     final initialItem = widget.initialItem;
     if (initialItem == null) {
       return;
@@ -4452,6 +4095,10 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
     _descriptionCtrl.text = initialItem.description;
     _selectedAttractionId = initialItem.attractionId;
     _selectedAttractionName = initialItem.attractionName;
+    _selectedCountryCode =
+        (initialItem.countryCode ?? _selectedCountryCode ?? '')
+            .trim()
+            .toUpperCase();
     _selectedLatitude = initialItem.latitude;
     _selectedLongitude = initialItem.longitude;
   }
@@ -4466,13 +4113,7 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
   }
 
   Future<void> _openStopAttractionSelector() async {
-    final countryCode = (widget.countryCode ?? '').trim().toUpperCase();
-    if (countryCode.isEmpty) {
-      setState(() {
-        _attractionErrorText = widget.l10n.createExcursionCountryValidation;
-      });
-      return;
-    }
+    final countryCode = (_selectedCountryCode ?? '').trim().toUpperCase();
 
     FocusScope.of(context).unfocus();
     final selectedId = (_selectedAttractionId ?? '').trim();
@@ -4505,6 +4146,7 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
     setState(() {
       _selectedAttractionId = attractionId.isEmpty ? null : attractionId;
       _selectedAttractionName = result.name.trim();
+      _selectedCountryCode = result.countryCode.trim().toUpperCase();
       _selectedLatitude = result.latitude;
       _selectedLongitude = result.longitude;
       _titleCtrl.text = result.name.trim();
@@ -4524,6 +4166,7 @@ class _AddItinerarySlotSheetState extends State<_AddItinerarySlotSheet> {
     final duration = int.tryParse(_durationCtrl.text.trim());
     final draft = _ExcursionItineraryDraft(
       startOffsetMinutes: offset ?? 0,
+      countryCode: _selectedCountryCode,
       durationMinutes: duration,
       title: _titleCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),

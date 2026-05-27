@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -873,6 +874,70 @@ func TestListMyExcursionsKeepsProductCoverFallback(t *testing.T) {
 	}
 	if items[0].ProductCoverFileID == nil || *items[0].ProductCoverFileID != productCoverFileID {
 		t.Fatalf("product cover file id = %v, want %s", items[0].ProductCoverFileID, productCoverFileID)
+	}
+}
+
+func TestListMyExcursionsKeepsProductCoverImageURLFallback(t *testing.T) {
+	guideUserID := uuid.New()
+	productCoverImageURL := "https://upload.wikimedia.org/dragon-bridge.jpg"
+	excursion, err := model.NewExcursion(model.NewExcursionParams{
+		GuideProfileID:  uuid.New(),
+		GuideUserID:     guideUserID,
+		LandmarkID:      uuidPtr(uuid.New()),
+		LandmarkName:    stringPtr("Dragon Bridge"),
+		Title:           "Dragon Bridge tour",
+		Summary:         "Private city route",
+		Description:     "A detailed city excursion through Da Nang.",
+		CategorySlug:    "architecture",
+		Visibility:      enum.ExcursionVisibilityPublic,
+		DurationMinutes: 120,
+		MaxGroupSize:    6,
+		CountryCode:     &testExcursionCountryCode,
+		CityName:        &testExcursionCityName,
+		MeetingPoint:    "Dragon Bridge",
+		Latitude:        &testExcursionLatitude,
+		Longitude:       &testExcursionLongitude,
+		PriceAmount:     120,
+		Currency:        "USD",
+	})
+	if err != nil {
+		t.Fatalf("NewExcursion() error = %v", err)
+	}
+	repo := &excursionRepoStub{
+		listExcursions: []*model.Excursion{excursion},
+		loadedRelations: port.ExcursionRelations{
+			ProductCoverImageURL: &productCoverImageURL,
+		},
+	}
+	uc := NewExcursionUseCase(repo, nil, nil)
+
+	items, err := uc.ListMyExcursions(context.Background(), guideUserID, 20, 0, nil)
+
+	if err != nil {
+		t.Fatalf("ListMyExcursions() error = %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("items = %d, want 1", len(items))
+	}
+	if items[0].ProductCoverImageURL == nil || *items[0].ProductCoverImageURL != productCoverImageURL {
+		t.Fatalf("product cover image url = %v, want %s", items[0].ProductCoverImageURL, productCoverImageURL)
+	}
+}
+
+func TestNormalizeCoverImageURLAllowsOnlyBoundedHTTPSURLs(t *testing.T) {
+	valid := " https://upload.wikimedia.org/dragon-bridge.jpg "
+	if got := normalizeCoverImageURL(&valid); got == nil || *got != strings.TrimSpace(valid) {
+		t.Fatalf("normalizeCoverImageURL(valid) = %v, want trimmed https URL", got)
+	}
+
+	httpURL := "http://upload.wikimedia.org/dragon-bridge.jpg"
+	if got := normalizeCoverImageURL(&httpURL); got != nil {
+		t.Fatalf("normalizeCoverImageURL(http) = %v, want nil", got)
+	}
+
+	tooLong := "https://" + strings.Repeat("a", maxExternalCoverImageURLLength)
+	if got := normalizeCoverImageURL(&tooLong); got != nil {
+		t.Fatalf("normalizeCoverImageURL(tooLong) = %v, want nil", got)
 	}
 }
 

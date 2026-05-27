@@ -44,6 +44,7 @@ type CreateExcursionRequest struct {
 	Currency                 string                            `json:"currency"`
 	CoverFileID              *string                           `json:"coverFileId,omitempty"`
 	ProductCoverFileID       *string                           `json:"productCoverFileId,omitempty"`
+	ProductCoverImageURL     *string                           `json:"productCoverImageUrl,omitempty"`
 	IncludedItems            []string                          `json:"includedItems,omitempty"`
 	IncludedItemTranslations map[string][]string               `json:"includedItemTranslations,omitempty"`
 	Itinerary                []ExcursionItineraryItemRequest   `json:"itinerary,omitempty"`

@@ -5,10 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/ui/app_colors.dart';
+import '../../core/ui/app_list_search_field.dart';
 import '../../features/attractions/attraction_ui.dart';
 import '../../features/attractions/data/attraction_api.dart';
 import '../../features/attractions/models/attraction_vm.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../shared/widgets/app_city_filter_section.dart';
 import '../attractions/attractions_filter_sheet.dart';
 
 class ExcursionLocationSelection {
@@ -40,11 +42,19 @@ class ExcursionLocationSelection {
   final Map<String, ExcursionLocationLocalizedCopy> translations;
   final String categorySlug;
 
-  factory ExcursionLocationSelection.fromAttraction(AttractionVm attraction) {
+  factory ExcursionLocationSelection.fromAttraction(
+    AttractionVm attraction, {
+    String? fallbackCityName,
+  }) {
     final mapUrl = attraction.locationSourceUrl.trim();
     final coverMedia = attraction.coverMedia;
     final coverImageUrl =
         coverMedia == null ? null : resolveAttractionMediaUrl(coverMedia);
+    final cityId = attraction.cityId.trim();
+    final cityName = _selectionCityName(
+      cityId: cityId,
+      fallbackCityName: fallbackCityName,
+    );
     final translations = <String, ExcursionLocationLocalizedCopy>{};
     for (final entry in attraction.translations.entries) {
       final locale = entry.key.trim().toLowerCase().replaceAll('_', '-');
@@ -73,7 +83,8 @@ class ExcursionLocationSelection {
       id: attraction.id,
       name: attraction.title,
       countryCode: attraction.countryCode,
-      cityId: attraction.cityId,
+      cityId: cityId.isEmpty ? null : cityId,
+      cityName: cityName,
       latitude: attraction.latitude,
       longitude: attraction.longitude,
       mapUrl: mapUrl.isEmpty ? null : mapUrl,
@@ -83,6 +94,18 @@ class ExcursionLocationSelection {
       categorySlug: attraction.category.trim(),
     );
   }
+}
+
+String? _selectionCityName({
+  required String cityId,
+  String? fallbackCityName,
+}) {
+  final cityName = fallbackCityName?.trim();
+  if (cityName != null && cityName.isNotEmpty) {
+    return cityName;
+  }
+  final normalizedCityId = cityId.trim();
+  return normalizedCityId.isEmpty ? null : normalizedCityId;
 }
 
 class ExcursionLocationLocalizedCopy {
@@ -101,12 +124,10 @@ class ExcursionLocationPickerArgs {
   const ExcursionLocationPickerArgs({
     required this.countryCode,
     this.initialSelection,
-    this.accessCityId,
   });
 
   final String countryCode;
   final ExcursionLocationSelection? initialSelection;
-  final String? accessCityId;
 }
 
 class ExcursionSelectLocationScreen extends StatefulWidget {
@@ -114,13 +135,11 @@ class ExcursionSelectLocationScreen extends StatefulWidget {
     super.key,
     required this.countryCode,
     this.initialSelection,
-    this.accessCityId,
     this.api,
   });
 
   final String countryCode;
   final ExcursionLocationSelection? initialSelection;
-  final String? accessCityId;
   final AttractionApi? api;
 
   @override
@@ -165,11 +184,36 @@ class _ExcursionSelectLocationScreenState
       _selectedCountryCode = 'KZ';
     }
     final initial = widget.initialSelection;
-    if (initial != null && initial.countryCode == _selectedCountryCode) {
+    if (_hasUsableInitialSelection(initial)) {
       _selectedLocation = initial;
     }
+    _filters = _initialLocationFilter(initial);
     _attractionSearchCtrl.addListener(_onAttractionSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadAttractions());
+  }
+
+  bool _hasUsableInitialSelection(ExcursionLocationSelection? initial) {
+    return initial != null &&
+        initial.id.trim().isNotEmpty &&
+        initial.countryCode.trim().toUpperCase() == _selectedCountryCode;
+  }
+
+  AttractionFilterResult _initialLocationFilter(
+    ExcursionLocationSelection? initial,
+  ) {
+    final country = AppCountryFilterValue.fromParts(
+      countryCode: _selectedCountryCode,
+    );
+    if (initial == null || initial.countryCode != _selectedCountryCode) {
+      return AttractionFilterResult(country: country);
+    }
+
+    final city = AppCityFilterValue.fromParts(
+      cityId: initial.cityId,
+      cityName: initial.cityName,
+      countryCode: initial.countryCode,
+    );
+    return AttractionFilterResult(country: country, city: city);
   }
 
   @override
@@ -202,11 +246,8 @@ class _ExcursionSelectLocationScreenState
       final search = _attractionSearchCtrl.text.trim();
       final result = await _api.getAttractions(
         search: search.isEmpty ? null : search,
-        countryCode: _filters.countryCode ?? _selectedCountryCode,
+        countryCode: _filters.countryCode,
         cityId: _filters.cityId,
-        accessCityId: (widget.accessCityId ?? '').trim().isEmpty
-            ? null
-            : widget.accessCityId!.trim(),
         category: _filters.category,
         minRating: _filters.minRating,
         priceMin: _filters.priceMin,
@@ -254,7 +295,6 @@ class _ExcursionSelectLocationScreenState
         api: _api,
         searchQuery: _attractionSearchCtrl.text,
         fallbackCountryCode: _selectedCountryCode,
-        accessCityId: widget.accessCityId,
       ),
     );
     if (result == null || !mounted) return;
@@ -278,7 +318,10 @@ class _ExcursionSelectLocationScreenState
 
   void _selectAttraction(AttractionVm attraction) {
     setState(() {
-      _selectedLocation = ExcursionLocationSelection.fromAttraction(attraction);
+      _selectedLocation = ExcursionLocationSelection.fromAttraction(
+        attraction,
+        fallbackCityName: _filters.cityName,
+      );
     });
   }
 
@@ -373,16 +416,13 @@ class _ExcursionSelectLocationScreenState
                                     .excursionSelectLocationAttractionSection,
                               ),
                               const SizedBox(height: 20),
-                              _LocationSearchField(
+                              AppListSearchField(
                                 controller: _attractionSearchCtrl,
                                 hintText: l10n
                                     .excursionSelectLocationAttractionSearchHint,
-                                trailing: IconButton(
-                                  onPressed: _openFilters,
-                                  tooltip: l10n.attractionsFiltersTitle,
-                                  icon: const Icon(Icons.tune_rounded),
-                                  color: AppColors.accent,
-                                ),
+                                filterTooltip: l10n.attractionsFiltersTitle,
+                                activeFilterCount: _filters.activeCount,
+                                onFilterTap: _openFilters,
                               ),
                               const SizedBox(height: 24),
                               _buildAttractions(l10n),
@@ -548,54 +588,6 @@ class _LocationSectionTitle extends StatelessWidget {
         fontSize: 28,
         fontWeight: FontWeight.w900,
         height: 1.05,
-      ),
-    );
-  }
-}
-
-class _LocationSearchField extends StatelessWidget {
-  const _LocationSearchField({
-    required this.controller,
-    required this.hintText,
-    this.trailing,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 56),
-      padding: const EdgeInsets.fromLTRB(20, 4, 10, 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF302318),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search_rounded, color: AppColors.accent, size: 28),
-          const SizedBox(width: 14),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: const TextStyle(
-                color: Color(0xFFFFF8EF),
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-              decoration: InputDecoration(
-                hintText: hintText,
-                hintStyle: const TextStyle(color: Color(0xFF9D8171)),
-                border: InputBorder.none,
-                isCollapsed: true,
-              ),
-              textInputAction: TextInputAction.search,
-            ),
-          ),
-          if (trailing != null) trailing!,
-        ],
       ),
     );
   }

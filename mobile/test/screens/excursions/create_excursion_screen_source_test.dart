@@ -380,7 +380,6 @@ void main() {
       ).readAsString();
 
       for (final fieldError in [
-        '_countryErrorText',
         '_landmarkErrorText',
         '_itineraryErrorText',
         '_durationErrorText',
@@ -572,23 +571,28 @@ void main() {
   );
 
   test(
-    'create excursion uses country picker before attraction selection',
+    'create excursion opens attraction selector without a country picker',
     () async {
       final source = await File(
         'lib/screens/excursions/create_excursion_screen.dart',
       ).readAsString();
 
-      expect(source, contains('class _ExcursionCountryPickerField'));
-      expect(source, contains('class _ExcursionCountryPickerSheet'));
       expect(source, contains('class _LandmarkSelectionCard'));
-      expect(source, contains('_openCountryPicker'));
       expect(source, contains('String? _selectedCountryCode'));
-      expect(source, contains('_hasSelectedCountry'));
       expect(source, contains('l10n.excursionSelectLocationAttractionSection'));
       expect(source, contains('context.push<ExcursionLocationSelection>'));
-      expect(source, contains('countryCode: _selectedCountryCode!'));
+      expect(source, contains("countryCode: _selectedCountryCode ?? ''"));
       expect(source, contains('onSelectLocation:'));
       expect(source, contains('_openLocationSelector'));
+      expect(source, contains('cityId: _departureCityId'));
+      expect(source, contains('cityName: _cityNameCtrl.text.trim()'));
+      expect(source, isNot(contains('accessCityId: _departureCityId')));
+      expect(source, isNot(contains('class _ExcursionCountryPickerField')));
+      expect(source, isNot(contains('class _ExcursionCountryPickerSheet')));
+      expect(source, isNot(contains('_openCountryPicker')));
+      expect(source, isNot(contains('AppCountryFilterSection')));
+      expect(source, isNot(contains('const excursionCountryOptions')));
+      expect(source, isNot(contains('ExcursionCountryOption')));
       expect(source, isNot(contains('countryCodeController')));
       expect(source, isNot(contains('actionLabel: _hasSelectedCountry')));
       expect(source, isNot(contains('_isLocationEditingEnabled')));

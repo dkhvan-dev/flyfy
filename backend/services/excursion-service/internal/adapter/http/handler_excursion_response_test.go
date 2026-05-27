@@ -68,6 +68,42 @@ func TestExcursionResponseUsesProductCoverWhenOfferCoverIsMissing(t *testing.T) 
 	}
 }
 
+func TestExcursionResponseUsesProductCoverImageURLWhenFileCoverIsMissing(t *testing.T) {
+	productCoverImageURL := "https://upload.wikimedia.org/dragon-bridge.jpg"
+	excursion := &model.Excursion{
+		ID:               uuid.New(),
+		GuideProfileID:   uuid.New(),
+		GuideUserID:      uuid.New(),
+		GuideDisplayName: "Aruzhan T.",
+		Title:            "Dragon Bridge",
+		Summary:          "Private city route",
+		Description:      "A detailed city excursion through Da Nang.",
+		CategorySlug:     "architecture",
+		Status:           enum.ExcursionStatusDraft,
+		Visibility:       enum.ExcursionVisibilityPublic,
+		DurationMinutes:  120,
+		MaxGroupSize:     6,
+		MeetingPoint:     "Dragon Bridge",
+		PriceAmount:      120,
+		Currency:         "USD",
+		Revision:         1,
+		CreatedAt:        time.Now().UTC(),
+		UpdatedAt:        time.Now().UTC(),
+	}
+
+	response := toExcursionResponse(&app.ExcursionAggregate{
+		Excursion:            excursion,
+		ProductCoverImageURL: &productCoverImageURL,
+	})
+
+	if response.CoverFileID != nil {
+		t.Fatalf("cover file id = %v, want nil", response.CoverFileID)
+	}
+	if response.CoverImageURL == nil || *response.CoverImageURL != productCoverImageURL {
+		t.Fatalf("cover image url = %v, want %s", response.CoverImageURL, productCoverImageURL)
+	}
+}
+
 func TestExcursionReviewResponseIncludesAuthorProjection(t *testing.T) {
 	authorUserID := uuid.New()
 	avatarFileID := uuid.New()

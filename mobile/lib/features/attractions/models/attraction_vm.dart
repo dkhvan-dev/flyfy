@@ -210,7 +210,11 @@ class AttractionVm {
 
   String? get coverFileId {
     final fileId = coverMedia?.fileId.trim();
-    return fileId == null || fileId.isEmpty ? null : fileId;
+    return fileId == null ||
+            fileId.isEmpty ||
+            fileId == '00000000-0000-0000-0000-000000000000'
+        ? null
+        : fileId;
   }
 
   bool get hasLocation => latitude != null && longitude != null;

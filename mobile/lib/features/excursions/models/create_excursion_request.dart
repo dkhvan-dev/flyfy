@@ -21,6 +21,7 @@ class CreateExcursionRequest {
     this.includedItemTranslations = const {},
     this.coverFileId,
     this.productCoverFileId,
+    this.productCoverImageUrl,
     this.productTranslations = const {},
   });
 
@@ -46,6 +47,7 @@ class CreateExcursionRequest {
   final List<CreateExcursionItineraryItemRequest> itinerary;
   final String? coverFileId;
   final String? productCoverFileId;
+  final String? productCoverImageUrl;
 
   Map<String, dynamic> toJson() {
     final normalizedLanguages = _cleanList(
@@ -90,6 +92,8 @@ class CreateExcursionRequest {
       if (_isPresent(coverFileId)) 'coverFileId': coverFileId!.trim(),
       if (_isPresent(productCoverFileId))
         'productCoverFileId': productCoverFileId!.trim(),
+      if (_isPresent(productCoverImageUrl))
+        'productCoverImageUrl': productCoverImageUrl!.trim(),
     };
   }
 

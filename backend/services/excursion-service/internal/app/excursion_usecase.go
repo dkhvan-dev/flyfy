@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -18,13 +19,27 @@ import (
 )
 
 type ExcursionAggregate struct {
-	Excursion          *model.Excursion
-	Tags               []string
-	LanguageCodes      []string
-	IncludedItems      []model.ExcursionIncludedItem
-	Itinerary          []*model.ExcursionItineraryItem
-	CoverFileID        *uuid.UUID
-	ProductCoverFileID *uuid.UUID
+	Excursion            *model.Excursion
+	Tags                 []string
+	LanguageCodes        []string
+	IncludedItems        []model.ExcursionIncludedItem
+	Itinerary            []*model.ExcursionItineraryItem
+	CoverFileID          *uuid.UUID
+	ProductCoverFileID   *uuid.UUID
+	ProductCoverImageURL *string
+}
+
+func newExcursionAggregate(item *model.Excursion, relations port.ExcursionRelations) *ExcursionAggregate {
+	return &ExcursionAggregate{
+		Excursion:            item,
+		Tags:                 relations.Tags,
+		LanguageCodes:        relations.LanguageCodes,
+		IncludedItems:        relations.IncludedItems,
+		Itinerary:            relations.Itinerary,
+		CoverFileID:          relations.CoverFileID,
+		ProductCoverFileID:   relations.ProductCoverFileID,
+		ProductCoverImageURL: relations.ProductCoverImageURL,
+	}
 }
 
 type ExcursionProductCardAggregate struct {
@@ -72,6 +87,7 @@ const (
 
 	excursionAutoPublishTrustThreshold = 70
 	excursionAutoPublishRiskThreshold  = 30
+	maxExternalCoverImageURLLength     = 2048
 
 	AttendanceSyncStatusSynced        = "SYNCED"
 	AttendanceSyncStatusAlreadySynced = "ALREADY_SYNCED"
@@ -157,54 +173,56 @@ type itineraryTranslationJob struct {
 }
 
 type CreateExcursionInput struct {
-	ActorUserID         uuid.UUID
-	LandmarkID          *uuid.UUID
-	LandmarkName        *string
-	CategorySlug        string
-	ProductTranslations model.ExcursionTranslations
-	Visibility          string
-	DurationMinutes     int
-	MaxGroupSize        int
-	LanguageCodes       []string
-	CountryCode         *string
-	CityName            *string
-	DepartureCityID     *string
-	MeetingPoint        string
-	Latitude            *float64
-	Longitude           *float64
-	MapURL              *string
-	PriceAmount         float64
-	Currency            string
-	CoverFileID         *uuid.UUID
-	ProductCoverFileID  *uuid.UUID
-	IncludedItems       []ExcursionIncludedItemInput
-	Itinerary           []ExcursionItineraryItemInput
+	ActorUserID          uuid.UUID
+	LandmarkID           *uuid.UUID
+	LandmarkName         *string
+	CategorySlug         string
+	ProductTranslations  model.ExcursionTranslations
+	Visibility           string
+	DurationMinutes      int
+	MaxGroupSize         int
+	LanguageCodes        []string
+	CountryCode          *string
+	CityName             *string
+	DepartureCityID      *string
+	MeetingPoint         string
+	Latitude             *float64
+	Longitude            *float64
+	MapURL               *string
+	PriceAmount          float64
+	Currency             string
+	CoverFileID          *uuid.UUID
+	ProductCoverFileID   *uuid.UUID
+	ProductCoverImageURL *string
+	IncludedItems        []ExcursionIncludedItemInput
+	Itinerary            []ExcursionItineraryItemInput
 }
 
 type UpdateExcursionInput struct {
-	ActorUserID         uuid.UUID
-	ExcursionID         uuid.UUID
-	LandmarkID          *uuid.UUID
-	LandmarkName        *string
-	CategorySlug        string
-	ProductTranslations model.ExcursionTranslations
-	Visibility          string
-	DurationMinutes     int
-	MaxGroupSize        int
-	LanguageCodes       []string
-	CountryCode         *string
-	CityName            *string
-	DepartureCityID     *string
-	MeetingPoint        string
-	Latitude            *float64
-	Longitude           *float64
-	MapURL              *string
-	PriceAmount         float64
-	Currency            string
-	CoverFileID         *uuid.UUID
-	ProductCoverFileID  *uuid.UUID
-	IncludedItems       []ExcursionIncludedItemInput
-	Itinerary           []ExcursionItineraryItemInput
+	ActorUserID          uuid.UUID
+	ExcursionID          uuid.UUID
+	LandmarkID           *uuid.UUID
+	LandmarkName         *string
+	CategorySlug         string
+	ProductTranslations  model.ExcursionTranslations
+	Visibility           string
+	DurationMinutes      int
+	MaxGroupSize         int
+	LanguageCodes        []string
+	CountryCode          *string
+	CityName             *string
+	DepartureCityID      *string
+	MeetingPoint         string
+	Latitude             *float64
+	Longitude            *float64
+	MapURL               *string
+	PriceAmount          float64
+	Currency             string
+	CoverFileID          *uuid.UUID
+	ProductCoverFileID   *uuid.UUID
+	ProductCoverImageURL *string
+	IncludedItems        []ExcursionIncludedItemInput
+	Itinerary            []ExcursionItineraryItemInput
 }
 
 type CreateExcursionBookingInput struct {
@@ -430,7 +448,7 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 	if err != nil {
 		return nil, err
 	}
-	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, itinerary)
+	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, input.ProductCoverImageURL, itinerary)
 	if err != nil {
 		return nil, err
 	}
@@ -442,13 +460,14 @@ func (u *ExcursionUseCase) CreateExcursion(ctx context.Context, input CreateExcu
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeCreated, input.ActorUserID, map[string]any{"status": string(item.Status)})
 
 	return &ExcursionAggregate{
-		Excursion:          item,
-		Tags:               relations.Tags,
-		LanguageCodes:      relations.LanguageCodes,
-		IncludedItems:      relations.IncludedItems,
-		Itinerary:          relations.Itinerary,
-		CoverFileID:        relations.CoverFileID,
-		ProductCoverFileID: relations.ProductCoverFileID,
+		Excursion:            item,
+		Tags:                 relations.Tags,
+		LanguageCodes:        relations.LanguageCodes,
+		IncludedItems:        relations.IncludedItems,
+		Itinerary:            relations.Itinerary,
+		CoverFileID:          relations.CoverFileID,
+		ProductCoverFileID:   relations.ProductCoverFileID,
+		ProductCoverImageURL: relations.ProductCoverImageURL,
 	}, nil
 }
 
@@ -536,7 +555,7 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	if err != nil {
 		return nil, err
 	}
-	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, itinerary)
+	relations, err := buildRelations(item.ID, nil, input.LanguageCodes, input.IncludedItems, input.CoverFileID, input.ProductCoverFileID, input.ProductCoverImageURL, itinerary)
 	if err != nil {
 		return nil, err
 	}
@@ -553,13 +572,14 @@ func (u *ExcursionUseCase) UpdateExcursion(ctx context.Context, input UpdateExcu
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeUpdated, input.ActorUserID, map[string]any{"revision": item.Revision})
 
 	return &ExcursionAggregate{
-		Excursion:          item,
-		Tags:               relations.Tags,
-		LanguageCodes:      relations.LanguageCodes,
-		IncludedItems:      relations.IncludedItems,
-		Itinerary:          relations.Itinerary,
-		CoverFileID:        relations.CoverFileID,
-		ProductCoverFileID: relations.ProductCoverFileID,
+		Excursion:            item,
+		Tags:                 relations.Tags,
+		LanguageCodes:        relations.LanguageCodes,
+		IncludedItems:        relations.IncludedItems,
+		Itinerary:            relations.Itinerary,
+		CoverFileID:          relations.CoverFileID,
+		ProductCoverFileID:   relations.ProductCoverFileID,
+		ProductCoverImageURL: relations.ProductCoverImageURL,
 	}, nil
 }
 
@@ -603,7 +623,7 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 			"publishRiskScore":     item.PublishRiskScore,
 			"reasonCodes":          item.ModerationReasonCodes,
 		})
-		return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+		return newExcursionAggregate(item, relations), nil
 	}
 	if err = item.ApplyPublishingEvaluation(evaluation); err != nil {
 		return nil, err
@@ -616,7 +636,7 @@ func (u *ExcursionUseCase) PublishExcursion(ctx context.Context, excursionID uui
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypePublished, actorUserID, map[string]any{"publishedAt": item.PublishedAt})
 
-	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+	return newExcursionAggregate(item, relations), nil
 }
 
 func (u *ExcursionUseCase) ApproveExcursionModeration(ctx context.Context, excursionID uuid.UUID, moderatorUserID uuid.UUID) (*ExcursionAggregate, error) {
@@ -649,7 +669,7 @@ func (u *ExcursionUseCase) ApproveExcursionModeration(ctx context.Context, excur
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeModerationApproved, moderatorUserID, map[string]any{"publishedAt": item.PublishedAt})
 
-	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+	return newExcursionAggregate(item, relations), nil
 }
 
 func (u *ExcursionUseCase) RejectExcursionModeration(ctx context.Context, excursionID uuid.UUID, moderatorUserID uuid.UUID, reasonCodes []string) (*ExcursionAggregate, error) {
@@ -678,7 +698,7 @@ func (u *ExcursionUseCase) RejectExcursionModeration(ctx context.Context, excurs
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeModerationRejected, moderatorUserID, map[string]any{"reasonCodes": item.ModerationReasonCodes})
 
-	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+	return newExcursionAggregate(item, relations), nil
 }
 
 func (u *ExcursionUseCase) ArchiveExcursion(ctx context.Context, excursionID uuid.UUID, actorUserID uuid.UUID) (*ExcursionAggregate, error) {
@@ -694,7 +714,7 @@ func (u *ExcursionUseCase) ArchiveExcursion(ctx context.Context, excursionID uui
 	}
 	u.recordEvent(ctx, item.ID, enum.ExcursionEventTypeArchived, actorUserID, map[string]any{"archivedAt": item.UpdatedAt})
 
-	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+	return newExcursionAggregate(item, relations), nil
 }
 
 func (u *ExcursionUseCase) ArchiveGuideExcursionOffers(ctx context.Context, guideUserID uuid.UUID) error {
@@ -755,7 +775,7 @@ func (u *ExcursionUseCase) GetMyExcursion(ctx context.Context, excursionID uuid.
 	if err != nil {
 		return nil, err
 	}
-	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+	return newExcursionAggregate(item, relations), nil
 }
 
 func (u *ExcursionUseCase) ListExcursions(ctx context.Context, filter port.ExcursionFilter) ([]*ExcursionAggregate, error) {
@@ -2607,7 +2627,7 @@ func (u *ExcursionUseCase) loadAggregate(ctx context.Context, item *model.Excurs
 	if err != nil {
 		return nil, fmt.Errorf("load excursion relations: %w", err)
 	}
-	return &ExcursionAggregate{Excursion: item, Tags: relations.Tags, LanguageCodes: relations.LanguageCodes, IncludedItems: relations.IncludedItems, Itinerary: relations.Itinerary, CoverFileID: relations.CoverFileID, ProductCoverFileID: relations.ProductCoverFileID}, nil
+	return newExcursionAggregate(item, relations), nil
 }
 
 func (u *ExcursionUseCase) loadAggregates(ctx context.Context, items []*model.Excursion) ([]*ExcursionAggregate, error) {
@@ -2983,6 +3003,7 @@ func buildRelations(
 	includedItems []ExcursionIncludedItemInput,
 	coverFileID *uuid.UUID,
 	productCoverFileID *uuid.UUID,
+	productCoverImageURL *string,
 	itinerary []ExcursionItineraryItemInput,
 ) (port.ExcursionRelations, error) {
 	items := make([]*model.ExcursionItineraryItem, 0, len(itinerary))
@@ -3009,11 +3030,12 @@ func buildRelations(
 	}
 
 	relations := port.ExcursionRelations{
-		Tags:               normalizeUniqueLower(tags),
-		LanguageCodes:      normalizeUniqueLower(languageCodes),
-		Itinerary:          items,
-		CoverFileID:        normalizeUUIDPtr(coverFileID),
-		ProductCoverFileID: normalizeUUIDPtr(productCoverFileID),
+		Tags:                 normalizeUniqueLower(tags),
+		LanguageCodes:        normalizeUniqueLower(languageCodes),
+		Itinerary:            items,
+		CoverFileID:          normalizeUUIDPtr(coverFileID),
+		ProductCoverFileID:   normalizeUUIDPtr(productCoverFileID),
+		ProductCoverImageURL: normalizeCoverImageURL(productCoverImageURL),
 	}
 	normalizedIncludedItems, err := normalizeIncludedItems(includedItems)
 	if err != nil {
@@ -3021,6 +3043,24 @@ func buildRelations(
 	}
 	relations.IncludedItems = normalizedIncludedItems
 	return relations, nil
+}
+
+func normalizeCoverImageURL(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+	if len(trimmed) > maxExternalCoverImageURLLength {
+		return nil
+	}
+	parsed, err := url.Parse(trimmed)
+	if err != nil || parsed.Host == "" || parsed.Scheme != "https" {
+		return nil
+	}
+	return &trimmed
 }
 
 func normalizeUniqueLower(values []string) []string {

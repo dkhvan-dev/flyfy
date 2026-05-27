@@ -14,7 +14,6 @@ void main() {
     expect(source, contains('final String? cityId'));
     expect(source, contains('AttractionApi'));
     expect(source, contains('getAttractions('));
-    expect(source, contains('accessCityId:'));
     expect(source, contains('context.pop<ExcursionLocationSelection>'));
     expect(source, contains('GridView.builder'));
     expect(source, contains('RefreshIndicator'));
@@ -28,9 +27,15 @@ void main() {
     expect(source, contains('required this.countryCode'));
     expect(source, contains('final String countryCode'));
     expect(source, contains('_selectedCountryCode = widget.countryCode'));
-    expect(source,
-        contains('countryCode: _filters.countryCode ?? _selectedCountryCode'));
-    expect(source, contains('color: AppColors.accent, size: 28'));
+    expect(source, contains('countryCode: _filters.countryCode'));
+    expect(source, contains('_initialLocationFilter'));
+    expect(source, contains('AppCountryFilterValue.fromParts'));
+    expect(source, contains('AppCityFilterValue.fromParts'));
+    expect(source, contains('cityId: initial.cityId'));
+    expect(source, contains('cityName: initial.cityName'));
+    expect(source, contains('_hasUsableInitialSelection'));
+    expect(
+        source, contains("import '../../core/ui/app_list_search_field.dart';"));
     expect(source, isNot(contains('class _CountrySelector')));
     expect(source, isNot(contains('_countrySearchCtrl')));
     expect(source, isNot(contains('_selectCountry')));
@@ -64,8 +69,10 @@ void main() {
     expect(source, contains('showModalBottomSheet<AttractionFilterResult>'));
     expect(source, contains('AttractionsFilterSheet('));
     expect(source, contains('fallbackCountryCode: _selectedCountryCode'));
-    expect(source, contains('accessCityId: widget.accessCityId'));
-    expect(source, contains('onPressed: _openFilters'));
+    expect(source, isNot(contains('accessCityId: widget.accessCityId')));
+    expect(source, isNot(contains('widget.accessCityId')));
+    expect(source, contains('AppListSearchField('));
+    expect(source, contains('activeFilterCount: _filters.activeCount'));
     expect(source, contains('category: _filters.category'));
     expect(source, contains('minRating: _filters.minRating'));
     expect(source, contains('priceMin: _filters.priceMin'));
@@ -74,6 +81,7 @@ void main() {
     expect(filterSource, contains('final String? fallbackCountryCode'));
     expect(filterSource, contains('final String? accessCityId'));
     expect(filterSource, contains('accessCityId: _normalizedAccessCityId()'));
+    expect(filterSource, contains('_city = null;'));
   });
 
   test('router exposes excursion location selection as an authenticated route',
@@ -83,7 +91,7 @@ void main() {
 
     expect(routerSource, contains("path: '/excursions/create/location'"));
     expect(routerSource, contains('ExcursionSelectLocationScreen'));
-    expect(routerSource, contains('accessCityId: args?.accessCityId'));
+    expect(routerSource, isNot(contains('accessCityId: args?.accessCityId')));
     expect(routerSource,
         isNot(contains("location == '/excursions/create/location'")));
   });
