@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -172,6 +172,35 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "MN", CityID: "choibalsan"},
 	{CountryCode: "MN", CityID: "khalkh-gol"},
 	{CountryCode: "MN", CityID: "binder"},
+	{CountryCode: "IS", CityID: "reykjavik"},
+	{CountryCode: "IS", CityID: "kopavogur"},
+	{CountryCode: "IS", CityID: "seltjarnarnes"},
+	{CountryCode: "IS", CityID: "hafnarfjordur"},
+	{CountryCode: "IS", CityID: "gardabaer"},
+	{CountryCode: "IS", CityID: "mosfellsbaer"},
+	{CountryCode: "IS", CityID: "reykjanes"},
+	{CountryCode: "IS", CityID: "thingvellir"},
+	{CountryCode: "IS", CityID: "geysir"},
+	{CountryCode: "IS", CityID: "gullfoss"},
+	{CountryCode: "IS", CityID: "selfoss"},
+	{CountryCode: "IS", CityID: "hveragerdi"},
+	{CountryCode: "IS", CityID: "vik"},
+	{CountryCode: "IS", CityID: "skogar"},
+	{CountryCode: "IS", CityID: "seljalandsfoss"},
+	{CountryCode: "IS", CityID: "jokulsarlon"},
+	{CountryCode: "IS", CityID: "skaftafell"},
+	{CountryCode: "IS", CityID: "snaefellsnes"},
+	{CountryCode: "IS", CityID: "borgarnes"},
+	{CountryCode: "IS", CityID: "stykkisholmur"},
+	{CountryCode: "IS", CityID: "isafjordur"},
+	{CountryCode: "IS", CityID: "latrabjarg"},
+	{CountryCode: "IS", CityID: "akureyri"},
+	{CountryCode: "IS", CityID: "husavik"},
+	{CountryCode: "IS", CityID: "myvatn"},
+	{CountryCode: "IS", CityID: "dettifoss"},
+	{CountryCode: "IS", CityID: "egilsstadir"},
+	{CountryCode: "IS", CityID: "seydisfjordur"},
+	{CountryCode: "IS", CityID: "borgarfjordur-eystri"},
 	{CountryCode: "UZ", CityID: "tashkent"},
 	{CountryCode: "UZ", CityID: "samarkand"},
 	{CountryCode: "UZ", CityID: "bukhara"},
@@ -1374,7 +1403,7 @@ var attractionCityFilterValues = append([]attractionCityReference{
 	{CountryCode: "CN", CityID: "hainan"},
 }, attractionCityValues...)
 
-var attractionCurrencyValues = []string{"KZT", "KGS", "TJS", "MNT", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
+var attractionCurrencyValues = []string{"KZT", "KGS", "TJS", "MNT", "ISK", "UZS", "USD", "EUR", "GBP", "CHF", "SEK", "CZK", "RUB", "AUD", "TZS", "KES", "TRY", "AED", "EGP", "MYR", "LKR", "INR", "VND", "THB", "PHP", "IDR", "MVR", "SCR", "PLN", "MXN", "BRL", "ARS", "CUP", "MAD", "GEL", "AZN", "AMD", "CNY", "KRW", "JPY"}
 
 func attractionInputFromItem(item *model.AdminAttraction) model.AttractionInput {
 	if item == nil {
@@ -1462,6 +1491,11 @@ func attractionCurrencyText(locale string, currency string) string {
 			return "Монгольский тугрик"
 		}
 		return "Mongolian tugrik"
+	case "ISK":
+		if locale == localeRU {
+			return "Исландская крона"
+		}
+		return "Icelandic krona"
 	case "UZS":
 		if locale == localeRU {
 			return "Узбекский сум"

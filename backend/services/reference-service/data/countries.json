@@ -459,6 +459,15 @@
     "capital": {"en": "Luxembourg City", "ru": "Люксембург", "kk": "Люксембург"}
   },
   {
+    "code": "IS",
+    "code3": "ISL",
+    "numeric": "352",
+    "currencyCode": "ISK",
+    "phoneCode": "+354",
+    "name": {"en": "Iceland", "ru": "Исландия", "kk": "Исландия"},
+    "capital": {"en": "Reykjavik", "ru": "Рейкьявик", "kk": "Рейкьявик"}
+  },
+  {
     "code": "SE",
     "code3": "SWE",
     "numeric": "752",

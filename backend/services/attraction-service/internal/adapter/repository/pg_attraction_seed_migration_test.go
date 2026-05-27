@@ -4203,6 +4203,103 @@ func TestMongoliaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing
 	}
 }
 
+func TestIcelandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "070_seed_iceland_priority_attractions.up.sql")
+	downSQL := readMigration(t, "070_seed_iceland_priority_attractions.down.sql")
+
+	for _, fragment := range []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_iceland_resolved_attractions AS",
+		"'IS'",
+		"'ISK'",
+		"iceland-seed-v1",
+	} {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Iceland up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"reykjavik",
+		"kopavogur",
+		"seltjarnarnes",
+		"hafnarfjordur",
+		"gardabaer",
+		"mosfellsbaer",
+		"thingvellir",
+		"geysir",
+		"gullfoss",
+		"selfoss",
+		"hveragerdi",
+		"vik",
+		"skogar",
+		"seljalandsfoss",
+		"jokulsarlon",
+		"skaftafell",
+		"snaefellsnes",
+		"borgarnes",
+		"stykkisholmur",
+		"isafjordur",
+		"latrabjarg",
+		"akureyri",
+		"husavik",
+		"myvatn",
+		"dettifoss",
+		"egilsstadir",
+		"seydisfjordur",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Iceland up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Hallgrimskirkja",
+		"Harpa Concert Hall and Conference Centre",
+		"Perlan - Wonders of Iceland",
+		"Kolaportid Flea Market",
+		"Sky Lagoon",
+		"Thingvellir National Park",
+		"Geysir Geothermal Area",
+		"Gullfoss Waterfall",
+		"Seljalandsfoss Waterfall",
+		"Reynisfjara Black Sand Beach",
+		"Jokulsarlon Glacier Lagoon",
+		"Snaefellsjokull National Park",
+		"Kirkjufell Mountain",
+		"Dynjandi Waterfall",
+		"Latrabjarg Cliffs",
+		"Akureyri Church",
+		"Husavik Whale Museum",
+		"Lake Myvatn",
+		"Dettifoss Waterfall",
+		"Seydisfjordur Rainbow Street",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Iceland up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'", "'BEACH'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Iceland up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Iceland up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['iceland', city_id") {
+		t.Fatalf("Iceland up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "iceland-seed-v1") || !strings.Contains(downSQL, "country_code = 'IS'") {
+		t.Fatalf("Iceland down migration must remove only tagged Iceland seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")

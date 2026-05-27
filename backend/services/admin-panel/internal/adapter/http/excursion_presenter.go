@@ -18,6 +18,7 @@ var countryNames = map[string]map[string]string{
 	"KG": {localeEN: "Kyrgyzstan", localeRU: "Кыргызстан"},
 	"TJ": {localeEN: "Tajikistan", localeRU: "Таджикистан"},
 	"MN": {localeEN: "Mongolia", localeRU: "Монголия"},
+	"IS": {localeEN: "Iceland", localeRU: "Исландия"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
@@ -1349,6 +1350,38 @@ var mongoliaCityNames = map[string]map[string]string{
 	"zuunmod":                      {localeEN: "Zuunmod", localeRU: "Зуунмод"},
 }
 
+var icelandCityNames = map[string]map[string]string{
+	"akureyri":             {localeEN: "Akureyri", localeRU: "Акюрейри"},
+	"borgarfjordur-eystri": {localeEN: "Borgarfjordur Eystri", localeRU: "Боргарфьордюр-Эйстри"},
+	"borgarnes":            {localeEN: "Borgarnes", localeRU: "Боргарнес"},
+	"dettifoss":            {localeEN: "Dettifoss", localeRU: "Деттифосс"},
+	"egilsstadir":          {localeEN: "Egilsstadir", localeRU: "Эйильсстадир"},
+	"gardabaer":            {localeEN: "Gardabaer", localeRU: "Гардабайр"},
+	"geysir":               {localeEN: "Geysir", localeRU: "Гейсир"},
+	"gullfoss":             {localeEN: "Gullfoss", localeRU: "Гюдльфосс"},
+	"hafnarfjordur":        {localeEN: "Hafnarfjordur", localeRU: "Хабнарфьордюр"},
+	"husavik":              {localeEN: "Husavik", localeRU: "Хусавик"},
+	"hveragerdi":           {localeEN: "Hveragerdi", localeRU: "Хверагерди"},
+	"isafjordur":           {localeEN: "Isafjordur", localeRU: "Исафьордюр"},
+	"jokulsarlon":          {localeEN: "Jokulsarlon", localeRU: "Йёкюльсаурлоун"},
+	"kopavogur":            {localeEN: "Kopavogur", localeRU: "Коупавогюр"},
+	"latrabjarg":           {localeEN: "Latrabjarg", localeRU: "Лаутрабьярг"},
+	"mosfellsbaer":         {localeEN: "Mosfellsbaer", localeRU: "Мосфедльсбайр"},
+	"myvatn":               {localeEN: "Myvatn", localeRU: "Миватн"},
+	"reykjanes":            {localeEN: "Reykjanes", localeRU: "Рейкьянес"},
+	"reykjavik":            {localeEN: "Reykjavik", localeRU: "Рейкьявик"},
+	"seydisfjordur":        {localeEN: "Seydisfjordur", localeRU: "Сейдисфьордюр"},
+	"seltjarnarnes":        {localeEN: "Seltjarnarnes", localeRU: "Сельтьярнарнес"},
+	"selfoss":              {localeEN: "Selfoss", localeRU: "Сельфосс"},
+	"seljalandsfoss":       {localeEN: "Seljalandsfoss", localeRU: "Сельяландсфосс"},
+	"skaftafell":           {localeEN: "Skaftafell", localeRU: "Скафтафетль"},
+	"skogar":               {localeEN: "Skogar", localeRU: "Скоугар"},
+	"snaefellsnes":         {localeEN: "Snaefellsnes", localeRU: "Снайфедльснес"},
+	"stykkisholmur":        {localeEN: "Stykkisholmur", localeRU: "Стиккисхоульмюр"},
+	"thingvellir":          {localeEN: "Thingvellir", localeRU: "Тингведлир"},
+	"vik":                  {localeEN: "Vik", localeRU: "Вик"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1579,6 +1612,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range mongoliaCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range icelandCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {

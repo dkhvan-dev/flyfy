@@ -3596,6 +3596,108 @@ func TestRendererRendersMongoliaAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersIcelandAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=IS&city=reykjavik",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Перлан — Чудеса Исландии",
+				CountryCode:   "IS",
+				CityID:        "reykjavik",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "IS",
+			CityID:      "reykjavik",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="IS" selected`,
+		`Исландия`,
+		`value="reykjavik" data-country="IS" selected`,
+		`Рейкьявик`,
+		`Рейкьявик, Исландия`,
+		`Музей`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Iceland attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">IS<") || strings.Contains(listBody, ">reykjavik<") {
+		t.Fatalf("Iceland attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "ISK"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Перлан — Чудеса Исландии",
+		Description:   "Интерактивный музей природы Исландии и обзорная площадка.",
+		CountryCode:   "IS",
+		CityID:        "reykjavik",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "IS", CityID: "reykjavik"},
+			{CountryCode: "IS", CityID: "thingvellir"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "IS", CityID: "reykjavik"},
+			{CountryCode: "IS", CityID: "akureyri"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="IS" selected>Исландия</option>`,
+		`<option value="reykjavik" data-country="IS" selected>Рейкьявик</option>`,
+		`<option value="thingvellir" data-country="IS" >Тингведлир</option>`,
+		`type="checkbox" name="access_cities" value="IS:thingvellir" checked`,
+		`type="checkbox" name="departure_cities" value="IS:akureyri" checked`,
+		`Рейкьявик, Исландия`,
+		`<option value="ISK" selected>Исландская крона</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Iceland attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

@@ -418,6 +418,77 @@ func TestReferenceUseCaseIncludesMongoliaCountryCurrencyAndTouristDestinations(t
 	}
 }
 
+func TestReferenceUseCaseIncludesIcelandCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("IS")
+	if country == nil {
+		t.Fatal("expected Iceland country reference")
+	}
+	if country.Name.Ru != "Исландия" {
+		t.Fatalf("Iceland Russian name = %q, want Исландия", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("IS")
+	if currency == nil {
+		t.Fatal("expected Icelandic krona currency by Iceland country")
+	}
+	if currency.Code != "ISK" {
+		t.Fatalf("Iceland currency = %q, want ISK", currency.Code)
+	}
+
+	cities := uc.ListCities("IS")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"reykjavik",
+		"kopavogur",
+		"seltjarnarnes",
+		"hafnarfjordur",
+		"gardabaer",
+		"mosfellsbaer",
+		"reykjanes",
+		"thingvellir",
+		"geysir",
+		"gullfoss",
+		"selfoss",
+		"hveragerdi",
+		"vik",
+		"skogar",
+		"seljalandsfoss",
+		"jokulsarlon",
+		"skaftafell",
+		"snaefellsnes",
+		"borgarnes",
+		"stykkisholmur",
+		"isafjordur",
+		"latrabjarg",
+		"akureyri",
+		"husavik",
+		"myvatn",
+		"dettifoss",
+		"egilsstadir",
+		"seydisfjordur",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Iceland city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("thingvellir", "IS", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "thingvellir" {
+		t.Fatalf("search thingvellir in Iceland = %#v, want thingvellir first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {
