@@ -214,7 +214,7 @@ func TestAttractionListQueryDefaultsInvalidPage(t *testing.T) {
 	}
 }
 
-func TestAttractionReferenceOptionsIncludeRussianFederationCities(t *testing.T) {
+func TestAttractionReferenceOptionsIncludeRussiaCities(t *testing.T) {
 	t.Parallel()
 
 	countries := attractionCountryOptions("RU")
@@ -241,8 +241,8 @@ func TestAttractionReferenceOptionsIncludeRussianFederationCities(t *testing.T) 
 		t.Fatalf("city options = %#v, want selected RU Moscow option", cities)
 	}
 
-	if got := attractionCityText(localeRU, "RU", "saint-petersburg"); got != "Санкт-Петербург, Российская Федерация" {
-		t.Fatalf("city text = %q, want localized Russian Federation city", got)
+	if got := attractionCityText(localeRU, "RU", "saint-petersburg"); got != "Санкт-Петербург, Россия" {
+		t.Fatalf("city text = %q, want localized Russia city", got)
 	}
 }
 

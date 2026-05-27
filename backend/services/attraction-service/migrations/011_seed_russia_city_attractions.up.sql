@@ -1,11 +1,11 @@
--- Curated Russian Federation attractions seed.
+-- Curated Russia attractions seed.
 -- Texts are original FlyFy editorial summaries localized for ru, en, kk.
 -- Sources audited in May 2026:
 -- - Wikimedia Commons and Wikipedia for representative cover media and source pages.
 -- - OpenStreetMap search URLs for lightweight location verification anchors.
 -- Selection policy:
 -- - country_code is always RU, because federal subjects/regions are not modeled as countries;
--- - city_id stores a practical departure/search hub inside the Russian Federation;
+-- - city_id stores a practical departure/search hub inside Russia;
 -- - ratings are editorial baselines for imported curated content until user reviews take over;
 -- - price is left NULL because tickets and opening conditions change by season/operator.
 

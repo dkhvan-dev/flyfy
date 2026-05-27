@@ -26,7 +26,7 @@ var countryNames = map[string]map[string]string{
 	"GR": {localeEN: "Greece", localeRU: "Греция"},
 	"UA": {localeEN: "Ukraine", localeRU: "Украина"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
-	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
+	"RU": {localeEN: "Russia", localeRU: "Россия"},
 	"CA": {localeEN: "Canada", localeRU: "Канада"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
 	"TH": {localeEN: "Thailand", localeRU: "Таиланд"},
