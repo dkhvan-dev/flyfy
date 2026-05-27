@@ -3800,6 +3800,108 @@ func TestRendererRendersIrelandAttractionReferencesLocalized(t *testing.T) {
 	}
 }
 
+func TestRendererRendersNetherlandsAttractionReferencesLocalized(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?country=NL&city=amsterdam",
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Рейксмюсеум",
+				CountryCode:   "NL",
+				CityID:        "amsterdam",
+				Category:      "MUSEUM",
+				Source:        "IMPORT",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 1, AttractionFilterViewData{
+			CountryCode: "NL",
+			CityID:      "amsterdam",
+		}),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	for _, expected := range []string{
+		`value="NL" selected`,
+		`Нидерланды`,
+		`value="amsterdam" data-country="NL" selected`,
+		`Амстердам`,
+		`Амстердам, Нидерланды`,
+		`Музей`,
+	} {
+		if !strings.Contains(listBody, expected) {
+			t.Fatalf("Netherlands attraction list did not render localized reference %q: %s", expected, listBody)
+		}
+	}
+	if strings.Contains(listBody, ">NL<") || strings.Contains(listBody, ">amsterdam<") {
+		t.Fatalf("Netherlands attraction list still renders raw codes: %s", listBody)
+	}
+
+	priceCurrency := "EUR"
+	editItem := &model.AdminAttraction{
+		ID:            itemID,
+		DefaultLocale: localeRU,
+		Title:         "Рейксмюсеум",
+		Description:   "Главный художественный музей Нидерландов на Музейной площади.",
+		CountryCode:   "NL",
+		CityID:        "amsterdam",
+		Category:      "MUSEUM",
+		Status:        "PUBLISHED",
+		PriceCurrency: &priceCurrency,
+		AccessCities: []model.AttractionCityLink{
+			{CountryCode: "NL", CityID: "amsterdam"},
+			{CountryCode: "NL", CityID: "zaanse-schans"},
+		},
+		DepartureCities: []model.AttractionCityLink{
+			{CountryCode: "NL", CityID: "amsterdam"},
+			{CountryCode: "NL", CityID: "rotterdam"},
+		},
+	}
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      "/admin/attractions/" + itemID.String() + "/edit",
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data:      NewAttractionFormViewData(editItem, model.AttractionInput{}),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	for _, expected := range []string{
+		`<option value="NL" selected>Нидерланды</option>`,
+		`<option value="amsterdam" data-country="NL" selected>Амстердам</option>`,
+		`<option value="zaanse-schans" data-country="NL" >Зансе-Сханс</option>`,
+		`type="checkbox" name="access_cities" value="NL:zaanse-schans" checked`,
+		`type="checkbox" name="departure_cities" value="NL:rotterdam" checked`,
+		`Амстердам, Нидерланды`,
+		`<option value="EUR" selected>Евро</option>`,
+	} {
+		if !strings.Contains(editBody, expected) {
+			t.Fatalf("Netherlands attraction form did not render localized reference %q: %s", expected, editBody)
+		}
+	}
+}
+
 func TestRendererRendersAbkhaziaAttractionReferencesLocalized(t *testing.T) {
 	t.Parallel()
 

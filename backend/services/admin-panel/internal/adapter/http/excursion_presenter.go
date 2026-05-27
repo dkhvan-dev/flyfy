@@ -20,6 +20,7 @@ var countryNames = map[string]map[string]string{
 	"MN": {localeEN: "Mongolia", localeRU: "Монголия"},
 	"IS": {localeEN: "Iceland", localeRU: "Исландия"},
 	"IE": {localeEN: "Ireland", localeRU: "Ирландия"},
+	"NL": {localeEN: "Netherlands", localeRU: "Нидерланды"},
 	"UZ": {localeEN: "Uzbekistan", localeRU: "Узбекистан"},
 	"RU": {localeEN: "Russian Federation", localeRU: "Российская Федерация"},
 	"VN": {localeEN: "Vietnam", localeRU: "Вьетнам"},
@@ -1413,6 +1414,39 @@ var irelandCityNames = map[string]map[string]string{
 	"wexford":         {localeEN: "Wexford", localeRU: "Уэксфорд"},
 }
 
+var netherlandsCityNames = map[string]map[string]string{
+	"alkmaar":       {localeEN: "Alkmaar", localeRU: "Алкмар"},
+	"amsterdam":     {localeEN: "Amsterdam", localeRU: "Амстердам"},
+	"arnhem":        {localeEN: "Arnhem", localeRU: "Арнем"},
+	"delft":         {localeEN: "Delft", localeRU: "Делфт"},
+	"den-bosch":     {localeEN: "Den Bosch", localeRU: "Ден-Бос"},
+	"domburg":       {localeEN: "Domburg", localeRU: "Домбург"},
+	"eindhoven":     {localeEN: "Eindhoven", localeRU: "Эйндховен"},
+	"giethoorn":     {localeEN: "Giethoorn", localeRU: "Гитхорн"},
+	"gouda":         {localeEN: "Gouda", localeRU: "Гауда"},
+	"groningen":     {localeEN: "Groningen", localeRU: "Гронинген"},
+	"haarlem":       {localeEN: "Haarlem", localeRU: "Харлем"},
+	"hoge-veluwe":   {localeEN: "Hoge Veluwe", localeRU: "Хоге-Велюве"},
+	"kaatsheuvel":   {localeEN: "Kaatsheuvel", localeRU: "Катсхёвел"},
+	"kinderdijk":    {localeEN: "Kinderdijk", localeRU: "Киндердейк"},
+	"leeuwarden":    {localeEN: "Leeuwarden", localeRU: "Леуварден"},
+	"leiden":        {localeEN: "Leiden", localeRU: "Лейден"},
+	"maastricht":    {localeEN: "Maastricht", localeRU: "Маастрихт"},
+	"marken":        {localeEN: "Marken", localeRU: "Маркен"},
+	"middelburg":    {localeEN: "Middelburg", localeRU: "Мидделбург"},
+	"nijmegen":      {localeEN: "Nijmegen", localeRU: "Неймеген"},
+	"rotterdam":     {localeEN: "Rotterdam", localeRU: "Роттердам"},
+	"scheveningen":  {localeEN: "Scheveningen", localeRU: "Схевенинген"},
+	"texel":         {localeEN: "Texel", localeRU: "Тексел"},
+	"the-hague":     {localeEN: "The Hague", localeRU: "Гаага"},
+	"utrecht":       {localeEN: "Utrecht", localeRU: "Утрехт"},
+	"valkenburg":    {localeEN: "Valkenburg", localeRU: "Валкенбург"},
+	"volendam":      {localeEN: "Volendam", localeRU: "Волендам"},
+	"zaandam":       {localeEN: "Zaandam", localeRU: "Зандам"},
+	"zaanse-schans": {localeEN: "Zaanse Schans", localeRU: "Зансе-Сханс"},
+	"zandvoort":     {localeEN: "Zandvoort", localeRU: "Зандворт"},
+}
+
 var uzbekistanCityNames = map[string]map[string]string{
 	"andijan":    {localeEN: "Andijan", localeRU: "Андижан"},
 	"aral-sea":   {localeEN: "Aral Sea", localeRU: "Аральское море"},
@@ -1649,6 +1683,9 @@ func init() {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range irelandCityNames {
+		cityNames[cityID] = names
+	}
+	for cityID, names := range netherlandsCityNames {
 		cityNames[cityID] = names
 	}
 	for cityID, names := range uzbekistanCityNames {

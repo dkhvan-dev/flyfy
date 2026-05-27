@@ -38,7 +38,7 @@ var attractionSourceNames = map[string]map[string]string{
 	"IMPORT":   {localeEN: "Import", localeRU: "Импорт"},
 }
 
-var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
+var attractionCountryValues = []string{"KZ", "KG", "TJ", "MN", "IS", "IE", "NL", "UZ", "RU", "VN", "TH", "PH", "ID", "MV", "SC", "PL", "MX", "BR", "AR", "AB", "CU", "MA", "PT", "IT", "ES", "LU", "DE", "AT", "CH", "SE", "CZ", "FR", "GB", "AU", "TZ", "KE", "TR", "AE", "GE", "AZ", "AM", "CN", "KR", "JP", "EG", "MY", "LK", "ME", "IN", "MT", "CY"}
 
 type attractionCityReference struct {
 	CountryCode string
@@ -228,6 +228,36 @@ var attractionCityValues = []attractionCityReference{
 	{CountryCode: "IE", CityID: "donegal"},
 	{CountryCode: "IE", CityID: "letterkenny"},
 	{CountryCode: "IE", CityID: "wexford"},
+	{CountryCode: "NL", CityID: "amsterdam"},
+	{CountryCode: "NL", CityID: "haarlem"},
+	{CountryCode: "NL", CityID: "zaandam"},
+	{CountryCode: "NL", CityID: "zaanse-schans"},
+	{CountryCode: "NL", CityID: "volendam"},
+	{CountryCode: "NL", CityID: "marken"},
+	{CountryCode: "NL", CityID: "alkmaar"},
+	{CountryCode: "NL", CityID: "zandvoort"},
+	{CountryCode: "NL", CityID: "texel"},
+	{CountryCode: "NL", CityID: "rotterdam"},
+	{CountryCode: "NL", CityID: "the-hague"},
+	{CountryCode: "NL", CityID: "scheveningen"},
+	{CountryCode: "NL", CityID: "delft"},
+	{CountryCode: "NL", CityID: "leiden"},
+	{CountryCode: "NL", CityID: "utrecht"},
+	{CountryCode: "NL", CityID: "gouda"},
+	{CountryCode: "NL", CityID: "kinderdijk"},
+	{CountryCode: "NL", CityID: "giethoorn"},
+	{CountryCode: "NL", CityID: "groningen"},
+	{CountryCode: "NL", CityID: "leeuwarden"},
+	{CountryCode: "NL", CityID: "maastricht"},
+	{CountryCode: "NL", CityID: "valkenburg"},
+	{CountryCode: "NL", CityID: "eindhoven"},
+	{CountryCode: "NL", CityID: "den-bosch"},
+	{CountryCode: "NL", CityID: "kaatsheuvel"},
+	{CountryCode: "NL", CityID: "arnhem"},
+	{CountryCode: "NL", CityID: "hoge-veluwe"},
+	{CountryCode: "NL", CityID: "nijmegen"},
+	{CountryCode: "NL", CityID: "middelburg"},
+	{CountryCode: "NL", CityID: "domburg"},
 	{CountryCode: "UZ", CityID: "tashkent"},
 	{CountryCode: "UZ", CityID: "samarkand"},
 	{CountryCode: "UZ", CityID: "bukhara"},

@@ -477,6 +477,15 @@
     "capital": {"en": "Dublin", "ru": "Дублин", "kk": "Дублин"}
   },
   {
+    "code": "NL",
+    "code3": "NLD",
+    "numeric": "528",
+    "currencyCode": "EUR",
+    "phoneCode": "+31",
+    "name": {"en": "Netherlands", "ru": "Нидерланды", "kk": "Нидерланд"},
+    "capital": {"en": "Amsterdam", "ru": "Амстердам", "kk": "Амстердам"}
+  },
+  {
     "code": "SE",
     "code3": "SWE",
     "numeric": "752",

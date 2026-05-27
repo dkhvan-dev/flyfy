@@ -559,6 +559,79 @@ func TestReferenceUseCaseIncludesIrelandCountryCurrencyAndTouristDestinations(t 
 	}
 }
 
+func TestReferenceUseCaseIncludesNetherlandsCountryCurrencyAndTouristDestinations(t *testing.T) {
+	repo, err := repository.NewMemoryRepository(data.FS)
+	if err != nil {
+		t.Fatalf("new reference repository: %v", err)
+	}
+
+	uc := NewReferenceUseCase(repo)
+
+	country := uc.GetCountry("NL")
+	if country == nil {
+		t.Fatal("expected Netherlands country reference")
+	}
+	if country.Name.Ru != "Нидерланды" {
+		t.Fatalf("Netherlands Russian name = %q, want Нидерланды", country.Name.Ru)
+	}
+
+	currency := uc.GetCurrencyByCountry("NL")
+	if currency == nil {
+		t.Fatal("expected euro currency by Netherlands country")
+	}
+	if currency.Code != "EUR" {
+		t.Fatalf("Netherlands currency = %q, want EUR", currency.Code)
+	}
+
+	cities := uc.ListCities("NL")
+	cityIDs := make(map[string]bool, len(cities))
+	for _, city := range cities {
+		cityIDs[city.ID] = true
+	}
+	requiredCityIDs := []string{
+		"amsterdam",
+		"haarlem",
+		"zaandam",
+		"zaanse-schans",
+		"volendam",
+		"marken",
+		"alkmaar",
+		"zandvoort",
+		"texel",
+		"rotterdam",
+		"the-hague",
+		"scheveningen",
+		"delft",
+		"leiden",
+		"utrecht",
+		"gouda",
+		"kinderdijk",
+		"giethoorn",
+		"groningen",
+		"leeuwarden",
+		"maastricht",
+		"valkenburg",
+		"eindhoven",
+		"den-bosch",
+		"kaatsheuvel",
+		"arnhem",
+		"hoge-veluwe",
+		"nijmegen",
+		"middelburg",
+		"domburg",
+	}
+	for _, cityID := range requiredCityIDs {
+		if !cityIDs[cityID] {
+			t.Fatalf("Netherlands city references must include %q; got %#v", cityID, cityIDs)
+		}
+	}
+
+	searchResults := uc.SearchCities("zaanse", "NL", 5)
+	if len(searchResults) == 0 || searchResults[0].ID != "zaanse-schans" {
+		t.Fatalf("search zaanse in Netherlands = %#v, want zaanse-schans first", searchResults)
+	}
+}
+
 func TestReferenceUseCaseIncludesThailandCountryCurrencyAndTouristCities(t *testing.T) {
 	repo, err := repository.NewMemoryRepository(data.FS)
 	if err != nil {

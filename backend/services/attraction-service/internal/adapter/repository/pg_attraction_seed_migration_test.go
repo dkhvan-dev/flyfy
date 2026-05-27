@@ -4398,6 +4398,115 @@ func TestIrelandPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.
 	}
 }
 
+func TestNetherlandsPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
+	upSQL := readMigration(t, "072_seed_netherlands_priority_attractions.up.sql")
+	downSQL := readMigration(t, "072_seed_netherlands_priority_attractions.down.sql")
+
+	for _, fragment := range []string{
+		"INSERT INTO attractions",
+		"INSERT INTO attraction_translations",
+		"INSERT INTO attraction_media",
+		"INSERT INTO attraction_city_links",
+		"CREATE TEMP TABLE seed_netherlands_resolved_attractions AS",
+		"'NL'",
+		"'EUR'",
+		"netherlands-seed-v1",
+	} {
+		if !strings.Contains(upSQL, fragment) {
+			t.Fatalf("Netherlands up migration must contain %q", fragment)
+		}
+	}
+
+	for _, cityID := range []string{
+		"amsterdam",
+		"haarlem",
+		"zaandam",
+		"zaanse-schans",
+		"volendam",
+		"marken",
+		"alkmaar",
+		"zandvoort",
+		"texel",
+		"rotterdam",
+		"the-hague",
+		"scheveningen",
+		"delft",
+		"leiden",
+		"utrecht",
+		"gouda",
+		"kinderdijk",
+		"giethoorn",
+		"groningen",
+		"leeuwarden",
+		"maastricht",
+		"valkenburg",
+		"eindhoven",
+		"den-bosch",
+		"kaatsheuvel",
+		"arnhem",
+		"hoge-veluwe",
+		"nijmegen",
+		"middelburg",
+		"domburg",
+	} {
+		if !strings.Contains(upSQL, "'"+cityID+"'") {
+			t.Fatalf("Netherlands up migration must seed attraction for city_id %q", cityID)
+		}
+	}
+
+	for _, title := range []string{
+		"Rijksmuseum",
+		"Van Gogh Museum",
+		"Anne Frank House",
+		"Canal Ring Amsterdam",
+		"Vondelpark",
+		"Albert Cuyp Market",
+		"ARTIS Amsterdam Royal Zoo",
+		"NEMO Science Museum",
+		"Zaanse Schans",
+		"Zandvoort Beach",
+		"Texel Lighthouse",
+		"Markthal Rotterdam",
+		"Cube Houses Rotterdam",
+		"Erasmus Bridge",
+		"Mauritshuis",
+		"Peace Palace",
+		"Scheveningen Beach",
+		"Royal Delft",
+		"Dom Tower Utrecht",
+		"Kinderdijk Windmills",
+		"Giethoorn",
+		"Efteling",
+		"Van Abbemuseum",
+		"Hoge Veluwe National Park",
+		"Kroller-Muller Museum",
+		"Vrijthof Maastricht",
+		"Groninger Museum",
+		"Fries Museum",
+		"Domburg Beach",
+	} {
+		if !strings.Contains(upSQL, title) {
+			t.Fatalf("Netherlands up migration must include curated attraction %q", title)
+		}
+	}
+
+	for _, category := range []string{"'MARKET'", "'SHOPPING'", "'ARCHITECTURE'", "'MUSEUM'", "'ENTERTAINMENT'", "'PARK'", "'NATURE'", "'TEMPLE'", "'FOOD'", "'BEACH'"} {
+		if !strings.Contains(upSQL, category) {
+			t.Fatalf("Netherlands up migration must include category %s", category)
+		}
+	}
+
+	if strings.Contains(upSQL, "highlights") {
+		t.Fatalf("Netherlands up migration must not write obsolete attraction_translations.highlights column")
+	}
+	if !strings.Contains(upSQL, "ARRAY['netherlands', city_id") {
+		t.Fatalf("Netherlands up migration must tag every attraction with the country destination and city")
+	}
+	if !strings.Contains(downSQL, "netherlands-seed-v1") || !strings.Contains(downSQL, "country_code = 'NL'") {
+		t.Fatalf("Netherlands down migration must remove only tagged Netherlands seed attractions")
+	}
+}
+
 func TestAbkhaziaPriorityAttractionsSeedMigrationCoversTouristBreadth(t *testing.T) {
 	upSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.up.sql")
 	downSQL := readMigration(t, "046_seed_abkhazia_priority_attractions.down.sql")
