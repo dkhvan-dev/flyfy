@@ -63,14 +63,14 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
   String _searchQuery = '';
   int _hostedPage = 1;
   int _attendedPage = 1;
-  bool _hasAppliedDefaultCityFilter = false;
+  bool _hasAppliedDefaultLocationFilter = false;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_initializeDefaultCityFilter());
+      unawaited(_initializeDefaultLocationFilter());
       final provider = context.read<ActivityProvider>();
       provider.loadActivityCategories();
       provider.loadMyActivities();
@@ -173,28 +173,44 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     return provider.refreshJoinedActivities();
   }
 
-  Future<void> _initializeDefaultCityFilter() async {
+  Future<void> _initializeDefaultLocationFilter() async {
     final provider = context.read<HomeLocationProvider>();
     if (!provider.isLoaded && !provider.isLoading) {
       await provider.load();
     }
     if (!mounted) return;
-    _applyDefaultCityFilter(provider);
+    _applyDefaultLocationFilter(provider);
   }
 
-  void _applyDefaultCityFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultCityFilter || _filters.city != null) return;
-    _hasAppliedDefaultCityFilter = true;
-
+  void _applyDefaultLocationFilter(HomeLocationProvider provider) {
+    if (_hasAppliedDefaultLocationFilter ||
+        _filters.country != null ||
+        _filters.city != null) {
+      return;
+    }
     final location = provider.selectedLocation;
-    final city = AppCityFilterValue.fromParts(
-      cityId: location?.cityId,
-      cityName: location?.cityName,
-      countryCode: location?.countryCode,
-    );
-    if (city == null) return;
+    if (location == null) return;
 
-    setState(() => _filters = _filters.copyWith(city: city));
+    _hasAppliedDefaultLocationFilter = true;
+
+    final defaultCountry = AppCountryFilterValue.fromParts(
+      countryCode: location.countryCode,
+    );
+    final defaultCity = defaultCountry == null
+        ? null
+        : AppCityFilterValue.fromParts(
+            cityId: location.cityId,
+            cityName: location.cityName,
+            countryCode: location.countryCode,
+          );
+    if (defaultCountry == null && defaultCity == null) return;
+
+    setState(
+      () => _filters = _filters.copyWith(
+        country: defaultCountry,
+        city: defaultCity,
+      ),
+    );
   }
 
   ActivitiesState _activeState(ActivityProvider provider) {
@@ -288,7 +304,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     final normalizedQuery = _searchQuery.trim().toLowerCase();
 
     return items.where((item) {
-      if (!_matchesCityFilter(item, activeFilters)) {
+      if (!_matchesLocationFilter(item, activeFilters)) {
         return false;
       }
 
@@ -342,10 +358,15 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     }).toList();
   }
 
-  bool _matchesCityFilter(
+  bool _matchesLocationFilter(
     ActivityListItemVm item,
     _MyActivitiesFilters filters,
   ) {
+    if (filters.country != null &&
+        !filters.country!.matches(countryCode: item.countryCode)) {
+      return false;
+    }
+
     final selectedCity = filters.city;
     if (selectedCity == null) return true;
     return selectedCity.matches(
@@ -359,7 +380,8 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     final base = _activeTab == _MyActivitiesTab.hosted
         ? l10n.myActivitiesEmptyHint
         : l10n.myActivitiesAttendedEmptyHint;
-    if (_filtersForTab(_activeTab).city == null) return base;
+    final filters = _filtersForTab(_activeTab);
+    if (filters.city == null && filters.country == null) return base;
     return '$base\n\n${l10n.cityFilterEmptyHint}';
   }
 
@@ -447,6 +469,7 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
     if (result == null || !mounted) return;
     setState(() {
       _filters = _MyActivitiesFilters(
+        country: result.country,
         city: result.city,
         statuses: <String>{
           ..._filters.statuses.where(
@@ -661,24 +684,28 @@ class _MyActivitiesScreenState extends State<MyActivitiesScreen> {
 
 class _MyActivitiesFilters {
   const _MyActivitiesFilters({
+    this.country,
     this.city,
     this.statuses = const <String>{},
     this.startDate,
     this.endDate,
   });
 
+  final AppCountryFilterValue? country;
   final AppCityFilterValue? city;
   final Set<String> statuses;
   final DateTime? startDate;
   final DateTime? endDate;
 
   int get activeCount =>
+      (country == null ? 0 : 1) +
       (city == null ? 0 : 1) +
       statuses.length +
       (startDate == null ? 0 : 1) +
       (endDate == null ? 0 : 1);
 
   _MyActivitiesFilters copyWith({
+    Object? country = _unset,
     Object? city = _unset,
     Set<String>? statuses,
     DateTime? startDate,
@@ -687,6 +714,9 @@ class _MyActivitiesFilters {
     bool clearEndDate = false,
   }) {
     return _MyActivitiesFilters(
+      country: identical(country, _unset)
+          ? this.country
+          : country as AppCountryFilterValue?,
       city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
       statuses: statuses ?? this.statuses,
       startDate: clearStartDate ? null : startDate ?? this.startDate,
@@ -696,6 +726,7 @@ class _MyActivitiesFilters {
 
   _MyActivitiesFilters onlyAllowedStatuses(Set<String> allowedStatuses) {
     return _MyActivitiesFilters(
+      country: country,
       city: city,
       statuses: statuses.where(allowedStatuses.contains).toSet(),
       startDate: startDate,
@@ -1865,6 +1896,7 @@ class _MyActivitiesFilterSheet extends StatefulWidget {
 }
 
 class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
+  late AppCountryFilterValue? _country;
   late AppCityFilterValue? _city;
   late Set<String> _selectedStatuses;
   late final ScrollController _sheetScrollController;
@@ -1880,6 +1912,7 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
   @override
   void initState() {
     super.initState();
+    _country = widget.initialFilters.country;
     _city = widget.initialFilters.city;
     _selectedStatuses = Set<String>.from(widget.initialFilters.statuses);
     _sheetScrollController = ScrollController();
@@ -2018,6 +2051,7 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
 
     Navigator.of(context).pop(
       _MyActivitiesFilters(
+        country: _country,
         city: _city,
         statuses: Set<String>.from(_selectedStatuses),
         startDate: _startDate,
@@ -2028,6 +2062,7 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
 
   void _clearDraftFilters() {
     setState(() {
+      _country = null;
       _city = null;
       _selectedStatuses.clear();
       _startDateController.clear();
@@ -2041,11 +2076,19 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
 
   _MyActivitiesFilters _draftFilters() {
     return _MyActivitiesFilters(
+      country: _country,
       city: _city,
       statuses: Set<String>.from(_selectedStatuses),
       startDate: _startDate,
       endDate: _endDate,
     );
+  }
+
+  void _setCountry(AppCountryFilterValue? country) {
+    setState(() {
+      _country = country;
+      _city = null;
+    });
   }
 
   @override
@@ -2109,19 +2152,34 @@ class _MyActivitiesFilterSheetState extends State<_MyActivitiesFilterSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AppCityFilterSection(
-                              title: widget.l10n.locationFilterCitySection,
-                              allCitiesLabel:
-                                  widget.l10n.locationFilterAllCities,
+                            AppCountryFilterSection(
+                              title: widget.l10n.activitiesFilterCountrySection,
+                              allCountriesLabel:
+                                  widget.l10n.activitiesFilterCountryAll,
                               searchHint:
-                                  widget.l10n.locationFilterCitySearchHint,
+                                  widget.l10n.activitiesFilterCountrySearchHint,
                               noResultsText:
-                                  widget.l10n.locationFilterCityNoResults,
-                              selectedCity: _city,
-                              onChanged: (city) {
-                                setState(() => _city = city);
-                              },
+                                  widget.l10n.activitiesFilterCountryNoResults,
+                              selectedCountry: _country,
+                              onChanged: _setCountry,
                             ),
+                            if (_country != null) ...[
+                              const SizedBox(height: 18),
+                              AppCityFilterSection(
+                                title: widget.l10n.locationFilterCitySection,
+                                allCitiesLabel:
+                                    widget.l10n.locationFilterAllCities,
+                                searchHint:
+                                    widget.l10n.locationFilterCitySearchHint,
+                                noResultsText:
+                                    widget.l10n.locationFilterCityNoResults,
+                                selectedCity: _city,
+                                onChanged: (city) {
+                                  setState(() => _city = city);
+                                },
+                                countryCode: _country?.countryCode,
+                              ),
+                            ],
                             const SizedBox(height: 18),
                             _FilterSheetSectionTitle(
                               icon: Icons.calendar_month_outlined,
