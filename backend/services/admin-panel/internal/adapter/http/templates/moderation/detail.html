@@ -6,13 +6,16 @@
 {{if $detail.Activity}}{{$caseBasePath = "/admin/moderation/activities"}}{{end}}
 {{if $detail.GuideApplication}}{{$caseBasePath = "/admin/moderation/guides"}}{{end}}
 {{if $detail.ChatMessage}}{{$caseBasePath = "/admin/moderation/chats"}}{{end}}
+{{$queueURL := .Data.QueueURL}}
+{{if not $queueURL}}{{$queueURL = $caseBasePath}}{{end}}
+{{$returnQuery := .Data.ReturnQuery}}
 <section class="section">
   <div class="section-head">
     <div>
       <p class="eyebrow">{{t .Locale "moderation.case"}} <code>{{shortID $detail.Case.ID}}</code></p>
       <h1>{{if $detail.Excursion}}{{excursionTitle .Locale $detail.Excursion}}{{else if $detail.Activity}}{{$detail.Activity.Title}}{{else if $detail.GuideApplication}}{{guideApplicationPrimary $detail.GuideApplication}}{{else if $detail.ChatMessage}}{{chatMessagePreview .Locale $detail.ChatMessage}}{{else}}{{t .Locale "moderation.caseTitle"}}{{end}}</h1>
     </div>
-    <a class="button" href="{{$caseBasePath}}">{{t .Locale "action.backToQueue"}}</a>
+    <a class="button" href="{{$queueURL}}">{{t .Locale "action.backToQueue"}}</a>
   </div>
 
   <div class="split">
@@ -283,7 +286,7 @@
       {{if chatMessageDecisionLocked $detail.ChatMessage}}
         <p class="empty">{{t .Locale "moderation.chatDecisionLocked"}}</p>
       {{else if $detail.ChatMessage}}
-        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/approve" class="form compact" data-confirm-form="approve">
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/approve{{urlQuerySuffix $returnQuery}}" class="form compact" data-confirm-form="approve">
           {{csrfField $.CSRFToken}}
           <input type="hidden" name="idempotency_key" value="{{newID}}">
           <label>
@@ -292,7 +295,7 @@
           </label>
           <button class="primary" type="submit">{{t $.Locale "action.keepMessage"}}</button>
         </form>
-        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/reject" class="form compact danger-zone" data-confirm-form="reject">
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/reject{{urlQuerySuffix $returnQuery}}" class="form compact danger-zone" data-confirm-form="reject">
           {{csrfField $.CSRFToken}}
           <input type="hidden" name="idempotency_key" value="{{newID}}">
           <label>
@@ -318,7 +321,7 @@
         <p class="empty">{{t .Locale "moderation.activityDecisionLocked"}}</p>
       {{else if guideApplicationCanRevoke $detail.GuideApplication}}
         <p class="empty">{{t .Locale "moderation.guideApplicationRevokeHint"}}</p>
-        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/revoke" class="form compact danger-zone" data-confirm-form="revoke">
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/revoke{{urlQuerySuffix $returnQuery}}" class="form compact danger-zone" data-confirm-form="revoke">
           {{csrfField $.CSRFToken}}
           <input type="hidden" name="idempotency_key" value="{{newID}}">
           <label>
@@ -343,7 +346,7 @@
       {{else if guideApplicationDecisionLocked $detail.GuideApplication}}
         <p class="empty">{{t .Locale "moderation.guideApplicationDecisionLocked"}}</p>
       {{else}}
-        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/approve" class="form compact" data-confirm-form="approve">
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/approve{{urlQuerySuffix $returnQuery}}" class="form compact" data-confirm-form="approve">
           {{csrfField $.CSRFToken}}
           <input type="hidden" name="idempotency_key" value="{{newID}}">
           <label>
@@ -352,7 +355,7 @@
           </label>
           <button class="primary" type="submit">{{t $.Locale "action.approve"}}</button>
         </form>
-        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/reject" class="form compact danger-zone" data-confirm-form="reject">
+        <form method="post" action="{{$caseBasePath}}/{{$detail.Case.ID}}/reject{{urlQuerySuffix $returnQuery}}" class="form compact danger-zone" data-confirm-form="reject">
           {{csrfField $.CSRFToken}}
           <input type="hidden" name="idempotency_key" value="{{newID}}">
           <label>

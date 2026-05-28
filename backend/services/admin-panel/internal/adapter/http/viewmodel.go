@@ -60,16 +60,20 @@ type QueueViewData struct {
 	HostHeaderKey        string
 	LocationHeaderKey    string
 	SearchPlaceholderKey string
+	Countries            []AttractionOptionView
+	Cities               []AttractionOptionView
 }
 
 type QueueFilterViewData struct {
-	Status string
-	City   string
-	Search string
-	Signal string
-	Risk   string
-	Sort   string
-	Query  string
+	Status      string
+	CountryCode string
+	CityID      string
+	City        string
+	Search      string
+	Signal      string
+	Risk        string
+	Sort        string
+	Query       string
 }
 
 type ModerationQueueItemView struct {
@@ -86,7 +90,9 @@ type ModerationQueueItemView struct {
 }
 
 type CaseDetailViewData struct {
-	Detail *app.ModerationCaseDetail
+	Detail      *app.ModerationCaseDetail
+	QueueURL    string
+	ReturnQuery string
 }
 
 type GuideListViewData struct {
@@ -112,6 +118,7 @@ type AttractionFilterViewData struct {
 	CityID      string
 	Page        int
 	Query       string
+	ReturnQuery string
 }
 
 type AttractionPaginationViewData struct {
@@ -133,6 +140,7 @@ type AttractionFormViewData struct {
 	IsEdit               bool
 	SubmitURL            string
 	MediaURL             string
+	ListURL              string
 	Categories           []AttractionOptionView
 	Statuses             []AttractionOptionView
 	Locales              []AttractionOptionView
@@ -264,6 +272,16 @@ func NewGuideListViewData(items []model.GuideApplicationModerationItem) GuideLis
 	}
 }
 
+func NewCaseDetailViewData(detail *app.ModerationCaseDetail, returnQuery string) CaseDetailViewData {
+	returnQuery = strings.TrimSpace(returnQuery)
+	queueURL := queueURLWithQuery(queueBaseURL(caseDetailTargetType(detail)), returnQuery)
+	return CaseDetailViewData{
+		Detail:      detail,
+		QueueURL:    queueURL,
+		ReturnQuery: returnQuery,
+	}
+}
+
 func NewAttractionListViewData(items []model.AdminAttraction, total int, filters AttractionFilterViewData) AttractionListViewData {
 	return AttractionListViewData{
 		Items:      items,
@@ -275,7 +293,7 @@ func NewAttractionListViewData(items []model.AdminAttraction, total int, filters
 	}
 }
 
-func NewAttractionFormViewData(item *model.AdminAttraction, input model.AttractionInput) AttractionFormViewData {
+func NewAttractionFormViewData(item *model.AdminAttraction, input model.AttractionInput, listURL ...string) AttractionFormViewData {
 	isEdit := item != nil && item.ID != uuid.Nil
 	if isEdit && input.Title == "" {
 		input = attractionInputFromItem(item)
@@ -296,11 +314,21 @@ func NewAttractionFormViewData(item *model.AdminAttraction, input model.Attracti
 	if input.Status == "" {
 		input.Status = "PUBLISHED"
 	}
+	backURL := "/admin/attractions"
+	if len(listURL) > 0 {
+		if candidate := strings.TrimSpace(listURL[0]); candidate != "" {
+			backURL = candidate
+		}
+	}
+	actionQuerySuffix := ""
+	if _, query, ok := strings.Cut(backURL, "?"); ok && strings.TrimSpace(query) != "" {
+		actionQuerySuffix = "?" + query
+	}
 	submitURL := "/admin/attractions"
 	mediaURL := ""
 	if isEdit {
-		submitURL = "/admin/attractions/" + item.ID.String()
-		mediaURL = submitURL + "/media"
+		submitURL = "/admin/attractions/" + item.ID.String() + actionQuerySuffix
+		mediaURL = "/admin/attractions/" + item.ID.String() + "/media" + actionQuerySuffix
 	}
 	return AttractionFormViewData{
 		Item:                 item,
@@ -308,6 +336,7 @@ func NewAttractionFormViewData(item *model.AdminAttraction, input model.Attracti
 		IsEdit:               isEdit,
 		SubmitURL:            submitURL,
 		MediaURL:             mediaURL,
+		ListURL:              backURL,
 		Categories:           attractionCategoryOptions(input.Category),
 		Statuses:             attractionStatusOptions(input.Status),
 		Locales:              attractionLocaleOptions(input.DefaultLocale),
@@ -720,6 +749,10 @@ func NewChatMessageQueueViewData(cases []*model.ModerationCase, filters ...Queue
 }
 
 func newQueueViewData(cases []*model.ModerationCase, targetType model.ModerationTargetType, filters ...QueueFilterViewData) QueueViewData {
+	viewFilters := QueueFilterViewData{Status: excursionQueueStatusActive}
+	if len(filters) > 0 {
+		viewFilters = filters[0]
+	}
 	items := make([]ModerationQueueItemView, 0, len(cases))
 	for _, item := range cases {
 		if item == nil {
@@ -754,12 +787,8 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		if view.GuideName == "" {
 			view.GuideName = "-"
 		}
-		view.DetailURL = queueDetailBaseURL(targetType) + "/" + item.ID.String()
+		view.DetailURL = queueURLWithQuery(queueDetailBaseURL(targetType)+"/"+item.ID.String(), viewFilters.Query)
 		items = append(items, view)
-	}
-	viewFilters := QueueFilterViewData{Status: excursionQueueStatusActive}
-	if len(filters) > 0 {
-		viewFilters = filters[0]
 	}
 	data := QueueViewData{
 		Items:                items,
@@ -778,6 +807,8 @@ func newQueueViewData(cases []*model.ModerationCase, targetType model.Moderation
 		HostHeaderKey:        queueHostHeaderKey(targetType),
 		LocationHeaderKey:    queueLocationHeaderKey(targetType),
 		SearchPlaceholderKey: queueSearchPlaceholderKey(targetType),
+		Countries:            attractionCountryFilterOptions(viewFilters.CountryCode),
+		Cities:               attractionCityFilterOptions(viewFilters.CityID),
 	}
 	if targetType == model.ModerationTargetGuideApplication {
 		data.CurrentGuidesURL = "/admin/moderation/guides/current"
@@ -945,6 +976,36 @@ func queueBaseURL(targetType model.ModerationTargetType) string {
 		return "/admin/moderation/guides"
 	}
 	return "/admin/moderation/excursions"
+}
+
+func queueURLWithQuery(path string, query string) string {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return path
+	}
+	if strings.Contains(path, "?") {
+		return path + "&" + query
+	}
+	return path + "?" + query
+}
+
+func caseDetailTargetType(detail *app.ModerationCaseDetail) model.ModerationTargetType {
+	if detail == nil {
+		return model.ModerationTargetExcursion
+	}
+	if detail.Case != nil {
+		return detail.Case.TargetType
+	}
+	if detail.ChatMessage != nil {
+		return model.ModerationTargetChatMessage
+	}
+	if detail.Activity != nil {
+		return model.ModerationTargetActivity
+	}
+	if detail.GuideApplication != nil {
+		return model.ModerationTargetGuideApplication
+	}
+	return model.ModerationTargetExcursion
 }
 
 func queueDetailBaseURL(targetType model.ModerationTargetType) string {

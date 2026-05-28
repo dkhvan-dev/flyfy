@@ -7,7 +7,7 @@
       <h1>{{if .Data.IsEdit}}{{t .Locale "attraction.editTitle"}}{{else}}{{t .Locale "attraction.createTitle"}}{{end}}</h1>
     </div>
     <div class="section-actions">
-      <a class="button" href="/admin/attractions">{{t .Locale "action.backToAttractions"}}</a>
+      <a class="button" href="{{.Data.ListURL}}">{{t .Locale "action.backToAttractions"}}</a>
     </div>
   </div>
 

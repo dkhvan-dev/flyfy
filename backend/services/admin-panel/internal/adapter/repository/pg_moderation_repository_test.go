@@ -17,22 +17,25 @@ func TestBuildListCasesQueryAppliesExcursionFiltersAndSort(t *testing.T) {
 		Statuses: []enum.ModerationCaseStatus{
 			enum.ModerationCaseStatusOpen,
 		},
-		Search: "medeu_%",
-		City:   "Almaty",
-		Signal: "new_guide",
-		Risk:   model.ModerationRiskFilterHigh,
-		Sort:   model.ModerationQueueSortRiskDesc,
-		Limit:  50,
-		Offset: 10,
+		Search:      "medeu_%",
+		CountryCode: "KZ",
+		City:        "almaty",
+		Signal:      "new_guide",
+		Risk:        model.ModerationRiskFilterHigh,
+		Sort:        model.ModerationQueueSortRiskDesc,
+		Limit:       50,
+		Offset:      10,
 	})
 
 	expectedSnippets := []string{
 		"target_type = $1",
 		"status = ANY($2)",
 		"LOWER(COALESCE",
+		"UPPER(COALESCE(snapshot->>'CountryCode', ''))",
 		"ProductTranslations",
 		"GuideNickname",
 		"DepartureCityID",
+		"CityID",
 		"CityName",
 		"BaseCityID",
 		"BaseCityName",
@@ -46,22 +49,25 @@ func TestBuildListCasesQueryAppliesExcursionFiltersAndSort(t *testing.T) {
 		}
 	}
 
-	if len(args) != 10 {
+	if len(args) != 11 {
 		t.Fatalf("unexpected args length: got %d, args=%#v", len(args), args)
 	}
 	if args[2] != `%medeu\_\%%` {
 		t.Fatalf("search pattern was not escaped safely: %#v", args[2])
 	}
-	if args[3] != "almaty" || args[4] != "%almaty%" {
-		t.Fatalf("city args were not normalized: %#v %#v", args[3], args[4])
+	if args[3] != "KZ" {
+		t.Fatalf("country arg was not normalized: %#v", args[3])
 	}
-	if args[5] != "almaty" || args[6] != "%almaty%" {
-		t.Fatalf("guide city args were not normalized: %#v %#v", args[5], args[6])
+	if args[4] != "almaty" || args[5] != "%almaty%" {
+		t.Fatalf("city args were not normalized: %#v %#v", args[4], args[5])
 	}
-	if args[7] != "new_guide" {
-		t.Fatalf("signal arg was not preserved: %#v", args[7])
+	if args[6] != "almaty" || args[7] != "%almaty%" {
+		t.Fatalf("guide city args were not normalized: %#v %#v", args[6], args[7])
 	}
-	if args[8] != 50 || args[9] != 10 {
+	if args[8] != "new_guide" {
+		t.Fatalf("signal arg was not preserved: %#v", args[8])
+	}
+	if args[9] != 50 || args[10] != 10 {
 		t.Fatalf("limit/offset args were not last: %#v", args)
 	}
 }

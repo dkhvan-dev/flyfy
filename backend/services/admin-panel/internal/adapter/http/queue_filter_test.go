@@ -13,7 +13,7 @@ func TestParseExcursionQueueFilter(t *testing.T) {
 
 	request := httptest.NewRequest(
 		"GET",
-		"/admin/moderation/excursions?status=all&city=Almaty&q=medeu&signal=new_guide&risk=high&sort=risk_desc",
+		"/admin/moderation/excursions?status=all&country=KZ&city=almaty&q=medeu&signal=new_guide&risk=high&sort=risk_desc",
 		nil,
 	)
 	filter, view := parseExcursionQueueFilter(request)
@@ -21,7 +21,7 @@ func TestParseExcursionQueueFilter(t *testing.T) {
 	if len(filter.Statuses) != len(allModerationCaseStatuses) {
 		t.Fatalf("status=all should include all statuses: %#v", filter.Statuses)
 	}
-	if filter.Search != "medeu" || filter.City != "Almaty" || filter.Signal != "new_guide" {
+	if filter.Search != "medeu" || filter.CountryCode != "KZ" || filter.City != "almaty" || filter.Signal != "new_guide" {
 		t.Fatalf("unexpected text filters: %#v", filter)
 	}
 	if filter.Risk != model.ModerationRiskFilterHigh {
@@ -32,6 +32,26 @@ func TestParseExcursionQueueFilter(t *testing.T) {
 	}
 	if view.Status != "all" || view.Query == "" {
 		t.Fatalf("view filter did not preserve selected state: %#v", view)
+	}
+	if view.CountryCode != "KZ" || view.CityID != "almaty" {
+		t.Fatalf("view location filter did not preserve selected state: %#v", view)
+	}
+	if view.Query != "city=almaty&country=KZ&q=medeu&risk=high&signal=new_guide&sort=risk_desc&status=all" {
+		t.Fatalf("view query = %q", view.Query)
+	}
+}
+
+func TestParseExcursionQueueFilterClearsCityWithoutCountry(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest("GET", "/admin/moderation/excursions?city=almaty", nil)
+	filter, view := parseExcursionQueueFilter(request)
+
+	if filter.CountryCode != "" || filter.City != "" {
+		t.Fatalf("city must be ignored without country: %#v", filter)
+	}
+	if view.CountryCode != "" || view.CityID != "" || view.Query != "" {
+		t.Fatalf("view city must be ignored without country: %#v", view)
 	}
 }
 

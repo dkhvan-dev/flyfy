@@ -300,17 +300,18 @@ func (s *Server) ExcursionCase(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	returnQuery := moderationQueueReturnQuery(r)
 	staff := staffFromContext(r.Context())
 	detail, err := s.moderation.GetCaseDetail(r.Context(), staff, caseID)
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "moderation", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "moderation", NewCaseDetailViewData(nil, returnQuery), publicError(localeFromContext(r.Context()), err))
 		return
 	}
 	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetExcursion {
-		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "moderation", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
+		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "moderation", NewCaseDetailViewData(detail, returnQuery), publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
 		return
 	}
-	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "moderation", CaseDetailViewData{Detail: detail}, "")
+	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "moderation", NewCaseDetailViewData(detail, returnQuery), "")
 }
 
 func (s *Server) ApproveExcursion(w http.ResponseWriter, r *http.Request) {
@@ -369,17 +370,18 @@ func (s *Server) ActivityCase(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	returnQuery := moderationQueueReturnQuery(r)
 	staff := staffFromContext(r.Context())
 	detail, err := s.moderation.GetCaseDetail(r.Context(), staff, caseID)
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "activities", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "activities", NewCaseDetailViewData(nil, returnQuery), publicError(localeFromContext(r.Context()), err))
 		return
 	}
 	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetActivity {
-		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "activities", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
+		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "activities", NewCaseDetailViewData(detail, returnQuery), publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
 		return
 	}
-	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "activities", CaseDetailViewData{Detail: detail}, "")
+	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "activities", NewCaseDetailViewData(detail, returnQuery), "")
 }
 
 func (s *Server) ApproveActivity(w http.ResponseWriter, r *http.Request) {
@@ -438,17 +440,18 @@ func (s *Server) ChatMessageCase(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	returnQuery := moderationQueueReturnQuery(r)
 	staff := staffFromContext(r.Context())
 	detail, err := s.moderation.GetCaseDetail(r.Context(), staff, caseID)
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "chats", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "chats", NewCaseDetailViewData(nil, returnQuery), publicError(localeFromContext(r.Context()), err))
 		return
 	}
 	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetChatMessage {
-		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "chats", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
+		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "chats", NewCaseDetailViewData(detail, returnQuery), publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
 		return
 	}
-	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "chats", CaseDetailViewData{Detail: detail}, "")
+	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "chats", NewCaseDetailViewData(detail, returnQuery), "")
 }
 
 func (s *Server) ApproveChatMessage(w http.ResponseWriter, r *http.Request) {
@@ -517,17 +520,18 @@ func (s *Server) GuideApplicationCase(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	returnQuery := moderationQueueReturnQuery(r)
 	staff := staffFromContext(r.Context())
 	detail, err := s.moderation.GetCaseDetail(r.Context(), staff, caseID)
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "guides", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "guides", NewCaseDetailViewData(nil, returnQuery), publicError(localeFromContext(r.Context()), err))
 		return
 	}
 	if detail.Case == nil || detail.Case.TargetType != model.ModerationTargetGuideApplication {
-		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "guides", CaseDetailViewData{}, publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
+		s.renderPage(w, http.StatusNotFound, r, "moderation/detail", "moderation.caseTitle", "guides", NewCaseDetailViewData(detail, returnQuery), publicError(localeFromContext(r.Context()), app.ErrModerationCaseNotFound))
 		return
 	}
-	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "guides", CaseDetailViewData{Detail: detail}, "")
+	s.renderPage(w, http.StatusOK, r, "moderation/detail", "moderation.caseTitle", "guides", NewCaseDetailViewData(detail, returnQuery), "")
 }
 
 func (s *Server) GuideApplicationDocument(w http.ResponseWriter, r *http.Request) {
@@ -654,13 +658,15 @@ func (s *Server) EditAttractionPage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	returnQuery := attractionListQuery(r.URL.Query()).ReturnQuery
+	listURL := attractionListURL(returnQuery)
 	staff := staffFromContext(r.Context())
 	item, err := s.attractions.GetAttraction(r.Context(), staff, attractionID)
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(nil, model.AttractionInput{}), publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(nil, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	s.renderPage(w, http.StatusOK, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), "")
+	s.renderPage(w, http.StatusOK, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), "")
 }
 
 func (s *Server) UpdateAttraction(w http.ResponseWriter, r *http.Request) {
@@ -668,18 +674,20 @@ func (s *Server) UpdateAttraction(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	returnQuery := attractionListQuery(r.URL.Query()).ReturnQuery
+	listURL := attractionListURL(returnQuery)
 	staff := staffFromContext(r.Context())
 	input, _, err := parseAttractionForm(r)
 	if err != nil {
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(&model.AdminAttraction{ID: attractionID}, input), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(&model.AdminAttraction{ID: attractionID}, input, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
 	item, err := s.attractions.UpdateAttraction(r.Context(), staff, attractionID, input, requestMetadata(r))
 	if err != nil {
-		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(&model.AdminAttraction{ID: attractionID}, input), publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(&model.AdminAttraction{ID: attractionID}, input, listURL), publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	http.Redirect(w, r, redirectWithFlash("/admin/attractions/"+item.ID.String()+"/edit", "attraction.updated"), http.StatusSeeOther)
+	http.Redirect(w, r, redirectWithFlash(attractionEditURL(item.ID, returnQuery), "attraction.updated"), http.StatusSeeOther)
 }
 
 func (s *Server) ReplaceAttractionMedia(w http.ResponseWriter, r *http.Request) {
@@ -687,28 +695,30 @@ func (s *Server) ReplaceAttractionMedia(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
+	returnQuery := attractionListQuery(r.URL.Query()).ReturnQuery
+	listURL := attractionListURL(returnQuery)
 	staff := staffFromContext(r.Context())
 	if err := parseRequestForm(r); err != nil {
 		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
 	images, err := parseAttractionImages(r)
 	if err != nil {
 		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
 	existingMediaIDs, err := parseUUIDValues(r.Form["media_ids"])
 	if err != nil {
 		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
 	deleteMediaIDs, err := parseUUIDValues(r.Form["delete_media_ids"])
 	if err != nil {
 		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
+		s.renderPage(w, http.StatusBadRequest, r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), app.ErrInvalidInput))
 		return
 	}
 	metadata := requestMetadata(r)
@@ -723,10 +733,10 @@ func (s *Server) ReplaceAttractionMedia(w http.ResponseWriter, r *http.Request) 
 		Metadata:         metadata,
 	}); err != nil {
 		item, _ := s.attractions.GetAttraction(r.Context(), staff, attractionID)
-		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}), publicError(localeFromContext(r.Context()), err))
+		s.renderPage(w, errorStatus(err), r, "attractions/form", "attraction.editTitle", "attractions", NewAttractionFormViewData(item, model.AttractionInput{}, listURL), publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	http.Redirect(w, r, redirectWithFlash("/admin/attractions/"+attractionID.String()+"/edit", "attraction.mediaUpdated"), http.StatusSeeOther)
+	http.Redirect(w, r, redirectWithFlash(attractionEditURL(attractionID, returnQuery), "attraction.mediaUpdated"), http.StatusSeeOther)
 }
 
 func (s *Server) AttractionMedia(w http.ResponseWriter, r *http.Request) {
@@ -750,6 +760,7 @@ func (s *Server) decideExcursion(w http.ResponseWriter, r *http.Request, decisio
 	if !ok {
 		return
 	}
+	returnQuery := moderationQueueReturnQuery(r)
 	staff := staffFromContext(r.Context())
 	_, err := s.moderation.DecideExcursion(r.Context(), app.ModerationDecisionInput{
 		Actor:           staff,
@@ -762,14 +773,14 @@ func (s *Server) decideExcursion(w http.ResponseWriter, r *http.Request, decisio
 		RequestMetadata: requestMetadata(r),
 	})
 	if err != nil {
-		viewData := CaseDetailViewData{}
+		viewData := NewCaseDetailViewData(nil, returnQuery)
 		if detail, detailErr := s.moderation.GetCaseDetail(r.Context(), staff, caseID); detailErr == nil {
-			viewData.Detail = detail
+			viewData = NewCaseDetailViewData(detail, returnQuery)
 		}
 		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "moderation", viewData, publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	http.Redirect(w, r, redirectWithFlash("/admin/moderation/excursions/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
+	http.Redirect(w, r, redirectWithFlash(queueURLWithQuery("/admin/moderation/excursions/"+caseID.String(), returnQuery), "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
 func (s *Server) decideActivity(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
@@ -777,6 +788,7 @@ func (s *Server) decideActivity(w http.ResponseWriter, r *http.Request, decision
 	if !ok {
 		return
 	}
+	returnQuery := moderationQueueReturnQuery(r)
 	staff := staffFromContext(r.Context())
 	_, err := s.moderation.DecideActivity(r.Context(), app.ModerationDecisionInput{
 		Actor:           staff,
@@ -789,14 +801,14 @@ func (s *Server) decideActivity(w http.ResponseWriter, r *http.Request, decision
 		RequestMetadata: requestMetadata(r),
 	})
 	if err != nil {
-		viewData := CaseDetailViewData{}
+		viewData := NewCaseDetailViewData(nil, returnQuery)
 		if detail, detailErr := s.moderation.GetCaseDetail(r.Context(), staff, caseID); detailErr == nil {
-			viewData.Detail = detail
+			viewData = NewCaseDetailViewData(detail, returnQuery)
 		}
 		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "activities", viewData, publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	http.Redirect(w, r, redirectWithFlash("/admin/moderation/activities/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
+	http.Redirect(w, r, redirectWithFlash(queueURLWithQuery("/admin/moderation/activities/"+caseID.String(), returnQuery), "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
 func (s *Server) decideChatMessage(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
@@ -804,6 +816,7 @@ func (s *Server) decideChatMessage(w http.ResponseWriter, r *http.Request, decis
 	if !ok {
 		return
 	}
+	returnQuery := moderationQueueReturnQuery(r)
 	staff := staffFromContext(r.Context())
 	_, err := s.moderation.DecideChatMessage(r.Context(), app.ModerationDecisionInput{
 		Actor:           staff,
@@ -816,14 +829,14 @@ func (s *Server) decideChatMessage(w http.ResponseWriter, r *http.Request, decis
 		RequestMetadata: requestMetadata(r),
 	})
 	if err != nil {
-		viewData := CaseDetailViewData{}
+		viewData := NewCaseDetailViewData(nil, returnQuery)
 		if detail, detailErr := s.moderation.GetCaseDetail(r.Context(), staff, caseID); detailErr == nil {
-			viewData.Detail = detail
+			viewData = NewCaseDetailViewData(detail, returnQuery)
 		}
 		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "chats", viewData, publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	http.Redirect(w, r, redirectWithFlash("/admin/moderation/chats/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
+	http.Redirect(w, r, redirectWithFlash(queueURLWithQuery("/admin/moderation/chats/"+caseID.String(), returnQuery), "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
 func (s *Server) decideGuideApplication(w http.ResponseWriter, r *http.Request, decision enum.ModerationDecisionType) {
@@ -831,6 +844,7 @@ func (s *Server) decideGuideApplication(w http.ResponseWriter, r *http.Request, 
 	if !ok {
 		return
 	}
+	returnQuery := moderationQueueReturnQuery(r)
 	staff := staffFromContext(r.Context())
 	_, err := s.moderation.DecideGuideApplication(r.Context(), app.ModerationDecisionInput{
 		Actor:           staff,
@@ -843,14 +857,14 @@ func (s *Server) decideGuideApplication(w http.ResponseWriter, r *http.Request, 
 		RequestMetadata: requestMetadata(r),
 	})
 	if err != nil {
-		viewData := CaseDetailViewData{}
+		viewData := NewCaseDetailViewData(nil, returnQuery)
 		if detail, detailErr := s.moderation.GetCaseDetail(r.Context(), staff, caseID); detailErr == nil {
-			viewData.Detail = detail
+			viewData = NewCaseDetailViewData(detail, returnQuery)
 		}
 		s.renderPage(w, errorStatus(err), r, "moderation/detail", "moderation.caseTitle", "guides", viewData, publicError(localeFromContext(r.Context()), err))
 		return
 	}
-	http.Redirect(w, r, redirectWithFlash("/admin/moderation/guides/"+caseID.String(), "moderation.decisionSaved"), http.StatusSeeOther)
+	http.Redirect(w, r, redirectWithFlash(queueURLWithQuery("/admin/moderation/guides/"+caseID.String(), returnQuery), "moderation.decisionSaved"), http.StatusSeeOther)
 }
 
 func (s *Server) StaffList(w http.ResponseWriter, r *http.Request) {

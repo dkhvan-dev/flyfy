@@ -22,7 +22,7 @@
     </div>
   </div>
 
-  <form class="filter-bar" method="get" action="{{.Data.FilterAction}}">
+  <form class="filter-bar" method="get" action="{{.Data.FilterAction}}" data-location-filter-form>
     <div class="filter-grid">
       <label>
         <span>{{t .Locale "field.status"}}</span>
@@ -39,12 +39,35 @@
           <option value="cancelled" {{if eq .Data.Filters.Status "cancelled"}}selected{{end}}>{{statusText .Locale "CANCELLED"}}</option>
         </select>
       </label>
-      {{if ne .Data.LocationHeaderKey "table.conversation"}}
-        <label>
-          <span>{{t .Locale "field.city"}}</span>
-          <input type="search" name="city" value="{{.Data.Filters.City}}" placeholder="{{t .Locale "placeholder.city"}}">
-        </label>
-      {{end}}
+      <div class="filter-field">
+        <span>{{t .Locale "field.country"}}</span>
+        <input type="hidden" name="country" value="{{.Data.Filters.CountryCode}}" data-country-filter-value>
+        <div class="filter-combobox" data-filter-combobox>
+          <input type="search" data-country-filter-input value="{{if .Data.Filters.CountryCode}}{{attractionCountry .Locale .Data.Filters.CountryCode}}{{end}}" placeholder="{{t .Locale "filter.country.all"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="moderation-country-filter-suggestions">
+          <div class="filter-suggestions" id="moderation-country-filter-suggestions" data-country-filter-suggestions role="listbox" hidden>
+            {{range .Data.Countries}}
+              <button type="button" class="filter-suggestion" data-country-filter-option data-value="{{.Value}}" data-label="{{attractionCountry $.Locale .Value}}" data-search="{{attractionCountrySearch .Value}}" role="option">
+                <span>{{attractionCountry $.Locale .Value}}</span>
+              </button>
+            {{end}}
+          </div>
+        </div>
+      </div>
+      <div class="filter-field" data-city-filter-group {{if not .Data.Filters.CountryCode}}hidden{{end}}>
+        <span>{{t .Locale "field.city"}}</span>
+        <input type="hidden" name="city" value="{{.Data.Filters.CityID}}" data-city-filter-value {{if not .Data.Filters.CountryCode}}disabled{{end}}>
+        <div class="filter-combobox" data-filter-combobox>
+          <input type="search" data-city-filter-input value="{{if .Data.Filters.CityID}}{{attractionCityName .Locale .Data.Filters.CityID}}{{end}}" placeholder="{{t .Locale "filter.city.all"}}" autocomplete="off" autocorrect="off" spellcheck="false" aria-autocomplete="none" aria-expanded="false" aria-controls="moderation-city-filter-suggestions" {{if not .Data.Filters.CountryCode}}disabled{{end}}>
+          <div class="filter-suggestions" id="moderation-city-filter-suggestions" data-city-filter-suggestions role="listbox" hidden>
+            {{range .Data.Cities}}
+              <button type="button" class="filter-suggestion" data-city-filter-option data-country="{{.CountryCode}}" data-value="{{.Value}}" data-label="{{attractionCityName $.Locale .Value}}" data-search="{{attractionCitySearch .CountryCode .Value}}" role="option">
+                <span>{{attractionCityName $.Locale .Value}}</span>
+                <small>{{attractionCountry $.Locale .CountryCode}}</small>
+              </button>
+            {{end}}
+          </div>
+        </div>
+      </div>
       <label>
         <span>{{t .Locale "field.search"}}</span>
         <input type="search" name="q" value="{{.Data.Filters.Search}}" placeholder="{{t .Locale .Data.SearchPlaceholderKey}}">

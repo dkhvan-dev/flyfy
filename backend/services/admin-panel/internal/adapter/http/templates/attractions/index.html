@@ -95,7 +95,7 @@
               <td><span class="{{statusClass .Status}}">{{t $.Locale (printf "attraction.status.%s" .Status)}}</span></td>
               <td>{{len .Media}}</td>
               <td>{{formatTime .UpdatedAt (staffTimezone $.Staff)}}</td>
-              <td class="right"><a class="button" href="/admin/attractions/{{.ID}}/edit">{{t $.Locale "action.edit"}}</a></td>
+              <td class="right"><a class="button" href="/admin/attractions/{{.ID}}/edit{{urlQuerySuffix $.Data.Filters.ReturnQuery}}">{{t $.Locale "action.edit"}}</a></td>
             </tr>
           {{end}}
         </tbody>

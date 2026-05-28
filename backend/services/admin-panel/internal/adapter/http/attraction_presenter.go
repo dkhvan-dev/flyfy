@@ -2357,11 +2357,20 @@ func attractionListQuery(r valuesReader) AttractionFilterViewData {
 		cityID = ""
 	}
 	values := url.Values{}
+	returnValues := url.Values{}
 	setAttractionQuery(values, "q", search)
 	setAttractionQuery(values, "category", category)
 	setAttractionQuery(values, "status", status)
 	setAttractionQuery(values, "country", countryCode)
 	setAttractionQuery(values, "city", cityID)
+	setAttractionQuery(returnValues, "q", search)
+	setAttractionQuery(returnValues, "category", category)
+	setAttractionQuery(returnValues, "status", status)
+	setAttractionQuery(returnValues, "country", countryCode)
+	setAttractionQuery(returnValues, "city", cityID)
+	if page > 1 {
+		returnValues.Set("page", strconv.Itoa(page))
+	}
 	return AttractionFilterViewData{
 		Search:      search,
 		Category:    category,
@@ -2370,7 +2379,25 @@ func attractionListQuery(r valuesReader) AttractionFilterViewData {
 		CityID:      cityID,
 		Page:        page,
 		Query:       values.Encode(),
+		ReturnQuery: returnValues.Encode(),
 	}
+}
+
+func attractionListURL(query string) string {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return "/admin/attractions"
+	}
+	return "/admin/attractions?" + query
+}
+
+func attractionEditURL(id uuid.UUID, query string) string {
+	path := "/admin/attractions/" + id.String() + "/edit"
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return path
+	}
+	return path + "?" + query
 }
 
 func parseAttractionListPage(raw string) int {

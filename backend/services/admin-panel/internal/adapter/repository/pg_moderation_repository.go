@@ -293,12 +293,27 @@ func buildListCasesQuery(filter model.ModerationQueueFilter) (string, []any) {
 	if search := likePattern(filter.Search); search != "" {
 		parts = append(parts, " AND "+moderationSearchSQL()+" LIKE "+addArg(search)+" ESCAPE '\\'")
 	}
-	if city := strings.TrimSpace(strings.ToLower(filter.City)); city != "" {
+	if countryCode := strings.TrimSpace(strings.ToUpper(filter.CountryCode)); countryCode != "" {
+		countryArg := addArg(countryCode)
 		parts = append(parts, " AND ("+
-			"LOWER(COALESCE(snapshot->>'DepartureCityID', '')) = "+addArg(city)+
-			" OR LOWER(COALESCE(snapshot->>'CityName', '')) LIKE "+addArg("%"+escapeLike(city)+"%")+" ESCAPE '\\'"+
-			" OR LOWER(COALESCE(snapshot->>'BaseCityID', '')) = "+addArg(city)+
-			" OR LOWER(COALESCE(snapshot->>'BaseCityName', '')) LIKE "+addArg("%"+escapeLike(city)+"%")+" ESCAPE '\\')")
+			"UPPER(COALESCE(snapshot->>'CountryCode', '')) = "+countryArg+
+			" OR UPPER(COALESCE(snapshot->>'ActivityCountryCode', '')) = "+countryArg+
+			" OR UPPER(COALESCE(snapshot->>'ExcursionCountryCode', '')) = "+countryArg+
+			" OR UPPER(COALESCE(snapshot->>'BaseCountryCode', '')) = "+countryArg+
+			" OR UPPER(COALESCE(snapshot->>'ConversationCountryCode', '')) = "+countryArg+")")
+	}
+	if city := strings.TrimSpace(strings.ToLower(filter.City)); city != "" {
+		cityArg := addArg(city)
+		cityLikeArg := addArg("%" + escapeLike(city) + "%")
+		baseCityArg := addArg(city)
+		baseCityLikeArg := addArg("%" + escapeLike(city) + "%")
+		parts = append(parts, " AND ("+
+			"LOWER(COALESCE(snapshot->>'DepartureCityID', '')) = "+cityArg+
+			" OR LOWER(COALESCE(snapshot->>'CityID', '')) = "+cityArg+
+			" OR LOWER(COALESCE(snapshot->>'ConversationCityID', '')) = "+cityArg+
+			" OR LOWER(COALESCE(snapshot->>'CityName', '')) LIKE "+cityLikeArg+" ESCAPE '\\'"+
+			" OR LOWER(COALESCE(snapshot->>'BaseCityID', '')) = "+baseCityArg+
+			" OR LOWER(COALESCE(snapshot->>'BaseCityName', '')) LIKE "+baseCityLikeArg+" ESCAPE '\\')")
 	}
 	if signal := strings.TrimSpace(filter.Signal); signal != "" {
 		parts = append(parts, " AND COALESCE(snapshot->'ModerationReasonCodes', '[]'::jsonb) ? "+addArg(signal))

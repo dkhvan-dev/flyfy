@@ -205,7 +205,7 @@
     }
   });
 
-  document.querySelectorAll("[data-attraction-filter-form]").forEach((form) => {
+  document.querySelectorAll("[data-attraction-filter-form], [data-location-filter-form]").forEach((form) => {
     const countryInput = form.querySelector("[data-country-filter-input]");
     const countryValue = form.querySelector("[data-country-filter-value]");
     const countrySuggestions = form.querySelector("[data-country-filter-suggestions]");

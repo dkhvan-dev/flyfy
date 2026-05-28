@@ -81,6 +81,7 @@ type ModerationQueueFilter struct {
 	Statuses        []enum.ModerationCaseStatus
 	AssignedAdminID *uuid.UUID
 	Search          string
+	CountryCode     string
 	City            string
 	Signal          string
 	Risk            ModerationRiskFilter

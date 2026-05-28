@@ -6,6 +6,7 @@ import (
 	"html"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -277,6 +278,309 @@ func TestRendererRendersAttractionEditFormWithOptionalValues(t *testing.T) {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("attraction edit form did not render expected control %q: %s", expected, body)
 		}
+	}
+}
+
+func TestRendererPreservesAttractionListFiltersAcrossEditNavigation(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	itemID := uuid.New()
+	filters := attractionListQuery(url.Values{
+		"country":  {"PH"},
+		"city":     {"cebu-city"},
+		"q":        {"magellan"},
+		"category": {"ARCHITECTURE"},
+		"status":   {"PUBLISHED"},
+		"page":     {"2"},
+	})
+	expectedQuery := "category=ARCHITECTURE&city=cebu-city&country=PH&page=2&q=magellan&status=PUBLISHED"
+	if filters.ReturnQuery != expectedQuery {
+		t.Fatalf("ReturnQuery = %q, want %q", filters.ReturnQuery, expectedQuery)
+	}
+
+	listPageData := PageData{
+		Title:  "Attractions",
+		Locale: localeRU,
+		Path:   "/admin/attractions?" + expectedQuery,
+		Staff:  adminTemplateActor(),
+		Data: NewAttractionListViewData([]model.AdminAttraction{
+			{
+				ID:            itemID,
+				DefaultLocale: localeRU,
+				Title:         "Крест Магеллана",
+				CountryCode:   "PH",
+				CityID:        "cebu-city",
+				Category:      "ARCHITECTURE",
+				Status:        "PUBLISHED",
+				UpdatedAt:     time.Now().UTC(),
+			},
+		}, 50, filters),
+	}
+
+	var listRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&listRendered, "attractions/index", listPageData); err != nil {
+		t.Fatalf("ExecuteTemplate list returned error: %v", err)
+	}
+	listBody := html.UnescapeString(listRendered.String())
+	expectedEditURL := "/admin/attractions/" + itemID.String() + "/edit?" + expectedQuery
+	if !strings.Contains(listBody, `href="`+expectedEditURL+`"`) {
+		t.Fatalf("attraction list did not preserve filters in edit link %q: %s", expectedEditURL, listBody)
+	}
+
+	editPageData := PageData{
+		Title:     "Edit attraction",
+		Locale:    localeRU,
+		Path:      expectedEditURL,
+		Staff:     adminTemplateActor(),
+		CSRFToken: "csrf-token",
+		Data: NewAttractionFormViewData(&model.AdminAttraction{
+			ID:            itemID,
+			DefaultLocale: localeRU,
+			Title:         "Крест Магеллана",
+			CountryCode:   "PH",
+			CityID:        "cebu-city",
+			Category:      "ARCHITECTURE",
+			Status:        "PUBLISHED",
+		}, model.AttractionInput{}, attractionListURL(filters.ReturnQuery)),
+	}
+
+	var editRendered bytes.Buffer
+	if err = renderer.templates.ExecuteTemplate(&editRendered, "attractions/form", editPageData); err != nil {
+		t.Fatalf("ExecuteTemplate edit returned error: %v", err)
+	}
+	editBody := html.UnescapeString(editRendered.String())
+	expectedBackURL := "/admin/attractions?" + expectedQuery
+	if !strings.Contains(editBody, `href="`+expectedBackURL+`"`) {
+		t.Fatalf("attraction edit form did not preserve filters in back link %q: %s", expectedBackURL, editBody)
+	}
+	expectedSubmitURL := "/admin/attractions/" + itemID.String() + "?" + expectedQuery
+	if !strings.Contains(editBody, `action="`+expectedSubmitURL+`"`) {
+		t.Fatalf("attraction edit form did not preserve filters in submit action %q: %s", expectedSubmitURL, editBody)
+	}
+	expectedMediaURL := "/admin/attractions/" + itemID.String() + "/media?" + expectedQuery
+	if !strings.Contains(editBody, `action="`+expectedMediaURL+`"`) {
+		t.Fatalf("attraction edit form did not preserve filters in media action %q: %s", expectedMediaURL, editBody)
+	}
+}
+
+func TestRendererRendersModerationQueueLocationComboboxFilters(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	filters := QueueFilterViewData{
+		Status:      excursionQueueStatusAll,
+		CountryCode: "KZ",
+		CityID:      "almaty",
+		Query:       "city=almaty&country=KZ&status=all",
+	}
+	cases := []struct {
+		name string
+		data QueueViewData
+	}{
+		{name: "excursions", data: NewQueueViewData(nil, filters)},
+		{name: "activities", data: NewActivityQueueViewData(nil, filters)},
+		{name: "guides", data: NewGuideApplicationQueueViewData(nil, filters)},
+		{name: "chats", data: NewChatMessageQueueViewData(nil, filters)},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			pageData := PageData{
+				Title:     "Moderation",
+				Locale:    localeRU,
+				Path:      tc.data.FilterAction + "?" + filters.Query,
+				Staff:     adminTemplateActor(),
+				CSRFToken: "csrf-token",
+				Data:      tc.data,
+			}
+
+			var rendered bytes.Buffer
+			if err = renderer.templates.ExecuteTemplate(&rendered, "moderation/queue", pageData); err != nil {
+				t.Fatalf("ExecuteTemplate returned error: %v", err)
+			}
+			body := html.UnescapeString(rendered.String())
+			for _, expected := range []string{
+				`data-location-filter-form`,
+				`type="hidden" name="country" value="KZ" data-country-filter-value`,
+				`type="search" data-country-filter-input value="Казахстан"`,
+				`data-country-filter-suggestions role="listbox" hidden`,
+				`type="button" class="filter-suggestion" data-country-filter-option`,
+				`type="hidden" name="city" value="almaty" data-city-filter-value`,
+				`type="search" data-city-filter-input value="Алматы"`,
+				`data-city-filter-suggestions role="listbox" hidden`,
+				`type="button" class="filter-suggestion" data-city-filter-option`,
+				`action="` + tc.data.SyncAction + `?city=almaty&country=KZ&status=all"`,
+			} {
+				if !strings.Contains(body, expected) {
+					t.Fatalf("%s queue did not render location filter control %q: %s", tc.name, expected, body)
+				}
+			}
+			if strings.Contains(body, `placeholder="Город"`) {
+				t.Fatalf("%s queue still renders legacy free-form city input: %s", tc.name, body)
+			}
+		})
+	}
+}
+
+func TestRendererPreservesModerationQueueFiltersAcrossDetailNavigation(t *testing.T) {
+	t.Parallel()
+
+	renderer, err := NewRenderer()
+	if err != nil {
+		t.Fatalf("NewRenderer returned error: %v", err)
+	}
+
+	now := time.Now().UTC()
+	returnQuery := "city=almaty&country=KZ&status=all"
+	filters := QueueFilterViewData{
+		Status:      excursionQueueStatusAll,
+		CountryCode: "KZ",
+		CityID:      "almaty",
+		Query:       returnQuery,
+	}
+	type detailCase struct {
+		name              string
+		queueData         QueueViewData
+		detailData        CaseDetailViewData
+		expectedDetailURL string
+		expectedQueueURL  string
+		expectedApprove   string
+	}
+	excursionCaseID := uuid.New()
+	excursionID := uuid.New()
+	activityCaseID := uuid.New()
+	activityID := uuid.New()
+	cases := []detailCase{
+		{
+			name: "excursions",
+			queueData: NewQueueViewData([]*model.ModerationCase{
+				{
+					ID:         excursionCaseID,
+					TargetType: model.ModerationTargetExcursion,
+					TargetID:   excursionID,
+					Status:     enum.ModerationCaseStatusOpen,
+					OpenedAt:   now,
+				},
+			}, filters),
+			detailData: NewCaseDetailViewData(
+				&app.ModerationCaseDetail{
+					Case: &model.ModerationCase{
+						ID:         excursionCaseID,
+						TargetType: model.ModerationTargetExcursion,
+						TargetID:   excursionID,
+						Status:     enum.ModerationCaseStatusOpen,
+						OpenedAt:   now,
+					},
+					Excursion: &model.ExcursionModerationItem{
+						ID:              excursionID,
+						Title:           "Big Almaty Lake",
+						Status:          "PENDING_REVIEW",
+						Visibility:      "PUBLIC",
+						CountryCode:     "KZ",
+						DepartureCityID: "almaty",
+						CreatedAt:       now,
+						UpdatedAt:       now,
+					},
+				},
+				returnQuery,
+			),
+			expectedDetailURL: "/admin/moderation/excursions/" + excursionCaseID.String() + "?" + returnQuery,
+			expectedQueueURL:  "/admin/moderation/excursions?" + returnQuery,
+			expectedApprove:   "/admin/moderation/excursions/" + excursionCaseID.String() + "/approve?" + returnQuery,
+		},
+		{
+			name: "activities",
+			queueData: NewActivityQueueViewData([]*model.ModerationCase{
+				{
+					ID:         activityCaseID,
+					TargetType: model.ModerationTargetActivity,
+					TargetID:   activityID,
+					Status:     enum.ModerationCaseStatusOpen,
+					OpenedAt:   now,
+				},
+			}, filters),
+			detailData: NewCaseDetailViewData(
+				&app.ModerationCaseDetail{
+					Case: &model.ModerationCase{
+						ID:         activityCaseID,
+						TargetType: model.ModerationTargetActivity,
+						TargetID:   activityID,
+						Status:     enum.ModerationCaseStatusOpen,
+						OpenedAt:   now,
+					},
+					Activity: &model.ActivityModerationItem{
+						ID:                  activityID,
+						Title:               "Evening city walk",
+						Status:              "FLAGGED",
+						CountryCode:         stringPtr("KZ"),
+						CityID:              stringPtr("almaty"),
+						ModerationRiskScore: 60,
+						StartAt:             now,
+						EndAt:               now.Add(time.Hour),
+						CreatedAt:           now,
+						UpdatedAt:           now,
+					},
+				},
+				returnQuery,
+			),
+			expectedDetailURL: "/admin/moderation/activities/" + activityCaseID.String() + "?" + returnQuery,
+			expectedQueueURL:  "/admin/moderation/activities?" + returnQuery,
+			expectedApprove:   "/admin/moderation/activities/" + activityCaseID.String() + "/approve?" + returnQuery,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			queuePageData := PageData{
+				Title:     "Moderation queue",
+				Locale:    localeRU,
+				Path:      tc.queueData.FilterAction + "?" + returnQuery,
+				Staff:     adminTemplateActor(),
+				CSRFToken: "csrf-token",
+				Data:      tc.queueData,
+			}
+			var queueRendered bytes.Buffer
+			if err = renderer.templates.ExecuteTemplate(&queueRendered, "moderation/queue", queuePageData); err != nil {
+				t.Fatalf("ExecuteTemplate queue returned error: %v", err)
+			}
+			queueBody := html.UnescapeString(queueRendered.String())
+			if !strings.Contains(queueBody, `href="`+tc.expectedDetailURL+`"`) {
+				t.Fatalf("%s queue did not preserve filters in detail link %q: %s", tc.name, tc.expectedDetailURL, queueBody)
+			}
+
+			detailPageData := PageData{
+				Title:     "Moderation detail",
+				Locale:    localeRU,
+				Path:      tc.expectedDetailURL,
+				Staff:     adminTemplateActor(),
+				CSRFToken: "csrf-token",
+				Data:      tc.detailData,
+			}
+			var detailRendered bytes.Buffer
+			if err = renderer.templates.ExecuteTemplate(&detailRendered, "moderation/detail", detailPageData); err != nil {
+				t.Fatalf("ExecuteTemplate detail returned error: %v", err)
+			}
+			detailBody := html.UnescapeString(detailRendered.String())
+			if !strings.Contains(detailBody, `href="`+tc.expectedQueueURL+`"`) {
+				t.Fatalf("%s detail did not preserve filters in back link %q: %s", tc.name, tc.expectedQueueURL, detailBody)
+			}
+			if !strings.Contains(detailBody, `action="`+tc.expectedApprove+`"`) {
+				t.Fatalf("%s detail did not preserve filters in approve action %q: %s", tc.name, tc.expectedApprove, detailBody)
+			}
+		})
 	}
 }
 

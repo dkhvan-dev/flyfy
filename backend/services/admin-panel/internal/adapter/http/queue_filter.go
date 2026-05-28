@@ -36,22 +36,30 @@ func parseExcursionQueueFilter(r *http.Request) (model.ModerationQueueFilter, Qu
 	status := normalizeExcursionQueueStatus(query.Get("status"))
 	risk := normalizeExcursionQueueRisk(query.Get("risk"))
 	sort := normalizeExcursionQueueSort(query.Get("sort"))
+	countryCode := strings.ToUpper(strings.TrimSpace(query.Get("country")))
+	cityID := strings.ToLower(strings.TrimSpace(query.Get("city")))
+	if countryCode == "" {
+		cityID = ""
+	}
 	view := QueueFilterViewData{
-		Status: status,
-		City:   strings.TrimSpace(query.Get("city")),
-		Search: strings.TrimSpace(query.Get("q")),
-		Signal: strings.TrimSpace(query.Get("signal")),
-		Risk:   string(risk),
-		Sort:   string(sort),
+		Status:      status,
+		CountryCode: countryCode,
+		CityID:      cityID,
+		City:        cityID,
+		Search:      strings.TrimSpace(query.Get("q")),
+		Signal:      strings.TrimSpace(query.Get("signal")),
+		Risk:        string(risk),
+		Sort:        string(sort),
 	}
 	view.Query = excursionQueueFilterQuery(view)
 	return model.ModerationQueueFilter{
-		Statuses: statusesForExcursionQueueStatus(status),
-		Search:   view.Search,
-		City:     view.City,
-		Signal:   view.Signal,
-		Risk:     risk,
-		Sort:     sort,
+		Statuses:    statusesForExcursionQueueStatus(status),
+		Search:      view.Search,
+		CountryCode: view.CountryCode,
+		City:        view.CityID,
+		Signal:      view.Signal,
+		Risk:        risk,
+		Sort:        sort,
 	}, view
 }
 
@@ -67,6 +75,14 @@ func parseExcursionHistoryFilter(r *http.Request) (model.ModerationQueueFilter, 
 	}
 	view.Query = excursionQueueFilterQuery(view)
 	return filter, view
+}
+
+func moderationQueueReturnQuery(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	_, view := parseExcursionQueueFilter(r)
+	return view.Query
 }
 
 func normalizeExcursionQueueStatus(value string) string {
@@ -152,8 +168,11 @@ func excursionQueueFilterQuery(filter QueueFilterViewData) string {
 	if filter.Status != "" && filter.Status != excursionQueueStatusActive {
 		values.Set("status", filter.Status)
 	}
-	if filter.City != "" {
-		values.Set("city", filter.City)
+	if filter.CountryCode != "" {
+		values.Set("country", filter.CountryCode)
+	}
+	if filter.CityID != "" {
+		values.Set("city", filter.CityID)
 	}
 	if filter.Search != "" {
 		values.Set("q", filter.Search)
