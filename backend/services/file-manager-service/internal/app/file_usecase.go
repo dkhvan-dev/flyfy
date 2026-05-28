@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -230,6 +231,12 @@ type CompleteUploadOutput struct {
 	SizeBytes           int64
 }
 
+type PublicContentURLOutput struct {
+	URL          string
+	ContentType  string
+	CacheControl string
+}
+
 func (u *FileUseCase) CompleteUpload(ctx context.Context, fileID uuid.UUID) (*CompleteUploadOutput, error) {
 	if fileID == uuid.Nil {
 		return nil, ErrInvalidFileID
@@ -369,6 +376,31 @@ func (u *FileUseCase) CreateDownloadURL(ctx context.Context, fileID uuid.UUID) (
 	return url, time.Now().UTC().Add(expiresIn), nil
 }
 
+func (u *FileUseCase) CreatePublicContentURL(ctx context.Context, fileID uuid.UUID) (*PublicContentURLOutput, error) {
+	if strings.TrimSpace(u.cfg.Storage.PublicURL) == "" {
+		return nil, nil
+	}
+
+	file, err := u.getReadableFile(ctx, fileID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	publicURL, err := buildPublicObjectURL(u.cfg.Storage.PublicURL, file.ObjectKey)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(publicURL) == "" {
+		return nil, nil
+	}
+
+	return &PublicContentURLOutput{
+		URL:          publicURL,
+		ContentType:  contentTypeForFile(file),
+		CacheControl: publicContentCacheControl(u.cfg.Storage.ParsedPublicContentCacheMaxAge()),
+	}, nil
+}
+
 func (u *FileUseCase) OpenContent(ctx context.Context, fileID uuid.UUID) (io.ReadCloser, string, error) {
 	return u.openContent(ctx, fileID, false)
 }
@@ -378,22 +410,9 @@ func (u *FileUseCase) OpenPublicContent(ctx context.Context, fileID uuid.UUID) (
 }
 
 func (u *FileUseCase) openContent(ctx context.Context, fileID uuid.UUID, requirePublic bool) (io.ReadCloser, string, error) {
-	if fileID == uuid.Nil {
-		return nil, "", ErrInvalidFileID
-	}
-
-	file, err := u.repo.GetByID(ctx, fileID)
+	file, err := u.getReadableFile(ctx, fileID, requirePublic)
 	if err != nil {
-		return nil, "", fmt.Errorf("get file by id: %w", err)
-	}
-	if file == nil || file.IsDeleted {
-		return nil, "", ErrFileNotFound
-	}
-	if file.Status != enum.FileStatusReady {
-		return nil, "", ErrFileNotReady
-	}
-	if requirePublic && file.Visibility != enum.FileVisibilityPublic {
-		return nil, "", ErrFileNotPublic
+		return nil, "", err
 	}
 
 	body, contentType, err := u.storage.GetObject(ctx, file.Bucket, file.ObjectKey)
@@ -402,16 +421,36 @@ func (u *FileUseCase) openContent(ctx context.Context, fileID uuid.UUID, require
 	}
 
 	if strings.TrimSpace(contentType) == "" {
-		contentType = normalizeContentType(valueOrEmpty(file.DetectedContentType))
-	}
-	if strings.TrimSpace(contentType) == "" {
-		contentType = normalizeContentType(file.ContentType)
-	}
-	if strings.TrimSpace(contentType) == "" {
-		contentType = "application/octet-stream"
+		contentType = contentTypeForFile(file)
 	}
 
 	return body, contentType, nil
+}
+
+func (u *FileUseCase) getReadableFile(
+	ctx context.Context,
+	fileID uuid.UUID,
+	requirePublic bool,
+) (*model.File, error) {
+	if fileID == uuid.Nil {
+		return nil, ErrInvalidFileID
+	}
+
+	file, err := u.repo.GetByID(ctx, fileID)
+	if err != nil {
+		return nil, fmt.Errorf("get file by id: %w", err)
+	}
+	if file == nil || file.IsDeleted {
+		return nil, ErrFileNotFound
+	}
+	if file.Status != enum.FileStatusReady {
+		return nil, ErrFileNotReady
+	}
+	if requirePublic && file.Visibility != enum.FileVisibilityPublic {
+		return nil, ErrFileNotPublic
+	}
+
+	return file, nil
 }
 
 func (u *FileUseCase) SoftDelete(ctx context.Context, fileID uuid.UUID) error {
@@ -463,6 +502,39 @@ func buildObjectKey(purpose enum.FilePurpose, originalName string) string {
 		base,
 		ext,
 	)
+}
+
+func buildPublicObjectURL(publicBaseURL string, objectKey string) (string, error) {
+	base := strings.TrimSpace(publicBaseURL)
+	key := strings.Trim(strings.TrimSpace(objectKey), "/")
+	if base == "" || key == "" {
+		return "", nil
+	}
+
+	joined, err := url.JoinPath(base, key)
+	if err != nil {
+		return "", fmt.Errorf("join public object url: %w", err)
+	}
+	return joined, nil
+}
+
+func publicContentCacheControl(maxAge time.Duration) string {
+	seconds := int64(maxAge.Seconds())
+	if seconds <= 0 {
+		seconds = int64((24 * time.Hour).Seconds())
+	}
+	return fmt.Sprintf("public, max-age=%d, immutable", seconds)
+}
+
+func contentTypeForFile(file *model.File) string {
+	contentType := normalizeContentType(valueOrEmpty(file.DetectedContentType))
+	if contentType == "" {
+		contentType = normalizeContentType(file.ContentType)
+	}
+	if contentType == "" {
+		return "application/octet-stream"
+	}
+	return contentType
 }
 
 func valueOrEmpty(v *string) string {

@@ -29,6 +29,7 @@ type fileUseCase interface {
 	UploadBinary(context.Context, uuid.UUID, string, []byte) error
 	GetFile(context.Context, uuid.UUID) (*model.File, error)
 	CreateDownloadURL(context.Context, uuid.UUID) (string, time.Time, error)
+	CreatePublicContentURL(context.Context, uuid.UUID) (*app.PublicContentURLOutput, error)
 	OpenContent(context.Context, uuid.UUID) (io.ReadCloser, string, error)
 	OpenPublicContent(context.Context, uuid.UUID) (io.ReadCloser, string, error)
 	SoftDelete(context.Context, uuid.UUID) error
@@ -336,6 +337,23 @@ func (h *Handler) GetContent(w http.ResponseWriter, r *http.Request, fileID uuid
 }
 
 func (h *Handler) GetPublicContent(w http.ResponseWriter, r *http.Request, fileID uuid.UUID) {
+	publicURL, err := h.useCase.CreatePublicContentURL(r.Context(), fileID)
+	if err != nil {
+		switch {
+		case errors.Is(err, app.ErrFileNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, app.ErrFileNotReady), errors.Is(err, app.ErrFileNotPublic):
+			writeError(w, http.StatusForbidden, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "failed to create public file content url")
+		}
+		return
+	}
+	if publicURL != nil && strings.TrimSpace(publicURL.URL) != "" {
+		writeFileRedirect(w, publicURL.URL, publicURL.ContentType, publicURL.CacheControl)
+		return
+	}
+
 	body, contentType, err := h.useCase.OpenPublicContent(r.Context(), fileID)
 	if err != nil {
 		switch {
@@ -353,11 +371,24 @@ func (h *Handler) GetPublicContent(w http.ResponseWriter, r *http.Request, fileI
 	writeFileContent(w, body, contentType, "public, max-age=300")
 }
 
+func writeFileRedirect(w http.ResponseWriter, location string, contentType string, cacheControl string) {
+	if strings.TrimSpace(contentType) != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	if strings.TrimSpace(cacheControl) != "" {
+		w.Header().Set("Cache-Control", cacheControl)
+	}
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Location", location)
+	w.WriteHeader(http.StatusFound)
+}
+
 func writeFileContent(w http.ResponseWriter, body io.Reader, contentType string, cacheControl string) {
 	if strings.TrimSpace(contentType) != "" {
 		w.Header().Set("Content-Type", contentType)
 	}
 	w.Header().Set("Cache-Control", cacheControl)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	_, _ = io.Copy(w, body)
 }
 

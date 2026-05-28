@@ -100,12 +100,34 @@ type StorageConfig struct {
 	UsePathStyle bool   `env:"STORAGE_USE_PATH_STYLE, default=true"`
 
 	MaxUploadSizeBytes int64 `env:"STORAGE_MAX_UPLOAD_SIZE_BYTES, default=10485760"` // 10 MB
+
+	PublicContentCacheMaxAge string `env:"STORAGE_PUBLIC_CONTENT_CACHE_MAX_AGE, default=24h"`
+	HTTPMaxIdleConns         int    `env:"STORAGE_HTTP_MAX_IDLE_CONNS, default=4096"`
+	HTTPMaxIdleConnsPerHost  int    `env:"STORAGE_HTTP_MAX_IDLE_CONNS_PER_HOST, default=2048"`
+	HTTPMaxConnsPerHost      int    `env:"STORAGE_HTTP_MAX_CONNS_PER_HOST, default=0"`
+	HTTPIdleConnTimeout      string `env:"STORAGE_HTTP_IDLE_CONN_TIMEOUT, default=90s"`
 }
 
 func (s StorageConfig) ParsedPresignTTL() time.Duration {
 	d, err := time.ParseDuration(s.PresignTTL)
 	if err != nil {
 		return 15 * time.Minute
+	}
+	return d
+}
+
+func (s StorageConfig) ParsedPublicContentCacheMaxAge() time.Duration {
+	d, err := time.ParseDuration(s.PublicContentCacheMaxAge)
+	if err != nil {
+		return 24 * time.Hour
+	}
+	return d
+}
+
+func (s StorageConfig) ParsedHTTPIdleConnTimeout() time.Duration {
+	d, err := time.ParseDuration(s.HTTPIdleConnTimeout)
+	if err != nil {
+		return 90 * time.Second
 	}
 	return d
 }

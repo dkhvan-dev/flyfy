@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ func New(ctx context.Context, cfg appconfig.StorageConfig) (*Client, error) {
 				"",
 			),
 		),
+		awsconfig.WithHTTPClient(newHTTPClient(cfg)),
 	}
 
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, loadOptions...)
@@ -51,6 +53,24 @@ func New(ctx context.Context, cfg appconfig.StorageConfig) (*Client, error) {
 		s3Client: s3Client,
 		presign:  awss3.NewPresignClient(s3Client),
 	}, nil
+}
+
+func newHTTPClient(cfg appconfig.StorageConfig) *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if cfg.HTTPMaxIdleConns > 0 {
+		transport.MaxIdleConns = cfg.HTTPMaxIdleConns
+	}
+	if cfg.HTTPMaxIdleConnsPerHost > 0 {
+		transport.MaxIdleConnsPerHost = cfg.HTTPMaxIdleConnsPerHost
+	}
+	if cfg.HTTPMaxConnsPerHost > 0 {
+		transport.MaxConnsPerHost = cfg.HTTPMaxConnsPerHost
+	}
+	transport.IdleConnTimeout = cfg.ParsedHTTPIdleConnTimeout()
+
+	return &http.Client{
+		Transport: transport,
+	}
 }
 
 func (c *Client) CreatePresignedUpload(ctx context.Context, req port.PresignUploadRequest) (*port.PresignUploadResponse, error) {
