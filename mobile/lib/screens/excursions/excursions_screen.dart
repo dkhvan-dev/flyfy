@@ -438,18 +438,25 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
   }
 
   void _applyDefaultCityFilter(HomeLocationProvider provider) {
-    if (_hasAppliedDefaultCityFilter || _filters.city != null) return;
+    if (_hasAppliedDefaultCityFilter ||
+        _filters.country != null ||
+        _filters.city != null) {
+      return;
+    }
     _hasAppliedDefaultCityFilter = true;
 
     final location = provider.selectedLocation;
+    final country = AppCountryFilterValue.fromParts(
+      countryCode: location?.countryCode,
+    );
     final city = AppCityFilterValue.fromParts(
       cityId: location?.cityId,
       cityName: location?.cityName,
       countryCode: location?.countryCode,
     );
-    if (city == null) return;
+    if (country == null && city == null) return;
 
-    setState(() => _filters = _filters.copyWith(city: city));
+    setState(() => _filters = _filters.copyWith(country: country, city: city));
   }
 
   void _handleSearchChanged() {
@@ -483,6 +490,7 @@ class _ExcursionsScreenState extends State<ExcursionsScreen> {
     final city = _filters.city;
     return context.read<ExcursionProvider>().refreshExcursions(
           query: _searchQuery,
+          countryCode: _filters.countryCode,
           cityName: city?.cityName,
           departureCityId: city?.cityId,
         );
@@ -1079,6 +1087,7 @@ class _ExcursionsSearchField extends StatelessWidget {
 
 class _ExcursionsFilters {
   const _ExcursionsFilters({
+    this.country,
     this.city,
     this.categorySlugs = const <String>{},
     this.languageCodes = const <String>{},
@@ -1087,6 +1096,7 @@ class _ExcursionsFilters {
     this.priceMax,
   });
 
+  final AppCountryFilterValue? country;
   final AppCityFilterValue? city;
   final Set<String> categorySlugs;
   final Set<String> languageCodes;
@@ -1095,6 +1105,7 @@ class _ExcursionsFilters {
   final double? priceMax;
 
   int get activeCount =>
+      (country == null ? 0 : 1) +
       (city == null ? 0 : 1) +
       categorySlugs.length +
       languageCodes.length +
@@ -1102,7 +1113,10 @@ class _ExcursionsFilters {
       (priceMin == null ? 0 : 1) +
       (priceMax == null ? 0 : 1);
 
+  String? get countryCode => country?.countryCode ?? city?.countryCode;
+
   _ExcursionsFilters copyWith({
+    Object? country = _unset,
     Object? city = _unset,
     Set<String>? categorySlugs,
     Set<String>? languageCodes,
@@ -1114,6 +1128,9 @@ class _ExcursionsFilters {
     bool clearPriceMax = false,
   }) {
     return _ExcursionsFilters(
+      country: identical(country, _unset)
+          ? this.country
+          : country as AppCountryFilterValue?,
       city: identical(city, _unset) ? this.city : city as AppCityFilterValue?,
       categorySlugs: categorySlugs ?? this.categorySlugs,
       languageCodes: languageCodes ?? this.languageCodes,
@@ -1126,6 +1143,12 @@ class _ExcursionsFilters {
   static const Object _unset = Object();
 
   bool matches(ExcursionVm excursion) {
+    final selectedCountry = country;
+    if (selectedCountry != null &&
+        !selectedCountry.matches(countryCode: excursion.countryCode)) {
+      return false;
+    }
+
     final selectedCity = city;
     if (selectedCity != null) {
       if (!selectedCity.matches(
@@ -1291,6 +1314,12 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
     });
   }
 
+  void _setCountry(AppCountryFilterValue? country) {
+    setState(() {
+      _filters = _filters.copyWith(country: country, city: null);
+    });
+  }
+
   void _handlePriceRangeChanged() {
     final priceMin = _parseExcursionPriceInput(_priceFromController.text);
     final priceMax = _parseExcursionPriceInput(_priceToController.text);
@@ -1380,18 +1409,30 @@ class _ExcursionsFiltersSheetState extends State<_ExcursionsFiltersSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      AppCityFilterSection(
-                        title: l10n.locationFilterCitySection,
-                        allCitiesLabel: l10n.locationFilterAllCities,
-                        searchHint: l10n.locationFilterCitySearchHint,
-                        noResultsText: l10n.locationFilterCityNoResults,
-                        selectedCity: _filters.city,
-                        onChanged: (city) {
-                          setState(() {
-                            _filters = _filters.copyWith(city: city);
-                          });
-                        },
+                      AppCountryFilterSection(
+                        title: l10n.attractionFilterCountrySection,
+                        allCountriesLabel: l10n.attractionFilterCountryAll,
+                        searchHint: l10n.attractionFilterCountrySearchHint,
+                        noResultsText: l10n.attractionFilterCountryNoResults,
+                        selectedCountry: _filters.country,
+                        onChanged: _setCountry,
                       ),
+                      if (_filters.country != null) ...[
+                        const SizedBox(height: 30),
+                        AppCityFilterSection(
+                          title: l10n.locationFilterCitySection,
+                          allCitiesLabel: l10n.locationFilterAllCities,
+                          searchHint: l10n.locationFilterCitySearchHint,
+                          noResultsText: l10n.locationFilterCityNoResults,
+                          selectedCity: _filters.city,
+                          onChanged: (city) {
+                            setState(() {
+                              _filters = _filters.copyWith(city: city);
+                            });
+                          },
+                          countryCode: _filters.country?.countryCode,
+                        ),
+                      ],
                       const SizedBox(height: 30),
                       _ExcursionsFilterSection(
                         title: l10n.excursionsFilterCategories,

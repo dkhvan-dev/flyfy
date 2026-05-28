@@ -501,6 +501,7 @@ class _FakeExcursionApi extends ExcursionApi {
     String? query,
     String? landmarkId,
     String? categorySlug,
+    String? countryCode,
     String? cityName,
     String? departureCityId,
   }) async {

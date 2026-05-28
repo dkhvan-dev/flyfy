@@ -56,6 +56,7 @@ void main() {
       await api.getExcursions(
         limit: 1,
         landmarkId: ' landmark-1 ',
+        countryCode: ' kz ',
         cityName: ' Алматы ',
         departureCityId: ' almaty ',
       );
@@ -66,6 +67,7 @@ void main() {
         'limit': 1,
         'offset': 0,
         'landmarkId': 'landmark-1',
+        'countryCode': 'KZ',
         'cityName': 'Алматы',
         'departureCityId': 'almaty',
       });

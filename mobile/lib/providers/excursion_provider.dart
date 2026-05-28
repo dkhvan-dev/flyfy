@@ -24,9 +24,9 @@ class ExcursionProvider extends ChangeNotifier {
     ExcursionApi? excursionApi,
     ExcursionScheduleApi? scheduleApi,
     GuideApi? guideApi,
-  }) : _excursionApi = excursionApi ?? ExcursionApi(),
-       _guideApi = guideApi ?? GuideApi(),
-       _scheduleApi = scheduleApi ?? ExcursionScheduleApi();
+  })  : _excursionApi = excursionApi ?? ExcursionApi(),
+        _guideApi = guideApi ?? GuideApi(),
+        _scheduleApi = scheduleApi ?? ExcursionScheduleApi();
 
   static const _marketplaceRefreshAttempts = 3;
   static const _marketplaceRefreshRetryDelay = Duration(milliseconds: 150);
@@ -137,6 +137,7 @@ class ExcursionProvider extends ChangeNotifier {
     String? query,
     String? landmarkId,
     String? categorySlug,
+    String? countryCode,
     String? cityName,
     String? departureCityId,
   }) async {
@@ -158,6 +159,7 @@ class ExcursionProvider extends ChangeNotifier {
         query: query,
         landmarkId: landmarkId,
         categorySlug: categorySlug,
+        countryCode: countryCode,
         cityName: cityName,
         departureCityId: departureCityId,
       );
@@ -182,6 +184,7 @@ class ExcursionProvider extends ChangeNotifier {
     String? query,
     String? landmarkId,
     String? categorySlug,
+    String? countryCode,
     String? cityName,
     String? departureCityId,
   }) {
@@ -189,6 +192,7 @@ class ExcursionProvider extends ChangeNotifier {
       query: query,
       landmarkId: landmarkId,
       categorySlug: categorySlug,
+      countryCode: countryCode,
       cityName: cityName,
       departureCityId: departureCityId,
     );
@@ -254,8 +258,7 @@ class ExcursionProvider extends ChangeNotifier {
       return;
     }
 
-    final hasCachedData =
-        _myGuideProfile != null ||
+    final hasCachedData = _myGuideProfile != null ||
         _myGuideExcursions.isNotEmpty ||
         _myGuideExcursionBookings.isNotEmpty;
     if (hasCachedData) {
@@ -340,13 +343,11 @@ class ExcursionProvider extends ChangeNotifier {
 
     try {
       await _scheduleApi.cancelSlot(trimmedSlotId, trimmedReason);
-      _myGuideExcursionBookings = _myGuideExcursionBookings
-          .map((booking) {
-            final bookingSlotId = (booking.scheduleSlotId ?? '').trim();
-            if (bookingSlotId != trimmedSlotId) return booking;
-            return booking.copyWith(status: 'CANCELLED');
-          })
-          .toList(growable: false);
+      _myGuideExcursionBookings = _myGuideExcursionBookings.map((booking) {
+        final bookingSlotId = (booking.scheduleSlotId ?? '').trim();
+        if (bookingSlotId != trimmedSlotId) return booking;
+        return booking.copyWith(status: 'CANCELLED');
+      }).toList(growable: false);
       _actionState = ExcursionActionState.success;
       return true;
     } on DioException catch (e) {
@@ -467,8 +468,7 @@ class ExcursionProvider extends ChangeNotifier {
       return;
     }
 
-    final cachedExcursion =
-        _excursionDetailsById[trimmedExcursionId] ??
+    final cachedExcursion = _excursionDetailsById[trimmedExcursionId] ??
         initialExcursion ??
         _findCachedExcursion(trimmedExcursionId);
     final hasCachedExcursion = cachedExcursion != null;
@@ -1129,12 +1129,10 @@ class ExcursionProvider extends ChangeNotifier {
     final normalizedBookingId = bookingId.trim();
     if (normalizedBookingId.isEmpty) return;
 
-    _myExcursionBookings = _myExcursionBookings
-        .map((booking) {
-          if (booking.id != normalizedBookingId) return booking;
-          return booking.copyWith(review: review);
-        })
-        .toList(growable: false);
+    _myExcursionBookings = _myExcursionBookings.map((booking) {
+      if (booking.id != normalizedBookingId) return booking;
+      return booking.copyWith(review: review);
+    }).toList(growable: false);
   }
 
   ExcursionBookingVm? _applyBookingReviewsResult(
@@ -1145,16 +1143,14 @@ class ExcursionProvider extends ChangeNotifier {
     if (normalizedBookingId.isEmpty) return null;
 
     ExcursionBookingVm? updatedBooking;
-    _myExcursionBookings = _myExcursionBookings
-        .map((booking) {
-          if (booking.id != normalizedBookingId) return booking;
-          updatedBooking = booking.copyWith(
-            review: result.excursionReview,
-            guideReview: result.guideReview,
-          );
-          return updatedBooking!;
-        })
-        .toList(growable: false);
+    _myExcursionBookings = _myExcursionBookings.map((booking) {
+      if (booking.id != normalizedBookingId) return booking;
+      updatedBooking = booking.copyWith(
+        review: result.excursionReview,
+        guideReview: result.guideReview,
+      );
+      return updatedBooking!;
+    }).toList(growable: false);
     return updatedBooking;
   }
 
