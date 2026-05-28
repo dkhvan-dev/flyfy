@@ -1,30 +1,36 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../auth/auth_session_events.dart';
 import '../config/app_config.dart';
 import '../models/auth_result.dart';
 import '../storage/secure_storage.dart';
 
 class ApiClient {
-  ApiClient({String? baseUrl, SecureStorage? secureStorage, Dio? dio})
-    : _secureStorage = secureStorage ?? SecureStorage(),
-      _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
-              connectTimeout: const Duration(seconds: 10),
-              receiveTimeout: const Duration(seconds: 10),
-              sendTimeout: const Duration(seconds: 10),
-              contentType: 'application/json',
-              responseType: ResponseType.json,
-            ),
-          ) {
+  ApiClient({
+    String? baseUrl,
+    SecureStorage? secureStorage,
+    Dio? dio,
+    AuthSessionEvents? authSessionEvents,
+  })  : _secureStorage = secureStorage ?? SecureStorage(),
+        _authSessionEvents = authSessionEvents ?? AuthSessionEvents.instance,
+        _dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
+                connectTimeout: const Duration(seconds: 10),
+                receiveTimeout: const Duration(seconds: 10),
+                sendTimeout: const Duration(seconds: 10),
+                contentType: 'application/json',
+                responseType: ResponseType.json,
+              ),
+            ) {
     _configureInterceptors();
   }
 
   final Dio _dio;
   final SecureStorage _secureStorage;
+  final AuthSessionEvents _authSessionEvents;
 
   Future<void>? _refreshFuture;
 
@@ -59,6 +65,10 @@ class ApiClient {
 
             if (accessToken != null && accessToken.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $accessToken';
+            } else {
+              await _expireLocalSession();
+              handler.reject(_missingAccessTokenError(options));
+              return;
             }
           }
 
@@ -68,8 +78,7 @@ class ApiClient {
           final request = error.requestOptions;
           final statusCode = error.response?.statusCode;
 
-          final shouldTryRefresh =
-              statusCode == 401 &&
+          final shouldTryRefresh = statusCode == 401 &&
               _requiresAuth(request) &&
               request.extra['retried'] != true;
 
@@ -84,6 +93,7 @@ class ApiClient {
 
             final newAccessToken = await _secureStorage.getAccessToken();
             if (newAccessToken == null || newAccessToken.isEmpty) {
+              await _expireLocalSession();
               handler.next(error);
               return;
             }
@@ -95,7 +105,7 @@ class ApiClient {
             handler.resolve(response);
           } catch (_) {
             _refreshFuture = null;
-            await _secureStorage.deleteTokens();
+            await _expireLocalSession();
             handler.next(error);
           }
         },
@@ -145,6 +155,23 @@ class ApiClient {
       await _secureStorage.deleteTokens();
       return null;
     }
+  }
+
+  DioException _missingAccessTokenError(RequestOptions options) {
+    return DioException(
+      requestOptions: options,
+      response: Response<Map<String, dynamic>>(
+        requestOptions: options,
+        statusCode: 401,
+        data: const {'error': 'authentication_required'},
+      ),
+      type: DioExceptionType.badResponse,
+    );
+  }
+
+  Future<void> _expireLocalSession() async {
+    await _secureStorage.deleteTokens();
+    _authSessionEvents.notifySessionExpired();
   }
 
   Future<Map<String, dynamic>> initMe({

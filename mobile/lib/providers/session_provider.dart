@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
+import '../core/auth/auth_session_events.dart';
+import '../core/network/api_client.dart';
 import '../core/storage/secure_storage.dart';
 import '../features/profile/data/profile_api.dart';
 import '../features/profile/models/user_profile_vm.dart';
@@ -7,12 +11,38 @@ import '../features/profile/models/user_profile_vm.dart';
 enum SessionStatus { initial, loading, authenticated, unauthenticated }
 
 class SessionProvider extends ChangeNotifier {
-  SessionProvider({SecureStorage? secureStorage, ProfileApi? profileApi})
-      : _secureStorage = secureStorage ?? SecureStorage(),
-        _profileApi = profileApi ?? ProfileApi();
+  SessionProvider({
+    SecureStorage? secureStorage,
+    ProfileApi? profileApi,
+    AuthSessionEvents? authSessionEvents,
+  }) : this._(
+          secureStorage: secureStorage ?? SecureStorage(),
+          profileApi: profileApi,
+          authSessionEvents: authSessionEvents ?? AuthSessionEvents.instance,
+        );
+
+  SessionProvider._({
+    required SecureStorage secureStorage,
+    required ProfileApi? profileApi,
+    required AuthSessionEvents authSessionEvents,
+  })  : _secureStorage = secureStorage,
+        _profileApi = profileApi ??
+            ProfileApi(
+              apiClient: ApiClient(
+                secureStorage: secureStorage,
+                authSessionEvents: authSessionEvents,
+              ),
+            ),
+        _authSessionEvents = authSessionEvents {
+    _sessionExpiredSubscription = _authSessionEvents.sessionExpired.listen((_) {
+      _handleSessionExpired();
+    });
+  }
 
   final SecureStorage _secureStorage;
   final ProfileApi _profileApi;
+  final AuthSessionEvents _authSessionEvents;
+  late final StreamSubscription<void> _sessionExpiredSubscription;
 
   SessionStatus _status = SessionStatus.initial;
   UserProfileVm? _profile;
@@ -101,5 +131,17 @@ class SessionProvider extends ChangeNotifier {
     _profile = null;
     _status = SessionStatus.unauthenticated;
     notifyListeners();
+  }
+
+  void _handleSessionExpired() {
+    _profile = null;
+    _status = SessionStatus.unauthenticated;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _sessionExpiredSubscription.cancel();
+    super.dispose();
   }
 }

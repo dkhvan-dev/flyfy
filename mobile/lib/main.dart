@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'core/auth/auth_session_events.dart';
 import 'features/attendance/attendance_sync_manager.dart';
 import 'providers/auth_provider.dart';
 import 'providers/home_location_provider.dart';
@@ -33,6 +34,7 @@ class SuperApp extends StatefulWidget {
 }
 
 class _SuperAppState extends State<SuperApp> {
+  late final AuthSessionEvents _authSessionEvents;
   late final AuthProvider _authProvider;
   late final SessionProvider _sessionProvider;
   late final LocaleProvider _localeProvider;
@@ -42,8 +44,9 @@ class _SuperAppState extends State<SuperApp> {
   void initState() {
     super.initState();
 
-    _authProvider = AuthProvider();
-    _sessionProvider = SessionProvider();
+    _authSessionEvents = AuthSessionEvents.instance;
+    _authProvider = AuthProvider(authSessionEvents: _authSessionEvents);
+    _sessionProvider = SessionProvider(authSessionEvents: _authSessionEvents);
     _localeProvider = LocaleProvider()..load();
     _router = AppRouter.router(_authProvider);
 

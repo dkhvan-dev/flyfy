@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
+import '../core/auth/auth_session_events.dart';
 import '../core/network/api_client.dart';
 import '../core/network/dio_error_mapper.dart';
 import '../core/storage/secure_storage.dart';
@@ -11,11 +14,33 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider({
     ApiClient? apiClient,
     SecureStorage? secureStorage,
-  })  : _apiClient = apiClient ?? ApiClient(),
-        _secureStorage = secureStorage ?? SecureStorage();
+    AuthSessionEvents? authSessionEvents,
+  }) : this._(
+          apiClient: apiClient,
+          secureStorage: secureStorage ?? SecureStorage(),
+          authSessionEvents: authSessionEvents ?? AuthSessionEvents.instance,
+        );
+
+  AuthProvider._({
+    required ApiClient? apiClient,
+    required SecureStorage secureStorage,
+    required AuthSessionEvents authSessionEvents,
+  })  : _apiClient = apiClient ??
+            ApiClient(
+              secureStorage: secureStorage,
+              authSessionEvents: authSessionEvents,
+            ),
+        _secureStorage = secureStorage,
+        _authSessionEvents = authSessionEvents {
+    _sessionExpiredSubscription = _authSessionEvents.sessionExpired.listen((_) {
+      unawaited(_handleSessionExpired());
+    });
+  }
 
   final ApiClient _apiClient;
   final SecureStorage _secureStorage;
+  final AuthSessionEvents _authSessionEvents;
+  late final StreamSubscription<void> _sessionExpiredSubscription;
 
   AuthState _state = AuthState.initial;
   String? _errorMessage;
@@ -170,5 +195,19 @@ class AuthProvider extends ChangeNotifier {
       _state = AuthState.unauthenticated;
       notifyListeners();
     }
+  }
+
+  Future<void> _handleSessionExpired() async {
+    await _secureStorage.deleteTokens();
+    _lastPrimaryPhoneHint = null;
+    _lastPrimaryEmailHint = null;
+    _state = AuthState.unauthenticated;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _sessionExpiredSubscription.cancel();
+    super.dispose();
   }
 }
